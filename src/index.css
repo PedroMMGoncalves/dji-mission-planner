@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* O mapa Leaflet fica escuro por defeito enquanto os tiles carregam */
+.leaflet-container {
+  background: #0f172a;
+}
+
+/* Cursor de mira nos modos de desenho */
+.leaflet-container.cursor-crosshair {
+  cursor: crosshair;
+}
+
+/* Vértices editáveis do polígono */
+.vertex-handle {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #38bdf8;
+  border: 2px solid #0f172a;
+  box-shadow: 0 0 0 1px #38bdf8;
+}
+
+.anchor-handle {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: 2px solid #0f172a;
+  box-shadow: 0 0 0 1px #f59e0b;
+}
+
+/* Controlo de camadas Leaflet em dark mode */
+.leaflet-control-layers,
+.leaflet-bar a {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+.leaflet-bar a:hover {
+  background: #334155 !important;
+}
+
+input[type='range'] {
+  accent-color: #38bdf8;
+}
