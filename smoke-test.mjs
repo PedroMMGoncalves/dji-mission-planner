@@ -2,8 +2,10 @@ import * as turf from '@turf/turf'
 import {
   computeFootprint,
   computeGSD,
+  distanceToArea,
   generateFlightLines,
   lineSpacing,
+  longestEdgeBearing,
   photoInterval,
   rectangleFromAnchor,
   validateRing,
@@ -127,6 +129,14 @@ if (planL && !planL.error) {
   )
   check('planL troços dentro da área', allInside)
 }
+
+/* 8b. Direção de referência e distância da base */
+const edgeAz = longestEdgeBearing(rectNS) // comprimento 500 m ao longo de E-O
+check('longestEdgeBearing ~90°', Math.abs(edgeAz - 90) < 1.5, edgeAz.toFixed(1))
+const inside = distanceToArea(center, rectNS)
+check('base dentro da área → 0', inside === 0)
+const far = distanceToArea([-8.02, 39.5], rectNS) // ~1.7 km a oeste do centro
+check('base fora → distância ao contorno', far > 1000 && far < 2000, far.toFixed(0))
 
 /* 9. Trava de segurança */
 const planTiny = generateFlightLines(rectNS, {

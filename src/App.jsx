@@ -6,14 +6,17 @@ import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR } from './data/drones.js'
 import {
   computeFootprint,
   computeGSD,
+  distanceToArea,
   generateFlightLines,
   lineSpacing,
+  longestEdgeBearing,
   photoInterval,
   rectangleFromAnchor,
   resolveSensor,
   validateRing,
 } from './utils/geo.js'
 import { exportSimpleKML, exportWPMLKmz } from './utils/exporters.js'
+import { IconDrone, IconDownload } from './components/Icons.jsx'
 
 export default function App() {
   /* ----------------------------- Estado ----------------------------- */
@@ -28,10 +31,14 @@ export default function App() {
     angle: 90,
     bufferPct: 0,
     triggerMode: 'distance',
+    spacingMode: 'auto', // 'auto' (sobreposição) | 'manual' (distância em m)
+    manualSpacing: 50,
   })
-  const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor'
+  const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base'
   const [draftVertices, setDraftVertices] = useState([])
   const [ring, setRing] = useState(null) // anel aberto [[lon,lat], ...]
+  const [areaOrigin, setAreaOrigin] = useState(null) // 'draw' | 'anchor' | null
+  const [basePoint, setBasePoint] = useState(null) // base do operador [lon,lat]
   const [anchor, setAnchor] = useState({
     center: null,
     length: 500,
@@ -53,6 +60,7 @@ export default function App() {
       setRing(
         rectangleFromAnchor(anchor.center, anchor.length, anchor.width, anchor.orientation),
       )
+      setAreaOrigin('anchor')
     }
   }, [anchor])
 
@@ -77,8 +85,11 @@ export default function App() {
     [sensor, params.altitude],
   )
   const spacing = useMemo(
-    () => lineSpacing(footprint.across, params.sideOverlap),
-    [footprint, params.sideOverlap],
+    () =>
+      params.spacingMode === 'manual'
+        ? Math.max(1, params.manualSpacing)
+        : lineSpacing(footprint.across, params.sideOverlap),
+    [footprint, params.sideOverlap, params.spacingMode, params.manualSpacing],
   )
   const interval = useMemo(
     () => photoInterval(footprint.along, params.frontOverlap),
@@ -104,6 +115,18 @@ export default function App() {
 
   const planOk = plan && !plan.error ? plan : null
 
+  // Direção de referência: orientação do bloco (âncora) ou aresta mais longa
+  const refAzimuth = useMemo(() => {
+    if (!ring) return null
+    if (areaOrigin === 'anchor') return ((anchor.orientation % 180) + 180) % 180
+    return longestEdgeBearing(ring)
+  }, [ring, areaOrigin, anchor.orientation])
+
+  const baseDistance = useMemo(
+    () => (basePoint && ring ? distanceToArea(basePoint, ring) : null),
+    [basePoint, ring],
+  )
+
   /* --------------------------- Interações ---------------------------- */
   const handleMapClick = useCallback(
     (lonlat) => {
@@ -111,6 +134,9 @@ export default function App() {
         setDraftVertices((d) => [...d, lonlat])
       } else if (mode === 'anchor') {
         setAnchor((a) => ({ ...a, center: lonlat }))
+      } else if (mode === 'base') {
+        setBasePoint(lonlat)
+        setMode('idle')
       }
     },
     [mode],
@@ -129,6 +155,7 @@ export default function App() {
       )
       if (clean.length >= 3) {
         setRing(clean)
+        setAreaOrigin('draw')
         setMode('idle')
         return []
       }
@@ -144,10 +171,15 @@ export default function App() {
     setAnchor((a) => ({ ...a, center: lonlat }))
   }, [])
 
+  const handleBaseDrag = useCallback((lonlat) => {
+    setBasePoint(lonlat)
+  }, [])
+
   const startDraw = useCallback(() => {
     setMode('draw')
     setDraftVertices([])
     setRing(null)
+    setAreaOrigin(null)
     setAnchor((a) => ({ ...a, center: null }))
   }, [])
 
@@ -155,15 +187,35 @@ export default function App() {
     setMode('anchor')
     setDraftVertices([])
     setRing(null)
+    setAreaOrigin(null)
     setAnchor((a) => ({ ...a, center: null }))
+  }, [])
+
+  const startBase = useCallback(() => {
+    setMode((m) => (m === 'base' ? 'idle' : 'base'))
+  }, [])
+
+  const removeBase = useCallback(() => {
+    setBasePoint(null)
+    setMode((m) => (m === 'base' ? 'idle' : m))
   }, [])
 
   const clearAll = useCallback(() => {
     setMode('idle')
     setDraftVertices([])
     setRing(null)
+    setAreaOrigin(null)
     setAnchor((a) => ({ ...a, center: null }))
   }, [])
+
+  // Atalhos de direção das linhas relativamente ao bloco/aresta de referência
+  const setAngleRelative = useCallback(
+    (offsetDeg) => {
+      if (refAzimuth == null) return
+      setParams((p) => ({ ...p, angle: Math.round((refAzimuth + offsetDeg) % 360) }))
+    },
+    [refAzimuth],
+  )
 
   /* --------------------------- Exportação ---------------------------- */
   const safeName = missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'
@@ -171,7 +223,7 @@ export default function App() {
   const canExportKMZ = Boolean(planOk && planOk.waypoints.length >= 2)
 
   const handleExportKML = () => {
-    if (canExportKML) exportSimpleKML(ring, safeName)
+    if (canExportKML) exportSimpleKML(ring, safeName, basePoint)
   }
 
   const handleExportKMZ = () => {
@@ -191,30 +243,31 @@ export default function App() {
   return (
     <div className="flex h-full flex-col bg-slate-950 text-slate-100">
       <header className="flex items-center justify-between gap-4 border-b border-slate-800 bg-slate-950 px-4 py-2.5">
-        <div>
-          <h1 className="text-base font-semibold tracking-tight">
-            🛩️ DJI Mission Planner
-          </h1>
-          <p className="text-[11px] text-slate-500">
-            Grelhas fotogramétricas / LiDAR · exportação KML &amp; WPML para DJI Pilot 2
-          </p>
+        <div className="flex items-center gap-2.5">
+          <IconDrone className="h-7 w-7 text-sky-400" />
+          <div>
+            <h1 className="text-base font-semibold tracking-tight">DJI Mission Planner</h1>
+            <p className="text-[11px] text-slate-500">
+              Grelhas fotogramétricas / LiDAR · exportação KML &amp; WPML para DJI Pilot 2
+            </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <button
             onClick={handleExportKML}
             disabled={!canExportKML}
             title="Polígono 2D da área (KML padrão)"
-            className="rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            ⬇ Exportar KML Simples
+            <IconDownload /> Exportar KML Simples
           </button>
           <button
             onClick={handleExportKMZ}
             disabled={!canExportKMZ}
             title="Missão completa DJI (wpmz/template.kml + waylines.wpml)"
-            className="rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            ⬇ Exportar WPML Avançado (KMZ)
+            <IconDownload /> Exportar WPML Avançado (KMZ)
           </button>
         </div>
       </header>
@@ -236,8 +289,13 @@ export default function App() {
           planError={plan?.error ?? null}
           anchor={anchor}
           setAnchorParam={setAnchorParam}
+          hasBase={Boolean(basePoint)}
+          refAzimuth={refAzimuth}
           onStartDraw={startDraw}
           onStartAnchor={startAnchor}
+          onStartBase={startBase}
+          onRemoveBase={removeBase}
+          onSetAngleRelative={setAngleRelative}
           onFinishDraw={handleFinishDraw}
           onClear={clearAll}
         />
@@ -250,10 +308,12 @@ export default function App() {
             valid={validation.valid}
             kinks={validation.kinks}
             anchorCenter={anchor.center}
+            basePoint={basePoint}
             plan={planOk}
             onMapClick={handleMapClick}
             onVertexDrag={handleVertexDrag}
             onAnchorDrag={handleAnchorDrag}
+            onBaseDrag={handleBaseDrag}
             onFinishDraw={handleFinishDraw}
           />
           <StatsPanel
@@ -264,6 +324,7 @@ export default function App() {
             triggerMode={params.triggerMode}
             speed={params.speed}
             stats={planOk?.stats ?? null}
+            baseDistance={baseDistance}
           />
         </main>
       </div>

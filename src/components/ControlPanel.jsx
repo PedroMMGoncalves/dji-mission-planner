@@ -1,4 +1,11 @@
 import { DRONE_PROFILES } from '../data/drones.js'
+import {
+  IconCheck,
+  IconHelipad,
+  IconPolygon,
+  IconTarget,
+  IconTrash,
+} from './Icons.jsx'
 
 /** Secção com título, estilo dashboard de engenharia. */
 function Section({ title, children }) {
@@ -52,8 +59,13 @@ export default function ControlPanel({
   planError,
   anchor,
   setAnchorParam,
+  hasBase,
+  refAzimuth,
   onStartDraw,
   onStartAnchor,
+  onStartBase,
+  onRemoveBase,
+  onSetAngleRelative,
   onFinishDraw,
   onClear,
 }) {
@@ -71,6 +83,10 @@ export default function ControlPanel({
           onChange={(e) => setMissionName(e.target.value)}
           placeholder="nome-da-missao"
         />
+        <p className="mt-1.5 text-[11px] text-slate-500">
+          Nome dos ficheiros exportados (<span className="font-mono">.kml</span> /{' '}
+          <span className="font-mono">.kmz</span>) e da missão no DJI Pilot 2.
+        </p>
       </Section>
 
       {/* Drone / Sensor */}
@@ -206,14 +222,34 @@ export default function ControlPanel({
             onChange={(v) => setParam('frontOverlap', v)}
           />
         </Field>
-        <Field label="Sobreposição lateral" suffix="%">
-          <NumberInput
-            value={params.sideOverlap}
-            min={0}
-            max={95}
-            onChange={(v) => setParam('sideOverlap', v)}
+        <div className={params.spacingMode === 'manual' ? 'opacity-40' : ''}>
+          <Field label="Sobreposição lateral" suffix="%">
+            <NumberInput
+              value={params.sideOverlap}
+              min={0}
+              max={95}
+              onChange={(v) => setParam('sideOverlap', v)}
+            />
+          </Field>
+        </div>
+        <label className="mb-2 flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={params.spacingMode === 'manual'}
+            onChange={(e) => setParam('spacingMode', e.target.checked ? 'manual' : 'auto')}
           />
-        </Field>
+          Espaçamento manual entre linhas
+        </label>
+        {params.spacingMode === 'manual' && (
+          <Field label="Distância entre linhas" suffix="m">
+            <NumberInput
+              value={params.manualSpacing}
+              min={1}
+              max={2000}
+              onChange={(v) => setParam('manualSpacing', v)}
+            />
+          </Field>
+        )}
         <Field label="Disparo por">
           <select
             className="w-28 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
@@ -249,6 +285,28 @@ export default function ControlPanel({
         <p className="mt-1 text-[11px] text-slate-500">
           Azimute das faixas: 0° = Norte–Sul · 90° = Este–Oeste
         </p>
+        <div className="mt-2 grid grid-cols-3 gap-1.5">
+          {[
+            { label: '∥ Paralelas', offset: 0 },
+            { label: '⊥ Perpendic.', offset: 90 },
+            { label: '∠ Oblíquas 45°', offset: 45 },
+          ].map(({ label, offset }) => (
+            <button
+              key={offset}
+              onClick={() => onSetAngleRelative(offset)}
+              disabled={refAzimuth == null}
+              title="Direção relativa à orientação do bloco (ou à aresta mais longa do polígono)"
+              className="rounded bg-slate-800 px-1.5 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {refAzimuth != null && (
+          <p className="mt-1 text-[11px] text-slate-500">
+            Referência: {Math.round(refAzimuth)}° — orientação do bloco / aresta mais longa
+          </p>
+        )}
       </Section>
 
       {/* Expansão (buffer) */}
@@ -275,25 +333,53 @@ export default function ControlPanel({
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onStartDraw}
-            className={`rounded px-2 py-2 text-sm font-medium transition-colors ${
+            className={`flex items-center justify-center gap-1.5 rounded px-2 py-2 text-sm font-medium transition-colors ${
               mode === 'draw'
                 ? 'bg-sky-500 text-slate-950'
                 : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
             }`}
           >
-            ✏️ Desenhar polígono
+            <IconPolygon /> Desenhar
           </button>
           <button
             onClick={onStartAnchor}
-            className={`rounded px-2 py-2 text-sm font-medium transition-colors ${
+            className={`flex items-center justify-center gap-1.5 rounded px-2 py-2 text-sm font-medium transition-colors ${
               mode === 'anchor'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
             }`}
           >
-            📍 Ponto central
+            <IconTarget /> Ponto central
           </button>
         </div>
+
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button
+            onClick={onStartBase}
+            title="Marcar o ponto de descolagem / posição do operador"
+            className={`flex items-center justify-center gap-1.5 rounded px-2 py-2 text-sm font-medium transition-colors ${
+              mode === 'base'
+                ? 'bg-amber-500 text-slate-950'
+                : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+            }`}
+          >
+            <IconHelipad /> Marcar base
+          </button>
+          <button
+            onClick={onRemoveBase}
+            disabled={!hasBase}
+            className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <IconTrash /> Remover base
+          </button>
+        </div>
+
+        {mode === 'base' && (
+          <p className="mt-2 text-xs text-slate-400">
+            Clique no mapa para marcar a base (arrastável). A distância à área aparece no
+            painel de métricas e o ponto é incluído no KML.
+          </p>
+        )}
 
         {mode === 'draw' && (
           <div className="mt-2 space-y-2">
@@ -304,9 +390,9 @@ export default function ControlPanel({
             <button
               onClick={onFinishDraw}
               disabled={draftCount < 3}
-              className="w-full rounded bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex w-full items-center justify-center gap-1.5 rounded bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              ✔ Concluir polígono
+              <IconCheck /> Concluir polígono
             </button>
           </div>
         )}
@@ -317,6 +403,28 @@ export default function ControlPanel({
               Clique no mapa para definir o centro. O retângulo ajusta-se aos valores
               abaixo.
             </p>
+            <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
+              Blocos rápidos
+            </p>
+            <div className="mb-2 grid grid-cols-4 gap-1.5">
+              {[250, 500, 750, 1000].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setAnchorParam('length', s)
+                    setAnchorParam('width', s)
+                  }}
+                  title={s === 250 ? `${s}×${s} m (≈1 bateria)` : `${s}×${s} m`}
+                  className={`rounded px-1 py-1.5 text-xs font-medium transition-colors ${
+                    anchor.length === s && anchor.width === s
+                      ? 'bg-amber-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {s}²
+                </button>
+              ))}
+            </div>
             <Field label="Comprimento" suffix="m">
               <NumberInput
                 value={anchor.length}
@@ -339,15 +447,18 @@ export default function ControlPanel({
                 onChange={(v) => setAnchorParam('orientation', v)}
               />
             </Field>
+            <p className="pt-1 text-[11px] text-slate-500">
+              Ex.: bloco 250×250 m ≈ 1 bateria (M3E, 120 m AGL); 500×500 m ≈ 4 blocos.
+            </p>
           </div>
         )}
 
         {hasRing && (
           <button
             onClick={onClear}
-            className="mt-2 w-full rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-300 transition-colors hover:bg-red-900/60 hover:text-red-200"
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-300 transition-colors hover:bg-red-900/60 hover:text-red-200"
           >
-            🗑 Limpar área
+            <IconTrash /> Limpar área
           </button>
         )}
 

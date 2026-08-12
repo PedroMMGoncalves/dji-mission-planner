@@ -128,6 +128,39 @@ export function rectangleFromAnchor(center, lengthM, widthM, orientationDeg) {
 }
 
 /**
+ * Azimute (0–180°) da aresta mais longa do polígono — usado como direção de
+ * referência para os atalhos "paralelas / perpendiculares / oblíquas" quando
+ * a área foi desenhada à mão.
+ */
+export function longestEdgeBearing(ring) {
+  if (!ring || ring.length < 3) return null
+  let best = null
+  let bestLen = -1
+  const closed = [...ring, ring[0]]
+  for (let i = 0; i < closed.length - 1; i++) {
+    const len = turf.distance(closed[i], closed[i + 1], { units: 'meters' })
+    if (len > bestLen) {
+      bestLen = len
+      best = turf.bearing(closed[i], closed[i + 1])
+    }
+  }
+  return ((best % 180) + 180) % 180
+}
+
+/**
+ * Distância (m) de um ponto (ex.: base do operador) ao polígono:
+ * 0 se estiver dentro; caso contrário, distância mínima ao contorno.
+ */
+export function distanceToArea(point, ring) {
+  if (!point || !ring || ring.length < 3) return null
+  const poly = ringToPolygon(ring)
+  if (turf.booleanPointInPolygon(turf.point(point), poly)) return 0
+  return turf.pointToLineDistance(turf.point(point), turf.lineString([...ring, ring[0]]), {
+    units: 'meters',
+  })
+}
+
+/**
  * Expansão (buffer) exterior: a distância do buffer é uma percentagem da
  * dimensão característica da área, L = √área. Com pct = 10, cada lado avança
  * 5% de L para fora, ou seja, a largura total da zona cresce ~10%.

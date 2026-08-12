@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
+import { BASE_MARKER_HTML } from './Icons.jsx'
 
 /**
  * Mapa Leaflet com camadas imperativas sincronizadas com o estado React:
@@ -18,10 +19,12 @@ export default function MapView({
   valid,
   kinks,
   anchorCenter,
+  basePoint,
   plan,
   onMapClick,
   onVertexDrag,
   onAnchorDrag,
+  onBaseDrag,
   onFinishDraw,
 }) {
   const containerRef = useRef(null)
@@ -31,7 +34,7 @@ export default function MapView({
   // As callbacks/modo vivem num ref para os handlers Leaflet (registados uma
   // única vez) lerem sempre a versão atual sem re-registos.
   const stateRef = useRef({})
-  stateRef.current = { mode, onMapClick, onFinishDraw, onVertexDrag, onAnchorDrag }
+  stateRef.current = { mode, onMapClick, onFinishDraw, onVertexDrag, onAnchorDrag, onBaseDrag }
 
   // Inicialização única do mapa
   useEffect(() => {
@@ -41,16 +44,57 @@ export default function MapView({
       doubleClickZoom: false,
     })
 
-    const sat = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 19, attribution: 'Imagens © Esri' },
-    ).addTo(map)
+    const esriImagery = () =>
+      L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 19, attribution: 'Imagens © Esri' },
+      )
+    const esriLabels = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19, maxNativeZoom: 18, zIndex: 3, attribution: 'Etiquetas © Esri' },
+    )
+    const hybrid = L.layerGroup([esriImagery(), esriLabels]).addTo(map)
+    const sat = esriImagery()
+    const topo = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 19, maxNativeZoom: 19, attribution: 'Topográfico © Esri' },
+    )
     const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors',
     })
+
+    // CAOP (DGT) — limites administrativos oficiais via WMS
+    const caopWms = (layers) =>
+      L.tileLayer.wms('https://geo2.dgterritorio.gov.pt/geoserver/ows', {
+        layers,
+        format: 'image/png',
+        transparent: true,
+        maxZoom: 19,
+        zIndex: 5,
+        attribution: 'CAOP © DGT',
+      })
+    const municipios = caopWms(
+      'caop_continente:cont_municipios,caop_raa:raa_cen_ori_municipios,caop_raa:raa_oci_municipios,caop_ram:ram_municipios',
+    )
+    const freguesias = caopWms(
+      'caop_continente:cont_freguesias,caop_raa:raa_cen_ori_freguesias,caop_raa:raa_oci_freguesias,caop_ram:ram_freguesias',
+    )
+
     L.control
-      .layers({ 'Satélite (Esri)': sat, OpenStreetMap: osm }, {}, { position: 'topright' })
+      .layers(
+        {
+          'Híbrido (Esri)': hybrid,
+          'Satélite (Esri)': sat,
+          'Topográfico (Esri)': topo,
+          OpenStreetMap: osm,
+        },
+        {
+          'Municípios (CAOP)': municipios,
+          'Freguesias (CAOP)': freguesias,
+        },
+        { position: 'topright' },
+      )
       .addTo(map)
 
     layersRef.current = {
@@ -63,7 +107,7 @@ export default function MapView({
 
     map.on('click', (e) => {
       const s = stateRef.current
-      if (s.mode === 'draw' || s.mode === 'anchor') {
+      if (s.mode === 'draw' || s.mode === 'anchor' || s.mode === 'base') {
         s.onMapClick([e.latlng.lng, e.latlng.lat])
       }
     })
@@ -79,8 +123,35 @@ export default function MapView({
   // Cursor de mira nos modos interativos
   useEffect(() => {
     const el = mapRef.current?.getContainer()
-    if (el) el.classList.toggle('cursor-crosshair', mode === 'draw' || mode === 'anchor')
+    if (el)
+      el.classList.toggle(
+        'cursor-crosshair',
+        mode === 'draw' || mode === 'anchor' || mode === 'base',
+      )
   }, [mode])
+
+  // Marcador da base do operador (ponto de descolagem)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    let marker = null
+    if (basePoint) {
+      const icon = L.divIcon({
+        className: 'base-marker',
+        html: BASE_MARKER_HTML,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+      })
+      marker = L.marker(toLatLng(basePoint), { icon, draggable: true, zIndexOffset: 500 }).addTo(map)
+      marker.on('dragend', () => {
+        const p = marker.getLatLng()
+        stateRef.current.onBaseDrag([p.lng, p.lat])
+      })
+    }
+    return () => {
+      if (marker) marker.remove()
+    }
+  }, [basePoint])
 
   // Rascunho durante o desenho livre
   useEffect(() => {

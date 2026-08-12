@@ -18,7 +18,16 @@ calcular grelhas de voo fotogramétricas/LiDAR e exportar **KML** simples ou
 - **Desenho livre de polígonos** com validação topológica (`turf.kinks` deteta
   auto-interseções e assinala-as a vermelho) e vértices editáveis por arrasto.
 - **Modo ponto central (âncora):** um clique define o centro; comprimento,
-  largura e orientação geram um retângulo perfeito (`turf.transformRotate`).
+  largura e orientação geram um retângulo perfeito (`turf.transformRotate`),
+  com blocos rápidos 250/500/750/1000 m (250×250 ≈ 1 bateria).
+- **Base do operador:** marcador do ponto de descolagem (arrastável), com
+  distância à área no painel de métricas e incluído no KML exportado.
+- **Direções rápidas das linhas:** paralelas, perpendiculares ou oblíquas (45°)
+  em relação à orientação do bloco ou à aresta mais longa do polígono; em
+  alternativa, espaçamento manual em metros (útil para LiDAR).
+- **Mapas base:** Esri Híbrido (satélite + topónimos), Satélite, Topográfico e
+  OpenStreetMap, com overlays dos **municípios e freguesias da CAOP** (WMS
+  oficial da DGT, continente e ilhas).
 - **Grelha de voo em serpentina** cortada rigorosamente dentro da área
   (`turf.lineIntersect` + `turf.booleanPointInPolygon`), com suporte a polígonos
   côncavos.

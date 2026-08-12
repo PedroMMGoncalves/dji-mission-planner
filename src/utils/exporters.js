@@ -26,10 +26,20 @@ export function downloadBlob(blob, filename) {
 /* KML simples (polígono 2D)                                          */
 /* ------------------------------------------------------------------ */
 
-export function buildSimpleKML(ring, name) {
+export function buildSimpleKML(ring, name, basePoint = null) {
   const coords = [...ring, ring[0]]
     .map(([lon, lat]) => `${fmtCoord(lon)},${fmtCoord(lat)},0`)
     .join(' ')
+
+  const basePlacemark = basePoint
+    ? `
+    <Placemark>
+      <name>Base</name>
+      <Point>
+        <coordinates>${fmtCoord(basePoint[0])},${fmtCoord(basePoint[1])},0</coordinates>
+      </Point>
+    </Placemark>`
+    : ''
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -49,14 +59,14 @@ export function buildSimpleKML(ring, name) {
           </LinearRing>
         </outerBoundaryIs>
       </Polygon>
-    </Placemark>
+    </Placemark>${basePlacemark}
   </Document>
 </kml>
 `
 }
 
-export function exportSimpleKML(ring, name) {
-  const kml = buildSimpleKML(ring, name)
+export function exportSimpleKML(ring, name, basePoint = null) {
+  const kml = buildSimpleKML(ring, name, basePoint)
   downloadBlob(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }), `${name}.kml`)
 }
 
