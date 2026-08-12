@@ -13,6 +13,7 @@ import * as turf from '@turf/turf'
 const M_PER_DEG_LAT = 110574 // metros por grau de latitude (aprox. WGS84)
 const MAX_LINES = 2500 // trava de segurança contra espaçamentos minúsculos
 const MIN_SEGMENT_M = 1 // segmentos mais curtos que isto são descartados
+const TURN_TIME_S = 3 // custo médio de cada inversão de sentido
 
 function metersPerDegLon(lat) {
   return 111320 * Math.cos((lat * Math.PI) / 180)
@@ -289,7 +290,6 @@ export function generateFlightLines(ring, options) {
     pathLengthM += turf.distance(waypoints[i - 1], waypoints[i], { units: 'meters' })
   }
 
-  const TURN_TIME_S = 3 // custo médio de cada inversão de sentido
   const flightTimeS =
     speed > 0 ? pathLengthM / speed + lines.length * TURN_TIME_S : null
 
@@ -308,4 +308,99 @@ export function generateFlightLines(ring, options) {
       bufferedAreaHa: turf.area(area) / 10000,
     },
   }
+}
+
+/**
+ * DIVISÃO EM BLOCOS DE VOO
+ * ------------------------
+ * Segue o modelo dos planeadores profissionais (UgCS "Large Projects",
+ * DroneDeploy multi-flight): a grelha global mantém-se alinhada e é cortada
+ * em grupos de faixas contíguas, pela ordem de voo em serpentina. Cada bloco
+ * fecha quando o "orçamento" é atingido:
+ *
+ *  - modo 'area':    orçamento = área máxima por bloco (ha); a área coberta
+ *                    por cada faixa ≈ comprimento × espaçamento.
+ *  - modo 'battery': orçamento = tempo útil de voo
+ *                    = duração da bateria × (1 − reserva/100)
+ *                    − trânsito ida+volta à base (se a base estiver marcada).
+ *                    A reserva por defeito é 30% (regressar com 30%).
+ *
+ * Como os blocos partilham faixas adjacentes da MESMA grelha, a sobreposição
+ * lateral fotográfica entre blocos mantém-se — não são precisas margens
+ * extra para o processamento fotogramétrico.
+ *
+ * Devolve [{ id, lines, waypoints, timeS, transitS, areaHa, lengthM }, ...]
+ */
+export function splitIntoBlocks(plan, options) {
+  const { mode, maxAreaHa, batteryMin, reservePct, speed, spacingM, basePoint } = options
+  if (!plan || !plan.lines || plan.lines.length === 0 || mode === 'none') return null
+
+  const v = speed > 0 ? speed : 10
+  const budget =
+    mode === 'area'
+      ? Math.max(0.5, maxAreaHa) * 10000 // m²
+      : Math.max(60, batteryMin * 60 * (1 - reservePct / 100)) // s úteis
+
+  const transitFor = (firstPoint) => {
+    if (mode !== 'battery' || !basePoint) return 0
+    return (2 * turf.distance(basePoint, firstPoint, { units: 'meters' })) / v
+  }
+
+  const blocks = []
+  let cur = null
+
+  const openBlock = (firstPoint) => {
+    cur = {
+      lines: [],
+      cost: 0,
+      transitS: transitFor(firstPoint),
+      areaM2: 0,
+      lengthM: 0,
+      timeS: 0,
+    }
+    blocks.push(cur)
+  }
+
+  let prevEnd = null
+  plan.lines.forEach((seg) => {
+    const lenM = turf.distance(seg[0], seg[1], { units: 'meters' })
+    const connM = prevEnd ? turf.distance(prevEnd, seg[0], { units: 'meters' }) : 0
+    const lineCost =
+      mode === 'area' ? lenM * spacingM : (lenM + connM) / v + TURN_TIME_S
+
+    if (!cur) openBlock(seg[0])
+    const fits =
+      mode === 'area'
+        ? cur.cost + lineCost <= budget
+        : cur.cost + lineCost + cur.transitS <= budget
+
+    if (!fits && cur.lines.length > 0) {
+      cur = null
+      openBlock(seg[0])
+    }
+    // (uma faixa isolada que exceda o orçamento entra sozinha no bloco)
+    cur.lines.push(seg)
+    cur.cost += mode === 'area' ? lenM * spacingM : lenM / v + TURN_TIME_S + (cur.lines.length > 1 ? connM / v : 0)
+    cur.areaM2 += lenM * spacingM
+    cur.lengthM += lenM
+    prevEnd = seg[1]
+  })
+
+  return blocks.map((b, i) => {
+    const waypoints = []
+    b.lines.forEach((seg) => waypoints.push(seg[0], seg[1]))
+    let pathM = 0
+    for (let k = 1; k < waypoints.length; k++) {
+      pathM += turf.distance(waypoints[k - 1], waypoints[k], { units: 'meters' })
+    }
+    return {
+      id: i + 1,
+      lines: b.lines,
+      waypoints,
+      areaHa: b.areaM2 / 10000,
+      lengthM: b.lengthM,
+      transitS: b.transitS,
+      timeS: pathM / v + b.lines.length * TURN_TIME_S + b.transitS,
+    }
+  })
 }

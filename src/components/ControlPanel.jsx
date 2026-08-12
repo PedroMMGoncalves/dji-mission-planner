@@ -61,6 +61,9 @@ export default function ControlPanel({
   setAnchorParam,
   hasBase,
   refAzimuth,
+  split,
+  setSplitParam,
+  blocks,
   onStartDraw,
   onStartAnchor,
   onStartBase,
@@ -330,26 +333,40 @@ export default function ControlPanel({
 
       {/* Ferramentas de desenho */}
       <Section title="Área de Levantamento">
-        <div className="grid grid-cols-2 gap-2">
+        <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">Forma</p>
+        <div className="grid grid-cols-3 gap-1.5">
           <button
             onClick={onStartDraw}
-            className={`flex items-center justify-center gap-1.5 rounded px-2 py-2 text-sm font-medium transition-colors ${
+            title="Polígono livre: clique a clique no mapa"
+            className={`flex items-center justify-center gap-1 rounded px-1.5 py-2 text-xs font-medium transition-colors ${
               mode === 'draw'
                 ? 'bg-sky-500 text-slate-950'
                 : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
             }`}
           >
-            <IconPolygon /> Desenhar
+            <IconPolygon /> Polígono
           </button>
           <button
-            onClick={onStartAnchor}
-            className={`flex items-center justify-center gap-1.5 rounded px-2 py-2 text-sm font-medium transition-colors ${
-              mode === 'anchor'
+            onClick={() => onStartAnchor('rect')}
+            title="Retângulo centrado num ponto (comprimento × largura)"
+            className={`flex items-center justify-center gap-1 rounded px-1.5 py-2 text-xs font-medium transition-colors ${
+              mode === 'anchor' && anchor.shape === 'rect'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
             }`}
           >
-            <IconTarget /> Ponto central
+            <IconTarget /> Retângulo
+          </button>
+          <button
+            onClick={() => onStartAnchor('square')}
+            title="Quadrado centrado num ponto (lado único)"
+            className={`flex items-center justify-center gap-1 rounded px-1.5 py-2 text-xs font-medium transition-colors ${
+              mode === 'anchor' && anchor.shape === 'square'
+                ? 'bg-amber-500 text-slate-950'
+                : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+            }`}
+          >
+            <IconTarget /> Quadrado
           </button>
         </div>
 
@@ -400,11 +417,10 @@ export default function ControlPanel({
         {mode === 'anchor' && (
           <div className="mt-2 space-y-1 rounded border border-slate-800 bg-slate-900/60 p-3">
             <p className="mb-2 text-xs text-slate-400">
-              Clique no mapa para definir o centro. O retângulo ajusta-se aos valores
-              abaixo.
+              Clique no mapa para definir o centro. A forma ajusta-se aos valores abaixo.
             </p>
             <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
-              Blocos rápidos
+              Tamanhos rápidos
             </p>
             <div className="mb-2 grid grid-cols-4 gap-1.5">
               {[250, 500, 750, 1000].map((s) => (
@@ -412,7 +428,7 @@ export default function ControlPanel({
                   key={s}
                   onClick={() => {
                     setAnchorParam('length', s)
-                    setAnchorParam('width', s)
+                    if (anchor.shape !== 'square') setAnchorParam('width', s)
                   }}
                   title={s === 250 ? `${s}×${s} m (≈1 bateria)` : `${s}×${s} m`}
                   className={`rounded px-1 py-1.5 text-xs font-medium transition-colors ${
@@ -425,20 +441,32 @@ export default function ControlPanel({
                 </button>
               ))}
             </div>
-            <Field label="Comprimento" suffix="m">
-              <NumberInput
-                value={anchor.length}
-                min={10}
-                onChange={(v) => setAnchorParam('length', v)}
-              />
-            </Field>
-            <Field label="Largura" suffix="m">
-              <NumberInput
-                value={anchor.width}
-                min={10}
-                onChange={(v) => setAnchorParam('width', v)}
-              />
-            </Field>
+            {anchor.shape === 'square' ? (
+              <Field label="Lado" suffix="m">
+                <NumberInput
+                  value={anchor.length}
+                  min={10}
+                  onChange={(v) => setAnchorParam('length', v)}
+                />
+              </Field>
+            ) : (
+              <>
+                <Field label="Comprimento" suffix="m">
+                  <NumberInput
+                    value={anchor.length}
+                    min={10}
+                    onChange={(v) => setAnchorParam('length', v)}
+                  />
+                </Field>
+                <Field label="Largura" suffix="m">
+                  <NumberInput
+                    value={anchor.width}
+                    min={10}
+                    onChange={(v) => setAnchorParam('width', v)}
+                  />
+                </Field>
+              </>
+            )}
             <Field label="Orientação" suffix="°">
               <NumberInput
                 value={anchor.orientation}
@@ -448,9 +476,17 @@ export default function ControlPanel({
               />
             </Field>
             <p className="pt-1 text-[11px] text-slate-500">
-              Ex.: bloco 250×250 m ≈ 1 bateria (M3E, 120 m AGL); 500×500 m ≈ 4 blocos.
+              Ex.: bloco 250×250 m ≈ 1 bateria (M3E, 120 m AGL).
             </p>
           </div>
+        )}
+
+        {hasRing && mode !== 'draw' && (
+          <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+            Edição: arraste os vértices · arraste os pontos intermédios para{' '}
+            <strong className="text-slate-400">inserir vértices</strong> · clique direito
+            num vértice para o <strong className="text-slate-400">remover</strong>.
+          </p>
         )}
 
         {hasRing && (
@@ -474,6 +510,88 @@ export default function ControlPanel({
           <div className="mt-3 rounded border border-amber-700 bg-amber-950/60 p-3 text-xs leading-relaxed text-amber-300">
             ⚠ O espaçamento calculado gera linhas em excesso (&gt;2500). Aumente a
             altitude, reduza a sobreposição lateral ou diminua a área.
+          </div>
+        )}
+      </Section>
+
+      {/* Divisão em blocos de voo */}
+      <Section title="Divisão em Blocos de Voo">
+        <div className="grid grid-cols-3 gap-1.5">
+          {[
+            { value: 'none', label: 'Nenhuma' },
+            { value: 'area', label: 'Por área' },
+            { value: 'battery', label: 'Por bateria' },
+          ].map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setSplitParam('mode', value)}
+              className={`rounded px-1.5 py-1.5 text-xs font-medium transition-colors ${
+                split.mode === value
+                  ? 'bg-sky-500 text-slate-950'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {split.mode === 'area' && (
+          <div className="mt-2">
+            <Field label="Área máx. por bloco" suffix="ha">
+              <NumberInput
+                value={split.maxAreaHa}
+                min={0.5}
+                step={0.5}
+                onChange={(v) => setSplitParam('maxAreaHa', v)}
+              />
+            </Field>
+          </div>
+        )}
+
+        {split.mode === 'battery' && (
+          <div className="mt-2">
+            <Field label="Duração da bateria" suffix="min">
+              <NumberInput
+                value={split.batteryMin}
+                min={5}
+                max={60}
+                onChange={(v) => setSplitParam('batteryMin', v)}
+              />
+            </Field>
+            <Field label="Reserva de regresso" suffix="%">
+              <NumberInput
+                value={split.reservePct}
+                min={10}
+                max={50}
+                onChange={(v) => setSplitParam('reservePct', v)}
+              />
+            </Field>
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              Cada bloco usa no máx. {100 - split.reservePct}% da bateria
+              {hasBase ? ', descontando o trânsito ida e volta à base.' : '.'}{' '}
+              {!hasBase && 'Marque a base para descontar o trânsito.'}
+            </p>
+          </div>
+        )}
+
+        {split.mode !== 'none' && blocks && (
+          <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded border border-slate-800 bg-slate-900/60 p-2">
+            {blocks.map((b) => (
+              <div
+                key={b.id}
+                className="flex items-center justify-between text-xs text-slate-300"
+              >
+                <span className="font-mono text-sky-300">B{String(b.id).padStart(2, '0')}</span>
+                <span>{b.areaHa.toFixed(1)} ha</span>
+                <span>{(b.lengthM / 1000).toFixed(1)} km</span>
+                <span className="font-mono">{Math.round(b.timeS / 60)} min</span>
+              </div>
+            ))}
+            <p className="pt-1 text-[11px] text-slate-500">
+              A exportação WPML gera um ZIP com um KMZ por bloco, numerados pela ordem de
+              voo.
+            </p>
           </div>
         )}
       </Section>

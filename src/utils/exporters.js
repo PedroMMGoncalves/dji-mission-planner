@@ -281,15 +281,38 @@ ${placemarks}
  *       ├── template.kml
  *       └── waylines.wpml
  */
-export async function exportWPMLKmz(params) {
+async function buildKmz(params, type = 'blob') {
   const zip = new JSZip()
   const wpmz = zip.folder('wpmz')
   wpmz.file('template.kml', buildTemplateKML(params))
   wpmz.file('waylines.wpml', buildWaylinesWPML(params))
-  const blob = await zip.generateAsync({
-    type: 'blob',
+  return zip.generateAsync({
+    type,
     compression: 'DEFLATE',
     compressionOptions: { level: 6 },
   })
+}
+
+export async function exportWPMLKmz(params) {
+  const blob = await buildKmz(params)
   downloadBlob(blob, `${params.name}.kmz`)
+}
+
+/**
+ * Exporta um ZIP com um KMZ WPML por bloco de voo, numerados pela ordem de
+ * voo: missao-b01.kmz, missao-b02.kmz, … Cada KMZ é uma missão completa e
+ * independente para o DJI Pilot 2 (uma bateria por bloco).
+ */
+export async function exportBlocksZip(params, blocks) {
+  const master = new JSZip()
+  for (const block of blocks) {
+    const nn = String(block.id).padStart(2, '0')
+    const kmz = await buildKmz(
+      { ...params, name: `${params.name}-b${nn}`, waypoints: block.waypoints },
+      'arraybuffer',
+    )
+    master.file(`${params.name}-b${nn}.kmz`, kmz)
+  }
+  const blob = await master.generateAsync({ type: 'blob' })
+  downloadBlob(blob, `${params.name}-blocos.zip`)
 }

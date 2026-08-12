@@ -21,8 +21,11 @@ export default function MapView({
   anchorCenter,
   basePoint,
   plan,
+  blocks,
   onMapClick,
   onVertexDrag,
+  onVertexInsert,
+  onVertexDelete,
   onAnchorDrag,
   onBaseDrag,
   onFinishDraw,
@@ -34,7 +37,16 @@ export default function MapView({
   // As callbacks/modo vivem num ref para os handlers Leaflet (registados uma
   // única vez) lerem sempre a versão atual sem re-registos.
   const stateRef = useRef({})
-  stateRef.current = { mode, onMapClick, onFinishDraw, onVertexDrag, onAnchorDrag, onBaseDrag }
+  stateRef.current = {
+    mode,
+    onMapClick,
+    onFinishDraw,
+    onVertexDrag,
+    onVertexInsert,
+    onVertexDelete,
+    onAnchorDrag,
+    onBaseDrag,
+  }
 
   // Inicialização única do mapa
   useEffect(() => {
@@ -64,22 +76,67 @@ export default function MapView({
       attribution: '© OpenStreetMap contributors',
     })
 
-    // CAOP (DGT) — limites administrativos oficiais via WMS
-    const caopWms = (layers) =>
-      L.tileLayer.wms('https://geo2.dgterritorio.gov.pt/geoserver/ows', {
-        layers,
-        format: 'image/png',
-        transparent: true,
-        maxZoom: 19,
-        zIndex: 5,
-        attribution: 'CAOP © DGT',
-      })
-    const municipios = caopWms(
-      'caop_continente:cont_municipios,caop_raa:raa_cen_ori_municipios,caop_raa:raa_oci_municipios,caop_ram:ram_municipios',
-    )
-    const freguesias = caopWms(
-      'caop_continente:cont_freguesias,caop_raa:raa_cen_ori_freguesias,caop_raa:raa_oci_freguesias,caop_ram:ram_freguesias',
-    )
+    // Municípios (CAOP) — vetor local simplificado: linhas verde+branco e
+    // etiquetas dependentes da escala (nomes visíveis a partir do zoom 9)
+    const municipios = L.layerGroup()
+    const caopLabels = L.layerGroup()
+    let caopLoaded = false
+    const syncCaopLabels = () => {
+      const show = map.getZoom() >= 9 && map.hasLayer(municipios)
+      if (show && !map.hasLayer(caopLabels)) caopLabels.addTo(map)
+      if (!show && map.hasLayer(caopLabels)) caopLabels.remove()
+    }
+    const loadCaop = async () => {
+      if (caopLoaded) return
+      caopLoaded = true
+      try {
+        const res = await fetch(`${import.meta.env.BASE_URL}caop-municipios.json`)
+        const gj = await res.json()
+        L.geoJSON(gj, {
+          style: { color: '#16a34a', weight: 1.5, fill: false },
+          interactive: false,
+        }).addTo(municipios)
+        L.geoJSON(gj, {
+          style: { color: '#ffffff', weight: 0.75, fill: false },
+          interactive: false,
+        }).addTo(municipios)
+        gj.features.forEach((f) => {
+          const [lon, lat] = f.properties.lp
+          L.marker([lat, lon], {
+            icon: L.divIcon({
+              className: 'caop-label',
+              html: f.properties.n,
+              iconSize: null,
+            }),
+            interactive: false,
+          }).addTo(caopLabels)
+        })
+        syncCaopLabels()
+      } catch {
+        caopLoaded = false
+      }
+    }
+    map.on('zoomend', syncCaopLabels)
+    map.on('overlayadd', (e) => {
+      if (e.layer === municipios) {
+        loadCaop()
+        syncCaopLabels()
+      }
+    })
+    map.on('overlayremove', (e) => {
+      if (e.layer === municipios) syncCaopLabels()
+    })
+
+    // Freguesias (CAOP) — WMS oficial da DGT
+    const freguesias = L.tileLayer.wms('https://geo2.dgterritorio.gov.pt/geoserver/ows', {
+      layers:
+        'caop_continente:cont_freguesias,caop_raa:raa_cen_ori_freguesias,caop_raa:raa_oci_freguesias,caop_ram:ram_freguesias',
+      format: 'image/png',
+      transparent: true,
+      maxZoom: 19,
+      zIndex: 5,
+      attribution: 'CAOP © DGT',
+    })
 
     L.control
       .layers(
@@ -200,6 +257,23 @@ export default function MapView({
         const p = m.getLatLng()
         stateRef.current.onVertexDrag(i, [p.lng, p.lat])
       })
+      // clique direito remove o vértice (mínimo 3)
+      m.on('contextmenu', (e) => {
+        e.originalEvent?.preventDefault()
+        stateRef.current.onVertexDelete(i)
+      })
+    })
+
+    // Pontos intermédios: arrastar insere um novo vértice nessa aresta
+    const midIcon = L.divIcon({ className: 'midpoint-handle', iconSize: [10, 10] })
+    ring.forEach((v, i) => {
+      const next = ring[(i + 1) % ring.length]
+      const mid = [(v[0] + next[0]) / 2, (v[1] + next[1]) / 2]
+      const mm = L.marker(toLatLng(mid), { icon: midIcon, draggable: true }).addTo(g)
+      mm.on('dragend', () => {
+        const p = mm.getLatLng()
+        stateRef.current.onVertexInsert(i + 1, [p.lng, p.lat])
+      })
     })
 
     kinks.forEach((k) => {
@@ -257,14 +331,42 @@ export default function MapView({
       renderer: layers.canvas,
     }).addTo(layers.lines)
 
-    // Faixas de voo (troços úteis, mais destacados)
-    plan.lines.forEach((seg) => {
-      L.polyline(seg.map(toLatLng), {
-        color: '#22d3ee',
-        weight: 2.5,
-        renderer: layers.canvas,
-      }).addTo(layers.lines)
-    })
+    // Faixas de voo: uma cor por bloco (quando há divisão) ou ciano único
+    const BLOCK_COLORS = [
+      '#22d3ee', '#a3e635', '#f472b6', '#fbbf24',
+      '#c084fc', '#34d399', '#fb923c', '#60a5fa',
+    ]
+    if (blocks && blocks.length > 1) {
+      blocks.forEach((block) => {
+        const color = BLOCK_COLORS[(block.id - 1) % BLOCK_COLORS.length]
+        block.lines.forEach((seg) => {
+          L.polyline(seg.map(toLatLng), {
+            color,
+            weight: 2.5,
+            renderer: layers.canvas,
+          }).addTo(layers.lines)
+        })
+        // etiqueta numerada no início do bloco
+        const first = block.lines[0]
+        const mid = [(first[0][0] + first[1][0]) / 2, (first[0][1] + first[1][1]) / 2]
+        L.marker(toLatLng(mid), {
+          icon: L.divIcon({
+            className: 'block-label',
+            html: `<span style="border-color:${color}">${block.id}</span>`,
+            iconSize: null,
+          }),
+          interactive: false,
+        }).addTo(layers.lines)
+      })
+    } else {
+      plan.lines.forEach((seg) => {
+        L.polyline(seg.map(toLatLng), {
+          color: '#22d3ee',
+          weight: 2.5,
+          renderer: layers.canvas,
+        }).addTo(layers.lines)
+      })
+    }
 
     // Waypoints + início (verde) / fim (vermelho)
     plan.waypoints.forEach((w, i) => {
@@ -279,7 +381,7 @@ export default function MapView({
         renderer: layers.canvas,
       }).addTo(layers.lines)
     })
-  }, [plan])
+  }, [plan, blocks])
 
   return <div ref={containerRef} className="h-full w-full" />
 }

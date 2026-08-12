@@ -13,9 +13,10 @@ import {
   photoInterval,
   rectangleFromAnchor,
   resolveSensor,
+  splitIntoBlocks,
   validateRing,
 } from './utils/geo.js'
-import { exportSimpleKML, exportWPMLKmz } from './utils/exporters.js'
+import { exportBlocksZip, exportSimpleKML, exportWPMLKmz } from './utils/exporters.js'
 import { IconDrone, IconDownload } from './components/Icons.jsx'
 
 export default function App() {
@@ -44,6 +45,13 @@ export default function App() {
     length: 500,
     width: 300,
     orientation: 90,
+    shape: 'rect', // 'rect' | 'square'
+  })
+  const [split, setSplit] = useState({
+    mode: 'none', // 'none' | 'area' | 'battery'
+    maxAreaHa: 20,
+    batteryMin: 25,
+    reservePct: 30, // regressar à base com 30% de bateria
   })
 
   const setParam = useCallback((key, value) => {
@@ -51,7 +59,17 @@ export default function App() {
   }, [])
 
   const setAnchorParam = useCallback((key, value) => {
-    setAnchor((a) => ({ ...a, [key]: value }))
+    setAnchor((a) => {
+      // no modo quadrado, o lado único controla comprimento e largura
+      if (a.shape === 'square' && (key === 'length' || key === 'width')) {
+        return { ...a, length: value, width: value }
+      }
+      return { ...a, [key]: value }
+    })
+  }, [])
+
+  const setSplitParam = useCallback((key, value) => {
+    setSplit((s) => ({ ...s, [key]: value }))
   }, [])
 
   /* ----------------- Modo âncora → retângulo perfeito ----------------- */
@@ -127,6 +145,20 @@ export default function App() {
     [basePoint, ring],
   )
 
+  // Divisão da grelha em blocos de voo numerados
+  const blocks = useMemo(() => {
+    if (!planOk || split.mode === 'none') return null
+    return splitIntoBlocks(planOk, {
+      mode: split.mode,
+      maxAreaHa: split.maxAreaHa,
+      batteryMin: split.batteryMin,
+      reservePct: split.reservePct,
+      speed: params.speed,
+      spacingM: spacing,
+      basePoint,
+    })
+  }, [planOk, split, params.speed, spacing, basePoint])
+
   /* --------------------------- Interações ---------------------------- */
   const handleMapClick = useCallback(
     (lonlat) => {
@@ -167,6 +199,20 @@ export default function App() {
     setRing((r) => (r ? r.map((v, i) => (i === index ? lonlat : v)) : r))
   }, [])
 
+  const handleVertexInsert = useCallback((index, lonlat) => {
+    setRing((r) => {
+      if (!r) return r
+      const next = [...r]
+      next.splice(index, 0, lonlat)
+      return next
+    })
+    setAreaOrigin('draw') // deixou de ser um retângulo perfeito
+  }, [])
+
+  const handleVertexDelete = useCallback((index) => {
+    setRing((r) => (r && r.length > 3 ? r.filter((_, i) => i !== index) : r))
+  }, [])
+
   const handleAnchorDrag = useCallback((lonlat) => {
     setAnchor((a) => ({ ...a, center: lonlat }))
   }, [])
@@ -183,12 +229,17 @@ export default function App() {
     setAnchor((a) => ({ ...a, center: null }))
   }, [])
 
-  const startAnchor = useCallback(() => {
+  const startAnchor = useCallback((shape = 'rect') => {
     setMode('anchor')
     setDraftVertices([])
     setRing(null)
     setAreaOrigin(null)
-    setAnchor((a) => ({ ...a, center: null }))
+    setAnchor((a) => ({
+      ...a,
+      center: null,
+      shape,
+      width: shape === 'square' ? a.length : a.width,
+    }))
   }, [])
 
   const startBase = useCallback(() => {
@@ -228,7 +279,7 @@ export default function App() {
 
   const handleExportKMZ = () => {
     if (!canExportKMZ) return
-    exportWPMLKmz({
+    const exportParams = {
       name: safeName,
       waypoints: planOk.waypoints,
       altitude: params.altitude,
@@ -236,7 +287,12 @@ export default function App() {
       wpml,
       photoIntervalM: sensor.type === 'camera' ? interval : 0,
       triggerMode: params.triggerMode,
-    })
+    }
+    if (blocks && blocks.length > 1) {
+      exportBlocksZip(exportParams, blocks)
+    } else {
+      exportWPMLKmz(exportParams)
+    }
   }
 
   /* ----------------------------- Layout ------------------------------ */
@@ -291,6 +347,9 @@ export default function App() {
           setAnchorParam={setAnchorParam}
           hasBase={Boolean(basePoint)}
           refAzimuth={refAzimuth}
+          split={split}
+          setSplitParam={setSplitParam}
+          blocks={blocks}
           onStartDraw={startDraw}
           onStartAnchor={startAnchor}
           onStartBase={startBase}
@@ -310,8 +369,11 @@ export default function App() {
             anchorCenter={anchor.center}
             basePoint={basePoint}
             plan={planOk}
+            blocks={blocks}
             onMapClick={handleMapClick}
             onVertexDrag={handleVertexDrag}
+            onVertexInsert={handleVertexInsert}
+            onVertexDelete={handleVertexDelete}
             onAnchorDrag={handleAnchorDrag}
             onBaseDrag={handleBaseDrag}
             onFinishDraw={handleFinishDraw}
@@ -325,6 +387,7 @@ export default function App() {
             speed={params.speed}
             stats={planOk?.stats ?? null}
             baseDistance={baseDistance}
+            blockCount={blocks?.length ?? null}
           />
         </main>
       </div>

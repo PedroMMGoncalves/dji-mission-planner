@@ -21,7 +21,7 @@ function Stat({ label, value }) {
   )
 }
 
-export default function StatsPanel({ gsd, footprint, spacing, interval, triggerMode, speed, stats, baseDistance }) {
+export default function StatsPanel({ gsd, footprint, spacing, interval, triggerMode, speed, stats, baseDistance, blockCount }) {
   return (
     <div className="pointer-events-none absolute bottom-4 right-4 z-[1000] grid max-w-md grid-cols-2 gap-1.5 sm:grid-cols-3">
       <Stat label="GSD" value={gsd != null ? `${gsd.toFixed(2)} cm/px` : '—'} />
@@ -58,6 +58,7 @@ export default function StatsPanel({ gsd, footprint, spacing, interval, triggerM
           value={baseDistance === 0 ? 'dentro da área' : fmtDist(baseDistance)}
         />
       )}
+      {blockCount != null && <Stat label="Blocos de voo" value={blockCount} />}
     </div>
   )
 }

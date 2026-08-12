@@ -8,6 +8,7 @@ import {
   longestEdgeBearing,
   photoInterval,
   rectangleFromAnchor,
+  splitIntoBlocks,
   validateRing,
 } from './src/utils/geo.js'
 import { buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
@@ -137,6 +138,34 @@ const inside = distanceToArea(center, rectNS)
 check('base dentro da área → 0', inside === 0)
 const far = distanceToArea([-8.02, 39.5], rectNS) // ~1.7 km a oeste do centro
 check('base fora → distância ao contorno', far > 1000 && far < 2000, far.toFixed(0))
+
+/* 8c. Divisão em blocos de voo */
+if (plan90 && !plan90.error) {
+  // por área: cada faixa cobre ~500×42.5 m ≈ 2.13 ha; máx 5 ha → 2 faixas/bloco → 4 blocos
+  const bArea = splitIntoBlocks(plan90, {
+    mode: 'area', maxAreaHa: 5, batteryMin: 25, reservePct: 30, speed: 10, spacingM: sp, basePoint: null,
+  })
+  check('blocos por área: 4 blocos de 2 faixas', bArea?.length === 4 && bArea.every((b) => b.lines.length === 2),
+    bArea?.map((b) => b.lines.length).join('+'))
+  check('blocos numerados 1..n', bArea?.every((b, i) => b.id === i + 1))
+  const totalLines = bArea?.reduce((s, b) => s + b.lines.length, 0)
+  check('blocos preservam todas as faixas', totalLines === plan90.stats.lineCount)
+
+  // por bateria: 5 min × 70% = 210 s úteis; faixa ≈ 53 s + ligação ≈ 4 s → 3+3+2
+  const bBat = splitIntoBlocks(plan90, {
+    mode: 'battery', maxAreaHa: 20, batteryMin: 5, reservePct: 30, speed: 10, spacingM: sp, basePoint: null,
+  })
+  check('blocos por bateria: 3 blocos', bBat?.length === 3, bBat?.map((b) => b.lines.length).join('+'))
+  check('tempo por bloco ≤ 210 s', bBat?.every((b) => b.timeS <= 215), bBat?.map((b) => Math.round(b.timeS)).join(','))
+
+  // com base marcada, o trânsito reduz o tempo útil → mais blocos (ou igual)
+  const bBase = splitIntoBlocks(plan90, {
+    mode: 'battery', maxAreaHa: 20, batteryMin: 5, reservePct: 30, speed: 10, spacingM: sp,
+    basePoint: [center[0] - 0.01, center[1]],
+  })
+  check('trânsito à base contabilizado', bBase && bBase.length >= bBat.length && bBase[0].transitS > 100,
+    `${bBase?.length} blocos, transito ${Math.round(bBase?.[0].transitS)} s`)
+}
 
 /* 9. Trava de segurança */
 const planTiny = generateFlightLines(rectNS, {

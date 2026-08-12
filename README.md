@@ -26,8 +26,17 @@ calcular grelhas de voo fotogramétricas/LiDAR e exportar **KML** simples ou
   em relação à orientação do bloco ou à aresta mais longa do polígono; em
   alternativa, espaçamento manual em metros (útil para LiDAR).
 - **Mapas base:** Esri Híbrido (satélite + topónimos), Satélite, Topográfico e
-  OpenStreetMap, com overlays dos **municípios e freguesias da CAOP** (WMS
-  oficial da DGT, continente e ilhas).
+  OpenStreetMap. Overlay dos **municípios da CAOP** em vetor (linhas verde+branco,
+  nomes visíveis a partir do zoom 9; dados simplificados incluídos na app) e das
+  **freguesias** via WMS oficial da DGT.
+- **Edição avançada:** arrastar vértices, arrastar pontos intermédios para
+  inserir novos vértices e clique direito para remover; formas predefinidas
+  (polígono livre, retângulo, quadrado).
+- **Divisão em blocos de voo numerados** (modelo UgCS/DroneDeploy): a grelha
+  global mantém-se alinhada e é cortada em grupos de faixas contíguas — por
+  área máxima (ha) ou por capacidade da bateria (duração × reserva de regresso,
+  30% por defeito, descontando o trânsito à base marcada). A exportação WPML
+  gera um ZIP com um KMZ independente por bloco (`missao-b01.kmz`, …).
 - **Grelha de voo em serpentina** cortada rigorosamente dentro da área
   (`turf.lineIntersect` + `turf.booleanPointInPolygon`), com suporte a polígonos
   côncavos.
