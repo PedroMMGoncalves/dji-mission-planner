@@ -8,7 +8,7 @@ import HelpModal from './components/HelpModal.jsx'
 // carregados sob demanda
 const Map3D = lazy(() => import('./components/Map3D.jsx'))
 const MissionReport = lazy(() => import('./components/MissionReport.jsx'))
-import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR, FLIGHT_PRESETS } from './data/drones.js'
+import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR, MISSION_PRESETS } from './data/drones.js'
 import {
   computeAlignment,
   computeFootprint,
@@ -801,19 +801,28 @@ function AppInner({ lang, setLang }) {
     setAnchor((a) => ({ ...a, center: null }))
   }, [])
 
-  // Presets de voo do perfil ativo (o preset LiDAR só faz sentido nesse modo)
+  // Catálogo de presets de missão aplicáveis ao sensor ativo, com a
+  // velocidade já resolvida para o perfil de drone selecionado
   const flightPresets = useMemo(() => {
-    const all = FLIGHT_PRESETS[droneId] ?? []
-    if (profile.type !== 'custom') return all
-    return all.filter((p) =>
-      custom.mode === 'lidar' ? p.id === 'lidar' : p.id !== 'lidar',
-    )
-  }, [droneId, profile.type, custom.mode])
+    const kind = sensor.type === 'lidar' ? 'lidar' : 'camera'
+    return MISSION_PRESETS.filter((p) => p.appliesTo === kind).map((p) => ({
+      id: p.id,
+      name: p.name,
+      desc: p.desc,
+      values: {
+        ...p.values,
+        speed: p.speedByProfile?.[droneId] ?? p.values.speed,
+      },
+    }))
+  }, [sensor.type, droneId])
 
-  const applyPreset = useCallback((preset) => {
-    const { id: _id, ...values } = preset
-    setParams((prev) => ({ ...prev, ...values }))
-  }, [])
+  const applyPreset = useCallback(
+    (presetId) => {
+      const preset = flightPresets.find((p) => p.id === presetId)
+      if (preset) setParams((prev) => ({ ...prev, ...preset.values }))
+    },
+    [flightPresets],
+  )
 
   // GSD alvo → altitude (inverso do cálculo do GSD)
   const setAltitudeFromGsd = useCallback(

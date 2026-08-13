@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { DRONE_PROFILES } from '../data/drones.js'
 import { CRS_OPTIONS } from '../utils/importArea.js'
-import { useT } from '../i18n.jsx'
+import { useLang, useT } from '../i18n.jsx'
 import {
   IconCheck,
   IconDownload,
@@ -109,6 +109,7 @@ export default function ControlPanel({
   onClear,
 }) {
   const t = useT()
+  const lang = useLang()
   const profile = DRONE_PROFILES[droneId]
   const isCustom = profile.type === 'custom'
   const areaFileRef = useRef(null)
@@ -272,32 +273,38 @@ export default function ControlPanel({
 
       {/* Parâmetros de voo */}
       <Section title={t('cp.flight.title')}>
-        {presets?.length > 0 && (
-          <div className="mb-3">
-            <div className="grid grid-cols-2 gap-1.5">
-              {presets.map((p) => {
-                const active = Object.entries(p)
-                  .filter(([k]) => k !== 'id')
-                  .every(([k, v]) => params[k] === v)
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => onApplyPreset(p)}
-                    title={t('cp.preset.hint')}
-                    className={`rounded px-2 py-1.5 text-xs font-medium transition-colors ${
-                      active
-                        ? 'bg-sky-500 text-slate-950'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    }`}
+        {presets?.length > 0 &&
+          (() => {
+            const activeId =
+              presets.find((p) =>
+                Object.entries(p.values).every(([k, v]) => params[k] === v),
+              )?.id ?? ''
+            const chosen = presets.find((p) => p.id === activeId)
+            return (
+              <div className="mb-3">
+                <label className="mb-1 flex items-center justify-between gap-2 text-sm text-slate-300">
+                  <span>{t('cp.preset.label')}</span>
+                  <select
+                    className="w-44 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+                    value={activeId}
+                    onChange={(e) => {
+                      if (e.target.value) onApplyPreset(e.target.value)
+                    }}
                   >
-                    {t(`cp.preset.${p.id}`)}
-                  </button>
-                )
-              })}
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500">{t('cp.preset.hint')}</p>
-          </div>
-        )}
+                    <option value="">{t('cp.preset.custom')}</option>
+                    {presets.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name[lang] ?? p.name.pt}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  {chosen ? (chosen.desc[lang] ?? chosen.desc.pt) : t('cp.preset.hint')}
+                </p>
+              </div>
+            )
+          })()}
         <Field label={t('cp.flight.altitude')} suffix="m">
           <NumberInput
             value={params.altitude}

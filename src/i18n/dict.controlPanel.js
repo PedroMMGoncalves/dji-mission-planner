@@ -348,13 +348,11 @@ export default {
     en: 'The global terrain downloads automatically once the area is defined; the button re-loads it. An imported DTM always takes priority.',
   },
 
-  /* ---- Presets de voo ---- */
-  'cp.preset.label': { pt: 'Presets', en: 'Presets' },
-  'cp.preset.quality': { pt: 'Qualidade', en: 'Quality' },
-  'cp.preset.fast': { pt: 'Rápida', en: 'Fast' },
-  'cp.preset.lidar': { pt: 'LiDAR', en: 'LiDAR' },
+  /* ---- Presets de missão ---- */
+  'cp.preset.label': { pt: 'Preset de missão', en: 'Mission preset' },
+  'cp.preset.custom': { pt: 'Personalizado', en: 'Custom' },
   'cp.preset.hint': {
-    pt: 'Combinações testadas: Qualidade = melhores resultados; Rápida = missão curta. Aplicam sobreposições, velocidade e gimbal.',
-    en: 'Field-tested combinations: Quality = best results; Fast = short mission. They set overlaps, speed and gimbal.',
+    pt: 'Escolha um tipo de levantamento para aplicar sobreposições, velocidade, gimbal e dupla grelha recomendados.',
+    en: 'Pick a survey type to apply the recommended overlaps, speed, gimbal and crosshatch.',
   },
 }
