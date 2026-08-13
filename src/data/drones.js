@@ -28,6 +28,8 @@ export const DRONE_PROFILES = {
     imageWidth: 5280,
     imageHeight: 3956,
     payloadLabel: 'XT24',
+    speedRange: { min: 1, max: 15 }, // limites de velocidade em missão (m/s)
+    minTriggerS: 0.7, // intervalo mínimo entre disparos da câmara (s)
     wpml: {
       droneEnumValue: 77,
       droneSubEnumValue: 0,
@@ -48,6 +50,8 @@ export const DRONE_PROFILES = {
     imageWidth: 5280,
     imageHeight: 3956,
     payloadLabel: 'XT24',
+    speedRange: { min: 1, max: 15 },
+    minTriggerS: 0.7,
     wpml: {
       droneEnumValue: 99,
       droneSubEnumValue: 1,
@@ -68,6 +72,8 @@ export const DRONE_PROFILES = {
     imageWidth: 8192,
     imageHeight: 5460,
     payloadLabel: 'P1',
+    speedRange: { min: 1, max: 17 },
+    minTriggerS: 0.7,
     wpml: {
       droneEnumValue: 60,
       droneSubEnumValue: 0,
@@ -83,6 +89,8 @@ export const DRONE_PROFILES = {
     type: 'custom',
     camera: 'Definido manualmente',
     payloadLabel: '—',
+    speedRange: { min: 1, max: 20 },
+    minTriggerS: 0.7,
     // Enums por defeito para o perfil custom (editáveis na interface):
     wpml: {
       droneEnumValue: 60,

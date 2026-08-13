@@ -3,6 +3,7 @@ import { DRONE_PROFILES } from '../data/drones.js'
 import { CRS_OPTIONS } from '../utils/importArea.js'
 import { useLang, useT } from '../i18n.jsx'
 import {
+  IconChart,
   IconCheck,
   IconDownload,
   IconFolder,
@@ -78,6 +79,7 @@ export default function ControlPanel({
   onGsdTarget,
   presets,
   onApplyPreset,
+  triggerWarn,
   importState,
   importError,
   onImportFile,
@@ -93,6 +95,7 @@ export default function ControlPanel({
   setTerrainFollow,
   onLoadTerrain,
   onImportDem,
+  onShowProfile,
   terrainResult,
   gcpConfig,
   setGcpConfig,
@@ -329,15 +332,28 @@ export default function ControlPanel({
             {t('cp.flight.altWarnPost')}
           </p>
         )}
-        <Field label={t('cp.flight.speed')} suffix="m/s">
+        <Field
+          label={`${t('cp.flight.speed')} (${profile.speedRange?.min ?? 1}–${profile.speedRange?.max ?? 20})`}
+          suffix="m/s"
+        >
           <NumberInput
             value={params.speed}
-            min={1}
-            max={23}
+            min={profile.speedRange?.min ?? 1}
+            max={profile.speedRange?.max ?? 20}
             step={0.5}
             onChange={(v) => setParam('speed', v)}
           />
         </Field>
+        {triggerWarn && (
+          <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+            ⚠{' '}
+            {t('cp.flight.triggerFast', {
+              s: triggerWarn.actualS.toFixed(2),
+              min: triggerWarn.minS.toFixed(1),
+              vmax: triggerWarn.maxSpeed.toFixed(1),
+            })}
+          </p>
+        )}
         <Field label={t('cp.flight.frontOverlap')} suffix="%">
           <NumberInput
             value={params.frontOverlap}
@@ -524,7 +540,7 @@ export default function ControlPanel({
         <input
           ref={areaFileRef}
           type="file"
-          accept=".kml,.geojson,.json,.zip"
+          accept=".kml,.geojson,.json,.zip,.kmz"
           className="hidden"
           onChange={(e) => {
             onImportFile(e.target.files?.[0])
@@ -989,6 +1005,13 @@ export default function ControlPanel({
         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
           {t('cp.terrain.auto')}
         </p>
+        <button
+          onClick={onShowProfile}
+          disabled={!(terrain.status === 'ready' && terrainCovers)}
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <IconChart /> {t('cp.terrain.profile')}
+        </button>
 
         {terrain.status === 'ready' && terrain.data?.source === 'file' && (
           <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">
