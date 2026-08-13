@@ -125,6 +125,41 @@ export function IconFolder({ className }) {
   )
 }
 
+/** Gráfico de perfil — perfil de elevação. */
+export function IconChart({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M3.5 4v15.5H21" />
+      <path d="M6 15.5 10 10l3.5 3 5-6.5" />
+    </Svg>
+  )
+}
+
+/** Bandeira de Portugal (simplificada) — o Windows não renderiza emojis 🇵🇹. */
+export function FlagPT({ className = 'h-3.5 w-5' }) {
+  return (
+    <svg viewBox="0 0 20 14" className={`inline-block rounded-[2px] ${className}`} aria-hidden="true">
+      <rect width="8" height="14" fill="#046a38" />
+      <rect x="8" width="12" height="14" fill="#da291c" />
+      <circle cx="8" cy="7" r="3" fill="#ffe900" />
+      <circle cx="8" cy="7" r="1.7" fill="#da291c" stroke="#fff" strokeWidth="0.5" />
+    </svg>
+  )
+}
+
+/** Bandeira do Reino Unido (simplificada). */
+export function FlagGB({ className = 'h-3.5 w-5' }) {
+  return (
+    <svg viewBox="0 0 20 14" className={`inline-block rounded-[2px] ${className}`} aria-hidden="true">
+      <rect width="20" height="14" fill="#012169" />
+      <path d="M0 0 20 14M20 0 0 14" stroke="#fff" strokeWidth="2.6" />
+      <path d="M0 0 20 14M20 0 0 14" stroke="#C8102E" strokeWidth="1.1" />
+      <path d="M10 0v14M0 7h20" stroke="#fff" strokeWidth="4.2" />
+      <path d="M10 0v14M0 7h20" stroke="#C8102E" strokeWidth="2.4" />
+    </svg>
+  )
+}
+
 /** SVG standalone (string) para o marcador da base no mapa Leaflet. */
 export const BASE_MARKER_HTML = `
 <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#f59e0b" stroke-width="1.8"

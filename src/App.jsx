@@ -8,6 +8,7 @@ import HelpModal from './components/HelpModal.jsx'
 // carregados sob demanda
 const Map3D = lazy(() => import('./components/Map3D.jsx'))
 const MissionReport = lazy(() => import('./components/MissionReport.jsx'))
+const ElevationProfile = lazy(() => import('./components/ElevationProfile.jsx'))
 import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR, MISSION_PRESETS } from './data/drones.js'
 import {
   computeAlignment,
@@ -41,8 +42,18 @@ import {
 } from './utils/importArea.js'
 import { loadTerrain, terrainFollowLines } from './utils/terrain.js'
 import { loadDemFromFile } from './utils/demFile.js'
+import { parseWpmlKmz } from './utils/importWpml.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
-import { IconCheck, IconCube, IconDrone, IconDownload } from './components/Icons.jsx'
+import {
+  FlagGB,
+  FlagPT,
+  IconCheck,
+  IconCube,
+  IconDrone,
+  IconDownload,
+} from './components/Icons.jsx'
+
+const FLAG_BY_LANG = { pt: FlagPT, en: FlagGB }
 import { LANGS, LangContext, useT } from './i18n.jsx'
 
 export default function App() {
@@ -126,13 +137,26 @@ function AppInner({ lang, setLang }) {
   const [showHelp, setShowHelp] = useState(false)
   const [show3d, setShow3d] = useState(false)
   const [showReport, setShowReport] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const [fitKey, setFitKey] = useState(0) // sinal para enquadrar o mapa na área
-  const tileHistoryRef = useRef([]) // histórico de seleção de células (Ctrl+Z)
+  // Histórico de edição unificado (Ctrl+Z): geometria da área + seleção de células
+  const editHistoryRef = useRef([])
+  const ringSnapshotRef = useRef(null)
+  const tilesSnapshotRef = useRef(new Set())
   const skipTileResetRef = useRef(false)
   const hydratedRef = useRef(false)
 
+  const profileRef = useRef(null)
   const setParam = useCallback((key, value) => {
-    setParams((p) => ({ ...p, [key]: value }))
+    setParams((p) => {
+      if (!Number.isFinite(value) && typeof value === 'number') return p
+      // a velocidade é sempre limitada aos limites do drone selecionado
+      if (key === 'speed') {
+        const r = profileRef.current?.speedRange ?? { min: 1, max: 20 }
+        value = Math.min(r.max, Math.max(r.min, value))
+      }
+      return { ...p, [key]: value }
+    })
   }, [])
 
   const setAnchorParam = useCallback((key, value) => {
@@ -172,6 +196,17 @@ function AppInner({ lang, setLang }) {
 
   /* ------------------- Pipeline de cálculo (memo) -------------------- */
   const profile = DRONE_PROFILES[droneId]
+  profileRef.current = profile
+
+  // ao trocar de drone, a velocidade atual é reencaixada nos novos limites
+  useEffect(() => {
+    const r = profile.speedRange ?? { min: 1, max: 20 }
+    setParams((p) =>
+      p.speed < r.min || p.speed > r.max
+        ? { ...p, speed: Math.min(r.max, Math.max(r.min, p.speed)) }
+        : p,
+    )
+  }, [profile])
   const sensor = useMemo(() => resolveSensor(profile, custom), [profile, custom])
 
   const wpml = useMemo(
@@ -202,6 +237,15 @@ function AppInner({ lang, setLang }) {
     [footprint, params.frontOverlap],
   )
   const gsd = useMemo(() => computeGSD(sensor, params.altitude), [sensor, params.altitude])
+
+  // intervalo entre fotos abaixo do que o obturador consegue?
+  const triggerWarn = useMemo(() => {
+    if (interval == null || !(params.speed > 0)) return null
+    const minS = profile.minTriggerS ?? 0.7
+    const actualS = interval / params.speed
+    if (actualS >= minS) return null
+    return { actualS, minS, maxSpeed: interval / minS }
+  }, [interval, params.speed, profile])
 
   const validation = useMemo(
     () => (ring ? validateRing(ring) : { valid: false, kinks: [] }),
@@ -247,6 +291,30 @@ function AppInner({ lang, setLang }) {
   const tilesError = tilesResult?.cells?.error ?? null
   const tileSide = tilesResult?.side ?? null
 
+  // espelhos do estado atual, para os snapshots do histórico
+  useEffect(() => {
+    ringSnapshotRef.current = ring
+  }, [ring])
+  useEffect(() => {
+    tilesSnapshotRef.current = disabledTiles
+  }, [disabledTiles])
+
+  const pushHistory = useCallback(() => {
+    editHistoryRef.current.push({
+      ring: ringSnapshotRef.current,
+      tiles: new Set(tilesSnapshotRef.current),
+    })
+    if (editHistoryRef.current.length > 100) editHistoryRef.current.shift()
+  }, [])
+
+  const undoEdit = useCallback(() => {
+    const prev = editHistoryRef.current.pop()
+    if (!prev) return
+    skipTileResetRef.current = true
+    setRing(prev.ring)
+    setDisabledTiles(new Set(prev.tiles))
+  }, [])
+
   // regenerar o mosaico limpa a seleção de células desativadas
   useEffect(() => {
     if (skipTileResetRef.current) {
@@ -254,47 +322,40 @@ function AppInner({ lang, setLang }) {
       return
     }
     setDisabledTiles(new Set())
-    tileHistoryRef.current = []
   }, [ring, split.mode, tileSide, split.tileOrientation])
 
-  const toggleTile = useCallback((index) => {
-    setDisabledTiles((prev) => {
-      tileHistoryRef.current.push(new Set(prev))
-      if (tileHistoryRef.current.length > 100) tileHistoryRef.current.shift()
-      const next = new Set(prev)
-      if (next.has(index)) next.delete(index)
-      else next.add(index)
-      return next
-    })
-  }, [])
-
-  const undoTiles = useCallback(() => {
-    const prev = tileHistoryRef.current.pop()
-    if (prev) setDisabledTiles(prev)
-  }, [])
+  const toggleTile = useCallback(
+    (index) => {
+      pushHistory()
+      setDisabledTiles((prev) => {
+        const next = new Set(prev)
+        if (next.has(index)) next.delete(index)
+        else next.add(index)
+        return next
+      })
+    },
+    [pushHistory],
+  )
 
   const restoreAllTiles = useCallback(() => {
-    setDisabledTiles((prev) => {
-      if (prev.size === 0) return prev
-      tileHistoryRef.current.push(new Set(prev))
-      return new Set()
-    })
-  }, [])
+    pushHistory()
+    setDisabledTiles(new Set())
+  }, [pushHistory])
 
-  // Ctrl+Z desfaz a última alteração às células do mosaico
+  // Ctrl+Z desfaz a última edição (vértices, área ou células)
   useEffect(() => {
     const onKey = (e) => {
       if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
-      if (tileHistoryRef.current.length > 0) {
+      if (editHistoryRef.current.length > 0) {
         e.preventDefault()
-        undoTiles()
+        undoEdit()
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undoTiles])
+  }, [undoEdit])
 
   // Células ativas: grelha da âncora, ou mosaico sem as células removidas
   const activeCells = useMemo(() => {
@@ -419,6 +480,7 @@ function AppInner({ lang, setLang }) {
           Math.abs(v[1] - draft[i - 1][1]) > EPS,
       )
       if (clean.length >= 3) {
+        pushHistory()
         setRing(clean)
         setAreaOrigin('draw')
         setMode('idle')
@@ -426,7 +488,7 @@ function AppInner({ lang, setLang }) {
       }
       return draft
     })
-  }, [])
+  }, [pushHistory])
 
   const removeDraftVertex = useCallback((index) => {
     setDraftVertices((d) => d.filter((_, i) => i !== index))
@@ -455,23 +517,35 @@ function AppInner({ lang, setLang }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [mode, removeLastDraftVertex])
 
-  const handleVertexDrag = useCallback((index, lonlat) => {
-    setRing((r) => (r ? r.map((v, i) => (i === index ? lonlat : v)) : r))
-  }, [])
+  const handleVertexDrag = useCallback(
+    (index, lonlat) => {
+      pushHistory()
+      setRing((r) => (r ? r.map((v, i) => (i === index ? lonlat : v)) : r))
+    },
+    [pushHistory],
+  )
 
-  const handleVertexInsert = useCallback((index, lonlat) => {
-    setRing((r) => {
-      if (!r) return r
-      const next = [...r]
-      next.splice(index, 0, lonlat)
-      return next
-    })
-    setAreaOrigin('draw') // deixou de ser um retângulo perfeito
-  }, [])
+  const handleVertexInsert = useCallback(
+    (index, lonlat) => {
+      pushHistory()
+      setRing((r) => {
+        if (!r) return r
+        const next = [...r]
+        next.splice(index, 0, lonlat)
+        return next
+      })
+      setAreaOrigin('draw') // deixou de ser um retângulo perfeito
+    },
+    [pushHistory],
+  )
 
-  const handleVertexDelete = useCallback((index) => {
-    setRing((r) => (r && r.length > 3 ? r.filter((_, i) => i !== index) : r))
-  }, [])
+  const handleVertexDelete = useCallback(
+    (index) => {
+      pushHistory()
+      setRing((r) => (r && r.length > 3 ? r.filter((_, i) => i !== index) : r))
+    },
+    [pushHistory],
+  )
 
   const handleAnchorDrag = useCallback((lonlat) => {
     setAnchor((a) => ({ ...a, center: lonlat }))
@@ -605,6 +679,7 @@ function AppInner({ lang, setLang }) {
 
   /* ------------------------ Importação de áreas ----------------------- */
   const applyImportedRing = useCallback((rawRing) => {
+    pushHistory()
     const clean = simplifyRingIfNeeded(rawRing)
     setMode('idle')
     setDraftVertices([])
@@ -622,6 +697,23 @@ function AppInner({ lang, setLang }) {
       if (!file) return
       setImportError(null)
       try {
+        // Reimportar uma missão WPML existente: reconstrói a área a partir
+        // dos waypoints e recupera altitude/velocidade/nome
+        if (file.name.toLowerCase().endsWith('.kmz')) {
+          const res = await parseWpmlKmz(file)
+          applyImportedRing(res.ring)
+          if (res.name) setMissionName(res.name)
+          setParams((p) => {
+            const next = { ...p }
+            if (Number.isFinite(res.altitude)) next.altitude = res.altitude
+            if (Number.isFinite(res.speed)) {
+              const r = profileRef.current?.speedRange ?? { min: 1, max: 20 }
+              next.speed = Math.min(r.max, Math.max(r.min, res.speed))
+            }
+            return next
+          })
+          return
+        }
         const result = await parseAreaFile(file)
         if (result.needsCrs) {
           setImportState({ ring: result.ring, filename: file.name })
@@ -793,13 +885,14 @@ function AppInner({ lang, setLang }) {
   }, [])
 
   const clearAll = useCallback(() => {
+    pushHistory()
     setMode('idle')
     setDraftVertices([])
     setRing(null)
     setAreaOrigin(null)
     setGridCells(null)
     setAnchor((a) => ({ ...a, center: null }))
-  }, [])
+  }, [pushHistory])
 
   // Catálogo de presets de missão aplicáveis ao sensor ativo, com a
   // velocidade já resolvida para o perfil de drone selecionado
@@ -850,7 +943,7 @@ function AppInner({ lang, setLang }) {
   const canExportKMZ = Boolean(planOk && planOk.waypoints.length >= 2)
 
   const handleExportKML = () => {
-    if (canExportKML) exportSimpleKML(ring, safeName, basePoint, gcps)
+    if (canExportKML) exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null)
   }
 
   const handleExportGcps = () => {
@@ -960,18 +1053,21 @@ function AppInner({ lang, setLang }) {
               ?
             </button>
             <div className="flex overflow-hidden rounded border border-slate-700">
-              {LANGS.map(({ code, flag, label }) => (
-                <button
-                  key={code}
-                  onClick={() => setLang(code)}
-                  title={label}
-                  className={`px-2 py-1 text-base leading-none transition-colors ${
-                    lang === code ? 'bg-slate-700' : 'opacity-50 hover:opacity-90'
-                  }`}
-                >
-                  {flag}
-                </button>
-              ))}
+              {LANGS.map(({ code, label }) => {
+                const Flag = FLAG_BY_LANG[code]
+                return (
+                  <button
+                    key={code}
+                    onClick={() => setLang(code)}
+                    title={label}
+                    className={`px-2 py-1.5 leading-none transition-opacity ${
+                      lang === code ? 'bg-slate-700' : 'opacity-40 hover:opacity-90'
+                    }`}
+                  >
+                    <Flag />
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>
@@ -1007,6 +1103,7 @@ function AppInner({ lang, setLang }) {
           onGsdTarget={setAltitudeFromGsd}
           presets={flightPresets}
           onApplyPreset={applyPreset}
+          triggerWarn={triggerWarn}
           importState={importState}
           importError={importError}
           onImportFile={handleImportFile}
@@ -1014,7 +1111,7 @@ function AppInner({ lang, setLang }) {
           onImportCancel={cancelImport}
           onProjectExport={exportProject}
           onProjectImport={importProject}
-          onTilesUndo={undoTiles}
+          onTilesUndo={undoEdit}
           onTilesRestoreAll={restoreAllTiles}
           terrain={terrain}
           terrainCovers={terrainCovers}
@@ -1022,6 +1119,7 @@ function AppInner({ lang, setLang }) {
           setTerrainFollow={setTerrainFollow}
           onLoadTerrain={handleLoadTerrain}
           onImportDem={handleImportDem}
+          onShowProfile={() => setShowProfile(true)}
           terrainResult={terrainResult}
           gcpConfig={gcpConfig}
           setGcpConfig={setGcpConfig}
@@ -1080,6 +1178,36 @@ function AppInner({ lang, setLang }) {
       </div>
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+
+      {showProfile && terrain.status === 'ready' && planOk && (
+        <Suspense fallback={null}>
+          <ElevationProfile
+            terrain={terrain.data}
+            waypoints={
+              terrainResult && !terrainResult.error
+                ? terrainResult.waypoints
+                : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
+            }
+            refElev={
+              terrainResult && !terrainResult.error
+                ? terrainResult.refElev
+                : terrain.data.elevationAt(
+                    (basePoint ?? planOk.waypoints[0])[0],
+                    (basePoint ?? planOk.waypoints[0])[1],
+                  ) ?? 0
+            }
+            blocks={
+              terrainResult && !terrainResult.error && terrainResult.blocks3
+                ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
+                : blocks?.map((b) => ({
+                    id: b.id,
+                    waypoints: b.waypoints.map(([lon, lat]) => [lon, lat, params.altitude]),
+                  })) ?? null
+            }
+            onClose={() => setShowProfile(false)}
+          />
+        </Suspense>
+      )}
 
       {showReport && planOk && (
         <Suspense

@@ -128,8 +128,8 @@ export default {
     en: 'Square centred on a point (single side)',
   },
   'cp.area.import': {
-    pt: 'Importar área (KML · GeoJSON · SHP zip)',
-    en: 'Import area (KML · GeoJSON · SHP zip)',
+    pt: 'Importar área (KML · GeoJSON · SHP · KMZ WPML)',
+    en: 'Import area (KML · GeoJSON · SHP · WPML KMZ)',
   },
   'cp.area.importTitle': {
     pt: 'Importar área de ficheiro KML, GeoJSON ou Shapefile zipado',
@@ -346,6 +346,15 @@ export default {
   'cp.terrain.auto': {
     pt: 'O relevo global descarrega-se automaticamente ao definir a área; o botão serve para recarregar. Um MDT importado tem sempre prioridade.',
     en: 'The global terrain downloads automatically once the area is defined; the button re-loads it. An imported DTM always takes priority.',
+  },
+
+  'cp.terrain.profile': {
+    pt: 'Perfil de elevação do voo',
+    en: 'Flight elevation profile',
+  },
+  'cp.flight.triggerFast': {
+    pt: 'Disparo a cada {s} s — abaixo do mínimo do obturador (~{min} s). Reduza a velocidade para ≤ {vmax} m/s ou baixe a sobreposição frontal.',
+    en: 'Shot every {s} s — below the shutter minimum (~{min} s). Reduce speed to ≤ {vmax} m/s or lower the front overlap.',
   },
 
   /* ---- Presets de missão ---- */

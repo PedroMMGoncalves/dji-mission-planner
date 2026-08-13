@@ -26,7 +26,7 @@ export function downloadBlob(blob, filename) {
 /* KML simples (polígono 2D)                                          */
 /* ------------------------------------------------------------------ */
 
-export function buildSimpleKML(ring, name, basePoint = null, gcps = null) {
+export function buildSimpleKML(ring, name, basePoint = null, gcps = null, lines = null) {
   const coords = [...ring, ring[0]]
     .map(([lon, lat]) => `${fmtCoord(lon)},${fmtCoord(lat)},0`)
     .join(' ')
@@ -73,14 +73,40 @@ export function buildSimpleKML(ring, name, basePoint = null, gcps = null) {
           </LinearRing>
         </outerBoundaryIs>
       </Polygon>
-    </Placemark>${basePlacemark}${gcpPlacemarks}
+    </Placemark>${basePlacemark}${gcpPlacemarks}${linesFolder(lines)}
   </Document>
 </kml>
 `
 }
 
-export function exportSimpleKML(ring, name, basePoint = null, gcps = null) {
-  const kml = buildSimpleKML(ring, name, basePoint, gcps)
+/** Pasta opcional com as faixas de voo (útil no QGIS; desligável no visualizador). */
+function linesFolder(lines) {
+  if (!lines?.length) return ''
+  const placemarks = lines
+    .map(
+      (seg, i) => `
+      <Placemark>
+        <name>L${String(i + 1).padStart(3, '0')}</name>
+        <styleUrl>#flightLine</styleUrl>
+        <LineString>
+          <coordinates>${seg
+            .map(([lon, lat]) => `${fmtCoord(lon)},${fmtCoord(lat)},0`)
+            .join(' ')}</coordinates>
+        </LineString>
+      </Placemark>`,
+    )
+    .join('')
+  return `
+    <Style id="flightLine">
+      <LineStyle><color>ffeed322</color><width>1.5</width></LineStyle>
+    </Style>
+    <Folder>
+      <name>Flight lines</name>${placemarks}
+    </Folder>`
+}
+
+export function exportSimpleKML(ring, name, basePoint = null, gcps = null, lines = null) {
+  const kml = buildSimpleKML(ring, name, basePoint, gcps, lines)
   downloadBlob(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }), `${name}.kml`)
 }
 
