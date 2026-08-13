@@ -343,6 +343,11 @@ export default {
     en: 'Edge + center heuristic (minimum-error distribution in the photogrammetric literature). The GCPs are also included in the simple area KML.',
   },
 
+  'cp.terrain.auto': {
+    pt: 'O relevo global descarrega-se automaticamente ao definir a área; o botão serve para recarregar. Um MDT importado tem sempre prioridade.',
+    en: 'The global terrain downloads automatically once the area is defined; the button re-loads it. An imported DTM always takes priority.',
+  },
+
   /* ---- Presets de voo ---- */
   'cp.preset.label': { pt: 'Presets', en: 'Presets' },
   'cp.preset.quality': { pt: 'Qualidade', en: 'Quality' },

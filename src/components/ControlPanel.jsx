@@ -979,6 +979,9 @@ export default function ControlPanel({
             }}
           />
         </div>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+          {t('cp.terrain.auto')}
+        </p>
 
         {terrain.status === 'ready' && terrain.data?.source === 'file' && (
           <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">

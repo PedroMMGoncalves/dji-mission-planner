@@ -59,7 +59,7 @@ function InstrucoesPt() {
 
       <H>Terreno e Vista 3D</H>
       <ul className="list-none">
-        <Li>«Descarregar relevo» obtém o modelo global (~30 m); com «Seguir terreno», cada waypoint recebe a altura que mantém o AGL constante.</Li>
+        <Li>O relevo global (~30 m) descarrega-se automaticamente ao definir a área; com «Seguir terreno», cada waypoint recebe a altura que mantém o AGL constante.</Li>
         <Li>Para precisão máxima, importe um <strong>MDT GeoTIFF do LiDAR da DGT</strong> (50 cm/2 m) — só a janela da área é lida, mesmo em ficheiros de vários GB.</Li>
         <Li>Marque a <strong>base no local real de descolagem</strong> — as alturas WPML são relativas a esse ponto.</Li>
         <Li>A <strong>Vista 3D</strong> mostra as linhas de voo à altura real sobre o relevo (órbita com o rato, exagero vertical).</Li>
@@ -112,7 +112,7 @@ function InstrucoesEn() {
 
       <H>Terrain and 3D view</H>
       <ul className="list-none">
-        <Li>“Download terrain” fetches the global model (~30 m); with “Follow terrain”, each waypoint gets the height that keeps the AGL constant.</Li>
+        <Li>The global terrain (~30 m) downloads automatically once the area is defined; with “Follow terrain”, each waypoint gets the height that keeps the AGL constant.</Li>
         <Li>For maximum accuracy, import a <strong>DGT LiDAR DTM GeoTIFF</strong> (50 cm/2 m) — only the window covering your area is read, even from multi-GB files.</Li>
         <Li>Mark the <strong>home point at the real takeoff location</strong> — WPML heights are relative to it.</Li>
         <Li>The <strong>3D view</strong> shows the flight lines at their true height over the relief (mouse orbit, vertical exaggeration).</Li>

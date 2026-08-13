@@ -529,6 +529,25 @@ function AppInner({ lang, setLang }) {
     return ringBbox[0] >= a && ringBbox[1] >= b && ringBbox[2] <= c && ringBbox[3] <= d
   }, [terrain, ringBbox])
 
+  // Descarga automática do relevo global quando a área fica definida:
+  // com debounce (não dispara enquanto se arrastam vértices), sem nunca
+  // substituir um MDT local importado, e sem repetir sozinha após um erro
+  // na mesma área (o botão manual fica como recurso).
+  const autoTerrainTriedRef = useRef(null)
+  useEffect(() => {
+    if (!ring || !validation.valid || !ringBbox) return
+    if (terrain.status === 'loading') return
+    if (terrain.data?.source === 'file') return
+    if (terrain.status === 'ready' && terrainCovers) return
+    const key = ringBbox.map((v) => v.toFixed(3)).join(',')
+    if (terrain.status === 'error' && autoTerrainTriedRef.current === key) return
+    const timer = setTimeout(() => {
+      autoTerrainTriedRef.current = key
+      handleLoadTerrain()
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [ring, validation.valid, ringBbox, terrain, terrainCovers, handleLoadTerrain])
+
   /* ------------------------------ GCPs -------------------------------- */
   const gcpAutoCount = useMemo(() => {
     const areaHa = planOk?.stats?.areaHa
