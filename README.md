@@ -2,15 +2,19 @@
 
 > Browser-based drone mapping mission planner that draws survey areas, computes photogrammetric/LiDAR flight grids with terrain following, splits them into battery-sized blocks, and exports KML and DJI WPML (KMZ) for DJI Pilot 2.
 
-[![React](https://img.shields.io/badge/React-18-61dafb.svg)](https://react.dev)
-[![Vite](https://img.shields.io/badge/Vite-5-646cff.svg)](https://vitejs.dev)
-[![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900.svg)](https://leafletjs.com)
-[![Turf.js](https://img.shields.io/badge/Turf.js-7-3bb2d0.svg)](https://turfjs.org)
-[![three.js](https://img.shields.io/badge/three.js-0.170-000000.svg)](https://threejs.org)
-[![Languages](https://img.shields.io/badge/UI-PT%20%7C%20EN-blue.svg)](#usage)
+[![React](https://img.shields.io/badge/React-18-20232a.svg?logo=react&logoColor=61dafb)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Vite-5-646cff.svg?logo=vite&logoColor=ffd62e)](https://vitejs.dev)
+[![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900.svg?logo=leaflet&logoColor=white)](https://leafletjs.com)
+[![Turf.js](https://img.shields.io/badge/Turf.js-7-35495d.svg)](https://turfjs.org)
+[![three.js](https://img.shields.io/badge/three.js-r170-000000.svg?logo=threedotjs&logoColor=white)](https://threejs.org)
+[![Target](https://img.shields.io/badge/Target-DJI_Pilot_2-1f6feb.svg)](https://enterprise.dji.com)
+[![WPML](https://img.shields.io/badge/Format-WPML_%2B_KML-1f6feb.svg)](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html)
+[![UI](https://img.shields.io/badge/UI-PT_%7C_EN-informational.svg)](#usage)
+[![Data](https://img.shields.io/badge/Elevation-Terrarium_%7C_DGT_LiDAR-8a63d2.svg)](#data-sources)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![deploy](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml/badge.svg)](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml)
-[![Live](https://img.shields.io/badge/Live-GitHub_Pages-222222.svg)](https://pedrommgoncalves.github.io/dji-mission-planner/)
+[![Live](https://img.shields.io/website?url=https%3A%2F%2Fpedrommgoncalves.github.io%2Fdji-mission-planner%2F&label=GitHub%20Pages&logo=github&up_message=online&down_message=offline)](https://pedrommgoncalves.github.io/dji-mission-planner/)
+[![Last commit](https://img.shields.io/github/last-commit/PedroMMGoncalves/dji-mission-planner.svg?logo=github)](https://github.com/PedroMMGoncalves/dji-mission-planner/commits/main)
 
 A single-page web application, 100% client-side (no backend, no API keys), that plans drone mapping missions end to end: hardware profiles, area definition, flight-grid computation, terrain following from a DEM, block splitting sized by battery, GCP placement, a printable mission report and a field checklist. Missions export as standard KML or as the official DJI WPML structure (`wpmz/template.kml` + `waylines.wpml`) ready to import in **DJI Pilot 2**.
 
