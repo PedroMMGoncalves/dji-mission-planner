@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MapView from './components/MapView.jsx'
 import ControlPanel from './components/ControlPanel.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import ChecklistPage from './components/ChecklistPage.jsx'
+import HelpModal from './components/HelpModal.jsx'
+
+// carregado sob demanda: o three.js só entra quando a Vista 3D abre
+const Map3D = lazy(() => import('./components/Map3D.jsx'))
 import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR } from './data/drones.js'
 import {
   computeAlignment,
@@ -35,6 +39,7 @@ import {
   CRS_OPTIONS,
 } from './utils/importArea.js'
 import { loadTerrain, terrainFollowLines } from './utils/terrain.js'
+import { loadDemFromFile } from './utils/demFile.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
 import { IconDrone, IconDownload } from './components/Icons.jsx'
 
@@ -96,6 +101,8 @@ export default function App() {
   const [terrain, setTerrain] = useState({ status: 'idle', data: null, error: null })
   const [terrainFollow, setTerrainFollow] = useState({ enabled: false, tolerance: 5 })
   const [gcpConfig, setGcpConfig] = useState({ enabled: false, count: null }) // null = auto
+  const [showHelp, setShowHelp] = useState(false)
+  const [show3d, setShow3d] = useState(false)
   const [fitKey, setFitKey] = useState(0) // sinal para enquadrar o mapa na área
   const tileHistoryRef = useRef([]) // histórico de seleção de células (Ctrl+Z)
   const skipTileResetRef = useRef(false)
@@ -477,6 +484,21 @@ export default function App() {
     }
   }, [ringBbox])
 
+  // Importar um MDT GeoTIFF local (ex.: LiDAR DGT 50 cm/2 m) como fonte
+  const handleImportDem = useCallback(
+    async (file) => {
+      if (!file || !ringBbox) return
+      setTerrain({ status: 'loading', data: null, error: null })
+      try {
+        const data = await loadDemFromFile(file, ringBbox)
+        setTerrain({ status: 'ready', data, error: null })
+      } catch (err) {
+        setTerrain({ status: 'error', data: null, error: err?.message ?? 'Falha ao ler o MDT' })
+      }
+    },
+    [ringBbox],
+  )
+
   // a área ainda está coberta pelo terreno carregado?
   const terrainCovers = useMemo(() => {
     if (terrain.status !== 'ready' || !ringBbox || !terrain.data?.bbox) return false
@@ -823,6 +845,25 @@ export default function App() {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={() => setShowHelp(true)}
+            title="Instruções e informação da aplicação"
+            className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
+          >
+            ?
+          </button>
+          <button
+            onClick={() => setShow3d(true)}
+            disabled={!(terrain.status === 'ready' && terrainCovers && planOk)}
+            title={
+              terrain.status === 'ready'
+                ? 'Ver as linhas de voo em 3D sobre o relevo'
+                : 'Carregue primeiro o relevo (secção Terreno) e gere um plano'
+            }
+            className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ⛰ Vista 3D
+          </button>
+          <button
             onClick={() => setView('checklist')}
             title="Checklist de campo UAV (pré-campo, durante, pós-campo) + relatório de missão"
             className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-amber-500 hover:text-amber-300"
@@ -890,6 +931,7 @@ export default function App() {
           terrainFollow={terrainFollow}
           setTerrainFollow={setTerrainFollow}
           onLoadTerrain={handleLoadTerrain}
+          onImportDem={handleImportDem}
           terrainResult={terrainResult}
           gcpConfig={gcpConfig}
           setGcpConfig={setGcpConfig}
@@ -946,6 +988,39 @@ export default function App() {
           />
         </main>
       </div>
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+
+      {show3d && terrain.status === 'ready' && planOk && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/90 text-sm text-slate-300">
+              A carregar a vista 3D…
+            </div>
+          }
+        >
+          <Map3D
+            terrain={terrain.data}
+            ring={ring}
+            waypoints={
+              terrainResult && !terrainResult.error
+                ? terrainResult.waypoints
+                : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
+            }
+            refElev={
+              terrainResult && !terrainResult.error
+                ? terrainResult.refElev
+                : terrain.data.elevationAt(
+                    (basePoint ?? planOk.waypoints[0])[0],
+                    (basePoint ?? planOk.waypoints[0])[1],
+                  ) ?? 0
+            }
+            basePoint={basePoint}
+            gcps={gcps}
+            onClose={() => setShow3d(false)}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }

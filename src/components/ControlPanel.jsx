@@ -87,6 +87,7 @@ export default function ControlPanel({
   terrainFollow,
   setTerrainFollow,
   onLoadTerrain,
+  onImportDem,
   terrainResult,
   gcpConfig,
   setGcpConfig,
@@ -106,6 +107,7 @@ export default function ControlPanel({
   const isCustom = profile.type === 'custom'
   const areaFileRef = useRef(null)
   const projectFileRef = useRef(null)
+  const demFileRef = useRef(null)
 
   return (
     <div className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-800 bg-slate-950 lg:w-96">
@@ -919,13 +921,40 @@ export default function ControlPanel({
 
       {/* Terreno (DEM) — terrain follow */}
       <Section title="Terreno (DEM) — Terrain Follow">
-        <button
-          onClick={onLoadTerrain}
-          disabled={!hasRing || terrain.status === 'loading'}
-          className="w-full rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          ⛰ {terrain.status === 'loading' ? 'A descarregar relevo…' : 'Descarregar relevo da área'}
-        </button>
+        <div className="grid grid-cols-1 gap-2">
+          <button
+            onClick={onLoadTerrain}
+            disabled={!hasRing || terrain.status === 'loading'}
+            className="w-full rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ⛰ {terrain.status === 'loading' ? 'A carregar terreno…' : 'Descarregar relevo global (~30 m)'}
+          </button>
+          <button
+            onClick={() => demFileRef.current?.click()}
+            disabled={!hasRing || terrain.status === 'loading'}
+            title="MDT LiDAR da DGT (50 cm / 2 m) descarregado do Centro de Dados Geográficos — só é lida a janela da área, mesmo em ficheiros de vários GB"
+            className="w-full rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            📂 Importar MDT (GeoTIFF LiDAR DGT)
+          </button>
+          <input
+            ref={demFileRef}
+            type="file"
+            accept=".tif,.tiff"
+            className="hidden"
+            onChange={(e) => {
+              onImportDem(e.target.files?.[0])
+              e.target.value = ''
+            }}
+          />
+        </div>
+
+        {terrain.status === 'ready' && terrain.data?.source === 'file' && (
+          <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">
+            MDT local: <strong>{terrain.data.label}</strong> ({terrain.data.crsCode},
+            grelha ~{terrain.data.resolutionM?.toFixed(1)} m)
+          </p>
+        )}
 
         {terrain.status === 'error' && (
           <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">

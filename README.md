@@ -56,6 +56,14 @@ calcular grelhas de voo fotogramétricas/LiDAR e exportar **KML** simples ou
 - **Planeamento de GCPs:** heurística bordo+centro (literatura fotogramétrica)
   com contagem automática (~1/5 ha, mín. 5) ou manual, alvos numerados no mapa
   e exportação KML própria.
+- **Vista 3D:** linhas de voo à altura real sobre a malha do relevo (three.js,
+  textura de satélite, exagero vertical 1–2×) — carregada sob demanda.
+- **MDT local (GeoTIFF):** importação do LiDAR nacional da DGT (MDT 50 cm/2 m
+  do Centro de Dados Geográficos) como fonte de elevação de alta resolução;
+  leitura por janela com reamostragem — ficheiros de vários GB são lidos por
+  intervalos, nunca por inteiro.
+- **Ajuda integrada:** botão «?» com instruções completas (controlos de
+  desenho, blocos, terreno, exportação) e créditos de dados.
 - **Divisão em blocos de voo numerados** (modelo UgCS/DroneDeploy), com a
   grelha globalmente alinhada (faixas colineares entre blocos):
   - *Faixas* — corte da serpentina por área máxima (ha);
