@@ -600,6 +600,7 @@ const UI = {
   removeLast: bi('− Remover última', '− Remove last'),
   emptyRows: bi('Sem linhas.', 'No rows.'),
   importBlocks: bi('Importar blocos do plano', 'Import plan blocks'),
+  importGcps: bi('Importar GCPs do plano', 'Import planned GCPs'),
   items: bi('itens', 'items'),
   autosave: bi(
     'Guardado automaticamente neste navegador.',
@@ -962,6 +963,7 @@ export default function ChecklistPage({
   missionName = '',
   droneLabel = '',
   blocks = [],
+  plannedGcps = [],
   onBack,
 }) {
   const lang = useLang()
@@ -1091,6 +1093,24 @@ export default function ChecklistPage({
     setVoos((prev) => {
       const preenchidas = prev.filter((l) =>
         COLS_VOO.some((c) => String(l[c.key] ?? '').trim() !== ''),
+      )
+      return [...preenchidas, ...novas]
+    })
+  }
+
+  const importarGcps = () => {
+    if (!plannedGcps || plannedGcps.length === 0) return
+    const novas = plannedGcps.map((g, i) => ({
+      ...linhaVazia(COLS_GCP),
+      n: String(i + 1),
+      ident: g.id ?? `GCP-${String(i + 1).padStart(2, '0')}`,
+      lat: Number.isFinite(g.point?.[1]) ? g.point[1].toFixed(6) : '',
+      lon: Number.isFinite(g.point?.[0]) ? g.point[0].toFixed(6) : '',
+      crs: 'WGS84',
+    }))
+    setGcps((prev) => {
+      const preenchidas = prev.filter((l) =>
+        COLS_GCP.some((c) => String(l[c.key] ?? '').trim() !== ''),
       )
       return [...preenchidas, ...novas]
     })
@@ -1262,6 +1282,13 @@ export default function ChecklistPage({
             onCell={setCelulaGcp}
             onAdd={() => setGcps((g) => [...g, linhaVazia(COLS_GCP)])}
             onRemove={() => setGcps((g) => g.slice(0, -1))}
+            extra={
+              plannedGcps && plannedGcps.length > 0 ? (
+                <Botao onClick={importarGcps}>
+                  {L(UI.importGcps)} ({plannedGcps.length})
+                </Botao>
+              ) : null
+            }
           />
         </div>
 

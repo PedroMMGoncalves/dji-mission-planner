@@ -94,6 +94,31 @@ export const DRONE_PROFILES = {
   },
 }
 
+/**
+ * Presets de parâmetros de voo por perfil — combinações testadas em campo.
+ * `quality` privilegia o resultado fotogramétrico; `fast` a duração da missão;
+ * `lidar` aplica-se ao perfil custom em modo LiDAR. Cada preset define apenas
+ * os parâmetros que altera; o resto mantém-se.
+ */
+export const FLIGHT_PRESETS = {
+  M3E: [
+    { id: 'quality', frontOverlap: 80, sideOverlap: 70, speed: 8, gimbalPitch: -90 },
+    { id: 'fast', frontOverlap: 70, sideOverlap: 60, speed: 10, gimbalPitch: -90 },
+  ],
+  M4T: [
+    { id: 'quality', frontOverlap: 80, sideOverlap: 70, speed: 8, gimbalPitch: -90 },
+    { id: 'fast', frontOverlap: 70, sideOverlap: 60, speed: 10, gimbalPitch: -90 },
+  ],
+  M300RTK: [
+    { id: 'quality', frontOverlap: 80, sideOverlap: 70, speed: 7, gimbalPitch: -90 },
+    { id: 'fast', frontOverlap: 70, sideOverlap: 60, speed: 10, gimbalPitch: -90 },
+  ],
+  CUSTOM: [
+    { id: 'quality', frontOverlap: 80, sideOverlap: 70, speed: 7, gimbalPitch: -90 },
+    { id: 'lidar', sideOverlap: 50, speed: 5, gimbalPitch: -90 },
+  ],
+}
+
 /** Valores iniciais do sensor custom (câmara manual ou LiDAR por FOV). */
 export const DEFAULT_CUSTOM_SENSOR = {
   mode: 'camera', // 'camera' | 'lidar'

@@ -76,6 +76,8 @@ export default function ControlPanel({
   tileSide,
   gsd,
   onGsdTarget,
+  presets,
+  onApplyPreset,
   importState,
   importError,
   onImportFile,
@@ -270,6 +272,32 @@ export default function ControlPanel({
 
       {/* Parâmetros de voo */}
       <Section title={t('cp.flight.title')}>
+        {presets?.length > 0 && (
+          <div className="mb-3">
+            <div className="grid grid-cols-2 gap-1.5">
+              {presets.map((p) => {
+                const active = Object.entries(p)
+                  .filter(([k]) => k !== 'id')
+                  .every(([k, v]) => params[k] === v)
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => onApplyPreset(p)}
+                    title={t('cp.preset.hint')}
+                    className={`rounded px-2 py-1.5 text-xs font-medium transition-colors ${
+                      active
+                        ? 'bg-sky-500 text-slate-950'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    {t(`cp.preset.${p.id}`)}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-500">{t('cp.preset.hint')}</p>
+          </div>
+        )}
         <Field label={t('cp.flight.altitude')} suffix="m">
           <NumberInput
             value={params.altitude}

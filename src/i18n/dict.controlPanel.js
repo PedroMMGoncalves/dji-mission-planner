@@ -342,4 +342,14 @@ export default {
     pt: 'Heurística bordo + centro (distribuição de erro mínimo na literatura fotogramétrica). Os GCPs também vão no KML simples da área.',
     en: 'Edge + center heuristic (minimum-error distribution in the photogrammetric literature). The GCPs are also included in the simple area KML.',
   },
+
+  /* ---- Presets de voo ---- */
+  'cp.preset.label': { pt: 'Presets', en: 'Presets' },
+  'cp.preset.quality': { pt: 'Qualidade', en: 'Quality' },
+  'cp.preset.fast': { pt: 'Rápida', en: 'Fast' },
+  'cp.preset.lidar': { pt: 'LiDAR', en: 'LiDAR' },
+  'cp.preset.hint': {
+    pt: 'Combinações testadas: Qualidade = melhores resultados; Rápida = missão curta. Aplicam sobreposições, velocidade e gimbal.',
+    en: 'Field-tested combinations: Quality = best results; Fast = short mission. They set overlaps, speed and gimbal.',
+  },
 }

@@ -68,6 +68,12 @@ const BASE_DICT = {
     en: 'Full DJI mission (wpmz/template.kml + waylines.wpml)',
   },
   'app.loading3d': { pt: 'A carregar a vista 3D…', en: 'Loading 3D view…' },
+  'app.report': { pt: 'Relatório', en: 'Report' },
+  'app.reportTitle': {
+    pt: 'Relatório imprimível do plano de missão (mapa, parâmetros, blocos, GCPs)',
+    en: 'Printable mission plan report (map, parameters, blocks, GCPs)',
+  },
+  'app.loadingReport': { pt: 'A preparar o relatório…', en: 'Preparing the report…' },
 
   /* ---- Painel de métricas ---- */
   'stats.gsd': { pt: 'GSD', en: 'GSD' },

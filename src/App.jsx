@@ -5,9 +5,10 @@ import StatsPanel from './components/StatsPanel.jsx'
 import ChecklistPage from './components/ChecklistPage.jsx'
 import HelpModal from './components/HelpModal.jsx'
 
-// carregado sob demanda: o three.js só entra quando a Vista 3D abre
+// carregados sob demanda
 const Map3D = lazy(() => import('./components/Map3D.jsx'))
-import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR } from './data/drones.js'
+const MissionReport = lazy(() => import('./components/MissionReport.jsx'))
+import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR, FLIGHT_PRESETS } from './data/drones.js'
 import {
   computeAlignment,
   computeFootprint,
@@ -124,6 +125,7 @@ function AppInner({ lang, setLang }) {
   const [gcpConfig, setGcpConfig] = useState({ enabled: false, count: null }) // null = auto
   const [showHelp, setShowHelp] = useState(false)
   const [show3d, setShow3d] = useState(false)
+  const [showReport, setShowReport] = useState(false)
   const [fitKey, setFitKey] = useState(0) // sinal para enquadrar o mapa na área
   const tileHistoryRef = useRef([]) // histórico de seleção de células (Ctrl+Z)
   const skipTileResetRef = useRef(false)
@@ -780,6 +782,20 @@ function AppInner({ lang, setLang }) {
     setAnchor((a) => ({ ...a, center: null }))
   }, [])
 
+  // Presets de voo do perfil ativo (o preset LiDAR só faz sentido nesse modo)
+  const flightPresets = useMemo(() => {
+    const all = FLIGHT_PRESETS[droneId] ?? []
+    if (profile.type !== 'custom') return all
+    return all.filter((p) =>
+      custom.mode === 'lidar' ? p.id === 'lidar' : p.id !== 'lidar',
+    )
+  }, [droneId, profile.type, custom.mode])
+
+  const applyPreset = useCallback((preset) => {
+    const { id: _id, ...values } = preset
+    setParams((prev) => ({ ...prev, ...values }))
+  }, [])
+
   // GSD alvo → altitude (inverso do cálculo do GSD)
   const setAltitudeFromGsd = useCallback(
     (gsdTarget) => {
@@ -847,6 +863,7 @@ function AppInner({ lang, setLang }) {
         missionName={missionName}
         droneLabel={profile.label}
         blocks={blocks ?? []}
+        plannedGcps={gcps ?? []}
         onBack={() => setView('planner')}
       />
     )
@@ -872,6 +889,14 @@ function AppInner({ lang, setLang }) {
             className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconCube /> {t('app.view3d')}
+          </button>
+          <button
+            onClick={() => setShowReport(true)}
+            disabled={!planOk}
+            title={t('app.reportTitle')}
+            className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {t('app.report')}
           </button>
           <button
             onClick={() => setView('checklist')}
@@ -952,6 +977,8 @@ function AppInner({ lang, setLang }) {
           tileSide={tileSide}
           gsd={gsd}
           onGsdTarget={setAltitudeFromGsd}
+          presets={flightPresets}
+          onApplyPreset={applyPreset}
           importState={importState}
           importError={importError}
           onImportFile={handleImportFile}
@@ -1025,6 +1052,32 @@ function AppInner({ lang, setLang }) {
       </div>
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+
+      {showReport && planOk && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-[2500] flex items-center justify-center bg-slate-950/90 text-sm text-slate-300">
+              {t('app.loadingReport')}
+            </div>
+          }
+        >
+          <MissionReport
+            missionName={missionName}
+            droneLabel={profile.label}
+            params={params}
+            spacing={spacing}
+            interval={interval}
+            gsd={gsd}
+            stats={planOk.stats}
+            blocks={blocks}
+            ring={ring}
+            basePoint={basePoint}
+            gcps={gcps}
+            lines={planOk.lines}
+            onClose={() => setShowReport(false)}
+          />
+        </Suspense>
+      )}
 
       {show3d && terrain.status === 'ready' && planOk && (
         <Suspense
