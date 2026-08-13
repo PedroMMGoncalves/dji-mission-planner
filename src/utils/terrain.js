@@ -129,7 +129,13 @@ async function fetchTilePixels(url, doFetch) {
   const res = await doFetch(url)
   if (!res || !res.ok) throw new Error(`HTTP ${res ? res.status : '?'} em ${url}`)
   const blob = await res.blob()
-  const bitmap = await createImageBitmap(blob)
+  // CRÍTICO: sem estas opções o browser pode aplicar conversão de espaço de
+  // cor / alfa pré-multiplicado ao PNG — um desvio de ±1 no canal R equivale
+  // a ±256 m de elevação (picos em cone no relevo).
+  const bitmap = await createImageBitmap(blob, {
+    premultiplyAlpha: 'none',
+    colorSpaceConversion: 'none',
+  })
   try {
     const { width, height } = bitmap
     const canvas = createCanvas(width, height)
@@ -138,10 +144,54 @@ async function fetchTilePixels(url, doFetch) {
     if (!ctx) throw new Error('contexto 2d indisponível')
     ctx.drawImage(bitmap, 0, 0)
     const img = ctx.getImageData(0, 0, width, height)
-    return { data: img.data, width, height }
+    // Descodifica já para metros (Float32) e remove picos residuais
+    const elev = new Float32Array(width * height)
+    const d = img.data
+    for (let i = 0, p = 0; p < elev.length; i += 4, p++) {
+      elev[p] = decodeTerrarium(d[i], d[i + 1], d[i + 2])
+    }
+    despikeElevations(elev, width, height)
+    return { elev, width, height }
   } finally {
     if (typeof bitmap.close === 'function') bitmap.close()
   }
+}
+
+/**
+ * Remove picos isolados (outliers) numa grelha de elevações, in-place:
+ * um píxel que difira mais de `thresholdM` da mediana dos seus vizinhos 3×3
+ * é substituído por essa mediana. Cristas e vales reais têm suporte espacial
+ * e não são afetados; erros pontuais de descodificação/dados desaparecem.
+ */
+export function despikeElevations(elev, width, height, thresholdM = 150) {
+  const orig = Float32Array.from(elev)
+  const viz = []
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      viz.length = 0
+      for (let dy = -1; dy <= 1; dy++) {
+        const ny = y + dy
+        if (ny < 0 || ny >= height) continue
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx
+          if (nx < 0 || nx >= width) continue
+          if (dx === 0 && dy === 0) continue
+          viz.push(orig[ny * width + nx])
+        }
+      }
+      if (viz.length < 3) continue
+      const i = y * width + x
+      // um valor real (crista, esporão) tem pelo menos 2 vizinhos ao seu
+      // nível; um erro pontual de descodificação não tem nenhum
+      let suporte = 0
+      for (const v of viz) if (Math.abs(v - orig[i]) <= thresholdM) suporte++
+      if (suporte >= 2) continue
+      viz.sort((a, b) => a - b)
+      const mediana = viz[Math.floor(viz.length / 2)]
+      if (Math.abs(orig[i] - mediana) > thresholdM) elev[i] = mediana
+    }
+  }
+  return elev
 }
 
 /**
@@ -252,9 +302,7 @@ export async function loadTerrain(bbox, { zoom = 12, fetchImpl = fetch, urlTempl
     if (!tile) return null
     const lx = clamp(gx - tx * tileSize, 0, tile.width - 1)
     const ly = clamp(gy - ty * tileSize, 0, tile.height - 1)
-    const i = (ly * tile.width + lx) * 4
-    const d = tile.data
-    return decodeTerrarium(d[i], d[i + 1], d[i + 2])
+    return tile.elev[ly * tile.width + lx]
   }
 
   /**

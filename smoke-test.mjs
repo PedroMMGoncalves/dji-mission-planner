@@ -18,7 +18,7 @@ import {
 } from './src/utils/geo.js'
 import { buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
-import { decodeTerrarium, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
+import { decodeTerrarium, despikeElevations, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
 
 let failures = 0
 function check(name, cond, extra = '') {
@@ -351,6 +351,20 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
     check('elevMin/Max do terreno coerentes', tf.elevMin >= 145 && tf.elevMax <= 255,
       `${tf.elevMin.toFixed(0)}–${tf.elevMax.toFixed(0)}`)
   }
+}
+
+/* 8k. Filtro anti-picos do terreno */
+{
+  const w = 8
+  const h = 8
+  const grid = new Float32Array(w * h).fill(200)
+  grid[3 * w + 3] = 900 // pico isolado (erro de descodificação)
+  for (let y = 0; y < h; y++) grid[y * w + 5] = 400 // crista real (coluna contínua)
+  despikeElevations(grid, w, h)
+  check('pico isolado removido', Math.abs(grid[3 * w + 3] - 200) < 1, grid[3 * w + 3])
+  let cristaOk = true
+  for (let y = 1; y < h - 1; y++) if (grid[y * w + 5] !== 400) cristaOk = false
+  check('crista real preservada', cristaOk)
 }
 
 /* 9. Trava de segurança */
