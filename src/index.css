@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* O mapa Leaflet fica escuro por defeito enquanto os tiles carregam */
+.leaflet-container {
+  background: #0f172a;
+}
+
+/* Cursor de mira nos modos de desenho */
+.leaflet-container.cursor-crosshair {
+  cursor: crosshair;
+}
+
+/* Vértices editáveis do polígono */
+.vertex-handle {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: #38bdf8;
+  border: 2px solid #0f172a;
+  box-shadow: 0 0 0 1px #38bdf8;
+}
+
+.anchor-handle {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #f59e0b;
+  border: 2px solid #0f172a;
+  box-shadow: 0 0 0 1px #f59e0b;
+}
+
+/* Pontos intermédios das arestas — arrastar insere um vértice */
+.midpoint-handle {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 2px solid #38bdf8;
+  opacity: 0.75;
+}
+
+/* Etiquetas dos municípios (CAOP), dependentes da escala */
+.caop-label {
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 0 3px #14532d,
+    0 1px 2px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
+/* Marca ✕ nas células do mosaico desativadas */
+.tile-off-label {
+  transform: translate(-50%, -50%);
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Alvos GCP planeados */
+.gcp-target {
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid #0f172a;
+  border-radius: 2px;
+  background: conic-gradient(#fff 0 25%, #111 25% 50%, #fff 50% 75%, #111 75%);
+  box-shadow: 0 0 0 1.5px #fde047;
+}
+.gcp-label {
+  position: absolute;
+  top: 11px;
+  left: 0;
+  transform: translateX(-50%);
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fde047;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Números dos blocos de voo */
+.block-label span {
+  display: inline-block;
+  transform: translate(-50%, -50%);
+  min-width: 22px;
+  text-align: center;
+  padding: 1px 5px;
+  border-radius: 9999px;
+  border: 2px solid;
+  background: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Controlo de camadas Leaflet em dark mode */
+.leaflet-control-layers,
+.leaflet-bar a {
+  background: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #334155 !important;
+}
+.leaflet-bar a:hover {
+  background: #334155 !important;
+}
+
+input[type='range'] {
+  accent-color: #38bdf8;
+}
