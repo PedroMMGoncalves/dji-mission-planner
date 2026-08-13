@@ -16,7 +16,9 @@ import * as turf from '@turf/turf'
 
 const M_PER_DEG_LAT = 110574 // metros por grau de latitude (aprox. WGS84)
 const RECT_MARGIN_M = 20 // folga do retângulo de recurso (pontos colineares)
-const MIN_HULL_AREA_M2 = 0.01 // abaixo disto o invólucro é degenerado
+// Um invólucro é degenerado quando a sua área é ínfima face à extensão dos
+// pontos (lâmina de pontos quase-colineares): exige-se ≥ 5% da área da bbox.
+const MIN_HULL_BBOX_RATIO = 0.05
 
 function metersPerDegLon(lat) {
   return Math.max(1, 111320 * Math.cos((lat * Math.PI) / 180))
@@ -223,7 +225,13 @@ function buildRing(waypoints) {
   try {
     const hull = turf.convex(turf.featureCollection(waypoints.map((p) => turf.point(p))))
     const coords = hull?.geometry?.coordinates?.[0]
-    if (coords && coords.length >= 4 && turf.area(hull) > MIN_HULL_AREA_M2) {
+    const bboxArea = turf.area(turf.bboxPolygon(turf.bbox(hull ?? turf.featureCollection([]))))
+    if (
+      coords &&
+      coords.length >= 4 &&
+      bboxArea > 0 &&
+      turf.area(hull) > bboxArea * MIN_HULL_BBOX_RATIO
+    ) {
       const ring = dropClosingVertex(coords.map((c) => [c[0], c[1]]))
       if (ring.length >= 3) return ring
     }
