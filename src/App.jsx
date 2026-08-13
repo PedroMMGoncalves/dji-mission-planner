@@ -863,27 +863,6 @@ function AppInner({ lang, setLang }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex overflow-hidden rounded border border-slate-700">
-            {LANGS.map(({ code, flag, label }) => (
-              <button
-                key={code}
-                onClick={() => setLang(code)}
-                title={label}
-                className={`px-2 py-1 text-base leading-none transition-colors ${
-                  lang === code ? 'bg-slate-700' : 'opacity-50 hover:opacity-90'
-                }`}
-              >
-                {flag}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={() => setShowHelp(true)}
-            title={t('app.helpTitle')}
-            className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
-          >
-            ?
-          </button>
           <button
             onClick={() => setShow3d(true)}
             disabled={!(terrain.status === 'ready' && terrainCovers && planOk)}
@@ -917,6 +896,31 @@ function AppInner({ lang, setLang }) {
           >
             <IconDownload /> {t('app.exportWpml')}
           </button>
+
+          {/* ajuda e língua encostados à direita */}
+          <div className="ml-3 flex items-center gap-2 border-l border-slate-800 pl-3">
+            <button
+              onClick={() => setShowHelp(true)}
+              title={t('app.helpTitle')}
+              className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
+            >
+              ?
+            </button>
+            <div className="flex overflow-hidden rounded border border-slate-700">
+              {LANGS.map(({ code, flag, label }) => (
+                <button
+                  key={code}
+                  onClick={() => setLang(code)}
+                  title={label}
+                  className={`px-2 py-1 text-base leading-none transition-colors ${
+                    lang === code ? 'bg-slate-700' : 'opacity-50 hover:opacity-90'
+                  }`}
+                >
+                  {flag}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 
