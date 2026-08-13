@@ -96,6 +96,35 @@ export function IconCheck({ className }) {
   )
 }
 
+/** Montanhas — terreno/relevo. */
+export function IconMountain({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M3 18.5 9 7l4 6.5 3-4.5 5 9.5Z" />
+      <path d="M7.5 12.5 9 10.5l1.5 2" />
+    </Svg>
+  )
+}
+
+/** Cubo isométrico — vista 3D. */
+export function IconCube({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M12 2.8 20.3 7.4v9.2L12 21.2l-8.3-4.6V7.4Z" />
+      <path d="M12 12 20.3 7.4M12 12 3.7 7.4M12 12v9.2" />
+    </Svg>
+  )
+}
+
+/** Pasta — abrir/importar ficheiros. */
+export function IconFolder({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M3.5 7A1.5 1.5 0 0 1 5 5.5h4.2l2 2.3H19A1.5 1.5 0 0 1 20.5 9.3v8.2A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5Z" />
+    </Svg>
+  )
+}
+
 /** SVG standalone (string) para o marcador da base no mapa Leaflet. */
 export const BASE_MARKER_HTML = `
 <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#f59e0b" stroke-width="1.8"

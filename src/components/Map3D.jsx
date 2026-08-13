@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { useT } from '../i18n.jsx'
 
 /**
  * VISUALIZADOR 3D DA MISSÃO
@@ -171,6 +172,7 @@ const EXAG_OPTIONS = [
 ]
 
 export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gcps, onClose }) {
+  const t = useT()
   const hostRef = useRef(null)
   const apiRef = useRef(null) // { applyExaggeration, resetView } da cena viva
   const propsRef = useRef(null)
@@ -621,10 +623,10 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
   return (
     <div className="fixed inset-0 z-[2000] flex flex-col bg-slate-950">
       <div className="flex items-center gap-3 border-b border-slate-800 bg-slate-950/90 px-3 py-2">
-        <span className="text-sm font-semibold text-slate-100">Vista 3D</span>
+        <span className="text-sm font-semibold text-slate-100">{t('map3d.title')}</span>
         {hasTerrain && <span className="hidden text-xs text-slate-500 sm:inline">{status}</span>}
         <div className="ml-auto flex items-center gap-2">
-          <span className="hidden text-xs text-slate-400 sm:inline">Exagero vertical</span>
+          <span className="hidden text-xs text-slate-400 sm:inline">{t('map3d.exaggeration')}</span>
           <div className="flex overflow-hidden rounded border border-slate-700">
             {EXAG_OPTIONS.map((opt) => (
               <button
@@ -642,10 +644,10 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
             ))}
           </div>
           <button type="button" className={BTN} onClick={() => apiRef.current?.resetView()}>
-            ↺ Repor vista
+            {t('map3d.reset')}
           </button>
           <button type="button" className={BTN} onClick={onClose}>
-            ✕ Fechar
+            {t('map3d.close')}
           </button>
         </div>
       </div>

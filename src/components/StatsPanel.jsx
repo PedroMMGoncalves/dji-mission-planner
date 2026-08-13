@@ -1,3 +1,5 @@
+import { useT } from '../i18n.jsx'
+
 /** Painel de métricas calculadas, sobreposto ao mapa (canto inferior direito). */
 
 function fmtDist(m) {
@@ -22,22 +24,23 @@ function Stat({ label, value }) {
 }
 
 export default function StatsPanel({ gsd, footprint, spacing, interval, triggerMode, speed, stats, baseDistance, blockCount }) {
+  const t = useT()
   return (
     <div className="pointer-events-none absolute bottom-4 right-4 z-[1000] grid max-w-md grid-cols-2 gap-1.5 sm:grid-cols-3">
-      <Stat label="GSD" value={gsd != null ? `${gsd.toFixed(2)} cm/px` : '—'} />
+      <Stat label={t('stats.gsd')} value={gsd != null ? `${gsd.toFixed(2)} cm/px` : '—'} />
       <Stat
-        label="Pegada no chão"
+        label={t('stats.footprint')}
         value={
           footprint
             ? footprint.along != null
               ? `${footprint.across.toFixed(0)} × ${footprint.along.toFixed(0)} m`
-              : `faixa ${footprint.across.toFixed(0)} m`
+              : t('stats.swath', { v: footprint.across.toFixed(0) })
             : '—'
         }
       />
-      <Stat label="Espaç. faixas" value={spacing != null ? `${spacing.toFixed(1)} m` : '—'} />
+      <Stat label={t('stats.spacing')} value={spacing != null ? `${spacing.toFixed(1)} m` : '—'} />
       <Stat
-        label="Intervalo disparo"
+        label={t('stats.interval')}
         value={
           interval != null
             ? triggerMode === 'time'
@@ -46,19 +49,19 @@ export default function StatsPanel({ gsd, footprint, spacing, interval, triggerM
             : '—'
         }
       />
-      <Stat label="Área" value={stats ? `${stats.areaHa.toFixed(2)} ha` : '—'} />
-      <Stat label="Nº de faixas" value={stats ? stats.lineCount : '—'} />
-      <Stat label="Waypoints" value={stats ? stats.waypointCount : '—'} />
-      <Stat label="Distância total" value={stats ? fmtDist(stats.pathLengthM) : '—'} />
-      <Stat label="Nº de fotos" value={stats?.photoCount ?? '—'} />
-      <Stat label="Tempo estimado" value={stats ? fmtTime(stats.flightTimeS) : '—'} />
+      <Stat label={t('stats.area')} value={stats ? `${stats.areaHa.toFixed(2)} ha` : '—'} />
+      <Stat label={t('stats.lines')} value={stats ? stats.lineCount : '—'} />
+      <Stat label={t('stats.waypoints')} value={stats ? stats.waypointCount : '—'} />
+      <Stat label={t('stats.totalDist')} value={stats ? fmtDist(stats.pathLengthM) : '—'} />
+      <Stat label={t('stats.photos')} value={stats?.photoCount ?? '—'} />
+      <Stat label={t('stats.time')} value={stats ? fmtTime(stats.flightTimeS) : '—'} />
       {baseDistance != null && (
         <Stat
-          label="Base → área"
-          value={baseDistance === 0 ? 'dentro da área' : fmtDist(baseDistance)}
+          label={t('stats.baseToArea')}
+          value={baseDistance === 0 ? t('stats.insideArea') : fmtDist(baseDistance)}
         />
       )}
-      {blockCount != null && <Stat label="Blocos de voo" value={blockCount} />}
+      {blockCount != null && <Stat label={t('stats.blocks')} value={blockCount} />}
     </div>
   )
 }

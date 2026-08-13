@@ -1,12 +1,34 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLang } from '../i18n.jsx'
 
 /* ------------------------------------------------------------------ *
  * Checklist de campo UAV — pré-campo, durante, pós-campo + relatório.
  * Persistência local automática, exportação JSON e impressão (A4).
+ *
+ * Bilingue PT/EN com dicionário interno: o conteúdo é longo e muito
+ * estruturado, pelo que cada texto vive junto do item a que pertence
+ * como par `{ pt, en }`. As chaves de estado (checks) usam índices
+ * fase/grupo/item e são, por isso, independentes da língua ativa.
  * ------------------------------------------------------------------ */
 
 const STORAGE_KEY = 'dji-mission-planner:checklist:v1'
 const SAVE_DELAY_MS = 400
+
+/** Par bilingue PT/EN. */
+const bi = (pt, en) => ({ pt, en })
+
+/** Resolve um par bilingue (ou string simples) na língua pedida. */
+const tr = (v, lang) => {
+  if (v == null) return ''
+  if (typeof v === 'string') return v
+  return v[lang] ?? v.pt ?? ''
+}
+
+/** Hook de conveniência: `const L = useL()` e depois `L(par)`. */
+function useL() {
+  const lang = useLang()
+  return (v) => tr(v, lang)
+}
 
 /** Atalho para declarar um item: texto, nota opcional, crítico opcional. */
 const it = (texto, nota = null, critico = false) => ({ texto, nota, critico })
@@ -14,217 +36,517 @@ const it = (texto, nota = null, critico = false) => ({ texto, nota, critico })
 const FASES = [
   {
     id: 'pre',
-    titulo: 'Pré-campo',
+    titulo: bi('Pré-campo', 'Pre-field'),
     grupos: [
       {
-        titulo: 'Plataforma',
+        titulo: bi('Plataforma', 'Platform'),
         itens: [
           it(
-            'Inspeção visual — fuselagem, braços, hélices',
-            'Fissuras, folgas, danos físicos',
+            bi(
+              'Inspeção visual — fuselagem, braços, hélices',
+              'Visual inspection — airframe, arms, propellers',
+            ),
+            bi('Fissuras, folgas, danos físicos', 'Cracks, play, physical damage'),
             true,
           ),
-          it('Hélices fixas com sentido correto por motor', null, true),
-          it('Motores livres de detritos, sem ruído anormal'),
-          it('Sistema de aterragem / patins verificado'),
-        ],
-      },
-      {
-        titulo: 'Software e firmware',
-        itens: [
           it(
-            'Firmware do UAV atualizado — versão estável',
-            'Não atualizar em campo, apenas em base',
-            true,
-          ),
-          it('Software de missão atualizado', 'DJI Pilot 2'),
-          it(
-            'Software de processamento testado e licenças válidas',
-            'WebODM, Pix4D, Metashape',
-          ),
-          it(
-            'Plano de voo carregado e validado',
-            'Overlap lateral ≥ 70%, frontal ≥ 80%',
-            true,
-          ),
-        ],
-      },
-      {
-        titulo: 'Energia',
-        itens: [
-          it('Baterias de voo ≥ 95% — tensão por célula ok', null, true),
-          it('Bateria do comando e tablet carregadas'),
-          it('Baterias reserva em bolsa LiPo anti-chama'),
-          it('Carregador de campo + powerbank disponíveis'),
-          it(
-            'Gerador verificado com combustível',
-            'Missões em áreas remotas sem rede elétrica',
-          ),
-        ],
-      },
-      {
-        titulo: 'Câmara / Sensor',
-        itens: [
-          it(
-            'Cartões SD formatados na câmara, capacidade suficiente + extras',
+            bi(
+              'Hélices fixas com sentido correto por motor',
+              'Propellers secured with correct rotation per motor',
+            ),
             null,
             true,
           ),
-          it('Lente limpa — sem poeira ou impressões digitais'),
-          it('Parâmetros da câmara configurados', 'ISO, obturador'),
-          it('Gimbal desbloqueado com movimentação livre'),
           it(
-            'Painel radiométrico incluído',
-            'Multiespectral: fotografar antes e depois do voo',
+            bi(
+              'Motores livres de detritos, sem ruído anormal',
+              'Motors free of debris, no abnormal noise',
+            ),
+          ),
+          it(
+            bi(
+              'Sistema de aterragem / patins verificado',
+              'Landing gear / skids checked',
+            ),
           ),
         ],
       },
       {
-        titulo: 'Referenciação',
+        titulo: bi('Software e firmware', 'Software and firmware'),
         itens: [
           it(
-            'Sistema de referência e datum definidos e documentados',
-            'WGS84 / PT-TM06',
-          ),
-          it('Equipamento GNSS/RTK preparado e testado'),
-          it(
-            'Targets GCP preparados e identificados',
-            'Contraste com o terreno; mínimo 5 por bloco',
-          ),
-          it('Cartografia de base da área disponível'),
-        ],
-      },
-      {
-        titulo: 'Plano de voo e segurança',
-        itens: [
-          it('Altitude de segurança acima de obstáculos definida'),
-          it('Autonomia estimada com margem de retorno ≥ 30%'),
-          it('Autorização de voo / NOTAM obtida', null, true),
-          it(
-            'Previsão meteorológica consultada',
-            'Vento ≤ 10 m/s, sem chuva, boa visibilidade',
+            bi(
+              'Firmware do UAV atualizado — versão estável',
+              'UAV firmware up to date — stable release',
+            ),
+            bi(
+              'Não atualizar em campo, apenas em base',
+              'Do not update in the field, only at base',
+            ),
             true,
           ),
-          it('Briefing de segurança à equipa preparado'),
+          it(
+            bi(
+              'Software de missão atualizado',
+              'Mission planning software up to date',
+            ),
+            bi('DJI Pilot 2', 'DJI Pilot 2'),
+          ),
+          it(
+            bi(
+              'Software de processamento testado e licenças válidas',
+              'Processing software tested and licences valid',
+            ),
+            bi('WebODM, Pix4D, Metashape', 'WebODM, Pix4D, Metashape'),
+          ),
+          it(
+            bi(
+              'Plano de voo carregado e validado',
+              'Flight plan uploaded and validated',
+            ),
+            bi(
+              'Overlap lateral ≥ 70%, frontal ≥ 80%',
+              'Side overlap ≥ 70%, forward overlap ≥ 80%',
+            ),
+            true,
+          ),
+        ],
+      },
+      {
+        titulo: bi('Energia', 'Power'),
+        itens: [
+          it(
+            bi(
+              'Baterias de voo ≥ 95% — tensão por célula ok',
+              'Flight batteries ≥ 95% — cell voltage OK',
+            ),
+            null,
+            true,
+          ),
+          it(
+            bi(
+              'Bateria do comando e tablet carregadas',
+              'Remote controller and tablet batteries charged',
+            ),
+          ),
+          it(
+            bi(
+              'Baterias reserva em bolsa LiPo anti-chama',
+              'Spare batteries in fireproof LiPo bag',
+            ),
+          ),
+          it(
+            bi(
+              'Carregador de campo + powerbank disponíveis',
+              'Field charger + power bank available',
+            ),
+          ),
+          it(
+            bi('Gerador verificado com combustível', 'Generator checked and fuelled'),
+            bi(
+              'Missões em áreas remotas sem rede elétrica',
+              'Missions in remote areas with no mains power',
+            ),
+          ),
+        ],
+      },
+      {
+        titulo: bi('Câmara / Sensor', 'Camera / Sensor'),
+        itens: [
+          it(
+            bi(
+              'Cartões SD formatados na câmara, capacidade suficiente + extras',
+              'SD cards formatted in the camera, sufficient capacity + spares',
+            ),
+            null,
+            true,
+          ),
+          it(
+            bi(
+              'Lente limpa — sem poeira ou impressões digitais',
+              'Lens clean — no dust or fingerprints',
+            ),
+          ),
+          it(
+            bi('Parâmetros da câmara configurados', 'Camera settings configured'),
+            bi('ISO, obturador', 'ISO, shutter speed'),
+          ),
+          it(
+            bi(
+              'Gimbal desbloqueado com movimentação livre',
+              'Gimbal unlocked and moving freely',
+            ),
+          ),
+          it(
+            bi('Painel radiométrico incluído', 'Radiometric panel packed'),
+            bi(
+              'Multiespectral: fotografar antes e depois do voo',
+              'Multispectral: photograph before and after the flight',
+            ),
+          ),
+        ],
+      },
+      {
+        titulo: bi('Referenciação', 'Georeferencing'),
+        itens: [
+          it(
+            bi(
+              'Sistema de referência e datum definidos e documentados',
+              'Reference system and datum defined and documented',
+            ),
+            bi('WGS84 / PT-TM06', 'WGS84 / PT-TM06'),
+          ),
+          it(
+            bi(
+              'Equipamento GNSS/RTK preparado e testado',
+              'GNSS/RTK equipment prepared and tested',
+            ),
+          ),
+          it(
+            bi(
+              'Targets GCP preparados e identificados',
+              'GCP targets prepared and labelled',
+            ),
+            bi(
+              'Contraste com o terreno; mínimo 5 por bloco',
+              'Contrast against the ground; minimum 5 per block',
+            ),
+          ),
+          it(
+            bi(
+              'Cartografia de base da área disponível',
+              'Base mapping of the area available',
+            ),
+          ),
+        ],
+      },
+      {
+        titulo: bi('Plano de voo e segurança', 'Flight plan and safety'),
+        itens: [
+          it(
+            bi(
+              'Altitude de segurança acima de obstáculos definida',
+              'Safe altitude above obstacles defined',
+            ),
+          ),
+          it(
+            bi(
+              'Autonomia estimada com margem de retorno ≥ 30%',
+              'Estimated endurance with ≥ 30% return margin',
+            ),
+          ),
+          it(
+            bi(
+              'Autorização de voo / NOTAM obtida',
+              'Flight authorisation / NOTAM obtained',
+            ),
+            null,
+            true,
+          ),
+          it(
+            bi('Previsão meteorológica consultada', 'Weather forecast checked'),
+            bi(
+              'Vento ≤ 10 m/s, sem chuva, boa visibilidade',
+              'Wind ≤ 10 m/s, no rain, good visibility',
+            ),
+            true,
+          ),
+          it(
+            bi(
+              'Briefing de segurança à equipa preparado',
+              'Safety briefing for the crew prepared',
+            ),
+          ),
         ],
       },
     ],
   },
   {
     id: 'durante',
-    titulo: 'Durante',
+    titulo: bi('Durante', 'In-field'),
     grupos: [
       {
-        titulo: 'Chegada ao local',
+        titulo: bi('Chegada ao local', 'Arrival on site'),
         itens: [
           it(
-            'Reconhecimento visual da área',
-            'Obstáculos, linhas de alta tensão, espaço aéreo',
+            bi('Reconhecimento visual da área', 'Visual survey of the area'),
+            bi(
+              'Obstáculos, linhas de alta tensão, espaço aéreo',
+              'Obstacles, high-voltage power lines, airspace',
+            ),
           ),
-          it('Zona de exclusão demarcada e briefing feito'),
-          it('GCPs colocados e coordenadas registadas', null, true),
-          it('Calibração IMU se necessário', 'novo local'),
-          it('Calibração da bússola se necessário', 'Obrigatório após transporte longo'),
-          it('Painel radiométrico fotografado antes do voo'),
+          it(
+            bi(
+              'Zona de exclusão demarcada e briefing feito',
+              'Exclusion zone marked out and briefing delivered',
+            ),
+          ),
+          it(
+            bi(
+              'GCPs colocados e coordenadas registadas',
+              'GCPs laid out and coordinates recorded',
+            ),
+            null,
+            true,
+          ),
+          it(
+            bi('Calibração IMU se necessário', 'IMU calibration if required'),
+            bi('novo local', 'new site'),
+          ),
+          it(
+            bi('Calibração da bússola se necessário', 'Compass calibration if required'),
+            bi(
+              'Obrigatório após transporte longo',
+              'Mandatory after long-distance transport',
+            ),
+          ),
+          it(
+            bi(
+              'Painel radiométrico fotografado antes do voo',
+              'Radiometric panel photographed before flight',
+            ),
+          ),
         ],
       },
       {
-        titulo: 'Descolagem',
+        titulo: bi('Descolagem', 'Take-off'),
         itens: [
-          it('Sinal GNSS estável', '≥ 12 satélites, HDOP < 1.5', true),
-          it('Home Point definido e confirmado', null, true),
-          it('Nível de bateria confirmado antes de armar'),
-          it('Área de descolagem livre de pessoas e obstáculos', null, true),
-          it('Hover 30 s após descolagem — comportamento normal', null, true),
-          it('Hora de início registada'),
+          it(
+            bi('Sinal GNSS estável', 'GNSS signal stable'),
+            bi('≥ 12 satélites, HDOP < 1.5', '≥ 12 satellites, HDOP < 1.5'),
+            true,
+          ),
+          it(
+            bi('Home Point definido e confirmado', 'Home Point set and confirmed'),
+            null,
+            true,
+          ),
+          it(
+            bi(
+              'Nível de bateria confirmado antes de armar',
+              'Battery level confirmed before arming',
+            ),
+          ),
+          it(
+            bi(
+              'Área de descolagem livre de pessoas e obstáculos',
+              'Take-off area clear of people and obstacles',
+            ),
+            null,
+            true,
+          ),
+          it(
+            bi(
+              'Hover 30 s após descolagem — comportamento normal',
+              'Hover 30 s after take-off — behaviour normal',
+            ),
+            null,
+            true,
+          ),
+          it(bi('Hora de início registada', 'Start time recorded')),
         ],
       },
       {
-        titulo: 'Monitorização em voo',
+        titulo: bi('Monitorização em voo', 'In-flight monitoring'),
         itens: [
-          it('Bateria monitorizada — retorno se < 30%', null, true),
-          it('Sinal de telemetria e RC estáveis'),
-          it('Câmara a capturar', 'live feed confirmado'),
-          it('Meteorologia reavaliada em voo'),
-          it('Espaço aéreo monitorizado'),
-          it('Anomalias registadas em tempo real'),
+          it(
+            bi(
+              'Bateria monitorizada — retorno se < 30%',
+              'Battery monitored — return home if < 30%',
+            ),
+            null,
+            true,
+          ),
+          it(
+            bi('Sinal de telemetria e RC estáveis', 'Telemetry and RC links stable'),
+          ),
+          it(
+            bi('Câmara a capturar', 'Camera capturing'),
+            bi('live feed confirmado', 'live feed confirmed'),
+          ),
+          it(bi('Meteorologia reavaliada em voo', 'Weather reassessed during flight')),
+          it(bi('Espaço aéreo monitorizado', 'Airspace monitored')),
+          it(
+            bi('Anomalias registadas em tempo real', 'Anomalies logged in real time'),
+          ),
         ],
       },
       {
-        titulo: 'Aterragem',
+        titulo: bi('Aterragem', 'Landing'),
         itens: [
-          it('Confirmar bateria antes do retorno'),
-          it('Zona de aterragem livre e visível'),
-          it('Motores desarmados após aterragem completa', null, true),
-          it('Hora de fim e duração registadas'),
+          it(
+            bi('Confirmar bateria antes do retorno', 'Confirm battery before return leg'),
+          ),
+          it(
+            bi('Zona de aterragem livre e visível', 'Landing zone clear and in sight'),
+          ),
+          it(
+            bi(
+              'Motores desarmados após aterragem completa',
+              'Motors disarmed after touchdown is complete',
+            ),
+            null,
+            true,
+          ),
+          it(
+            bi('Hora de fim e duração registadas', 'End time and duration recorded'),
+          ),
         ],
       },
       {
-        titulo: 'Entre voos',
+        titulo: bi('Entre voos', 'Between flights'),
         itens: [
-          it('Substituição de bateria — registar ID'),
-          it('Verificação rápida de câmara e cartão SD'),
-          it('Painel radiométrico refotografado se a luz mudou'),
-          it('Plano do voo seguinte confirmado', 'sem gaps'),
-          it('Inspeção visual rápida da plataforma'),
+          it(bi('Substituição de bateria — registar ID', 'Battery swap — record ID')),
+          it(
+            bi(
+              'Verificação rápida de câmara e cartão SD',
+              'Quick check of camera and SD card',
+            ),
+          ),
+          it(
+            bi(
+              'Painel radiométrico refotografado se a luz mudou',
+              'Radiometric panel re-photographed if the light changed',
+            ),
+          ),
+          it(
+            bi('Plano do voo seguinte confirmado', 'Next flight plan confirmed'),
+            bi('sem gaps', 'no gaps'),
+          ),
+          it(
+            bi(
+              'Inspeção visual rápida da plataforma',
+              'Quick visual inspection of the aircraft',
+            ),
+          ),
         ],
       },
     ],
   },
   {
     id: 'pos',
-    titulo: 'Pós-campo',
+    titulo: bi('Pós-campo', 'Post-field'),
     grupos: [
       {
-        titulo: 'Backup imediato',
+        titulo: bi('Backup imediato', 'Immediate backup'),
         itens: [
           it(
-            'Imagens copiadas para disco externo no campo',
-            '3-2-1: 3 cópias, 2 suportes, 1 offsite',
+            bi(
+              'Imagens copiadas para disco externo no campo',
+              'Images copied to an external drive in the field',
+            ),
+            bi(
+              '3-2-1: 3 cópias, 2 suportes, 1 offsite',
+              '3-2-1: 3 copies, 2 media types, 1 offsite',
+            ),
             true,
           ),
-          it('Nº de imagens verificado vs. plano', null, true),
-          it('Logs de voo exportados'),
-          it('Coordenadas GNSS/RTK dos GCPs exportadas'),
-          it('Cartões SD sem formatar até backup confirmado'),
-        ],
-      },
-      {
-        titulo: 'Controlo de qualidade',
-        itens: [
-          it('Amostra de imagens inspecionada', 'blur, exposição'),
-          it('Metadados EXIF verificados', 'GPS, timestamp'),
-          it('Painel radiométrico pós-voo fotografado'),
-          it('Cobertura confirmada sem gaps'),
-        ],
-      },
-      {
-        titulo: 'Plataforma e energia',
-        itens: [
-          it('Inspeção pós-voo', 'hélices, motores, estrutura'),
-          it('Lente e sensor limpos'),
           it(
-            'Baterias a 40–60% para armazenamento',
-            'LiPo degradam a 100% ou 0% prolongados',
+            bi(
+              'Nº de imagens verificado vs. plano',
+              'Image count checked against the plan',
+            ),
+            null,
             true,
           ),
-          it('Baterias em local fresco e seco'),
-          it('Inchamento/aquecimento anormal reportado', null, true),
-          it('Ciclos por bateria atualizados no registo'),
+          it(bi('Logs de voo exportados', 'Flight logs exported')),
+          it(
+            bi(
+              'Coordenadas GNSS/RTK dos GCPs exportadas',
+              'GNSS/RTK coordinates of the GCPs exported',
+            ),
+          ),
+          it(
+            bi(
+              'Cartões SD sem formatar até backup confirmado',
+              'SD cards left unformatted until backup is confirmed',
+            ),
+          ),
         ],
       },
       {
-        titulo: 'Documentação',
+        titulo: bi('Controlo de qualidade', 'Quality control'),
         itens: [
-          it('Diário de voo preenchido'),
-          it('Condições meteo registadas'),
-          it('Incidentes documentados'),
           it(
-            'Estrutura de pastas criada',
-            'YYYYMMDD_LOCAL_SENSOR_RAW / PROCESSED',
+            bi('Amostra de imagens inspecionada', 'Sample of images inspected'),
+            bi('blur, exposição', 'blur, exposure'),
           ),
-          it('Dados sincronizados para servidor'),
-          it('Inventário conferido', 'saída = chegada'),
+          it(
+            bi('Metadados EXIF verificados', 'EXIF metadata checked'),
+            bi('GPS, timestamp', 'GPS, timestamp'),
+          ),
+          it(
+            bi(
+              'Painel radiométrico pós-voo fotografado',
+              'Post-flight radiometric panel photographed',
+            ),
+          ),
+          it(
+            bi('Cobertura confirmada sem gaps', 'Coverage confirmed with no gaps'),
+          ),
+        ],
+      },
+      {
+        titulo: bi('Plataforma e energia', 'Platform and power'),
+        itens: [
+          it(
+            bi('Inspeção pós-voo', 'Post-flight inspection'),
+            bi('hélices, motores, estrutura', 'propellers, motors, airframe'),
+          ),
+          it(bi('Lente e sensor limpos', 'Lens and sensor cleaned')),
+          it(
+            bi(
+              'Baterias a 40–60% para armazenamento',
+              'Batteries at 40–60% for storage',
+            ),
+            bi(
+              'LiPo degradam a 100% ou 0% prolongados',
+              'LiPo cells degrade if left at 100% or 0% for long periods',
+            ),
+            true,
+          ),
+          it(
+            bi(
+              'Baterias em local fresco e seco',
+              'Batteries stored in a cool, dry place',
+            ),
+          ),
+          it(
+            bi(
+              'Inchamento/aquecimento anormal reportado',
+              'Swelling or abnormal heating reported',
+            ),
+            null,
+            true,
+          ),
+          it(
+            bi(
+              'Ciclos por bateria atualizados no registo',
+              'Cycle count per battery updated in the log',
+            ),
+          ),
+        ],
+      },
+      {
+        titulo: bi('Documentação', 'Documentation'),
+        itens: [
+          it(bi('Diário de voo preenchido', 'Flight logbook completed')),
+          it(bi('Condições meteo registadas', 'Weather conditions recorded')),
+          it(bi('Incidentes documentados', 'Incidents documented')),
+          it(
+            bi('Estrutura de pastas criada', 'Folder structure created'),
+            bi(
+              'YYYYMMDD_LOCAL_SENSOR_RAW / PROCESSED',
+              'YYYYMMDD_SITE_SENSOR_RAW / PROCESSED',
+            ),
+          ),
+          it(
+            bi('Dados sincronizados para servidor', 'Data synchronised to the server'),
+          ),
+          it(
+            bi('Inventário conferido', 'Inventory checked'),
+            bi('saída = chegada', 'out = back'),
+          ),
         ],
       },
     ],
@@ -253,44 +575,103 @@ const ACENTOS = {
   },
 }
 
+/** Strings de interface — dicionário interno a esta página. */
+const UI = {
+  back: bi('← Voltar ao planeador', '← Back to planner'),
+  title: bi('Checklist de Campo UAV', 'UAV Field Checklist'),
+  subtitle: bi(
+    'Pré-campo · Durante · Pós-campo + Relatório de missão',
+    'Pre-field · In-field · Post-field + Mission report',
+  ),
+  exportJson: bi('Exportar JSON', 'Export JSON'),
+  printFilled: bi('Imprimir preenchido', 'Print filled in'),
+  printBlank: bi('Imprimir em branco', 'Print blank'),
+  clear: bi('Limpar', 'Clear'),
+  clearConfirm: bi(
+    'Limpar toda a checklist, tabelas e notas? Esta ação não pode ser anulada.',
+    'Clear the whole checklist, tables and notes? This action cannot be undone.',
+  ),
+  missionSection: bi('Identificação da missão', 'Mission identification'),
+  flightsSection: bi('Registo de voos', 'Flight log'),
+  gcpSection: bi('Pontos de controlo — GCPs', 'Ground control points — GCPs'),
+  notesSection: bi('Notas de missão', 'Mission notes'),
+  addFlight: bi('+ Voo', '+ Flight'),
+  addGcp: bi('+ GCP', '+ GCP'),
+  removeLast: bi('− Remover última', '− Remove last'),
+  emptyRows: bi('Sem linhas.', 'No rows.'),
+  importBlocks: bi('Importar blocos do plano', 'Import plan blocks'),
+  items: bi('itens', 'items'),
+  autosave: bi(
+    'Guardado automaticamente neste navegador.',
+    'Saved automatically in this browser.',
+  ),
+}
+
+const ASSINATURAS = [
+  bi('Piloto responsável', 'Pilot in command'),
+  bi('Supervisor técnico', 'Technical supervisor'),
+  bi('Validação de dados', 'Data validation'),
+]
+
 const CAMPOS_MISSAO = [
-  { key: 'operador', label: 'Operador / Piloto', placeholder: 'Nome' },
-  { key: 'missao', label: 'Missão / Projeto', placeholder: 'Designação' },
-  { key: 'local', label: 'Área / Local', placeholder: 'Local do levantamento' },
-  { key: 'plataforma', label: 'Plataforma UAV', placeholder: 'Modelo' },
-  { key: 'data', label: 'Data', placeholder: 'AAAA-MM-DD', type: 'date' },
+  {
+    key: 'operador',
+    label: bi('Operador / Piloto', 'Operator / Pilot'),
+    placeholder: bi('Nome', 'Name'),
+  },
+  {
+    key: 'missao',
+    label: bi('Missão / Projeto', 'Mission / Project'),
+    placeholder: bi('Designação', 'Designation'),
+  },
+  {
+    key: 'local',
+    label: bi('Área / Local', 'Area / Site'),
+    placeholder: bi('Local do levantamento', 'Survey site'),
+  },
+  {
+    key: 'plataforma',
+    label: bi('Plataforma UAV', 'UAV platform'),
+    placeholder: bi('Modelo', 'Model'),
+  },
+  {
+    key: 'data',
+    label: bi('Data', 'Date'),
+    placeholder: bi('AAAA-MM-DD', 'YYYY-MM-DD'),
+    type: 'date',
+  },
 ]
 
 const COLS_VOO = [
-  { key: 'n', label: '#', w: 'w-12' },
-  { key: 'inicio', label: 'Hora início', w: 'w-24' },
-  { key: 'fim', label: 'Hora fim', w: 'w-24' },
-  { key: 'duracao', label: 'Duração (min)', w: 'w-24' },
-  { key: 'baterias', label: 'Bateria(s)', w: 'w-28' },
-  { key: 'area', label: 'Área (ha)', w: 'w-24' },
-  { key: 'imagens', label: 'Nº imagens', w: 'w-24' },
-  { key: 'sensor', label: 'Sensor', w: 'w-32' },
-  { key: 'meteo', label: 'Meteo', w: 'w-32' },
-  { key: 'obs', label: 'Observações', w: 'w-64' },
+  { key: 'n', label: bi('#', '#'), w: 'w-12' },
+  { key: 'inicio', label: bi('Hora início', 'Start time'), w: 'w-24' },
+  { key: 'fim', label: bi('Hora fim', 'End time'), w: 'w-24' },
+  { key: 'duracao', label: bi('Duração (min)', 'Duration (min)'), w: 'w-24' },
+  { key: 'baterias', label: bi('Bateria(s)', 'Battery(ies)'), w: 'w-28' },
+  { key: 'area', label: bi('Área (ha)', 'Area (ha)'), w: 'w-24' },
+  { key: 'imagens', label: bi('Nº imagens', 'No. of images'), w: 'w-24' },
+  { key: 'sensor', label: bi('Sensor', 'Sensor'), w: 'w-32' },
+  { key: 'meteo', label: bi('Meteo', 'Weather'), w: 'w-32' },
+  { key: 'obs', label: bi('Observações', 'Remarks'), w: 'w-64' },
 ]
 
 const COLS_GCP = [
-  { key: 'n', label: '#', w: 'w-12' },
-  { key: 'ident', label: 'ID', w: 'w-24' },
-  { key: 'lat', label: 'Latitude', w: 'w-32' },
-  { key: 'lon', label: 'Longitude', w: 'w-32' },
-  { key: 'alt', label: 'Altitude (m)', w: 'w-24' },
-  { key: 'crs', label: 'Datum-CRS', w: 'w-32' },
-  { key: 'metodo', label: 'Método', w: 'w-28' },
-  { key: 'incerteza', label: 'Incerteza (m)', w: 'w-24' },
-  { key: 'obs', label: 'Observações', w: 'w-56' },
+  { key: 'n', label: bi('#', '#'), w: 'w-12' },
+  { key: 'ident', label: bi('ID', 'ID'), w: 'w-24' },
+  { key: 'lat', label: bi('Latitude', 'Latitude'), w: 'w-32' },
+  { key: 'lon', label: bi('Longitude', 'Longitude'), w: 'w-32' },
+  { key: 'alt', label: bi('Altitude (m)', 'Altitude (m)'), w: 'w-24' },
+  { key: 'crs', label: bi('Datum-CRS', 'Datum-CRS'), w: 'w-32' },
+  { key: 'metodo', label: bi('Método', 'Method'), w: 'w-28' },
+  { key: 'incerteza', label: bi('Incerteza (m)', 'Uncertainty (m)'), w: 'w-24' },
+  { key: 'obs', label: bi('Observações', 'Remarks'), w: 'w-56' },
 ]
 
 const CAMPOS_NOTAS = [
-  { key: 'anomalias', label: 'Anomalias e incidentes' },
-  { key: 'qualidade', label: 'Qualidade dos dados' },
-  { key: 'condicoes', label: 'Condições de campo' },
-  { key: 'seguimento', label: 'Ações de seguimento' },
+  { key: 'anomalias', label: bi('Anomalias e incidentes', 'Anomalies and incidents') },
+  { key: 'qualidade', label: bi('Qualidade dos dados', 'Data quality') },
+  { key: 'condicoes', label: bi('Condições de campo', 'Field conditions') },
+  { key: 'seguimento', label: bi('Ações de seguimento', 'Follow-up actions') },
 ]
 
 let seq = 0
@@ -375,6 +756,7 @@ function Celula({ value, onChange }) {
 }
 
 function ItemChecklist({ item, feito, onToggle, acento }) {
+  const L = useL()
   return (
     <li>
       <button
@@ -396,7 +778,7 @@ function ItemChecklist({ item, feito, onToggle, acento }) {
               feito ? 'text-slate-500 line-through' : 'text-slate-200'
             }`}
           >
-            {item.texto}
+            {L(item.texto)}
             {item.critico && (
               <span className="chk-crit ml-1.5 inline-block rounded-sm border border-red-500/60 bg-red-500/10 px-1 align-middle font-mono text-[9px] font-bold uppercase tracking-wider text-red-400">
                 CRIT
@@ -405,7 +787,7 @@ function ItemChecklist({ item, feito, onToggle, acento }) {
           </span>
           {item.nota && (
             <span className="chk-note mt-0.5 block font-mono text-[10px] leading-tight text-slate-500">
-              {item.nota}
+              {L(item.nota)}
             </span>
           )}
         </span>
@@ -415,12 +797,13 @@ function ItemChecklist({ item, feito, onToggle, acento }) {
 }
 
 function BarraProgresso({ feitos, total, acento }) {
+  const L = useL()
   const pct = total ? Math.round((feitos / total) * 100) : 0
   return (
     <div className="mt-3 border-t border-slate-800 pt-3">
       <div className="mb-1 flex items-baseline justify-between font-mono text-[10px] text-slate-400">
         <span>
-          {feitos}/{total} itens
+          {feitos}/{total} {L(UI.items)}
         </span>
         <span>{pct}%</span>
       </div>
@@ -435,6 +818,7 @@ function BarraProgresso({ feitos, total, acento }) {
 }
 
 function ColunaFase({ fase, checked, onToggle }) {
+  const L = useL()
   const acento = ACENTOS[fase.id]
   const { feitos, total } = useMemo(() => {
     let f = 0
@@ -455,15 +839,15 @@ function ColunaFase({ fase, checked, onToggle }) {
         <h2
           className={`text-[11px] font-semibold uppercase tracking-widest ${acento.titulo}`}
         >
-          {fase.titulo}
+          {L(fase.titulo)}
         </h2>
       </div>
 
       <div className="flex-1 space-y-4">
         {fase.grupos.map((grupo, gi) => (
-          <div key={grupo.titulo} className="chk-grupo">
+          <div key={`${fase.id}.${gi}`} className="chk-grupo">
             <h3 className="mb-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
-              {grupo.titulo}
+              {L(grupo.titulo)}
             </h3>
             <ul className="space-y-0.5">
               {grupo.itens.map((item, ii) => {
@@ -499,15 +883,16 @@ function Tabela({
   minWidth,
   rotuloAdd,
 }) {
+  const L = useL()
   return (
     <section className="chk-bloco rounded-lg border border-slate-800 bg-slate-900 p-4">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <Titulo>{titulo}</Titulo>
+        <Titulo>{L(titulo)}</Titulo>
         <div className="no-print flex flex-wrap items-center gap-2">
           {extra}
-          <Botao onClick={onAdd}>{rotuloAdd}</Botao>
+          <Botao onClick={onAdd}>{L(rotuloAdd)}</Botao>
           <Botao onClick={onRemove} tom="aviso" disabled={linhas.length === 0}>
-            − Remover última
+            {L(UI.removeLast)}
           </Botao>
         </div>
       </div>
@@ -521,7 +906,7 @@ function Tabela({
                   key={c.key}
                   className={`border border-slate-800 bg-slate-950 px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-400 ${c.w}`}
                 >
-                  {c.label}
+                  {L(c.label)}
                 </th>
               ))}
             </tr>
@@ -544,7 +929,7 @@ function Tabela({
                   colSpan={cols.length}
                   className="border border-slate-800 px-2 py-3 text-center text-[12px] text-slate-600"
                 >
-                  Sem linhas.
+                  {L(UI.emptyRows)}
                 </td>
               </tr>
             )}
@@ -579,6 +964,9 @@ export default function ChecklistPage({
   blocks = [],
   onBack,
 }) {
+  const lang = useLang()
+  const L = (v) => tr(v, lang)
+
   const [hidratado, setHidratado] = useState(false)
   const [checked, setChecked] = useState({})
   const [missao, setMissao] = useState(() => ({
@@ -675,8 +1063,10 @@ export default function ChecklistPage({
       const itens = []
       fase.grupos.forEach((g, gi) => {
         g.itens.forEach((item, ii) => {
+          const texto = tr(item.texto, lang)
+          const nota = tr(item.nota, lang)
           itens.push({
-            texto: item.nota ? `${item.texto} (${item.nota})` : item.texto,
+            texto: nota ? `${texto} (${nota})` : texto,
             concluido: !!checked[chaveItem(fase.id, gi, ii)],
             critico: !!item.critico,
           })
@@ -688,7 +1078,7 @@ export default function ChecklistPage({
       total += itens.length
     })
     return { porFase, feitos, total }
-  }, [checked])
+  }, [checked, lang])
 
   const importarBlocos = () => {
     if (!blocks || blocks.length === 0) return
@@ -707,11 +1097,7 @@ export default function ChecklistPage({
   }
 
   const limpar = () => {
-    if (
-      !window.confirm(
-        'Limpar toda a checklist, tabelas e notas? Esta ação não pode ser anulada.',
-      )
-    ) {
+    if (!window.confirm(L(UI.clearConfirm))) {
       return
     }
     setChecked({})
@@ -737,6 +1123,7 @@ export default function ChecklistPage({
 
   const exportarJSON = () => {
     const payload = {
+      idioma: lang,
       missao: { ...missao },
       checklist: {
         pre: resumo.porFase.pre,
@@ -786,18 +1173,16 @@ export default function ChecklistPage({
               onClick={onBack}
               className="rounded px-2 py-1 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
             >
-              ← Voltar ao planeador
+              {L(UI.back)}
             </button>
           </div>
 
           <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-4">
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-slate-100">
-                Checklist de Campo UAV
+                {L(UI.title)}
               </h1>
-              <p className="mt-0.5 text-[13px] text-slate-400">
-                Pré-campo · Durante · Pós-campo + Relatório de missão
-              </p>
+              <p className="mt-0.5 text-[13px] text-slate-400">{L(UI.subtitle)}</p>
             </div>
 
             <div className="no-print flex flex-wrap items-center gap-2">
@@ -805,12 +1190,12 @@ export default function ChecklistPage({
                 {resumo.feitos}/{resumo.total} · {pctGlobal}%
               </span>
               <Botao onClick={exportarJSON} tom="primario">
-                Exportar JSON
+                {L(UI.exportJson)}
               </Botao>
-              <Botao onClick={imprimirPreenchido}>Imprimir preenchido</Botao>
-              <Botao onClick={imprimirEmBranco}>Imprimir em branco</Botao>
+              <Botao onClick={imprimirPreenchido}>{L(UI.printFilled)}</Botao>
+              <Botao onClick={imprimirEmBranco}>{L(UI.printBlank)}</Botao>
               <Botao onClick={limpar} tom="aviso">
-                Limpar
+                {L(UI.clear)}
               </Botao>
             </div>
           </div>
@@ -818,14 +1203,14 @@ export default function ChecklistPage({
 
         {/* ---------------------- Campos da missão ---------------------- */}
         <section className="chk-bloco mb-5 rounded-lg border border-slate-800 bg-slate-900 p-4">
-          <Titulo className="mb-3">Identificação da missão</Titulo>
+          <Titulo className="mb-3">{L(UI.missionSection)}</Titulo>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {CAMPOS_MISSAO.map((c) => (
               <CampoTexto
                 key={c.key}
-                label={c.label}
+                label={L(c.label)}
                 type={c.type}
-                placeholder={c.placeholder}
+                placeholder={L(c.placeholder)}
                 value={missao[c.key] ?? ''}
                 onChange={(v) => setCampoMissao(c.key, v)}
               />
@@ -848,10 +1233,10 @@ export default function ChecklistPage({
         {/* ------------------------ Registo de voos ---------------------- */}
         <div className="mb-5">
           <Tabela
-            titulo="Registo de voos"
+            titulo={UI.flightsSection}
             cols={COLS_VOO}
             linhas={voos}
-            rotuloAdd="+ Voo"
+            rotuloAdd={UI.addFlight}
             minWidth="min-w-[1160px]"
             onCell={setCelulaVoo}
             onAdd={() => setVoos((v) => [...v, linhaVazia(COLS_VOO)])}
@@ -859,7 +1244,7 @@ export default function ChecklistPage({
             extra={
               blocks && blocks.length > 0 ? (
                 <Botao onClick={importarBlocos}>
-                  Importar blocos do plano ({blocks.length})
+                  {L(UI.importBlocks)} ({blocks.length})
                 </Botao>
               ) : null
             }
@@ -869,10 +1254,10 @@ export default function ChecklistPage({
         {/* --------------------------- GCPs ----------------------------- */}
         <div className="mb-5">
           <Tabela
-            titulo="Pontos de controlo — GCPs"
+            titulo={UI.gcpSection}
             cols={COLS_GCP}
             linhas={gcps}
-            rotuloAdd="+ GCP"
+            rotuloAdd={UI.addGcp}
             minWidth="min-w-[1040px]"
             onCell={setCelulaGcp}
             onAdd={() => setGcps((g) => [...g, linhaVazia(COLS_GCP)])}
@@ -882,12 +1267,12 @@ export default function ChecklistPage({
 
         {/* --------------------------- Notas ---------------------------- */}
         <section className="chk-bloco mb-5 rounded-lg border border-slate-800 bg-slate-900 p-4">
-          <Titulo className="mb-3">Notas de missão</Titulo>
+          <Titulo className="mb-3">{L(UI.notesSection)}</Titulo>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {CAMPOS_NOTAS.map((c) => (
               <CaixaNota
                 key={c.key}
-                label={c.label}
+                label={L(c.label)}
                 value={notas[c.key] ?? ''}
                 onChange={(v) => setNota(c.key, v)}
               />
@@ -898,21 +1283,19 @@ export default function ChecklistPage({
         {/* ------------------------ Assinaturas -------------------------- */}
         <section className="chk-assinaturas">
           <div className="grid grid-cols-3 gap-8 pt-8">
-            {['Piloto responsável', 'Supervisor técnico', 'Validação de dados'].map(
-              (papel) => (
-                <div key={papel}>
-                  <div className="h-8 border-b border-slate-600" />
-                  <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
-                    {papel}
-                  </p>
-                </div>
-              ),
-            )}
+            {ASSINATURAS.map((papel) => (
+              <div key={papel.pt}>
+                <div className="h-8 border-b border-slate-600" />
+                <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                  {L(papel)}
+                </p>
+              </div>
+            ))}
           </div>
         </section>
 
         <p className="no-print mt-6 text-center font-mono text-[10px] text-slate-600">
-          Guardado automaticamente neste navegador.
+          {L(UI.autosave)}
         </p>
       </div>
     </div>

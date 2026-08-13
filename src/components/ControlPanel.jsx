@@ -1,10 +1,13 @@
 import { useRef } from 'react'
 import { DRONE_PROFILES } from '../data/drones.js'
 import { CRS_OPTIONS } from '../utils/importArea.js'
+import { useT } from '../i18n.jsx'
 import {
   IconCheck,
   IconDownload,
+  IconFolder,
   IconHelipad,
+  IconMountain,
   IconPolygon,
   IconTarget,
   IconTrash,
@@ -103,6 +106,7 @@ export default function ControlPanel({
   onFinishDraw,
   onClear,
 }) {
+  const t = useT()
   const profile = DRONE_PROFILES[droneId]
   const isCustom = profile.type === 'custom'
   const areaFileRef = useRef(null)
@@ -112,32 +116,32 @@ export default function ControlPanel({
   return (
     <div className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-800 bg-slate-950 lg:w-96">
       {/* Missão */}
-      <Section title="Missão">
+      <Section title={t('cp.mission.title')}>
         <input
           type="text"
           className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
           value={missionName}
           onChange={(e) => setMissionName(e.target.value)}
-          placeholder="nome-da-missao"
+          placeholder={t('cp.mission.namePlaceholder')}
         />
         <p className="mt-1.5 text-[11px] text-slate-500">
-          Nome dos ficheiros exportados (<span className="font-mono">.kml</span> /{' '}
-          <span className="font-mono">.kmz</span>) e da missão no DJI Pilot 2.
+          {t('cp.mission.nameHintA')} (<span className="font-mono">.kml</span> /{' '}
+          <span className="font-mono">.kmz</span>) {t('cp.mission.nameHintB')}
         </p>
         <div className="mt-2 grid grid-cols-2 gap-2">
           <button
             onClick={onProjectExport}
-            title="Descarregar o projeto completo (.json)"
+            title={t('cp.mission.saveTitle')}
             className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
           >
-            <IconDownload /> Guardar projeto
+            <IconDownload /> {t('cp.mission.save')}
           </button>
           <button
             onClick={() => projectFileRef.current?.click()}
-            title="Abrir um projeto guardado (.json)"
-            className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
+            title={t('cp.mission.openTitle')}
+            className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
           >
-            📂 Abrir projeto
+            <IconFolder /> {t('cp.mission.open')}
           </button>
           <input
             ref={projectFileRef}
@@ -150,13 +154,11 @@ export default function ControlPanel({
             }}
           />
         </div>
-        <p className="mt-1.5 text-[11px] text-slate-500">
-          O trabalho é gravado automaticamente neste browser.
-        </p>
+        <p className="mt-1.5 text-[11px] text-slate-500">{t('cp.mission.autosave')}</p>
       </Section>
 
       {/* Drone / Sensor */}
-      <Section title="Drone / Sensor">
+      <Section title={t('cp.drone.title')}>
         <select
           className="mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
           value={droneId}
@@ -171,8 +173,13 @@ export default function ControlPanel({
 
         {!isCustom && (
           <p className="text-xs leading-relaxed text-slate-500">
-            {profile.camera} · sensor {profile.sensorWidth}×{profile.sensorHeight} mm · focal{' '}
-            {profile.focalLength} mm · payload {profile.payloadLabel}
+            {t('cp.drone.specs', {
+              camera: profile.camera,
+              w: profile.sensorWidth,
+              h: profile.sensorHeight,
+              focal: profile.focalLength,
+              payload: profile.payloadLabel,
+            })}
           </p>
         )}
 
@@ -185,7 +192,7 @@ export default function ControlPanel({
                   checked={custom.mode === 'camera'}
                   onChange={() => setCustom({ ...custom, mode: 'camera' })}
                 />
-                Câmara
+                {t('cp.drone.camera')}
               </label>
               <label className="flex items-center gap-1.5">
                 <input
@@ -193,13 +200,13 @@ export default function ControlPanel({
                   checked={custom.mode === 'lidar'}
                   onChange={() => setCustom({ ...custom, mode: 'lidar' })}
                 />
-                LiDAR (FOV)
+                {t('cp.drone.lidar')}
               </label>
             </div>
 
             {custom.mode === 'camera' ? (
               <>
-                <Field label="Largura sensor" suffix="mm">
+                <Field label={t('cp.drone.sensorWidth')} suffix="mm">
                   <NumberInput
                     value={custom.sensorWidth}
                     step={0.1}
@@ -207,7 +214,7 @@ export default function ControlPanel({
                     onChange={(v) => setCustom({ ...custom, sensorWidth: v })}
                   />
                 </Field>
-                <Field label="Altura sensor" suffix="mm">
+                <Field label={t('cp.drone.sensorHeight')} suffix="mm">
                   <NumberInput
                     value={custom.sensorHeight}
                     step={0.1}
@@ -215,7 +222,7 @@ export default function ControlPanel({
                     onChange={(v) => setCustom({ ...custom, sensorHeight: v })}
                   />
                 </Field>
-                <Field label="Distância focal" suffix="mm">
+                <Field label={t('cp.drone.focalLength')} suffix="mm">
                   <NumberInput
                     value={custom.focalLength}
                     step={0.1}
@@ -223,7 +230,7 @@ export default function ControlPanel({
                     onChange={(v) => setCustom({ ...custom, focalLength: v })}
                   />
                 </Field>
-                <Field label="Largura imagem" suffix="px">
+                <Field label={t('cp.drone.imageWidth')} suffix="px">
                   <NumberInput
                     value={custom.imageWidth}
                     min={100}
@@ -232,7 +239,7 @@ export default function ControlPanel({
                 </Field>
               </>
             ) : (
-              <Field label="FOV do feixe" suffix="°">
+              <Field label={t('cp.drone.fov')} suffix="°">
                 <NumberInput
                   value={custom.fov}
                   min={1}
@@ -242,7 +249,7 @@ export default function ControlPanel({
               </Field>
             )}
 
-            <p className="pt-1 text-[11px] text-slate-500">Enums WPML (avançado)</p>
+            <p className="pt-1 text-[11px] text-slate-500">{t('cp.drone.wpmlEnums')}</p>
             <Field label="droneEnumValue">
               <NumberInput
                 value={custom.droneEnumValue}
@@ -262,8 +269,8 @@ export default function ControlPanel({
       </Section>
 
       {/* Parâmetros de voo */}
-      <Section title="Parâmetros de Voo">
-        <Field label="Altitude (AGL)" suffix="m">
+      <Section title={t('cp.flight.title')}>
+        <Field label={t('cp.flight.altitude')} suffix="m">
           <NumberInput
             value={params.altitude}
             min={5}
@@ -272,7 +279,7 @@ export default function ControlPanel({
           />
         </Field>
         {gsd != null && (
-          <Field label="GSD alvo" suffix="cm/px">
+          <Field label={t('cp.flight.gsdTarget')} suffix="cm/px">
             <NumberInput
               value={Number(gsd.toFixed(2))}
               min={0.1}
@@ -283,11 +290,11 @@ export default function ControlPanel({
         )}
         {params.altitude > 120 && (
           <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
-            ⚠ Acima de <strong>120 m AGL</strong> — excede o limite geral da categoria
-            Aberta (UE); requer autorização específica.
+            ⚠ {t('cp.flight.altWarnPre')} <strong>120 m AGL</strong>{' '}
+            {t('cp.flight.altWarnPost')}
           </p>
         )}
-        <Field label="Velocidade" suffix="m/s">
+        <Field label={t('cp.flight.speed')} suffix="m/s">
           <NumberInput
             value={params.speed}
             min={1}
@@ -296,7 +303,7 @@ export default function ControlPanel({
             onChange={(v) => setParam('speed', v)}
           />
         </Field>
-        <Field label="Sobreposição frontal" suffix="%">
+        <Field label={t('cp.flight.frontOverlap')} suffix="%">
           <NumberInput
             value={params.frontOverlap}
             min={0}
@@ -305,7 +312,7 @@ export default function ControlPanel({
           />
         </Field>
         <div className={params.spacingMode === 'manual' ? 'opacity-40' : ''}>
-          <Field label="Sobreposição lateral" suffix="%">
+          <Field label={t('cp.flight.sideOverlap')} suffix="%">
             <NumberInput
               value={params.sideOverlap}
               min={0}
@@ -320,10 +327,10 @@ export default function ControlPanel({
             checked={params.spacingMode === 'manual'}
             onChange={(e) => setParam('spacingMode', e.target.checked ? 'manual' : 'auto')}
           />
-          Espaçamento manual entre linhas
+          {t('cp.flight.manualSpacing')}
         </label>
         {params.spacingMode === 'manual' && (
-          <Field label="Distância entre linhas" suffix="m">
+          <Field label={t('cp.flight.lineDistance')} suffix="m">
             <NumberInput
               value={params.manualSpacing}
               min={1}
@@ -332,17 +339,17 @@ export default function ControlPanel({
             />
           </Field>
         )}
-        <Field label="Disparo por">
+        <Field label={t('cp.flight.triggerBy')}>
           <select
             className="w-28 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
             value={params.triggerMode}
             onChange={(e) => setParam('triggerMode', e.target.value)}
           >
-            <option value="distance">Distância</option>
-            <option value="time">Tempo</option>
+            <option value="distance">{t('cp.flight.triggerDistance')}</option>
+            <option value="time">{t('cp.flight.triggerTime')}</option>
           </select>
         </Field>
-        <Field label="Inclinação do gimbal" suffix="°">
+        <Field label={t('cp.flight.gimbalPitch')} suffix="°">
           <NumberInput
             value={params.gimbalPitch}
             min={-90}
@@ -351,13 +358,11 @@ export default function ControlPanel({
             onChange={(v) => setParam('gimbalPitch', Math.max(-90, Math.min(0, v)))}
           />
         </Field>
-        <p className="text-[11px] text-slate-500">
-          −90° = nadir (2D) · −60°/−45° = oblíqua, para reconstrução 3D
-        </p>
+        <p className="text-[11px] text-slate-500">{t('cp.flight.gimbalHint')}</p>
       </Section>
 
       {/* Orientação das linhas */}
-      <Section title="Orientação das Linhas">
+      <Section title={t('cp.orientation.title')}>
         <div className="flex items-center gap-3">
           <input
             type="range"
@@ -376,29 +381,27 @@ export default function ControlPanel({
           />
           <span className="text-xs text-slate-500">°</span>
         </div>
-        <p className="mt-1 text-[11px] text-slate-500">
-          Azimute das faixas: 0° = Norte–Sul · 90° = Este–Oeste
-        </p>
+        <p className="mt-1 text-[11px] text-slate-500">{t('cp.orientation.azimuthHint')}</p>
         <div className="mt-2 grid grid-cols-3 gap-1.5">
           {[
-            { label: '∥ Paralelas', offset: 0 },
-            { label: '⊥ Perpendic.', offset: 90 },
-            { label: '∠ Oblíquas 45°', offset: 45 },
-          ].map(({ label, offset }) => (
+            { key: 'cp.orientation.parallel', offset: 0 },
+            { key: 'cp.orientation.perpendicular', offset: 90 },
+            { key: 'cp.orientation.oblique45', offset: 45 },
+          ].map(({ key, offset }) => (
             <button
               key={offset}
               onClick={() => onSetAngleRelative(offset)}
               disabled={refAzimuth == null}
-              title="Direção relativa à orientação do bloco (ou à aresta mais longa do polígono)"
+              title={t('cp.orientation.relativeTitle')}
               className="rounded bg-slate-800 px-1.5 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {label}
+              {t(key)}
             </button>
           ))}
         </div>
         {refAzimuth != null && (
           <p className="mt-1 text-[11px] text-slate-500">
-            Referência: {Math.round(refAzimuth)}° — orientação do bloco / aresta mais longa
+            {t('cp.orientation.reference', { deg: Math.round(refAzimuth) })}
           </p>
         )}
         <label className="mt-2 flex items-center gap-2 text-sm text-slate-300">
@@ -407,18 +410,17 @@ export default function ControlPanel({
             checked={params.crosshatch}
             onChange={(e) => setParam('crosshatch', e.target.checked)}
           />
-          Dupla grelha perpendicular (crosshatch, 3D)
+          {t('cp.orientation.crosshatch')}
         </label>
         {params.crosshatch && (
           <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-            Segunda passagem a {(params.angle + 90) % 360}°. Duplica o tempo de voo — os
-            blocos por bateria são redimensionados. Sugere-se gimbal a −60°.
+            {t('cp.orientation.crosshatchHint', { deg: (params.angle + 90) % 360 })}
           </p>
         )}
       </Section>
 
       {/* Expansão (buffer) */}
-      <Section title="Expansão das Linhas (Buffer)">
+      <Section title={t('cp.buffer.title')}>
         <div className="grid grid-cols-4 gap-1.5">
           {[0, 10, 20, 30].map((pct) => (
             <button
@@ -437,50 +439,52 @@ export default function ControlPanel({
       </Section>
 
       {/* Ferramentas de desenho */}
-      <Section title="Área de Levantamento">
-        <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">Forma</p>
+      <Section title={t('cp.area.title')}>
+        <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
+          {t('cp.area.shape')}
+        </p>
         <div className="grid grid-cols-3 gap-1.5">
           <button
             onClick={onStartDraw}
-            title="Polígono livre: clique a clique no mapa"
+            title={t('cp.area.polygonTitle')}
             className={`flex items-center justify-center gap-1 rounded px-1.5 py-2 text-xs font-medium transition-colors ${
               mode === 'draw'
                 ? 'bg-sky-500 text-slate-950'
                 : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
             }`}
           >
-            <IconPolygon /> Polígono
+            <IconPolygon /> {t('cp.area.polygon')}
           </button>
           <button
             onClick={() => onStartAnchor('rect')}
-            title="Retângulo centrado num ponto (comprimento × largura)"
+            title={t('cp.area.rectTitle')}
             className={`flex items-center justify-center gap-1 rounded px-1.5 py-2 text-xs font-medium transition-colors ${
               mode === 'anchor' && anchor.shape === 'rect'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
             }`}
           >
-            <IconTarget /> Retângulo
+            <IconTarget /> {t('cp.area.rect')}
           </button>
           <button
             onClick={() => onStartAnchor('square')}
-            title="Quadrado centrado num ponto (lado único)"
+            title={t('cp.area.squareTitle')}
             className={`flex items-center justify-center gap-1 rounded px-1.5 py-2 text-xs font-medium transition-colors ${
               mode === 'anchor' && anchor.shape === 'square'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
             }`}
           >
-            <IconTarget /> Quadrado
+            <IconTarget /> {t('cp.area.square')}
           </button>
         </div>
 
         <button
           onClick={() => areaFileRef.current?.click()}
-          className="mt-2 w-full rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700"
-          title="Importar área de ficheiro KML, GeoJSON ou Shapefile zipado"
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700"
+          title={t('cp.area.importTitle')}
         >
-          📂 Importar área (KML · GeoJSON · SHP zip)
+          <IconFolder /> {t('cp.area.import')}
         </button>
         <input
           ref={areaFileRef}
@@ -496,8 +500,7 @@ export default function ControlPanel({
         {importState && (
           <div className="mt-2 rounded border border-sky-800 bg-sky-950/40 p-3">
             <p className="mb-2 text-xs leading-relaxed text-sky-200">
-              <strong>{importState.filename}</strong>: coordenadas projetadas detetadas.
-              Escolha o sistema de coordenadas de origem:
+              <strong>{importState.filename}</strong>: {t('cp.area.crsPrompt')}
             </p>
             <select
               className="mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
@@ -515,13 +518,13 @@ export default function ControlPanel({
                 onClick={() => onImportCrs(document.getElementById('crs-select').value)}
                 className="rounded bg-sky-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500"
               >
-                Converter
+                {t('cp.area.convert')}
               </button>
               <button
                 onClick={onImportCancel}
                 className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-700"
               >
-                Cancelar
+                {t('cp.area.cancel')}
               </button>
             </div>
           </div>
@@ -536,38 +539,36 @@ export default function ControlPanel({
         <div className="mt-2 grid grid-cols-2 gap-2">
           <button
             onClick={onStartBase}
-            title="Marcar o ponto de descolagem / posição do operador"
+            title={t('cp.area.baseTitle')}
             className={`flex items-center justify-center gap-1.5 rounded px-2 py-2 text-sm font-medium transition-colors ${
               mode === 'base'
                 ? 'bg-amber-500 text-slate-950'
                 : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
             }`}
           >
-            <IconHelipad /> Marcar base
+            <IconHelipad /> {t('cp.area.markBase')}
           </button>
           <button
             onClick={onRemoveBase}
             disabled={!hasBase}
             className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <IconTrash /> Remover base
+            <IconTrash /> {t('cp.area.removeBase')}
           </button>
         </div>
 
         {mode === 'base' && (
-          <p className="mt-2 text-xs text-slate-400">
-            Clique no mapa para marcar a base (arrastável). A distância à área aparece no
-            painel de métricas e o ponto é incluído no KML.
-          </p>
+          <p className="mt-2 text-xs text-slate-400">{t('cp.area.baseHint')}</p>
         )}
 
         {mode === 'draw' && (
           <div className="mt-2 space-y-2">
             <p className="text-xs leading-relaxed text-slate-400">
-              Clique no mapa para adicionar vértices ({draftCount}).{' '}
-              <strong className="text-slate-300">Backspace</strong> ou clique num vértice
-              para o remover · <strong className="text-slate-300">duplo clique</strong>{' '}
-              (esquerdo ou direito) ou «Concluir» para fechar · Esc cancela.
+              {t('cp.area.drawHintA', { n: draftCount })}{' '}
+              <strong className="text-slate-300">Backspace</strong>{' '}
+              {t('cp.area.drawHintB')}{' '}
+              <strong className="text-slate-300">{t('cp.area.drawHintDblClick')}</strong>{' '}
+              {t('cp.area.drawHintC')}
             </p>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -575,14 +576,14 @@ export default function ControlPanel({
                 disabled={draftCount === 0}
                 className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                ↩ Anular último
+                ↩ {t('cp.area.undoVertex')}
               </button>
               <button
                 onClick={onFinishDraw}
                 disabled={draftCount < 3}
                 className="flex items-center justify-center gap-1.5 rounded bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <IconCheck /> Concluir
+                <IconCheck /> {t('cp.area.finish')}
               </button>
             </div>
           </div>
@@ -590,11 +591,9 @@ export default function ControlPanel({
 
         {mode === 'anchor' && (
           <div className="mt-2 space-y-1 rounded border border-slate-800 bg-slate-900/60 p-3">
-            <p className="mb-2 text-xs text-slate-400">
-              Clique no mapa para definir o centro. A forma ajusta-se aos valores abaixo.
-            </p>
+            <p className="mb-2 text-xs text-slate-400">{t('cp.area.anchorHint')}</p>
             <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
-              Tamanhos rápidos
+              {t('cp.area.quickSizes')}
             </p>
             <div className="mb-2 grid grid-cols-4 gap-1.5">
               {[250, 500, 750, 1000].map((s) => (
@@ -604,7 +603,11 @@ export default function ControlPanel({
                     setAnchorParam('length', s)
                     if (anchor.shape !== 'square') setAnchorParam('width', s)
                   }}
-                  title={s === 250 ? `${s}×${s} m (≈1 bateria)` : `${s}×${s} m`}
+                  title={
+                    s === 250
+                      ? t('cp.area.sizeTitleBattery', { s })
+                      : t('cp.area.sizeTitle', { s })
+                  }
                   className={`rounded px-1 py-1.5 text-xs font-medium transition-colors ${
                     anchor.length === s && anchor.width === s
                       ? 'bg-amber-500 text-slate-950'
@@ -616,7 +619,7 @@ export default function ControlPanel({
               ))}
             </div>
             {anchor.shape === 'square' ? (
-              <Field label="Lado" suffix="m">
+              <Field label={t('cp.area.side')} suffix="m">
                 <NumberInput
                   value={anchor.length}
                   min={10}
@@ -625,14 +628,14 @@ export default function ControlPanel({
               </Field>
             ) : (
               <>
-                <Field label="Comprimento" suffix="m">
+                <Field label={t('cp.area.length')} suffix="m">
                   <NumberInput
                     value={anchor.length}
                     min={10}
                     onChange={(v) => setAnchorParam('length', v)}
                   />
                 </Field>
-                <Field label="Largura" suffix="m">
+                <Field label={t('cp.area.width')} suffix="m">
                   <NumberInput
                     value={anchor.width}
                     min={10}
@@ -641,7 +644,7 @@ export default function ControlPanel({
                 </Field>
               </>
             )}
-            <Field label="Orientação" suffix="°">
+            <Field label={t('cp.area.orientation')} suffix="°">
               <NumberInput
                 value={anchor.orientation}
                 min={0}
@@ -651,9 +654,9 @@ export default function ControlPanel({
             </Field>
 
             <p className="pb-1 pt-2 text-[11px] uppercase tracking-wider text-slate-500">
-              Grelha de blocos (réplicas da forma)
+              {t('cp.area.blockGrid')}
             </p>
-            <Field label="Colunas (∥ orientação)">
+            <Field label={t('cp.area.cols')}>
               <NumberInput
                 value={anchor.cols}
                 min={1}
@@ -661,7 +664,7 @@ export default function ControlPanel({
                 onChange={(v) => setAnchorParam('cols', v)}
               />
             </Field>
-            <Field label="Linhas (⊥ orientação)">
+            <Field label={t('cp.area.rows')}>
               <NumberInput
                 value={anchor.rows}
                 min={1}
@@ -670,18 +673,17 @@ export default function ControlPanel({
               />
             </Field>
             <p className="pt-1 text-[11px] leading-relaxed text-slate-500">
-              Com mais de 1 célula, cada célula torna-se um bloco de voo numerado
-              (ex.: 3×2 quadrados de 250 m = 6 baterias). Use o buffer para criar
-              sobreposição entre células.
+              {t('cp.area.gridHint')}
             </p>
           </div>
         )}
 
         {hasRing && mode !== 'draw' && !gridActive && split.mode !== 'tiles' && (
           <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-            Edição: arraste os vértices · arraste os pontos intermédios para{' '}
-            <strong className="text-slate-400">inserir vértices</strong> · clique direito
-            num vértice para o <strong className="text-slate-400">remover</strong>.
+            {t('cp.area.editHintA')}{' '}
+            <strong className="text-slate-400">{t('cp.area.editHintInsert')}</strong>{' '}
+            {t('cp.area.editHintB')}{' '}
+            <strong className="text-slate-400">{t('cp.area.editHintRemove')}</strong>.
           </p>
         )}
 
@@ -690,42 +692,38 @@ export default function ControlPanel({
             onClick={onClear}
             className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-300 transition-colors hover:bg-red-900/60 hover:text-red-200"
           >
-            <IconTrash /> Limpar área
+            <IconTrash /> {t('cp.area.clear')}
           </button>
         )}
 
         {hasRing && !validation.valid && (
           <div className="mt-3 rounded border border-red-700 bg-red-950/60 p-3 text-xs leading-relaxed text-red-300">
-            ⚠ <strong>Polígono inválido:</strong> foram detetadas auto-interseções
-            (marcadas a vermelho no mapa). Arraste os vértices para corrigir a
-            geometria antes de gerar as linhas de voo.
+            ⚠ <strong>{t('cp.area.invalidTitle')}</strong> {t('cp.area.invalidBody')}
           </div>
         )}
 
         {planError === 'too-many-lines' && (
           <div className="mt-3 rounded border border-amber-700 bg-amber-950/60 p-3 text-xs leading-relaxed text-amber-300">
-            ⚠ O espaçamento calculado gera linhas em excesso (&gt;2500). Aumente a
-            altitude, reduza a sobreposição lateral ou diminua a área.
+            ⚠ {t('cp.area.tooManyLines')}
           </div>
         )}
       </Section>
 
       {/* Divisão em blocos de voo */}
-      <Section title="Divisão em Blocos de Voo">
+      <Section title={t('cp.split.title')}>
         {gridActive && (
           <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
-            Grelha ativa: cada célula é um bloco de voo. A divisão por área/bateria
-            aplica-se apenas a áreas sem grelha.
+            {t('cp.split.gridActive')}
           </p>
         )}
         {!gridActive && (
         <div className="grid grid-cols-4 gap-1.5">
           {[
-            { value: 'none', label: 'Nenhuma' },
-            { value: 'area', label: 'Faixas' },
-            { value: 'battery', label: 'Bateria' },
-            { value: 'tiles', label: 'Mosaico' },
-          ].map(({ value, label }) => (
+            { value: 'none', key: 'cp.split.modeNone' },
+            { value: 'area', key: 'cp.split.modeArea' },
+            { value: 'battery', key: 'cp.split.modeBattery' },
+            { value: 'tiles', key: 'cp.split.modeTiles' },
+          ].map(({ value, key }) => (
             <button
               key={value}
               onClick={() => setSplitParam('mode', value)}
@@ -735,7 +733,7 @@ export default function ControlPanel({
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
-              {label}
+              {t(key)}
             </button>
           ))}
         </div>
@@ -744,7 +742,7 @@ export default function ControlPanel({
         {!gridActive && split.mode === 'tiles' && (
           <div className="mt-2">
             <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
-              Lado do quadrado
+              {t('cp.split.tileSideLabel')}
             </p>
             <div className="mb-2 grid grid-cols-4 gap-1.5">
               {[250, 500, 750, 1000].map((s) => (
@@ -761,7 +759,7 @@ export default function ControlPanel({
                 </button>
               ))}
             </div>
-            <Field label="Lado personalizado" suffix="m">
+            <Field label={t('cp.split.customSide')} suffix="m">
               <NumberInput
                 value={split.tileSize}
                 min={50}
@@ -770,7 +768,7 @@ export default function ControlPanel({
                 onChange={(v) => setSplitParam('tileSize', v)}
               />
             </Field>
-            <Field label="Orientação da malha" suffix="°">
+            <Field label={t('cp.split.meshOrientation')} suffix="°">
               <NumberInput
                 value={split.tileOrientation}
                 min={0}
@@ -781,34 +779,35 @@ export default function ControlPanel({
             <div className="mb-2 grid grid-cols-2 gap-2">
               <button
                 onClick={onTilesUndo}
-                title="Desfazer a última alteração às células (Ctrl+Z)"
+                title={t('cp.split.undoTitle')}
                 className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
               >
-                ↩ Anular (Ctrl+Z)
+                ↩ {t('cp.split.undo')}
               </button>
               <button
                 onClick={onTilesRestoreAll}
                 className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
               >
-                Reativar todas
+                {t('cp.split.restoreAll')}
               </button>
             </div>
             <p className="text-[11px] leading-relaxed text-slate-500">
-              O polígono é coberto por quadrados (podem exceder os limites).{' '}
-              <strong className="text-slate-400">Clique numa célula no mapa</strong> para a
-              desativar/reativar (Ctrl+Z desfaz). Cada célula ativa é um bloco de voo
-              numerado.
+              {t('cp.split.tilesHintA')}{' '}
+              <strong className="text-slate-400">{t('cp.split.clickCell')}</strong>{' '}
+              {t('cp.split.tilesHintB')}
               {tilesTotal != null && (
                 <>
                   {' '}
-                  <span className="text-sky-300">{tilesTotal} células geradas</span>
-                  {blocks ? `, ${blocks.length} ativas` : ', 0 ativas'}.
+                  <span className="text-sky-300">
+                    {t('cp.split.cellsGenerated', { n: tilesTotal })}
+                  </span>
+                  {t('cp.split.cellsActive', { n: blocks ? blocks.length : 0 })}.
                 </>
               )}
             </p>
             {tilesError === 'too-many-cells' && (
               <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
-                ⚠ Demasiadas células (&gt;400). Aumente o lado do quadrado.
+                ⚠ {t('cp.split.tooManyCellsTile')}
               </p>
             )}
           </div>
@@ -816,7 +815,7 @@ export default function ControlPanel({
 
         {!gridActive && split.mode === 'area' && (
           <div className="mt-2">
-            <Field label="Área máx. por bloco" suffix="ha">
+            <Field label={t('cp.split.maxAreaPerBlock')} suffix="ha">
               <NumberInput
                 value={split.maxAreaHa}
                 min={0.5}
@@ -829,7 +828,7 @@ export default function ControlPanel({
 
         {!gridActive && split.mode === 'battery' && (
           <div className="mt-2">
-            <Field label="Duração da bateria" suffix="min">
+            <Field label={t('cp.split.batteryDuration')} suffix="min">
               <NumberInput
                 value={split.batteryMin}
                 min={5}
@@ -837,7 +836,7 @@ export default function ControlPanel({
                 onChange={(v) => setSplitParam('batteryMin', v)}
               />
             </Field>
-            <Field label="Reserva de regresso" suffix="%">
+            <Field label={t('cp.split.returnReserve')} suffix="%">
               <NumberInput
                 value={split.reservePct}
                 min={10}
@@ -845,7 +844,7 @@ export default function ControlPanel({
                 onChange={(v) => setSplitParam('reservePct', v)}
               />
             </Field>
-            <Field label="Lado máx. (VLOS)" suffix="m">
+            <Field label={t('cp.split.maxSide')} suffix="m">
               <NumberInput
                 value={split.maxSide}
                 min={100}
@@ -856,43 +855,47 @@ export default function ControlPanel({
             </Field>
             {tileSide != null && (
               <p className="mb-2 rounded border border-sky-800 bg-sky-950/40 p-2 text-[11px] leading-relaxed text-sky-200">
-                Blocos quadrados de <strong>{tileSide} × {tileSide} m</strong>, dimensionados
-                para {100 - split.reservePct}% da bateria
-                {hasBase ? ' (trânsito à base descontado)' : ''}.
+                {t('cp.split.squareBlocks')}{' '}
+                <strong>
+                  {tileSide} × {tileSide} m
+                </strong>
+                {t('cp.split.batteryUse', { pct: 100 - split.reservePct })}
+                {hasBase ? ` ${t('cp.split.transitDeducted')}` : ''}.
               </p>
             )}
             <div className="mb-2 grid grid-cols-2 gap-2">
               <button
                 onClick={onTilesUndo}
-                title="Desfazer a última alteração às células (Ctrl+Z)"
+                title={t('cp.split.undoTitle')}
                 className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
               >
-                ↩ Anular (Ctrl+Z)
+                ↩ {t('cp.split.undo')}
               </button>
               <button
                 onClick={onTilesRestoreAll}
                 className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
               >
-                Reativar todas
+                {t('cp.split.restoreAll')}
               </button>
             </div>
             <p className="text-[11px] leading-relaxed text-slate-500">
-              Áreas compactas mantêm o voo dentro do alcance visual (VLOS) e a troca de
-              baterias perto do bloco. <strong className="text-slate-400">Clique numa
-              célula no mapa</strong> para a desativar/reativar.
-              {!hasBase && ' Marque a base para descontar o trânsito ao dimensionar.'}
+              {t('cp.split.batteryHintA')}{' '}
+              <strong className="text-slate-400">{t('cp.split.clickCell')}</strong>{' '}
+              {t('cp.split.batteryHintB')}
+              {!hasBase && ` ${t('cp.split.markBaseHint')}`}
               {tilesTotal != null && (
                 <>
                   {' '}
-                  <span className="text-sky-300">{tilesTotal} células</span>
-                  {blocks ? `, ${blocks.length} ativas` : ', 0 ativas'}.
+                  <span className="text-sky-300">
+                    {t('cp.split.cells', { n: tilesTotal })}
+                  </span>
+                  {t('cp.split.cellsActive', { n: blocks ? blocks.length : 0 })}.
                 </>
               )}
             </p>
             {tilesError === 'too-many-cells' && (
               <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
-                ⚠ Demasiadas células (&gt;400). Aumente a duração da bateria ou o teto
-                VLOS.
+                ⚠ {t('cp.split.tooManyCellsBattery')}
               </p>
             )}
           </div>
@@ -911,31 +914,31 @@ export default function ControlPanel({
                 <span className="font-mono">{Math.round(b.timeS / 60)} min</span>
               </div>
             ))}
-            <p className="pt-1 text-[11px] text-slate-500">
-              A exportação WPML gera um ZIP com um KMZ por bloco, numerados pela ordem de
-              voo.
-            </p>
+            <p className="pt-1 text-[11px] text-slate-500">{t('cp.split.exportHint')}</p>
           </div>
         )}
       </Section>
 
       {/* Terreno (DEM) — terrain follow */}
-      <Section title="Terreno (DEM) — Terrain Follow">
+      <Section title={t('cp.terrain.title')}>
         <div className="grid grid-cols-1 gap-2">
           <button
             onClick={onLoadTerrain}
             disabled={!hasRing || terrain.status === 'loading'}
-            className="w-full rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex w-full items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            ⛰ {terrain.status === 'loading' ? 'A carregar terreno…' : 'Descarregar relevo global (~30 m)'}
+            <IconMountain />{' '}
+            {terrain.status === 'loading'
+              ? t('cp.terrain.loading')
+              : t('cp.terrain.downloadGlobal')}
           </button>
           <button
             onClick={() => demFileRef.current?.click()}
             disabled={!hasRing || terrain.status === 'loading'}
-            title="MDT LiDAR da DGT (50 cm / 2 m) descarregado do Centro de Dados Geográficos — só é lida a janela da área, mesmo em ficheiros de vários GB"
-            className="w-full rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+            title={t('cp.terrain.importDemTitle')}
+            className="flex w-full items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            📂 Importar MDT (GeoTIFF LiDAR DGT)
+            <IconFolder /> {t('cp.terrain.importDem')}
           </button>
           <input
             ref={demFileRef}
@@ -951,8 +954,11 @@ export default function ControlPanel({
 
         {terrain.status === 'ready' && terrain.data?.source === 'file' && (
           <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">
-            MDT local: <strong>{terrain.data.label}</strong> ({terrain.data.crsCode},
-            grelha ~{terrain.data.resolutionM?.toFixed(1)} m)
+            {t('cp.terrain.localDem')} <strong>{terrain.data.label}</strong>{' '}
+            {t('cp.terrain.demGrid', {
+              crs: terrain.data.crsCode,
+              res: terrain.data.resolutionM?.toFixed(1),
+            })}
           </p>
         )}
 
@@ -963,7 +969,7 @@ export default function ControlPanel({
         )}
         {terrain.status === 'ready' && !terrainCovers && (
           <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
-            ⚠ A área atual sai fora do relevo carregado — volte a descarregar.
+            ⚠ {t('cp.terrain.outOfCoverage')}
           </p>
         )}
 
@@ -974,12 +980,12 @@ export default function ControlPanel({
             disabled={!(terrain.status === 'ready' && terrainCovers)}
             onChange={(e) => setTerrainFollow({ ...terrainFollow, enabled: e.target.checked })}
           />
-          Seguir terreno (AGL constante)
+          {t('cp.terrain.follow')}
         </label>
 
         {terrainFollow.enabled && (
           <div className="mt-1">
-            <Field label="Tolerância vertical" suffix="m">
+            <Field label={t('cp.terrain.tolerance')} suffix="m">
               <NumberInput
                 value={terrainFollow.tolerance}
                 min={1}
@@ -992,9 +998,12 @@ export default function ControlPanel({
 
         {terrainFollow.enabled && terrainResult && !terrainResult.error && (
           <div className="mt-1 rounded border border-slate-800 bg-slate-900/60 p-2 text-[11px] leading-relaxed text-slate-400">
-            Terreno {Math.round(terrainResult.elevMin)}–{Math.round(terrainResult.elevMax)} m ·{' '}
-            {terrainResult.waypoints.length} waypoints com altura própria (ref.{' '}
-            {Math.round(terrainResult.refElev)} m).
+            {t('cp.terrain.result', {
+              min: Math.round(terrainResult.elevMin),
+              max: Math.round(terrainResult.elevMax),
+              n: terrainResult.waypoints.length,
+              ref: Math.round(terrainResult.refElev),
+            })}
             {terrainResult.warnings?.map((w, i) => (
               <p key={i} className="mt-1 text-amber-300">⚠ {w}</p>
             ))}
@@ -1005,14 +1014,11 @@ export default function ControlPanel({
             ⚠ {terrainResult.error}
           </p>
         )}
-        <p className="mt-1.5 text-[11px] text-slate-500">
-          Fonte: Terrarium/AWS (~30 m). As alturas por waypoint são relativas ao ponto de
-          descolagem — marque a base no local real de descolagem e valide no Pilot 2.
-        </p>
+        <p className="mt-1.5 text-[11px] text-slate-500">{t('cp.terrain.sourceHint')}</p>
       </Section>
 
       {/* GCPs */}
-      <Section title="GCPs — Pontos de Controlo">
+      <Section title={t('cp.gcp.title')}>
         <label className="flex items-center gap-2 text-sm text-slate-300">
           <input
             type="checkbox"
@@ -1020,12 +1026,12 @@ export default function ControlPanel({
             disabled={!hasRing}
             onChange={(e) => setGcpConfig({ ...gcpConfig, enabled: e.target.checked })}
           />
-          Planear posições de GCPs
+          {t('cp.gcp.plan')}
         </label>
 
         {gcpConfig.enabled && (
           <div className="mt-2">
-            <Field label="Número de GCPs">
+            <Field label={t('cp.gcp.count')}>
               <div className="flex items-center gap-1.5">
                 <NumberInput
                   value={gcpConfig.count ?? gcpAutoCount}
@@ -1035,32 +1041,36 @@ export default function ControlPanel({
                 />
                 <button
                   onClick={() => setGcpConfig({ ...gcpConfig, count: null })}
-                  title={`Automático: ${gcpAutoCount} (≈1 por 5 ha, mín. 5)`}
+                  title={t('cp.gcp.autoTitle', { n: gcpAutoCount })}
                   className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
                     gcpConfig.count == null
                       ? 'bg-sky-500 text-slate-950'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                   }`}
                 >
-                  Auto
+                  {t('cp.gcp.auto')}
                 </button>
               </div>
             </Field>
             {gcpInfo && (
               <p className="text-[11px] leading-relaxed text-slate-400">
-                {gcpInfo.count} GCPs · ~{gcpInfo.haPerGcp?.toFixed(1)} ha/GCP · espaçamento
-                mín. {Number.isFinite(gcpInfo.minSpacingM) ? `${Math.round(gcpInfo.minSpacingM)} m` : '—'}
+                {t('cp.gcp.info', {
+                  count: gcpInfo.count,
+                  ha: gcpInfo.haPerGcp?.toFixed(1),
+                  spacing: Number.isFinite(gcpInfo.minSpacingM)
+                    ? `${Math.round(gcpInfo.minSpacingM)} m`
+                    : '—',
+                })}
               </p>
             )}
             <button
               onClick={onExportGcps}
               className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
             >
-              <IconDownload /> Exportar GCPs (KML)
+              <IconDownload /> {t('cp.gcp.export')}
             </button>
             <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
-              Heurística bordo + centro (distribuição de erro mínimo na literatura
-              fotogramétrica). Os GCPs também vão no KML simples da área.
+              {t('cp.gcp.hint')}
             </p>
           </div>
         )}

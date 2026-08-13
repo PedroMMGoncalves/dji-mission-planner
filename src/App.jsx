@@ -41,9 +41,30 @@ import {
 import { loadTerrain, terrainFollowLines } from './utils/terrain.js'
 import { loadDemFromFile } from './utils/demFile.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
-import { IconDrone, IconDownload } from './components/Icons.jsx'
+import { IconCheck, IconCube, IconDrone, IconDownload } from './components/Icons.jsx'
+import { LANGS, LangContext, useT } from './i18n.jsx'
 
 export default function App() {
+  const [lang, setLang] = useState(
+    () => localStorage.getItem('dji-mission-planner:lang') ?? 'pt',
+  )
+  useEffect(() => {
+    try {
+      localStorage.setItem('dji-mission-planner:lang', lang)
+    } catch {
+      /* ignora */
+    }
+  }, [lang])
+
+  return (
+    <LangContext.Provider value={lang}>
+      <AppInner lang={lang} setLang={setLang} />
+    </LangContext.Provider>
+  )
+}
+
+function AppInner({ lang, setLang }) {
+  const t = useT()
   /* ----------------------------- Estado ----------------------------- */
   // 'planner' | 'checklist' — o hash #checklist permite ligação direta
   const [view, setView] = useState(() =>
@@ -838,15 +859,27 @@ export default function App() {
           <IconDrone className="h-7 w-7 text-sky-400" />
           <div>
             <h1 className="text-base font-semibold tracking-tight">DJI Mission Planner</h1>
-            <p className="text-[11px] text-slate-500">
-              Grelhas fotogramétricas / LiDAR · exportação KML &amp; WPML para DJI Pilot 2
-            </p>
+            <p className="text-[11px] text-slate-500">{t('app.subtitle')}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex overflow-hidden rounded border border-slate-700">
+            {LANGS.map(({ code, flag, label }) => (
+              <button
+                key={code}
+                onClick={() => setLang(code)}
+                title={label}
+                className={`px-2 py-1 text-base leading-none transition-colors ${
+                  lang === code ? 'bg-slate-700' : 'opacity-50 hover:opacity-90'
+                }`}
+              >
+                {flag}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => setShowHelp(true)}
-            title="Instruções e informação da aplicação"
+            title={t('app.helpTitle')}
             className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
           >
             ?
@@ -855,36 +888,34 @@ export default function App() {
             onClick={() => setShow3d(true)}
             disabled={!(terrain.status === 'ready' && terrainCovers && planOk)}
             title={
-              terrain.status === 'ready'
-                ? 'Ver as linhas de voo em 3D sobre o relevo'
-                : 'Carregue primeiro o relevo (secção Terreno) e gere um plano'
+              terrain.status === 'ready' ? t('app.view3dReady') : t('app.view3dNotReady')
             }
             className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            ⛰ Vista 3D
+            <IconCube /> {t('app.view3d')}
           </button>
           <button
             onClick={() => setView('checklist')}
-            title="Checklist de campo UAV (pré-campo, durante, pós-campo) + relatório de missão"
+            title={t('app.checklistTitle')}
             className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-amber-500 hover:text-amber-300"
           >
-            ✓ Checklist de campo
+            <IconCheck /> {t('app.checklist')}
           </button>
           <button
             onClick={handleExportKML}
             disabled={!canExportKML}
-            title="Polígono 2D da área (KML padrão)"
+            title={t('app.exportKmlTitle')}
             className="flex items-center gap-1.5 rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <IconDownload /> Exportar KML Simples
+            <IconDownload /> {t('app.exportKml')}
           </button>
           <button
             onClick={handleExportKMZ}
             disabled={!canExportKMZ}
-            title="Missão completa DJI (wpmz/template.kml + waylines.wpml)"
+            title={t('app.exportWpmlTitle')}
             className="flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <IconDownload /> Exportar WPML Avançado (KMZ)
+            <IconDownload /> {t('app.exportWpml')}
           </button>
         </div>
       </header>
@@ -995,7 +1026,7 @@ export default function App() {
         <Suspense
           fallback={
             <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/90 text-sm text-slate-300">
-              A carregar a vista 3D…
+              {t('app.loading3d')}
             </div>
           }
         >

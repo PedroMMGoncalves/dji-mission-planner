@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import { BASE_MARKER_HTML } from './Icons.jsx'
+import { useLang, useT } from '../i18n.jsx'
 
 /**
  * Mapa Leaflet com camadas imperativas sincronizadas com o estado React:
@@ -148,23 +149,16 @@ export default function MapView({
       attribution: 'CAOP © DGT',
     })
 
-    L.control
-      .layers(
-        {
-          'Híbrido (Esri)': hybrid,
-          'Satélite (Esri)': sat,
-          'Topográfico (Esri)': topo,
-          OpenStreetMap: osm,
-        },
-        {
-          'Municípios (CAOP)': municipios,
-          'Freguesias (CAOP)': freguesias,
-        },
-        { position: 'topright' },
-      )
-      .addTo(map)
+    // o controlo de camadas é criado no efeito de idioma (labels traduzidas)
+    layersRef.current = {
+      ...(layersRef.current ?? {}),
+      baseLayers: { hybrid, sat, topo, osm },
+      caopOverlays: { municipios, freguesias },
+      layersControl: null,
+    }
 
     layersRef.current = {
+      ...(layersRef.current ?? {}),
       draft: L.layerGroup().addTo(map),
       polygon: L.layerGroup().addTo(map),
       buffer: L.layerGroup().addTo(map),
@@ -198,6 +192,33 @@ export default function MapView({
     mapRef.current = map
     return () => map.remove()
   }, [])
+
+  // Controlo de camadas com labels na língua ativa (reconstruído ao mudar;
+  // os estados ligado/desligado preservam-se porque as camadas são as mesmas)
+  const t = useT()
+  const lang = useLang()
+  useEffect(() => {
+    const map = mapRef.current
+    const refs = layersRef.current
+    if (!map || !refs?.baseLayers) return
+    if (refs.layersControl) map.removeControl(refs.layersControl)
+    refs.layersControl = L.control
+      .layers(
+        {
+          [t('map.hybrid')]: refs.baseLayers.hybrid,
+          [t('map.satellite')]: refs.baseLayers.sat,
+          [t('map.topo')]: refs.baseLayers.topo,
+          OpenStreetMap: refs.baseLayers.osm,
+        },
+        {
+          [t('map.municipalities')]: refs.caopOverlays.municipios,
+          [t('map.parishes')]: refs.caopOverlays.freguesias,
+        },
+        { position: 'topright' },
+      )
+      .addTo(map)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang])
 
   // Cursor de mira nos modos interativos
   useEffect(() => {
