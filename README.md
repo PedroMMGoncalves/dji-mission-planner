@@ -46,11 +46,16 @@ calcular grelhas de voo fotogramétricas/LiDAR e exportar **KML** simples ou
 - **Checklist de campo UAV** (pré-campo / durante / pós-campo + relatório de
   missão): página própria acessível pelo cabeçalho, imprimível e com
   exportação JSON.
-- **Divisão em blocos de voo numerados** (modelo UgCS/DroneDeploy): a grelha
-  global mantém-se alinhada e é cortada em grupos de faixas contíguas — por
-  área máxima (ha) ou por capacidade da bateria (duração × reserva de regresso,
-  30% por defeito, descontando o trânsito à base marcada). A exportação WPML
-  gera um ZIP com um KMZ independente por bloco (`missao-b01.kmz`, …).
+- **Divisão em blocos de voo numerados** (modelo UgCS/DroneDeploy), com a
+  grelha globalmente alinhada (faixas colineares entre blocos):
+  - *Faixas* — corte da serpentina por área máxima (ha);
+  - *Bateria* — **quadrados compactos dimensionados automaticamente** a partir
+    da duração da bateria × reserva de regresso (30% por defeito), descontando
+    o trânsito à base marcada e limitados por um teto VLOS (500 m por defeito);
+  - *Mosaico* — quadrados de lado manual; em ambos os mosaicos as células
+    clicam-se no mapa para desativar/reativar (Ctrl+Z desfaz).
+  A exportação WPML gera um ZIP com um KMZ independente por bloco
+  (`missao-b01.kmz`, …).
 - **Grelha de voo em serpentina** cortada rigorosamente dentro da área
   (`turf.lineIntersect` + `turf.booleanPointInPolygon`), com suporte a polígonos
   côncavos.

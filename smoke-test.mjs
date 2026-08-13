@@ -11,6 +11,7 @@ import {
   photoInterval,
   rectangleFromAnchor,
   splitIntoBlocks,
+  squareSideForBattery,
   tilePolygonWithSquares,
   validateRing,
 } from './src/utils/geo.js'
@@ -246,6 +247,24 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
     check('faixas oblíquas em múltiplos do espaçamento (colineares)', worst < 1,
       `resíduo máx ${worst.toFixed(2)} m em ${residuals.length} faixas`)
   }
+}
+
+/* 8g. Lado do quadrado por bateria */
+{
+  const base = { batteryMin: 25, reservePct: 30, speed: 10, spacingM: sp, transitS: 0 }
+  const uncapped = squareSideForBattery({ ...base, maxSideM: 2000 })
+  check('lado por bateria (25 min/30%) ~610 m', uncapped >= 590 && uncapped <= 630, uncapped)
+  const capped = squareSideForBattery({ ...base, maxSideM: 500 })
+  check('teto VLOS aplicado (500 m)', capped === 500, capped)
+  const small = squareSideForBattery({ ...base, batteryMin: 12, maxSideM: 2000 })
+  check('bateria menor → lado menor', small >= 380 && small <= 420, small)
+  // verificação do modelo: um quadrado com o lado devolvido cabe no tempo útil
+  const L = uncapped
+  const n = L / sp + 1
+  const timeS = (L * L / sp + 2 * L) / 10 + n * 3
+  check('tempo do bloco ≤ tempo útil', timeS <= 25 * 60 * 0.7 + 1, `${Math.round(timeS)} s ≤ 1050 s`)
+  const transit = squareSideForBattery({ ...base, transitS: 300, maxSideM: 2000 })
+  check('trânsito reduz o lado', transit < uncapped, `${transit} < ${uncapped}`)
 }
 
 /* 9. Trava de segurança */

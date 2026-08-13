@@ -18,6 +18,7 @@ import {
   resolveSensor,
   ringToPolygon,
   splitIntoBlocks,
+  squareSideForBattery,
   tilePolygonWithSquares,
   validateRing,
 } from './utils/geo.js'
@@ -81,6 +82,7 @@ export default function App() {
     maxAreaHa: 20,
     batteryMin: 25,
     reservePct: 30, // regressar à base com 30% de bateria
+    maxSide: 500, // teto do lado do bloco por bateria (conforto VLOS)
     tileSize: 250, // lado dos quadrados do mosaico (m)
     tileOrientation: 0, // azimute da malha do mosaico
   })
@@ -169,14 +171,43 @@ export default function App() {
     [ring],
   )
 
-  // Mosaico automático: candidatas a células sobre o polígono
+  // Mosaico de quadrados: manual ('tiles') ou dimensionado pela bateria
+  // ('battery' — lado calculado a partir do tempo útil e do teto VLOS)
   const tilesResult = useMemo(() => {
-    if (!ring || !validation.valid || split.mode !== 'tiles' || gridCells) return null
-    return tilePolygonWithSquares(ring, split.tileSize, split.tileOrientation)
-  }, [ring, validation.valid, split.mode, split.tileSize, split.tileOrientation, gridCells])
+    if (!ring || !validation.valid || gridCells) return null
+    if (split.mode !== 'tiles' && split.mode !== 'battery') return null
+    let side = split.tileSize
+    if (split.mode === 'battery') {
+      const dist = basePoint ? distanceToArea(basePoint, ring) : null
+      const transitS = dist != null ? (2 * dist) / (params.speed || 10) : 0
+      side = squareSideForBattery({
+        batteryMin: split.batteryMin,
+        reservePct: split.reservePct,
+        speed: params.speed,
+        spacingM: spacing,
+        transitS,
+        maxSideM: split.maxSide,
+      })
+    }
+    return { cells: tilePolygonWithSquares(ring, side, split.tileOrientation), side }
+  }, [
+    ring,
+    validation.valid,
+    gridCells,
+    split.mode,
+    split.tileSize,
+    split.tileOrientation,
+    split.batteryMin,
+    split.reservePct,
+    split.maxSide,
+    params.speed,
+    spacing,
+    basePoint,
+  ])
 
-  const tiles = Array.isArray(tilesResult) ? tilesResult : null
-  const tilesError = tilesResult?.error ?? null
+  const tiles = Array.isArray(tilesResult?.cells) ? tilesResult.cells : null
+  const tilesError = tilesResult?.cells?.error ?? null
+  const tileSide = tilesResult?.side ?? null
 
   // regenerar o mosaico limpa a seleção de células desativadas
   useEffect(() => {
@@ -186,7 +217,7 @@ export default function App() {
     }
     setDisabledTiles(new Set())
     tileHistoryRef.current = []
-  }, [ring, split.mode, split.tileSize, split.tileOrientation])
+  }, [ring, split.mode, tileSide, split.tileOrientation])
 
   const toggleTile = useCallback((index) => {
     setDisabledTiles((prev) => {
@@ -304,7 +335,8 @@ export default function App() {
         timeS: p.stats.flightTimeS ?? 0,
       }))
     }
-    if (split.mode === 'none' || split.mode === 'tiles') return null
+    // 'battery' e 'tiles' produzem células (acima); só 'area' corta a serpentina
+    if (split.mode !== 'area') return null
     return splitIntoBlocks(planOk, {
       mode: split.mode,
       maxAreaHa: split.maxAreaHa,
@@ -720,6 +752,7 @@ export default function App() {
           gridActive={Boolean(gridCells)}
           tilesTotal={tiles?.length ?? null}
           tilesError={tilesError}
+          tileSide={tileSide}
           gsd={gsd}
           onGsdTarget={setAltitudeFromGsd}
           importState={importState}
@@ -757,7 +790,7 @@ export default function App() {
             disabledTiles={disabledTiles}
             onTileToggle={toggleTile}
             fitKey={fitKey}
-            editable={!gridCells && split.mode !== 'tiles'}
+            editable={!gridCells && split.mode !== 'tiles' && split.mode !== 'battery'}
             onMapClick={handleMapClick}
             onVertexDrag={handleVertexDrag}
             onVertexInsert={handleVertexInsert}

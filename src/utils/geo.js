@@ -175,6 +175,37 @@ export function gridFromAnchor(center, lengthM, widthM, orientationDeg, cols, ro
 const MAX_TILES = 400 // trava contra mosaicos com células minúsculas
 
 /**
+ * Lado do quadrado que uma bateria consegue voar.
+ *
+ * Modelo de tempo para um quadrado de lado L com espaçamento s e velocidade v:
+ *   nº de faixas   n ≈ L/s + 1
+ *   distância      ≈ n·L (faixas) + (n−1)·s (ligações) ≈ L²/s + L + …
+ *   tempo          ≈ (L²/s + 2L)/v + n·TURN_TIME_S
+ * Igualando ao tempo útil T = bateria × (1 − reserva) − trânsito e resolvendo
+ * o polinómio quadrático em L:  (1/(s·v))·L² + (1/v + 2/v + T_turn/s)·L … → L.
+ * O resultado é limitado por `maxSideM` (ex.: 500 m para conforto VLOS) e
+ * arredondado para baixo à dezena de metros.
+ */
+export function squareSideForBattery({
+  batteryMin,
+  reservePct,
+  speed,
+  spacingM,
+  transitS = 0,
+  maxSideM = 500,
+}) {
+  const v = speed > 0 ? speed : 10
+  const s = Math.max(1, spacingM)
+  const T = Math.max(60, batteryMin * 60 * (1 - reservePct / 100) - transitS)
+  const a = 1 / (s * v)
+  const b = 2 / v + TURN_TIME_S / s
+  const c = TURN_TIME_S - T
+  const L = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a)
+  const capped = Math.min(L, Math.max(100, maxSideM))
+  return Math.max(50, Math.floor(capped / 10) * 10)
+}
+
+/**
  * MOSAICO AUTOMÁTICO: cobre um polígono desenhado com quadrados de lado
  * `sizeM`, alinhados com o azimute `orientationDeg`. As células podem exceder
  * os limites do polígono (mantém-se qualquer célula que o interseta) — o

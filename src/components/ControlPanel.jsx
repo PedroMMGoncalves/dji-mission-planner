@@ -70,6 +70,7 @@ export default function ControlPanel({
   gridActive,
   tilesTotal,
   tilesError,
+  tileSide,
   gsd,
   onGsdTarget,
   importState,
@@ -682,7 +683,7 @@ export default function ControlPanel({
         <div className="grid grid-cols-4 gap-1.5">
           {[
             { value: 'none', label: 'Nenhuma' },
-            { value: 'area', label: 'Área' },
+            { value: 'area', label: 'Faixas' },
             { value: 'battery', label: 'Bateria' },
             { value: 'tiles', label: 'Mosaico' },
           ].map(({ value, label }) => (
@@ -805,11 +806,56 @@ export default function ControlPanel({
                 onChange={(v) => setSplitParam('reservePct', v)}
               />
             </Field>
+            <Field label="Lado máx. (VLOS)" suffix="m">
+              <NumberInput
+                value={split.maxSide}
+                min={100}
+                max={2000}
+                step={50}
+                onChange={(v) => setSplitParam('maxSide', v)}
+              />
+            </Field>
+            {tileSide != null && (
+              <p className="mb-2 rounded border border-sky-800 bg-sky-950/40 p-2 text-[11px] leading-relaxed text-sky-200">
+                Blocos quadrados de <strong>{tileSide} × {tileSide} m</strong>, dimensionados
+                para {100 - split.reservePct}% da bateria
+                {hasBase ? ' (trânsito à base descontado)' : ''}.
+              </p>
+            )}
+            <div className="mb-2 grid grid-cols-2 gap-2">
+              <button
+                onClick={onTilesUndo}
+                title="Desfazer a última alteração às células (Ctrl+Z)"
+                className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
+              >
+                ↩ Anular (Ctrl+Z)
+              </button>
+              <button
+                onClick={onTilesRestoreAll}
+                className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
+              >
+                Reativar todas
+              </button>
+            </div>
             <p className="text-[11px] leading-relaxed text-slate-500">
-              Cada bloco usa no máx. {100 - split.reservePct}% da bateria
-              {hasBase ? ', descontando o trânsito ida e volta à base.' : '.'}{' '}
-              {!hasBase && 'Marque a base para descontar o trânsito.'}
+              Áreas compactas mantêm o voo dentro do alcance visual (VLOS) e a troca de
+              baterias perto do bloco. <strong className="text-slate-400">Clique numa
+              célula no mapa</strong> para a desativar/reativar.
+              {!hasBase && ' Marque a base para descontar o trânsito ao dimensionar.'}
+              {tilesTotal != null && (
+                <>
+                  {' '}
+                  <span className="text-sky-300">{tilesTotal} células</span>
+                  {blocks ? `, ${blocks.length} ativas` : ', 0 ativas'}.
+                </>
+              )}
             </p>
+            {tilesError === 'too-many-cells' && (
+              <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
+                ⚠ Demasiadas células (&gt;400). Aumente a duração da bateria ou o teto
+                VLOS.
+              </p>
+            )}
           </div>
         )}
 
