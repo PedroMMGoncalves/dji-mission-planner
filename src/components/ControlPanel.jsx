@@ -82,6 +82,17 @@ export default function ControlPanel({
   onProjectImport,
   onTilesUndo,
   onTilesRestoreAll,
+  terrain,
+  terrainCovers,
+  terrainFollow,
+  setTerrainFollow,
+  onLoadTerrain,
+  terrainResult,
+  gcpConfig,
+  setGcpConfig,
+  gcpAutoCount,
+  gcpInfo,
+  onExportGcps,
   onUndoVertex,
   onStartDraw,
   onStartAnchor,
@@ -329,6 +340,18 @@ export default function ControlPanel({
             <option value="time">Tempo</option>
           </select>
         </Field>
+        <Field label="Inclinação do gimbal" suffix="°">
+          <NumberInput
+            value={params.gimbalPitch}
+            min={-90}
+            max={0}
+            step={5}
+            onChange={(v) => setParam('gimbalPitch', Math.max(-90, Math.min(0, v)))}
+          />
+        </Field>
+        <p className="text-[11px] text-slate-500">
+          −90° = nadir (2D) · −60°/−45° = oblíqua, para reconstrução 3D
+        </p>
       </Section>
 
       {/* Orientação das linhas */}
@@ -374,6 +397,20 @@ export default function ControlPanel({
         {refAzimuth != null && (
           <p className="mt-1 text-[11px] text-slate-500">
             Referência: {Math.round(refAzimuth)}° — orientação do bloco / aresta mais longa
+          </p>
+        )}
+        <label className="mt-2 flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={params.crosshatch}
+            onChange={(e) => setParam('crosshatch', e.target.checked)}
+          />
+          Dupla grelha perpendicular (crosshatch, 3D)
+        </label>
+        {params.crosshatch && (
+          <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+            Segunda passagem a {(params.angle + 90) % 360}°. Duplica o tempo de voo — os
+            blocos por bateria são redimensionados. Sugere-se gimbal a −60°.
           </p>
         )}
       </Section>
@@ -875,6 +912,126 @@ export default function ControlPanel({
             <p className="pt-1 text-[11px] text-slate-500">
               A exportação WPML gera um ZIP com um KMZ por bloco, numerados pela ordem de
               voo.
+            </p>
+          </div>
+        )}
+      </Section>
+
+      {/* Terreno (DEM) — terrain follow */}
+      <Section title="Terreno (DEM) — Terrain Follow">
+        <button
+          onClick={onLoadTerrain}
+          disabled={!hasRing || terrain.status === 'loading'}
+          className="w-full rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          ⛰ {terrain.status === 'loading' ? 'A descarregar relevo…' : 'Descarregar relevo da área'}
+        </button>
+
+        {terrain.status === 'error' && (
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
+            ⚠ {terrain.error}
+          </p>
+        )}
+        {terrain.status === 'ready' && !terrainCovers && (
+          <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
+            ⚠ A área atual sai fora do relevo carregado — volte a descarregar.
+          </p>
+        )}
+
+        <label className="mt-2 flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={terrainFollow.enabled}
+            disabled={!(terrain.status === 'ready' && terrainCovers)}
+            onChange={(e) => setTerrainFollow({ ...terrainFollow, enabled: e.target.checked })}
+          />
+          Seguir terreno (AGL constante)
+        </label>
+
+        {terrainFollow.enabled && (
+          <div className="mt-1">
+            <Field label="Tolerância vertical" suffix="m">
+              <NumberInput
+                value={terrainFollow.tolerance}
+                min={1}
+                max={20}
+                onChange={(v) => setTerrainFollow({ ...terrainFollow, tolerance: v })}
+              />
+            </Field>
+          </div>
+        )}
+
+        {terrainFollow.enabled && terrainResult && !terrainResult.error && (
+          <div className="mt-1 rounded border border-slate-800 bg-slate-900/60 p-2 text-[11px] leading-relaxed text-slate-400">
+            Terreno {Math.round(terrainResult.elevMin)}–{Math.round(terrainResult.elevMax)} m ·{' '}
+            {terrainResult.waypoints.length} waypoints com altura própria (ref.{' '}
+            {Math.round(terrainResult.refElev)} m).
+            {terrainResult.warnings?.map((w, i) => (
+              <p key={i} className="mt-1 text-amber-300">⚠ {w}</p>
+            ))}
+          </div>
+        )}
+        {terrainFollow.enabled && terrainResult?.error && (
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
+            ⚠ {terrainResult.error}
+          </p>
+        )}
+        <p className="mt-1.5 text-[11px] text-slate-500">
+          Fonte: Terrarium/AWS (~30 m). As alturas por waypoint são relativas ao ponto de
+          descolagem — marque a base no local real de descolagem e valide no Pilot 2.
+        </p>
+      </Section>
+
+      {/* GCPs */}
+      <Section title="GCPs — Pontos de Controlo">
+        <label className="flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={gcpConfig.enabled}
+            disabled={!hasRing}
+            onChange={(e) => setGcpConfig({ ...gcpConfig, enabled: e.target.checked })}
+          />
+          Planear posições de GCPs
+        </label>
+
+        {gcpConfig.enabled && (
+          <div className="mt-2">
+            <Field label="Número de GCPs">
+              <div className="flex items-center gap-1.5">
+                <NumberInput
+                  value={gcpConfig.count ?? gcpAutoCount}
+                  min={1}
+                  max={25}
+                  onChange={(v) => setGcpConfig({ ...gcpConfig, count: v })}
+                />
+                <button
+                  onClick={() => setGcpConfig({ ...gcpConfig, count: null })}
+                  title={`Automático: ${gcpAutoCount} (≈1 por 5 ha, mín. 5)`}
+                  className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                    gcpConfig.count == null
+                      ? 'bg-sky-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  Auto
+                </button>
+              </div>
+            </Field>
+            {gcpInfo && (
+              <p className="text-[11px] leading-relaxed text-slate-400">
+                {gcpInfo.count} GCPs · ~{gcpInfo.haPerGcp?.toFixed(1)} ha/GCP · espaçamento
+                mín. {Number.isFinite(gcpInfo.minSpacingM) ? `${Math.round(gcpInfo.minSpacingM)} m` : '—'}
+              </p>
+            )}
+            <button
+              onClick={onExportGcps}
+              className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+            >
+              <IconDownload /> Exportar GCPs (KML)
+            </button>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+              Heurística bordo + centro (distribuição de erro mínimo na literatura
+              fotogramétrica). Os GCPs também vão no KML simples da área.
             </p>
           </div>
         )}

@@ -193,10 +193,14 @@ export function squareSideForBattery({
   spacingM,
   transitS = 0,
   maxSideM = 500,
+  passes = 1, // 2 = dupla grelha (crosshatch): o bloco é voado nas duas direções
 }) {
   const v = speed > 0 ? speed : 10
   const s = Math.max(1, spacingM)
-  const T = Math.max(60, batteryMin * 60 * (1 - reservePct / 100) - transitS)
+  const T = Math.max(
+    60,
+    (batteryMin * 60 * (1 - reservePct / 100) - transitS) / Math.max(1, passes),
+  )
   const a = 1 / (s * v)
   const b = 2 / v + TURN_TIME_S / s
   const c = TURN_TIME_S - T
@@ -478,6 +482,55 @@ export function generateFlightLines(ring, options) {
       flightTimeS,
       areaHa: turf.area(basePoly) / 10000,
       bufferedAreaHa: turf.area(area) / 10000,
+    },
+  }
+}
+
+/**
+ * Dupla grelha (crosshatch) para reconstrução 3D: gera a grelha normal e uma
+ * segunda perpendicular (+90°), voadas em sequência. `align2` é o alinhamento
+ * global da direção perpendicular (para células). As estatísticas somam as
+ * duas passagens, incluindo a ligação entre o fim da primeira e o início da
+ * segunda.
+ */
+export function generateFlightPlan(ring, options) {
+  const p1 = generateFlightLines(ring, options)
+  if (!options.crosshatch || !p1 || p1.error) return p1
+
+  const p2 = generateFlightLines(ring, {
+    ...options,
+    angleDeg: (options.angleDeg + 90) % 360,
+    align: options.align2 ?? null,
+  })
+  if (!p2 || p2.error) return p2?.error ? p2 : p1
+
+  const linkM = turf.distance(
+    p1.waypoints[p1.waypoints.length - 1],
+    p2.waypoints[0],
+    { units: 'meters' },
+  )
+  const v = options.speed > 0 ? options.speed : 10
+  const s1 = p1.stats
+  const s2 = p2.stats
+  return {
+    area: p1.area,
+    lines: [...p1.lines, ...p2.lines],
+    waypoints: [...p1.waypoints, ...p2.waypoints],
+    stats: {
+      lineCount: s1.lineCount + s2.lineCount,
+      waypointCount: s1.waypointCount + s2.waypointCount,
+      totalLineLengthM: s1.totalLineLengthM + s2.totalLineLengthM,
+      pathLengthM: s1.pathLengthM + s2.pathLengthM + linkM,
+      photoCount:
+        s1.photoCount != null || s2.photoCount != null
+          ? (s1.photoCount ?? 0) + (s2.photoCount ?? 0)
+          : null,
+      flightTimeS:
+        s1.flightTimeS != null && s2.flightTimeS != null
+          ? s1.flightTimeS + s2.flightTimeS + linkM / v
+          : null,
+      areaHa: s1.areaHa,
+      bufferedAreaHa: s1.bufferedAreaHa,
     },
   }
 }

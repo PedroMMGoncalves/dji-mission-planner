@@ -26,6 +26,7 @@ export default function MapView({
   tiles,
   disabledTiles,
   onTileToggle,
+  gcps,
   fitKey,
   editable,
   onMapClick,
@@ -168,6 +169,7 @@ export default function MapView({
       polygon: L.layerGroup().addTo(map),
       buffer: L.layerGroup().addTo(map),
       lines: L.layerGroup().addTo(map),
+      gcps: L.layerGroup().addTo(map),
       canvas: L.canvas({ padding: 0.3 }),
     }
 
@@ -453,6 +455,25 @@ export default function MapView({
       }).addTo(layers.lines)
     })
   }, [plan, blocks])
+
+  // Alvos GCP planeados (xadrez amarelo, com etiqueta)
+  useEffect(() => {
+    const g = layersRef.current?.gcps
+    if (!g) return
+    g.clearLayers()
+    if (!gcps) return
+    gcps.forEach(({ id, point }) => {
+      L.marker(toLatLng(point), {
+        icon: L.divIcon({
+          className: 'gcp-marker',
+          html: `<div class="gcp-target"></div><div class="gcp-label">${id}</div>`,
+          iconSize: null,
+        }),
+        interactive: false,
+        zIndexOffset: 400,
+      }).addTo(g)
+    })
+  }, [gcps])
 
   return <div ref={containerRef} className="h-full w-full" />
 }

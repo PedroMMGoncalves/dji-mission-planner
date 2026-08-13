@@ -2,6 +2,7 @@ import * as turf from '@turf/turf'
 import {
   computeAlignment,
   computeFootprint,
+  generateFlightPlan,
   computeGSD,
   distanceToArea,
   generateFlightLines,
@@ -16,6 +17,8 @@ import {
   validateRing,
 } from './src/utils/geo.js'
 import { buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
+import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
+import { decodeTerrarium, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
 
 let failures = 0
 function check(name, cond, extra = '') {
@@ -265,6 +268,89 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
   check('tempo do bloco ≤ tempo útil', timeS <= 25 * 60 * 0.7 + 1, `${Math.round(timeS)} s ≤ 1050 s`)
   const transit = squareSideForBattery({ ...base, transitS: 300, maxSideM: 2000 })
   check('trânsito reduz o lado', transit < uncapped, `${transit} < ${uncapped}`)
+}
+
+/* 8h. Dupla grelha (crosshatch) */
+{
+  const cross = generateFlightPlan(rectNS, {
+    spacingM: sp, angleDeg: 90, bufferPct: 0, photoIntervalM: iv, speed: 10, crosshatch: true,
+  })
+  check('crosshatch gerado', cross && !cross.error)
+  if (cross && !cross.error) {
+    check('crosshatch: 8 + 12-13 faixas', cross.stats.lineCount >= 20 && cross.stats.lineCount <= 21,
+      cross.stats.lineCount)
+    const bearings = cross.lines.map((s) => Math.round(((turf.bearing(s[0], s[1]) % 180) + 180) % 180))
+    const has90 = bearings.some((b) => Math.abs(b - 90) < 2)
+    const has0 = bearings.some((b) => b < 2 || b > 178)
+    check('crosshatch: duas famílias perpendiculares', has90 && has0)
+    const single = generateFlightLines(rectNS, {
+      spacingM: sp, angleDeg: 90, bufferPct: 0, photoIntervalM: iv, speed: 10,
+    })
+    check('crosshatch: tempo ~2× grelha simples',
+      cross.stats.flightTimeS > single.stats.flightTimeS * 1.7,
+      `${Math.round(cross.stats.flightTimeS)} vs ${Math.round(single.stats.flightTimeS)} s`)
+  }
+  const sideCross = squareSideForBattery({
+    batteryMin: 25, reservePct: 30, speed: 10, spacingM: sp, transitS: 0, maxSideM: 2000, passes: 2,
+  })
+  check('bateria com crosshatch → lado menor', sideCross >= 400 && sideCross <= 440, sideCross)
+}
+
+/* 8i. Planeamento de GCPs */
+{
+  check('suggestedGcpCount: 3 ha → 5', suggestedGcpCount(3) === 5)
+  check('suggestedGcpCount: 50 ha → 15', suggestedGcpCount(50) === 15)
+  check('suggestedGcpCount: 500 ha → 25 (teto)', suggestedGcpCount(500) === 25)
+  const g7 = planGcps(rectNS, 7)
+  check('planGcps: 7 pontos', g7.length === 7, g7.length)
+  const polyR = turf.polygon([[...rectNS, rectNS[0]]])
+  check('GCPs todos dentro', g7.every((g) => turf.booleanPointInPolygon(turf.point(g.point), polyR)))
+  const st = gcpStats(rectNS, g7)
+  check('GCPs espaçamento mín > 40 m', st.minSpacingM > 40, st.minSpacingM.toFixed(0))
+  check('GCPs ids sequenciais', g7[0].id === 'GCP-01' && g7[6].id === 'GCP-07')
+  const gk = buildGcpKML(g7, 'teste-gcps')
+  check('GCP KML: 7 placemarks', (gk.match(/<Placemark>/g) || []).length === 7)
+  const gL = planGcps(lShape, 8)
+  const polyL2 = turf.polygon([[...lShape, lShape[0]]])
+  check('GCPs em polígono côncavo dentro', gL.length >= 6 && gL.every((g) => turf.booleanPointInPolygon(turf.point(g.point), polyL2)), gL.length)
+}
+
+/* 8j. Terrain follow (elevação sintética) */
+{
+  check('decodeTerrarium: nível do mar', decodeTerrarium(128, 0, 0) === 0)
+  check('decodeTerrarium: 500 m', decodeTerrarium(129, 244, 0) === 500)
+
+  const flat = Array.from({ length: 20 }, (_, i) => ({ distM: i * 40, value: 300 }))
+  const idxFlat = simplifyProfile(flat, 5)
+  check('perfil plano → só extremos', idxFlat.length === 2 && idxFlat[0] === 0 && idxFlat[1] === 19)
+  const peaked = flat.map((p, i) => ({ ...p, value: i === 10 ? 340 : 300 }))
+  const idxPeak = simplifyProfile(peaked, 5)
+  check('pico de 40 m retido', idxPeak.includes(10))
+
+  // terreno sintético: rampa Este-Oeste de ~100 m de desnível pelos 500 m da área
+  const rampa = {
+    elevationAt: (lon) => 200 + (lon - center[0]) * mLon * 0.2, // 0.2 m por metro
+  }
+  if (plan90 && !plan90.error) {
+    const tf = terrainFollowLines(rampa, plan90.lines, {
+      agl: 100,
+      refElev: 200,
+      toleranceM: 5,
+      stepM: 40,
+    })
+    check('terrain follow gerado', tf.waypoints.length >= plan90.lines.length * 2)
+    check('perLine soma = waypoints', tf.perLine.reduce((a, b) => a + b, 0) === tf.waypoints.length)
+    // rampa linear → cada faixa E-O precisa só dos extremos
+    check('rampa linear → 2 wp/faixa', tf.perLine.every((n) => n === 2), tf.perLine.join(','))
+    // alturas corretas: agl + (elev − ref); extremos a ±250 m do centro → ±50 m
+    const hs = tf.waypoints.map((w) => w[2])
+    const hMin = Math.min(...hs)
+    const hMax = Math.max(...hs)
+    check('alturas seguem a rampa (~50 a ~150)', Math.abs(hMin - 50) < 3 && Math.abs(hMax - 150) < 3,
+      `${hMin.toFixed(1)}–${hMax.toFixed(1)}`)
+    check('elevMin/Max do terreno coerentes', tf.elevMin >= 145 && tf.elevMax <= 255,
+      `${tf.elevMin.toFixed(0)}–${tf.elevMax.toFixed(0)}`)
+  }
 }
 
 /* 9. Trava de segurança */

@@ -46,6 +46,16 @@ calcular grelhas de voo fotogramétricas/LiDAR e exportar **KML** simples ou
 - **Checklist de campo UAV** (pré-campo / durante / pós-campo + relatório de
   missão): página própria acessível pelo cabeçalho, imprimível e com
   exportação JSON.
+- **Terrain follow (DEM):** relevo Terrarium/AWS (~30 m) descarregado para a
+  área; com "Seguir terreno" ativo, as faixas são densificadas e cada waypoint
+  recebe a altura que mantém o AGL constante (Douglas-Peucker com tolerância
+  configurável; alturas relativas ao ponto de descolagem/base).
+- **Dupla grelha (crosshatch):** segunda passagem perpendicular para
+  reconstrução 3D, com inclinação do gimbal configurável (−90° nadir a 0°);
+  os blocos por bateria são redimensionados para as duas passagens.
+- **Planeamento de GCPs:** heurística bordo+centro (literatura fotogramétrica)
+  com contagem automática (~1/5 ha, mín. 5) ou manual, alvos numerados no mapa
+  e exportação KML própria.
 - **Divisão em blocos de voo numerados** (modelo UgCS/DroneDeploy), com a
   grelha globalmente alinhada (faixas colineares entre blocos):
   - *Faixas* — corte da serpentina por área máxima (ha);

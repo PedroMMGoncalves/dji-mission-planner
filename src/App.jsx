@@ -9,7 +9,7 @@ import {
   computeFootprint,
   computeGSD,
   distanceToArea,
-  generateFlightLines,
+  generateFlightPlan,
   gridFromAnchor,
   lineSpacing,
   longestEdgeBearing,
@@ -34,6 +34,8 @@ import {
   simplifyRingIfNeeded,
   CRS_OPTIONS,
 } from './utils/importArea.js'
+import { loadTerrain, terrainFollowLines } from './utils/terrain.js'
+import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
 import { IconDrone, IconDownload } from './components/Icons.jsx'
 
 export default function App() {
@@ -61,6 +63,8 @@ export default function App() {
     triggerMode: 'distance',
     spacingMode: 'auto', // 'auto' (sobreposição) | 'manual' (distância em m)
     manualSpacing: 50,
+    crosshatch: false, // dupla grelha perpendicular (3D)
+    gimbalPitch: -90, // inclinação da câmara: -90 nadir · -60/-45 oblíqua
   })
   const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base'
   const [draftVertices, setDraftVertices] = useState([])
@@ -89,6 +93,9 @@ export default function App() {
   const [disabledTiles, setDisabledTiles] = useState(() => new Set())
   const [importState, setImportState] = useState(null) // {ring, filename} à espera de CRS
   const [importError, setImportError] = useState(null)
+  const [terrain, setTerrain] = useState({ status: 'idle', data: null, error: null })
+  const [terrainFollow, setTerrainFollow] = useState({ enabled: false, tolerance: 5 })
+  const [gcpConfig, setGcpConfig] = useState({ enabled: false, count: null }) // null = auto
   const [fitKey, setFitKey] = useState(0) // sinal para enquadrar o mapa na área
   const tileHistoryRef = useRef([]) // histórico de seleção de células (Ctrl+Z)
   const skipTileResetRef = useRef(false)
@@ -187,6 +194,7 @@ export default function App() {
         spacingM: spacing,
         transitS,
         maxSideM: split.maxSide,
+        passes: params.crosshatch ? 2 : 1,
       })
     }
     return { cells: tilePolygonWithSquares(ring, side, split.tileOrientation), side }
@@ -276,14 +284,20 @@ export default function App() {
       bufferPct: params.bufferPct,
       photoIntervalM: interval ?? 0,
       speed: params.speed,
+      crosshatch: params.crosshatch,
     }
-    if (!activeCells) return generateFlightLines(ring, opts)
+    if (!activeCells) return generateFlightPlan(ring, opts)
 
     // Grelha/mosaico: cada célula é planeada com os mesmos parâmetros e com
     // alinhamento global — as faixas de células adjacentes são colineares e
     // têm continuidade (o buffer, se ativo, cria sobreposição entre células)
     const align = computeAlignment(ring, spacing, params.angle)
-    const perCell = activeCells.map((cell) => generateFlightLines(cell, { ...opts, align }))
+    const align2 = params.crosshatch
+      ? computeAlignment(ring, spacing, (params.angle + 90) % 360)
+      : null
+    const perCell = activeCells.map((cell) =>
+      generateFlightPlan(cell, { ...opts, align, align2 }),
+    )
     if (perCell.some((p) => p?.error)) return { error: 'too-many-lines' }
     const ok = perCell.filter(Boolean)
     if (ok.length === 0) return null
@@ -304,7 +318,7 @@ export default function App() {
         bufferedAreaHa: sum((s) => s.bufferedAreaHa),
       },
     }
-  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, activeCells])
+  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, params.crosshatch, activeCells])
 
   const planOk = plan && !plan.error ? plan : null
 
@@ -437,6 +451,94 @@ export default function App() {
     setBasePoint(lonlat)
   }, [])
 
+  /* ------------------------- Terreno (DEM) --------------------------- */
+  const ringBbox = useMemo(() => {
+    if (!ring) return null
+    let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity]
+    ring.forEach(([x, y]) => {
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x)
+      maxY = Math.max(maxY, y)
+    })
+    return [minX, minY, maxX, maxY]
+  }, [ring])
+
+  const handleLoadTerrain = useCallback(async () => {
+    if (!ringBbox) return
+    setTerrain({ status: 'loading', data: null, error: null })
+    try {
+      const m = 0.01 // ~1 km de margem para incluir a base
+      const bbox = [ringBbox[0] - m, ringBbox[1] - m, ringBbox[2] + m, ringBbox[3] + m]
+      const data = await loadTerrain(bbox)
+      setTerrain({ status: 'ready', data, error: null })
+    } catch (err) {
+      setTerrain({ status: 'error', data: null, error: err?.message ?? 'Falha no terreno' })
+    }
+  }, [ringBbox])
+
+  // a área ainda está coberta pelo terreno carregado?
+  const terrainCovers = useMemo(() => {
+    if (terrain.status !== 'ready' || !ringBbox || !terrain.data?.bbox) return false
+    const [a, b, c, d] = terrain.data.bbox
+    return ringBbox[0] >= a && ringBbox[1] >= b && ringBbox[2] <= c && ringBbox[3] <= d
+  }, [terrain, ringBbox])
+
+  /* ------------------------------ GCPs -------------------------------- */
+  const gcpAutoCount = useMemo(() => {
+    const areaHa = planOk?.stats?.areaHa
+    return areaHa ? suggestedGcpCount(areaHa) : 5
+  }, [planOk])
+
+  const gcps = useMemo(() => {
+    if (!gcpConfig.enabled || !ring || !validation.valid) return null
+    try {
+      return planGcps(ring, gcpConfig.count ?? gcpAutoCount)
+    } catch {
+      return null
+    }
+  }, [gcpConfig, ring, validation.valid, gcpAutoCount])
+
+  const gcpInfo = useMemo(
+    () => (gcps && gcps.length > 0 ? gcpStats(ring, gcps) : null),
+    [gcps, ring],
+  )
+
+  /* ------------- Terrain follow: alturas por waypoint ----------------- */
+  const terrainResult = useMemo(() => {
+    if (!terrainFollow.enabled || !terrainCovers || !planOk?.lines?.length) return null
+    const data = terrain.data
+    const refPt = basePoint ?? planOk.waypoints[0]
+    const refElev = data.elevationAt(refPt[0], refPt[1])
+    if (refElev == null) return { error: 'Referência fora do terreno carregado' }
+    try {
+      const res = terrainFollowLines(data, planOk.lines, {
+        agl: params.altitude,
+        refElev,
+        toleranceM: Math.max(1, terrainFollow.tolerance),
+      })
+      // reagrupar os waypoints densificados por bloco (ordem preservada)
+      let blocks3 = null
+      if (blocks) {
+        const porLinha = []
+        let idx = 0
+        res.perLine.forEach((n) => {
+          porLinha.push(res.waypoints.slice(idx, idx + n))
+          idx += n
+        })
+        let li = 0
+        blocks3 = blocks.map((b) => {
+          const wps = []
+          for (let k = 0; k < b.lines.length; k++) wps.push(...(porLinha[li++] ?? []))
+          return { ...b, waypoints: wps }
+        })
+      }
+      return { ...res, refElev, blocks3 }
+    } catch (err) {
+      return { error: err?.message ?? 'Falha no cálculo do terreno' }
+    }
+  }, [terrainFollow, terrainCovers, terrain.data, planOk, blocks, basePoint, params.altitude])
+
   /* ------------------------ Importação de áreas ----------------------- */
   const applyImportedRing = useCallback((rawRing) => {
     const clean = simplifyRingIfNeeded(rawRing)
@@ -506,6 +608,8 @@ export default function App() {
     setAreaOrigin(p.areaOrigin ?? null)
     setBasePoint(Array.isArray(p.basePoint) ? p.basePoint : null)
     setDisabledTiles(new Set(Array.isArray(p.disabledTiles) ? p.disabledTiles : []))
+    if (p.terrainFollow) setTerrainFollow((t) => ({ ...t, ...p.terrainFollow }))
+    if (p.gcpConfig) setGcpConfig((g) => ({ ...g, ...p.gcpConfig }))
     return true
   }, [])
 
@@ -543,6 +647,8 @@ export default function App() {
             areaOrigin,
             basePoint,
             disabledTiles: [...disabledTiles],
+            terrainFollow,
+            gcpConfig,
           }),
         )
       } catch {
@@ -550,7 +656,7 @@ export default function App() {
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [missionName, droneId, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles])
+  }, [missionName, droneId, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const exportProject = useCallback(() => {
     const data = {
@@ -565,12 +671,14 @@ export default function App() {
       areaOrigin,
       basePoint,
       disabledTiles: [...disabledTiles],
+      terrainFollow,
+      gcpConfig,
     }
     downloadBlob(
       new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
       `${missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'}-projeto.json`,
     )
-  }, [missionName, droneId, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles])
+  }, [missionName, droneId, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const importProject = useCallback(
     async (file) => {
@@ -655,22 +763,35 @@ export default function App() {
   const canExportKMZ = Boolean(planOk && planOk.waypoints.length >= 2)
 
   const handleExportKML = () => {
-    if (canExportKML) exportSimpleKML(ring, safeName, basePoint)
+    if (canExportKML) exportSimpleKML(ring, safeName, basePoint, gcps)
+  }
+
+  const handleExportGcps = () => {
+    if (!gcps || gcps.length === 0) return
+    downloadBlob(
+      new Blob([buildGcpKML(gcps, `${safeName}-gcps`)], {
+        type: 'application/vnd.google-earth.kml+xml',
+      }),
+      `${safeName}-gcps.kml`,
+    )
   }
 
   const handleExportKMZ = () => {
     if (!canExportKMZ) return
+    const terrainOk = terrainResult && !terrainResult.error
     const exportParams = {
       name: safeName,
-      waypoints: planOk.waypoints,
+      waypoints: terrainOk ? terrainResult.waypoints : planOk.waypoints,
       altitude: params.altitude,
       speed: params.speed,
       wpml,
       photoIntervalM: sensor.type === 'camera' ? interval : 0,
       triggerMode: params.triggerMode,
+      gimbalPitch: params.gimbalPitch,
     }
-    if (blocks && blocks.length > 1) {
-      exportBlocksZip(exportParams, blocks)
+    const exportBlocks = terrainOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
+    if (exportBlocks && exportBlocks.length > 1) {
+      exportBlocksZip(exportParams, exportBlocks)
     } else {
       exportWPMLKmz(exportParams)
     }
@@ -764,6 +885,17 @@ export default function App() {
           onProjectImport={importProject}
           onTilesUndo={undoTiles}
           onTilesRestoreAll={restoreAllTiles}
+          terrain={terrain}
+          terrainCovers={terrainCovers}
+          terrainFollow={terrainFollow}
+          setTerrainFollow={setTerrainFollow}
+          onLoadTerrain={handleLoadTerrain}
+          terrainResult={terrainResult}
+          gcpConfig={gcpConfig}
+          setGcpConfig={setGcpConfig}
+          gcpAutoCount={gcpAutoCount}
+          gcpInfo={gcpInfo}
+          onExportGcps={handleExportGcps}
           onUndoVertex={removeLastDraftVertex}
           onStartDraw={startDraw}
           onStartAnchor={startAnchor}
@@ -789,6 +921,7 @@ export default function App() {
             tiles={tiles}
             disabledTiles={disabledTiles}
             onTileToggle={toggleTile}
+            gcps={gcps}
             fitKey={fitKey}
             editable={!gridCells && split.mode !== 'tiles' && split.mode !== 'battery'}
             onMapClick={handleMapClick}

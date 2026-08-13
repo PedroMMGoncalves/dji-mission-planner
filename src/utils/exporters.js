@@ -26,7 +26,7 @@ export function downloadBlob(blob, filename) {
 /* KML simples (polígono 2D)                                          */
 /* ------------------------------------------------------------------ */
 
-export function buildSimpleKML(ring, name, basePoint = null) {
+export function buildSimpleKML(ring, name, basePoint = null, gcps = null) {
   const coords = [...ring, ring[0]]
     .map(([lon, lat]) => `${fmtCoord(lon)},${fmtCoord(lat)},0`)
     .join(' ')
@@ -39,6 +39,20 @@ export function buildSimpleKML(ring, name, basePoint = null) {
         <coordinates>${fmtCoord(basePoint[0])},${fmtCoord(basePoint[1])},0</coordinates>
       </Point>
     </Placemark>`
+    : ''
+
+  const gcpPlacemarks = gcps?.length
+    ? gcps
+        .map(
+          (g) => `
+    <Placemark>
+      <name>${escapeXml(g.id)}</name>
+      <Point>
+        <coordinates>${fmtCoord(g.point[0])},${fmtCoord(g.point[1])},0</coordinates>
+      </Point>
+    </Placemark>`,
+        )
+        .join('')
     : ''
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -59,14 +73,14 @@ export function buildSimpleKML(ring, name, basePoint = null) {
           </LinearRing>
         </outerBoundaryIs>
       </Polygon>
-    </Placemark>${basePlacemark}
+    </Placemark>${basePlacemark}${gcpPlacemarks}
   </Document>
 </kml>
 `
 }
 
-export function exportSimpleKML(ring, name, basePoint = null) {
-  const kml = buildSimpleKML(ring, name, basePoint)
+export function exportSimpleKML(ring, name, basePoint = null, gcps = null) {
+  const kml = buildSimpleKML(ring, name, basePoint, gcps)
   downloadBlob(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }), `${name}.kml`)
 }
 
@@ -114,14 +128,14 @@ export function buildTemplateKML(params) {
 
   const placemarks = waypoints
     .map(
-      ([lon, lat], i) => `      <Placemark>
+      ([lon, lat, h], i) => `      <Placemark>
         <Point>
           <coordinates>${fmtCoord(lon)},${fmtCoord(lat)}</coordinates>
         </Point>
         <wpml:index>${i}</wpml:index>
-        <wpml:ellipsoidHeight>${altitude}</wpml:ellipsoidHeight>
-        <wpml:height>${altitude}</wpml:height>
-        <wpml:useGlobalHeight>1</wpml:useGlobalHeight>
+        <wpml:ellipsoidHeight>${h ?? altitude}</wpml:ellipsoidHeight>
+        <wpml:height>${h ?? altitude}</wpml:height>
+        <wpml:useGlobalHeight>${h != null ? 0 : 1}</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
@@ -171,6 +185,7 @@ ${placemarks}
  */
 export function buildWaylinesWPML(params) {
   const { waypoints, altitude, speed, wpml, photoIntervalM, triggerMode } = params
+  const gimbalPitch = params.gimbalPitch ?? -90
 
   const triggerXml = (() => {
     if (!photoIntervalM || photoIntervalM <= 0) return null
@@ -200,7 +215,7 @@ export function buildWaylinesWPML(params) {
               <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
               <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
               <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>-90</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalPitchRotateAngle>${gimbalPitch}</wpml:gimbalPitchRotateAngle>
               <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
               <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
               <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
@@ -235,12 +250,12 @@ ${triggerXml}
 
   const placemarks = waypoints
     .map(
-      ([lon, lat], i) => `      <Placemark>
+      ([lon, lat, h], i) => `      <Placemark>
         <Point>
           <coordinates>${fmtCoord(lon)},${fmtCoord(lat)}</coordinates>
         </Point>
         <wpml:index>${i}</wpml:index>
-        <wpml:executeHeight>${altitude}</wpml:executeHeight>
+        <wpml:executeHeight>${h ?? altitude}</wpml:executeHeight>
         <wpml:waypointSpeed>${speed}</wpml:waypointSpeed>
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
