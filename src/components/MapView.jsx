@@ -22,10 +22,13 @@ export default function MapView({
   basePoint,
   plan,
   blocks,
+  gridCells,
+  editable,
   onMapClick,
   onVertexDrag,
   onVertexInsert,
   onVertexDelete,
+  onDraftVertexRemove,
   onAnchorDrag,
   onBaseDrag,
   onFinishDraw,
@@ -44,6 +47,7 @@ export default function MapView({
     onVertexDrag,
     onVertexInsert,
     onVertexDelete,
+    onDraftVertexRemove,
     onAnchorDrag,
     onBaseDrag,
   }
@@ -172,6 +176,17 @@ export default function MapView({
       const s = stateRef.current
       if (s.mode === 'draw') s.onFinishDraw()
     })
+    // Duplo clique DIREITO fecha o polígono; o menu do browser fica suprimido
+    // durante o desenho (evita cliques fantasma ao dispensá-lo)
+    let lastContextMenu = 0
+    map.on('contextmenu', (e) => {
+      const s = stateRef.current
+      if (s.mode !== 'draw') return
+      e.originalEvent?.preventDefault()
+      const now = Date.now()
+      if (now - lastContextMenu < 500) s.onFinishDraw()
+      lastContextMenu = now
+    })
 
     mapRef.current = map
     return () => map.remove()
@@ -224,14 +239,17 @@ export default function MapView({
         dashArray: '6 4',
       }).addTo(g)
     }
-    draftVertices.forEach((v) => {
-      L.circleMarker(toLatLng(v), {
-        radius: 5,
+    draftVertices.forEach((v, i) => {
+      const m = L.circleMarker(toLatLng(v), {
+        radius: 6,
         color: '#0f172a',
         weight: 2,
         fillColor: '#38bdf8',
         fillOpacity: 1,
+        bubblingMouseEvents: false, // o clique no vértice não chega ao mapa
       }).addTo(g)
+      // clicar num vértice do rascunho remove-o
+      m.on('click', () => stateRef.current.onDraftVertexRemove(i))
     })
   }, [draftVertices, mode])
 
@@ -250,31 +268,47 @@ export default function MapView({
       fillOpacity: 0.08,
     }).addTo(g)
 
-    const icon = L.divIcon({ className: 'vertex-handle', iconSize: [12, 12] })
-    ring.forEach((v, i) => {
-      const m = L.marker(toLatLng(v), { icon, draggable: true }).addTo(g)
-      m.on('dragend', () => {
-        const p = m.getLatLng()
-        stateRef.current.onVertexDrag(i, [p.lng, p.lat])
+    if (editable) {
+      const icon = L.divIcon({ className: 'vertex-handle', iconSize: [12, 12] })
+      ring.forEach((v, i) => {
+        const m = L.marker(toLatLng(v), { icon, draggable: true }).addTo(g)
+        m.on('dragend', () => {
+          const p = m.getLatLng()
+          stateRef.current.onVertexDrag(i, [p.lng, p.lat])
+        })
+        // clique direito remove o vértice (mínimo 3)
+        m.on('contextmenu', (e) => {
+          e.originalEvent?.preventDefault()
+          stateRef.current.onVertexDelete(i)
+        })
       })
-      // clique direito remove o vértice (mínimo 3)
-      m.on('contextmenu', (e) => {
-        e.originalEvent?.preventDefault()
-        stateRef.current.onVertexDelete(i)
-      })
-    })
 
-    // Pontos intermédios: arrastar insere um novo vértice nessa aresta
-    const midIcon = L.divIcon({ className: 'midpoint-handle', iconSize: [10, 10] })
-    ring.forEach((v, i) => {
-      const next = ring[(i + 1) % ring.length]
-      const mid = [(v[0] + next[0]) / 2, (v[1] + next[1]) / 2]
-      const mm = L.marker(toLatLng(mid), { icon: midIcon, draggable: true }).addTo(g)
-      mm.on('dragend', () => {
-        const p = mm.getLatLng()
-        stateRef.current.onVertexInsert(i + 1, [p.lng, p.lat])
+      // Pontos intermédios: arrastar insere um novo vértice nessa aresta
+      const midIcon = L.divIcon({ className: 'midpoint-handle', iconSize: [10, 10] })
+      ring.forEach((v, i) => {
+        const next = ring[(i + 1) % ring.length]
+        const mid = [(v[0] + next[0]) / 2, (v[1] + next[1]) / 2]
+        const mm = L.marker(toLatLng(mid), { icon: midIcon, draggable: true }).addTo(g)
+        mm.on('dragend', () => {
+          const p = mm.getLatLng()
+          stateRef.current.onVertexInsert(i + 1, [p.lng, p.lat])
+        })
       })
-    })
+    }
+
+    // Contornos das células da grelha de blocos
+    if (gridCells) {
+      gridCells.forEach((cell) => {
+        L.polygon(cell.map(toLatLng), {
+          color: '#f59e0b',
+          weight: 1,
+          dashArray: '3 4',
+          fill: false,
+          opacity: 0.8,
+          interactive: false,
+        }).addTo(g)
+      })
+    }
 
     kinks.forEach((k) => {
       L.circleMarker(toLatLng(k), {
@@ -284,7 +318,7 @@ export default function MapView({
         fill: false,
       }).addTo(g)
     })
-  }, [ring, valid, kinks])
+  }, [ring, valid, kinks, editable, gridCells])
 
   // Marcador do ponto central (modo âncora)
   useEffect(() => {

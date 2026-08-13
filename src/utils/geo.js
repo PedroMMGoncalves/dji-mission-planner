@@ -129,6 +129,50 @@ export function rectangleFromAnchor(center, lengthM, widthM, orientationDeg) {
 }
 
 /**
+ * Grelha de blocos: replica o retângulo/quadrado da âncora em `cols` colunas
+ * (ao longo do azimute de orientação) × `rows` linhas (perpendicular),
+ * centrada no ponto âncora. As células vêm em ordem serpenteante (linha a
+ * linha, invertendo o sentido das colunas) para minimizar o reposicionamento
+ * entre blocos consecutivos — cada célula é um bloco de voo independente.
+ *
+ * Devolve { outline, cells }: anel exterior + anéis das células, por ordem de voo.
+ */
+export function gridFromAnchor(center, lengthM, widthM, orientationDeg, cols, rows) {
+  const [lon, lat] = center
+  const mLon = metersPerDegLon(lat)
+  const totalL = lengthM * cols
+  const totalW = widthM * rows
+
+  const toRing = (x0, y0, x1, y1) => [
+    [lon + x0 / mLon, lat + y0 / M_PER_DEG_LAT],
+    [lon + x1 / mLon, lat + y0 / M_PER_DEG_LAT],
+    [lon + x1 / mLon, lat + y1 / M_PER_DEG_LAT],
+    [lon + x0 / mLon, lat + y1 / M_PER_DEG_LAT],
+  ]
+  const rotateRing = (ring) => {
+    const poly = turf.polygon([[...ring, ring[0]]])
+    const rotated = turf.transformRotate(poly, orientationDeg - 90, { pivot: center })
+    return rotated.geometry.coordinates[0].slice(0, 4)
+  }
+
+  const cells = []
+  for (let r = 0; r < rows; r++) {
+    const colIdx = Array.from({ length: cols }, (_, c) => c)
+    if (r % 2 === 1) colIdx.reverse()
+    for (const c of colIdx) {
+      const x0 = -totalL / 2 + c * lengthM
+      const y0 = -totalW / 2 + r * widthM
+      cells.push(rotateRing(toRing(x0, y0, x0 + lengthM, y0 + widthM)))
+    }
+  }
+
+  return {
+    outline: rotateRing(toRing(-totalL / 2, -totalW / 2, totalL / 2, totalW / 2)),
+    cells,
+  }
+}
+
+/**
  * Azimute (0–180°) da aresta mais longa do polígono — usado como direção de
  * referência para os atalhos "paralelas / perpendiculares / oblíquas" quando
  * a área foi desenhada à mão.

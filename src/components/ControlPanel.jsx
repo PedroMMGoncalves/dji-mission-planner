@@ -64,6 +64,8 @@ export default function ControlPanel({
   split,
   setSplitParam,
   blocks,
+  gridActive,
+  onUndoVertex,
   onStartDraw,
   onStartAnchor,
   onStartBase,
@@ -400,17 +402,28 @@ export default function ControlPanel({
 
         {mode === 'draw' && (
           <div className="mt-2 space-y-2">
-            <p className="text-xs text-slate-400">
-              Clique no mapa para adicionar vértices ({draftCount}). Duplo-clique ou
-              «Concluir» para fechar.
+            <p className="text-xs leading-relaxed text-slate-400">
+              Clique no mapa para adicionar vértices ({draftCount}).{' '}
+              <strong className="text-slate-300">Backspace</strong> ou clique num vértice
+              para o remover · <strong className="text-slate-300">duplo clique</strong>{' '}
+              (esquerdo ou direito) ou «Concluir» para fechar · Esc cancela.
             </p>
-            <button
-              onClick={onFinishDraw}
-              disabled={draftCount < 3}
-              className="flex w-full items-center justify-center gap-1.5 rounded bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <IconCheck /> Concluir polígono
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={onUndoVertex}
+                disabled={draftCount === 0}
+                className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ↩ Anular último
+              </button>
+              <button
+                onClick={onFinishDraw}
+                disabled={draftCount < 3}
+                className="flex items-center justify-center gap-1.5 rounded bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <IconCheck /> Concluir
+              </button>
+            </div>
           </div>
         )}
 
@@ -475,13 +488,35 @@ export default function ControlPanel({
                 onChange={(v) => setAnchorParam('orientation', v)}
               />
             </Field>
-            <p className="pt-1 text-[11px] text-slate-500">
-              Ex.: bloco 250×250 m ≈ 1 bateria (M3E, 120 m AGL).
+
+            <p className="pb-1 pt-2 text-[11px] uppercase tracking-wider text-slate-500">
+              Grelha de blocos (réplicas da forma)
+            </p>
+            <Field label="Colunas (∥ orientação)">
+              <NumberInput
+                value={anchor.cols}
+                min={1}
+                max={12}
+                onChange={(v) => setAnchorParam('cols', v)}
+              />
+            </Field>
+            <Field label="Linhas (⊥ orientação)">
+              <NumberInput
+                value={anchor.rows}
+                min={1}
+                max={12}
+                onChange={(v) => setAnchorParam('rows', v)}
+              />
+            </Field>
+            <p className="pt-1 text-[11px] leading-relaxed text-slate-500">
+              Com mais de 1 célula, cada célula torna-se um bloco de voo numerado
+              (ex.: 3×2 quadrados de 250 m = 6 baterias). Use o buffer para criar
+              sobreposição entre células.
             </p>
           </div>
         )}
 
-        {hasRing && mode !== 'draw' && (
+        {hasRing && mode !== 'draw' && !gridActive && (
           <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
             Edição: arraste os vértices · arraste os pontos intermédios para{' '}
             <strong className="text-slate-400">inserir vértices</strong> · clique direito
@@ -516,6 +551,13 @@ export default function ControlPanel({
 
       {/* Divisão em blocos de voo */}
       <Section title="Divisão em Blocos de Voo">
+        {gridActive && (
+          <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+            Grelha ativa: cada célula é um bloco de voo. A divisão por área/bateria
+            aplica-se apenas a áreas sem grelha.
+          </p>
+        )}
+        {!gridActive && (
         <div className="grid grid-cols-3 gap-1.5">
           {[
             { value: 'none', label: 'Nenhuma' },
@@ -535,8 +577,9 @@ export default function ControlPanel({
             </button>
           ))}
         </div>
+        )}
 
-        {split.mode === 'area' && (
+        {!gridActive && split.mode === 'area' && (
           <div className="mt-2">
             <Field label="Área máx. por bloco" suffix="ha">
               <NumberInput
@@ -549,7 +592,7 @@ export default function ControlPanel({
           </div>
         )}
 
-        {split.mode === 'battery' && (
+        {!gridActive && split.mode === 'battery' && (
           <div className="mt-2">
             <Field label="Duração da bateria" suffix="min">
               <NumberInput
@@ -575,7 +618,7 @@ export default function ControlPanel({
           </div>
         )}
 
-        {split.mode !== 'none' && blocks && (
+        {(gridActive || split.mode !== 'none') && blocks && (
           <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded border border-slate-800 bg-slate-900/60 p-2">
             {blocks.map((b) => (
               <div

@@ -8,11 +8,13 @@ import {
   computeGSD,
   distanceToArea,
   generateFlightLines,
+  gridFromAnchor,
   lineSpacing,
   longestEdgeBearing,
   photoInterval,
   rectangleFromAnchor,
   resolveSensor,
+  ringToPolygon,
   splitIntoBlocks,
   validateRing,
 } from './utils/geo.js'
@@ -46,7 +48,10 @@ export default function App() {
     width: 300,
     orientation: 90,
     shape: 'rect', // 'rect' | 'square'
+    cols: 1, // grelha de blocos: colunas ao longo da orientação
+    rows: 1, // grelha de blocos: linhas perpendiculares
   })
+  const [gridCells, setGridCells] = useState(null) // anéis das células da grelha
   const [split, setSplit] = useState({
     mode: 'none', // 'none' | 'area' | 'battery'
     maxAreaHa: 20,
@@ -72,12 +77,23 @@ export default function App() {
     setSplit((s) => ({ ...s, [key]: value }))
   }, [])
 
-  /* ----------------- Modo âncora → retângulo perfeito ----------------- */
+  /* ------- Modo âncora → retângulo perfeito ou grelha de células ------- */
   useEffect(() => {
     if (anchor.center && anchor.length > 0 && anchor.width > 0) {
-      setRing(
-        rectangleFromAnchor(anchor.center, anchor.length, anchor.width, anchor.orientation),
-      )
+      const cols = Math.max(1, Math.round(anchor.cols))
+      const rows = Math.max(1, Math.round(anchor.rows))
+      if (cols * rows > 1) {
+        const grid = gridFromAnchor(
+          anchor.center, anchor.length, anchor.width, anchor.orientation, cols, rows,
+        )
+        setRing(grid.outline)
+        setGridCells(grid.cells)
+      } else {
+        setRing(
+          rectangleFromAnchor(anchor.center, anchor.length, anchor.width, anchor.orientation),
+        )
+        setGridCells(null)
+      }
       setAreaOrigin('anchor')
     }
   }, [anchor])
@@ -122,14 +138,39 @@ export default function App() {
 
   const plan = useMemo(() => {
     if (!ring || !validation.valid) return null
-    return generateFlightLines(ring, {
+    const opts = {
       spacingM: spacing,
       angleDeg: params.angle,
       bufferPct: params.bufferPct,
       photoIntervalM: interval ?? 0,
       speed: params.speed,
-    })
-  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed])
+    }
+    if (!gridCells) return generateFlightLines(ring, opts)
+
+    // Grelha: cada célula é planeada de forma independente com os mesmos
+    // parâmetros (o buffer, se ativo, cria sobreposição entre células)
+    const perCell = gridCells.map((cell) => generateFlightLines(cell, opts))
+    if (perCell.some((p) => p?.error)) return { error: 'too-many-lines' }
+    const ok = perCell.filter(Boolean)
+    if (ok.length === 0) return null
+    const sum = (f) => ok.reduce((acc, p) => acc + (f(p.stats) ?? 0), 0)
+    return {
+      area: ringToPolygon(ring),
+      lines: ok.flatMap((p) => p.lines),
+      waypoints: ok.flatMap((p) => p.waypoints),
+      cellPlans: ok,
+      stats: {
+        lineCount: sum((s) => s.lineCount),
+        waypointCount: sum((s) => s.waypointCount),
+        totalLineLengthM: sum((s) => s.totalLineLengthM),
+        pathLengthM: sum((s) => s.pathLengthM),
+        photoCount: interval != null ? sum((s) => s.photoCount) : null,
+        flightTimeS: sum((s) => s.flightTimeS),
+        areaHa: sum((s) => s.areaHa),
+        bufferedAreaHa: sum((s) => s.bufferedAreaHa),
+      },
+    }
+  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, gridCells])
 
   const planOk = plan && !plan.error ? plan : null
 
@@ -145,9 +186,22 @@ export default function App() {
     [basePoint, ring],
   )
 
-  // Divisão da grelha em blocos de voo numerados
+  // Divisão em blocos de voo numerados: células da grelha, ou corte da
+  // serpentina por área/bateria
   const blocks = useMemo(() => {
-    if (!planOk || split.mode === 'none') return null
+    if (!planOk) return null
+    if (gridCells && planOk.cellPlans) {
+      return planOk.cellPlans.map((p, i) => ({
+        id: i + 1,
+        lines: p.lines,
+        waypoints: p.waypoints,
+        areaHa: p.stats.areaHa,
+        lengthM: p.stats.totalLineLengthM,
+        transitS: 0,
+        timeS: p.stats.flightTimeS ?? 0,
+      }))
+    }
+    if (split.mode === 'none') return null
     return splitIntoBlocks(planOk, {
       mode: split.mode,
       maxAreaHa: split.maxAreaHa,
@@ -157,7 +211,7 @@ export default function App() {
       spacingM: spacing,
       basePoint,
     })
-  }, [planOk, split, params.speed, spacing, basePoint])
+  }, [planOk, gridCells, split, params.speed, spacing, basePoint])
 
   /* --------------------------- Interações ---------------------------- */
   const handleMapClick = useCallback(
@@ -195,6 +249,33 @@ export default function App() {
     })
   }, [])
 
+  const removeDraftVertex = useCallback((index) => {
+    setDraftVertices((d) => d.filter((_, i) => i !== index))
+  }, [])
+
+  const removeLastDraftVertex = useCallback(() => {
+    setDraftVertices((d) => d.slice(0, -1))
+  }, [])
+
+  // Teclado no modo de desenho: Backspace/Delete anula o último ponto,
+  // Escape cancela o desenho (ignorado quando o foco está num input)
+  useEffect(() => {
+    if (mode !== 'draw') return
+    const onKey = (e) => {
+      const tag = e.target?.tagName
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault()
+        removeLastDraftVertex()
+      } else if (e.key === 'Escape') {
+        setMode('idle')
+        setDraftVertices([])
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mode, removeLastDraftVertex])
+
   const handleVertexDrag = useCallback((index, lonlat) => {
     setRing((r) => (r ? r.map((v, i) => (i === index ? lonlat : v)) : r))
   }, [])
@@ -226,6 +307,7 @@ export default function App() {
     setDraftVertices([])
     setRing(null)
     setAreaOrigin(null)
+    setGridCells(null)
     setAnchor((a) => ({ ...a, center: null }))
   }, [])
 
@@ -256,6 +338,7 @@ export default function App() {
     setDraftVertices([])
     setRing(null)
     setAreaOrigin(null)
+    setGridCells(null)
     setAnchor((a) => ({ ...a, center: null }))
   }, [])
 
@@ -350,6 +433,8 @@ export default function App() {
           split={split}
           setSplitParam={setSplitParam}
           blocks={blocks}
+          gridActive={Boolean(gridCells)}
+          onUndoVertex={removeLastDraftVertex}
           onStartDraw={startDraw}
           onStartAnchor={startAnchor}
           onStartBase={startBase}
@@ -370,10 +455,13 @@ export default function App() {
             basePoint={basePoint}
             plan={planOk}
             blocks={blocks}
+            gridCells={gridCells}
+            editable={!gridCells}
             onMapClick={handleMapClick}
             onVertexDrag={handleVertexDrag}
             onVertexInsert={handleVertexInsert}
             onVertexDelete={handleVertexDelete}
+            onDraftVertexRemove={removeDraftVertex}
             onAnchorDrag={handleAnchorDrag}
             onBaseDrag={handleBaseDrag}
             onFinishDraw={handleFinishDraw}

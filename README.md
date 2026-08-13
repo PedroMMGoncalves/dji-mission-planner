@@ -30,8 +30,14 @@ calcular grelhas de voo fotogramétricas/LiDAR e exportar **KML** simples ou
   nomes visíveis a partir do zoom 9; dados simplificados incluídos na app) e das
   **freguesias** via WMS oficial da DGT.
 - **Edição avançada:** arrastar vértices, arrastar pontos intermédios para
-  inserir novos vértices e clique direito para remover; formas predefinidas
-  (polígono livre, retângulo, quadrado).
+  inserir novos vértices e clique direito para remover. Durante o desenho:
+  Backspace/clique num vértice anula-o, duplo clique (esquerdo ou direito)
+  fecha o polígono, Esc cancela. Formas predefinidas (polígono livre,
+  retângulo, quadrado).
+- **Grelha de blocos:** no modo ponto central, replicar a forma em N colunas ×
+  M linhas (paralelas/perpendiculares à orientação); cada célula torna-se um
+  bloco de voo numerado em ordem serpenteante (ex.: 3×2 quadrados de 250 m =
+  6 baterias), com exportação de um KMZ por célula.
 - **Divisão em blocos de voo numerados** (modelo UgCS/DroneDeploy): a grelha
   global mantém-se alinhada e é cortada em grupos de faixas contíguas — por
   área máxima (ha) ou por capacidade da bateria (duração × reserva de regresso,

@@ -4,6 +4,7 @@ import {
   computeGSD,
   distanceToArea,
   generateFlightLines,
+  gridFromAnchor,
   lineSpacing,
   longestEdgeBearing,
   photoInterval,
@@ -166,6 +167,29 @@ if (plan90 && !plan90.error) {
   check('trânsito à base contabilizado', bBase && bBase.length >= bBat.length && bBase[0].transitS > 100,
     `${bBase?.length} blocos, transito ${Math.round(bBase?.[0].transitS)} s`)
 }
+
+/* 8d. Grelha de blocos (células) */
+const grid = gridFromAnchor(center, 250, 250, 90, 3, 2)
+check('grelha 3×2: 6 células', grid.cells.length === 6)
+const outW = turf.distance(grid.outline[0], grid.outline[1], { units: 'meters' })
+const outH = turf.distance(grid.outline[1], grid.outline[2], { units: 'meters' })
+check('grelha contorno ~750×500 m', Math.abs(outW - 750) < 8 && Math.abs(outH - 500) < 8,
+  `${outW.toFixed(0)}×${outH.toFixed(0)}`)
+const cellSides = grid.cells.map((c) => turf.distance(c[0], c[1], { units: 'meters' }))
+check('células ~250 m de lado', cellSides.every((s) => Math.abs(s - 250) < 5))
+const centroids = grid.cells.map((c) => turf.centroid(turf.polygon([[...c, c[0]]])).geometry.coordinates)
+let snakeOk = true
+for (let i = 1; i < centroids.length; i++) {
+  const d = turf.distance(centroids[i - 1], centroids[i], { units: 'meters' })
+  if (Math.abs(d - 250) > 10) snakeOk = false
+}
+check('células em serpentina (vizinhas a ~250 m)', snakeOk,
+  centroids.slice(1).map((c, i) => turf.distance(centroids[i], c, { units: 'meters' }).toFixed(0)).join(','))
+const cellPlan = generateFlightLines(grid.cells[0], {
+  spacingM: sp, angleDeg: 90, bufferPct: 0, photoIntervalM: iv, speed: 10,
+})
+check('plano por célula gerado (~6-7 faixas)', cellPlan && !cellPlan.error && cellPlan.stats.lineCount >= 6 && cellPlan.stats.lineCount <= 7,
+  cellPlan?.stats.lineCount)
 
 /* 9. Trava de segurança */
 const planTiny = generateFlightLines(rectNS, {
