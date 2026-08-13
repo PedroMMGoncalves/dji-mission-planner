@@ -38,6 +38,14 @@ calcular grelhas de voo fotogramétricas/LiDAR e exportar **KML** simples ou
   M linhas (paralelas/perpendiculares à orientação); cada célula torna-se um
   bloco de voo numerado em ordem serpenteante (ex.: 3×2 quadrados de 250 m =
   6 baterias), com exportação de um KMZ por célula.
+- **Mosaico automático:** cobrir um polígono desenhado com quadrados de lado
+  à escolha (podem exceder os limites); clicar numa célula no mapa
+  desativa-a/reativa-a e cada célula ativa é um bloco de voo numerado.
+- **GSD alvo ↔ altitude:** editar qualquer um dos dois recalcula o outro, com
+  aviso quando a altitude excede os 120 m AGL da categoria Aberta (UE).
+- **Checklist de campo UAV** (pré-campo / durante / pós-campo + relatório de
+  missão): página própria acessível pelo cabeçalho, imprimível e com
+  exportação JSON.
 - **Divisão em blocos de voo numerados** (modelo UgCS/DroneDeploy): a grelha
   global mantém-se alinhada e é cortada em grupos de faixas contíguas — por
   área máxima (ha) ou por capacidade da bateria (duração × reserva de regresso,

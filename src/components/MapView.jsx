@@ -23,6 +23,9 @@ export default function MapView({
   plan,
   blocks,
   gridCells,
+  tiles,
+  disabledTiles,
+  onTileToggle,
   editable,
   onMapClick,
   onVertexDrag,
@@ -50,6 +53,7 @@ export default function MapView({
     onDraftVertexRemove,
     onAnchorDrag,
     onBaseDrag,
+    onTileToggle,
   }
 
   // Inicialização única do mapa
@@ -310,6 +314,30 @@ export default function MapView({
       })
     }
 
+    // Células do mosaico: clicar ativa/desativa cada quadrado
+    if (tiles) {
+      tiles.forEach((cell, i) => {
+        const off = disabledTiles?.has(i)
+        const p = L.polygon(cell.map(toLatLng), {
+          color: off ? '#64748b' : '#f59e0b',
+          weight: off ? 1 : 1.5,
+          dashArray: off ? '2 5' : '3 4',
+          fillColor: off ? '#64748b' : '#f59e0b',
+          fillOpacity: off ? 0.04 : 0.08,
+          opacity: off ? 0.5 : 0.9,
+          bubblingMouseEvents: false,
+        }).addTo(g)
+        p.on('click', () => stateRef.current.onTileToggle(i))
+        if (off) {
+          const c = cell.reduce((a, v) => [a[0] + v[0] / 4, a[1] + v[1] / 4], [0, 0])
+          L.marker(toLatLng(c), {
+            icon: L.divIcon({ className: 'tile-off-label', html: '✕', iconSize: null }),
+            interactive: false,
+          }).addTo(g)
+        }
+      })
+    }
+
     kinks.forEach((k) => {
       L.circleMarker(toLatLng(k), {
         radius: 8,
@@ -318,7 +346,7 @@ export default function MapView({
         fill: false,
       }).addTo(g)
     })
-  }, [ring, valid, kinks, editable, gridCells])
+  }, [ring, valid, kinks, editable, gridCells, tiles, disabledTiles])
 
   // Marcador do ponto central (modo âncora)
   useEffect(() => {

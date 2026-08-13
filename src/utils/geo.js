@@ -172,6 +172,62 @@ export function gridFromAnchor(center, lengthM, widthM, orientationDeg, cols, ro
   }
 }
 
+const MAX_TILES = 400 // trava contra mosaicos com células minúsculas
+
+/**
+ * MOSAICO AUTOMÁTICO: cobre um polígono desenhado com quadrados de lado
+ * `sizeM`, alinhados com o azimute `orientationDeg`. As células podem exceder
+ * os limites do polígono (mantém-se qualquer célula que o interseta) — o
+ * utilizador desativa depois as que não interessam, clicando no mapa.
+ *
+ * Algoritmo: roda o polígono por −orientação em torno do centróide (células
+ * ficam alinhadas aos eixos no referencial rodado), gera a malha centrada na
+ * bounding box, filtra por interseção com o polígono e roda as células de
+ * volta. A numeração segue ordem serpenteante linha a linha.
+ *
+ * Devolve [anéis] das células candidatas, ou { error: 'too-many-cells' }.
+ */
+export function tilePolygonWithSquares(ring, sizeM, orientationDeg) {
+  if (!ring || ring.length < 3 || !(sizeM >= 10)) return null
+  const poly = ringToPolygon(ring)
+  const pivot = turf.centroid(poly).geometry.coordinates
+  const rotated = turf.transformRotate(poly, -orientationDeg, { pivot })
+
+  const [minX, minY, maxX, maxY] = turf.bbox(rotated)
+  const midLat = (minY + maxY) / 2
+  const dLon = sizeM / metersPerDegLon(midLat)
+  const dLat = sizeM / M_PER_DEG_LAT
+
+  const cols = Math.max(1, Math.ceil((maxX - minX) / dLon))
+  const rows = Math.max(1, Math.ceil((maxY - minY) / dLat))
+  if (cols * rows > MAX_TILES) return { error: 'too-many-cells', count: cols * rows }
+
+  // malha centrada na bbox, para margens simétricas
+  const x0 = (minX + maxX) / 2 - (cols * dLon) / 2
+  const y0 = (minY + maxY) / 2 - (rows * dLat) / 2
+
+  const cells = []
+  for (let r = 0; r < rows; r++) {
+    const colIdx = Array.from({ length: cols }, (_, c) => c)
+    if (r % 2 === 1) colIdx.reverse()
+    for (const c of colIdx) {
+      const cx0 = x0 + c * dLon
+      const cy0 = y0 + r * dLat
+      const cellRing = [
+        [cx0, cy0],
+        [cx0 + dLon, cy0],
+        [cx0 + dLon, cy0 + dLat],
+        [cx0, cy0 + dLat],
+      ]
+      const cellPoly = turf.polygon([[...cellRing, cellRing[0]]])
+      if (!turf.booleanIntersects(cellPoly, rotated)) continue
+      const back = turf.transformRotate(cellPoly, orientationDeg, { pivot })
+      cells.push(back.geometry.coordinates[0].slice(0, 4))
+    }
+  }
+  return cells
+}
+
 /**
  * Azimute (0–180°) da aresta mais longa do polígono — usado como direção de
  * referência para os atalhos "paralelas / perpendiculares / oblíquas" quando

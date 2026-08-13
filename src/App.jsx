@@ -16,6 +16,7 @@ import {
   resolveSensor,
   ringToPolygon,
   splitIntoBlocks,
+  tilePolygonWithSquares,
   validateRing,
 } from './utils/geo.js'
 import { exportBlocksZip, exportSimpleKML, exportWPMLKmz } from './utils/exporters.js'
@@ -53,11 +54,14 @@ export default function App() {
   })
   const [gridCells, setGridCells] = useState(null) // anéis das células da grelha
   const [split, setSplit] = useState({
-    mode: 'none', // 'none' | 'area' | 'battery'
+    mode: 'none', // 'none' | 'area' | 'battery' | 'tiles'
     maxAreaHa: 20,
     batteryMin: 25,
     reservePct: 30, // regressar à base com 30% de bateria
+    tileSize: 250, // lado dos quadrados do mosaico (m)
+    tileOrientation: 0, // azimute da malha do mosaico
   })
+  const [disabledTiles, setDisabledTiles] = useState(() => new Set())
 
   const setParam = useCallback((key, value) => {
     setParams((p) => ({ ...p, [key]: value }))
@@ -136,6 +140,39 @@ export default function App() {
     [ring],
   )
 
+  // Mosaico automático: candidatas a células sobre o polígono
+  const tilesResult = useMemo(() => {
+    if (!ring || !validation.valid || split.mode !== 'tiles' || gridCells) return null
+    return tilePolygonWithSquares(ring, split.tileSize, split.tileOrientation)
+  }, [ring, validation.valid, split.mode, split.tileSize, split.tileOrientation, gridCells])
+
+  const tiles = Array.isArray(tilesResult) ? tilesResult : null
+  const tilesError = tilesResult?.error ?? null
+
+  // regenerar o mosaico limpa a seleção de células desativadas
+  useEffect(() => {
+    setDisabledTiles(new Set())
+  }, [ring, split.mode, split.tileSize, split.tileOrientation])
+
+  const toggleTile = useCallback((index) => {
+    setDisabledTiles((prev) => {
+      const next = new Set(prev)
+      if (next.has(index)) next.delete(index)
+      else next.add(index)
+      return next
+    })
+  }, [])
+
+  // Células ativas: grelha da âncora, ou mosaico sem as células removidas
+  const activeCells = useMemo(() => {
+    if (gridCells) return gridCells
+    if (tiles) {
+      const kept = tiles.filter((_, i) => !disabledTiles.has(i))
+      return kept.length > 0 ? kept : null
+    }
+    return null
+  }, [gridCells, tiles, disabledTiles])
+
   const plan = useMemo(() => {
     if (!ring || !validation.valid) return null
     const opts = {
@@ -145,11 +182,11 @@ export default function App() {
       photoIntervalM: interval ?? 0,
       speed: params.speed,
     }
-    if (!gridCells) return generateFlightLines(ring, opts)
+    if (!activeCells) return generateFlightLines(ring, opts)
 
-    // Grelha: cada célula é planeada de forma independente com os mesmos
-    // parâmetros (o buffer, se ativo, cria sobreposição entre células)
-    const perCell = gridCells.map((cell) => generateFlightLines(cell, opts))
+    // Grelha/mosaico: cada célula é planeada de forma independente com os
+    // mesmos parâmetros (o buffer, se ativo, cria sobreposição entre células)
+    const perCell = activeCells.map((cell) => generateFlightLines(cell, opts))
     if (perCell.some((p) => p?.error)) return { error: 'too-many-lines' }
     const ok = perCell.filter(Boolean)
     if (ok.length === 0) return null
@@ -170,7 +207,7 @@ export default function App() {
         bufferedAreaHa: sum((s) => s.bufferedAreaHa),
       },
     }
-  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, gridCells])
+  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, activeCells])
 
   const planOk = plan && !plan.error ? plan : null
 
@@ -190,7 +227,7 @@ export default function App() {
   // serpentina por área/bateria
   const blocks = useMemo(() => {
     if (!planOk) return null
-    if (gridCells && planOk.cellPlans) {
+    if (activeCells && planOk.cellPlans) {
       return planOk.cellPlans.map((p, i) => ({
         id: i + 1,
         lines: p.lines,
@@ -201,7 +238,7 @@ export default function App() {
         timeS: p.stats.flightTimeS ?? 0,
       }))
     }
-    if (split.mode === 'none') return null
+    if (split.mode === 'none' || split.mode === 'tiles') return null
     return splitIntoBlocks(planOk, {
       mode: split.mode,
       maxAreaHa: split.maxAreaHa,
@@ -211,7 +248,7 @@ export default function App() {
       spacingM: spacing,
       basePoint,
     })
-  }, [planOk, gridCells, split, params.speed, spacing, basePoint])
+  }, [planOk, activeCells, split, params.speed, spacing, basePoint])
 
   /* --------------------------- Interações ---------------------------- */
   const handleMapClick = useCallback(
@@ -342,6 +379,17 @@ export default function App() {
     setAnchor((a) => ({ ...a, center: null }))
   }, [])
 
+  // GSD alvo → altitude (inverso do cálculo do GSD)
+  const setAltitudeFromGsd = useCallback(
+    (gsdTarget) => {
+      if (sensor.type !== 'camera' || !sensor.imageWidth || !(gsdTarget > 0)) return
+      const alt =
+        (gsdTarget * sensor.focalLength * sensor.imageWidth) / (sensor.sensorWidth * 100)
+      setParams((p) => ({ ...p, altitude: Math.round(alt * 10) / 10 }))
+    },
+    [sensor],
+  )
+
   // Atalhos de direção das linhas relativamente ao bloco/aresta de referência
   const setAngleRelative = useCallback(
     (offsetDeg) => {
@@ -392,6 +440,15 @@ export default function App() {
           </div>
         </div>
         <div className="flex gap-2">
+          <a
+            href={`${import.meta.env.BASE_URL}checklist.html`}
+            target="_blank"
+            rel="noreferrer"
+            title="Checklist de campo UAV (pré-campo, durante, pós-campo) + relatório de missão"
+            className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-amber-500 hover:text-amber-300"
+          >
+            ✓ Checklist de campo
+          </a>
           <button
             onClick={handleExportKML}
             disabled={!canExportKML}
@@ -434,6 +491,10 @@ export default function App() {
           setSplitParam={setSplitParam}
           blocks={blocks}
           gridActive={Boolean(gridCells)}
+          tilesTotal={tiles?.length ?? null}
+          tilesError={tilesError}
+          gsd={gsd}
+          onGsdTarget={setAltitudeFromGsd}
           onUndoVertex={removeLastDraftVertex}
           onStartDraw={startDraw}
           onStartAnchor={startAnchor}
@@ -456,7 +517,10 @@ export default function App() {
             plan={planOk}
             blocks={blocks}
             gridCells={gridCells}
-            editable={!gridCells}
+            tiles={tiles}
+            disabledTiles={disabledTiles}
+            onTileToggle={toggleTile}
+            editable={!gridCells && split.mode !== 'tiles'}
             onMapClick={handleMapClick}
             onVertexDrag={handleVertexDrag}
             onVertexInsert={handleVertexInsert}

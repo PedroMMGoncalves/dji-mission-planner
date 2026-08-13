@@ -62,6 +62,16 @@ body,
   pointer-events: none;
 }
 
+/* Marca ✕ nas células do mosaico desativadas */
+.tile-off-label {
+  transform: translate(-50%, -50%);
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 /* Números dos blocos de voo */
 .block-label span {
   display: inline-block;

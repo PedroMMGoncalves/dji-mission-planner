@@ -10,6 +10,7 @@ import {
   photoInterval,
   rectangleFromAnchor,
   splitIntoBlocks,
+  tilePolygonWithSquares,
   validateRing,
 } from './src/utils/geo.js'
 import { buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
@@ -190,6 +191,32 @@ const cellPlan = generateFlightLines(grid.cells[0], {
 })
 check('plano por célula gerado (~6-7 faixas)', cellPlan && !cellPlan.error && cellPlan.stats.lineCount >= 6 && cellPlan.stats.lineCount <= 7,
   cellPlan?.stats.lineCount)
+
+/* 8e. Mosaico automático sobre polígono */
+// L-shape ~600×600 m: mosaico de 250 m → malha 3×3, canto NE (interior do L) sem célula?
+// O L cobre a coluna oeste inteira e a base — todas as 9 células intersetam menos a NE?
+// (o recorte do L é 250..600 × 250..600 → células (c1..2, r1..2) exceto as que tocam o L)
+const mosaic = tilePolygonWithSquares(lShape, 250, 0)
+check('mosaico gerado', Array.isArray(mosaic) && mosaic.length >= 6 && mosaic.length <= 9, mosaic?.length)
+if (Array.isArray(mosaic)) {
+  const side = turf.distance(mosaic[0][0], mosaic[0][1], { units: 'meters' })
+  check('mosaico células ~250 m', Math.abs(side - 250) < 5, side.toFixed(1))
+  const polyL = turf.polygon([[...lShape, lShape[0]]])
+  const allTouch = mosaic.every((cell) =>
+    turf.booleanIntersects(turf.polygon([[...cell, cell[0]]]), polyL),
+  )
+  check('todas as células intersetam o polígono', allTouch)
+}
+const mosaicRot = tilePolygonWithSquares(lShape, 250, 45)
+check('mosaico rodado 45° gerado', Array.isArray(mosaicRot) && mosaicRot.length > 0, mosaicRot?.length)
+if (Array.isArray(mosaicRot)) {
+  // numa malha quadrada as arestas alternam entre θ e θ+90 — a 2.ª aresta do
+  // anel é a família alinhada com a orientação pedida
+  const b = (turf.bearing(mosaicRot[0][1], mosaicRot[0][2]) + 360) % 180
+  check('mosaico rodado: arestas a ~45°', Math.abs(b - 45) < 2, b.toFixed(1))
+}
+const mosaicTiny = tilePolygonWithSquares(lShape, 20, 0)
+check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-cells')
 
 /* 9. Trava de segurança */
 const planTiny = generateFlightLines(rectNS, {

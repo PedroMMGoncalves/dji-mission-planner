@@ -65,6 +65,10 @@ export default function ControlPanel({
   setSplitParam,
   blocks,
   gridActive,
+  tilesTotal,
+  tilesError,
+  gsd,
+  onGsdTarget,
   onUndoVertex,
   onStartDraw,
   onStartAnchor,
@@ -210,6 +214,22 @@ export default function ControlPanel({
             onChange={(v) => setParam('altitude', v)}
           />
         </Field>
+        {gsd != null && (
+          <Field label="GSD alvo" suffix="cm/px">
+            <NumberInput
+              value={Number(gsd.toFixed(2))}
+              min={0.1}
+              step={0.1}
+              onChange={onGsdTarget}
+            />
+          </Field>
+        )}
+        {params.altitude > 120 && (
+          <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+            ⚠ Acima de <strong>120 m AGL</strong> — excede o limite geral da categoria
+            Aberta (UE); requer autorização específica.
+          </p>
+        )}
         <Field label="Velocidade" suffix="m/s">
           <NumberInput
             value={params.speed}
@@ -516,7 +536,7 @@ export default function ControlPanel({
           </div>
         )}
 
-        {hasRing && mode !== 'draw' && !gridActive && (
+        {hasRing && mode !== 'draw' && !gridActive && split.mode !== 'tiles' && (
           <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
             Edição: arraste os vértices · arraste os pontos intermédios para{' '}
             <strong className="text-slate-400">inserir vértices</strong> · clique direito
@@ -558,16 +578,17 @@ export default function ControlPanel({
           </p>
         )}
         {!gridActive && (
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-4 gap-1.5">
           {[
             { value: 'none', label: 'Nenhuma' },
-            { value: 'area', label: 'Por área' },
-            { value: 'battery', label: 'Por bateria' },
+            { value: 'area', label: 'Área' },
+            { value: 'battery', label: 'Bateria' },
+            { value: 'tiles', label: 'Mosaico' },
           ].map(({ value, label }) => (
             <button
               key={value}
               onClick={() => setSplitParam('mode', value)}
-              className={`rounded px-1.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded px-1 py-1.5 text-xs font-medium transition-colors ${
                 split.mode === value
                   ? 'bg-sky-500 text-slate-950'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -577,6 +598,63 @@ export default function ControlPanel({
             </button>
           ))}
         </div>
+        )}
+
+        {!gridActive && split.mode === 'tiles' && (
+          <div className="mt-2">
+            <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
+              Lado do quadrado
+            </p>
+            <div className="mb-2 grid grid-cols-4 gap-1.5">
+              {[250, 500, 750, 1000].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSplitParam('tileSize', s)}
+                  className={`rounded px-1 py-1.5 text-xs font-medium transition-colors ${
+                    split.tileSize === s
+                      ? 'bg-amber-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {s} m
+                </button>
+              ))}
+            </div>
+            <Field label="Lado personalizado" suffix="m">
+              <NumberInput
+                value={split.tileSize}
+                min={50}
+                max={5000}
+                step={50}
+                onChange={(v) => setSplitParam('tileSize', v)}
+              />
+            </Field>
+            <Field label="Orientação da malha" suffix="°">
+              <NumberInput
+                value={split.tileOrientation}
+                min={0}
+                max={180}
+                onChange={(v) => setSplitParam('tileOrientation', v)}
+              />
+            </Field>
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              O polígono é coberto por quadrados (podem exceder os limites).{' '}
+              <strong className="text-slate-400">Clique numa célula no mapa</strong> para a
+              desativar/reativar. Cada célula ativa é um bloco de voo numerado.
+              {tilesTotal != null && (
+                <>
+                  {' '}
+                  <span className="text-sky-300">{tilesTotal} células geradas</span>
+                  {blocks ? `, ${blocks.length} ativas` : ', 0 ativas'}.
+                </>
+              )}
+            </p>
+            {tilesError === 'too-many-cells' && (
+              <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
+                ⚠ Demasiadas células (&gt;400). Aumente o lado do quadrado.
+              </p>
+            )}
+          </div>
         )}
 
         {!gridActive && split.mode === 'area' && (
