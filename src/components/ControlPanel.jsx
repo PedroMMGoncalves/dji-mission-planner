@@ -1,6 +1,9 @@
+import { useRef } from 'react'
 import { DRONE_PROFILES } from '../data/drones.js'
+import { CRS_OPTIONS } from '../utils/importArea.js'
 import {
   IconCheck,
+  IconDownload,
   IconHelipad,
   IconPolygon,
   IconTarget,
@@ -69,6 +72,15 @@ export default function ControlPanel({
   tilesError,
   gsd,
   onGsdTarget,
+  importState,
+  importError,
+  onImportFile,
+  onImportCrs,
+  onImportCancel,
+  onProjectExport,
+  onProjectImport,
+  onTilesUndo,
+  onTilesRestoreAll,
   onUndoVertex,
   onStartDraw,
   onStartAnchor,
@@ -80,6 +92,8 @@ export default function ControlPanel({
 }) {
   const profile = DRONE_PROFILES[droneId]
   const isCustom = profile.type === 'custom'
+  const areaFileRef = useRef(null)
+  const projectFileRef = useRef(null)
 
   return (
     <div className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-800 bg-slate-950 lg:w-96">
@@ -95,6 +109,35 @@ export default function ControlPanel({
         <p className="mt-1.5 text-[11px] text-slate-500">
           Nome dos ficheiros exportados (<span className="font-mono">.kml</span> /{' '}
           <span className="font-mono">.kmz</span>) e da missão no DJI Pilot 2.
+        </p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button
+            onClick={onProjectExport}
+            title="Descarregar o projeto completo (.json)"
+            className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
+          >
+            <IconDownload /> Guardar projeto
+          </button>
+          <button
+            onClick={() => projectFileRef.current?.click()}
+            title="Abrir um projeto guardado (.json)"
+            className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
+          >
+            📂 Abrir projeto
+          </button>
+          <input
+            ref={projectFileRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={(e) => {
+              onProjectImport(e.target.files?.[0])
+              e.target.value = ''
+            }}
+          />
+        </div>
+        <p className="mt-1.5 text-[11px] text-slate-500">
+          O trabalho é gravado automaticamente neste browser.
         </p>
       </Section>
 
@@ -392,6 +435,64 @@ export default function ControlPanel({
           </button>
         </div>
 
+        <button
+          onClick={() => areaFileRef.current?.click()}
+          className="mt-2 w-full rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700"
+          title="Importar área de ficheiro KML, GeoJSON ou Shapefile zipado"
+        >
+          📂 Importar área (KML · GeoJSON · SHP zip)
+        </button>
+        <input
+          ref={areaFileRef}
+          type="file"
+          accept=".kml,.geojson,.json,.zip"
+          className="hidden"
+          onChange={(e) => {
+            onImportFile(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
+
+        {importState && (
+          <div className="mt-2 rounded border border-sky-800 bg-sky-950/40 p-3">
+            <p className="mb-2 text-xs leading-relaxed text-sky-200">
+              <strong>{importState.filename}</strong>: coordenadas projetadas detetadas.
+              Escolha o sistema de coordenadas de origem:
+            </p>
+            <select
+              className="mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+              defaultValue="EPSG:3763"
+              id="crs-select"
+            >
+              {CRS_OPTIONS.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => onImportCrs(document.getElementById('crs-select').value)}
+                className="rounded bg-sky-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500"
+              >
+                Converter
+              </button>
+              <button
+                onClick={onImportCancel}
+                className="rounded bg-slate-800 px-2 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-700"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
+
+        {importError && (
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
+            ⚠ {importError}
+          </p>
+        )}
+
         <div className="mt-2 grid grid-cols-2 gap-2">
           <button
             onClick={onStartBase}
@@ -637,10 +738,26 @@ export default function ControlPanel({
                 onChange={(v) => setSplitParam('tileOrientation', v)}
               />
             </Field>
+            <div className="mb-2 grid grid-cols-2 gap-2">
+              <button
+                onClick={onTilesUndo}
+                title="Desfazer a última alteração às células (Ctrl+Z)"
+                className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
+              >
+                ↩ Anular (Ctrl+Z)
+              </button>
+              <button
+                onClick={onTilesRestoreAll}
+                className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
+              >
+                Reativar todas
+              </button>
+            </div>
             <p className="text-[11px] leading-relaxed text-slate-500">
               O polígono é coberto por quadrados (podem exceder os limites).{' '}
               <strong className="text-slate-400">Clique numa célula no mapa</strong> para a
-              desativar/reativar. Cada célula ativa é um bloco de voo numerado.
+              desativar/reativar (Ctrl+Z desfaz). Cada célula ativa é um bloco de voo
+              numerado.
               {tilesTotal != null && (
                 <>
                   {' '}

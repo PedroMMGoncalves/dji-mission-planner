@@ -271,6 +271,30 @@ export function bufferDistanceMeters(polygon, pct) {
 }
 
 /**
+ * Alinhamento global das linhas entre células (grelha/mosaico): calcula um
+ * referencial partilhado — pivô, passo em latitude e latitude de referência —
+ * a partir do contorno exterior. Todas as células planeadas com este
+ * alinhamento posicionam as scanlines em múltiplos exatos do espaçamento
+ * relativamente à mesma origem, pelo que as faixas de células adjacentes são
+ * colineares e têm continuidade visual e fotogramétrica.
+ */
+export function computeAlignment(outlineRing, spacingM, angleDeg) {
+  if (!outlineRing || outlineRing.length < 3 || !(spacingM > 0.05)) return null
+  const poly = ringToPolygon(outlineRing)
+  const pivot = turf.centroid(poly).geometry.coordinates
+  const delta = 90 - angleDeg
+  const rotated = turf.transformRotate(poly, delta, { pivot })
+  const [minX, minY, , maxY] = turf.bbox(rotated)
+  const heightM = turf.distance([minX, minY], [minX, maxY], { units: 'meters' })
+  if (!(heightM > 0)) return null
+  return {
+    pivot,
+    latStep: ((maxY - minY) * spacingM) / heightM,
+    yRef: pivot[1], // o pivô é invariante na rotação
+  }
+}
+
+/**
  * ALGORITMO DE GERAÇÃO DA GRELHA DE VOO
  * -------------------------------------
  * 1. Aplica o buffer exterior (turf.buffer) se pct > 0.
@@ -288,7 +312,7 @@ export function bufferDistanceMeters(polygon, pct) {
  * Devolve { area, lines, waypoints, stats } ou { error }.
  */
 export function generateFlightLines(ring, options) {
-  const { spacingM, angleDeg, bufferPct, photoIntervalM, speed } = options
+  const { spacingM, angleDeg, bufferPct, photoIntervalM, speed, align } = options
   if (!ring || ring.length < 3 || !(spacingM > 0.05)) return null
 
   const basePoly = ringToPolygon(ring)
@@ -301,8 +325,9 @@ export function generateFlightLines(ring, options) {
     if (buffered) area = buffered
   }
 
-  // 2) Rodar a área para o referencial das linhas
-  const pivot = turf.centroid(area).geometry.coordinates
+  // 2) Rodar a área para o referencial das linhas. Com `align`, o pivô é
+  //    partilhado por todas as células para garantir faixas colineares.
+  const pivot = align?.pivot ?? turf.centroid(area).geometry.coordinates
   const delta = 90 - angleDeg
   const rotated = turf.transformRotate(area, delta, { pivot })
 
@@ -310,17 +335,33 @@ export function generateFlightLines(ring, options) {
   const heightM = turf.distance([minX, minY], [minX, maxY], { units: 'meters' })
   if (!(heightM > 0)) return null
 
-  const nLines = Math.max(1, Math.floor(heightM / spacingM) + 1)
-  if (nLines > MAX_LINES) return { error: 'too-many-lines', nLines }
+  // 3) Posições das scanlines: centradas na bbox (área única) ou em múltiplos
+  //    exatos do espaçamento a partir da referência global (células alinhadas)
+  let ys
+  if (align) {
+    const kMin = Math.ceil((minY - align.yRef) / align.latStep - 1e-9)
+    const kMax = Math.floor((maxY - align.yRef) / align.latStep + 1e-9)
+    if (kMax < kMin) {
+      // célula mais estreita que o espaçamento: usa a linha global mais próxima
+      const k = Math.round(((minY + maxY) / 2 - align.yRef) / align.latStep)
+      ys = [align.yRef + k * align.latStep]
+    } else {
+      ys = []
+      for (let k = kMin; k <= kMax; k++) ys.push(align.yRef + k * align.latStep)
+    }
+  } else {
+    const nLines = Math.max(1, Math.floor(heightM / spacingM) + 1)
+    if (nLines > MAX_LINES) return { error: 'too-many-lines', nLines }
+    const latStep = ((maxY - minY) * spacingM) / heightM
+    const y0 = (minY + maxY) / 2 - ((nLines - 1) / 2) * latStep
+    ys = Array.from({ length: nLines }, (_, i) => y0 + i * latStep)
+  }
+  if (ys.length > MAX_LINES) return { error: 'too-many-lines', nLines: ys.length }
 
-  // 3) Scanlines horizontais, com espaçamento exato e centradas na bbox
-  const latStep = ((maxY - minY) * spacingM) / heightM
-  const y0 = (minY + maxY) / 2 - ((nLines - 1) / 2) * latStep
   const padX = (maxX - minX) * 0.1 + 1e-6
 
   const rowsOfSegments = []
-  for (let i = 0; i < nLines; i++) {
-    const y = y0 + i * latStep
+  for (const y of ys) {
     const scanline = turf.lineString([
       [minX - padX, y],
       [maxX + padX, y],

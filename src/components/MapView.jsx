@@ -26,6 +26,7 @@ export default function MapView({
   tiles,
   disabledTiles,
   onTileToggle,
+  fitKey,
   editable,
   onMapClick,
   onVertexDrag,
@@ -205,6 +206,14 @@ export default function MapView({
         mode === 'draw' || mode === 'anchor' || mode === 'base',
       )
   }, [mode])
+
+  // Enquadrar o mapa na área (após importação ou abertura de projeto)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !fitKey || !ring || ring.length < 3) return
+    map.fitBounds(L.latLngBounds(ring.map(toLatLng)), { padding: [60, 60] })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fitKey])
 
   // Marcador da base do operador (ponto de descolagem)
   useEffect(() => {

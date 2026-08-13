@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MapView from './components/MapView.jsx'
 import ControlPanel from './components/ControlPanel.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
+import ChecklistPage from './components/ChecklistPage.jsx'
 import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR } from './data/drones.js'
 import {
+  computeAlignment,
   computeFootprint,
   computeGSD,
   distanceToArea,
@@ -19,11 +21,32 @@ import {
   tilePolygonWithSquares,
   validateRing,
 } from './utils/geo.js'
-import { exportBlocksZip, exportSimpleKML, exportWPMLKmz } from './utils/exporters.js'
+import {
+  downloadBlob,
+  exportBlocksZip,
+  exportSimpleKML,
+  exportWPMLKmz,
+} from './utils/exporters.js'
+import {
+  parseAreaFile,
+  reprojectRing,
+  simplifyRingIfNeeded,
+  CRS_OPTIONS,
+} from './utils/importArea.js'
 import { IconDrone, IconDownload } from './components/Icons.jsx'
 
 export default function App() {
   /* ----------------------------- Estado ----------------------------- */
+  // 'planner' | 'checklist' — o hash #checklist permite ligação direta
+  const [view, setView] = useState(() =>
+    window.location.hash === '#checklist' ? 'checklist' : 'planner',
+  )
+  useEffect(() => {
+    const hash = view === 'checklist' ? '#checklist' : ''
+    if (window.location.hash !== hash) {
+      history.replaceState(null, '', window.location.pathname + window.location.search + hash)
+    }
+  }, [view])
   const [missionName, setMissionName] = useState('missao-drone')
   const [droneId, setDroneId] = useState('M3E')
   const [custom, setCustom] = useState(DEFAULT_CUSTOM_SENSOR)
@@ -62,6 +85,12 @@ export default function App() {
     tileOrientation: 0, // azimute da malha do mosaico
   })
   const [disabledTiles, setDisabledTiles] = useState(() => new Set())
+  const [importState, setImportState] = useState(null) // {ring, filename} à espera de CRS
+  const [importError, setImportError] = useState(null)
+  const [fitKey, setFitKey] = useState(0) // sinal para enquadrar o mapa na área
+  const tileHistoryRef = useRef([]) // histórico de seleção de células (Ctrl+Z)
+  const skipTileResetRef = useRef(false)
+  const hydratedRef = useRef(false)
 
   const setParam = useCallback((key, value) => {
     setParams((p) => ({ ...p, [key]: value }))
@@ -151,17 +180,52 @@ export default function App() {
 
   // regenerar o mosaico limpa a seleção de células desativadas
   useEffect(() => {
+    if (skipTileResetRef.current) {
+      skipTileResetRef.current = false
+      return
+    }
     setDisabledTiles(new Set())
+    tileHistoryRef.current = []
   }, [ring, split.mode, split.tileSize, split.tileOrientation])
 
   const toggleTile = useCallback((index) => {
     setDisabledTiles((prev) => {
+      tileHistoryRef.current.push(new Set(prev))
+      if (tileHistoryRef.current.length > 100) tileHistoryRef.current.shift()
       const next = new Set(prev)
       if (next.has(index)) next.delete(index)
       else next.add(index)
       return next
     })
   }, [])
+
+  const undoTiles = useCallback(() => {
+    const prev = tileHistoryRef.current.pop()
+    if (prev) setDisabledTiles(prev)
+  }, [])
+
+  const restoreAllTiles = useCallback(() => {
+    setDisabledTiles((prev) => {
+      if (prev.size === 0) return prev
+      tileHistoryRef.current.push(new Set(prev))
+      return new Set()
+    })
+  }, [])
+
+  // Ctrl+Z desfaz a última alteração às células do mosaico
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return
+      const tag = e.target?.tagName
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+      if (tileHistoryRef.current.length > 0) {
+        e.preventDefault()
+        undoTiles()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [undoTiles])
 
   // Células ativas: grelha da âncora, ou mosaico sem as células removidas
   const activeCells = useMemo(() => {
@@ -184,9 +248,11 @@ export default function App() {
     }
     if (!activeCells) return generateFlightLines(ring, opts)
 
-    // Grelha/mosaico: cada célula é planeada de forma independente com os
-    // mesmos parâmetros (o buffer, se ativo, cria sobreposição entre células)
-    const perCell = activeCells.map((cell) => generateFlightLines(cell, opts))
+    // Grelha/mosaico: cada célula é planeada com os mesmos parâmetros e com
+    // alinhamento global — as faixas de células adjacentes são colineares e
+    // têm continuidade (o buffer, se ativo, cria sobreposição entre células)
+    const align = computeAlignment(ring, spacing, params.angle)
+    const perCell = activeCells.map((cell) => generateFlightLines(cell, { ...opts, align }))
     if (perCell.some((p) => p?.error)) return { error: 'too-many-lines' }
     const ok = perCell.filter(Boolean)
     if (ok.length === 0) return null
@@ -339,6 +405,158 @@ export default function App() {
     setBasePoint(lonlat)
   }, [])
 
+  /* ------------------------ Importação de áreas ----------------------- */
+  const applyImportedRing = useCallback((rawRing) => {
+    const clean = simplifyRingIfNeeded(rawRing)
+    setMode('idle')
+    setDraftVertices([])
+    setGridCells(null)
+    setAnchor((a) => ({ ...a, center: null }))
+    setRing(clean)
+    setAreaOrigin('draw')
+    setImportState(null)
+    setImportError(null)
+    setFitKey((k) => k + 1)
+  }, [])
+
+  const handleImportFile = useCallback(
+    async (file) => {
+      if (!file) return
+      setImportError(null)
+      try {
+        const result = await parseAreaFile(file)
+        if (result.needsCrs) {
+          setImportState({ ring: result.ring, filename: file.name })
+        } else {
+          applyImportedRing(result.ring)
+        }
+      } catch (err) {
+        setImportError(err?.message ?? 'Falha ao ler o ficheiro')
+        setImportState(null)
+      }
+    },
+    [applyImportedRing],
+  )
+
+  const handleImportCrs = useCallback(
+    (code) => {
+      if (!importState) return
+      const crs = CRS_OPTIONS.find((c) => c.code === code)
+      if (!crs) return
+      try {
+        applyImportedRing(reprojectRing(importState.ring, crs.def))
+      } catch {
+        setImportError('Falha na conversão de coordenadas')
+        setImportState(null)
+      }
+    },
+    [importState, applyImportedRing],
+  )
+
+  const cancelImport = useCallback(() => {
+    setImportState(null)
+    setImportError(null)
+  }, [])
+
+  /* --------------- Persistência do projeto (localStorage) -------------- */
+  const PROJECT_KEY = 'dji-mission-planner:project:v1'
+
+  const applyProject = useCallback((p) => {
+    if (!p || p.version !== 1) return false
+    skipTileResetRef.current = true
+    if (typeof p.missionName === 'string') setMissionName(p.missionName)
+    if (p.droneId && DRONE_PROFILES[p.droneId]) setDroneId(p.droneId)
+    if (p.custom) setCustom((c) => ({ ...c, ...p.custom }))
+    if (p.params) setParams((prev) => ({ ...prev, ...p.params }))
+    if (p.split) setSplit((prev) => ({ ...prev, ...p.split }))
+    if (p.anchor) setAnchor((prev) => ({ ...prev, ...p.anchor }))
+    if (Array.isArray(p.ring)) setRing(p.ring)
+    setAreaOrigin(p.areaOrigin ?? null)
+    setBasePoint(Array.isArray(p.basePoint) ? p.basePoint : null)
+    setDisabledTiles(new Set(Array.isArray(p.disabledTiles) ? p.disabledTiles : []))
+    return true
+  }, [])
+
+  // hidratar uma vez no arranque
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(PROJECT_KEY)
+      if (raw) {
+        const p = JSON.parse(raw)
+        if (applyProject(p) && p.ring) setFitKey((k) => k + 1)
+      }
+    } catch {
+      /* projeto corrompido: ignora */
+    }
+    hydratedRef.current = true
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // gravação automática (debounce 500 ms)
+  useEffect(() => {
+    if (!hydratedRef.current) return
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          PROJECT_KEY,
+          JSON.stringify({
+            version: 1,
+            missionName,
+            droneId,
+            custom,
+            params,
+            split,
+            anchor,
+            ring,
+            areaOrigin,
+            basePoint,
+            disabledTiles: [...disabledTiles],
+          }),
+        )
+      } catch {
+        /* armazenamento indisponível */
+      }
+    }, 500)
+    return () => clearTimeout(t)
+  }, [missionName, droneId, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles])
+
+  const exportProject = useCallback(() => {
+    const data = {
+      version: 1,
+      missionName,
+      droneId,
+      custom,
+      params,
+      split,
+      anchor,
+      ring,
+      areaOrigin,
+      basePoint,
+      disabledTiles: [...disabledTiles],
+    }
+    downloadBlob(
+      new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
+      `${missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'}-projeto.json`,
+    )
+  }, [missionName, droneId, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles])
+
+  const importProject = useCallback(
+    async (file) => {
+      if (!file) return
+      try {
+        const p = JSON.parse(await file.text())
+        if (!applyProject(p)) {
+          setImportError('Ficheiro de projeto inválido')
+          return
+        }
+        if (p.ring) setFitKey((k) => k + 1)
+      } catch {
+        setImportError('Ficheiro de projeto inválido')
+      }
+    },
+    [applyProject],
+  )
+
   const startDraw = useCallback(() => {
     setMode('draw')
     setDraftVertices([])
@@ -427,6 +645,17 @@ export default function App() {
   }
 
   /* ----------------------------- Layout ------------------------------ */
+  if (view === 'checklist') {
+    return (
+      <ChecklistPage
+        missionName={missionName}
+        droneLabel={profile.label}
+        blocks={blocks ?? []}
+        onBack={() => setView('planner')}
+      />
+    )
+  }
+
   return (
     <div className="flex h-full flex-col bg-slate-950 text-slate-100">
       <header className="flex items-center justify-between gap-4 border-b border-slate-800 bg-slate-950 px-4 py-2.5">
@@ -440,15 +669,13 @@ export default function App() {
           </div>
         </div>
         <div className="flex gap-2">
-          <a
-            href={`${import.meta.env.BASE_URL}checklist.html`}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            onClick={() => setView('checklist')}
             title="Checklist de campo UAV (pré-campo, durante, pós-campo) + relatório de missão"
             className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-amber-500 hover:text-amber-300"
           >
             ✓ Checklist de campo
-          </a>
+          </button>
           <button
             onClick={handleExportKML}
             disabled={!canExportKML}
@@ -495,6 +722,15 @@ export default function App() {
           tilesError={tilesError}
           gsd={gsd}
           onGsdTarget={setAltitudeFromGsd}
+          importState={importState}
+          importError={importError}
+          onImportFile={handleImportFile}
+          onImportCrs={handleImportCrs}
+          onImportCancel={cancelImport}
+          onProjectExport={exportProject}
+          onProjectImport={importProject}
+          onTilesUndo={undoTiles}
+          onTilesRestoreAll={restoreAllTiles}
           onUndoVertex={removeLastDraftVertex}
           onStartDraw={startDraw}
           onStartAnchor={startAnchor}
@@ -520,6 +756,7 @@ export default function App() {
             tiles={tiles}
             disabledTiles={disabledTiles}
             onTileToggle={toggleTile}
+            fitKey={fitKey}
             editable={!gridCells && split.mode !== 'tiles'}
             onMapClick={handleMapClick}
             onVertexDrag={handleVertexDrag}

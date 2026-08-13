@@ -1,5 +1,6 @@
 import * as turf from '@turf/turf'
 import {
+  computeAlignment,
   computeFootprint,
   computeGSD,
   distanceToArea,
@@ -217,6 +218,35 @@ if (Array.isArray(mosaicRot)) {
 }
 const mosaicTiny = tilePolygonWithSquares(lShape, 20, 0)
 check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-cells')
+
+/* 8f. Alinhamento global: faixas oblíquas colineares entre células */
+{
+  const outline = rectangleFromAnchor(center, 500, 250, 90) // 2 células de 250
+  const grid2 = gridFromAnchor(center, 250, 250, 90, 2, 1)
+  const align = computeAlignment(outline, sp, 45)
+  check('alignment calculado', align && align.latStep > 0)
+  const opts45 = { spacingM: sp, angleDeg: 45, bufferPct: 0, photoIntervalM: iv, speed: 10, align }
+  const pA = generateFlightLines(grid2.cells[0], opts45)
+  const pB = generateFlightLines(grid2.cells[1], opts45)
+  check('células planeadas com align', pA && !pA.error && pB && !pB.error)
+  if (pA?.lines && pB?.lines) {
+    // todas as faixas (de ambas as células) devem estar a múltiplos exatos do
+    // espaçamento medidos a partir do pivô comum — logo, colineares entre células
+    const pivotPt = turf.point(align.pivot)
+    const residuals = [...pA.lines, ...pB.lines].map((seg) => {
+      const brg = turf.bearing(seg[0], seg[1])
+      const far1 = turf.destination(seg[0], 5, brg + 180, { units: 'kilometers' })
+      const far2 = turf.destination(seg[1], 5, brg, { units: 'kilometers' })
+      const ext = turf.lineString([far1.geometry.coordinates, far2.geometry.coordinates])
+      const d = turf.pointToLineDistance(pivotPt, ext, { units: 'meters' })
+      const r = d % sp
+      return Math.min(r, sp - r)
+    })
+    const worst = Math.max(...residuals)
+    check('faixas oblíquas em múltiplos do espaçamento (colineares)', worst < 1,
+      `resíduo máx ${worst.toFixed(2)} m em ${residuals.length} faixas`)
+  }
+}
 
 /* 9. Trava de segurança */
 const planTiny = generateFlightLines(rectNS, {
