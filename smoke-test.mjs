@@ -7,6 +7,7 @@ import {
   distanceToArea,
   generateFlightLines,
   gridFromAnchor,
+  lidarPointDensity,
   lineSpacing,
   longestEdgeBearing,
   photoInterval,
@@ -159,6 +160,20 @@ check('GSD ~2.69 cm/px', Math.abs(gsd - 2.686) < 0.01, gsd.toFixed(3))
   const wtOk = aglCapWarning(mp, 90, { terrainFollowActive: true, toleranceM: 5 })
   check('teto AGL com terrain follow: 90+5 m nao avisa', wtOk === null)
   check('teto AGL: payload sem limite nunca avisa', aglCapWarning(PAYLOADS.M3E_WIDE, 500) === null)
+}
+
+/* 1e2. Densidade de pontos LiDAR (T2.1) — âncora: figura publicada do
+   Mapper+ (~170 pts/m2 a 100 m AGL, 10 m/s). */
+{
+  const swath = computeFootprint(resolveSensor(PAYLOADS.MAPPER_PLUS, DEFAULT_CUSTOM_SENSOR), 100).across
+  const d = lidarPointDensity({ prr: PAYLOADS.MAPPER_PLUS.maxPrr, speed: 10, swathM: swath })
+  check('densidade Mapper+ ~170 pts/m2 @100 m, 10 m/s', Math.abs(d.single - 170) < 2, d.single.toFixed(1))
+  check('densidade na sobreposicao = 2x', Math.abs(d.overlap - 2 * d.single) < 1e-9, d.overlap.toFixed(1))
+  check('velocidade mais baixa aumenta a densidade',
+    lidarPointDensity({ prr: 240000, speed: 5, swathM: swath }).single > d.single)
+  check('densidade sem dados validos -> null',
+    lidarPointDensity({ prr: 240000, speed: 0, swathM: 141 }) === null &&
+      lidarPointDensity({ prr: 0, speed: 10, swathM: 141 }) === null)
 }
 
 /* 1e. Bateria por combinacao aeronave+payload (T1.4) */

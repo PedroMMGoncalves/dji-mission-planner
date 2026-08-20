@@ -14,20 +14,28 @@ function fmtTime(s) {
   return `${min} min ${sec.toString().padStart(2, '0')} s`
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, hint }) {
   return (
-    <div className="rounded bg-slate-900/90 px-3 py-2">
+    <div className="rounded bg-slate-900/90 px-3 py-2" title={hint}>
       <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
       <div className="font-mono text-sm text-sky-300">{value}</div>
     </div>
   )
 }
 
-export default function StatsPanel({ gsd, footprint, spacing, interval, triggerMode, speed, stats, baseDistance, blockCount }) {
+export default function StatsPanel({ gsd, footprint, spacing, pointDensity, interval, triggerMode, speed, stats, baseDistance, blockCount }) {
   const t = useT()
   return (
     <div className="pointer-events-none absolute bottom-4 right-4 z-[1000] grid max-w-md grid-cols-2 gap-1.5 sm:grid-cols-3">
-      <Stat label={t('stats.gsd')} value={gsd != null ? `${gsd.toFixed(2)} cm/px` : '—'} />
+      {pointDensity != null ? (
+        <Stat
+          label={t('stats.density')}
+          value={`${Math.round(pointDensity.single)} (${Math.round(pointDensity.overlap)}) pts/m²`}
+          hint={t('stats.densityHint')}
+        />
+      ) : (
+        <Stat label={t('stats.gsd')} value={gsd != null ? `${gsd.toFixed(2)} cm/px` : '—'} />
+      )}
       <Stat
         label={t('stats.footprint')}
         value={

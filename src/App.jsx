@@ -26,6 +26,7 @@ import {
   distanceToArea,
   generateFlightPlan,
   gridFromAnchor,
+  lidarPointDensity,
   lineSpacing,
   longestEdgeBearing,
   photoInterval,
@@ -301,6 +302,15 @@ function AppInner({ lang, setLang }) {
     [footprint, params.frontOverlap],
   )
   const gsd = useMemo(() => computeGSD(sensor, params.altitude), [sensor, params.altitude])
+
+  // densidade de pontos LiDAR no solo (T2.1) — só para payloads com PRR
+  const pointDensity = useMemo(
+    () =>
+      sensor.type === 'lidar' && payload.maxPrr
+        ? lidarPointDensity({ prr: payload.maxPrr, speed: params.speed, swathM: footprint.across })
+        : null,
+    [sensor.type, payload, params.speed, footprint],
+  )
 
   // intervalo entre fotos abaixo do que o obturador consegue?
   const triggerWarn = useMemo(() => {
@@ -1271,6 +1281,7 @@ function AppInner({ lang, setLang }) {
             gsd={gsd}
             footprint={footprint}
             spacing={spacing}
+            pointDensity={pointDensity}
             interval={interval}
             triggerMode={params.triggerMode}
             speed={params.speed}

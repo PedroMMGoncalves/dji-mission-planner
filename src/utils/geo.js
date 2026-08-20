@@ -88,6 +88,20 @@ export function lineSpacing(footprintAcross, sideOverlapPct) {
   return footprintAcross * (1 - sideOverlapPct / 100)
 }
 
+/**
+ * LiDAR ground point density (T2.1), pts/m2:
+ *   density = PRR / (speed x swath)
+ * Use the single-return PRR as a conservative figure — multi-echo returns
+ * raise it. In the side-overlap band two adjacent passes cover the same
+ * ground, doubling the density. Returns { single, overlap } or null when
+ * any input is missing/non-positive.
+ */
+export function lidarPointDensity({ prr, speed, swathM }) {
+  if (!(prr > 0) || !(speed > 0) || !(swathM > 0)) return null
+  const single = prr / (speed * swathM)
+  return { single, overlap: 2 * single }
+}
+
 /** Distância entre disparos a partir da pegada longitudinal e da sobreposição frontal. */
 export function photoInterval(footprintAlong, frontOverlapPct) {
   if (footprintAlong == null) return null
