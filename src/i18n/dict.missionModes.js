@@ -118,6 +118,12 @@ export default {
   'op.plan.gimbals': { pt: 'gimbal por nível: {v}', en: 'gimbal per level: {v}' },
   'op.exportSingle': { pt: 'Exportar missão única (KMZ)', en: 'Export single mission (KMZ)' },
   'op.exportPerLevel': { pt: 'Exportar um KMZ por nível (ZIP)', en: 'Export one KMZ per level (ZIP)' },
+  /* ---- Resumo do projecto (E3.2) ---- */
+  'ps.line': {
+    pt: '{plans} planos · {min} min de voo · {bat} baterias · {photos} fotos',
+    en: '{plans} plans · {min} min of flight · {bat} batteries · {photos} photos',
+  },
+
   'op.exportHint': {
     pt: 'Voo curvo contínuo (toPointAndPassWithContinuityCurvature), rumo ao POI e uma foto em cada waypoint. Alturas relativas ao ponto de descolagem.',
     en: 'Continuous curved flight (toPointAndPassWithContinuityCurvature), heading at the POI and one photo per waypoint. Heights relative to the takeoff point.',
