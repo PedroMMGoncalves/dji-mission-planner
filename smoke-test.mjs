@@ -20,7 +20,7 @@ import {
   tilePolygonWithSquares,
   validateRing,
 } from './src/utils/geo.js'
-import { buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
+import { buildExportName, buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
 import { decodeTerrarium, despikeElevations, fitSlopePlane, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
 import { readFileSync } from 'node:fs'
@@ -1139,6 +1139,22 @@ check('waylines Mapper+: sem acoes de camara',
   check('inspecao: WPML com 1 rumo fixo e 2 fotos',
     (wlInsp.match(/smoothTransition/g) || []).length === 1 &&
       (wlInsp.match(/takePhoto/g) || []).length === 2)
+}
+
+/* 10a2. Convencao de nomes de exportacao (E3.1) */
+{
+  check('nome: area com variantes',
+    buildExportName('Quinta Sul', 'area', { variant: ['crosshatch', 'nadir'] }) ===
+      'Quinta-Sul_area-crosshatch-nadir')
+  check('nome: variantes falsas filtradas',
+    buildExportName('m', 'area', { variant: [false, null, 'tie'] }) === 'm_area-tie')
+  check('nome: fachada com passagens',
+    buildExportName('pedreira', 'face', { part: 'p1-6' }) === 'pedreira_face_p1-6')
+  check('nome: orbita com niveis',
+    buildExportName('silo', 'orbit', { part: 'n3' }) === 'silo_orbit_n3')
+  check('nome: caracteres estranhos e vazio caem no seguro',
+    buildExportName('  á/b?  ', 'inspect') === 'b_inspect' &&
+      buildExportName('', 'area') === 'missao_area')
 }
 
 /* 10b. Acoes por waypoint no exportador (T4.1) */

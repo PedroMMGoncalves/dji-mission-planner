@@ -41,6 +41,7 @@ import {
   validateRing,
 } from './utils/geo.js'
 import {
+  buildExportName,
   downloadBlob,
   exportBlocksZip,
   exportSimpleKML,
@@ -1190,8 +1191,17 @@ function AppInner({ lang, setLang }) {
   const handleExportKMZ = () => {
     if (!canExportKMZ) return
     const terrainOk = terrainResult && !terrainResult.error
+    // E3.1: tipo e variantes codificados no nome do ficheiro
+    const areaName = buildExportName(missionName, 'area', {
+      variant: [
+        params.crosshatch && 'crosshatch',
+        params.crosshatch && params.includeNadir && 'nadir',
+        params.tieLine && 'tie',
+        terrainOk && 'tf',
+      ],
+    })
     const exportParams = {
-      name: safeName,
+      name: areaName,
       waypoints: terrainOk ? terrainResult.waypoints : planOk.waypoints,
       altitude: params.altitude,
       speed: params.speed,
@@ -1247,7 +1257,7 @@ function AppInner({ lang, setLang }) {
     if (inspectPoints.length === 0) return
     const { waypoints, perWaypoint } = inspectionToWaypoints(inspectPoints)
     exportWPMLKmz({
-      name: `${safeName}-inspecao`,
+      name: buildExportName(missionName, 'inspect', { part: `n${inspectPoints.length}` }),
       waypoints,
       perWaypoint,
       altitude: params.altitude,
