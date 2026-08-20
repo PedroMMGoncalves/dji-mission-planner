@@ -164,10 +164,99 @@ export function generateFacePlan(baseline, options) {
       imageWidthM: imgW,
       imageHeightM: imgH,
       gsdCm: computeGSD(sensor, standoffM),
+      standoffM,
       heights,
       pathLengthM,
       // paragem-e-disparo: ~2 s por waypoint além do deslocamento
       flightTimeS: speed > 0 ? pathLengthM / speed + waypoints.length * 2 : null,
     },
+  }
+}
+
+/**
+ * R2.8: verificação de folga de um plano de fachada contra um DSM LOCAL
+ * (GeoTIFF via demFile.js — `elevationAt(lon, lat)` injetável). NUNCA usar
+ * tiles Terrarium aqui: a resolução é inutilizável à escala de uma face;
+ * sem DSM local o chamador mantém o aviso "standoff não verificado".
+ *
+ * Por waypoint (a resolução dos pontos de foto):
+ *  - folga VERTICAL = cota absoluta do drone (pé da face + altura da
+ *    passagem) − DSM na posição do drone;
+ *  - folga HORIZONTAL = distância, ao longo do rumo da câmara, até à
+ *    primeira amostra (a 1/4, 1/2 e 3/4 do standoff) cuja superfície chega
+ *    à cota do drone — a face a abaular para dentro do corredor.
+ * `footElevM` é a cota do pé da face; por omissão usa o DSM na posição do
+ * primeiro waypoint com dados (corredor ao nível do pé).
+ *
+ * Devolve { ok, passes, minVerticalM, minHorizontalM, minClearanceM,
+ * samples } com a lista de passagens (1-based) com folga abaixo do mínimo,
+ * ou null quando o DSM não tem dados na zona (aviso de não-verificado).
+ */
+export function checkFaceClearance(plan, elevationAt, options = {}) {
+  const { footElevM = null, minClearanceM = 15 } = options
+  if (!plan?.waypoints?.length || typeof elevationAt !== 'function') return null
+  const standoffM = options.standoffM ?? plan.stats?.standoffM ?? 25
+  const pointsPerPass = plan.stats?.pointsPerPass ?? plan.waypoints.length
+
+  let foot = footElevM
+  if (foot == null) {
+    for (const w of plan.waypoints) {
+      const z = elevationAt(w[0], w[1])
+      if (Number.isFinite(z)) {
+        foot = z
+        break
+      }
+    }
+  }
+  if (!Number.isFinite(foot)) return null
+
+  let sampled = 0
+  let minVertical = Infinity
+  let minHorizontal = standoffM
+  const flagged = new Set()
+
+  plan.waypoints.forEach((w, i) => {
+    const droneAbs = foot + (w[2] ?? 0)
+    const pass = Math.floor(i / pointsPerPass) + 1
+
+    const zHere = elevationAt(w[0], w[1])
+    if (Number.isFinite(zHere)) {
+      sampled += 1
+      const vertical = droneAbs - zHere
+      if (vertical < minVertical) minVertical = vertical
+      if (vertical < minClearanceM) flagged.add(pass)
+    }
+
+    const heading = plan.perWaypoint?.[i]?.heading
+    if (heading != null && standoffM > 0) {
+      for (let k = 1; k <= 3; k++) {
+        const d = (k / 4) * standoffM
+        const p = turf.destination(
+          turf.point([w[0], w[1]]),
+          d,
+          ((heading + 540) % 360) - 180,
+          { units: 'meters' },
+        ).geometry.coordinates
+        const z = elevationAt(p[0], p[1])
+        if (!Number.isFinite(z)) continue
+        sampled += 1
+        if (z >= droneAbs) {
+          if (d < minHorizontal) minHorizontal = d
+          if (d < minClearanceM) flagged.add(pass)
+          break
+        }
+      }
+    }
+  })
+
+  if (sampled === 0) return null
+  const passes = [...flagged].sort((a, b) => a - b)
+  return {
+    ok: passes.length === 0,
+    passes,
+    minVerticalM: Number.isFinite(minVertical) ? minVertical : null,
+    minHorizontalM: minHorizontal,
+    minClearanceM,
+    samples: sampled,
   }
 }
