@@ -15,6 +15,8 @@ import {
   DEFAULT_CUSTOM_SENSOR,
   DEFAULT_SELECTION,
   MISSION_PRESETS,
+  aglCapWarning,
+  batteryMinFor,
   migrateDroneSelection,
 } from './data/drones.js'
 import {
@@ -720,6 +722,18 @@ function AppInner({ lang, setLang }) {
     }
   }, [terrainFollow, terrainCovers, terrain.data, planOk, blocks, basePoint, params.altitude])
 
+  // Teto operacional AGL do payload (T1.3), ex.: LiDAR limitado a 100 m
+  const aglWarn = useMemo(
+    () =>
+      aglCapWarning(payload, params.altitude, {
+        terrainFollowActive: Boolean(
+          terrainFollow.enabled && terrainResult && !terrainResult.error,
+        ),
+        toleranceM: terrainFollow.tolerance,
+      }),
+    [payload, params.altitude, terrainFollow, terrainResult],
+  )
+
   /* ------------------------ Importação de áreas ----------------------- */
   const applyImportedRing = useCallback((rawRing) => {
     pushHistory()
@@ -1154,6 +1168,7 @@ function AppInner({ lang, setLang }) {
           presets={flightPresets}
           onApplyPreset={applyPreset}
           triggerWarn={triggerWarn}
+          aglWarn={aglWarn}
           importState={importState}
           importError={importError}
           onImportFile={handleImportFile}

@@ -195,6 +195,31 @@ export function migrateDroneSelection(stored) {
 }
 
 /**
+ * AGL-ceiling check for payloads with an operational limit (T1.3), e.g. a
+ * LiDAR rated to 100 m. With terrain follow the route holds the nominal
+ * altitude within +tolerance of the ground, so that envelope is what gets
+ * compared; without it the nominal altitude is the height at the reference
+ * point (larger deviations over rough ground surface via terrain warnings).
+ * Returns { cap, worstAgl } when exceeded, null otherwise.
+ */
+export function aglCapWarning(payload, altitudeM, { terrainFollowActive = false, toleranceM = 0 } = {}) {
+  const cap = payload?.maxAglM
+  if (!cap || !Number.isFinite(altitudeM)) return null
+  const worstAgl = terrainFollowActive ? altitudeM + Math.max(0, toleranceM) : altitudeM
+  return worstAgl > cap ? { cap, worstAgl } : null
+}
+
+/**
+ * Battery duration (min) for an aircraft+payload combo (T1.4): the per-combo
+ * override when one is stored (a heavy payload shortens real endurance),
+ * otherwise the aircraft default.
+ */
+export function batteryMinFor(aircraft, payloadId, overrides = {}) {
+  const o = overrides[`${aircraft.id}:${payloadId}`]
+  return Number.isFinite(o) && o > 0 ? o : aircraft.batteryMin
+}
+
+/**
  * Catálogo de presets de missão — tipos de levantamento típicos, cada um com
  * uma combinação recomendada de sobreposições, velocidade, gimbal e dupla
  * grelha. `appliesTo` filtra por tipo de sensor ('camera' | 'lidar');

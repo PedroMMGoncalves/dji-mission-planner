@@ -82,6 +82,7 @@ export default function ControlPanel({
   presets,
   onApplyPreset,
   triggerWarn,
+  aglWarn,
   importState,
   importError,
   onImportFile,
@@ -402,6 +403,16 @@ export default function ControlPanel({
           <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
             ⚠ {t('cp.flight.altWarnPre')} <strong>120 m AGL</strong>{' '}
             {t('cp.flight.altWarnPost')}
+          </p>
+        )}
+        {aglWarn && (
+          <p className="mb-2 rounded border border-red-800/60 bg-red-950/40 p-2 text-[11px] leading-relaxed text-red-200">
+            ⚠{' '}
+            {t('cp.flight.aglCapWarn', {
+              payload: payload.label,
+              cap: aglWarn.cap,
+              worst: Math.round(aglWarn.worstAgl),
+            })}
           </p>
         )}
         <Field
