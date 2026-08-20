@@ -25,6 +25,7 @@ import { decodeTerrarium, despikeElevations, simplifyProfile, terrainFollowLines
 import { readFileSync } from 'node:fs'
 import { groupApplies } from './src/data/checklist.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
+import { generateFacePlan } from './src/utils/faceMode.js'
 import {
   AIRCRAFT,
   PAYLOADS,
@@ -795,6 +796,93 @@ check('waylines Mapper+: payloadEnumValue 65534',
     wlMapper.includes('<wpml:droneEnumValue>60</wpml:droneEnumValue>'))
 check('waylines Mapper+: sem acoes de camara',
   !wlMapper.includes('takePhoto') && !wlMapper.includes('gimbalRotate'))
+
+/* 9b. Modo fachada (T4.2 — gerador puro) */
+{
+  // face reta E-O de 600 m, 60 m de altura, standoff 25 m, M3E, 70/70%
+  // imagem na face: 35.45 x 26.64 m -> vStep 7.99, hStep 10.63
+  const straight = [toLL(0, 0), toLL(600, 0)]
+  const fpl = generateFacePlan(straight, {
+    sensor, faceHeightM: 60, standoffM: 25, side: 'left',
+    verticalOverlapPct: 70, horizontalOverlapPct: 70,
+  })
+  check('fachada: 6 passagens', fpl && fpl.stats.passCount === 6, fpl?.stats.passCount)
+  check('fachada: passo vertical ~6.7 m (<= 8.0)',
+    Math.abs(fpl.stats.vStepM - 6.67) < 0.1 && fpl.stats.vStepM <= 8.0, fpl.stats.vStepM?.toFixed(2))
+  check('fachada: alturas de 13.3 a 46.7 m',
+    Math.abs(fpl.stats.heights[0] - 13.32) < 0.1 &&
+      Math.abs(fpl.stats.heights[5] - 46.68) < 0.1,
+    `${fpl.stats.heights[0].toFixed(1)}-${fpl.stats.heights[5].toFixed(1)}`)
+  check('fachada: espacamento na passagem ~10.5 m (<= 10.7)',
+    Math.abs(fpl.stats.hStepM - 10.53) < 0.2 && fpl.stats.hStepM <= 10.7, fpl.stats.hStepM?.toFixed(2))
+  check('fachada: GSD a 25 m ~0.67 cm/px', Math.abs(fpl.stats.gsdCm - 0.6715) < 0.005,
+    fpl.stats.gsdCm?.toFixed(4))
+  check('fachada: waypoints = passagens x pontos e 1 foto por waypoint',
+    fpl.stats.waypointCount === fpl.stats.passCount * fpl.stats.pointsPerPass &&
+      fpl.perWaypoint.length === fpl.waypoints.length &&
+      fpl.perWaypoint.every((p) => p.actions.includes('takePhoto') && p.gimbalPitch === 0))
+  // lado esquerdo de quem anda para Este = norte; a face fica a sul -> rumo ~180
+  const baseLine = turf.lineString(straight)
+  const northOk = fpl.waypoints.every((w) => w[1] > straight[0][1])
+  const standoffOk = fpl.waypoints.every((w) => {
+    const d = turf.pointToLineDistance(turf.point([w[0], w[1]]), baseLine, { units: 'meters' })
+    return Math.abs(d - 25) < 1
+  })
+  check('fachada: drone a norte da baseline (side left)', northOk)
+  check('fachada: standoff 25 m +-1', standoffOk)
+  check('fachada: rumo perpendicular a face (~180)',
+    fpl.perWaypoint.every((p) => Math.abs(p.heading - 180) <= 2))
+  // serpentina vertical: a 2.a passagem comeca onde a 1.a acabou (mesmo xy)
+  const n = fpl.stats.pointsPerPass
+  check('fachada: viragem em altura no mesmo ponto',
+    fpl.waypoints[n - 1][0] === fpl.waypoints[n][0] && fpl.waypoints[n - 1][1] === fpl.waypoints[n][1] &&
+      fpl.waypoints[n][2] > fpl.waypoints[n - 1][2])
+
+  // baseline em L: o rumo roda na esquina; standoff mantem-se
+  const lBase = [toLL(0, 0), toLL(300, 0), toLL(300, 300)]
+  const fpL = generateFacePlan(lBase, {
+    sensor, faceHeightM: 30, standoffM: 25, side: 'left',
+    verticalOverlapPct: 70, horizontalOverlapPct: 70,
+  })
+  const pass0 = fpL.perWaypoint.slice(0, fpL.stats.pointsPerPass)
+  check('fachada L: rumo 180 no inicio e 90 no fim',
+    Math.abs(pass0[0].heading - 180) <= 3 && Math.abs(pass0[pass0.length - 1].heading - 90) <= 3,
+    `${pass0[0].heading} -> ${pass0[pass0.length - 1].heading}`)
+  // num cotovelo interior a distancia minima a polilinha cai abaixo do
+  // standoff (a parede lateral aproxima-se) — a metrica que interessa e a
+  // distancia A FACE SEGUNDO O RUMO da camara, que deve manter ~25 m
+  const lLine = turf.lineString(lBase)
+  const facing = fpL.waypoints.map((w, i) => {
+    const far = turf.destination(turf.point([w[0], w[1]]), 200, fpL.perWaypoint[i].heading, {
+      units: 'meters',
+    })
+    const hits = turf.lineIntersect(
+      turf.lineString([[w[0], w[1]], far.geometry.coordinates]), lLine).features
+    if (hits.length === 0) return null
+    return Math.min(...hits.map((f) =>
+      turf.distance([w[0], w[1]], f.geometry.coordinates, { units: 'meters' })))
+  })
+  const okFacing = facing.filter((d) => d != null && d > 22 && d < 28).length
+  check('fachada L: distancia a face segundo o rumo ~25 m',
+    okFacing >= facing.length - 2 && facing.every((d) => d == null || d < 36),
+    `${okFacing}/${facing.length} em [22,28]`)
+  const dists = fpL.waypoints.map((w) =>
+    turf.pointToLineDistance(turf.point([w[0], w[1]]), lLine, { units: 'meters' }))
+  check('fachada L: afastamento minimo nunca colapsa (>18 m)',
+    dists.every((d) => d > 18 && d < 36),
+    `${Math.min(...dists).toFixed(1)}-${Math.max(...dists).toFixed(1)}`)
+
+  // integracao com o exportador (T4.1): um rumo fixo por waypoint
+  const wlFace = buildWaylinesWPML({
+    name: 'face', waypoints: fpl.waypoints, altitude: 30, speed: 3,
+    wpml: wpmlParams.wpml, photoIntervalM: 0, triggerMode: 'distance',
+    sensorType: 'camera', perWaypoint: fpl.perWaypoint,
+  })
+  check('fachada: WPML com rumo fixo em todos os waypoints',
+    (wlFace.match(/smoothTransition/g) || []).length === fpl.waypoints.length)
+  check('fachada: WPML com uma foto por waypoint',
+    (wlFace.match(/takePhoto/g) || []).length === fpl.waypoints.length)
+}
 
 /* 10b. Acoes por waypoint no exportador (T4.1) */
 {
