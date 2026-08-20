@@ -1080,6 +1080,31 @@ function AppInner({ lang, setLang }) {
     if (slopeHint) setParams((p) => ({ ...p, gimbalPitch: slopeHint.gimbal }))
   }, [slopeHint])
 
+  // E1.4: a vista 3D cobre o modo activo — grelha (com terrain follow),
+  // passagens de fachada empilhadas ou anéis de órbita às suas alturas.
+  // refElev ancora as alturas relativas: pé da face / solo do POI / base.
+  const view3d = useMemo(() => {
+    const elevAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
+    if (missionMode === 'face' && facePlan && !facePlan.error) {
+      const foot = elevAt?.(faceConfig.baseline[0][0], faceConfig.baseline[0][1])
+      return { waypoints: facePlan.waypoints, refElev: Number.isFinite(foot) ? foot : 0 }
+    }
+    if (missionMode === 'orbit' && orbitPlan && !orbitPlan.error) {
+      const ground = elevAt?.(orbitConfig.poi[0], orbitConfig.poi[1])
+      return { waypoints: orbitPlan.waypoints, refElev: Number.isFinite(ground) ? ground : 0 }
+    }
+    if (!planOk) return null
+    const wps =
+      terrainResult && !terrainResult.error
+        ? terrainResult.waypoints
+        : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
+    const ref =
+      terrainResult && !terrainResult.error
+        ? terrainResult.refElev
+        : (elevAt?.((basePoint ?? planOk.waypoints[0])[0], (basePoint ?? planOk.waypoints[0])[1]) ?? 0)
+    return { waypoints: wps, refElev: ref }
+  }, [missionMode, facePlan, faceConfig.baseline, orbitPlan, orbitConfig.poi, planOk, terrainResult, terrain, basePoint, params.altitude])
+
   // Teto operacional AGL do payload (T1.3), ex.: LiDAR limitado a 100 m
   const aglWarn = useMemo(
     () =>
@@ -1531,7 +1556,13 @@ function AppInner({ lang, setLang }) {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShow3d(true)}
-            disabled={!(terrain.status === 'ready' && terrainCovers && planOk)}
+            disabled={
+              !(
+                terrain.status === 'ready' &&
+                view3d &&
+                (missionMode !== 'area' || (terrainCovers && planOk))
+              )
+            }
             title={
               terrain.status === 'ready' ? t('app.view3dReady') : t('app.view3dNotReady')
             }
@@ -1828,7 +1859,7 @@ function AppInner({ lang, setLang }) {
         </Suspense>
       )}
 
-      {show3d && terrain.status === 'ready' && planOk && (
+      {show3d && terrain.status === 'ready' && view3d && (
         <Suspense
           fallback={
             <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/90 text-sm text-slate-300">
@@ -1838,22 +1869,11 @@ function AppInner({ lang, setLang }) {
         >
           <Map3D
             terrain={terrain.data}
-            ring={ring}
-            waypoints={
-              terrainResult && !terrainResult.error
-                ? terrainResult.waypoints
-                : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
-            }
-            refElev={
-              terrainResult && !terrainResult.error
-                ? terrainResult.refElev
-                : terrain.data.elevationAt(
-                    (basePoint ?? planOk.waypoints[0])[0],
-                    (basePoint ?? planOk.waypoints[0])[1],
-                  ) ?? 0
-            }
+            ring={missionMode === 'area' ? ring : null}
+            waypoints={view3d.waypoints}
+            refElev={view3d.refElev}
             basePoint={basePoint}
-            gcps={gcps}
+            gcps={missionMode === 'area' ? gcps : null}
             onClose={() => setShow3d(false)}
           />
         </Suspense>
