@@ -367,7 +367,7 @@ export function computeAlignment(outlineRing, spacingM, angleDeg) {
  * Devolve { area, lines, waypoints, stats } ou { error }.
  */
 export function generateFlightLines(ring, options) {
-  const { spacingM, angleDeg, bufferPct, photoIntervalM, speed, align } = options
+  const { spacingM, angleDeg, bufferPct, photoIntervalM, speed, align, overshootM = 0 } = options
   if (!ring || ring.length < 3 || !(spacingM > 0.05)) return null
 
   const basePoly = ringToPolygon(ring)
@@ -429,6 +429,11 @@ export function generateFlightLines(ring, options) {
       .filter((x, idx, arr) => idx === 0 || x - arr[idx - 1] > 1e-10)
 
     const segments = []
+    // Overshoot (T2.2): each segment is extended at both ends along the line
+    // direction, so turns happen outside the area and in-area data is
+    // captured at stable speed/attitude. Applied in the rotated frame, where
+    // lines are horizontal — the eligibility test uses the core length.
+    const dxOver = overshootM > 0 ? overshootM / metersPerDegLon(y) : 0
     let k = 0
     while (k < crossings.length - 1) {
       const xa = crossings[k]
@@ -436,7 +441,7 @@ export function generateFlightLines(ring, options) {
       const mid = turf.point([(xa + xb) / 2, y])
       if (turf.booleanPointInPolygon(mid, rotated)) {
         const lenM = turf.distance([xa, y], [xb, y], { units: 'meters' })
-        if (lenM >= MIN_SEGMENT_M) segments.push([[xa, y], [xb, y]])
+        if (lenM >= MIN_SEGMENT_M) segments.push([[xa - dxOver, y], [xb + dxOver, y]])
         k += 2
       } else {
         k += 1
@@ -472,13 +477,20 @@ export function generateFlightLines(ring, options) {
     waypoints.push(seg[0], seg[1])
   })
 
-  // Estatísticas
+  // Estatísticas. O disparo por distância cobre a rota inteira, overshoot
+  // incluído — photoCount é o total real; photoCountArea desconta o
+  // overshoot (fotos úteis sobre a área) quando ele está ativo.
   let totalLineLengthM = 0
   let photoCount = 0
+  let photoCountArea = 0
   lines.forEach((seg) => {
     const len = turf.distance(seg[0], seg[1], { units: 'meters' })
     totalLineLengthM += len
-    if (photoIntervalM > 0) photoCount += Math.floor(len / photoIntervalM) + 1
+    if (photoIntervalM > 0) {
+      photoCount += Math.floor(len / photoIntervalM) + 1
+      const core = Math.max(0, len - 2 * overshootM)
+      photoCountArea += Math.floor(core / photoIntervalM) + 1
+    }
   })
 
   let pathLengthM = 0
@@ -499,6 +511,7 @@ export function generateFlightLines(ring, options) {
       totalLineLengthM,
       pathLengthM,
       photoCount: photoIntervalM > 0 ? photoCount : null,
+      photoCountArea: photoIntervalM > 0 && overshootM > 0 ? photoCountArea : null,
       flightTimeS,
       areaHa: turf.area(basePoly) / 10000,
       bufferedAreaHa: turf.area(area) / 10000,
@@ -544,6 +557,10 @@ export function generateFlightPlan(ring, options) {
       photoCount:
         s1.photoCount != null || s2.photoCount != null
           ? (s1.photoCount ?? 0) + (s2.photoCount ?? 0)
+          : null,
+      photoCountArea:
+        s1.photoCountArea != null || s2.photoCountArea != null
+          ? (s1.photoCountArea ?? 0) + (s2.photoCountArea ?? 0)
           : null,
       flightTimeS:
         s1.flightTimeS != null && s2.flightTimeS != null

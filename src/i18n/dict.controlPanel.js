@@ -49,6 +49,11 @@ export default {
     pt: 'Voltar ao FOV nominal do sensor ({fov}°)',
     en: 'Back to the sensor nominal FOV ({fov}°)',
   },
+  'cp.flight.overshoot': { pt: 'Overshoot por faixa', en: 'Per-line overshoot' },
+  'cp.flight.overshootHint': {
+    pt: 'Prolonga cada faixa nos dois extremos: as viragens ficam fora da área e os dados dentro dela são captados a velocidade e atitude estáveis. Sugerido 10–20 m para LiDAR; 0 desliga. Conta para o tempo e para os blocos.',
+    en: 'Extends every line at both ends: turns happen outside the area and in-area data is captured at stable speed and attitude. Suggested 10–20 m for LiDAR; 0 disables. Counts toward time and block budgets.',
+  },
   'cp.split.batteryReset': { pt: 'Defeito', en: 'Default' },
   'cp.split.batteryResetTitle': {
     pt: 'Voltar ao valor por defeito da aeronave ({min} min)',

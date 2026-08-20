@@ -91,6 +91,10 @@ const BASE_DICT = {
   'stats.waypoints': { pt: 'Waypoints', en: 'Waypoints' },
   'stats.totalDist': { pt: 'Distância total', en: 'Total distance' },
   'stats.photos': { pt: 'Nº de fotos', en: 'No. of photos' },
+  'stats.photosHint': {
+    pt: 'Total (o disparo por distância cobre também o overshoot) e, entre parênteses, as fotos sobre a área.',
+    en: 'Total (the distance trigger also fires along the overshoot) and, in parentheses, the photos over the area.',
+  },
   'stats.time': { pt: 'Tempo estimado', en: 'Estimated time' },
   'stats.baseToArea': { pt: 'Base → área', en: 'Base → area' },
   'stats.insideArea': { pt: 'dentro da área', en: 'inside the area' },

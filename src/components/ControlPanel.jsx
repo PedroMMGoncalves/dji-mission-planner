@@ -496,6 +496,20 @@ export default function ControlPanel({
           />
         </Field>
         <p className="text-[11px] text-slate-500">{t('cp.flight.gimbalHint')}</p>
+        <div className="mt-2">
+          <Field label={t('cp.flight.overshoot')} suffix="m">
+            <NumberInput
+              value={params.overshoot}
+              min={0}
+              max={100}
+              step={5}
+              onChange={(v) => setParam('overshoot', Math.max(0, Math.min(100, v)))}
+            />
+          </Field>
+          <p className="text-[11px] leading-relaxed text-slate-500">
+            {t('cp.flight.overshootHint')}
+          </p>
+        </div>
       </Section>
 
       {/* Orientação das linhas */}
