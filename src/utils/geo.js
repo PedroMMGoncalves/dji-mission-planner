@@ -1,4 +1,5 @@
 import * as turf from '@turf/turf'
+import { STRIP_OVERLAP_EPS_M, decomposeCells, orderCells } from './gridRoute.js'
 
 /**
  * Utilitários geoespaciais do planeador de missões.
@@ -361,7 +362,10 @@ export function computeAlignment(outlineRing, spacingM, angleDeg) {
  *    de cruzamento por longitude e empareha-os; o ponto médio de cada par é testado
  *    com turf.booleanPointInPolygon para reter apenas os troços interiores
  *    (funciona também com polígonos côncavos → várias faixas por linha).
- * 5. Ordena as linhas em serpentina (ziguezague): linhas alternadas invertem o sentido.
+ * 5. Ordena as passagens com decomposição celular boustrophedon (gridRoute.js,
+ *    portado do FlyPath): strips contíguas viram células visitadas em ordem de
+ *    grafo, cada célula em ziguezague — num polígono convexo é a serpentina
+ *    clássica; num côncavo as ligações nunca atravessam os vãos da área.
  * 6. Roda tudo de volta pelo ângulo simétrico, em torno do mesmo pivô.
  *
  * Devolve { area, lines, waypoints, stats } ou { error }.
@@ -418,25 +422,22 @@ export function generateFlightLines(ring, options) {
 
   const padX = (maxX - minX) * 0.1 + 1e-6
 
-  const rowsOfSegments = []
+  // 4) Interseção e emparelhamento dos cruzamentos. Cada linha vira
+  //    [y, [[xLo, xHi], ...]] — as linhas vazias também entram, porque um
+  //    vão a toda a largura quebra a conectividade entre strips.
+  const rows = []
   for (const y of ys) {
     const scanline = turf.lineString([
       [minX - padX, y],
       [maxX + padX, y],
     ])
 
-    // 4) Interseção e emparelhamento dos cruzamentos
     const crossings = turf.lineIntersect(scanline, rotated).features
       .map((f) => f.geometry.coordinates[0])
       .sort((a, b) => a - b)
       .filter((x, idx, arr) => idx === 0 || x - arr[idx - 1] > 1e-10)
 
     const segments = []
-    // Overshoot (T2.2): each segment is extended at both ends along the line
-    // direction, so turns happen outside the area and in-area data is
-    // captured at stable speed/attitude. Applied in the rotated frame, where
-    // lines are horizontal — the eligibility test uses the core length.
-    const dxOver = overshootM > 0 ? overshootM / metersPerDegLon(y) : 0
     let k = 0
     while (k < crossings.length - 1) {
       const xa = crossings[k]
@@ -444,29 +445,45 @@ export function generateFlightLines(ring, options) {
       const mid = turf.point([(xa + xb) / 2, y])
       if (turf.booleanPointInPolygon(mid, rotated)) {
         const lenM = turf.distance([xa, y], [xb, y], { units: 'meters' })
-        if (lenM >= MIN_SEGMENT_M) segments.push([[xa - dxOver, y], [xb + dxOver, y]])
+        if (lenM >= MIN_SEGMENT_M) segments.push([xa, xb])
         k += 2
       } else {
         k += 1
       }
     }
-    if (segments.length > 0) rowsOfSegments.push(segments)
+    rows.push([y, segments])
   }
 
-  if (rowsOfSegments.length === 0) return null
+  if (rows.every(([, segs]) => segs.length === 0)) return null
 
-  // 5) Ordenação em serpentina (ziguezague)
+  // 5) Ordenação côncava-segura (T3.1): decomposição celular boustrophedon
+  //    portada do FlyPath. As strips contíguas viram células; a rota visita
+  //    as células em ordem de grafo, pelo que as ligações entre passagens
+  //    seguem a "espinha" da área e nunca atravessam um vão. Num polígono
+  //    convexo o resultado é exatamente a serpentina antiga.
+  const midLatRot = (minY + maxY) / 2
+  const { cells, adjacency } = decomposeCells(rows, STRIP_OVERLAP_EPS_M / metersPerDegLon(midLatRot))
+  const routePts = orderCells(cells, adjacency, metersPerDegLon(midLatRot) / M_PER_DEG_LAT)
+
+  // Overshoot (T2.2): cada passagem é prolongada nos dois extremos ao longo
+  // da direção de voo, já com o sentido escolhido pela rota — as viragens
+  // ficam fora da área e os dados dentro dela são captados estáveis.
   const serpentine = []
-  rowsOfSegments.forEach((segments, rowIdx) => {
-    if (rowIdx % 2 === 0) {
-      segments.forEach((s) => serpentine.push(s))
-    } else {
-      segments
-        .slice()
-        .reverse()
-        .forEach((s) => serpentine.push([s[1], s[0]]))
+  for (let k = 0; k + 1 < routePts.length; k += 2) {
+    let a = routePts[k]
+    let b = routePts[k + 1]
+    if (overshootM > 0) {
+      const dxOver = overshootM / metersPerDegLon(a[1])
+      if (a[0] <= b[0]) {
+        a = [a[0] - dxOver, a[1]]
+        b = [b[0] + dxOver, b[1]]
+      } else {
+        a = [a[0] + dxOver, a[1]]
+        b = [b[0] - dxOver, b[1]]
+      }
     }
-  })
+    serpentine.push([a, b])
+  }
 
   // 5b) Fiada de amarração perpendicular (T2.3): uma passagem extra a meio
   // do bloco, perpendicular às faixas (vertical no referencial rodado) e
