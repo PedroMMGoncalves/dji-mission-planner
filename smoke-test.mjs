@@ -26,6 +26,7 @@ import {
   DEFAULT_CUSTOM_SENSOR,
   DEFAULT_SELECTION,
   aglCapWarning,
+  batteryMinFor,
   migrateDroneSelection,
 } from './src/data/drones.js'
 
@@ -158,6 +159,19 @@ check('GSD ~2.69 cm/px', Math.abs(gsd - 2.686) < 0.01, gsd.toFixed(3))
   const wtOk = aglCapWarning(mp, 90, { terrainFollowActive: true, toleranceM: 5 })
   check('teto AGL com terrain follow: 90+5 m nao avisa', wtOk === null)
   check('teto AGL: payload sem limite nunca avisa', aglCapWarning(PAYLOADS.M3E_WIDE, 500) === null)
+}
+
+/* 1e. Bateria por combinacao aeronave+payload (T1.4) */
+{
+  check('bateria: default da aeronave', batteryMinFor(AIRCRAFT.M300RTK, 'P1', {}) === 55)
+  check('bateria: override da combinacao vale',
+    batteryMinFor(AIRCRAFT.M300RTK, 'MAPPER_PLUS', { 'M300RTK:MAPPER_PLUS': 38 }) === 38)
+  check('bateria: outra combinacao nao e afetada',
+    batteryMinFor(AIRCRAFT.M300RTK, 'P1', { 'M300RTK:MAPPER_PLUS': 38 }) === 55)
+  check('bateria: override invalido cai no default',
+    batteryMinFor(AIRCRAFT.M3E, 'M3E_WIDE', { 'M3E:M3E_WIDE': -5 }) === 45)
+  check('bateria: overrides ausentes usam defaults',
+    batteryMinFor(AIRCRAFT.M4T, 'M4T_WIDE') === 49 && batteryMinFor(AIRCRAFT.CUSTOM, 'CUSTOM') === 25)
 }
 
 /* 2. LiDAR por FOV */

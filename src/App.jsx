@@ -103,6 +103,8 @@ function AppInner({ lang, setLang }) {
   const [custom, setCustom] = useState(DEFAULT_CUSTOM_SENSOR)
   // afinações por payload (T1.2): { [payloadId]: { effectiveFov } }
   const [payloadTuning, setPayloadTuning] = useState({})
+  // duração de bateria por combinação (T1.4): { 'aircraftId:payloadId': min }
+  const [batteryByCombo, setBatteryByCombo] = useState({})
   const [params, setParams] = useState({
     altitude: 100,
     speed: 10,
@@ -134,7 +136,6 @@ function AppInner({ lang, setLang }) {
   const [split, setSplit] = useState({
     mode: 'none', // 'none' | 'area' | 'battery' | 'tiles'
     maxAreaHa: 20,
-    batteryMin: 25,
     reservePct: 30, // regressar à base com 30% de bateria
     maxSide: 500, // teto do lado do bloco por bateria (conforto VLOS)
     tileSize: 250, // lado dos quadrados do mosaico (m)
@@ -254,6 +255,24 @@ function AppInner({ lang, setLang }) {
     [drone.payloadId],
   )
 
+  // duração de bateria efetiva: override da combinação, senão o defeito da
+  // aeronave; editar para o valor de defeito remove o override
+  const batteryMin = batteryMinFor(aircraft, drone.payloadId, batteryByCombo)
+  const setBatteryMin = useCallback(
+    (value) => {
+      setBatteryByCombo((m) => {
+        const key = `${drone.aircraftId}:${drone.payloadId}`
+        const dflt = AIRCRAFT[drone.aircraftId]?.batteryMin
+        if (!Number.isFinite(value) || value <= 0 || value === dflt) {
+          const { [key]: _drop, ...rest } = m
+          return rest
+        }
+        return { ...m, [key]: Math.min(120, Math.max(5, value)) }
+      })
+    },
+    [drone],
+  )
+
   // Enums WPML: aeronave + payload; o editor custom substitui o enum do
   // payload sempre, e o da aeronave apenas quando a aeronave é CUSTOM
   // (num M300 com payload custom o droneEnumValue continua a ser o do M300)
@@ -307,7 +326,7 @@ function AppInner({ lang, setLang }) {
       const dist = basePoint ? distanceToArea(basePoint, ring) : null
       const transitS = dist != null ? (2 * dist) / (params.speed || 10) : 0
       side = squareSideForBattery({
-        batteryMin: split.batteryMin,
+        batteryMin,
         reservePct: split.reservePct,
         speed: params.speed,
         spacingM: spacing,
@@ -324,7 +343,7 @@ function AppInner({ lang, setLang }) {
     split.mode,
     split.tileSize,
     split.tileOrientation,
-    split.batteryMin,
+    batteryMin,
     split.reservePct,
     split.maxSide,
     params.speed,
@@ -490,13 +509,13 @@ function AppInner({ lang, setLang }) {
     return splitIntoBlocks(planOk, {
       mode: split.mode,
       maxAreaHa: split.maxAreaHa,
-      batteryMin: split.batteryMin,
+      batteryMin,
       reservePct: split.reservePct,
       speed: params.speed,
       spacingM: spacing,
       basePoint,
     })
-  }, [planOk, activeCells, split, params.speed, spacing, basePoint])
+  }, [planOk, activeCells, split, batteryMin, params.speed, spacing, basePoint])
 
   /* --------------------------- Interações ---------------------------- */
   const handleMapClick = useCallback(
@@ -813,11 +832,26 @@ function AppInner({ lang, setLang }) {
     if (!p || (p.version !== 1 && p.version !== 2)) return false
     skipTileResetRef.current = true
     if (typeof p.missionName === 'string') setMissionName(p.missionName)
-    if (p.drone || p.droneId) setDrone(migrateDroneSelection(p.drone ?? p.droneId))
+    const sel = p.drone || p.droneId ? migrateDroneSelection(p.drone ?? p.droneId) : null
+    if (sel) setDrone(sel)
     if (p.custom) setCustom((c) => ({ ...c, ...p.custom }))
     if (p.payloadTuning && typeof p.payloadTuning === 'object') setPayloadTuning(p.payloadTuning)
     if (p.params) setParams((prev) => ({ ...prev, ...p.params }))
-    if (p.split) setSplit((prev) => ({ ...prev, ...p.split }))
+    if (p.split) {
+      // projetos antigos guardavam uma duração de bateria única dentro de
+      // split — preserva o comportamento exato como override da combinação
+      const { batteryMin: legacyBatteryMin, ...restSplit } = p.split
+      setSplit((prev) => ({ ...prev, ...restSplit }))
+      if (Number.isFinite(legacyBatteryMin) && sel) {
+        setBatteryByCombo((m) => ({
+          ...m,
+          [`${sel.aircraftId}:${sel.payloadId}`]: legacyBatteryMin,
+        }))
+      }
+    }
+    if (p.batteryByCombo && typeof p.batteryByCombo === 'object') {
+      setBatteryByCombo((m) => ({ ...m, ...p.batteryByCombo }))
+    }
     if (p.anchor) setAnchor((prev) => ({ ...prev, ...p.anchor }))
     if (Array.isArray(p.ring)) setRing(p.ring)
     setAreaOrigin(p.areaOrigin ?? null)
@@ -856,6 +890,7 @@ function AppInner({ lang, setLang }) {
             drone,
             custom,
             payloadTuning,
+            batteryByCombo,
             params,
             split,
             anchor,
@@ -872,7 +907,7 @@ function AppInner({ lang, setLang }) {
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [missionName, drone, custom, payloadTuning, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const exportProject = useCallback(() => {
     const data = {
@@ -881,6 +916,7 @@ function AppInner({ lang, setLang }) {
       drone,
       custom,
       payloadTuning,
+      batteryByCombo,
       params,
       split,
       anchor,
@@ -895,7 +931,7 @@ function AppInner({ lang, setLang }) {
       new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
       `${missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'}-projeto.json`,
     )
-  }, [missionName, drone, custom, payloadTuning, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const importProject = useCallback(
     async (file) => {
@@ -1158,6 +1194,9 @@ function AppInner({ lang, setLang }) {
           refAzimuth={refAzimuth}
           split={split}
           setSplitParam={setSplitParam}
+          batteryMin={batteryMin}
+          batteryDefault={aircraft.batteryMin}
+          onBatteryMin={setBatteryMin}
           blocks={blocks}
           gridActive={Boolean(gridCells)}
           tilesTotal={tiles?.length ?? null}
