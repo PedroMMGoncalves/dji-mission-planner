@@ -49,6 +49,10 @@ export default {
     pt: 'Voltar ao FOV nominal do sensor ({fov}°)',
     en: 'Back to the sensor nominal FOV ({fov}°)',
   },
+  'cp.flight.aglCapWarn': {
+    pt: 'O payload {payload} tem teto operacional de {cap} m AGL e a rota chega a ~{worst} m sobre o terreno. Reduza a altitude.',
+    en: 'The {payload} payload is rated to {cap} m AGL and the route reaches ~{worst} m above ground. Lower the altitude.',
+  },
   'cp.drone.effectiveFovHint': {
     pt: 'Corte de trabalho do feixe: a faixa e o espaçamento usam este ângulo. Bordas do feixe têm mais ruído — é comum voar com um corte mais estreito que o nominal.',
     en: 'Working beam cut: swath and spacing use this angle. Beam edges are noisier — flying a narrower cut than nominal is common practice.',

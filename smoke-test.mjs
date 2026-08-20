@@ -25,6 +25,7 @@ import {
   PAYLOADS,
   DEFAULT_CUSTOM_SENSOR,
   DEFAULT_SELECTION,
+  aglCapWarning,
   migrateDroneSelection,
 } from './src/data/drones.js'
 
@@ -141,6 +142,22 @@ check('GSD ~2.69 cm/px', Math.abs(gsd - 2.686) < 0.01, gsd.toFixed(3))
     mp.wpml.payloadEnumValue === 65534 && mp.maxAglM === 100 && mp.maxPrr === 240000)
   check('par M300+Mapper+ migra intacto',
     migrateDroneSelection({ aircraftId: 'M300RTK', payloadId: 'MAPPER_PLUS' }).payloadId === 'MAPPER_PLUS')
+}
+
+/* 1d. Teto operacional AGL por payload (T1.3) */
+{
+  const mp = PAYLOADS.MAPPER_PLUS
+  check('teto AGL: 90 m nao avisa', aglCapWarning(mp, 90) === null)
+  check('teto AGL: 100 m exatos nao avisa', aglCapWarning(mp, 100) === null)
+  const w = aglCapWarning(mp, 120)
+  check('teto AGL: 120 m avisa', w != null && w.cap === 100 && w.worstAgl === 120,
+    w && `${w.worstAgl} > ${w.cap}`)
+  const wt = aglCapWarning(mp, 98, { terrainFollowActive: true, toleranceM: 5 })
+  check('teto AGL com terrain follow: 98+5 m avisa', wt != null && wt.worstAgl === 103,
+    wt && `${wt.worstAgl} > ${wt.cap}`)
+  const wtOk = aglCapWarning(mp, 90, { terrainFollowActive: true, toleranceM: 5 })
+  check('teto AGL com terrain follow: 90+5 m nao avisa', wtOk === null)
+  check('teto AGL: payload sem limite nunca avisa', aglCapWarning(PAYLOADS.M3E_WIDE, 500) === null)
 }
 
 /* 2. LiDAR por FOV */
