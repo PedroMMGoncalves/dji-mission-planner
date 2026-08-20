@@ -66,16 +66,67 @@ com screenshot e os passos.
   **Esperado:** área, hardware, parâmetros, blocos e afinações (FOV de
   trabalho, bateria por combinação) restaurados.
 
-## 6. Modo fachada e órbitas — *pendente da ronda de UI*
+## 6. Modo fachada (~2.5 min)
 
-Os geradores e o exportador estão prontos e testados pelo harness; os itens
-abaixo ativam quando a interface (baseline no mapa, clique de POI) existir:
+- ☐ Selector do topo → **Fachada**; Desenhar; clicar um L no mapa (dois
+  troços perpendiculares, ~300 m cada); Concluir (ou duplo clique).
+  **Esperado:** baseline laranja; linha afastada tracejada ao standoff do
+  lado escolhido; traços amarelos de rumo perpendiculares a cada troço,
+  a rodarem na esquina; painel com passagens/GSD/tempo.
+- ☐ Trocar o **Lado do voo**.
+  **Esperado:** a linha afastada salta para o outro lado da baseline e os
+  rumos invertem.
+- ☐ Sem GeoTIFF local carregado, observar os avisos.
+  **Esperado:** aviso âmbar "afastamento NÃO verificado" (os tiles globais
+  nunca validam uma face).
+- ☐ Importar um GeoTIFF local (modo Área → Terreno) que cubra a face —
+  idealmente o DSM sintético de rampa dos testes de campo.
+  **Esperado:** o aviso muda para folga verificada (verde) ou para a lista
+  vermelha de passagens em conflito; subir o standoff limpa a lista.
+- ☐ Exportar WPML e abrir o KMZ.
+  **Esperado:** nome `<missao>_face_p1-N.kmz`; `waylines.wpml` com
+  `smoothTransition` e um `takePhoto` em cada waypoint.
+- ☐ Guardar o projecto, limpar tudo, reabrir.
+  **Esperado:** baseline, parâmetros e modo activo restaurados.
 
-- ☐ Fachada numa baseline em L: pré-visualização das passagens afastadas ao
-  standoff; rumo roda na esquina; aviso "standoff não verificado" sem DSM
-  local; com DSM local, aviso de folga quando uma passagem corta a rampa.
-- ☐ Órbita multi-nível: círculos ao raio pedido, export em voo curvo
-  contínuo, gimbal por nível a apontar ao alvo.
+## 7. Modo órbita (~2 min)
+
+- ☐ Selector → **Órbita**; Marcar POI; clicar no alvo; raio 60 m, 3 níveis.
+  **Esperado:** anel tracejado ao raio, traços de rumo a apontarem ao POI,
+  marcador arrastável; painel com níveis × pontos/volta e gimbal por nível
+  (mais inclinado nos níveis altos).
+- ☐ Ajustar o **GSD alvo à distância**.
+  **Esperado:** o raio recalcula-se em conformidade.
+- ☐ Exportar missão única; reimportar o KMZ no modo Área.
+  **Esperado:** `<missao>_orbit_nN.kmz` com
+  `toPointAndPassWithContinuityCurvature` em todos os waypoints; o
+  reimport reconstrói um contorno em redor do círculo sem erro.
+- ☐ Exportar um KMZ por nível.
+  **Esperado:** ZIP com N ficheiros `_b01..bNN`, um nível cada, alturas
+  crescentes.
+
+## 8. Pontos de inspeção — ordem e persistência (~1.5 min)
+
+- ☐ Modo Área → marcar 4 pontos; renomear dois; arrastar o cartão do 4.º
+  para a 2.ª posição; carregar em Sugerir ordem.
+  **Esperado:** o arrasto reordena (números do mapa acompanham); a sugestão
+  reordena por proximidade a partir da base.
+- ☐ Guardar projecto → limpar → reabrir → exportar KMZ.
+  **Esperado:** etiquetas e ordem sobrevivem ao ciclo gravar/abrir e a
+  ordem do KMZ (`_inspect_nN.kmz`) segue a lista.
+
+## 9. Verificação em tablet (~1 min)
+
+A app é usada em campo: numa janela a **~768 px de largura** (DevTools ou
+tablet real):
+
+- ☐ O selector de modo e os três painéis (Área/Fachada/Órbita) são usáveis
+  sem sobreposições; os campos numéricos aceitam toque; as listas fazem
+  scroll dentro do painel.
+- ☐ No modo inspeção, reordenar com as **setas** (o arrastar HTML5 não
+  dispara em ecrã táctil — comportamento esperado).
+- ☐ A faixa de resumo do projecto (2+ planos) não tapa os controlos do
+  mapa.
 
 ---
 
