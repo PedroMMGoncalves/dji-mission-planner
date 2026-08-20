@@ -103,6 +103,9 @@ export default function ControlPanel({
   onImportDem,
   onShowProfile,
   terrainResult,
+  slopeHint,
+  onApplySlopeAngle,
+  onApplySlopeGimbal,
   gcpConfig,
   setGcpConfig,
   gcpAutoCount,
@@ -1210,6 +1213,30 @@ export default function ControlPanel({
           <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
             ⚠ {terrainResult.error}
           </p>
+        )}
+        {slopeHint && (
+          <div className="mt-2 rounded border border-sky-800 bg-sky-950/40 p-2 text-[11px] leading-relaxed text-sky-200">
+            {t('cp.terrain.slopeHint', {
+              slope: Math.round(slopeHint.slopeDeg),
+              az: Math.round(slopeHint.downhillAzimuthDeg),
+              lines: Math.round(slopeHint.contourAzimuthDeg),
+              gimbal: slopeHint.gimbal,
+            })}
+            <div className="mt-1.5 grid grid-cols-2 gap-2">
+              <button
+                onClick={onApplySlopeAngle}
+                className="rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700"
+              >
+                {t('cp.terrain.slopeApplyLines', { lines: Math.round(slopeHint.contourAzimuthDeg) })}
+              </button>
+              <button
+                onClick={onApplySlopeGimbal}
+                className="rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700"
+              >
+                {t('cp.terrain.slopeApplyGimbal', { gimbal: slopeHint.gimbal })}
+              </button>
+            </div>
+          </div>
         )}
         <p className="mt-1.5 text-[11px] text-slate-500">{t('cp.terrain.sourceHint')}</p>
       </Section>
