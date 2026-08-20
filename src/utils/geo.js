@@ -764,6 +764,32 @@ export function nadirLineLocalPerBlock(blockLineCounts, nadirStartLine) {
 }
 
 /**
+ * E3.2: agregado do projecto quando coexistem vários planos (área, fachada,
+ * órbita): soma tempo e fotos e estima as baterias somando POR PLANO
+ * (missões separadas não partilham a bateria a meio), com o tempo útil
+ * = bateria × (1 − reserva). Devolve null sem planos válidos.
+ */
+export function aggregatePlans(statsList, { batteryMin, reservePct = 30 } = {}) {
+  const valid = (statsList ?? []).filter((s) => s && Number.isFinite(s.flightTimeS))
+  if (valid.length === 0) return null
+  const usefulS = batteryMin > 0 ? batteryMin * 60 * (1 - reservePct / 100) : null
+  let flightTimeS = 0
+  let photoCount = 0
+  let batteries = 0
+  for (const s of valid) {
+    flightTimeS += s.flightTimeS
+    photoCount += s.photoCount ?? 0
+    if (usefulS) batteries += Math.max(1, Math.ceil(s.flightTimeS / usefulS))
+  }
+  return {
+    plans: valid.length,
+    flightTimeS,
+    photoCount,
+    batteries: usefulS ? batteries : null,
+  }
+}
+
+/**
  * DIVISÃO EM BLOCOS DE VOO
  * ------------------------
  * Segue o modelo dos planeadores profissionais (UgCS "Large Projects",

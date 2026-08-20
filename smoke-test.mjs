@@ -1,5 +1,6 @@
 import * as turf from '@turf/turf'
 import {
+  aggregatePlans,
   computeAlignment,
   computeFootprint,
   findOptimalDirection,
@@ -859,6 +860,27 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
   let cristaOk = true
   for (let y = 1; y < h - 1; y++) if (grid[y * w + 5] !== 400) cristaOk = false
   check('crista real preservada', cristaOk)
+}
+
+/* 8m. Agregado do projecto (E3.2) */
+{
+  // 2 planos de 10 e 25 min; bateria 20 min a 30% de reserva -> util 840 s:
+  // plano 1 = 1 bateria, plano 2 (1500 s) = 2 -> total 3
+  const agg = aggregatePlans(
+    [
+      { flightTimeS: 600, photoCount: 100 },
+      { flightTimeS: 1500, photoCount: null },
+      null,
+      { flightTimeS: NaN },
+    ],
+    { batteryMin: 20, reservePct: 30 },
+  )
+  check('agregado: 2 planos validos, tempo e fotos somados',
+    agg.plans === 2 && agg.flightTimeS === 2100 && agg.photoCount === 100)
+  check('agregado: baterias somadas POR plano (1+2)', agg.batteries === 3, agg.batteries)
+  check('agregado: sem planos -> null', aggregatePlans([null, {}], { batteryMin: 20 }) === null)
+  check('agregado: sem bateria valida -> batteries null',
+    aggregatePlans([{ flightTimeS: 60 }], {}).batteries === null)
 }
 
 /* 9. Trava de segurança */

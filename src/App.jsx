@@ -4,6 +4,7 @@ import ControlPanel from './components/ControlPanel.jsx'
 import MissionModeSelector from './components/MissionModeSelector.jsx'
 import FacePanel from './components/FacePanel.jsx'
 import OrbitPanel from './components/OrbitPanel.jsx'
+import ProjectSummary from './components/ProjectSummary.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import ChecklistPage from './components/ChecklistPage.jsx'
 import HelpModal from './components/HelpModal.jsx'
@@ -23,6 +24,7 @@ import {
   migrateDroneSelection,
 } from './data/drones.js'
 import {
+  aggregatePlans,
   computeAlignment,
   computeFootprint,
   computeGSD,
@@ -1080,6 +1082,20 @@ function AppInner({ lang, setLang }) {
     if (slopeHint) setParams((p) => ({ ...p, gimbalPitch: slopeHint.gimbal }))
   }, [slopeHint])
 
+  // E3.2: agregado do projecto quando coexistem varios planos
+  const projectSummary = useMemo(
+    () =>
+      aggregatePlans(
+        [
+          planOk?.stats,
+          facePlan && !facePlan.error ? facePlan.stats : null,
+          orbitPlan && !orbitPlan.error ? orbitPlan.stats : null,
+        ],
+        { batteryMin, reservePct: split.reservePct },
+      ),
+    [planOk, facePlan, orbitPlan, batteryMin, split.reservePct],
+  )
+
   // E1.4: a vista 3D cobre o modo activo — grelha (com terrain follow),
   // passagens de fachada empilhadas ou anéis de órbita às suas alturas.
   // refElev ancora as alturas relativas: pé da face / solo do POI / base.
@@ -1753,6 +1769,7 @@ function AppInner({ lang, setLang }) {
         </div>
 
         <main className="relative min-w-0 flex-1">
+          <ProjectSummary summary={projectSummary} />
           <MapView
             mode={mode}
             draftVertices={draftVertices}
