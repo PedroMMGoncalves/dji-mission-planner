@@ -796,5 +796,39 @@ check('waylines Mapper+: payloadEnumValue 65534',
 check('waylines Mapper+: sem acoes de camara',
   !wlMapper.includes('takePhoto') && !wlMapper.includes('gimbalRotate'))
 
+/* 10b. Acoes por waypoint no exportador (T4.1) */
+{
+  const wlPW = buildWaylinesWPML({
+    ...wpmlParams,
+    photoIntervalM: 0,
+    perWaypoint: [
+      null,
+      { heading: 45, gimbalPitch: -30, actions: ['takePhoto'] },
+      { actions: ['takePhoto'] },
+    ],
+  })
+  check('T4.1: heading smoothTransition apenas no wp1',
+    wlPW.includes('<wpml:waypointHeadingAngle>45</wpml:waypointHeadingAngle>') &&
+      (wlPW.match(/smoothTransition/g) || []).length === 1)
+  check('T4.1: headingAngleEnable=1 so onde ha heading',
+    (wlPW.match(/<wpml:waypointHeadingAngleEnable>1<\/wpml:waypointHeadingAngleEnable>/g) || []).length === 1)
+  check('T4.1: grupo do wp1 com gimbal -30',
+    wlPW.includes('<wpml:actionGroupStartIndex>1</wpml:actionGroupStartIndex>') &&
+      wlPW.includes('<wpml:gimbalPitchRotateAngle>-30</wpml:gimbalPitchRotateAngle>'))
+  check('T4.1: grupo do wp2 (so foto)',
+    wlPW.includes('<wpml:actionGroupStartIndex>2</wpml:actionGroupStartIndex>'))
+  // com photoIntervalM 0 o unico grupo global e o gimbal (id 0): os grupos
+  // por waypoint devem ocupar os ids 1 e 2, sem saltos
+  check('T4.1: ids de grupos consecutivos',
+    wlPW.includes('<wpml:actionGroupId>1</wpml:actionGroupId>') &&
+      wlPW.includes('<wpml:actionGroupId>2</wpml:actionGroupId>') &&
+      !wlPW.includes('<wpml:actionGroupId>3</wpml:actionGroupId>'))
+  check('T4.1: takePhoto nos dois waypoints', (wlPW.match(/takePhoto/g) || []).length >= 2)
+  const wlPlain = buildWaylinesWPML(wpmlParams)
+  check('T4.1: sem perWaypoint nao ha smoothTransition nem grupos extra',
+    !wlPlain.includes('smoothTransition') &&
+      !wlPlain.includes('<wpml:actionGroupId>2</wpml:actionGroupId>'))
+}
+
 console.log(failures === 0 ? '\nTODOS OS TESTES PASSARAM' : `\n${failures} TESTES FALHARAM`)
 process.exit(failures === 0 ? 0 : 1)

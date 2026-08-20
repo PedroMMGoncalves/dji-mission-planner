@@ -210,7 +210,15 @@ ${placemarks}
  * multipleDistance (disparo a cada X metros) ou multipleTiming (a cada X s).
  */
 export function buildWaylinesWPML(params) {
-  const { waypoints, altitude, speed, wpml, photoIntervalM, triggerMode, sensorType } = params
+  const {
+    waypoints, altitude, speed, wpml, photoIntervalM, triggerMode, sensorType,
+    // T4.1: ações por waypoint — array paralelo a `waypoints` com entradas
+    // opcionais { gimbalPitch, heading, actions: ['takePhoto', ...] }.
+    // heading fixa o rumo nesse waypoint (waypointHeadingMode
+    // smoothTransition); sem entrada, o comportamento global mantém-se
+    // byte a byte (followWayline, sem grupos extra).
+    perWaypoint = null,
+  } = params
   const gimbalPitch = params.gimbalPitch ?? -90
 
   const triggerXml = (() => {
@@ -280,9 +288,65 @@ ${triggerXml}
     : null
   const firstWaypointActions = [gimbalGroup, photoGroup].filter(Boolean).join('\n')
 
+  // T4.1: grupos de ações por waypoint, com ids consecutivos a seguir aos
+  // grupos globais. Cada grupo dispara em reachPoint no próprio waypoint.
+  let nextGroupId = (gimbalGroup ? 1 : 0) + (photoGroup ? 1 : 0)
+  const perWaypointGroup = (i, pw) => {
+    const actions = []
+    if (pw.gimbalPitch != null) {
+      actions.push(`          <wpml:action>
+            <wpml:actionId>${actions.length}</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
+              <wpml:gimbalPitchRotateAngle>${pw.gimbalPitch}</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
+              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
+              <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`)
+    }
+    for (const act of pw.actions ?? []) {
+      if (act !== 'takePhoto') continue
+      actions.push(`          <wpml:action>
+            <wpml:actionId>${actions.length}</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`)
+    }
+    if (actions.length === 0) return ''
+    const gid = nextGroupId
+    nextGroupId += 1
+    return `        <wpml:actionGroup>
+          <wpml:actionGroupId>${gid}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${i}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${i}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+${actions.join('\n')}
+        </wpml:actionGroup>`
+  }
+
   const placemarks = waypoints
-    .map(
-      ([lon, lat, h], i) => `      <Placemark>
+    .map(([lon, lat, h], i) => {
+      const pw = perWaypoint?.[i] ?? null
+      const hasHeading = pw?.heading != null
+      const pwGroup = pw ? perWaypointGroup(i, pw) : ''
+      const groupsXml = [i === 0 ? firstWaypointActions : '', pwGroup]
+        .filter(Boolean)
+        .join('\n')
+      return `      <Placemark>
         <Point>
           <coordinates>${fmtCoord(lon)},${fmtCoord(lat)}</coordinates>
         </Point>
@@ -290,19 +354,19 @@ ${triggerXml}
         <wpml:executeHeight>${h ?? altitude}</wpml:executeHeight>
         <wpml:waypointSpeed>${speed}</wpml:waypointSpeed>
         <wpml:waypointHeadingParam>
-          <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>0</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingMode>${hasHeading ? 'smoothTransition' : 'followWayline'}</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>${hasHeading ? Math.round(pw.heading) : 0}</wpml:waypointHeadingAngle>
           <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
-          <wpml:waypointHeadingAngleEnable>0</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingAngleEnable>${hasHeading ? 1 : 0}</wpml:waypointHeadingAngleEnable>
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
           <wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
-        <wpml:useStraightLine>1</wpml:useStraightLine>${i === 0 && firstWaypointActions ? '\n' + firstWaypointActions : ''}
-      </Placemark>`,
-    )
+        <wpml:useStraightLine>1</wpml:useStraightLine>${groupsXml ? '\n' + groupsXml : ''}
+      </Placemark>`
+    })
     .join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
