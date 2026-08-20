@@ -26,7 +26,8 @@ import { decodeTerrarium, despikeElevations, fitSlopePlane, simplifyProfile, ter
 import { readFileSync } from 'node:fs'
 import { groupApplies } from './src/data/checklist.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
-import { checkFaceClearance, generateFacePlan } from './src/utils/faceMode.js'
+import { DEFAULT_FACE_CONFIG, checkFaceClearance, generateFacePlan, normalizeFaceConfig } from './src/utils/faceMode.js'
+import { headingTicks } from './src/utils/preview.js'
 import { generateOrbitPlan } from './src/utils/orbit.js'
 import { inspectionToWaypoints, nearestNeighbourOrder } from './src/utils/inspect.js'
 import {
@@ -1045,6 +1046,39 @@ check('waylines Mapper+: sem acoes de camara',
   // sem dados no DSM -> null (o chamador mostra standoff nao verificado)
   check('folga: DSM sem dados -> null',
     checkFaceClearance(mk(25), () => null, { minClearanceM: 15 }) === null)
+}
+
+/* 9b3. Persistencia da configuracao de fachada (E1.1) */
+{
+  check('faceConfig: ausente -> defaults',
+    JSON.stringify(normalizeFaceConfig(undefined)) === JSON.stringify(DEFAULT_FACE_CONFIG))
+  const norm = normalizeFaceConfig({
+    baseline: [[-8, 39.5], [-7.99, 39.5]], heightM: 9999, standoffM: 1,
+    side: 'right', verticalOverlapPct: 'x', minClearanceM: 20,
+  })
+  check('faceConfig: numeros limitados e lixo -> default',
+    norm.heightM === 500 && norm.standoffM === 5 &&
+      norm.verticalOverlapPct === DEFAULT_FACE_CONFIG.verticalOverlapPct &&
+      norm.minClearanceM === 20 && norm.side === 'right')
+  check('faceConfig: baseline valida preservada, invalida -> null',
+    norm.baseline.length === 2 &&
+      normalizeFaceConfig({ baseline: [[1]] }).baseline === null &&
+      normalizeFaceConfig({ baseline: 'x' }).baseline === null)
+  check('faceConfig: lado invalido cai em left',
+    normalizeFaceConfig({ side: 'up' }).side === 'left')
+
+  // ticks de rumo para a pre-visualizacao
+  const tk = headingTicks(
+    [[-8, 39.5, 10], [-7.999, 39.5, 10], [-7.998, 39.5, 10]],
+    [{ heading: 180 }, {}, { heading: 90 }],
+    { lengthM: 10, limit: 2 },
+  )
+  check('ticks: so waypoints com rumo dentro do limite', tk.length === 1)
+  const dTick = turf.distance(tk[0][0], tk[0][1], { units: 'meters' })
+  const bTick = ((turf.bearing(tk[0][0], tk[0][1]) % 360) + 360) % 360
+  check('ticks: comprimento e direccao correctos',
+    Math.abs(dTick - 10) < 0.1 && Math.abs(bTick - 180) < 1,
+    `${dTick.toFixed(1)} m a ${bTick.toFixed(0)}°`)
 }
 
 /* 9c. Orbitas multi-nivel (T5.1 — gerador puro) */

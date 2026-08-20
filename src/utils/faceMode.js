@@ -42,6 +42,47 @@ function offsetPolyline(coords, dM) {
   })
 }
 
+/** Valores iniciais da configuração de fachada (E1.1). */
+export const DEFAULT_FACE_CONFIG = {
+  baseline: null, // polilinha [[lon,lat],...] = pé da face
+  heightM: 30,
+  standoffM: 25,
+  side: 'left',
+  verticalOverlapPct: 70,
+  horizontalOverlapPct: 70,
+  gimbalPitch: 0,
+  minClearanceM: 15,
+}
+
+/**
+ * E1.1: normaliza uma configuração de fachada guardada num projecto para o
+ * formato corrente — campos em falta caem nos valores por omissão, números
+ * são validados e limitados, lixo nunca rebenta (projectos antigos, sem o
+ * campo, carregam com os defaults).
+ */
+export function normalizeFaceConfig(stored) {
+  const d = { ...DEFAULT_FACE_CONFIG }
+  if (!stored || typeof stored !== 'object') return d
+  const num = (v, lo, hi, dflt) =>
+    Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : dflt
+  const baseline =
+    Array.isArray(stored.baseline) &&
+    stored.baseline.length >= 2 &&
+    stored.baseline.every((p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]))
+      ? stored.baseline.map((p) => [p[0], p[1]])
+      : null
+  return {
+    baseline,
+    heightM: num(stored.heightM, 2, 500, d.heightM),
+    standoffM: num(stored.standoffM, 5, 200, d.standoffM),
+    side: stored.side === 'right' ? 'right' : 'left',
+    verticalOverlapPct: num(stored.verticalOverlapPct, 0, 95, d.verticalOverlapPct),
+    horizontalOverlapPct: num(stored.horizontalOverlapPct, 0, 95, d.horizontalOverlapPct),
+    gimbalPitch: num(stored.gimbalPitch, -90, 45, d.gimbalPitch),
+    minClearanceM: num(stored.minClearanceM, 2, 100, d.minClearanceM),
+  }
+}
+
 /**
  * FACE MODE (T4.2) — serpentina vertical sobre uma face (sub)vertical:
  * afloramentos rochosos, taludes de pedreira, fachadas, estruturas.
