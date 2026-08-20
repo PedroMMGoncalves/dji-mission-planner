@@ -1,114 +1,188 @@
 /**
- * Dicionário de Hardware — perfis da frota de drones/sensores.
+ * Hardware dictionary — aircraft and payloads, decoupled (T1.1).
  *
- * Estrutura expansível: para adicionar um novo drone basta acrescentar uma
- * entrada a este objeto. Campos:
- *  - label:        nome apresentado no dropdown
- *  - type:         'camera' (fotogrametria) | 'custom' (câmara manual ou LiDAR)
- *  - camera:       descrição da câmara
- *  - sensorWidth:  largura física do sensor (mm) — usada no cálculo da pegada transversal
- *  - sensorHeight: altura física do sensor (mm) — usada no cálculo da pegada longitudinal
- *  - focalLength:  distância focal real da lente (mm)
- *  - imageWidth:   largura da imagem (px) — usada no cálculo do GSD
- *  - imageHeight:  altura da imagem (px)
- *  - payloadLabel: identificador do payload (informativo)
- *  - wpml:         enums oficiais DJI usados no template.kml / waylines.wpml
- *                  (droneEnumValue / payloadEnumValue — confirmar na documentação
- *                  WPML da DJI se a app Pilot 2 rejeitar a importação)
+ * AIRCRAFT holds what belongs to the airframe: mission speed limits, default
+ * battery duration, the WPML drone enums and the list of mountable payloads.
+ * PAYLOADS holds what belongs to the sensor: optics (camera) or beam geometry
+ * (lidar), trigger limits and the WPML payload enums. Integrated drones list
+ * exactly one payload (the UI only shows the payload dropdown when there is a
+ * choice); modular aircraft (M300) list several, including CUSTOM.
+ *
+ * Aircraft fields:
+ *  - label:      name shown in the dropdown
+ *  - speedRange: mission speed limits (m/s), clamped in the UI
+ *  - batteryMin: default battery duration (min, DJI spec max) — per-combo
+ *                overrides arrive with T1.4
+ *  - wpml:       { droneEnumValue, droneSubEnumValue } for template/waylines
+ *  - payloads:   ids into PAYLOADS, first entry is the default
+ *
+ * Payload fields:
+ *  - label:        short name (payload dropdown / composed hardware label)
+ *  - desc:         descriptive text for the specs line
+ *  - payloadLabel: short code for the specs line
+ *  - type:         'camera' | 'lidar' | 'custom' (manual camera or LiDAR)
+ *  - camera optics: sensorWidth/sensorHeight (mm), focalLength (mm, real),
+ *                   imageWidth/imageHeight (px)
+ *  - lidar geometry: fov (deg, nominal), effectiveFov (deg, working cut),
+ *                    maxPrr (pts/s) — used from T1.2 on
+ *  - minTriggerS:  minimum interval between camera triggers (s)
+ *  - maxAglM:      optional operational AGL ceiling (warning, T1.3)
+ *  - wpml:         { payloadEnumValue, payloadSubEnumValue,
+ *                    payloadPositionIndex } (confirm against DJI WPML docs
+ *                    if Pilot 2 rejects the import)
  */
-export const DRONE_PROFILES = {
+export const AIRCRAFT = {
   M3E: {
     id: 'M3E',
     label: 'DJI Mavic 3 Enterprise (M3E)',
-    type: 'camera',
-    camera: 'Wide RGB — CMOS 4/3"',
-    sensorWidth: 17.3,
-    sensorHeight: 13.0,
-    focalLength: 12.2,
-    imageWidth: 5280,
-    imageHeight: 3956,
-    payloadLabel: 'XT24',
-    speedRange: { min: 1, max: 15 }, // limites de velocidade em missão (m/s)
-    minTriggerS: 0.7, // intervalo mínimo entre disparos da câmara (s)
-    wpml: {
-      droneEnumValue: 77,
-      droneSubEnumValue: 0,
-      payloadEnumValue: 66,
-      payloadSubEnumValue: 0,
-      payloadPositionIndex: 0,
-    },
+    speedRange: { min: 1, max: 15 },
+    batteryMin: 45,
+    wpml: { droneEnumValue: 77, droneSubEnumValue: 0 },
+    payloads: ['M3E_WIDE'],
   },
 
   M4T: {
     id: 'M4T',
     label: 'DJI Matrice 4T (M4T)',
+    speedRange: { min: 1, max: 15 },
+    batteryMin: 49,
+    wpml: { droneEnumValue: 99, droneSubEnumValue: 1 },
+    payloads: ['M4T_WIDE'],
+  },
+
+  M300RTK: {
+    id: 'M300RTK',
+    label: 'DJI Matrice 300 RTK',
+    speedRange: { min: 1, max: 17 },
+    batteryMin: 55,
+    wpml: { droneEnumValue: 60, droneSubEnumValue: 0 },
+    payloads: ['P1', 'CUSTOM'],
+  },
+
+  CUSTOM: {
+    id: 'CUSTOM',
+    label: 'Custom',
+    speedRange: { min: 1, max: 20 },
+    batteryMin: 25,
+    // Default enums, editable in the custom editor of the UI:
+    wpml: { droneEnumValue: 60, droneSubEnumValue: 0 },
+    payloads: ['CUSTOM'],
+  },
+}
+
+export const PAYLOADS = {
+  M3E_WIDE: {
+    id: 'M3E_WIDE',
+    label: 'Wide RGB',
+    desc: 'Wide RGB — CMOS 4/3"',
+    payloadLabel: 'XT24',
     type: 'camera',
-    camera: 'Wide RGB — CMOS 4/3"',
     sensorWidth: 17.3,
     sensorHeight: 13.0,
     focalLength: 12.2,
     imageWidth: 5280,
     imageHeight: 3956,
-    payloadLabel: 'XT24',
-    speedRange: { min: 1, max: 15 },
     minTriggerS: 0.7,
-    wpml: {
-      droneEnumValue: 99,
-      droneSubEnumValue: 1,
-      payloadEnumValue: 89,
-      payloadSubEnumValue: 0,
-      payloadPositionIndex: 0,
-    },
+    wpml: { payloadEnumValue: 66, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
   },
 
-  M300RTK: {
-    id: 'M300RTK',
-    label: 'DJI Matrice 300 RTK + Zenmuse P1',
+  M4T_WIDE: {
+    // T0.1 STILL OPEN: the optics below are M3E-class placeholders. The real
+    // M4T wide camera is a 1/1.3" 48 MP unit (DJI: FOV 82 deg, 8064x6048,
+    // 24 mm equivalent) — values will be replaced from the EXIF of a real
+    // photo. Until then footprint/GSD for M4T are NOT to be trusted.
+    id: 'M4T_WIDE',
+    label: 'Wide RGB',
+    desc: 'Wide RGB — CMOS 4/3"',
+    payloadLabel: 'XT24',
     type: 'camera',
-    camera: 'Zenmuse P1 — Full Frame 35 mm',
+    sensorWidth: 17.3,
+    sensorHeight: 13.0,
+    focalLength: 12.2,
+    imageWidth: 5280,
+    imageHeight: 3956,
+    minTriggerS: 0.7,
+    wpml: { payloadEnumValue: 89, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+  },
+
+  P1: {
+    id: 'P1',
+    label: 'Zenmuse P1',
+    desc: 'Zenmuse P1 — Full Frame 35 mm',
+    payloadLabel: 'P1',
+    type: 'camera',
     sensorWidth: 35.9,
     sensorHeight: 24.0,
     focalLength: 35.0,
     imageWidth: 8192,
     imageHeight: 5460,
-    payloadLabel: 'P1',
-    speedRange: { min: 1, max: 17 },
     minTriggerS: 0.7,
-    wpml: {
-      droneEnumValue: 60,
-      droneSubEnumValue: 0,
-      payloadEnumValue: 50,
-      payloadSubEnumValue: 0,
-      payloadPositionIndex: 0,
-    },
+    wpml: { payloadEnumValue: 50, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
   },
 
   CUSTOM: {
     id: 'CUSTOM',
     label: 'Custom / LiDAR',
-    type: 'custom',
-    camera: 'Definido manualmente',
+    desc: 'Definido manualmente',
     payloadLabel: '—',
-    speedRange: { min: 1, max: 20 },
+    type: 'custom',
     minTriggerS: 0.7,
-    // Enums por defeito para o perfil custom (editáveis na interface):
-    wpml: {
-      droneEnumValue: 60,
-      droneSubEnumValue: 0,
-      payloadEnumValue: 50,
-      payloadSubEnumValue: 0,
-      payloadPositionIndex: 0,
-    },
+    // Default enums, editable in the custom editor of the UI:
+    wpml: { payloadEnumValue: 50, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
   },
+}
+
+/** Default hardware selection for new projects and failed migrations. */
+export const DEFAULT_SELECTION = { aircraftId: 'M3E', payloadId: 'M3E_WIDE' }
+
+// Legacy single-id profiles (pre-T1.1) mapped to aircraft + sole payload.
+const LEGACY_DRONE_IDS = {
+  M3E: { aircraftId: 'M3E', payloadId: 'M3E_WIDE' },
+  M4T: { aircraftId: 'M4T', payloadId: 'M4T_WIDE' },
+  M300RTK: { aircraftId: 'M300RTK', payloadId: 'P1' },
+  CUSTOM: { aircraftId: 'CUSTOM', payloadId: 'CUSTOM' },
+}
+
+/**
+ * Normalises any stored hardware selection to a valid pair:
+ *  - legacy `droneId` strings (projects saved before T1.1) map to their
+ *    aircraft + sole payload;
+ *  - `{ aircraftId, payloadId }` objects are validated against the catalog,
+ *    with the payload snapped to the aircraft's list when incompatible.
+ * Unknown ids fall back to DEFAULT_SELECTION with a console warning — this
+ * function never throws, so old saved projects always load.
+ */
+export function migrateDroneSelection(stored) {
+  if (typeof stored === 'string') {
+    const hit = LEGACY_DRONE_IDS[stored]
+    if (hit) return { ...hit }
+    console.warn(`[drones] unknown legacy droneId "${stored}" — using default`)
+    return { ...DEFAULT_SELECTION }
+  }
+  if (stored && typeof stored === 'object') {
+    const aircraft = AIRCRAFT[stored.aircraftId]
+    if (!aircraft) {
+      console.warn(`[drones] unknown aircraftId "${stored.aircraftId}" — using default`)
+      return { ...DEFAULT_SELECTION }
+    }
+    if (!aircraft.payloads.includes(stored.payloadId)) {
+      console.warn(
+        `[drones] payload "${stored.payloadId}" not available on ${aircraft.id} — using ${aircraft.payloads[0]}`,
+      )
+      return { aircraftId: aircraft.id, payloadId: aircraft.payloads[0] }
+    }
+    return { aircraftId: aircraft.id, payloadId: stored.payloadId }
+  }
+  return { ...DEFAULT_SELECTION }
 }
 
 /**
  * Catálogo de presets de missão — tipos de levantamento típicos, cada um com
  * uma combinação recomendada de sobreposições, velocidade, gimbal e dupla
  * grelha. `appliesTo` filtra por tipo de sensor ('camera' | 'lidar');
- * `speedByProfile` afina a velocidade para drones específicos. Os textos são
- * bilingues ({ pt, en }) e resolvidos na interface. Lista expansível — basta
- * acrescentar entradas.
+ * `speedByProfile` afina a velocidade para aeronaves específicas (chaves =
+ * ids de AIRCRAFT). Os textos são bilingues ({ pt, en }) e resolvidos na
+ * interface. Lista expansível — basta acrescentar entradas.
  */
 export const MISSION_PRESETS = [
   {

@@ -9,7 +9,14 @@ import HelpModal from './components/HelpModal.jsx'
 const Map3D = lazy(() => import('./components/Map3D.jsx'))
 const MissionReport = lazy(() => import('./components/MissionReport.jsx'))
 const ElevationProfile = lazy(() => import('./components/ElevationProfile.jsx'))
-import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR, MISSION_PRESETS } from './data/drones.js'
+import {
+  AIRCRAFT,
+  PAYLOADS,
+  DEFAULT_CUSTOM_SENSOR,
+  DEFAULT_SELECTION,
+  MISSION_PRESETS,
+  migrateDroneSelection,
+} from './data/drones.js'
 import {
   computeAlignment,
   computeFootprint,
@@ -89,7 +96,8 @@ function AppInner({ lang, setLang }) {
     }
   }, [view])
   const [missionName, setMissionName] = useState('missao-drone')
-  const [droneId, setDroneId] = useState('M3E')
+  // seleção de hardware: aeronave + payload (T1.1)
+  const [drone, setDrone] = useState(() => ({ ...DEFAULT_SELECTION }))
   const [custom, setCustom] = useState(DEFAULT_CUSTOM_SENSOR)
   const [params, setParams] = useState({
     altitude: 100,
@@ -146,13 +154,13 @@ function AppInner({ lang, setLang }) {
   const skipTileResetRef = useRef(false)
   const hydratedRef = useRef(false)
 
-  const profileRef = useRef(null)
+  const aircraftRef = useRef(null)
   const setParam = useCallback((key, value) => {
     setParams((p) => {
       if (!Number.isFinite(value) && typeof value === 'number') return p
-      // a velocidade é sempre limitada aos limites do drone selecionado
+      // a velocidade é sempre limitada aos limites da aeronave selecionada
       if (key === 'speed') {
-        const r = profileRef.current?.speedRange ?? { min: 1, max: 20 }
+        const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
         value = Math.min(r.max, Math.max(r.min, value))
       }
       return { ...p, [key]: value }
@@ -195,31 +203,37 @@ function AppInner({ lang, setLang }) {
   }, [anchor])
 
   /* ------------------- Pipeline de cálculo (memo) -------------------- */
-  const profile = DRONE_PROFILES[droneId]
-  profileRef.current = profile
+  const aircraft = AIRCRAFT[drone.aircraftId]
+  const payload = PAYLOADS[drone.payloadId]
+  aircraftRef.current = aircraft
 
-  // ao trocar de drone, a velocidade atual é reencaixada nos novos limites
+  // rótulo composto para o relatório/checklist: a aeronave, e o payload
+  // quando a aeronave tem mais do que um montável
+  const hardwareLabel =
+    aircraft.payloads.length > 1 ? `${aircraft.label} + ${payload.label}` : aircraft.label
+
+  // ao trocar de aeronave, a velocidade atual é reencaixada nos novos limites
   useEffect(() => {
-    const r = profile.speedRange ?? { min: 1, max: 20 }
+    const r = aircraft.speedRange ?? { min: 1, max: 20 }
     setParams((p) =>
       p.speed < r.min || p.speed > r.max
         ? { ...p, speed: Math.min(r.max, Math.max(r.min, p.speed)) }
         : p,
     )
-  }, [profile])
-  const sensor = useMemo(() => resolveSensor(profile, custom), [profile, custom])
+  }, [aircraft])
+  const sensor = useMemo(() => resolveSensor(payload, custom), [payload, custom])
 
-  const wpml = useMemo(
-    () =>
-      profile.type === 'custom'
-        ? {
-            ...profile.wpml,
-            droneEnumValue: custom.droneEnumValue,
-            payloadEnumValue: custom.payloadEnumValue,
-          }
-        : profile.wpml,
-    [profile, custom],
-  )
+  // Enums WPML: aeronave + payload; o editor custom substitui o enum do
+  // payload sempre, e o da aeronave apenas quando a aeronave é CUSTOM
+  // (num M300 com payload custom o droneEnumValue continua a ser o do M300)
+  const wpml = useMemo(() => {
+    const merged = { ...aircraft.wpml, ...payload.wpml }
+    if (payload.type === 'custom') {
+      merged.payloadEnumValue = custom.payloadEnumValue
+      if (aircraft.id === 'CUSTOM') merged.droneEnumValue = custom.droneEnumValue
+    }
+    return merged
+  }, [aircraft, payload, custom])
 
   const footprint = useMemo(
     () => computeFootprint(sensor, params.altitude),
@@ -241,11 +255,11 @@ function AppInner({ lang, setLang }) {
   // intervalo entre fotos abaixo do que o obturador consegue?
   const triggerWarn = useMemo(() => {
     if (interval == null || !(params.speed > 0)) return null
-    const minS = profile.minTriggerS ?? 0.7
+    const minS = payload.minTriggerS ?? 0.7
     const actualS = interval / params.speed
     if (actualS >= minS) return null
     return { actualS, minS, maxSpeed: interval / minS }
-  }, [interval, params.speed, profile])
+  }, [interval, params.speed, payload])
 
   const validation = useMemo(
     () => (ring ? validateRing(ring) : { valid: false, kinks: [] }),
@@ -707,7 +721,7 @@ function AppInner({ lang, setLang }) {
             const next = { ...p }
             if (Number.isFinite(res.altitude)) next.altitude = res.altitude
             if (Number.isFinite(res.speed)) {
-              const r = profileRef.current?.speedRange ?? { min: 1, max: 20 }
+              const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
               next.speed = Math.min(r.max, Math.max(r.min, res.speed))
             }
             return next
@@ -752,10 +766,11 @@ function AppInner({ lang, setLang }) {
   const PROJECT_KEY = 'dji-mission-planner:project:v1'
 
   const applyProject = useCallback((p) => {
-    if (!p || p.version !== 1) return false
+    // v1: droneId (perfil único, pré-T1.1) · v2: drone {aircraftId, payloadId}
+    if (!p || (p.version !== 1 && p.version !== 2)) return false
     skipTileResetRef.current = true
     if (typeof p.missionName === 'string') setMissionName(p.missionName)
-    if (p.droneId && DRONE_PROFILES[p.droneId]) setDroneId(p.droneId)
+    if (p.drone || p.droneId) setDrone(migrateDroneSelection(p.drone ?? p.droneId))
     if (p.custom) setCustom((c) => ({ ...c, ...p.custom }))
     if (p.params) setParams((prev) => ({ ...prev, ...p.params }))
     if (p.split) setSplit((prev) => ({ ...prev, ...p.split }))
@@ -792,9 +807,9 @@ function AppInner({ lang, setLang }) {
         localStorage.setItem(
           PROJECT_KEY,
           JSON.stringify({
-            version: 1,
+            version: 2,
             missionName,
-            droneId,
+            drone,
             custom,
             params,
             split,
@@ -812,13 +827,13 @@ function AppInner({ lang, setLang }) {
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [missionName, droneId, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const exportProject = useCallback(() => {
     const data = {
-      version: 1,
+      version: 2,
       missionName,
-      droneId,
+      drone,
       custom,
       params,
       split,
@@ -834,7 +849,7 @@ function AppInner({ lang, setLang }) {
       new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
       `${missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'}-projeto.json`,
     )
-  }, [missionName, droneId, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const importProject = useCallback(
     async (file) => {
@@ -895,7 +910,7 @@ function AppInner({ lang, setLang }) {
   }, [pushHistory])
 
   // Catálogo de presets de missão aplicáveis ao sensor ativo, com a
-  // velocidade já resolvida para o perfil de drone selecionado
+  // velocidade já resolvida para a aeronave selecionada
   const flightPresets = useMemo(() => {
     const kind = sensor.type === 'lidar' ? 'lidar' : 'camera'
     return MISSION_PRESETS.filter((p) => p.appliesTo === kind).map((p) => ({
@@ -904,10 +919,10 @@ function AppInner({ lang, setLang }) {
       desc: p.desc,
       values: {
         ...p.values,
-        speed: p.speedByProfile?.[droneId] ?? p.values.speed,
+        speed: p.speedByProfile?.[drone.aircraftId] ?? p.values.speed,
       },
     }))
-  }, [sensor.type, droneId])
+  }, [sensor.type, drone.aircraftId])
 
   const applyPreset = useCallback(
     (presetId) => {
@@ -983,7 +998,7 @@ function AppInner({ lang, setLang }) {
     return (
       <ChecklistPage
         missionName={missionName}
-        droneLabel={profile.label}
+        droneLabel={hardwareLabel}
         blocks={blocks ?? []}
         plannedGcps={gcps ?? []}
         onBack={() => setView('planner')}
@@ -1078,8 +1093,8 @@ function AppInner({ lang, setLang }) {
         <ControlPanel
           missionName={missionName}
           setMissionName={setMissionName}
-          droneId={droneId}
-          setDroneId={setDroneId}
+          drone={drone}
+          setDrone={setDrone}
           custom={custom}
           setCustom={setCustom}
           params={params}
@@ -1220,7 +1235,7 @@ function AppInner({ lang, setLang }) {
         >
           <MissionReport
             missionName={missionName}
-            droneLabel={profile.label}
+            droneLabel={hardwareLabel}
             params={params}
             spacing={spacing}
             interval={interval}
