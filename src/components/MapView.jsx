@@ -30,6 +30,7 @@ export default function MapView({
   gcps,
   inspectPoints,
   onInspectDrag,
+  facePreview,
   fitKey,
   editable,
   onMapClick,
@@ -168,18 +169,22 @@ export default function MapView({
       lines: L.layerGroup().addTo(map),
       gcps: L.layerGroup().addTo(map),
       inspect: L.layerGroup().addTo(map),
+      face: L.layerGroup().addTo(map),
       canvas: L.canvas({ padding: 0.3 }),
     }
 
     map.on('click', (e) => {
       const s = stateRef.current
-      if (s.mode === 'draw' || s.mode === 'anchor' || s.mode === 'base' || s.mode === 'inspect') {
+      if (
+        s.mode === 'draw' || s.mode === 'anchor' || s.mode === 'base' ||
+        s.mode === 'inspect' || s.mode === 'face'
+      ) {
         s.onMapClick([e.latlng.lng, e.latlng.lat])
       }
     })
     map.on('dblclick', () => {
       const s = stateRef.current
-      if (s.mode === 'draw') s.onFinishDraw()
+      if (s.mode === 'draw' || s.mode === 'face') s.onFinishDraw()
     })
     // Duplo clique DIREITO fecha o polígono; o menu do browser fica suprimido
     // durante o desenho (evita cliques fantasma ao dispensá-lo)
@@ -230,7 +235,8 @@ export default function MapView({
     if (el)
       el.classList.toggle(
         'cursor-crosshair',
-        mode === 'draw' || mode === 'anchor' || mode === 'base' || mode === 'inspect',
+        mode === 'draw' || mode === 'anchor' || mode === 'base' ||
+          mode === 'inspect' || mode === 'face',
       )
   }, [mode])
 
@@ -270,7 +276,7 @@ export default function MapView({
     const g = layersRef.current?.draft
     if (!g) return
     g.clearLayers()
-    if (mode !== 'draw' || draftVertices.length === 0) return
+    if ((mode !== 'draw' && mode !== 'face') || draftVertices.length === 0) return
 
     if (draftVertices.length > 1) {
       L.polyline(draftVertices.map(toLatLng), {
@@ -499,6 +505,37 @@ export default function MapView({
       }).addTo(g)
     })
   }, [gcps])
+
+  // Pré-visualização do modo fachada (E1.1): baseline (pé da face), linha
+  // afastada ao standoff e traços de rumo da primeira passagem
+  useEffect(() => {
+    const g = layersRef.current?.face
+    if (!g) return
+    g.clearLayers()
+    if (!facePreview) return
+    if (facePreview.baseline?.length >= 2) {
+      L.polyline(facePreview.baseline.map(toLatLng), {
+        color: '#f97316',
+        weight: 3,
+      }).addTo(g)
+    }
+    if (facePreview.offsetLine?.length >= 2) {
+      L.polyline(facePreview.offsetLine.map(toLatLng), {
+        color: '#38bdf8',
+        weight: 2,
+        dashArray: '6 4',
+      }).addTo(g)
+    }
+    if (facePreview.ticks) {
+      facePreview.ticks.forEach(([a, b]) => {
+        L.polyline([toLatLng(a), toLatLng(b)], {
+          color: '#fde047',
+          weight: 1.5,
+          opacity: 0.9,
+        }).addTo(g)
+      })
+    }
+  }, [facePreview])
 
   // Pontos de inspeção (R2.9): marcadores numerados e arrastáveis
   useEffect(() => {

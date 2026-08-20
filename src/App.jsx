@@ -1,6 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MapView from './components/MapView.jsx'
 import ControlPanel from './components/ControlPanel.jsx'
+import MissionModeSelector from './components/MissionModeSelector.jsx'
+import FacePanel from './components/FacePanel.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import ChecklistPage from './components/ChecklistPage.jsx'
 import HelpModal from './components/HelpModal.jsx'
@@ -55,6 +57,13 @@ import {
 } from './utils/importArea.js'
 import { fitSlopePlane, loadTerrain, terrainFollowLines } from './utils/terrain.js'
 import { inspectionToWaypoints, nearestNeighbourOrder } from './utils/inspect.js'
+import {
+  DEFAULT_FACE_CONFIG,
+  checkFaceClearance,
+  generateFacePlan,
+  normalizeFaceConfig,
+} from './utils/faceMode.js'
+import { headingTicks } from './utils/preview.js'
 import { loadDemFromFile } from './utils/demFile.js'
 import { parseWpmlKmz } from './utils/importWpml.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
@@ -126,7 +135,10 @@ function AppInner({ lang, setLang }) {
     overshoot: 0, // prolongamento de cada faixa nos dois extremos (m) — T2.2
     tieLine: false, // fiada de amarração perpendicular no fim — T2.3
   })
-  const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect'
+  const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect' | 'face'
+  // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
+  const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit'
+  const [faceConfig, setFaceConfig] = useState(() => ({ ...DEFAULT_FACE_CONFIG }))
   // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
   const [inspectPoints, setInspectPoints] = useState([])
   const inspectSeqRef = useRef(1)
@@ -569,6 +581,8 @@ function AppInner({ lang, setLang }) {
       } else if (mode === 'base') {
         setBasePoint(lonlat)
         setMode('idle')
+      } else if (mode === 'face') {
+        setDraftVertices((d) => [...d, lonlat])
       } else if (mode === 'inspect') {
         const n = inspectSeqRef.current++
         setInspectPoints((pts) => [
@@ -587,6 +601,102 @@ function AppInner({ lang, setLang }) {
     },
     [mode, params.altitude],
   )
+
+  /* ----------------------- Modo fachada (E1.1) ------------------------ */
+  const changeMissionMode = useCallback((m) => {
+    setMissionMode(m)
+    setMode('idle')
+    setDraftVertices([])
+  }, [])
+
+  const setFaceParam = useCallback((key, value) => {
+    setFaceConfig((c) => ({ ...c, [key]: value }))
+  }, [])
+
+  const startFaceDraw = useCallback(() => {
+    setMode((m) => (m === 'face' ? 'idle' : 'face'))
+    setDraftVertices([])
+  }, [])
+
+  const handleFinishFace = useCallback(() => {
+    setDraftVertices((draft) => {
+      const EPS = 1e-6
+      const clean = draft.filter(
+        (v, i) =>
+          i === 0 ||
+          Math.abs(v[0] - draft[i - 1][0]) > EPS ||
+          Math.abs(v[1] - draft[i - 1][1]) > EPS,
+      )
+      if (clean.length >= 2) {
+        setFaceConfig((c) => ({ ...c, baseline: clean }))
+        setMode('idle')
+        return []
+      }
+      return draft
+    })
+  }, [])
+
+  const clearFaceBaseline = useCallback(() => {
+    setFaceConfig((c) => ({ ...c, baseline: null }))
+    setDraftVertices([])
+    setMode('idle')
+  }, [])
+
+  const facePlan = useMemo(() => {
+    if (!faceConfig.baseline || sensor.type !== 'camera') return null
+    return generateFacePlan(faceConfig.baseline, {
+      sensor,
+      faceHeightM: faceConfig.heightM,
+      standoffM: faceConfig.standoffM,
+      side: faceConfig.side,
+      verticalOverlapPct: faceConfig.verticalOverlapPct,
+      horizontalOverlapPct: faceConfig.horizontalOverlapPct,
+      gimbalPitch: faceConfig.gimbalPitch,
+      speed: Math.min(params.speed, 5), // fachadas voam-se devagar
+    })
+  }, [faceConfig, sensor, params.speed])
+
+  // folga só contra DSM LOCAL; com Terrarium fica "standoff não verificado"
+  const dsmLoaded = terrain.status === 'ready' && terrain.data?.source === 'file'
+  const faceClearance = useMemo(() => {
+    if (!facePlan || facePlan.error || !dsmLoaded) return null
+    return checkFaceClearance(facePlan, terrain.data.elevationAt, {
+      minClearanceM: faceConfig.minClearanceM,
+    })
+  }, [facePlan, dsmLoaded, terrain.data, faceConfig.minClearanceM])
+
+  const facePreview = useMemo(() => {
+    if (missionMode !== 'face') return null
+    const ok = facePlan && !facePlan.error ? facePlan : null
+    return {
+      baseline: faceConfig.baseline,
+      offsetLine: ok?.offsetLine ?? null,
+      ticks: ok
+        ? headingTicks(ok.waypoints, ok.perWaypoint, {
+            lengthM: Math.min(12, faceConfig.standoffM * 0.4),
+            limit: ok.stats.pointsPerPass,
+          })
+        : null,
+    }
+  }, [missionMode, facePlan, faceConfig.baseline, faceConfig.standoffM])
+
+  const handleExportFace = useCallback(() => {
+    if (!facePlan || facePlan.error) return
+    exportWPMLKmz({
+      name: buildExportName(missionName, 'face', {
+        part: `p1-${facePlan.stats.passCount}`,
+      }),
+      waypoints: facePlan.waypoints,
+      perWaypoint: facePlan.perWaypoint,
+      altitude: Math.round(facePlan.stats.heights[facePlan.stats.heights.length - 1]),
+      speed: Math.min(params.speed, 5),
+      wpml,
+      photoIntervalM: 0,
+      triggerMode: 'distance',
+      gimbalPitch: faceConfig.gimbalPitch,
+      sensorType: sensor.type,
+    })
+  }, [facePlan, missionName, params.speed, wpml, faceConfig.gimbalPitch, sensor.type])
 
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const startInspect = useCallback(() => {
@@ -642,6 +752,12 @@ function AppInner({ lang, setLang }) {
     })
   }, [pushHistory])
 
+  // o duplo clique no mapa conclui o desenho activo (área ou baseline)
+  const handleFinishAny = useCallback(() => {
+    if (mode === 'face') handleFinishFace()
+    else handleFinishDraw()
+  }, [mode, handleFinishFace, handleFinishDraw])
+
   const removeDraftVertex = useCallback((index) => {
     setDraftVertices((d) => d.filter((_, i) => i !== index))
   }, [])
@@ -653,7 +769,7 @@ function AppInner({ lang, setLang }) {
   // Teclado no modo de desenho: Backspace/Delete anula o último ponto,
   // Escape cancela o desenho (ignorado quando o foco está num input)
   useEffect(() => {
-    if (mode !== 'draw') return
+    if (mode !== 'draw' && mode !== 'face') return
     const onKey = (e) => {
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
@@ -969,6 +1085,10 @@ function AppInner({ lang, setLang }) {
     if (p.batteryByCombo && typeof p.batteryByCombo === 'object') {
       setBatteryByCombo((m) => ({ ...m, ...p.batteryByCombo }))
     }
+    if (p.missionMode === 'area' || p.missionMode === 'face' || p.missionMode === 'orbit') {
+      setMissionMode(p.missionMode)
+    }
+    if (p.faceConfig) setFaceConfig(normalizeFaceConfig(p.faceConfig))
     if (Array.isArray(p.inspectPoints)) {
       const pts = p.inspectPoints.filter((q) => q && Array.isArray(q.point))
       setInspectPoints(pts)
@@ -1014,6 +1134,8 @@ function AppInner({ lang, setLang }) {
             payloadTuning,
             batteryByCombo,
             inspectPoints,
+            missionMode,
+            faceConfig,
             params,
             split,
             anchor,
@@ -1030,7 +1152,7 @@ function AppInner({ lang, setLang }) {
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const exportProject = useCallback(() => {
     const data = {
@@ -1041,6 +1163,8 @@ function AppInner({ lang, setLang }) {
       payloadTuning,
       batteryByCombo,
       inspectPoints,
+      missionMode,
+      faceConfig,
       params,
       split,
       anchor,
@@ -1055,7 +1179,7 @@ function AppInner({ lang, setLang }) {
       new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
       `${missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'}-projeto.json`,
     )
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const importProject = useCallback(
     async (file) => {
@@ -1277,6 +1401,7 @@ function AppInner({ lang, setLang }) {
         missionName={missionName}
         droneLabel={hardwareLabel}
         sensorType={sensor.type}
+        faceMode={missionMode === 'face' && Boolean(faceConfig.baseline)}
         blocks={blocks ?? []}
         plannedGcps={gcps ?? []}
         onBack={() => setView('planner')}
@@ -1368,6 +1493,27 @@ function AppInner({ lang, setLang }) {
       </header>
 
       <div className="flex min-h-0 flex-1">
+        <div className="flex h-full shrink-0 flex-col">
+          <MissionModeSelector mode={missionMode} onChange={changeMissionMode} />
+          <div className="min-h-0 flex-1">
+            {missionMode === 'face' && (
+              <FacePanel
+                faceConfig={faceConfig}
+                setFaceParam={setFaceParam}
+                facePlan={facePlan}
+                faceClearance={faceClearance}
+                dsmLoaded={dsmLoaded}
+                cameraOk={sensor.type === 'camera'}
+                mode={mode}
+                draftCount={draftVertices.length}
+                onStartDraw={startFaceDraw}
+                onUndoVertex={removeLastDraftVertex}
+                onFinishDraw={handleFinishFace}
+                onClearBaseline={clearFaceBaseline}
+                onExport={handleExportFace}
+              />
+            )}
+            {missionMode === 'area' && (
         <ControlPanel
           missionName={missionName}
           setMissionName={setMissionName}
@@ -1446,6 +1592,9 @@ function AppInner({ lang, setLang }) {
           onFinishDraw={handleFinishDraw}
           onClear={clearAll}
         />
+            )}
+          </div>
+        </div>
 
         <main className="relative min-w-0 flex-1">
           <MapView
@@ -1465,6 +1614,7 @@ function AppInner({ lang, setLang }) {
             gcps={gcps}
             inspectPoints={inspectPoints}
             onInspectDrag={handleInspectDrag}
+            facePreview={facePreview}
             fitKey={fitKey}
             editable={!gridCells && split.mode !== 'tiles' && split.mode !== 'battery'}
             onMapClick={handleMapClick}
@@ -1474,7 +1624,7 @@ function AppInner({ lang, setLang }) {
             onDraftVertexRemove={removeDraftVertex}
             onAnchorDrag={handleAnchorDrag}
             onBaseDrag={handleBaseDrag}
-            onFinishDraw={handleFinishDraw}
+            onFinishDraw={handleFinishAny}
           />
           <StatsPanel
             gsd={gsd}
