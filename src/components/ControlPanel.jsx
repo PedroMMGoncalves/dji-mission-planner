@@ -72,6 +72,9 @@ export default function ControlPanel({
   refAzimuth,
   split,
   setSplitParam,
+  batteryMin,
+  batteryDefault,
+  onBatteryMin,
   blocks,
   gridActive,
   tilesTotal,
@@ -963,13 +966,27 @@ export default function ControlPanel({
         {!gridActive && split.mode === 'battery' && (
           <div className="mt-2">
             <Field label={t('cp.split.batteryDuration')} suffix="min">
-              <NumberInput
-                value={split.batteryMin}
-                min={5}
-                max={60}
-                onChange={(v) => setSplitParam('batteryMin', v)}
-              />
+              <div className="flex items-center gap-1.5">
+                <NumberInput
+                  value={batteryMin}
+                  min={5}
+                  max={120}
+                  onChange={onBatteryMin}
+                />
+                {batteryMin !== batteryDefault && (
+                  <button
+                    onClick={() => onBatteryMin(batteryDefault)}
+                    title={t('cp.split.batteryResetTitle', { min: batteryDefault })}
+                    className="rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
+                  >
+                    {t('cp.split.batteryReset')}
+                  </button>
+                )}
+              </div>
             </Field>
+            <p className="mb-2 text-[11px] leading-relaxed text-slate-500">
+              {t('cp.split.batteryComboHint', { min: batteryDefault })}
+            </p>
             <Field label={t('cp.split.returnReserve')} suffix="%">
               <NumberInput
                 value={split.reservePct}

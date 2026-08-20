@@ -49,6 +49,15 @@ export default {
     pt: 'Voltar ao FOV nominal do sensor ({fov}°)',
     en: 'Back to the sensor nominal FOV ({fov}°)',
   },
+  'cp.split.batteryReset': { pt: 'Defeito', en: 'Default' },
+  'cp.split.batteryResetTitle': {
+    pt: 'Voltar ao valor por defeito da aeronave ({min} min)',
+    en: 'Back to the aircraft default ({min} min)',
+  },
+  'cp.split.batteryComboHint': {
+    pt: 'Por defeito da aeronave: {min} min. Um valor editado fica guardado para esta combinação aeronave+payload (um payload pesado encurta a autonomia real).',
+    en: 'Aircraft default: {min} min. An edited value is stored for this aircraft+payload combination (a heavy payload shortens real endurance).',
+  },
   'cp.flight.aglCapWarn': {
     pt: 'O payload {payload} tem teto operacional de {cap} m AGL e a rota chega a ~{worst} m sobre o terreno. Reduza a altitude.',
     en: 'The {payload} payload is rated to {cap} m AGL and the route reaches ~{worst} m above ground. Lower the altitude.',
