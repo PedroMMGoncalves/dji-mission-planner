@@ -24,6 +24,7 @@ import {
   computeFootprint,
   computeGSD,
   distanceToArea,
+  findOptimalDirection,
   generateFlightPlan,
   gridFromAnchor,
   lidarPointDensity,
@@ -1050,6 +1051,13 @@ function AppInner({ lang, setLang }) {
     [refAzimuth],
   )
 
+  // Direção ótima (T3.2): menor número de troços dentro do polígono real
+  const setAngleOptimal = useCallback(() => {
+    if (!ring || !validation.valid) return
+    const best = findOptimalDirection(ring, spacing)
+    if (best != null) setParams((p) => ({ ...p, angle: Math.round(best) }))
+  }, [ring, validation.valid, spacing])
+
   /* --------------------------- Exportação ---------------------------- */
   const safeName = missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'
   const canExportKML = Boolean(ring && validation.valid)
@@ -1253,6 +1261,7 @@ function AppInner({ lang, setLang }) {
           onStartBase={startBase}
           onRemoveBase={removeBase}
           onSetAngleRelative={setAngleRelative}
+          onSetAngleOptimal={setAngleOptimal}
           onFinishDraw={handleFinishDraw}
           onClear={clearAll}
         />
