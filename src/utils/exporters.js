@@ -210,7 +210,7 @@ ${placemarks}
  * multipleDistance (disparo a cada X metros) ou multipleTiming (a cada X s).
  */
 export function buildWaylinesWPML(params) {
-  const { waypoints, altitude, speed, wpml, photoIntervalM, triggerMode } = params
+  const { waypoints, altitude, speed, wpml, photoIntervalM, triggerMode, sensorType } = params
   const gimbalPitch = params.gimbalPitch ?? -90
 
   const triggerXml = (() => {
@@ -224,9 +224,15 @@ export function buildWaylinesWPML(params) {
           <wpml:actionTriggerParam>${photoIntervalM.toFixed(1)}</wpml:actionTriggerParam>`
   })()
 
-  // Grupo 0: ao chegar ao 1.º waypoint, gimbal a nadir (-90°).
-  // Grupo 1: disparo contínuo da câmara ao longo de toda a rota.
-  const firstWaypointActions = `        <wpml:actionGroup>
+  // Waypoint-0 action groups. A LiDAR payload (e.g. YellowScan on a Skyport
+  // mount) has no gimbal the WPML can rotate, so the gimbalRotate group is
+  // omitted for sensorType 'lidar'; the takePhoto group is omitted whenever
+  // photoIntervalM is null/0. Group ids stay consecutive from 0, and with
+  // both groups absent waypoint 0 carries no actions at all.
+  const gimbalGroup =
+    sensorType === 'lidar'
+      ? null
+      : `        <wpml:actionGroup>
           <wpml:actionGroupId>0</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>0</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>0</wpml:actionGroupEndIndex>
@@ -251,11 +257,11 @@ export function buildWaylinesWPML(params) {
               <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
-        </wpml:actionGroup>${
-          triggerXml
-            ? `
-        <wpml:actionGroup>
-          <wpml:actionGroupId>1</wpml:actionGroupId>
+        </wpml:actionGroup>`
+  const photoGroupId = gimbalGroup ? 1 : 0
+  const photoGroup = triggerXml
+    ? `        <wpml:actionGroup>
+          <wpml:actionGroupId>${photoGroupId}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>0</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>${waypoints.length - 1}</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
@@ -263,7 +269,7 @@ export function buildWaylinesWPML(params) {
 ${triggerXml}
           </wpml:actionTrigger>
           <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
+            <wpml:actionId>${photoGroupId}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>
@@ -271,8 +277,8 @@ ${triggerXml}
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>`
-            : ''
-        }`
+    : null
+  const firstWaypointActions = [gimbalGroup, photoGroup].filter(Boolean).join('\n')
 
   const placemarks = waypoints
     .map(
@@ -294,7 +300,7 @@ ${triggerXml}
           <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
           <wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
-        <wpml:useStraightLine>1</wpml:useStraightLine>${i === 0 ? '\n' + firstWaypointActions : ''}
+        <wpml:useStraightLine>1</wpml:useStraightLine>${i === 0 && firstWaypointActions ? '\n' + firstWaypointActions : ''}
       </Placemark>`,
     )
     .join('\n')
