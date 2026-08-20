@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLang, useT } from '../i18n.jsx'
 
-/** Chip de tecla/ação, estilo visualizador de mapas. */
+/** Chip de tecla/acção, estilo visualizador de mapas. */
 function Kbd({ children }) {
   return (
     <kbd className="rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 font-mono text-[11px] text-slate-200">
@@ -35,7 +35,7 @@ function InstrucoesPt() {
 
       <H>Tipos de missão</H>
       <ul className="list-none">
-        <Li><strong>Área</strong> (selector no topo do painel) — grelha nadir/oblíqua sobre um polígono; inclui a dupla grelha 3D com «Passagem nadir extra (orto)» e os <strong>pontos de inspeção</strong> como camada extra: marque pontos no mapa, edite etiqueta/rumo/pitch/foto, reordene por arrasto ou «Sugerir ordem», e exporte como missão própria.</Li>
+        <Li><strong>Área</strong> (selector no topo do painel) — grelha nadir/oblíqua sobre um polígono; inclui a dupla grelha 3D com «Passagem nadir extra (orto)» e os <strong>pontos de inspecção</strong> como camada extra: marque pontos no mapa, edite etiqueta/rumo/pitch/foto, reordene por arrasto ou «Sugerir ordem», e exporte como missão própria.</Li>
         <Li><strong>Fachada</strong> — clique «Desenhar» e marque o pé da face no mapa (o sentido do desenho define a esquerda/direita); conclua com duplo clique. Ajuste altura, afastamento, lado e sobreposições; a pré-visualização mostra a linha de voo afastada e os rumos. Exporta com rumo fixo e uma foto por waypoint.</Li>
         <Li><strong>Órbita</strong> — «Marcar POI» e clicar no alvo; defina raio (ou GSD alvo), níveis e passo. Exporta em voo curvo contínuo, missão única ou um KMZ por nível (ZIP).</Li>
       </ul>
@@ -64,9 +64,9 @@ function InstrucoesPt() {
       <H>Blocos de voo</H>
       <ul className="list-none">
         <Li><strong>Faixas</strong> — corta a serpentina por área máxima (linhas longas).</Li>
-        <Li><strong>Bateria</strong> — quadrados dimensionados pela bateria (duração × reserva, trânsito à base descontado, teto VLOS).</Li>
+        <Li><strong>Bateria</strong> — quadrados dimensionados pela bateria (duração × reserva, trânsito à base descontado, tecto VLOS).</Li>
         <Li><strong>Mosaico</strong> — quadrados de lado manual sobre o polígono.</Li>
-        <Li><Kbd>Clique numa célula</Kbd> — desativa/reativa · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> — desfaz.</Li>
+        <Li><Kbd>Clique numa célula</Kbd> — desactiva/reactiva · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> — desfaz.</Li>
         <Li>No modo ponto central, a <strong>grelha N×M</strong> replica a forma em colunas × linhas.</Li>
       </ul>
 
@@ -81,8 +81,8 @@ function InstrucoesPt() {
       <H>Exportação</H>
       <ul className="list-none">
         <Li><strong>KML Simples</strong> — polígono 2D + base + GCPs, para desenhar a missão no Pilot 2.</Li>
-        <Li><strong>WPML (KMZ)</strong> — missão executável com waypoints e disparo automático; com blocos ativos gera um ZIP com um KMZ por bloco.</Li>
-        <Li>O projeto grava-se automaticamente no browser; use «Guardar/Abrir projeto» para arquivar em ficheiro.</Li>
+        <Li><strong>WPML (KMZ)</strong> — missão executável com waypoints e disparo automático; com blocos activos gera um ZIP com um KMZ por bloco.</Li>
+        <Li>O projecto grava-se automaticamente no browser; use «Guardar/Abrir projecto» para arquivar em ficheiro.</Li>
       </ul>
     </>
   )
@@ -161,7 +161,7 @@ function AcercaPt() {
       <p className="leading-relaxed">
         Planeador de missões de mapeamento com drones: grelhas fotogramétricas e LiDAR,
         divisão em blocos por bateria, seguimento de terreno, planeamento de GCPs e
-        exportação KML/WPML otimizada para o DJI Pilot 2 (Mavic 3E, Matrice 4T, M300
+        exportação KML/WPML optimizada para o DJI Pilot 2 (Mavic 3E, Matrice 4T, M300
         RTK + P1 e perfis personalizados).
       </p>
 

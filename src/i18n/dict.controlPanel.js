@@ -21,14 +21,14 @@ export default {
     pt: 'e da missão no DJI Pilot 2.',
     en: 'and of the mission in DJI Pilot 2.',
   },
-  'cp.mission.save': { pt: 'Guardar projeto', en: 'Save project' },
+  'cp.mission.save': { pt: 'Guardar projecto', en: 'Save project' },
   'cp.mission.saveTitle': {
-    pt: 'Descarregar o projeto completo (.json)',
+    pt: 'Descarregar o projecto completo (.json)',
     en: 'Download the complete project (.json)',
   },
-  'cp.mission.open': { pt: 'Abrir projeto', en: 'Open project' },
+  'cp.mission.open': { pt: 'Abrir projecto', en: 'Open project' },
   'cp.mission.openTitle': {
-    pt: 'Abrir um projeto guardado (.json)',
+    pt: 'Abrir um projecto guardado (.json)',
     en: 'Open a saved project (.json)',
   },
   'cp.mission.autosave': {
@@ -40,7 +40,7 @@ export default {
   'cp.drone.title': { pt: 'Drone / Sensor', en: 'Drone / Sensor' },
   'cp.drone.payload': { pt: 'Payload / Sensor', en: 'Payload / Sensor' },
   'cp.drone.lidarSpecs': {
-    pt: '{desc} · FOV nominal {fov}° · teto operacional {agl} m AGL',
+    pt: '{desc} · FOV nominal {fov}° · tecto operacional {agl} m AGL',
     en: '{desc} · nominal FOV {fov}° · operational ceiling {agl} m AGL',
   },
   'cp.drone.effectiveFov': { pt: 'FOV de trabalho', en: 'Working FOV' },
@@ -49,11 +49,11 @@ export default {
     pt: 'Voltar ao FOV nominal do sensor ({fov}°)',
     en: 'Back to the sensor nominal FOV ({fov}°)',
   },
-  /* ---- Pontos de inspeção (R2.9) ---- */
-  'cp.inspect.title': { pt: 'Pontos de Inspeção', en: 'Inspection Points' },
+  /* ---- Pontos de inspecção (R2.9) ---- */
+  'cp.inspect.title': { pt: 'Pontos de Inspecção', en: 'Inspection Points' },
   'cp.inspect.mark': { pt: 'Marcar pontos no mapa', en: 'Place points on the map' },
   'cp.inspect.markTitle': {
-    pt: 'Cada clique no mapa acrescenta um ponto de inspeção; volte a carregar para terminar',
+    pt: 'Cada clique no mapa acrescenta um ponto de inspecção; volte a carregar para terminar',
     en: 'Each map click adds an inspection point; press again to finish',
   },
   'cp.inspect.markHint': {
@@ -88,9 +88,9 @@ export default {
   },
   'cp.terrain.slopeApplyLines': { pt: 'Linhas a {lines}°', en: 'Lines at {lines}°' },
   'cp.terrain.slopeApplyGimbal': { pt: 'Gimbal {gimbal}°', en: 'Gimbal {gimbal}°' },
-  'cp.orientation.optimal': { pt: 'Ótima', en: 'Optimal' },
+  'cp.orientation.optimal': { pt: 'Óptima', en: 'Optimal' },
   'cp.orientation.optimalTitle': {
-    pt: 'Procura a direção com menos faixas dentro do polígono real (menos viragens, menos tempo)',
+    pt: 'Procura a direcção com menos faixas dentro do polígono real (menos viragens, menos tempo)',
     en: 'Searches for the direction with the fewest lines inside the real polygon (fewer turns, less time)',
   },
   'cp.orientation.includeNadir': {
@@ -98,7 +98,7 @@ export default {
     en: 'Extra nadir pass (ortho)',
   },
   'cp.orientation.includeNadirHint': {
-    pt: 'Terceira grelha na direção da primeira, voada no fim com a câmara a −90°: garante o produto orto além do 3D. Conta para o tempo, blocos e bateria; o GSD mostrado passa a ser o nadir (a resolução governante do orto).',
+    pt: 'Terceira grelha na direcção da primeira, voada no fim com a câmara a −90°: garante o produto orto além do 3D. Conta para o tempo, blocos e bateria; o GSD mostrado passa a ser o nadir (a resolução governante do orto).',
     en: 'Third grid along the first direction, flown last with the camera at −90°: secures the ortho product besides the 3D. Counts toward time, blocks and battery; the displayed GSD becomes the nadir one (the governing ortho resolution).',
   },
   'cp.orientation.tieLine': {
@@ -124,7 +124,7 @@ export default {
     en: 'Aircraft default: {min} min. An edited value is stored for this aircraft+payload combination (a heavy payload shortens real endurance).',
   },
   'cp.flight.aglCapWarn': {
-    pt: 'O payload {payload} tem teto operacional de {cap} m AGL e a rota chega a ~{worst} m sobre o terreno. Reduza a altitude.',
+    pt: 'O payload {payload} tem tecto operacional de {cap} m AGL e a rota chega a ~{worst} m sobre o terreno. Reduza a altitude.',
     en: 'The {payload} payload is rated to {cap} m AGL and the route reaches ~{worst} m above ground. Lower the altitude.',
   },
   'cp.drone.effectiveFovHint': {
@@ -180,7 +180,7 @@ export default {
   'cp.orientation.perpendicular': { pt: '⊥ Perpendic.', en: '⊥ Perpend.' },
   'cp.orientation.oblique45': { pt: '∠ Oblíquas 45°', en: '∠ Oblique 45°' },
   'cp.orientation.relativeTitle': {
-    pt: 'Direção relativa à orientação do bloco (ou à aresta mais longa do polígono)',
+    pt: 'Direcção relativa à orientação do bloco (ou à aresta mais longa do polígono)',
     en: 'Direction relative to the block orientation (or to the longest edge of the polygon)',
   },
   'cp.orientation.reference': {
@@ -229,7 +229,7 @@ export default {
     en: 'Import an area from a KML, GeoJSON or zipped Shapefile',
   },
   'cp.area.crsPrompt': {
-    pt: 'coordenadas projetadas detetadas. Escolha o sistema de coordenadas de origem:',
+    pt: 'coordenadas projectadas detectadas. Escolha o sistema de coordenadas de origem:',
     en: 'projected coordinates detected. Choose the source coordinate reference system:',
   },
   'cp.area.convert': { pt: 'Converter', en: 'Convert' },
@@ -296,7 +296,7 @@ export default {
   'cp.area.clear': { pt: 'Limpar área', en: 'Clear area' },
   'cp.area.invalidTitle': { pt: 'Polígono inválido:', en: 'Invalid polygon:' },
   'cp.area.invalidBody': {
-    pt: 'foram detetadas auto-interseções (marcadas a vermelho no mapa). Arraste os vértices para corrigir a geometria antes de gerar as linhas de voo.',
+    pt: 'foram detectadas auto-interseções (marcadas a vermelho no mapa). Arraste os vértices para corrigir a geometria antes de gerar as linhas de voo.',
     en: 'self-intersections were detected (marked in red on the map). Drag the vertices to fix the geometry before generating the flight lines.',
   },
   'cp.area.tooManyLines': {
@@ -307,7 +307,7 @@ export default {
   /* ---- Divisão em blocos de voo ---- */
   'cp.split.title': { pt: 'Divisão em Blocos de Voo', en: 'Split into Flight Blocks' },
   'cp.split.gridActive': {
-    pt: 'Grelha ativa: cada célula é um bloco de voo. A divisão por área/bateria aplica-se apenas a áreas sem grelha.',
+    pt: 'Grelha activa: cada célula é um bloco de voo. A divisão por área/bateria aplica-se apenas a áreas sem grelha.',
     en: 'Grid active: each cell is a flight block. Splitting by area/battery applies only to areas without a grid.',
   },
   'cp.split.modeNone': { pt: 'Nenhuma', en: 'None' },
@@ -322,7 +322,7 @@ export default {
     pt: 'Desfazer a última alteração às células (Ctrl+Z)',
     en: 'Undo the last change to the cells (Ctrl+Z)',
   },
-  'cp.split.restoreAll': { pt: 'Reativar todas', en: 'Re-enable all' },
+  'cp.split.restoreAll': { pt: 'Reactivar todas', en: 'Re-enable all' },
   'cp.split.tilesHintA': {
     pt: 'O polígono é coberto por quadrados (podem exceder os limites).',
     en: 'The polygon is covered by squares (they may extend beyond its limits).',
@@ -332,18 +332,18 @@ export default {
     en: 'Click a cell on the map',
   },
   'cp.split.tilesHintB': {
-    pt: 'para a desativar/reativar (Ctrl+Z desfaz). Cada célula ativa é um bloco de voo numerado.',
+    pt: 'para a desactivar/reactivar (Ctrl+Z desfaz). Cada célula activa é um bloco de voo numerado.',
     en: 'to disable/re-enable it (Ctrl+Z undoes). Each active cell is a numbered flight block.',
   },
   'cp.split.cellsGenerated': { pt: '{n} células geradas', en: '{n} cells generated' },
   'cp.split.cells': { pt: '{n} células', en: '{n} cells' },
-  'cp.split.cellsActive': { pt: ', {n} ativas', en: ', {n} active' },
+  'cp.split.cellsActive': { pt: ', {n} activas', en: ', {n} active' },
   'cp.split.tooManyCellsTile': {
     pt: 'Demasiadas células (>400). Aumente o lado do quadrado.',
     en: 'Too many cells (>400). Increase the square side.',
   },
   'cp.split.tooManyCellsBattery': {
-    pt: 'Demasiadas células (>400). Aumente a duração da bateria ou o teto VLOS.',
+    pt: 'Demasiadas células (>400). Aumente a duração da bateria ou o tecto VLOS.',
     en: 'Too many cells (>400). Increase the battery duration or the VLOS ceiling.',
   },
   'cp.split.maxAreaPerBlock': { pt: 'Área máx. por bloco', en: 'Max. area per block' },
@@ -364,7 +364,7 @@ export default {
     en: 'Compact areas keep the flight within visual line of sight (VLOS) and battery swaps close to the block.',
   },
   'cp.split.batteryHintB': {
-    pt: 'para a desativar/reativar.',
+    pt: 'para a desactivar/reactivar.',
     en: 'to disable/re-enable it.',
   },
   'cp.split.markBaseHint': {
@@ -400,7 +400,7 @@ export default {
     en: '({crs}, ~{res} m grid)',
   },
   'cp.terrain.outOfCoverage': {
-    pt: 'A área atual sai fora do relevo carregado — volte a descarregar.',
+    pt: 'A área actual sai fora do relevo carregado — volte a descarregar.',
     en: 'The current area extends beyond the loaded terrain — download it again.',
   },
   'cp.terrain.follow': {
