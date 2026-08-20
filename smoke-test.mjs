@@ -28,7 +28,7 @@ import { groupApplies } from './src/data/checklist.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
 import { DEFAULT_FACE_CONFIG, checkFaceClearance, generateFacePlan, normalizeFaceConfig } from './src/utils/faceMode.js'
 import { headingTicks } from './src/utils/preview.js'
-import { generateOrbitPlan } from './src/utils/orbit.js'
+import { DEFAULT_ORBIT_CONFIG, generateOrbitPlan, normalizeOrbitConfig, orbitLevelsToBlocks } from './src/utils/orbit.js'
 import { inspectionToWaypoints, nearestNeighbourOrder } from './src/utils/inspect.js'
 import {
   AIRCRAFT,
@@ -1135,6 +1135,27 @@ check('waylines Mapper+: sem acoes de camara',
       .stats.heights.join(',') === '20,35')
   check('orbita: raio invalido -> erro controlado',
     generateOrbitPlan(center, { sensor, radiusM: 0, levels: [30] })?.error === 'invalid-radius')
+
+  /* E1.2: persistencia e exportacao por nivel */
+  check('orbitConfig: ausente -> defaults',
+    JSON.stringify(normalizeOrbitConfig(null)) === JSON.stringify(DEFAULT_ORBIT_CONFIG))
+  const onorm = normalizeOrbitConfig({
+    poi: [-8, 39.5], radiusM: 9999, levelCount: 99.7, levelStartM: 'x', clockwise: false,
+  })
+  check('orbitConfig: limites, arredondamento e lixo -> default',
+    onorm.radiusM === 500 && onorm.levelCount === 12 &&
+      onorm.levelStartM === DEFAULT_ORBIT_CONFIG.levelStartM &&
+      onorm.clockwise === false && onorm.poi[0] === -8)
+  check('orbitConfig: poi invalido -> null', normalizeOrbitConfig({ poi: [1] }).poi === null)
+
+  const lvls = orbitLevelsToBlocks(orb)
+  const perLvl = orb.stats.pointsPerOrbit + 1
+  check('orbita por nivel: 3 blocos com n+1 waypoints e perWaypoint em sincronia',
+    lvls.length === 3 &&
+      lvls.every((b, i) => b.waypoints.length === perLvl && b.perWaypoint.length === perLvl &&
+        b.id === i + 1 && b.waypoints[0][2] === orb.stats.heights[i]))
+  check('orbita por nivel: gimbal do nivel preservado',
+    lvls[2].perWaypoint[0].gimbalPitch === orb.perLevel[2].gimbalPitch)
 }
 
 /* 9d. Pontos de inspecao (R2.9 — parte pura) */

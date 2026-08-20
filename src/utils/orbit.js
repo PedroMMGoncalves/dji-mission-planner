@@ -1,6 +1,59 @@
 import * as turf from '@turf/turf'
 import { computeFootprint, computeGSD } from './geo.js'
 
+/** Valores iniciais da configuração de órbita (E1.2). */
+export const DEFAULT_ORBIT_CONFIG = {
+  poi: null, // [lon, lat]
+  radiusM: 60,
+  levelCount: 3,
+  levelStartM: 30,
+  levelStepM: 15,
+  horizontalOverlapPct: 80,
+  poiHeightM: 0,
+  clockwise: true,
+}
+
+/**
+ * E1.2: normaliza uma configuração de órbita guardada num projecto —
+ * campos em falta caem nos defaults, números validados e limitados,
+ * lixo nunca rebenta.
+ */
+export function normalizeOrbitConfig(stored) {
+  const d = { ...DEFAULT_ORBIT_CONFIG }
+  if (!stored || typeof stored !== 'object') return d
+  const num = (v, lo, hi, dflt) =>
+    Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : dflt
+  const poi =
+    Array.isArray(stored.poi) && Number.isFinite(stored.poi[0]) && Number.isFinite(stored.poi[1])
+      ? [stored.poi[0], stored.poi[1]]
+      : null
+  return {
+    poi,
+    radiusM: num(stored.radiusM, 5, 500, d.radiusM),
+    levelCount: Math.round(num(stored.levelCount, 1, 12, d.levelCount)),
+    levelStartM: num(stored.levelStartM, 2, 300, d.levelStartM),
+    levelStepM: num(stored.levelStepM, 1, 100, d.levelStepM),
+    horizontalOverlapPct: num(stored.horizontalOverlapPct, 0, 95, d.horizontalOverlapPct),
+    poiHeightM: num(stored.poiHeightM, -50, 300, d.poiHeightM),
+    clockwise: stored.clockwise !== false,
+  }
+}
+
+/**
+ * E1.2: divide um plano de órbita em blocos por nível — cada nível vira uma
+ * missão independente (um KMZ por bateria/nível), com o perWaypoint fatiado
+ * em sincronia. Serve exportBlocksZip directamente.
+ */
+export function orbitLevelsToBlocks(plan) {
+  if (!plan?.waypoints?.length || !plan.stats) return []
+  const per = plan.stats.pointsPerOrbit + 1
+  return plan.perLevel.map((lvl, i) => ({
+    id: lvl.level,
+    waypoints: plan.waypoints.slice(i * per, (i + 1) * per),
+    perWaypoint: plan.perWaypoint.slice(i * per, (i + 1) * per),
+  }))
+}
+
 /**
  * ÓRBITAS MULTI-NÍVEL (T5.1) — círculos empilhados em torno de um POI para
  * inspeção/reconstrução 3D de estruturas isoladas (chaminés, antenas,
