@@ -38,6 +38,7 @@ export default {
 
   /* ---- Drone / Sensor ---- */
   'cp.drone.title': { pt: 'Drone / Sensor', en: 'Drone / Sensor' },
+  'cp.drone.payload': { pt: 'Payload / Sensor', en: 'Payload / Sensor' },
   'cp.drone.specs': {
     pt: '{camera} · sensor {w}×{h} mm · focal {focal} mm · payload {payload}',
     en: '{camera} · sensor {w}×{h} mm · focal length {focal} mm · payload {payload}',

@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { DRONE_PROFILES } from '../data/drones.js'
+import { AIRCRAFT, PAYLOADS } from '../data/drones.js'
 import { CRS_OPTIONS } from '../utils/importArea.js'
 import { useLang, useT } from '../i18n.jsx'
 import {
@@ -53,8 +53,8 @@ function NumberInput({ value, onChange, min, max, step = 1, wide }) {
 export default function ControlPanel({
   missionName,
   setMissionName,
-  droneId,
-  setDroneId,
+  drone,
+  setDrone,
   custom,
   setCustom,
   params,
@@ -113,8 +113,9 @@ export default function ControlPanel({
 }) {
   const t = useT()
   const lang = useLang()
-  const profile = DRONE_PROFILES[droneId]
-  const isCustom = profile.type === 'custom'
+  const aircraft = AIRCRAFT[drone.aircraftId]
+  const payload = PAYLOADS[drone.payloadId]
+  const isCustom = payload.type === 'custom'
   const areaFileRef = useRef(null)
   const projectFileRef = useRef(null)
   const demFileRef = useRef(null)
@@ -167,24 +168,52 @@ export default function ControlPanel({
       <Section title={t('cp.drone.title')}>
         <select
           className="mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-          value={droneId}
-          onChange={(e) => setDroneId(e.target.value)}
+          value={drone.aircraftId}
+          onChange={(e) => {
+            const a = AIRCRAFT[e.target.value]
+            // keep the payload when the new aircraft also mounts it
+            setDrone({
+              aircraftId: a.id,
+              payloadId: a.payloads.includes(drone.payloadId)
+                ? drone.payloadId
+                : a.payloads[0],
+            })
+          }}
         >
-          {Object.values(DRONE_PROFILES).map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.label}
+          {Object.values(AIRCRAFT).map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.label}
             </option>
           ))}
         </select>
 
+        {aircraft.payloads.length > 1 && (
+          <>
+            <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
+              {t('cp.drone.payload')}
+            </p>
+            <select
+              className="mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+              value={drone.payloadId}
+              onChange={(e) => setDrone({ ...drone, payloadId: e.target.value })}
+            >
+              {aircraft.payloads.map((pid) => (
+                <option key={pid} value={pid}>
+                  {PAYLOADS[pid].label}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+
         {!isCustom && (
           <p className="text-xs leading-relaxed text-slate-500">
             {t('cp.drone.specs', {
-              camera: profile.camera,
-              w: profile.sensorWidth,
-              h: profile.sensorHeight,
-              focal: profile.focalLength,
-              payload: profile.payloadLabel,
+              camera: payload.desc,
+              w: payload.sensorWidth,
+              h: payload.sensorHeight,
+              focal: payload.focalLength,
+              payload: payload.payloadLabel,
             })}
           </p>
         )}
@@ -256,13 +285,17 @@ export default function ControlPanel({
             )}
 
             <p className="pt-1 text-[11px] text-slate-500">{t('cp.drone.wpmlEnums')}</p>
-            <Field label="droneEnumValue">
-              <NumberInput
-                value={custom.droneEnumValue}
-                min={0}
-                onChange={(v) => setCustom({ ...custom, droneEnumValue: v })}
-              />
-            </Field>
+            {/* on a real aircraft the drone enum is the aircraft's own;
+                only the CUSTOM aircraft exposes it for editing */}
+            {aircraft.id === 'CUSTOM' && (
+              <Field label="droneEnumValue">
+                <NumberInput
+                  value={custom.droneEnumValue}
+                  min={0}
+                  onChange={(v) => setCustom({ ...custom, droneEnumValue: v })}
+                />
+              </Field>
+            )}
             <Field label="payloadEnumValue">
               <NumberInput
                 value={custom.payloadEnumValue}
@@ -333,13 +366,13 @@ export default function ControlPanel({
           </p>
         )}
         <Field
-          label={`${t('cp.flight.speed')} (${profile.speedRange?.min ?? 1}–${profile.speedRange?.max ?? 20})`}
+          label={`${t('cp.flight.speed')} (${aircraft.speedRange?.min ?? 1}–${aircraft.speedRange?.max ?? 20})`}
           suffix="m/s"
         >
           <NumberInput
             value={params.speed}
-            min={profile.speedRange?.min ?? 1}
-            max={profile.speedRange?.max ?? 20}
+            min={aircraft.speedRange?.min ?? 1}
+            max={aircraft.speedRange?.max ?? 20}
             step={0.5}
             onChange={(v) => setParam('speed', v)}
           />

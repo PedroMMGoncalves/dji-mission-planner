@@ -11,6 +11,7 @@ import {
   longestEdgeBearing,
   photoInterval,
   rectangleFromAnchor,
+  resolveSensor,
   splitIntoBlocks,
   squareSideForBattery,
   tilePolygonWithSquares,
@@ -19,7 +20,13 @@ import {
 import { buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
 import { decodeTerrarium, despikeElevations, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
-import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR } from './src/data/drones.js'
+import {
+  AIRCRAFT,
+  PAYLOADS,
+  DEFAULT_CUSTOM_SENSOR,
+  DEFAULT_SELECTION,
+  migrateDroneSelection,
+} from './src/data/drones.js'
 
 let failures = 0
 function check(name, cond, extra = '') {
@@ -27,20 +34,33 @@ function check(name, cond, extra = '') {
   if (!cond) failures++
 }
 
-/* 0. Sanidade dos perfis de hardware — plausibility ranges for every profile.
-   Guards against data-entry mistakes (a sensor in cm, a focal in px, a swapped
-   width/height) rather than against wrong-but-plausible values. */
+/* 0. Sanidade do hardware — plausibility ranges for every aircraft and
+   payload. Guards against data-entry mistakes (a sensor in cm, a focal in
+   px, a swapped width/height) rather than wrong-but-plausible values. */
 const inRange = (v, lo, hi) => typeof v === 'number' && v >= lo && v <= hi
-for (const p of Object.values(DRONE_PROFILES)) {
-  check(`perfil ${p.id}: speedRange valido`,
-    p.speedRange && p.speedRange.min > 0 && p.speedRange.max >= p.speedRange.min,
-    `${p.speedRange?.min}-${p.speedRange?.max} m/s`)
+for (const a of Object.values(AIRCRAFT)) {
+  check(`aeronave ${a.id}: speedRange valido`,
+    a.speedRange && a.speedRange.min > 0 && a.speedRange.max >= a.speedRange.min,
+    `${a.speedRange?.min}-${a.speedRange?.max} m/s`)
+  check(`aeronave ${a.id}: batteryMin 5-120 min`, inRange(a.batteryMin, 5, 120), a.batteryMin)
+  check(`aeronave ${a.id}: droneEnumValue numerico`, Number.isFinite(a.wpml?.droneEnumValue))
+  check(`aeronave ${a.id}: payloads existem no catalogo`,
+    Array.isArray(a.payloads) && a.payloads.length >= 1 && a.payloads.every((pid) => PAYLOADS[pid]),
+    a.payloads?.join(','))
+}
+for (const p of Object.values(PAYLOADS)) {
+  check(`payload ${p.id}: payloadEnumValue numerico`, Number.isFinite(p.wpml?.payloadEnumValue))
   if (p.type === 'camera') {
-    check(`perfil ${p.id}: sensorWidth 4-60 mm`, inRange(p.sensorWidth, 4, 60), p.sensorWidth)
-    check(`perfil ${p.id}: sensorHeight 3-45 mm`, inRange(p.sensorHeight, 3, 45), p.sensorHeight)
-    check(`perfil ${p.id}: focalLength 2-100 mm`, inRange(p.focalLength, 2, 100), p.focalLength)
-    check(`perfil ${p.id}: imageWidth 1000-20000 px`, inRange(p.imageWidth, 1000, 20000), p.imageWidth)
-    check(`perfil ${p.id}: imageHeight 1000-20000 px`, inRange(p.imageHeight, 1000, 20000), p.imageHeight)
+    check(`payload ${p.id}: sensorWidth 4-60 mm`, inRange(p.sensorWidth, 4, 60), p.sensorWidth)
+    check(`payload ${p.id}: sensorHeight 3-45 mm`, inRange(p.sensorHeight, 3, 45), p.sensorHeight)
+    check(`payload ${p.id}: focalLength 2-100 mm`, inRange(p.focalLength, 2, 100), p.focalLength)
+    check(`payload ${p.id}: imageWidth 1000-20000 px`, inRange(p.imageWidth, 1000, 20000), p.imageWidth)
+    check(`payload ${p.id}: imageHeight 1000-20000 px`, inRange(p.imageHeight, 1000, 20000), p.imageHeight)
+  } else if (p.type === 'lidar') {
+    check(`payload ${p.id}: FOV 5-360 graus`, inRange(p.fov, 5, 360), p.fov)
+    check(`payload ${p.id}: effectiveFov <= fov`,
+      p.effectiveFov == null || (inRange(p.effectiveFov, 5, 360) && p.effectiveFov <= p.fov),
+      p.effectiveFov)
   }
 }
 check('custom default: camara em intervalos validos',
@@ -50,6 +70,26 @@ check('custom default: camara em intervalos validos',
     inRange(DEFAULT_CUSTOM_SENSOR.imageWidth, 1000, 20000))
 check('custom default: FOV LiDAR 5-360 graus', inRange(DEFAULT_CUSTOM_SENSOR.fov, 5, 360),
   DEFAULT_CUSTOM_SENSOR.fov)
+
+/* 0b. Migracao da selecao de hardware (T1.1) — legacy droneId strings and
+   current {aircraftId, payloadId} objects both land on valid pairs. */
+{
+  const sameSel = (a, b) => a.aircraftId === b.aircraftId && a.payloadId === b.payloadId
+  check('migra M3E', sameSel(migrateDroneSelection('M3E'), { aircraftId: 'M3E', payloadId: 'M3E_WIDE' }))
+  check('migra M4T', sameSel(migrateDroneSelection('M4T'), { aircraftId: 'M4T', payloadId: 'M4T_WIDE' }))
+  check('migra M300RTK para P1', sameSel(migrateDroneSelection('M300RTK'), { aircraftId: 'M300RTK', payloadId: 'P1' }))
+  check('migra CUSTOM', sameSel(migrateDroneSelection('CUSTOM'), { aircraftId: 'CUSTOM', payloadId: 'CUSTOM' }))
+  check('droneId desconhecido cai no default', sameSel(migrateDroneSelection('MAVIC_PRO'), DEFAULT_SELECTION))
+  check('par valido passa intacto',
+    sameSel(migrateDroneSelection({ aircraftId: 'M300RTK', payloadId: 'CUSTOM' }), { aircraftId: 'M300RTK', payloadId: 'CUSTOM' }))
+  check('payload incompativel encaixa no primeiro da aeronave',
+    sameSel(migrateDroneSelection({ aircraftId: 'M3E', payloadId: 'P1' }), { aircraftId: 'M3E', payloadId: 'M3E_WIDE' }))
+  check('aeronave desconhecida cai no default',
+    sameSel(migrateDroneSelection({ aircraftId: 'M600', payloadId: 'P1' }), DEFAULT_SELECTION))
+  check('selecao ausente cai no default', sameSel(migrateDroneSelection(undefined), DEFAULT_SELECTION))
+  check('default e valido',
+    AIRCRAFT[DEFAULT_SELECTION.aircraftId]?.payloads.includes(DEFAULT_SELECTION.payloadId))
+}
 
 /* 1. Footprint / GSD / espaçamento — M3E a 100 m */
 const sensor = { type: 'camera', sensorWidth: 17.3, sensorHeight: 13.0, focalLength: 12.2, imageWidth: 5280 }
@@ -62,6 +102,29 @@ const iv = photoInterval(fp.along, 80)
 check('interval @80% ~21.3 m', Math.abs(iv - 21.31) < 0.1, iv.toFixed(2))
 const gsd = computeGSD(sensor, 100)
 check('GSD ~2.69 cm/px', Math.abs(gsd - 2.686) < 0.01, gsd.toFixed(3))
+
+/* 1b. resolveSensor a partir do payload (T1.1) — óticas idênticas às do
+   modelo antigo para os perfis que não mudaram. */
+{
+  const sM3E = resolveSensor(PAYLOADS.M3E_WIDE, DEFAULT_CUSTOM_SENSOR)
+  check('payload M3E = sensor de referencia',
+    sM3E.type === 'camera' &&
+      ['sensorWidth', 'sensorHeight', 'focalLength', 'imageWidth'].every((k) => sM3E[k] === sensor[k]))
+  const fpP1 = computeFootprint(resolveSensor(PAYLOADS.P1, DEFAULT_CUSTOM_SENSOR), 100)
+  check('P1 footprint across ~102.6 m', Math.abs(fpP1.across - 102.57) < 0.1, fpP1.across.toFixed(2))
+  const gsdP1 = computeGSD(resolveSensor(PAYLOADS.P1, DEFAULT_CUSTOM_SENSOR), 100)
+  check('P1 GSD ~1.252 cm/px', Math.abs(gsdP1 - 1.2521) < 0.005, gsdP1.toFixed(4))
+  const sCustomCam = resolveSensor(PAYLOADS.CUSTOM, DEFAULT_CUSTOM_SENSOR)
+  check('payload CUSTOM camara le o customSensor',
+    sCustomCam.type === 'camera' && sCustomCam.sensorWidth === DEFAULT_CUSTOM_SENSOR.sensorWidth)
+  const sCustomLidar = resolveSensor(PAYLOADS.CUSTOM, { ...DEFAULT_CUSTOM_SENSOR, mode: 'lidar', fov: 75 })
+  check('payload CUSTOM lidar le o FOV editado', sCustomLidar.type === 'lidar' && sCustomLidar.fov === 75)
+  // lidar payload shape (arrives with T1.2): flies with the working FOV
+  const sLidar = resolveSensor({ type: 'lidar', fov: 70.4, effectiveFov: 60 }, DEFAULT_CUSTOM_SENSOR)
+  check('payload lidar usa effectiveFov', sLidar.type === 'lidar' && sLidar.fov === 60)
+  const sLidarNominal = resolveSensor({ type: 'lidar', fov: 70.4 }, DEFAULT_CUSTOM_SENSOR)
+  check('payload lidar sem corte usa fov nominal', sLidarNominal.fov === 70.4)
+}
 
 /* 2. LiDAR por FOV */
 const lidar = computeFootprint({ type: 'lidar', fov: 70 }, 100)

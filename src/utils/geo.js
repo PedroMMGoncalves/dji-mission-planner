@@ -25,18 +25,24 @@ export function ringToPolygon(ring) {
 }
 
 /**
- * Normaliza o perfil selecionado num objeto "sensor" único:
+ * Normalises the selected payload into a single "sensor" object:
  * { type: 'camera'|'lidar', sensorWidth, sensorHeight, focalLength, imageWidth, fov }
+ * Catalog payloads carry their own optics/beam geometry; the CUSTOM payload
+ * (type 'custom') reads them from the user-edited customSensor instead. A
+ * lidar payload flies with its working FOV (effectiveFov) when one is set.
  */
-export function resolveSensor(profile, customSensor) {
-  if (profile.type !== 'custom') {
+export function resolveSensor(payload, customSensor) {
+  if (payload.type === 'camera') {
     return {
       type: 'camera',
-      sensorWidth: profile.sensorWidth,
-      sensorHeight: profile.sensorHeight,
-      focalLength: profile.focalLength,
-      imageWidth: profile.imageWidth,
+      sensorWidth: payload.sensorWidth,
+      sensorHeight: payload.sensorHeight,
+      focalLength: payload.focalLength,
+      imageWidth: payload.imageWidth,
     }
+  }
+  if (payload.type === 'lidar') {
+    return { type: 'lidar', fov: payload.effectiveFov ?? payload.fov }
   }
   if (customSensor.mode === 'lidar') {
     return { type: 'lidar', fov: customSensor.fov }
