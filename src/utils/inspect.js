@@ -36,6 +36,26 @@ export function nearestNeighbourOrder(points, start = null) {
 }
 
 /**
+ * E1.3: move um elemento da posição `from` para `to`, devolvendo uma NOVA
+ * lista; índices inválidos devolvem a original intacta. Usado pelo
+ * arrastar-e-largar da lista de pontos.
+ */
+export function reorderList(list, from, to) {
+  if (!Array.isArray(list)) return []
+  if (
+    from === to ||
+    !Number.isInteger(from) || !Number.isInteger(to) ||
+    from < 0 || to < 0 || from >= list.length || to >= list.length
+  ) {
+    return list
+  }
+  const next = list.slice()
+  const [moved] = next.splice(from, 1)
+  next.splice(to, 0, moved)
+  return next
+}
+
+/**
  * Converte a lista de pontos de inspeção nos inputs do exportador (T4.1):
  * waypoints [lon, lat, h] + perWaypoint { heading?, gimbalPitch?, actions }.
  * heading null/indefinido deixa o rumo seguir a rota (followWayline);

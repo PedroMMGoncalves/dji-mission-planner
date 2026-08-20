@@ -29,7 +29,7 @@ import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
 import { DEFAULT_FACE_CONFIG, checkFaceClearance, generateFacePlan, normalizeFaceConfig } from './src/utils/faceMode.js'
 import { headingTicks } from './src/utils/preview.js'
 import { DEFAULT_ORBIT_CONFIG, generateOrbitPlan, normalizeOrbitConfig, orbitLevelsToBlocks } from './src/utils/orbit.js'
-import { inspectionToWaypoints, nearestNeighbourOrder } from './src/utils/inspect.js'
+import { inspectionToWaypoints, nearestNeighbourOrder, reorderList } from './src/utils/inspect.js'
 import {
   AIRCRAFT,
   PAYLOADS,
@@ -1194,6 +1194,15 @@ check('waylines Mapper+: sem acoes de camara',
   check('inspecao: WPML com 1 rumo fixo e 2 fotos',
     (wlInsp.match(/smoothTransition/g) || []).length === 1 &&
       (wlInsp.match(/takePhoto/g) || []).length === 2)
+
+  /* E1.3: reordenacao por arrastar-e-largar */
+  check('reorder: move para a frente e para tras',
+    reorderList(['a', 'b', 'c', 'd'], 0, 2).join('') === 'bcad' &&
+      reorderList(['a', 'b', 'c', 'd'], 3, 1).join('') === 'adbc')
+  const orig = ['a', 'b']
+  check('reorder: indices invalidos devolvem a lista original intacta',
+    reorderList(orig, 0, 5) === orig && reorderList(orig, 1, 1) === orig &&
+      reorderList(orig, -1, 0) === orig)
 }
 
 /* 10a2. Convencao de nomes de exportacao (E3.1) */
