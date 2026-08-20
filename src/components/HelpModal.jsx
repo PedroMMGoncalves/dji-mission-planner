@@ -33,6 +33,19 @@ function InstrucoesPt() {
         <Li><strong>Exporte</strong>: KML simples (área) ou WPML/KMZ (missão completa para o DJI Pilot 2).</Li>
       </ol>
 
+      <H>Tipos de missão</H>
+      <ul className="list-none">
+        <Li><strong>Área</strong> (selector no topo do painel) — grelha nadir/oblíqua sobre um polígono; inclui a dupla grelha 3D com «Passagem nadir extra (orto)» e os <strong>pontos de inspeção</strong> como camada extra: marque pontos no mapa, edite etiqueta/rumo/pitch/foto, reordene por arrasto ou «Sugerir ordem», e exporte como missão própria.</Li>
+        <Li><strong>Fachada</strong> — clique «Desenhar» e marque o pé da face no mapa (o sentido do desenho define a esquerda/direita); conclua com duplo clique. Ajuste altura, afastamento, lado e sobreposições; a pré-visualização mostra a linha de voo afastada e os rumos. Exporta com rumo fixo e uma foto por waypoint.</Li>
+        <Li><strong>Órbita</strong> — «Marcar POI» e clicar no alvo; defina raio (ou GSD alvo), níveis e passo. Exporta em voo curvo contínuo, missão única ou um KMZ por nível (ZIP).</Li>
+      </ul>
+
+      <H>Avisos que deve compreender</H>
+      <ul className="list-none">
+        <Li><strong>«Afastamento NÃO verificado»</strong> (fachada) — sem um GeoTIFF local importado, nada valida a distância à face: os tiles globais (~30 m) não têm resolução à escala de uma parede. Com um DSM local carregado, a app verifica a folga vertical e ao longo do rumo e lista as passagens em conflito — aumentar o afastamento resolve.</Li>
+        <Li><strong>«GSD (centro do quadro)»</strong> — com o gimbal oblíquo, o GSD mostrado usa o alcance inclinado ao centro da imagem (a −60° é ~15% pior do que a nadir); os bordos superiores do quadro são ainda piores. O espaçamento das faixas continua calculado como a nadir, de propósito — o erro é conservador (sobreposição real ≥ pedida).</Li>
+      </ul>
+
       <H>Desenho do polígono</H>
       <ul className="list-none">
         <Li><Kbd>Clique</Kbd> — adiciona um vértice.</Li>
@@ -85,6 +98,19 @@ function InstrucoesEn() {
         <Li>Optional: mark the <strong>home point</strong>, split into <strong>blocks</strong>, load the <strong>terrain</strong> and plan <strong>GCPs</strong>.</Li>
         <Li><strong>Export</strong>: simple KML (area) or WPML/KMZ (full mission for DJI Pilot 2).</Li>
       </ol>
+
+      <H>Mission types</H>
+      <ul className="list-none">
+        <Li><strong>Area</strong> (selector at the top of the panel) — nadir/oblique grid over a polygon; includes the 3D double grid with “Extra nadir pass (ortho)” and <strong>inspection points</strong> as an extra layer: place points on the map, edit label/heading/pitch/photo, reorder by drag or “Suggest order”, and export as a mission of its own.</Li>
+        <Li><strong>Face</strong> — click “Draw” and mark the foot of the face on the map (the drawing direction defines left/right); finish with a double click. Set height, standoff, side and overlaps; the preview shows the offset flight line and the headings. Exports with a fixed heading and one photo per waypoint.</Li>
+        <Li><strong>Orbit</strong> — “Mark POI” and click the target; set radius (or target GSD), levels and step. Exports in continuous curved flight, single mission or one KMZ per level (ZIP).</Li>
+      </ul>
+
+      <H>Warnings you must understand</H>
+      <ul className="list-none">
+        <Li><strong>“Standoff NOT verified”</strong> (face mode) — without an imported local GeoTIFF, nothing validates the distance to the face: global tiles (~30 m) lack resolution at wall scale. With a local DSM loaded, the app checks vertical and along-heading clearance and lists conflicting passes — raising the standoff clears it.</Li>
+        <Li><strong>“GSD (frame centre)”</strong> — with an oblique gimbal the displayed GSD uses the slant range to the image centre (at −60° it is ~15% worse than nadir); the upper frame edges are worse still. Line spacing stays nadir-based on purpose — the error is conservative (real overlap ≥ requested).</Li>
+      </ul>
 
       <H>Polygon drawing</H>
       <ul className="list-none">
