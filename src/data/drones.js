@@ -56,7 +56,7 @@ export const AIRCRAFT = {
     speedRange: { min: 1, max: 17 },
     batteryMin: 55,
     wpml: { droneEnumValue: 60, droneSubEnumValue: 0 },
-    payloads: ['P1', 'CUSTOM'],
+    payloads: ['P1', 'MAPPER_PLUS', 'CUSTOM'],
   },
 
   CUSTOM: {
@@ -118,6 +118,24 @@ export const PAYLOADS = {
     imageHeight: 5460,
     minTriggerS: 0.7,
     wpml: { payloadEnumValue: 50, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+  },
+
+  MAPPER_PLUS: {
+    // YellowScan Mapper+ (Livox AVIA) on the M300 Skyport mount.
+    // Source: yellowscan.com/products/mapper-plus (checked 2026-08-18):
+    // FOV 70.4 deg nominal, 240 kHz PRR (single return), 100 m max AGL.
+    // payloadEnumValue 65534 = "PSDK Payload Device", the documented enum
+    // for third-party payloads (DJI WPML common-element table).
+    id: 'MAPPER_PLUS',
+    label: 'YellowScan Mapper+',
+    desc: 'YellowScan Mapper+ — LiDAR Livox AVIA',
+    payloadLabel: 'Mapper+',
+    type: 'lidar',
+    fov: 70.4, // nominal full beam aperture (deg)
+    effectiveFov: null, // working cut set in the UI; null = fly the nominal
+    maxPrr: 240000, // pts/s, single-return figure (T2.1 density estimator)
+    maxAglM: 100, // operational ceiling (T1.3 warning)
+    wpml: { payloadEnumValue: 65534, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
   },
 
   CUSTOM: {

@@ -126,6 +126,23 @@ check('GSD ~2.69 cm/px', Math.abs(gsd - 2.686) < 0.01, gsd.toFixed(3))
   check('payload lidar sem corte usa fov nominal', sLidarNominal.fov === 70.4)
 }
 
+/* 1c. YellowScan Mapper+ no M300 (T1.2) */
+{
+  const mp = PAYLOADS.MAPPER_PLUS
+  check('Mapper+ e payload lidar montavel no M300',
+    mp?.type === 'lidar' && AIRCRAFT.M300RTK.payloads.includes('MAPPER_PLUS'))
+  const swath = computeFootprint(resolveSensor(mp, DEFAULT_CUSTOM_SENSOR), 100)
+  check('Mapper+ faixa ~141 m @100 m (FOV 70.4)', Math.abs(swath.across - 141.1) < 0.5,
+    swath.across.toFixed(2))
+  const cut = computeFootprint(resolveSensor({ ...mp, effectiveFov: 60 }, DEFAULT_CUSTOM_SENSOR), 100)
+  check('Mapper+ corte 60 graus: faixa ~115.5 m', Math.abs(cut.across - 115.47) < 0.5,
+    cut.across.toFixed(2))
+  check('Mapper+ enum PSDK 65534 e teto 100 m',
+    mp.wpml.payloadEnumValue === 65534 && mp.maxAglM === 100 && mp.maxPrr === 240000)
+  check('par M300+Mapper+ migra intacto',
+    migrateDroneSelection({ aircraftId: 'M300RTK', payloadId: 'MAPPER_PLUS' }).payloadId === 'MAPPER_PLUS')
+}
+
 /* 2. LiDAR por FOV */
 const lidar = computeFootprint({ type: 'lidar', fov: 70 }, 100)
 check('LiDAR swath ~140 m @FOV70/100m', Math.abs(lidar.across - 140.04) < 0.1, lidar.across.toFixed(2))
@@ -528,6 +545,19 @@ const wlLidar = buildWaylinesWPML({ ...wpmlParams, sensorType: 'lidar', photoInt
 check('waylines LiDAR: sem takePhoto', !wlLidar.includes('takePhoto'))
 check('waylines LiDAR: sem gimbalRotate', !wlLidar.includes('gimbalRotate'))
 check('waylines LiDAR: waypoint 0 sem actionGroup', !wlLidar.includes('<wpml:actionGroup>'))
+
+// M300 + Mapper+ (T1.2): enum PSDK do payload de terceiros, sem ações de câmara
+const wlMapper = buildWaylinesWPML({
+  ...wpmlParams,
+  sensorType: 'lidar',
+  photoIntervalM: 0,
+  wpml: { droneEnumValue: 60, droneSubEnumValue: 0, ...PAYLOADS.MAPPER_PLUS.wpml },
+})
+check('waylines Mapper+: payloadEnumValue 65534',
+  wlMapper.includes('<wpml:payloadEnumValue>65534</wpml:payloadEnumValue>') &&
+    wlMapper.includes('<wpml:droneEnumValue>60</wpml:droneEnumValue>'))
+check('waylines Mapper+: sem acoes de camara',
+  !wlMapper.includes('takePhoto') && !wlMapper.includes('gimbalRotate'))
 
 console.log(failures === 0 ? '\nTODOS OS TESTES PASSARAM' : `\n${failures} TESTES FALHARAM`)
 process.exit(failures === 0 ? 0 : 1)

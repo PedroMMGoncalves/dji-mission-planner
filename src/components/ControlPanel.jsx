@@ -57,6 +57,8 @@ export default function ControlPanel({
   setDrone,
   custom,
   setCustom,
+  effectiveFov,
+  onEffectiveFov,
   params,
   setParam,
   mode,
@@ -206,7 +208,7 @@ export default function ControlPanel({
           </>
         )}
 
-        {!isCustom && (
+        {payload.type === 'camera' && (
           <p className="text-xs leading-relaxed text-slate-500">
             {t('cp.drone.specs', {
               camera: payload.desc,
@@ -216,6 +218,43 @@ export default function ControlPanel({
               payload: payload.payloadLabel,
             })}
           </p>
+        )}
+
+        {payload.type === 'lidar' && (
+          <>
+            <p className="text-xs leading-relaxed text-slate-500">
+              {t('cp.drone.lidarSpecs', {
+                desc: payload.desc,
+                fov: payload.fov,
+                agl: payload.maxAglM ?? '—',
+              })}
+            </p>
+            <div className="mt-2">
+              <Field label={t('cp.drone.effectiveFov')} suffix="°">
+                <div className="flex items-center gap-1.5">
+                  <NumberInput
+                    value={effectiveFov ?? payload.fov}
+                    min={5}
+                    max={payload.fov}
+                    step={0.1}
+                    onChange={onEffectiveFov}
+                  />
+                  {effectiveFov != null && (
+                    <button
+                      onClick={() => onEffectiveFov(payload.fov)}
+                      title={t('cp.drone.effectiveFovResetTitle', { fov: payload.fov })}
+                      className="rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
+                    >
+                      {t('cp.drone.effectiveFovReset')}
+                    </button>
+                  )}
+                </div>
+              </Field>
+              <p className="text-[11px] leading-relaxed text-slate-500">
+                {t('cp.drone.effectiveFovHint')}
+              </p>
+            </div>
+          </>
         )}
 
         {isCustom && (

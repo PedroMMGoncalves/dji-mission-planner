@@ -39,6 +39,20 @@ export default {
   /* ---- Drone / Sensor ---- */
   'cp.drone.title': { pt: 'Drone / Sensor', en: 'Drone / Sensor' },
   'cp.drone.payload': { pt: 'Payload / Sensor', en: 'Payload / Sensor' },
+  'cp.drone.lidarSpecs': {
+    pt: '{desc} · FOV nominal {fov}° · teto operacional {agl} m AGL',
+    en: '{desc} · nominal FOV {fov}° · operational ceiling {agl} m AGL',
+  },
+  'cp.drone.effectiveFov': { pt: 'FOV de trabalho', en: 'Working FOV' },
+  'cp.drone.effectiveFovReset': { pt: 'Nominal', en: 'Nominal' },
+  'cp.drone.effectiveFovResetTitle': {
+    pt: 'Voltar ao FOV nominal do sensor ({fov}°)',
+    en: 'Back to the sensor nominal FOV ({fov}°)',
+  },
+  'cp.drone.effectiveFovHint': {
+    pt: 'Corte de trabalho do feixe: a faixa e o espaçamento usam este ângulo. Bordas do feixe têm mais ruído — é comum voar com um corte mais estreito que o nominal.',
+    en: 'Working beam cut: swath and spacing use this angle. Beam edges are noisier — flying a narrower cut than nominal is common practice.',
+  },
   'cp.drone.specs': {
     pt: '{camera} · sensor {w}×{h} mm · focal {focal} mm · payload {payload}',
     en: '{camera} · sensor {w}×{h} mm · focal length {focal} mm · payload {payload}',

@@ -99,6 +99,8 @@ function AppInner({ lang, setLang }) {
   // seleção de hardware: aeronave + payload (T1.1)
   const [drone, setDrone] = useState(() => ({ ...DEFAULT_SELECTION }))
   const [custom, setCustom] = useState(DEFAULT_CUSTOM_SENSOR)
+  // afinações por payload (T1.2): { [payloadId]: { effectiveFov } }
+  const [payloadTuning, setPayloadTuning] = useState({})
   const [params, setParams] = useState({
     altitude: 100,
     speed: 10,
@@ -221,7 +223,34 @@ function AppInner({ lang, setLang }) {
         : p,
     )
   }, [aircraft])
-  const sensor = useMemo(() => resolveSensor(payload, custom), [payload, custom])
+
+  // payload ativo com a afinação aplicada: um LiDAR pode voar com um corte
+  // de trabalho do feixe (effectiveFov) mais estreito do que o nominal
+  const effectiveFov = payloadTuning[drone.payloadId]?.effectiveFov ?? null
+  const activePayload = useMemo(
+    () =>
+      payload.type === 'lidar' && effectiveFov
+        ? { ...payload, effectiveFov }
+        : payload,
+    [payload, effectiveFov],
+  )
+  const sensor = useMemo(() => resolveSensor(activePayload, custom), [activePayload, custom])
+
+  const setEffectiveFov = useCallback(
+    (value) => {
+      setPayloadTuning((m) => {
+        const pid = drone.payloadId
+        const nominal = PAYLOADS[pid]?.fov
+        // clamp to ]5, nominal]; at (or above) nominal the override is removed
+        if (!Number.isFinite(value) || !nominal || value >= nominal) {
+          const { [pid]: _drop, ...rest } = m
+          return rest
+        }
+        return { ...m, [pid]: { ...m[pid], effectiveFov: Math.max(5, value) } }
+      })
+    },
+    [drone.payloadId],
+  )
 
   // Enums WPML: aeronave + payload; o editor custom substitui o enum do
   // payload sempre, e o da aeronave apenas quando a aeronave é CUSTOM
@@ -772,6 +801,7 @@ function AppInner({ lang, setLang }) {
     if (typeof p.missionName === 'string') setMissionName(p.missionName)
     if (p.drone || p.droneId) setDrone(migrateDroneSelection(p.drone ?? p.droneId))
     if (p.custom) setCustom((c) => ({ ...c, ...p.custom }))
+    if (p.payloadTuning && typeof p.payloadTuning === 'object') setPayloadTuning(p.payloadTuning)
     if (p.params) setParams((prev) => ({ ...prev, ...p.params }))
     if (p.split) setSplit((prev) => ({ ...prev, ...p.split }))
     if (p.anchor) setAnchor((prev) => ({ ...prev, ...p.anchor }))
@@ -811,6 +841,7 @@ function AppInner({ lang, setLang }) {
             missionName,
             drone,
             custom,
+            payloadTuning,
             params,
             split,
             anchor,
@@ -827,7 +858,7 @@ function AppInner({ lang, setLang }) {
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [missionName, drone, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const exportProject = useCallback(() => {
     const data = {
@@ -835,6 +866,7 @@ function AppInner({ lang, setLang }) {
       missionName,
       drone,
       custom,
+      payloadTuning,
       params,
       split,
       anchor,
@@ -849,7 +881,7 @@ function AppInner({ lang, setLang }) {
       new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
       `${missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'}-projeto.json`,
     )
-  }, [missionName, drone, custom, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const importProject = useCallback(
     async (file) => {
@@ -1097,6 +1129,8 @@ function AppInner({ lang, setLang }) {
           setDrone={setDrone}
           custom={custom}
           setCustom={setCustom}
+          effectiveFov={effectiveFov}
+          onEffectiveFov={setEffectiveFov}
           params={params}
           setParam={setParam}
           mode={mode}
