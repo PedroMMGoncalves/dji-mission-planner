@@ -112,6 +112,16 @@ check('interval @80% ~21.3 m', Math.abs(iv - 21.31) < 0.1, iv.toFixed(2))
 const gsd = computeGSD(sensor, 100)
 check('GSD ~2.69 cm/px', Math.abs(gsd - 2.686) < 0.01, gsd.toFixed(3))
 
+/* 1a2. GSD obliquo (R2.4) — alcance inclinado ao centro do quadro */
+check('GSD: -90 explicito = nadir (regressao)', computeGSD(sensor, 100, -90) === gsd)
+check('GSD: -60 = nadir x 1/sin60 (x1.1547)',
+  Math.abs(computeGSD(sensor, 100, -60) / gsd - 1 / Math.sin(Math.PI / 3)) < 1e-9,
+  computeGSD(sensor, 100, -60).toFixed(4))
+check('GSD: -45 = nadir x 1.4142',
+  Math.abs(computeGSD(sensor, 100, -45) / gsd - Math.SQRT2) < 1e-9)
+check('GSD: |pitch| < 20 -> null (quase-horizonte)',
+  computeGSD(sensor, 100, -15) === null && computeGSD(sensor, 100, 0) === null)
+
 /* 1b. resolveSensor a partir do payload (T1.1) — óticas idênticas às do
    modelo antigo para os perfis que não mudaram. */
 {

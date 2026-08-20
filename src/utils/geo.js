@@ -78,10 +78,20 @@ export function computeFootprint(sensor, altitude) {
   }
 }
 
-/** GSD em cm/píxel (apenas câmaras). */
-export function computeGSD(sensor, altitude) {
+/**
+ * GSD em cm/píxel (apenas câmaras). Com gimbal oblíquo o alcance ao centro
+ * do quadro é o inclinado — altitude / sin(|pitch|) — pelo que a −60° o GSD
+ * real é ~15% pior do que o nadir (R2.4). Abaixo de 20° de |pitch| o
+ * conceito de GSD deixa de ser útil (quase-horizonte): devolve null e a
+ * interface mostra n/a. O espaçamento e o intervalo de disparo continuam
+ * nadir-based — decisão deliberada, documentada no cálculo do espaçamento.
+ */
+export function computeGSD(sensor, altitude, gimbalPitchDeg = -90) {
   if (sensor.type !== 'camera' || !sensor.imageWidth) return null
-  return (sensor.sensorWidth * altitude * 100) / (sensor.focalLength * sensor.imageWidth)
+  const absPitch = Math.abs(gimbalPitchDeg)
+  if (absPitch < 20) return null
+  const slantRange = altitude / Math.sin((Math.min(90, absPitch) * Math.PI) / 180)
+  return (sensor.sensorWidth * slantRange * 100) / (sensor.focalLength * sensor.imageWidth)
 }
 
 /** Distância entre faixas a partir da pegada transversal e da sobreposição lateral. */

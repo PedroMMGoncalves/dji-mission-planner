@@ -293,6 +293,10 @@ function AppInner({ lang, setLang }) {
     () => computeFootprint(sensor, params.altitude),
     [sensor, params.altitude],
   )
+  // Espaçamento e intervalo de disparo mantêm-se nadir-based mesmo com o
+  // gimbal oblíquo — decisão deliberada (R2.4): a pegada oblíqua no chão é
+  // maior do que a nadir, pelo que a sobreposição real fica sempre ≥ à
+  // pedida (erro conservador). Só o GSD apresentado usa o alcance inclinado.
   const spacing = useMemo(
     () =>
       params.spacingMode === 'manual'
@@ -304,7 +308,10 @@ function AppInner({ lang, setLang }) {
     () => photoInterval(footprint.along, params.frontOverlap),
     [footprint, params.frontOverlap],
   )
-  const gsd = useMemo(() => computeGSD(sensor, params.altitude), [sensor, params.altitude])
+  const gsd = useMemo(
+    () => computeGSD(sensor, params.altitude, params.gimbalPitch),
+    [sensor, params.altitude, params.gimbalPitch],
+  )
 
   // densidade de pontos LiDAR no solo (T2.1) — só para payloads com PRR
   const pointDensity = useMemo(
@@ -1050,15 +1057,19 @@ function AppInner({ lang, setLang }) {
     [flightPresets],
   )
 
-  // GSD alvo → altitude (inverso do cálculo do GSD)
+  // GSD alvo → altitude (inverso do cálculo do GSD, com o mesmo alcance
+  // inclinado do gimbal oblíquo)
   const setAltitudeFromGsd = useCallback(
     (gsdTarget) => {
       if (sensor.type !== 'camera' || !sensor.imageWidth || !(gsdTarget > 0)) return
+      const absPitch = Math.max(20, Math.min(90, Math.abs(params.gimbalPitch)))
+      const slantToAlt = Math.sin((absPitch * Math.PI) / 180)
       const alt =
-        (gsdTarget * sensor.focalLength * sensor.imageWidth) / (sensor.sensorWidth * 100)
+        ((gsdTarget * sensor.focalLength * sensor.imageWidth) / (sensor.sensorWidth * 100)) *
+        slantToAlt
       setParams((p) => ({ ...p, altitude: Math.round(alt * 10) / 10 }))
     },
-    [sensor],
+    [sensor, params.gimbalPitch],
   )
 
   // Atalhos de direção das linhas relativamente ao bloco/aresta de referência
@@ -1317,6 +1328,7 @@ function AppInner({ lang, setLang }) {
           />
           <StatsPanel
             gsd={gsd}
+            gimbalPitch={params.gimbalPitch}
             footprint={footprint}
             spacing={spacing}
             pointDensity={pointDensity}

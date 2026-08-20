@@ -77,6 +77,12 @@ const BASE_DICT = {
 
   /* ---- Painel de métricas ---- */
   'stats.gsd': { pt: 'GSD', en: 'GSD' },
+  'stats.gsdCentre': { pt: 'GSD (centro do quadro)', en: 'GSD (frame centre)' },
+  'stats.gsdCentreHint': {
+    pt: 'Com o gimbal oblíquo o GSD usa o alcance inclinado ao centro do quadro (altitude ÷ sin|pitch|); nos bordos superiores do quadro é pior.',
+    en: 'With an oblique gimbal the GSD uses the slant range to the frame centre (altitude ÷ sin|pitch|); the upper frame edges are worse.',
+  },
+  'stats.gsdOblique': { pt: 'n/a (oblíqua)', en: 'n/a (oblique)' },
   'stats.density': { pt: 'Densidade LiDAR', en: 'LiDAR density' },
   'stats.densityHint': {
     pt: 'PRR ÷ (velocidade × faixa), com o PRR de retorno único — conservador, multi-eco aumenta. Entre parênteses: densidade na banda de sobreposição lateral (2 passagens).',

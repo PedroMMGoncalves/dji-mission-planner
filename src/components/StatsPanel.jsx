@@ -23,7 +23,7 @@ function Stat({ label, value, hint }) {
   )
 }
 
-export default function StatsPanel({ gsd, footprint, spacing, pointDensity, interval, triggerMode, speed, stats, baseDistance, blockCount }) {
+export default function StatsPanel({ gsd, gimbalPitch = -90, footprint, spacing, pointDensity, interval, triggerMode, speed, stats, baseDistance, blockCount }) {
   const t = useT()
   return (
     <div className="pointer-events-none absolute bottom-4 right-4 z-[1000] grid max-w-md grid-cols-2 gap-1.5 sm:grid-cols-3">
@@ -34,7 +34,11 @@ export default function StatsPanel({ gsd, footprint, spacing, pointDensity, inte
           hint={t('stats.densityHint')}
         />
       ) : (
-        <Stat label={t('stats.gsd')} value={gsd != null ? `${gsd.toFixed(2)} cm/px` : '—'} />
+        <Stat
+          label={t(gimbalPitch === -90 ? 'stats.gsd' : 'stats.gsdCentre')}
+          value={gsd != null ? `${gsd.toFixed(2)} cm/px` : t('stats.gsdOblique')}
+          hint={gimbalPitch === -90 ? undefined : t('stats.gsdCentreHint')}
+        />
       )}
       <Stat
         label={t('stats.footprint')}
