@@ -199,6 +199,28 @@ if (plan90 && !plan90.error) {
     `${bBase?.length} blocos, transito ${Math.round(bBase?.[0].transitS)} s`)
 }
 
+/* 8c-bis. Fits-check exclui a ligacao entre faixas (T0.5) */
+{
+  // Two 250 m lines with a 100 m hop between them; battery budget 60 s.
+  // Each line's own cost is 250/10 + 3 = 28 s, so both fit (56 <= 60 s).
+  // The old fits-check also charged the 10 s connection and split them
+  // into 2 blocks even though the second line opens no such connection.
+  const twoLines = {
+    lines: [
+      [toLL(0, 0), toLL(250, 0)],
+      [toLL(350, 0), toLL(600, 0)],
+    ],
+  }
+  const bb = splitIntoBlocks(twoLines, {
+    mode: 'battery', maxAreaHa: 20, batteryMin: 2, reservePct: 50, speed: 10, spacingM: 40, basePoint: null,
+  })
+  check('fits sem ligacao: 1 bloco de 2 faixas', bb?.length === 1 && bb[0].lines.length === 2,
+    bb?.map((b) => b.lines.length).join('+'))
+  // flown time may exceed the budget by at most that one connection
+  check('excesso limitado a uma ligacao (~10 s)', bb?.[0].timeS > 60 && bb?.[0].timeS <= 70.5,
+    bb?.[0].timeS?.toFixed(1))
+}
+
 /* 8d. Grelha de blocos (células) */
 const grid = gridFromAnchor(center, 250, 250, 90, 3, 2)
 check('grelha 3×2: 6 células', grid.cells.length === 6)
