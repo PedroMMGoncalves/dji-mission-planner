@@ -21,6 +21,8 @@ import {
 import { buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
 import { decodeTerrarium, despikeElevations, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
+import { readFileSync } from 'node:fs'
+import { groupApplies } from './src/data/checklist.js'
 import {
   AIRCRAFT,
   PAYLOADS,
@@ -174,6 +176,20 @@ check('GSD ~2.69 cm/px', Math.abs(gsd - 2.686) < 0.01, gsd.toFixed(3))
   check('densidade sem dados validos -> null',
     lidarPointDensity({ prr: 240000, speed: 0, swathM: 141 }) === null &&
       lidarPointDensity({ prr: 0, speed: 10, swathM: 141 }) === null)
+}
+
+/* 1e3. Checklist condicional por payload (T2.4) */
+{
+  check('groupApplies: grupo universal aparece sempre',
+    groupApplies({ titulo: 'x' }, 'camera') && groupApplies({ titulo: 'x' }, 'lidar'))
+  check('groupApplies: grupo lidar so com lidar',
+    groupApplies({ appliesTo: 'lidar' }, 'lidar') && !groupApplies({ appliesTo: 'lidar' }, 'camera'))
+  // guarda estrutural: os dois grupos LiDAR existem e os tres loops filtram
+  const chk = readFileSync(new URL('./src/components/ChecklistPage.jsx', import.meta.url), 'utf8')
+  check('ChecklistPage: 2 grupos appliesTo lidar',
+    (chk.match(/appliesTo: 'lidar'/g) || []).length === 2)
+  check('ChecklistPage: filtragem aplicada nos loops',
+    (chk.match(/groupApplies\(/g) || []).length >= 3)
 }
 
 /* 1e. Bateria por combinacao aeronave+payload (T1.4) */

@@ -1097,6 +1097,7 @@ function AppInner({ lang, setLang }) {
       <ChecklistPage
         missionName={missionName}
         droneLabel={hardwareLabel}
+        sensorType={sensor.type}
         blocks={blocks ?? []}
         plannedGcps={gcps ?? []}
         onBack={() => setView('planner')}

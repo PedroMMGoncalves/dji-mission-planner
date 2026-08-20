@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLang } from '../i18n.jsx'
+import { groupApplies } from '../data/checklist.js'
 
 /* ------------------------------------------------------------------ *
  * Checklist de campo UAV — pré-campo, durante, pós-campo + relatório.
@@ -259,6 +260,41 @@ const FASES = [
           ),
         ],
       },
+      // Grupo condicional (T2.4): só aparece com payload LiDAR ativo.
+      // Textos provisórios — redação final e durações a validar em campo.
+      {
+        titulo: bi('LiDAR', 'LiDAR'),
+        appliesTo: 'lidar',
+        itens: [
+          it(
+            bi(
+              'Armazenamento do scanner com espaço livre',
+              'Scanner storage with free space',
+            ),
+            bi(
+              'Cartão/SSD formatado; capacidade para o dia',
+              'Card/SSD formatted; capacity for the day',
+            ),
+            true,
+          ),
+          it(
+            bi('Bateria própria do scanner carregada', 'Scanner battery charged'),
+            null,
+            true,
+          ),
+          it(
+            bi(
+              'Plano PPK: base GNSS e ficheiros RINEX',
+              'PPK plan: GNSS base and RINEX files',
+            ),
+            bi(
+              'Estação base própria montada ou CORS definida',
+              'Own base station planned or CORS chosen',
+            ),
+            true,
+          ),
+        ],
+      },
     ],
   },
   {
@@ -417,6 +453,56 @@ const FASES = [
             bi(
               'Inspeção visual rápida da plataforma',
               'Quick visual inspection of the aircraft',
+            ),
+          ),
+        ],
+      },
+      // Grupo condicional (T2.4): só aparece com payload LiDAR ativo.
+      // Textos provisórios — redação final e durações a validar em campo.
+      {
+        titulo: bi('LiDAR', 'LiDAR'),
+        appliesTo: 'lidar',
+        itens: [
+          it(
+            bi(
+              'Base GNSS a registar antes da descolagem',
+              'GNSS base logging before takeoff',
+            ),
+            bi('Confirmar gravação e taxa (≥ 1 Hz)', 'Confirm recording and rate (≥ 1 Hz)'),
+            true,
+          ),
+          it(
+            bi(
+              'Alinhamento estático do IMU antes de descolar',
+              'Static IMU alignment before takeoff',
+            ),
+            bi(
+              'Scanner ligado, plataforma imóvel (~1–3 min)',
+              'Scanner on, aircraft still (~1–3 min)',
+            ),
+            true,
+          ),
+          it(
+            bi(
+              'Manobras de calibração antes das fiadas',
+              'Calibration manoeuvres before the lines',
+            ),
+            bi(
+              'Ex.: oitos / acelerações, conforme o fabricante',
+              'E.g. figure-eights / accelerations, per manufacturer',
+            ),
+            true,
+          ),
+          it(
+            bi(
+              'Manobras de calibração depois das fiadas',
+              'Calibration manoeuvres after the lines',
+            ),
+          ),
+          it(
+            bi(
+              'Alinhamento estático final após aterrar',
+              'Final static alignment after landing',
             ),
           ),
         ],
@@ -818,20 +904,21 @@ function BarraProgresso({ feitos, total, acento }) {
   )
 }
 
-function ColunaFase({ fase, checked, onToggle }) {
+function ColunaFase({ fase, checked, onToggle, sensorType }) {
   const L = useL()
   const acento = ACENTOS[fase.id]
   const { feitos, total } = useMemo(() => {
     let f = 0
     let t = 0
     fase.grupos.forEach((g, gi) => {
+      if (!groupApplies(g, sensorType)) return
       g.itens.forEach((_, ii) => {
         t += 1
         if (checked[chaveItem(fase.id, gi, ii)]) f += 1
       })
     })
     return { feitos: f, total: t }
-  }, [fase, checked])
+  }, [fase, checked, sensorType])
 
   return (
     <section className="chk-coluna flex flex-col rounded-lg border border-slate-800 bg-slate-900 p-4">
@@ -845,7 +932,8 @@ function ColunaFase({ fase, checked, onToggle }) {
       </div>
 
       <div className="flex-1 space-y-4">
-        {fase.grupos.map((grupo, gi) => (
+        {/* filtragem sem reindexar: gi original preserva as chaves gravadas */}
+        {fase.grupos.map((grupo, gi) => groupApplies(grupo, sensorType) && (
           <div key={`${fase.id}.${gi}`} className="chk-grupo">
             <h3 className="mb-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
               {L(grupo.titulo)}
@@ -962,6 +1050,7 @@ function CaixaNota({ label, value, onChange }) {
 export default function ChecklistPage({
   missionName = '',
   droneLabel = '',
+  sensorType = 'camera',
   blocks = [],
   plannedGcps = [],
   onBack,
@@ -1064,6 +1153,7 @@ export default function ChecklistPage({
     FASES.forEach((fase) => {
       const itens = []
       fase.grupos.forEach((g, gi) => {
+        if (!groupApplies(g, sensorType)) return
         g.itens.forEach((item, ii) => {
           const texto = tr(item.texto, lang)
           const nota = tr(item.nota, lang)
@@ -1080,7 +1170,7 @@ export default function ChecklistPage({
       total += itens.length
     })
     return { porFase, feitos, total }
-  }, [checked, lang])
+  }, [checked, lang, sensorType])
 
   const importarBlocos = () => {
     if (!blocks || blocks.length === 0) return
@@ -1246,6 +1336,7 @@ export default function ChecklistPage({
               fase={fase}
               checked={checked}
               onToggle={toggle}
+              sensorType={sensorType}
             />
           ))}
         </div>
