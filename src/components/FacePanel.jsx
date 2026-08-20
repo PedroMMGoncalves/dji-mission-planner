@@ -174,6 +174,15 @@ export default function FacePanel({
             onChange={(v) => setFaceParam('minClearanceM', v)}
           />
         </Field>
+        <Field label={t('fp.params.speed')} suffix="m/s">
+          <NumberInput
+            value={faceConfig.speedMS}
+            min={1}
+            max={10}
+            step={0.5}
+            onChange={(v) => setFaceParam('speedMS', Math.max(1, Math.min(10, v)))}
+          />
+        </Field>
       </Section>
 
       {/* Plano e avisos */}

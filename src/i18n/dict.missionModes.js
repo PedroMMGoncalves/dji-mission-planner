@@ -35,6 +35,7 @@ export default {
   'fp.params.hOverlap': { pt: 'Sobreposição horizontal', en: 'Horizontal overlap' },
   'fp.params.gimbal': { pt: 'Pitch do gimbal', en: 'Gimbal pitch' },
   'fp.params.minClearance': { pt: 'Folga mínima', en: 'Minimum clearance' },
+  'fp.params.speed': { pt: 'Velocidade', en: 'Speed' },
   'fp.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
   'fp.plan.noBaseline': {
     pt: 'Desenhe o pé da face no mapa para gerar as passagens.',
