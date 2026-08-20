@@ -590,8 +590,14 @@ export function splitIntoBlocks(plan, options) {
   plan.lines.forEach((seg) => {
     const lenM = turf.distance(seg[0], seg[1], { units: 'meters' })
     const connM = prevEnd ? turf.distance(prevEnd, seg[0], { units: 'meters' }) : 0
+    // Cost used by the fits-check below. The connection from the previous
+    // line is deliberately excluded: if the line is evicted it opens a new
+    // block where that connection is never flown, and if it stays the single
+    // extra hop (~spacing/v) is covered by the battery reserve. cur.cost does
+    // accumulate flown connections, so the budget overshoot is bounded by one
+    // connection per block.
     const lineCost =
-      mode === 'area' ? lenM * spacingM : (lenM + connM) / v + TURN_TIME_S
+      mode === 'area' ? lenM * spacingM : lenM / v + TURN_TIME_S
 
     if (!cur) openBlock(seg[0])
     const fits =
