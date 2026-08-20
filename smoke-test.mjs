@@ -428,8 +428,21 @@ check('waylines: actionGroupEndIndex 15', wl.includes('<wpml:actionGroupEndIndex
 const wlTime = buildWaylinesWPML({ ...wpmlParams, triggerMode: 'time' })
 check('waylines tempo: multipleTiming ~2.1 s', wlTime.includes('multipleTiming') && wlTime.includes('<wpml:actionTriggerParam>2.1</wpml:actionTriggerParam>'))
 
-const wlLidar = buildWaylinesWPML({ ...wpmlParams, photoIntervalM: 0 })
+check('waylines camara: grupos 0 (gimbal) e 1 (foto)',
+  wl.includes('<wpml:actionGroupId>0</wpml:actionGroupId>') &&
+    wl.includes('<wpml:actionGroupId>1</wpml:actionGroupId>'))
+
+// Camera with a null trigger keeps the gimbal group (existing behaviour).
+const wlNoPhoto = buildWaylinesWPML({ ...wpmlParams, photoIntervalM: 0 })
+check('waylines sem intervalo: sem takePhoto, gimbal mantido',
+  !wlNoPhoto.includes('takePhoto') && wlNoPhoto.includes('gimbalRotate'))
+
+// LiDAR payload (T0.4): no controllable gimbal and no camera trigger, so
+// waypoint 0 must carry no action groups at all.
+const wlLidar = buildWaylinesWPML({ ...wpmlParams, sensorType: 'lidar', photoIntervalM: 0 })
 check('waylines LiDAR: sem takePhoto', !wlLidar.includes('takePhoto'))
+check('waylines LiDAR: sem gimbalRotate', !wlLidar.includes('gimbalRotate'))
+check('waylines LiDAR: waypoint 0 sem actionGroup', !wlLidar.includes('<wpml:actionGroup>'))
 
 console.log(failures === 0 ? '\nTODOS OS TESTES PASSARAM' : `\n${failures} TESTES FALHARAM`)
 process.exit(failures === 0 ? 0 : 1)

@@ -968,6 +968,7 @@ function AppInner({ lang, setLang }) {
       photoIntervalM: sensor.type === 'camera' ? interval : 0,
       triggerMode: params.triggerMode,
       gimbalPitch: params.gimbalPitch,
+      sensorType: sensor.type,
     }
     const exportBlocks = terrainOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
     if (exportBlocks && exportBlocks.length > 1) {
