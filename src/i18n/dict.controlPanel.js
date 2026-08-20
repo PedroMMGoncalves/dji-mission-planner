@@ -93,6 +93,14 @@ export default {
     pt: 'Procura a direção com menos faixas dentro do polígono real (menos viragens, menos tempo)',
     en: 'Searches for the direction with the fewest lines inside the real polygon (fewer turns, less time)',
   },
+  'cp.orientation.includeNadir': {
+    pt: 'Passagem nadir extra (orto)',
+    en: 'Extra nadir pass (ortho)',
+  },
+  'cp.orientation.includeNadirHint': {
+    pt: 'Terceira grelha na direção da primeira, voada no fim com a câmara a −90°: garante o produto orto além do 3D. Conta para o tempo, blocos e bateria; o GSD mostrado passa a ser o nadir (a resolução governante do orto).',
+    en: 'Third grid along the first direction, flown last with the camera at −90°: secures the ortho product besides the 3D. Counts toward time, blocks and battery; the displayed GSD becomes the nadir one (the governing ortho resolution).',
+  },
   'cp.orientation.tieLine': {
     pt: 'Fiada de amarração perpendicular',
     en: 'Perpendicular tie line',

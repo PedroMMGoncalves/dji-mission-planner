@@ -587,6 +587,21 @@ export default function ControlPanel({
             {t('cp.orientation.crosshatchHint', { deg: (params.angle + 90) % 360 })}
           </p>
         )}
+        {params.crosshatch && (
+          <label className="mt-2 flex items-center gap-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={Boolean(params.includeNadir)}
+              onChange={(e) => setParam('includeNadir', e.target.checked)}
+            />
+            {t('cp.orientation.includeNadir')}
+          </label>
+        )}
+        {params.crosshatch && params.includeNadir && (
+          <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+            {t('cp.orientation.includeNadirHint')}
+          </p>
+        )}
         <label className="mt-2 flex items-center gap-2 text-sm text-slate-300">
           <input
             type="checkbox"

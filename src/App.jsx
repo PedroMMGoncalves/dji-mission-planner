@@ -27,6 +27,7 @@ import {
   findOptimalDirection,
   generateFlightPlan,
   gridFromAnchor,
+  nadirLineLocalPerBlock,
   lidarPointDensity,
   lineSpacing,
   longestEdgeBearing,
@@ -119,6 +120,7 @@ function AppInner({ lang, setLang }) {
     spacingMode: 'auto', // 'auto' (sobreposição) | 'manual' (distância em m)
     manualSpacing: 50,
     crosshatch: false, // dupla grelha perpendicular (3D)
+    includeNadir: false, // passagem nadir extra no fim do crosshatch — R2.10
     gimbalPitch: -90, // inclinação da câmara: -90 nadir · -60/-45 oblíqua
     overshoot: 0, // prolongamento de cada faixa nos dois extremos (m) — T2.2
     tieLine: false, // fiada de amarração perpendicular no fim — T2.3
@@ -312,9 +314,13 @@ function AppInner({ lang, setLang }) {
     () => photoInterval(footprint.along, params.frontOverlap),
     [footprint, params.frontOverlap],
   )
+  // com a passagem nadir extra (R2.10) o produto orto é governado pelo GSD
+  // nadir — é esse que se mostra e que serve de alvo
+  const gsdPitch =
+    params.crosshatch && params.includeNadir ? -90 : params.gimbalPitch
   const gsd = useMemo(
-    () => computeGSD(sensor, params.altitude, params.gimbalPitch),
-    [sensor, params.altitude, params.gimbalPitch],
+    () => computeGSD(sensor, params.altitude, gsdPitch),
+    [sensor, params.altitude, gsdPitch],
   )
 
   // densidade de pontos LiDAR no solo (T2.1) — só para payloads com PRR
@@ -356,7 +362,7 @@ function AppInner({ lang, setLang }) {
         spacingM: spacing,
         transitS,
         maxSideM: split.maxSide,
-        passes: params.crosshatch ? 2 : 1,
+        passes: params.crosshatch ? (params.includeNadir ? 3 : 2) : 1,
       })
     }
     return { cells: tilePolygonWithSquares(ring, side, split.tileOrientation), side }
@@ -464,6 +470,7 @@ function AppInner({ lang, setLang }) {
       photoIntervalM: interval ?? 0,
       speed: params.speed,
       crosshatch: params.crosshatch,
+      includeNadir: Boolean(params.crosshatch && params.includeNadir),
       overshootM: Math.max(0, params.overshoot || 0),
       tieLine: Boolean(params.tieLine),
     }
@@ -501,7 +508,7 @@ function AppInner({ lang, setLang }) {
         bufferedAreaHa: sum((s) => s.bufferedAreaHa),
       },
     }
-  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, params.crosshatch, params.overshoot, params.tieLine, activeCells])
+  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, params.crosshatch, params.includeNadir, params.overshoot, params.tieLine, activeCells])
 
   const planOk = plan && !plan.error ? plan : null
 
@@ -530,11 +537,13 @@ function AppInner({ lang, setLang }) {
         lengthM: p.stats.totalLineLengthM,
         transitS: 0,
         timeS: p.stats.flightTimeS ?? 0,
+        // R2.10: cada célula tem a sua grelha nadir no fim
+        nadirLineLocal: p.nadirStartLine ?? null,
       }))
     }
     // 'battery' e 'tiles' produzem células (acima); só 'area' corta a serpentina
     if (split.mode !== 'area') return null
-    return splitIntoBlocks(planOk, {
+    const cut = splitIntoBlocks(planOk, {
       mode: split.mode,
       maxAreaHa: split.maxAreaHa,
       batteryMin,
@@ -543,6 +552,10 @@ function AppInner({ lang, setLang }) {
       spacingM: spacing,
       basePoint,
     })
+    if (!cut || planOk.nadirStartLine == null) return cut
+    // R2.10: em que linha local de cada bloco começa a grelha nadir
+    const locals = nadirLineLocalPerBlock(cut.map((b) => b.lines.length), planOk.nadirStartLine)
+    return cut.map((b, i) => ({ ...b, nadirLineLocal: locals[i] }))
   }, [planOk, activeCells, split, batteryMin, params.speed, spacing, basePoint])
 
   /* --------------------------- Interações ---------------------------- */
@@ -804,9 +817,19 @@ function AppInner({ lang, setLang }) {
         })
         let li = 0
         blocks3 = blocks.map((b) => {
+          const startLine = li
           const wps = []
           for (let k = 0; k < b.lines.length; k++) wps.push(...(porLinha[li++] ?? []))
-          return { ...b, waypoints: wps }
+          // R2.10: com densificação, o waypoint local onde o nadir começa é a
+          // soma dos comprimentos das linhas anteriores do bloco
+          let nadirMarkerAt = null
+          if (b.nadirLineLocal != null) {
+            nadirMarkerAt = 0
+            for (let k = 0; k < b.nadirLineLocal; k++) {
+              nadirMarkerAt += porLinha[startLine + k]?.length ?? 0
+            }
+          }
+          return { ...b, waypoints: wps, nadirMarkerAt }
         })
       }
       return { ...res, refElev, blocks3 }
@@ -1119,14 +1142,14 @@ function AppInner({ lang, setLang }) {
   const setAltitudeFromGsd = useCallback(
     (gsdTarget) => {
       if (sensor.type !== 'camera' || !sensor.imageWidth || !(gsdTarget > 0)) return
-      const absPitch = Math.max(20, Math.min(90, Math.abs(params.gimbalPitch)))
+      const absPitch = Math.max(20, Math.min(90, Math.abs(gsdPitch)))
       const slantToAlt = Math.sin((absPitch * Math.PI) / 180)
       const alt =
         ((gsdTarget * sensor.focalLength * sensor.imageWidth) / (sensor.sensorWidth * 100)) *
         slantToAlt
       setParams((p) => ({ ...p, altitude: Math.round(alt * 10) / 10 }))
     },
-    [sensor, params.gimbalPitch],
+    [sensor, gsdPitch],
   )
 
   // Atalhos de direção das linhas relativamente ao bloco/aresta de referência
@@ -1179,6 +1202,38 @@ function AppInner({ lang, setLang }) {
       sensorType: sensor.type,
     }
     const exportBlocks = terrainOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
+
+    // R2.10: com a passagem nadir extra, o gimbal roda a −90 no primeiro
+    // waypoint da grelha nadir (a missão arranca no pitch oblíquo global)
+    const nadirLine = planOk.nadirStartLine ?? planOk.cellPlans?.[0]?.nadirStartLine ?? null
+    if (nadirLine != null) {
+      if (exportBlocks && exportBlocks.length > 1) {
+        const annotated = exportBlocks.map((b) => {
+          const at = terrainOk
+            ? b.nadirMarkerAt
+            : b.nadirLineLocal != null
+              ? 2 * b.nadirLineLocal
+              : null
+          if (at == null) return b
+          const pw = []
+          pw[at] = { gimbalPitch: -90 }
+          return { ...b, perWaypoint: pw }
+        })
+        exportBlocksZip(exportParams, annotated)
+        return
+      }
+      let at
+      if (terrainOk) {
+        at = 0
+        for (let k = 0; k < nadirLine; k++) at += terrainResult.perLine[k] ?? 0
+      } else {
+        at = planOk.nadirStartWaypoint ?? planOk.cellPlans?.[0]?.nadirStartWaypoint ?? 2 * nadirLine
+      }
+      const pw = []
+      pw[at] = { gimbalPitch: -90 }
+      exportParams.perWaypoint = pw
+    }
+
     if (exportBlocks && exportBlocks.length > 1) {
       exportBlocksZip(exportParams, exportBlocks)
     } else {
@@ -1413,7 +1468,7 @@ function AppInner({ lang, setLang }) {
           />
           <StatsPanel
             gsd={gsd}
-            gimbalPitch={params.gimbalPitch}
+            gimbalPitch={gsdPitch}
             footprint={footprint}
             spacing={spacing}
             pointDensity={pointDensity}

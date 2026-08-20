@@ -686,9 +686,11 @@ export function generateFlightLines(ring, options) {
 /**
  * Dupla grelha (crosshatch) para reconstrução 3D: gera a grelha normal e uma
  * segunda perpendicular (+90°), voadas em sequência. `align2` é o alinhamento
- * global da direção perpendicular (para células). As estatísticas somam as
- * duas passagens, incluindo a ligação entre o fim da primeira e o início da
- * segunda.
+ * global da direção perpendicular (para células). Com `includeNadir` (R2.10)
+ * acrescenta uma TERCEIRA passagem na direção da primeira grelha, voada no
+ * fim — a passagem nadir para o produto orto; o pitch −90 é aplicado na
+ * exportação a partir de `nadirStartLine`/`nadirStartWaypoint`. As
+ * estatísticas somam todas as passagens, incluindo as ligações entre elas.
  */
 export function generateFlightPlan(ring, options) {
   const p1 = generateFlightLines(ring, options)
@@ -702,39 +704,63 @@ export function generateFlightPlan(ring, options) {
   })
   if (!p2 || p2.error) return p2?.error ? p2 : p1
 
-  const linkM = turf.distance(
-    p1.waypoints[p1.waypoints.length - 1],
-    p2.waypoints[0],
-    { units: 'meters' },
-  )
+  const parts = [p1, p2]
+  if (options.includeNadir) {
+    const p3 = generateFlightLines(ring, { ...options, tieLine: false })
+    if (!p3 || p3.error) return p3?.error ? p3 : p1
+    parts.push(p3)
+  }
+
   const v = options.speed > 0 ? options.speed : 10
-  const s1 = p1.stats
-  const s2 = p2.stats
+  let linkM = 0
+  for (let i = 1; i < parts.length; i++) {
+    linkM += turf.distance(
+      parts[i - 1].waypoints[parts[i - 1].waypoints.length - 1],
+      parts[i].waypoints[0],
+      { units: 'meters' },
+    )
+  }
+  const sum = (f) => parts.reduce((acc, p) => acc + (f(p.stats) ?? 0), 0)
+  const nadir = parts.length === 3
   return {
     area: p1.area,
-    lines: [...p1.lines, ...p2.lines],
-    waypoints: [...p1.waypoints, ...p2.waypoints],
+    lines: parts.flatMap((p) => p.lines),
+    waypoints: parts.flatMap((p) => p.waypoints),
+    nadirStartLine: nadir ? p1.stats.lineCount + p2.stats.lineCount : null,
+    nadirStartWaypoint: nadir ? p1.stats.waypointCount + p2.stats.waypointCount : null,
     stats: {
-      lineCount: s1.lineCount + s2.lineCount,
-      waypointCount: s1.waypointCount + s2.waypointCount,
-      totalLineLengthM: s1.totalLineLengthM + s2.totalLineLengthM,
-      pathLengthM: s1.pathLengthM + s2.pathLengthM + linkM,
-      photoCount:
-        s1.photoCount != null || s2.photoCount != null
-          ? (s1.photoCount ?? 0) + (s2.photoCount ?? 0)
-          : null,
-      photoCountArea:
-        s1.photoCountArea != null || s2.photoCountArea != null
-          ? (s1.photoCountArea ?? 0) + (s2.photoCountArea ?? 0)
-          : null,
-      flightTimeS:
-        s1.flightTimeS != null && s2.flightTimeS != null
-          ? s1.flightTimeS + s2.flightTimeS + linkM / v
-          : null,
-      areaHa: s1.areaHa,
-      bufferedAreaHa: s1.bufferedAreaHa,
+      lineCount: sum((s) => s.lineCount),
+      waypointCount: sum((s) => s.waypointCount),
+      totalLineLengthM: sum((s) => s.totalLineLengthM),
+      pathLengthM: sum((s) => s.pathLengthM) + linkM,
+      photoCount: parts.some((p) => p.stats.photoCount != null) ? sum((s) => s.photoCount) : null,
+      photoCountArea: parts.some((p) => p.stats.photoCountArea != null)
+        ? sum((s) => s.photoCountArea)
+        : null,
+      flightTimeS: parts.every((p) => p.stats.flightTimeS != null)
+        ? sum((s) => s.flightTimeS) + linkM / v
+        : null,
+      areaHa: p1.stats.areaHa,
+      bufferedAreaHa: p1.stats.bufferedAreaHa,
     },
   }
+}
+
+/**
+ * R2.10: para planos com grelha nadir no fim, devolve por bloco o índice
+ * LOCAL da linha onde o nadir começa: null (bloco sem linhas nadir), 0
+ * (bloco inteiramente nadir) ou 0<k<n (misto — rodar o gimbal a −90 no
+ * primeiro waypoint dessa linha). `blockLineCounts` pela ordem de voo.
+ */
+export function nadirLineLocalPerBlock(blockLineCounts, nadirStartLine) {
+  if (nadirStartLine == null) return blockLineCounts.map(() => null)
+  let global = 0
+  return blockLineCounts.map((count) => {
+    const local = nadirStartLine - global
+    global += count
+    if (local >= count) return null
+    return Math.max(0, local)
+  })
 }
 
 /**
