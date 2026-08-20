@@ -11,6 +11,7 @@ export const DEFAULT_ORBIT_CONFIG = {
   horizontalOverlapPct: 80,
   poiHeightM: 0,
   clockwise: true,
+  speedMS: 5, // velocidade de voo da órbita — parâmetro explícito (sem clamp)
 }
 
 /**
@@ -36,6 +37,7 @@ export function normalizeOrbitConfig(stored) {
     horizontalOverlapPct: num(stored.horizontalOverlapPct, 0, 95, d.horizontalOverlapPct),
     poiHeightM: num(stored.poiHeightM, -50, 300, d.poiHeightM),
     clockwise: stored.clockwise !== false,
+    speedMS: num(stored.speedMS, 1, 10, d.speedMS),
   }
 }
 

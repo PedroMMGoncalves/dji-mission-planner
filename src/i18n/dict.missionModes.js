@@ -102,6 +102,7 @@ export default {
   'op.geom.step': { pt: 'Passo vertical', en: 'Vertical step' },
   'op.geom.overlap': { pt: 'Sobreposição horizontal', en: 'Horizontal overlap' },
   'op.geom.clockwise': { pt: 'Sentido horário', en: 'Clockwise' },
+  'op.geom.speed': { pt: 'Velocidade', en: 'Speed' },
   'op.lidarNote': {
     pt: 'Sem câmara activa os pontos por volta usam um passo por omissão (24/volta).',
     en: 'Without an active camera the points per orbit fall back to a default (24/orbit).',

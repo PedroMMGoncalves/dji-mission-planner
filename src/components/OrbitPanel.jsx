@@ -150,6 +150,15 @@ export default function OrbitPanel({
             onChange={(v) => setOrbitParam('horizontalOverlapPct', v)}
           />
         </Field>
+        <Field label={t('op.geom.speed')} suffix="m/s">
+          <NumberInput
+            value={orbitConfig.speedMS}
+            min={1}
+            max={10}
+            step={0.5}
+            onChange={(v) => setOrbitParam('speedMS', Math.max(1, Math.min(10, v)))}
+          />
+        </Field>
         <label className="mt-1 flex items-center gap-2 text-sm text-slate-300">
           <input
             type="checkbox"
