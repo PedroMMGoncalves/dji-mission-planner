@@ -1,92 +1,94 @@
 # dji-mission-planner
 
-> Planeador de missões de mapeamento por drone, no browser: áreas de levantamento, grelhas fotogramétricas/LiDAR com seguimento do terreno, fachadas, órbitas e pontos de inspecção, divisão em blocos à medida da bateria e exportação KML e DJI WPML (KMZ) para o DJI Pilot 2.
+English | **[Português](README.pt.md)**
+
+> Browser-based drone mapping mission planner: survey areas, photogrammetric/LiDAR flight grids with terrain following, facades, orbits and inspection points, battery-sized block splitting, and KML / DJI WPML (KMZ) export for DJI Pilot 2.
 
 [![React](https://img.shields.io/badge/React-18-20232a.svg?logo=react&logoColor=61dafb)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-5-646cff.svg?logo=vite&logoColor=ffd62e)](https://vitejs.dev)
 [![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900.svg?logo=leaflet&logoColor=white)](https://leafletjs.com)
 [![Turf.js](https://img.shields.io/badge/Turf.js-7-35495d.svg)](https://turfjs.org)
 [![three.js](https://img.shields.io/badge/three.js-r170-000000.svg?logo=threedotjs&logoColor=white)](https://threejs.org)
-[![Target](https://img.shields.io/badge/Alvo-DJI_Pilot_2-1f6feb.svg)](https://enterprise.dji.com)
-[![WPML](https://img.shields.io/badge/Formato-WPML_%2B_KML-1f6feb.svg)](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html)
-[![UI](https://img.shields.io/badge/UI-PT_%7C_EN-informational.svg)](#utilizacao)
-[![Data](https://img.shields.io/badge/Elevação-Terrarium_%7C_LiDAR_DGT-8a63d2.svg)](#fontes-de-dados)
-[![License: GPL v3](https://img.shields.io/badge/Licença-GPLv3-blue.svg)](LICENSE)
+[![Target](https://img.shields.io/badge/Target-DJI_Pilot_2-1f6feb.svg)](https://enterprise.dji.com)
+[![WPML](https://img.shields.io/badge/Format-WPML_%2B_KML-1f6feb.svg)](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html)
+[![UI](https://img.shields.io/badge/UI-PT_%7C_EN-informational.svg)](#usage)
+[![Data](https://img.shields.io/badge/Elevation-Terrarium_%7C_DGT_LiDAR-8a63d2.svg)](#data-sources)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![deploy](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml/badge.svg)](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml)
 [![Live](https://img.shields.io/website?url=https%3A%2F%2Fpedrommgoncalves.github.io%2Fdji-mission-planner%2F&label=GitHub%20Pages&logo=github&up_message=online&down_message=offline)](https://pedrommgoncalves.github.io/dji-mission-planner/)
 [![Last commit](https://img.shields.io/github/last-commit/PedroMMGoncalves/dji-mission-planner.svg?logo=github)](https://github.com/PedroMMGoncalves/dji-mission-planner/commits/main)
 
-Aplicação de página única, 100% no cliente (sem backend, sem chaves de API), que planeia missões de ponta a ponta: perfis de aeronave+payload, definição da área, grelha de voo côncava-segura, seguimento do terreno a partir de um MDT, divisão em blocos à medida da bateria, modo fachada, órbitas multi-nível, pontos de inspecção, GCPs, relatório imprimível e checklist de campo. As missões exportam como KML simples ou na estrutura oficial DJI WPML (`wpmz/template.kml` + `waylines.wpml`), prontas a importar no **DJI Pilot 2**.
+A single-page web application, 100% client-side (no backend, no API keys), that plans drone mapping missions end to end: aircraft+payload profiles, area definition, concave-safe flight grids, terrain following from a DEM, battery-sized block splitting, face mode, multi-level orbits, inspection points, GCP placement, a printable mission report and a field checklist. Missions export as plain KML or as the official DJI WPML structure (`wpmz/template.kml` + `waylines.wpml`), ready to import in **DJI Pilot 2**.
 
-Esta ferramenta é **apenas o motor de planeamento**. A autorização de espaço aéreo, o licenciamento de zonas UAS e a execução do voo acontecem a montante/jusante e NÃO fazem parte da app. Valide sempre a missão importada no DJI Pilot 2 antes de voar.
+This tool is the **mission planning engine only**. Airspace authorisation, UAS-zone licensing and flight execution are done upstream/downstream and are NOT part of this app. Always validate the imported mission in DJI Pilot 2 before flying.
 
-**App publicada:** <https://pedrommgoncalves.github.io/dji-mission-planner/>
+**Live app:** <https://pedrommgoncalves.github.io/dji-mission-planner/>
 
-![Vista geral do planeador](docs/img/overview.png "Planeador: área, grelha e painel — captura por acrescentar")
+![Planner overview](docs/img/overview.png "Planner: area, grid and panel — screenshot to be added")
 
-## Índice
+## Contents
 
-[Começo rápido](#comeco-rapido) - [Resumo](#resumo) - [Método](#metodo) - [Estado da validação](#estado-da-validacao) - [Requisitos](#requisitos) - [Fontes de dados](#fontes-de-dados) - [Utilização](#utilizacao) - [Exportações](#exportacoes) - [Notas DJI Pilot 2](#notas-dji-pilot-2) - [Desenvolvimento](#desenvolvimento) - [Publicação](#publicacao) - [Limitações e notas](#limitacoes-e-notas) - [Licença](#licenca)
-
----
-
-## Começo rápido
-
-1. **Abra a app** no endereço publicado (ou `npm install && npm run dev` localmente).
-2. **Escolha a aeronave e o payload** (M3E, M4T, M300 RTK com P1, YellowScan Mapper+ ou custom) e um **preset de missão** — ou defina altitude/GSD, velocidade e sobreposições à mão.
-3. **Escolha o tipo de missão** no selector do topo do painel: **Área** (grelha nadir/oblíqua), **Fachada** (serpentina vertical sobre uma face) ou **Órbita** (círculos multi-nível em torno de um alvo). Os pontos de inspecção vivem como camada extra do modo Área.
-4. **Área**: desenhe um polígono, gere um rectângulo/quadrado a partir do ponto central, ou importe KML / GeoJSON / Shapefile zipado / KMZ WPML. A direcção **Ótima** procura a orientação com menos faixas dentro do polígono real.
-5. **Divida em blocos** quando a área excede uma bateria: faixas por área, quadrados dimensionados pela bateria (com tecto VLOS) ou mosaico manual com células clicáveis.
-6. **Terreno**: o MDT global descarrega automaticamente; active o *terrain follow* para alturas por waypoint, ou importe um GeoTIFF LiDAR da DGT (50 cm / 2 m). Verifique na **vista 3D** e no **perfil de elevação** — a vista 3D também mostra as passagens de fachada e os anéis de órbita.
-7. **Exporte**: KML simples ou WPML (KMZ) — um KMZ por bloco (ZIP) com blocos activos, um KMZ por nível nas órbitas. Imprima o **relatório de missão** e leve a **checklist de campo**.
+[Quick start](#quick-start) - [Summary](#summary) - [Method](#method) - [Validation status](#validation-status) - [Requirements](#requirements) - [Data sources](#data-sources) - [Usage](#usage) - [Exports](#exports) - [DJI Pilot 2 notes](#dji-pilot-2-notes) - [Development](#development) - [Deployment](#deployment) - [Limitations and notes](#limitations-and-notes) - [License](#license)
 
 ---
 
-## Resumo
+## Quick start
 
-- **Modelo aeronave + payload** (`src/data/drones.js`): aeronaves com limites de velocidade, bateria por omissão e enums WPML; payloads com óptica (câmara) ou geometria do feixe (LiDAR), incluindo o YellowScan Mapper+ no M300 (enum PSDK 65534, documentado); bateria por combinação aeronave+payload; migração automática de projectos antigos.
-- **Grelha de voo côncava-segura** (`src/utils/geo.js` + `src/utils/gridRoute.js`): decomposição celular boustrophedon (portada do FlyPath, GPL-3.0) — em polígonos côncavos as ligações entre faixas nunca atravessam os vãos da área; em áreas convexas a rota é exactamente a serpentina clássica (garantido por teste). Pesquisa de **direcção óptima** (menos faixas no polígono real), **overshoot** por faixa (viragens fora da área), **fiada de amarração** perpendicular para LiDAR e alinhamento global das faixas entre blocos.
-- **Honestidade numérica**: GSD oblíquo pelo alcance inclinado ao centro do quadro (a −60° é ~15% pior que o nadir; o espaçamento continua nadir-based por ser conservador); densidade de pontos LiDAR (PRR ÷ velocidade × faixa, com a âncora de 170 pts/m² do Mapper+ verificada); aviso de tecto operacional AGL por payload.
-- **Modo fachada** (`src/utils/faceMode.js`): serpentina vertical sobre o pé da face desenhado no mapa — passagens a alturas crescentes, rumo perpendicular ao troço local, uma foto por waypoint; verificação de **folga contra um DSM local** (vertical e ao longo do rumo), com aviso claro de "afastamento não verificado" quando só há tiles globais.
-- **Órbitas multi-nível** (`src/utils/orbit.js`): círculos empilhados em torno de um POI, pontos por volta a partir da sobreposição, rumo ao alvo, gimbal por nível apontado à cota do centro, exportação em voo curvo contínuo — missão única ou um KMZ por nível.
-- **Pontos de inspecção** (`src/utils/inspect.js`): waypoints avulsos com etiqueta, rumo/pitch/foto por ponto, ordenação por arrasto ou sugestão vizinho-mais-próximo, exportação própria e tabela no relatório.
-- **Dupla grelha 3D com passagem nadir opcional**: crosshatch a −60° e, se activada, uma terceira grelha nadir no fim (o gimbal roda a −90° por acções de waypoint) — o GSD apresentado passa ao nadir, a resolução governante do orto.
-- **Blocos**: faixas por área máxima; quadrados por bateria resolvidos de um modelo de tempo de voo (duração × reserva − trânsito, tecto VLOS); mosaico manual com células clicáveis e Ctrl+Z; grelhas N×M do ponto central.
-- **Seguimento do terreno** (`src/utils/terrain.js`): tiles Terrarium (~30 m) com despiking, ou GeoTIFF LiDAR da DGT lido por janela (`src/utils/demFile.js`, ficheiros multi-GB seguros); densificação + Douglas-Peucker em alturas por waypoint; sugestões para encostas íngremes (linhas ao longo das curvas de nível, gimbal oblíquo).
-- **Exportador WPML** (`src/utils/exporters.js`): acções por waypoint (rumo fixo, gimbal, foto), modo de viragem configurável, sem acções de câmara nos payloads LiDAR, nomes com o tipo de missão codificado (`missao_area-crosshatch-nadir_b01`, `missao_face_p1-6`, `missao_orbit_n3`).
-- **GCPs, relatório e checklist**: heurística bordo+centro para GCPs; relatório A4 com mapa; checklist de 75+ itens com grupos condicionais por payload (LiDAR) e por modo (fachada), registos de voo e GCPs, exportação JSON e impressão.
-- **Projectos**: gravação automática no browser + ficheiro JSON; resumo agregado (tempo, baterias, fotos) quando coexistem vários planos. **UI bilingue** (PT/EN).
-
-![Modo fachada com pré-visualização](docs/img/face-mode.png "Fachada: baseline, linha afastada e rumos — captura por acrescentar")
-![Órbitas multi-nível](docs/img/orbit-mode.png "Órbita: anel, POI e rumos — captura por acrescentar")
+1. **Open the app** at the live URL (or `npm install && npm run dev` locally).
+2. **Pick the aircraft and payload** (M3E, M4T, M300 RTK with P1, YellowScan Mapper+ or custom) and a **mission preset** — or set altitude/GSD, speed and overlaps by hand.
+3. **Pick the mission type** in the selector at the top of the panel: **Area** (nadir/oblique grid), **Face** (vertical serpentine over a wall) or **Orbit** (multi-level circles around a target). Inspection points live as an extra layer of the Area mode.
+4. **Area**: draw a polygon, generate a centre-point rectangle/square, or import KML / GeoJSON / zipped Shapefile / WPML KMZ. The **Optimal** direction shortcut finds the orientation with the fewest lines inside the real polygon.
+5. **Split into blocks** when the area exceeds one battery: strips by area, battery-sized squares (VLOS-capped) or a manual mosaic with clickable cells.
+6. **Terrain**: the global DEM loads automatically; enable *terrain follow* for per-waypoint heights, or import a DGT LiDAR GeoTIFF (50 cm / 2 m). Check the **3D view** and the **elevation profile** — the 3D view also renders face passes and orbit rings.
+7. **Export**: simple KML or WPML (KMZ) — one KMZ per block (ZIP) with blocks active, one KMZ per level for orbits. Print the **mission report** and take the **field checklist**.
 
 ---
 
-## Método
+## Summary
+
+- **Aircraft + payload model** (`src/data/drones.js`): aircraft with speed limits, default battery and WPML enums; payloads with camera optics or LiDAR beam geometry, including the YellowScan Mapper+ on the M300 (documented PSDK enum 65534); battery per aircraft+payload combination; automatic migration of old projects.
+- **Concave-safe flight grid** (`src/utils/geo.js` + `src/utils/gridRoute.js`): boustrophedon cellular decomposition (ported from FlyPath, GPL-3.0) — on concave polygons the legs between passes never cross the gaps of the area; on convex areas the route is exactly the classic serpentine (guarded by test). **Optimal direction** search (fewest segments inside the real polygon), per-line **overshoot** (turns outside the area), a perpendicular **tie line** for LiDAR strip adjustment, and global line alignment across blocks.
+- **Numerical honesty**: oblique GSD from the slant range to the frame centre (at −60° it is ~15% worse than nadir; spacing deliberately stays nadir-based because the error is conservative); LiDAR point density (PRR ÷ speed × swath, with the Mapper+ 170 pts/m² anchor verified); per-payload operational AGL ceiling warning.
+- **Face mode** (`src/utils/faceMode.js`): vertical serpentine over the face foot drawn on the map — passes at increasing heights, heading perpendicular to the local segment, one photo per waypoint; **clearance check against a local DSM** (vertical and along-heading), with an explicit "standoff unverified" warning when only global tiles are available.
+- **Multi-level orbits** (`src/utils/orbit.js`): stacked circles around a POI, points per revolution from the overlap, heading at the target, per-level gimbal aimed at the target centre height, continuous curved flight export — single mission or one KMZ per level.
+- **Inspection points** (`src/utils/inspect.js`): individually placed waypoints with a label, per-point heading/pitch/photo, drag ordering or nearest-neighbour suggestion, their own export and a table in the mission report.
+- **3D double grid with an optional nadir pass**: crosshatch at −60° plus, when enabled, a third nadir grid flown last (the gimbal rotates to −90° through waypoint actions) — the displayed GSD switches to nadir, the governing ortho resolution.
+- **Blocks**: strips by maximum area; battery-sized squares solved from a flight-time model (duration × return reserve − transit, VLOS cap); manual mosaic with clickable cells and Ctrl+Z; centre-point N×M grids.
+- **Terrain following** (`src/utils/terrain.js`): Terrarium tiles (~30 m) with despiking, or a DGT LiDAR GeoTIFF read lazily by window (`src/utils/demFile.js`, multi-GB safe); densify + Douglas-Peucker into per-waypoint heights; steep-slope suggestions (lines along the contours, oblique gimbal).
+- **WPML exporter** (`src/utils/exporters.js`): per-waypoint actions (fixed heading, gimbal, photo), configurable turn mode, no camera actions for LiDAR payloads, file names encoding the mission type (`mission_area-crosshatch-nadir_b01`, `mission_face_p1-6`, `mission_orbit_n3`).
+- **GCPs, report and checklist**: edge+centre GCP heuristic; printable A4 report with a map; a 75+ item checklist with groups conditional on the payload (LiDAR) and on the mode (face), flight and GCP logs, JSON export and printing.
+- **Projects**: browser autosave plus save/open as JSON; an aggregate strip (time, batteries, photos) when several plans coexist. **Bilingual UI** (PT/EN).
+
+![Face mode preview](docs/img/face-mode.png "Face mode: baseline, offset line and headings — screenshot to be added")
+![Multi-level orbits](docs/img/orbit-mode.png "Orbit: ring, POI and headings — screenshot to be added")
+
+---
+
+## Method
 
 ```mermaid
 flowchart TD
-    P["Aeronave + payload + preset<br/>óptica, feixe, limites, enums WPML"]
-    P --> C["Pegada / GSD / espaçamento<br/>modelo pin-hole, sobreposições"]
-    A["Área / baseline / POI<br/>desenho, ponto central, importação"]
-    A --> V["Validação topológica<br/>turf.kinks + edição de vértices"]
-    V --> G["Motor de grelha<br/>scanlines no referencial rodado,<br/>células boustrophedon, direcção óptima"]
+    P["Aircraft + payload + preset<br/>optics, beam, limits, WPML enums"]
+    P --> C["Footprint / GSD / spacing<br/>pin-hole model, overlaps"]
+    A["Area / baseline / POI<br/>draw, centre point, import"]
+    A --> V["Topology validation<br/>turf.kinks + vertex editing"]
+    V --> G["Grid engine<br/>scanlines in a rotated frame,<br/>boustrophedon cells, optimal direction"]
     C --> G
-    G --> B["Blocos<br/>faixas / quadrados por bateria /<br/>mosaico / grelha N×M"]
-    D["MDT<br/>Terrarium ~30 m (auto) ou<br/>GeoTIFF LiDAR DGT 50 cm/2 m"]
-    D --> T["Terrain follow<br/>densificar + Douglas-Peucker<br/>alturas por waypoint"]
+    G --> B["Blocks<br/>strips / battery squares /<br/>mosaic / N×M grid"]
+    D["DEM<br/>Terrarium ~30 m (auto) or<br/>DGT LiDAR GeoTIFF 50 cm/2 m"]
+    D --> T["Terrain follow<br/>densify + Douglas-Peucker<br/>per-waypoint heights"]
     B --> T
-    FC["Fachada<br/>passagens verticais,<br/>folga vs DSM local"]
-    OR["Órbitas<br/>níveis, rumo ao POI,<br/>gimbal trigonométrico"]
+    FC["Face mode<br/>vertical passes,<br/>clearance vs local DSM"]
+    OR["Orbits<br/>levels, heading at POI,<br/>trigonometric gimbal"]
     A --> FC
     A --> OR
-    T --> O3["Vista 3D + perfil de elevação"]
+    T --> O3["3D view + elevation profile"]
     FC --> O3
     OR --> O3
-    B --> E2["WPML KMZ<br/>acções por waypoint,<br/>um KMZ por bloco/nível"]
+    B --> E2["WPML KMZ<br/>per-waypoint actions,<br/>one KMZ per block/level"]
     FC --> E2
     OR --> E2
-    E2 --> PILOT["DJI Pilot 2<br/>(validar antes de voar)"]
+    E2 --> PILOT["DJI Pilot 2<br/>(validate before flying)"]
 
     classDef step fill:#1f6feb,stroke:#0d3b8a,color:#ffffff;
     classDef data fill:#eaf2ff,stroke:#1f6feb,color:#0b2a5b;
@@ -96,76 +98,76 @@ flowchart TD
     class PILOT ext;
 ```
 
-O espaçamento entre faixas vem da pegada transversal no solo, `altitude × largura_do_sensor / focal`, vezes `(1 − sobreposição_lateral)`; o intervalo de disparo usa a pegada longitudinal e a sobreposição frontal (a faixa LiDAR usa `2 × altitude × tan(FOV/2)`). A grelha calcula-se num referencial rodado (área rodada de `90° − azimute` em torno de um pivô partilhado) com scanlines horizontais agrupadas em células contíguas; com blocos, todas as células partilham a mesma origem de alinhamento, mantendo as faixas colineares entre blocos.
+Line spacing comes from the across-track ground footprint, `altitude × sensor_width / focal_length`, times `(1 − side_overlap)`; the photo interval uses the along-track footprint and the front overlap (the LiDAR swath uses `2 × altitude × tan(FOV/2)`). The grid is computed in a rotated frame (area rotated by `90° − azimuth` about a shared pivot) with horizontal scanlines grouped into contiguous cells; with blocks, every cell shares one alignment origin, keeping lines collinear across block boundaries.
 
 ---
 
-## Estado da validação
+## Validation status
 
-**Exportação verificada contra a especificação WPML e testes automáticos; validação em voo real prevista para setembro de 2026.** A suite (`smoke-test.mjs`, 300+ asserções) corre em cada push no CI e cobre a matemática de planeamento e a estrutura dos ficheiros exportados; o que ela não cobre está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release. Os enums WPML nunca foram testados num comando real — ver as notas abaixo.
+**Export verified against the WPML specification and automated tests; real-flight validation planned for September 2026.** The suite (`smoke-test.mjs`, 300+ assertions) runs in CI on every push and covers the planning math and the structure of the exported files; what it cannot cover is in the manual protocol [docs/QA_MANUAL.md](docs/QA_MANUAL.md), run once per release. The WPML enums have never been tested on a real controller — see the notes below.
 
-**Estado dos perfis:** as ópticas do **M4T são provisórias** (valores da classe M3E, assinalados no código) até chegarem dados EXIF reais — não confie na pegada/GSD do M4T para dimensionar missões. Os restantes perfis (M3E, P1, Mapper+) usam valores publicados.
+**Profile status:** the **M4T optics are placeholders** (M3E-class values, flagged in the code) until real EXIF data lands — do not trust the M4T footprint/GSD for mission sizing. The remaining profiles (M3E, P1, Mapper+) use published values.
 
-## Requisitos
+## Requirements
 
-- Qualquer browser moderno (Chromium, Firefox, Safari). Sem conta, sem chaves de API.
-- Para desenvolvimento: Node.js ≥ 18 e npm.
-- Internet para mapas base, CAOP e MDT global (um GeoTIFF local serve de fonte de elevação depois de importado).
+- Any modern browser (Chromium, Firefox, Safari). No account, no API keys.
+- For development: Node.js ≥ 18 and npm.
+- Internet access for base maps, CAOP overlays and the global DEM (a local GeoTIFF works as the elevation source once imported).
 
-## Fontes de dados
+## Data sources
 
-- **Mapas base:** Esri World Imagery / etiquetas / topográfico, OpenStreetMap.
-- **Limites administrativos:** CAOP © Direcção-Geral do Território (CC-BY 4.0) — municípios como vectores simplificados, freguesias via WMS da DGT.
-- **Elevação global:** tiles Terrarium (Mapzen / AWS Open Data, ~30 m).
-- **Elevação de alta resolução:** [Levantamento LiDAR de Portugal continental](https://www.dgterritorio.gov.pt/levantamento-lidar-de-portugal-continental-0) © DGT (CC-BY 4.0) — descarregue o MDT GeoTIFF (50 cm ou 2 m) da sua área no [portal CDD](https://cdd.dgterritorio.gov.pt/) e importe-o; só a janela sobre a área é lida, pelo que ficheiros municipais de vários GB abrem em segundos.
+- **Base maps:** Esri World Imagery / labels / topographic, OpenStreetMap.
+- **Administrative boundaries:** CAOP © Direcção-Geral do Território (CC-BY 4.0) — municipalities bundled as simplified vectors, parishes via the DGT WMS.
+- **Global elevation:** Terrarium terrain tiles (Mapzen / AWS Open Data, ~30 m).
+- **High-resolution elevation:** [LiDAR survey of mainland Portugal](https://www.dgterritorio.gov.pt/levantamento-lidar-de-portugal-continental-0) © DGT (CC-BY 4.0) — download the DTM GeoTIFF (50 cm or 2 m) for your area from the [CDD portal](https://cdd.dgterritorio.gov.pt/) and import it; only the window covering the survey area is read, so multi-GB files open in seconds.
 
-## Utilização
+## Usage
 
-O selector no topo do painel escolhe o tipo de missão (**Área | Fachada | Órbita**) e troca a ferramenta de desenho e os parâmetros; os pontos de inspecção são uma camada extra do modo Área. Dentro de cada modo o painel guia de cima para baixo; o cabeçalho tem a vista 3D, o relatório, a checklist, as exportações do modo Área, a ajuda e a língua. Tudo recalcula reactivamente; o painel de métricas (canto inferior direito) mostra GSD (ou densidade LiDAR), pegada, espaçamento, contagens, distância e tempo estimado, e uma faixa no topo do mapa soma os totais quando há vários planos no projecto.
+The selector at the top of the panel picks the mission type (**Area | Face | Orbit**) and swaps the drawing tool and the parameters; inspection points are an extra layer of the Area mode. Within each mode the panel drives top-down; the header holds the 3D view, the mission report, the checklist, the Area-mode exports, help and language. Everything recomputes reactively; the metrics panel (bottom right) shows GSD (or LiDAR density), footprint, spacing, counts, distance and estimated time, and a strip at the top of the map sums the totals when several plans coexist in the project.
 
-Gestos de edição: clique acrescenta vértices (Backspace ou clique num vértice remove, duplo clique conclui, Esc cancela); arraste vértices, arraste os pontos médios das arestas para inserir; clique nas células do mosaico para as desactivar; **Ctrl+Z** desfaz edições de área e células; os cartões dos pontos de inspecção arrastam-se na lista.
+Editing gestures: click adds vertices (Backspace or clicking a vertex removes, double-click closes, Esc cancels); drag vertices, drag edge midpoints to insert; click mosaic cells to toggle them; **Ctrl+Z** undoes area and cell edits; inspection-point cards drag within their list.
 
-## Exportações
+## Exports
 
-| Exportação | Conteúdo | Uso |
+| Export | Content | Use |
 | --- | --- | --- |
-| KML simples | Polígono, base, GCPs, faixas | Desenho no Pilot 2; QGIS |
-| WPML (KMZ) — Área | `template.kml` + `waylines.wpml`, alturas por waypoint com terrain follow, disparo por distância/tempo, `_area[-variantes]_bNN` | Importação directa no Pilot 2; um KMZ por bloco (ZIP) |
-| WPML (KMZ) — Fachada | Rumo fixo e foto por waypoint, `_face_p1-N` | Faces, taludes, estruturas |
-| WPML (KMZ) — Órbita | Voo curvo contínuo, rumo ao POI, gimbal por nível, `_orbit_nN` (única ou ZIP por nível) | Inspecção/3D de alvos isolados |
-| WPML (KMZ) — Inspecção | Pontos avulsos com rumo/pitch/foto, `_inspect_nN` | Inspecção dirigida |
-| KML de GCPs | Pontos numerados | Rover RTK / campo |
-| JSON do projecto | Estado completo do planeador | Arquivo, partilha |
-| Checklist JSON / impressão | Registo de campo | Diário de operações |
-| Relatório de missão (impressão) | Mapa, parâmetros, blocos, GCPs, pontos de inspecção, assinaturas | Pasta de campo / anexos |
+| Simple KML | Area polygon, home point, GCPs, flight lines | Drawing the mission in Pilot 2; QGIS |
+| WPML (KMZ) — Area | `template.kml` + `waylines.wpml`, per-waypoint heights with terrain follow, distance/time trigger, `_area[-variants]_bNN` | Direct import in DJI Pilot 2; one KMZ per block (ZIP) |
+| WPML (KMZ) — Face | Fixed heading and one photo per waypoint, `_face_p1-N` | Faces, slopes, structures |
+| WPML (KMZ) — Orbit | Continuous curved flight, heading at the POI, per-level gimbal, `_orbit_nN` (single or per-level ZIP) | Inspection/3D of isolated targets |
+| WPML (KMZ) — Inspection | Individual points with heading/pitch/photo, `_inspect_nN` | Directed inspection |
+| GCPs KML | Numbered GCP points | RTK rover / field |
+| Project JSON | Full planner state | Archive, sharing |
+| Checklist JSON / print | Field record | Operations log |
+| Mission report (print) | Map, parameters, blocks, GCPs, inspection points, signatures | Field folder / annexes |
 
-## Notas DJI Pilot 2
+## DJI Pilot 2 notes
 
-Os enums WPML embarcados são `M3E = 77/66`, `M4T = 99/1/89`, `M300 RTK + P1 = 60/50` e `M300 + Mapper+ = 60/65534` (o 65534 é o valor documentado para payloads PSDK de terceiros). Seguem a documentação WPML da DJI mas **nunca foram testados num comando real** — se o Pilot 2 rejeitar uma importação, ajuste em `src/data/drones.js` (ou na UI, no perfil custom) contra a [referência WPML da Cloud API](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html). As alturas são relativas ao ponto de descolagem: nas missões com terrain follow, marque a base no local real de descolagem antes de exportar; nas fachadas, descole à cota do pé da face.
+The WPML enums shipped are `M3E = 77/66`, `M4T = 99/1/89`, `M300 RTK + P1 = 60/50` and `M300 + Mapper+ = 60/65534` (65534 is the documented value for third-party PSDK payloads). They follow DJI's WPML documentation but **have never been tested on a real controller** — if Pilot 2 rejects an import, adjust the enums in `src/data/drones.js` (or in the UI for the custom profile) against the [DJI Cloud API WPML reference](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html). Heights are relative to the takeoff point: for terrain-following missions mark the home point at the real takeoff location before exporting; for faces, take off at the face-foot elevation.
 
-## Desenvolvimento
+## Development
 
 ```bash
 npm install
-npm run dev          # servidor local
-npm run build        # build de produção em dist/
-node smoke-test.mjs  # suite de testes (corre também no CI antes de cada deploy)
+npm run dev          # local dev server
+npm run build        # production build in dist/
+node smoke-test.mjs  # test suite (also runs in CI before every deploy)
 ```
 
-O CI só publica com a suite verde. A cada release corre-se além disso o protocolo manual de ~10 minutos em [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (interface no browser, incluindo verificação em tablet), registando a passagem na tabela do fim.
+CI only deploys with the suite green. On top of that, each release runs the ~10-minute manual protocol in [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (browser UI, including a tablet check), recording the run in the table at the end.
 
-## Publicação
+## Deployment
 
-Pushes a `main` constroem e publicam automaticamente no GitHub Pages via [.github/workflows/deploy.yml](.github/workflows/deploy.yml). O `base` do Vite aponta ao nome do repositório.
+Pushes to `main` build and publish automatically to GitHub Pages via [.github/workflows/deploy.yml](.github/workflows/deploy.yml). The Vite `base` is set to the repository name.
 
-## Limitações e notas
+## Limitations and notes
 
-- Alturas em modo `relativeToStartPoint`; a referência é a base marcada (ou o 1.º waypoint). No modo fachada o afastamento só é verificado com um DSM local — os tiles globais não têm resolução à escala de uma face.
-- O dimensionamento por bateria usa um modelo de tempo (faixas, ligações, custo de viragem, trânsito) — é uma estimativa; valide contra a autonomia real da aeronave (calibração com logs prevista para setembro de 2026).
-- As células do mosaico voam o quadrado inteiro mesmo onde excede o polígono (desactive células a clicar).
-- A colocação de GCPs é uma heurística geométrica; não modela a geometria das imagens.
-- Sem modo offline, de propósito: o planeamento é trabalho de gabinete.
+- Heights use the WPML `relativeToStartPoint` mode; the reference is the marked home point (or the first waypoint). In face mode the standoff is only verified with a local DSM — global tiles lack resolution at face scale.
+- Battery block sizing uses a flight-time model (line length, connectors, turn cost, transit) — it is an estimate; validate against your aircraft's real endurance (log-based calibration planned for September 2026).
+- Mosaic/battery cells fly the full square even where it exceeds the polygon (disable unwanted cells by clicking them).
+- GCP placement is a geometric heuristic; it does not model image geometry.
+- No offline mode by design: planning is office work.
 
-## Licença
+## License
 
 [GPL-3.0](LICENSE)
