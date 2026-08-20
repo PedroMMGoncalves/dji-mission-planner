@@ -57,7 +57,7 @@ import {
   CRS_OPTIONS,
 } from './utils/importArea.js'
 import { fitSlopePlane, loadTerrain, terrainFollowLines } from './utils/terrain.js'
-import { inspectionToWaypoints, nearestNeighbourOrder } from './utils/inspect.js'
+import { inspectionToWaypoints, nearestNeighbourOrder, reorderList } from './utils/inspect.js'
 import {
   DEFAULT_FACE_CONFIG,
   checkFaceClearance,
@@ -822,6 +822,10 @@ function AppInner({ lang, setLang }) {
       ;[next[i], next[j]] = [next[j], next[i]]
       return next
     })
+  }, [])
+
+  const reorderInspectPoints = useCallback((from, to) => {
+    setInspectPoints((pts) => reorderList(pts, from, to))
   }, [])
 
   const suggestInspectOrder = useCallback(() => {
@@ -1700,6 +1704,7 @@ function AppInner({ lang, setLang }) {
           onInspectUpdate={updateInspectPoint}
           onInspectRemove={removeInspectPoint}
           onInspectMove={moveInspectPoint}
+          onInspectReorder={reorderInspectPoints}
           onInspectSuggestOrder={suggestInspectOrder}
           onExportInspection={handleExportInspection}
           onUndoVertex={removeLastDraftVertex}

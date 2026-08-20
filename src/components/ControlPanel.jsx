@@ -116,6 +116,7 @@ export default function ControlPanel({
   onInspectUpdate,
   onInspectRemove,
   onInspectMove,
+  onInspectReorder,
   onInspectSuggestOrder,
   onExportInspection,
   onUndoVertex,
@@ -130,6 +131,9 @@ export default function ControlPanel({
 }) {
   const t = useT()
   const lang = useLang()
+  // E1.3: arrastar-e-largar na lista de pontos de inspecção (as setas
+  // mantêm-se para ecrãs tácteis, onde o HTML5 DnD não dispara)
+  const dragIndexRef = useRef(null)
   const aircraft = AIRCRAFT[drone.aircraftId]
   const payload = PAYLOADS[drone.payloadId]
   const isCustom = payload.type === 'custom'
@@ -1342,10 +1346,30 @@ export default function ControlPanel({
         {inspectPoints?.length > 0 && (
           <div className="mt-2 space-y-2">
             {inspectPoints.map((p, i) => (
-              <div key={p.id} className="rounded border border-slate-800 bg-slate-900/60 p-2">
+              <div
+                key={p.id}
+                className="cursor-grab rounded border border-slate-800 bg-slate-900/60 p-2 active:cursor-grabbing"
+                draggable
+                onDragStart={(e) => {
+                  // não iniciar o arrasto a partir dos campos de edição
+                  const tag = e.target?.tagName
+                  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
+                    e.preventDefault()
+                    return
+                  }
+                  dragIndexRef.current = i
+                  e.dataTransfer.effectAllowed = 'move'
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  if (dragIndexRef.current != null) onInspectReorder(dragIndexRef.current, i)
+                  dragIndexRef.current = null
+                }}
+              >
                 <div className="flex items-center gap-1.5">
                   <span className="w-5 shrink-0 font-mono text-xs font-bold text-orange-300">
-                    {i + 1}
+                    ⋮⋮ {i + 1}
                   </span>
                   <input
                     type="text"
