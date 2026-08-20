@@ -11,6 +11,24 @@ function fmtCoord(v) {
   return Number(v.toFixed(8))
 }
 
+/**
+ * E3.1: nome canónico dos ficheiros exportados, com o tipo de missão e a
+ * variante codificados: `<missao>_<tipo>[-variante][_parte]`, ex.:
+ *   quinta_area-crosshatch-nadir_b01 · quinta_face-p1-6 · quinta_orbit-n3
+ * `variant` pode ser string ou lista (filtra vazios e junta com '-');
+ * `part` é o sufixo de bloco/nível. Sem extensão — o chamador acrescenta.
+ */
+export function buildExportName(missionName, type, { variant = null, part = null } = {}) {
+  const safe = (s) =>
+    String(s ?? '')
+      .trim()
+      .replace(/[^\w\-]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'missao'
+  const variants = (Array.isArray(variant) ? variant : [variant]).filter(Boolean)
+  const typeBit = [type, ...variants].filter(Boolean).join('-')
+  return [safe(missionName), typeBit, part].filter(Boolean).join('_')
+}
+
 export function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -436,7 +454,7 @@ export async function exportBlocksZip(params, blocks) {
     const kmz = await buildKmz(
       {
         ...params,
-        name: `${params.name}-b${nn}`,
+        name: `${params.name}_b${nn}`,
         waypoints: block.waypoints,
         // um perWaypoint global indexaria mal as fatias — cada bloco traz o
         // seu (ex.: marcador de gimbal nadir do R2.10), ou nenhum
@@ -444,8 +462,8 @@ export async function exportBlocksZip(params, blocks) {
       },
       'arraybuffer',
     )
-    master.file(`${params.name}-b${nn}.kmz`, kmz)
+    master.file(`${params.name}_b${nn}.kmz`, kmz)
   }
   const blob = await master.generateAsync({ type: 'blob' })
-  downloadBlob(blob, `${params.name}-blocos.zip`)
+  downloadBlob(blob, `${params.name}_blocos.zip`)
 }
