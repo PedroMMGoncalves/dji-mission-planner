@@ -3,6 +3,7 @@ import MapView from './components/MapView.jsx'
 import ControlPanel from './components/ControlPanel.jsx'
 import MissionModeSelector from './components/MissionModeSelector.jsx'
 import FacePanel from './components/FacePanel.jsx'
+import OrbitPanel from './components/OrbitPanel.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import ChecklistPage from './components/ChecklistPage.jsx'
 import HelpModal from './components/HelpModal.jsx'
@@ -64,6 +65,12 @@ import {
   normalizeFaceConfig,
 } from './utils/faceMode.js'
 import { headingTicks } from './utils/preview.js'
+import {
+  DEFAULT_ORBIT_CONFIG,
+  generateOrbitPlan,
+  normalizeOrbitConfig,
+  orbitLevelsToBlocks,
+} from './utils/orbit.js'
 import { loadDemFromFile } from './utils/demFile.js'
 import { parseWpmlKmz } from './utils/importWpml.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
@@ -139,6 +146,7 @@ function AppInner({ lang, setLang }) {
   // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
   const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit'
   const [faceConfig, setFaceConfig] = useState(() => ({ ...DEFAULT_FACE_CONFIG }))
+  const [orbitConfig, setOrbitConfig] = useState(() => ({ ...DEFAULT_ORBIT_CONFIG }))
   // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
   const [inspectPoints, setInspectPoints] = useState([])
   const inspectSeqRef = useRef(1)
@@ -583,6 +591,9 @@ function AppInner({ lang, setLang }) {
         setMode('idle')
       } else if (mode === 'face') {
         setDraftVertices((d) => [...d, lonlat])
+      } else if (mode === 'orbit') {
+        setOrbitConfig((c) => ({ ...c, poi: lonlat }))
+        setMode('idle')
       } else if (mode === 'inspect') {
         const n = inspectSeqRef.current++
         setInspectPoints((pts) => [
@@ -697,6 +708,97 @@ function AppInner({ lang, setLang }) {
       sensorType: sensor.type,
     })
   }, [facePlan, missionName, params.speed, wpml, faceConfig.gimbalPitch, sensor.type])
+
+  /* ------------------------ Modo órbita (E1.2) ------------------------ */
+  const setOrbitParam = useCallback((key, value) => {
+    setOrbitConfig((c) => ({ ...c, [key]: value }))
+  }, [])
+
+  const startOrbitPoi = useCallback(() => {
+    setMode((m) => (m === 'orbit' ? 'idle' : 'orbit'))
+  }, [])
+
+  const clearOrbitPoi = useCallback(() => {
+    setOrbitConfig((c) => ({ ...c, poi: null }))
+    setMode('idle')
+  }, [])
+
+  const handleOrbitPoiDrag = useCallback((lonlat) => {
+    setOrbitConfig((c) => ({ ...c, poi: lonlat }))
+  }, [])
+
+  const orbitPlan = useMemo(() => {
+    if (!orbitConfig.poi) return null
+    return generateOrbitPlan(orbitConfig.poi, {
+      sensor: sensor.type === 'camera' ? sensor : null,
+      radiusM: orbitConfig.radiusM,
+      levels: {
+        count: orbitConfig.levelCount,
+        startM: orbitConfig.levelStartM,
+        stepM: orbitConfig.levelStepM,
+      },
+      horizontalOverlapPct: orbitConfig.horizontalOverlapPct,
+      poiHeightM: orbitConfig.poiHeightM,
+      clockwise: orbitConfig.clockwise,
+      speed: Math.min(params.speed, 5),
+    })
+  }, [orbitConfig, sensor, params.speed])
+
+  const gsdAtRadius = useMemo(
+    () => (sensor.type === 'camera' ? computeGSD(sensor, orbitConfig.radiusM) : null),
+    [sensor, orbitConfig.radiusM],
+  )
+
+  const setRadiusFromGsd = useCallback(
+    (gsdTarget) => {
+      if (sensor.type !== 'camera' || !sensor.imageWidth || !(gsdTarget > 0)) return
+      const r = (gsdTarget * sensor.focalLength * sensor.imageWidth) / (sensor.sensorWidth * 100)
+      setOrbitConfig((c) => ({ ...c, radiusM: Math.max(5, Math.min(500, Math.round(r))) }))
+    },
+    [sensor],
+  )
+
+  const orbitPreview = useMemo(() => {
+    if (missionMode !== 'orbit') return null
+    const ok = orbitPlan && !orbitPlan.error ? orbitPlan : null
+    const per = ok ? ok.stats.pointsPerOrbit + 1 : 0
+    return {
+      poi: orbitConfig.poi,
+      ring: ok ? ok.waypoints.slice(0, per) : null,
+      ticks: ok
+        ? headingTicks(ok.waypoints, ok.perWaypoint, {
+            lengthM: Math.min(12, orbitConfig.radiusM * 0.25),
+            limit: per,
+          })
+        : null,
+    }
+  }, [missionMode, orbitPlan, orbitConfig.poi, orbitConfig.radiusM])
+
+  const orbitExportParams = useCallback(() => ({
+    name: buildExportName(missionName, 'orbit', {
+      part: `n${orbitPlan.stats.levelCount}`,
+    }),
+    waypoints: orbitPlan.waypoints,
+    perWaypoint: orbitPlan.perWaypoint,
+    turnMode: orbitPlan.turnMode,
+    altitude: Math.round(orbitPlan.stats.heights[orbitPlan.stats.heights.length - 1]),
+    speed: Math.min(params.speed, 5),
+    wpml,
+    photoIntervalM: 0,
+    triggerMode: 'distance',
+    gimbalPitch: orbitPlan.perLevel[0]?.gimbalPitch ?? -45,
+    sensorType: sensor.type,
+  }), [orbitPlan, missionName, params.speed, wpml, sensor.type])
+
+  const handleExportOrbitSingle = useCallback(() => {
+    if (!orbitPlan || orbitPlan.error) return
+    exportWPMLKmz(orbitExportParams())
+  }, [orbitPlan, orbitExportParams])
+
+  const handleExportOrbitPerLevel = useCallback(() => {
+    if (!orbitPlan || orbitPlan.error) return
+    exportBlocksZip(orbitExportParams(), orbitLevelsToBlocks(orbitPlan))
+  }, [orbitPlan, orbitExportParams])
 
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const startInspect = useCallback(() => {
@@ -1089,6 +1191,7 @@ function AppInner({ lang, setLang }) {
       setMissionMode(p.missionMode)
     }
     if (p.faceConfig) setFaceConfig(normalizeFaceConfig(p.faceConfig))
+    if (p.orbitConfig) setOrbitConfig(normalizeOrbitConfig(p.orbitConfig))
     if (Array.isArray(p.inspectPoints)) {
       const pts = p.inspectPoints.filter((q) => q && Array.isArray(q.point))
       setInspectPoints(pts)
@@ -1136,6 +1239,7 @@ function AppInner({ lang, setLang }) {
             inspectPoints,
             missionMode,
             faceConfig,
+            orbitConfig,
             params,
             split,
             anchor,
@@ -1152,7 +1256,7 @@ function AppInner({ lang, setLang }) {
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const exportProject = useCallback(() => {
     const data = {
@@ -1165,6 +1269,7 @@ function AppInner({ lang, setLang }) {
       inspectPoints,
       missionMode,
       faceConfig,
+      orbitConfig,
       params,
       split,
       anchor,
@@ -1179,7 +1284,7 @@ function AppInner({ lang, setLang }) {
       new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
       `${missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'}-projeto.json`,
     )
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const importProject = useCallback(
     async (file) => {
@@ -1513,6 +1618,21 @@ function AppInner({ lang, setLang }) {
                 onExport={handleExportFace}
               />
             )}
+            {missionMode === 'orbit' && (
+              <OrbitPanel
+                orbitConfig={orbitConfig}
+                setOrbitParam={setOrbitParam}
+                orbitPlan={orbitPlan}
+                cameraOk={sensor.type === 'camera'}
+                gsdAtRadius={gsdAtRadius}
+                onGsdTarget={setRadiusFromGsd}
+                mode={mode}
+                onStartPoi={startOrbitPoi}
+                onClearPoi={clearOrbitPoi}
+                onExportSingle={handleExportOrbitSingle}
+                onExportPerLevel={handleExportOrbitPerLevel}
+              />
+            )}
             {missionMode === 'area' && (
         <ControlPanel
           missionName={missionName}
@@ -1615,6 +1735,8 @@ function AppInner({ lang, setLang }) {
             inspectPoints={inspectPoints}
             onInspectDrag={handleInspectDrag}
             facePreview={facePreview}
+            orbitPreview={orbitPreview}
+            onOrbitPoiDrag={handleOrbitPoiDrag}
             fitKey={fitKey}
             editable={!gridCells && split.mode !== 'tiles' && split.mode !== 'battery'}
             onMapClick={handleMapClick}

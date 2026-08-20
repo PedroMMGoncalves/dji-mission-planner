@@ -79,4 +79,47 @@ export default {
     pt: 'Alturas relativas ao ponto de descolagem: descole à cota do pé da face, ou ajuste as alturas. Rumo fixo e uma foto em cada waypoint.',
     en: 'Heights relative to the takeoff point: take off at the face-foot elevation, or adjust heights. Fixed heading and one photo at every waypoint.',
   },
+
+  /* ---- Painel de órbita (E1.2) ---- */
+  'op.poi.title': { pt: 'Ponto de Interesse (POI)', en: 'Point of Interest (POI)' },
+  'op.poi.mark': { pt: 'Marcar POI', en: 'Mark POI' },
+  'op.poi.clear': { pt: 'Remover', en: 'Remove' },
+  'op.poi.hint': {
+    pt: 'Clique no mapa sobre o centro do alvo. O marcador fica arrastável.',
+    en: 'Click the map on the target centre. The marker stays draggable.',
+  },
+  'op.poi.height': { pt: 'Cota do centro do alvo', en: 'Target centre height' },
+  'op.poi.heightHint': {
+    pt: 'Acima do ponto de descolagem — o gimbal de cada nível aponta a esta cota.',
+    en: 'Above the takeoff point — each level’s gimbal aims at this height.',
+  },
+  'op.geom.title': { pt: 'Geometria da Órbita', en: 'Orbit Geometry' },
+  'op.geom.radius': { pt: 'Raio', en: 'Radius' },
+  'op.geom.gsdTarget': { pt: 'GSD alvo à distância', en: 'Target GSD at range' },
+  'op.geom.levels': { pt: 'Número de níveis', en: 'Number of levels' },
+  'op.geom.firstLevel': { pt: 'Primeiro nível', en: 'First level' },
+  'op.geom.step': { pt: 'Passo vertical', en: 'Vertical step' },
+  'op.geom.overlap': { pt: 'Sobreposição horizontal', en: 'Horizontal overlap' },
+  'op.geom.clockwise': { pt: 'Sentido horário', en: 'Clockwise' },
+  'op.lidarNote': {
+    pt: 'Sem câmara activa os pontos por volta usam um passo por omissão (24/volta).',
+    en: 'Without an active camera the points per orbit fall back to a default (24/orbit).',
+  },
+  'op.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
+  'op.plan.noPoi': {
+    pt: 'Marque o POI no mapa para gerar as órbitas.',
+    en: 'Mark the POI on the map to generate the orbits.',
+  },
+  'op.plan.rings': { pt: '{n} níveis × {pts} pontos/volta', en: '{n} levels × {pts} points/orbit' },
+  'op.plan.photos': { pt: '{n} fotos (1 por waypoint)', en: '{n} photos (1 per waypoint)' },
+  'op.plan.gsd': { pt: 'GSD {v} cm/px no alvo', en: 'GSD {v} cm/px at the target' },
+  'op.plan.path': { pt: 'percurso {km} km', en: 'path {km} km' },
+  'op.plan.time': { pt: '~{min} min', en: '~{min} min' },
+  'op.plan.gimbals': { pt: 'gimbal por nível: {v}', en: 'gimbal per level: {v}' },
+  'op.exportSingle': { pt: 'Exportar missão única (KMZ)', en: 'Export single mission (KMZ)' },
+  'op.exportPerLevel': { pt: 'Exportar um KMZ por nível (ZIP)', en: 'Export one KMZ per level (ZIP)' },
+  'op.exportHint': {
+    pt: 'Voo curvo contínuo (toPointAndPassWithContinuityCurvature), rumo ao POI e uma foto em cada waypoint. Alturas relativas ao ponto de descolagem.',
+    en: 'Continuous curved flight (toPointAndPassWithContinuityCurvature), heading at the POI and one photo per waypoint. Heights relative to the takeoff point.',
+  },
 }

@@ -31,6 +31,8 @@ export default function MapView({
   inspectPoints,
   onInspectDrag,
   facePreview,
+  orbitPreview,
+  onOrbitPoiDrag,
   fitKey,
   editable,
   onMapClick,
@@ -61,6 +63,7 @@ export default function MapView({
     onBaseDrag,
     onTileToggle,
     onInspectDrag,
+    onOrbitPoiDrag,
   }
 
   // Inicialização única do mapa
@@ -170,6 +173,7 @@ export default function MapView({
       gcps: L.layerGroup().addTo(map),
       inspect: L.layerGroup().addTo(map),
       face: L.layerGroup().addTo(map),
+      orbit: L.layerGroup().addTo(map),
       canvas: L.canvas({ padding: 0.3 }),
     }
 
@@ -177,7 +181,7 @@ export default function MapView({
       const s = stateRef.current
       if (
         s.mode === 'draw' || s.mode === 'anchor' || s.mode === 'base' ||
-        s.mode === 'inspect' || s.mode === 'face'
+        s.mode === 'inspect' || s.mode === 'face' || s.mode === 'orbit'
       ) {
         s.onMapClick([e.latlng.lng, e.latlng.lat])
       }
@@ -236,7 +240,7 @@ export default function MapView({
       el.classList.toggle(
         'cursor-crosshair',
         mode === 'draw' || mode === 'anchor' || mode === 'base' ||
-          mode === 'inspect' || mode === 'face',
+          mode === 'inspect' || mode === 'face' || mode === 'orbit',
       )
   }, [mode])
 
@@ -536,6 +540,43 @@ export default function MapView({
       })
     }
   }, [facePreview])
+
+  // Pré-visualização do modo órbita (E1.2): POI arrastável, anel do 1.º
+  // nível e traços de rumo a apontar ao alvo
+  useEffect(() => {
+    const g = layersRef.current?.orbit
+    if (!g) return
+    g.clearLayers()
+    if (!orbitPreview) return
+    if (orbitPreview.ring?.length >= 2) {
+      L.polyline(orbitPreview.ring.map(toLatLng), {
+        color: '#38bdf8',
+        weight: 2,
+        dashArray: '6 4',
+      }).addTo(g)
+    }
+    if (orbitPreview.ticks) {
+      orbitPreview.ticks.forEach(([a, b]) => {
+        L.polyline([toLatLng(a), toLatLng(b)], {
+          color: '#fde047',
+          weight: 1.5,
+          opacity: 0.9,
+        }).addTo(g)
+      })
+    }
+    if (orbitPreview.poi) {
+      const icon = L.divIcon({ className: 'anchor-handle', iconSize: [16, 16] })
+      const m = L.marker(toLatLng(orbitPreview.poi), {
+        icon,
+        draggable: true,
+        zIndexOffset: 550,
+      }).addTo(g)
+      m.on('dragend', () => {
+        const p = m.getLatLng()
+        stateRef.current.onOrbitPoiDrag?.([p.lng, p.lat])
+      })
+    }
+  }, [orbitPreview])
 
   // Pontos de inspeção (R2.9): marcadores numerados e arrastáveis
   useEffect(() => {
