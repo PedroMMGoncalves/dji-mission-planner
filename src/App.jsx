@@ -744,9 +744,9 @@ function AppInner({ lang, setLang }) {
       horizontalOverlapPct: orbitConfig.horizontalOverlapPct,
       poiHeightM: orbitConfig.poiHeightM,
       clockwise: orbitConfig.clockwise,
-      speed: Math.min(params.speed, 5),
+      speed: orbitConfig.speedMS,
     })
-  }, [orbitConfig, sensor, params.speed])
+  }, [orbitConfig, sensor])
 
   const gsdAtRadius = useMemo(
     () => (sensor.type === 'camera' ? computeGSD(sensor, orbitConfig.radiusM) : null),
@@ -786,13 +786,13 @@ function AppInner({ lang, setLang }) {
     perWaypoint: orbitPlan.perWaypoint,
     turnMode: orbitPlan.turnMode,
     altitude: Math.round(orbitPlan.stats.heights[orbitPlan.stats.heights.length - 1]),
-    speed: Math.min(params.speed, 5),
+    speed: orbitConfig.speedMS,
     wpml,
     photoIntervalM: 0,
     triggerMode: 'distance',
     gimbalPitch: orbitPlan.perLevel[0]?.gimbalPitch ?? -45,
     sensorType: sensor.type,
-  }), [orbitPlan, missionName, params.speed, wpml, sensor.type])
+  }), [orbitPlan, missionName, orbitConfig.speedMS, wpml, sensor.type])
 
   const handleExportOrbitSingle = useCallback(() => {
     if (!orbitPlan || orbitPlan.error) return

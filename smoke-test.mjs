@@ -1212,6 +1212,31 @@ check('waylines Mapper+: sem acoes de camara',
     lvls[2].perWaypoint[0].gimbalPitch === orb.perLevel[2].gimbalPitch)
 }
 
+/* 9c2. Velocidade da orbita como parametro explicito (micro-patch, espelho do P1) */
+{
+  check('orbitConfig: speedMS default em projectos antigos',
+    normalizeOrbitConfig({}).speedMS === 5)
+  check('orbitConfig: speedMS limitada a 1-10',
+    normalizeOrbitConfig({ speedMS: 42 }).speedMS === 10 &&
+      normalizeOrbitConfig({ speedMS: 0.1 }).speedMS === 1)
+  // o tempo de voo da orbita e percurso / velocidade (sem termo de paragem):
+  // duplicar a velocidade reduz o tempo exactamente a metade
+  const o2 = generateOrbitPlan(center, { sensor, radiusM: 100, levels: [30, 50], speed: 2 })
+  const o4 = generateOrbitPlan(center, { sensor, radiusM: 100, levels: [30, 50], speed: 4 })
+  check('orbita: tempo reduz a metade quando a velocidade duplica',
+    Math.abs(o2.stats.flightTimeS / o4.stats.flightTimeS - 2) < 1e-9,
+    `${o2.stats.flightTimeS.toFixed(1)} s vs ${o4.stats.flightTimeS.toFixed(1)} s`)
+  // o WPML exportado leva exactamente a velocidade configurada
+  const wlOrbSpeed = buildWaylinesWPML({
+    name: 'orbita', waypoints: o4.waypoints, perWaypoint: o4.perWaypoint,
+    turnMode: o4.turnMode, altitude: 50, speed: 4, wpml: wpmlParams.wpml,
+    photoIntervalM: 0, triggerMode: 'distance', sensorType: 'camera',
+  })
+  check('orbita: autoFlightSpeed = velocidade configurada',
+    wlOrbSpeed.includes('<wpml:autoFlightSpeed>4</wpml:autoFlightSpeed>') &&
+      wlOrbSpeed.includes('<wpml:waypointSpeed>4</wpml:waypointSpeed>'))
+}
+
 /* 9d. Pontos de inspecao (R2.9 — parte pura) */
 {
   const P = (x, y, extra = {}) => ({ id: x + y, label: `P${x}`, point: toLL(x, y), heightM: 30, ...extra })
