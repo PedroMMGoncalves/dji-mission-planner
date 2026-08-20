@@ -9,7 +9,7 @@ import { groupApplies } from '../data/checklist.js'
  * Bilingue PT/EN com dicionário interno: o conteúdo é longo e muito
  * estruturado, pelo que cada texto vive junto do item a que pertence
  * como par `{ pt, en }`. As chaves de estado (checks) usam índices
- * fase/grupo/item e são, por isso, independentes da língua ativa.
+ * fase/grupo/item e são, por isso, independentes da língua activa.
  * ------------------------------------------------------------------ */
 
 const STORAGE_KEY = 'dji-mission-planner:checklist:v1'
@@ -44,7 +44,7 @@ const FASES = [
         itens: [
           it(
             bi(
-              'Inspeção visual — fuselagem, braços, hélices',
+              'Inspecção visual — fuselagem, braços, hélices',
               'Visual inspection — airframe, arms, propellers',
             ),
             bi('Fissuras, folgas, danos físicos', 'Cracks, play, physical damage'),
@@ -77,18 +77,18 @@ const FASES = [
         itens: [
           it(
             bi(
-              'Firmware do UAV atualizado — versão estável',
+              'Firmware do UAV actualizado — versão estável',
               'UAV firmware up to date — stable release',
             ),
             bi(
-              'Não atualizar em campo, apenas em base',
+              'Não actualizar em campo, apenas em base',
               'Do not update in the field, only at base',
             ),
             true,
           ),
           it(
             bi(
-              'Software de missão atualizado',
+              'Software de missão actualizado',
               'Mission planning software up to date',
             ),
             bi('DJI Pilot 2', 'DJI Pilot 2'),
@@ -260,8 +260,8 @@ const FASES = [
           ),
         ],
       },
-      // Grupo condicional (T2.4): só aparece com payload LiDAR ativo.
-      // Textos provisórios — redação final e durações a validar em campo.
+      // Grupo condicional (T2.4): só aparece com payload LiDAR activo.
+      // Textos provisórios — redacção final e durações a validar em campo.
       {
         titulo: bi('LiDAR', 'LiDAR'),
         appliesTo: 'lidar',
@@ -451,14 +451,14 @@ const FASES = [
           ),
           it(
             bi(
-              'Inspeção visual rápida da plataforma',
+              'Inspecção visual rápida da plataforma',
               'Quick visual inspection of the aircraft',
             ),
           ),
         ],
       },
-      // Grupo condicional (T2.4): só aparece com payload LiDAR ativo.
-      // Textos provisórios — redação final e durações a validar em campo.
+      // Grupo condicional (T2.4): só aparece com payload LiDAR activo.
+      // Textos provisórios — redacção final e durações a validar em campo.
       {
         titulo: bi('LiDAR', 'LiDAR'),
         appliesTo: 'lidar',
@@ -633,7 +633,7 @@ const FASES = [
         titulo: bi('Plataforma e energia', 'Platform and power'),
         itens: [
           it(
-            bi('Inspeção pós-voo', 'Post-flight inspection'),
+            bi('Inspecção pós-voo', 'Post-flight inspection'),
             bi('hélices, motores, estrutura', 'propellers, motors, airframe'),
           ),
           it(bi('Lente e sensor limpos', 'Lens and sensor cleaned')),
@@ -664,7 +664,7 @@ const FASES = [
           ),
           it(
             bi(
-              'Ciclos por bateria atualizados no registo',
+              'Ciclos por bateria actualizados no registo',
               'Cycle count per battery updated in the log',
             ),
           ),
@@ -696,7 +696,7 @@ const FASES = [
   },
 ]
 
-/** Cores por fase — strings completas para o JIT do Tailwind as detetar. */
+/** Cores por fase — strings completas para o JIT do Tailwind as detectar. */
 const ACENTOS = {
   pre: {
     titulo: 'text-amber-400',
@@ -731,7 +731,7 @@ const UI = {
   printBlank: bi('Imprimir em branco', 'Print blank'),
   clear: bi('Limpar', 'Clear'),
   clearConfirm: bi(
-    'Limpar toda a checklist, tabelas e notas? Esta ação não pode ser anulada.',
+    'Limpar toda a checklist, tabelas e notas? Esta acção não pode ser anulada.',
     'Clear the whole checklist, tables and notes? This action cannot be undone.',
   ),
   missionSection: bi('Identificação da missão', 'Mission identification'),
@@ -765,7 +765,7 @@ const CAMPOS_MISSAO = [
   },
   {
     key: 'missao',
-    label: bi('Missão / Projeto', 'Mission / Project'),
+    label: bi('Missão / Projecto', 'Mission / Project'),
     placeholder: bi('Designação', 'Designation'),
   },
   {
@@ -815,7 +815,7 @@ const CAMPOS_NOTAS = [
   { key: 'anomalias', label: bi('Anomalias e incidentes', 'Anomalies and incidents') },
   { key: 'qualidade', label: bi('Qualidade dos dados', 'Data quality') },
   { key: 'condicoes', label: bi('Condições de campo', 'Field conditions') },
-  { key: 'seguimento', label: bi('Ações de seguimento', 'Follow-up actions') },
+  { key: 'seguimento', label: bi('Acções de seguimento', 'Follow-up actions') },
 ]
 
 let seq = 0
@@ -1190,7 +1190,7 @@ export default function ChecklistPage({
     return () => clearTimeout(t)
   }, [hidratado, checked, missao, voos, gcps, notas])
 
-  /* ------------------------------ Ações ------------------------------ */
+  /* ------------------------------ Acções ------------------------------ */
   const toggle = (k) => setChecked((c) => ({ ...c, [k]: !c[k] }))
 
   const setCampoMissao = (k, v) => setMissao((m) => ({ ...m, [k]: v }))

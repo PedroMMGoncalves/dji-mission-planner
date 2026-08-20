@@ -90,7 +90,7 @@ const UI = {
 
   gcpsTitle: bi('Pontos de controlo (GCPs)', 'Ground control points (GCPs)'),
   gcpsNote: bi('Coordenadas WGS84 (lat, lon)', 'WGS84 coordinates (lat, lon)'),
-  inspectTitle: bi('Pontos de inspeção', 'Inspection points'),
+  inspectTitle: bi('Pontos de inspecção', 'Inspection points'),
   inspectNote: bi('Esqueleto do relatório de campo', 'Field report skeleton'),
   inspectIdx: bi('Nº', 'No.'),
   inspectLabel: bi('Etiqueta', 'Label'),
@@ -108,7 +108,7 @@ const UI = {
   ),
 }
 
-/* ------------------- Mapa: constantes e projeção ------------------- */
+/* ------------------- Mapa: constantes e projecção ------------------- */
 
 const CANVAS_W = 1200
 const CANVAS_H = 800
@@ -183,7 +183,7 @@ function pickZoom(bbox) {
 }
 
 /**
- * Vista do mapa: zoom, escala e função de projeção lon/lat → píxel do canvas.
+ * Vista do mapa: zoom, escala e função de projecção lon/lat → píxel do canvas.
  * A bbox é ajustada ao canvas preservando a proporção (letterbox centrado).
  */
 function buildView(ring) {
@@ -481,7 +481,7 @@ const blockColor = (id, idx) =>
  * Agrupa as faixas por bloco para colorir o mapa.
  *
  * Se os blocos trouxerem as suas próprias faixas (`block.lines`), usa-as
- * diretamente. Caso contrário reparte a lista global — que vem na mesma ordem
+ * directamente. Caso contrário reparte a lista global — que vem na mesma ordem
  * de voo em serpentina usada por splitIntoBlocks — pelo comprimento acumulado
  * de cada bloco (`lengthM`), o que reproduz exatamente a partição original.
  */
@@ -909,7 +909,7 @@ export default function MissionReport({
           </Section>
         )}
 
-        {/* ---------------------- Pontos de inspeção (R2.9) ---------------------- */}
+        {/* ---------------------- Pontos de inspecção (R2.9) ---------------------- */}
         {Array.isArray(inspectPoints) && inspectPoints.length > 0 && (
           <Section title={L(UI.inspectTitle)} right={L(UI.inspectNote)}>
             <table className="rep-table w-full border-collapse text-left">

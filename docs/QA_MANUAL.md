@@ -5,28 +5,28 @@ o WPML; **não** cobre a integração de interface. Este protocolo verifica no
 browser o que o harness não vê. Correr uma vez por tag de release, contra a
 app publicada (<https://pedrommgoncalves.github.io/dji-mission-planner/>),
 de preferência num browser sem estado (janela privada) e depois uma segunda
-passagem rápida com o estado normal (migração de projetos antigos).
+passagem rápida com o estado normal (migração de projectos antigos).
 
-Cada item: **ação → resultado esperado → ☐**. Qualquer desvio: abrir issue
+Cada item: **acção → resultado esperado → ☐**. Qualquer desvio: abrir issue
 com screenshot e os passos.
 
 ## 1. Área em U — rota côncava-segura (~2 min)
 
 - ☐ Desenhar um U (braços verticais largos, base em baixo; ~600×600 m) com a
-  ferramenta polígono; direção das linhas a **90°** (E-O).
+  ferramenta polígono; direcção das linhas a **90°** (E-O).
   **Esperado:** na pré-visualização, nenhuma ligação entre faixas atravessa o
   vão do U — as pernas entre strips seguem pela base.
-- ☐ Carregar o atalho **Ótima**.
-  **Esperado:** a direção salta para ~0° (N-S), o nº de faixas desce
+- ☐ Carregar o atalho **Óptima**.
+  **Esperado:** a direcção salta para ~0° (N-S), o nº de faixas desce
   (comparar o cartão "Nº de faixas" antes/depois) e a distância total baixa.
 - ☐ Voltar a 90° e comparar "Distância total".
-  **Esperado:** maior do que na direção ótima.
+  **Esperado:** maior do que na direcção óptima.
 
 ## 2. Dupla grelha + terrain follow (~2 min)
 
 - ☐ Área retangular ~500×300 m em terreno com relevo; preset
   **Modelo 3D · Dupla grelha**; esperar a descarga automática do relevo;
-  ativar **terrain follow**.
+  activar **terrain follow**.
   **Esperado:** duas famílias de linhas perpendiculares; cartão GSD passa a
   **"GSD (centro do quadro)"** (gimbal −60°) com valor ~15% pior do que a
   −90°; o resultado do terreno indica waypoints densificados.
@@ -51,18 +51,18 @@ com screenshot e os passos.
   editar para 38 → aparece o botão **Defeito**; trocar o payload para P1 →
   o campo volta a 55 (o override ficou só na combinação Mapper+).
 - ☐ Ainda com Mapper+: subir a altitude acima de 100 m.
-  **Esperado:** aviso vermelho do teto operacional (100 m AGL). O cartão de
+  **Esperado:** aviso vermelho do tecto operacional (100 m AGL). O cartão de
   métricas mostra **Densidade LiDAR** em vez de GSD.
-- ☐ Checklist (com Mapper+ ativo).
+- ☐ Checklist (com Mapper+ activo).
   **Esperado:** grupos **LiDAR** no pré-campo e no durante; com um perfil de
   câmara os grupos desaparecem e as contagens de progresso ajustam.
 
-## 5. Presets e projetos antigos (~1.5 min)
+## 5. Presets e projectos antigos (~1.5 min)
 
 - ☐ Na janela com estado antigo (pré-round-1): abrir a app.
-  **Esperado:** o projeto carrega sem erro; o drone selecionado migra para o
+  **Esperado:** o projecto carrega sem erro; o drone seleccionado migra para o
   par aeronave+payload equivalente; nenhuma definição perdida.
-- ☐ Guardar projeto (JSON), limpar tudo, reabrir o ficheiro.
+- ☐ Guardar projecto (JSON), limpar tudo, reabrir o ficheiro.
   **Esperado:** área, hardware, parâmetros, blocos e afinações (FOV de
   trabalho, bateria por combinação) restaurados.
 
@@ -105,7 +105,7 @@ com screenshot e os passos.
   **Esperado:** ZIP com N ficheiros `_b01..bNN`, um nível cada, alturas
   crescentes.
 
-## 8. Pontos de inspeção — ordem e persistência (~1.5 min)
+## 8. Pontos de inspecção — ordem e persistência (~1.5 min)
 
 - ☐ Modo Área → marcar 4 pontos; renomear dois; arrastar o cartão do 4.º
   para a 2.ª posição; carregar em Sugerir ordem.
@@ -123,7 +123,7 @@ tablet real):
 - ☐ O selector de modo e os três painéis (Área/Fachada/Órbita) são usáveis
   sem sobreposições; os campos numéricos aceitam toque; as listas fazem
   scroll dentro do painel.
-- ☐ No modo inspeção, reordenar com as **setas** (o arrastar HTML5 não
+- ☐ No modo inspecção, reordenar com as **setas** (o arrastar HTML5 não
   dispara em ecrã táctil — comportamento esperado).
 - ☐ A faixa de resumo do projecto (2+ planos) não tapa os controlos do
   mapa.
