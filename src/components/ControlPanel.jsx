@@ -111,6 +111,13 @@ export default function ControlPanel({
   gcpAutoCount,
   gcpInfo,
   onExportGcps,
+  inspectPoints,
+  onStartInspect,
+  onInspectUpdate,
+  onInspectRemove,
+  onInspectMove,
+  onInspectSuggestOrder,
+  onExportInspection,
   onUndoVertex,
   onStartDraw,
   onStartAnchor,
@@ -1296,6 +1303,134 @@ export default function ControlPanel({
             <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
               {t('cp.gcp.hint')}
             </p>
+          </div>
+        )}
+      </Section>
+
+      {/* Pontos de inspeção (R2.9) */}
+      <Section title={t('cp.inspect.title')}>
+        <button
+          onClick={onStartInspect}
+          title={t('cp.inspect.markTitle')}
+          className={`flex w-full items-center justify-center gap-1.5 rounded px-2 py-2 text-sm font-medium transition-colors ${
+            mode === 'inspect'
+              ? 'bg-orange-500 text-slate-950'
+              : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+          }`}
+        >
+          <IconTarget /> {t('cp.inspect.mark')}
+        </button>
+        {mode === 'inspect' && (
+          <p className="mt-2 text-xs text-slate-400">{t('cp.inspect.markHint')}</p>
+        )}
+
+        {inspectPoints?.length > 0 && (
+          <div className="mt-2 space-y-2">
+            {inspectPoints.map((p, i) => (
+              <div key={p.id} className="rounded border border-slate-800 bg-slate-900/60 p-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-5 shrink-0 font-mono text-xs font-bold text-orange-300">
+                    {i + 1}
+                  </span>
+                  <input
+                    type="text"
+                    className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+                    value={p.label}
+                    onChange={(e) => onInspectUpdate(p.id, { label: e.target.value })}
+                  />
+                  <button
+                    onClick={() => onInspectMove(p.id, -1)}
+                    disabled={i === 0}
+                    className="rounded bg-slate-800 px-1.5 py-1 text-xs text-slate-300 hover:bg-slate-700 disabled:opacity-40"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={() => onInspectMove(p.id, 1)}
+                    disabled={i === inspectPoints.length - 1}
+                    className="rounded bg-slate-800 px-1.5 py-1 text-xs text-slate-300 hover:bg-slate-700 disabled:opacity-40"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    onClick={() => onInspectRemove(p.id)}
+                    className="rounded bg-slate-800 px-1.5 py-1 text-xs text-slate-300 hover:bg-red-900/60 hover:text-red-200"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-[11px] text-slate-400">
+                  <label className="flex items-center gap-1">
+                    {t('cp.inspect.height')}
+                    <input
+                      type="number"
+                      className="w-full min-w-0 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right text-xs text-slate-100"
+                      value={p.heightM}
+                      min={2}
+                      onChange={(e) => onInspectUpdate(p.id, { heightM: Number(e.target.value) })}
+                    />
+                  </label>
+                  <label className="flex items-center gap-1" title={t('cp.inspect.headingTitle')}>
+                    {t('cp.inspect.heading')}
+                    <input
+                      type="number"
+                      className="w-full min-w-0 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right text-xs text-slate-100"
+                      value={p.heading ?? ''}
+                      placeholder="—"
+                      min={0}
+                      max={359}
+                      onChange={(e) =>
+                        onInspectUpdate(p.id, {
+                          heading: e.target.value === '' ? null : Math.max(0, Math.min(359, Number(e.target.value))),
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="flex items-center gap-1" title={t('cp.inspect.pitchTitle')}>
+                    {t('cp.inspect.pitch')}
+                    <input
+                      type="number"
+                      className="w-full min-w-0 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right text-xs text-slate-100"
+                      value={p.gimbalPitch ?? ''}
+                      placeholder="—"
+                      min={-90}
+                      max={20}
+                      onChange={(e) =>
+                        onInspectUpdate(p.id, {
+                          gimbalPitch: e.target.value === '' ? null : Math.max(-90, Math.min(20, Number(e.target.value))),
+                        })
+                      }
+                    />
+                  </label>
+                </div>
+                <label className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={p.photo !== false}
+                    onChange={(e) => onInspectUpdate(p.id, { photo: e.target.checked })}
+                  />
+                  {t('cp.inspect.photo')}
+                </label>
+              </div>
+            ))}
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={onInspectSuggestOrder}
+                disabled={inspectPoints.length < 3}
+                title={t('cp.inspect.suggestTitle')}
+                className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {t('cp.inspect.suggest')}
+              </button>
+              <button
+                onClick={onExportInspection}
+                className="flex items-center justify-center gap-1.5 rounded bg-sky-600 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-sky-500"
+              >
+                <IconDownload /> {t('cp.inspect.export')}
+              </button>
+            </div>
+            <p className="text-[11px] leading-relaxed text-slate-500">{t('cp.inspect.hint')}</p>
           </div>
         )}
       </Section>

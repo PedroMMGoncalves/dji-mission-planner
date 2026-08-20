@@ -90,6 +90,15 @@ const UI = {
 
   gcpsTitle: bi('Pontos de controlo (GCPs)', 'Ground control points (GCPs)'),
   gcpsNote: bi('Coordenadas WGS84 (lat, lon)', 'WGS84 coordinates (lat, lon)'),
+  inspectTitle: bi('Pontos de inspeção', 'Inspection points'),
+  inspectNote: bi('Esqueleto do relatório de campo', 'Field report skeleton'),
+  inspectIdx: bi('Nº', 'No.'),
+  inspectLabel: bi('Etiqueta', 'Label'),
+  inspectCoords: bi('Lat, Lon', 'Lat, Lon'),
+  inspectHeight: bi('Alt (m)', 'Alt (m)'),
+  inspectPhoto: bi('Foto prevista', 'Expected photo'),
+  inspectYes: bi('sim', 'yes'),
+  inspectNo: bi('não', 'no'),
 
   sigPilot: bi('Piloto responsável', 'Pilot in command'),
   sigSupervisor: bi('Supervisor técnico', 'Technical supervisor'),
@@ -570,6 +579,7 @@ function StatCell({ label, value }) {
 export default function MissionReport({
   missionName,
   droneLabel,
+  inspectPoints,
   params,
   spacing,
   interval,
@@ -896,6 +906,49 @@ export default function MissionReport({
                 </li>
               ))}
             </ul>
+          </Section>
+        )}
+
+        {/* ---------------------- Pontos de inspeção (R2.9) ---------------------- */}
+        {Array.isArray(inspectPoints) && inspectPoints.length > 0 && (
+          <Section title={L(UI.inspectTitle)} right={L(UI.inspectNote)}>
+            <table className="rep-table w-full border-collapse text-left">
+              <thead>
+                <tr>
+                  {[UI.inspectIdx, UI.inspectLabel, UI.inspectCoords, UI.inspectHeight, UI.inspectPhoto].map(
+                    (h) => (
+                      <th
+                        key={h.pt}
+                        className="border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-wider text-slate-400"
+                      >
+                        {L(h)}
+                      </th>
+                    ),
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {inspectPoints.map((p, i) => (
+                  <tr key={p.id ?? i}>
+                    <td className="border border-slate-800 px-2 py-1 font-mono text-[10px] text-orange-300">
+                      {i + 1}
+                    </td>
+                    <td className="border border-slate-800 px-2 py-1 text-[10px] text-slate-200">
+                      {p.label}
+                    </td>
+                    <td className="border border-slate-800 px-2 py-1 font-mono text-[10px] text-slate-300">
+                      {p.point[1].toFixed(6)}, {p.point[0].toFixed(6)}
+                    </td>
+                    <td className="border border-slate-800 px-2 py-1 font-mono text-[10px] text-slate-300">
+                      {Number.isFinite(p.heightM) ? p.heightM : '—'}
+                    </td>
+                    <td className="border border-slate-800 px-2 py-1 text-[10px] text-slate-300">
+                      {p.photo === false ? L(UI.inspectNo) : L(UI.inspectYes)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </Section>
         )}
 

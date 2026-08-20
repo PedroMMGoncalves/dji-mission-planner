@@ -28,6 +28,8 @@ export default function MapView({
   disabledTiles,
   onTileToggle,
   gcps,
+  inspectPoints,
+  onInspectDrag,
   fitKey,
   editable,
   onMapClick,
@@ -57,6 +59,7 @@ export default function MapView({
     onAnchorDrag,
     onBaseDrag,
     onTileToggle,
+    onInspectDrag,
   }
 
   // Inicialização única do mapa
@@ -164,12 +167,13 @@ export default function MapView({
       buffer: L.layerGroup().addTo(map),
       lines: L.layerGroup().addTo(map),
       gcps: L.layerGroup().addTo(map),
+      inspect: L.layerGroup().addTo(map),
       canvas: L.canvas({ padding: 0.3 }),
     }
 
     map.on('click', (e) => {
       const s = stateRef.current
-      if (s.mode === 'draw' || s.mode === 'anchor' || s.mode === 'base') {
+      if (s.mode === 'draw' || s.mode === 'anchor' || s.mode === 'base' || s.mode === 'inspect') {
         s.onMapClick([e.latlng.lng, e.latlng.lat])
       }
     })
@@ -226,7 +230,7 @@ export default function MapView({
     if (el)
       el.classList.toggle(
         'cursor-crosshair',
-        mode === 'draw' || mode === 'anchor' || mode === 'base',
+        mode === 'draw' || mode === 'anchor' || mode === 'base' || mode === 'inspect',
       )
   }, [mode])
 
@@ -495,6 +499,29 @@ export default function MapView({
       }).addTo(g)
     })
   }, [gcps])
+
+  // Pontos de inspeção (R2.9): marcadores numerados e arrastáveis
+  useEffect(() => {
+    const g = layersRef.current?.inspect
+    if (!g) return
+    g.clearLayers()
+    if (!inspectPoints || inspectPoints.length === 0) return
+    inspectPoints.forEach((p, i) => {
+      const m = L.marker(toLatLng(p.point), {
+        icon: L.divIcon({
+          className: 'inspect-marker',
+          html: `<div class="inspect-dot">${i + 1}</div><div class="inspect-label">${String(p.label ?? '').replace(/[<>&]/g, '')}</div>`,
+          iconSize: null,
+        }),
+        draggable: true,
+        zIndexOffset: 600,
+      }).addTo(g)
+      m.on('dragend', () => {
+        const q = m.getLatLng()
+        stateRef.current.onInspectDrag?.(p.id, [q.lng, q.lat])
+      })
+    })
+  }, [inspectPoints])
 
   return <div ref={containerRef} className="h-full w-full" />
 }

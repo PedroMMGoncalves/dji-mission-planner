@@ -96,6 +96,37 @@ body,
   pointer-events: none;
 }
 
+/* Pontos de inspeção: círculo numerado arrastável + etiqueta */
+.inspect-dot {
+  width: 22px;
+  height: 22px;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: #f97316;
+  border: 2px solid #0f172a;
+  box-shadow: 0 0 0 1.5px #f97316;
+  color: #0f172a;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inspect-label {
+  position: absolute;
+  top: 13px;
+  left: 0;
+  transform: translateX(-50%);
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fdba74;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* Números dos blocos de voo */
 .block-label span {
   display: inline-block;
