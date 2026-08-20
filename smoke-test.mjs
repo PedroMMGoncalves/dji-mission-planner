@@ -23,6 +23,7 @@ import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/
 import { decodeTerrarium, despikeElevations, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
 import { readFileSync } from 'node:fs'
 import { groupApplies } from './src/data/checklist.js'
+import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
 import {
   AIRCRAFT,
   PAYLOADS,
@@ -351,6 +352,92 @@ if (planL && !planL.error) {
     turf.booleanPointInPolygon(turf.midpoint(turf.point(s[0]), turf.point(s[1])), poly),
   )
   check('planL troços dentro da área', allInside)
+}
+
+/* 8a2. Decomposição celular boustrophedon (T3.1, port do FlyPath) */
+{
+  // duas linhas cheias, depois duas com um vão ao meio → 3 células:
+  // base + dois braços, ambos adjacentes à base
+  const rows = [
+    [0, [[0, 10]]],
+    [1, [[0, 10]]],
+    [2, [[0, 4], [6, 10]]],
+    [3, [[0, 4], [6, 10]]],
+  ]
+  const { cells, adjacency } = decomposeCells(rows, 1e-9)
+  check('decompose: 3 células (base + 2 braços)', cells.length === 3, cells.length)
+  check('decompose: braços adjacentes à base',
+    adjacency[0].size === 2 && adjacency[1].has(0) && adjacency[2].has(0))
+  const route = orderCells(cells, adjacency)
+  check('decompose: rota com 2 pontos por passagem', route.length === (2 + 2 + 2) * 2, route.length)
+  // uma linha vazia quebra a conectividade como um vão real
+  const rowsGap = [
+    [0, [[0, 10]]],
+    [1, []],
+    [2, [[0, 10]]],
+  ]
+  const gap = decomposeCells(rowsGap, 1e-9)
+  check('decompose: linha vazia separa células', gap.cells.length === 2 && gap.adjacency[0].size === 0)
+}
+
+/* 8a3. Percurso côncavo-seguro num U (T3.1) */
+{
+  // U a abrir para norte: braços verticais x∈[0,200] e x∈[400,600],
+  // base y∈[0,200]; linhas E-O → as filas acima de y=200 têm 2 troços
+  const uShape = [
+    toLL(0, 0), toLL(600, 0), toLL(600, 600), toLL(400, 600),
+    toLL(400, 200), toLL(200, 200), toLL(200, 600), toLL(0, 600),
+  ]
+  check('U válido', validateRing(uShape).valid)
+  const pu = generateFlightLines(uShape, {
+    spacingM: 47, angleDeg: 90, bufferPct: 0, photoIntervalM: 0, speed: 10,
+  })
+  check('U gerado', pu && !pu.error)
+  const polyU = turf.polygon([[...uShape, uShape[0]]])
+  const edgeU = turf.lineString([...uShape, uShape[0]])
+  // dentro OU em cima da fronteira (as pernas de ziguezague correm ao longo
+  // da aresta; o ruído do rotate-back poe o ponto medio ~1e-12 fora)
+  const inU = (mid) =>
+    turf.booleanPointInPolygon(mid, polyU) ||
+    turf.pointToLineDistance(mid, edgeU, { units: 'meters' }) < 0.5
+  let allIn = true
+  for (let i = 1; i + 1 < pu.waypoints.length; i += 2) {
+    const mid = turf.midpoint(turf.point(pu.waypoints[i]), turf.point(pu.waypoints[i + 1]))
+    if (!inU(mid)) allIn = false
+  }
+  check('U: ligações entre passagens dentro da área', allIn)
+
+  // reconstrução da serpentina antiga (ordem por fila, ziguezague) para
+  // comparação: com angle 90 não há rotação, as filas são latitudes
+  const rowsMap = new Map()
+  pu.lines.forEach((seg) => {
+    const key = ((seg[0][1] + seg[1][1]) / 2).toFixed(6)
+    if (!rowsMap.has(key)) rowsMap.set(key, [])
+    rowsMap.get(key).push(seg)
+  })
+  const legacy = []
+  const keys = [...rowsMap.keys()].sort((a, b) => Number(a) - Number(b))
+  keys.forEach((kk, r) => {
+    const segs = rowsMap.get(kk)
+      .map((s) => (s[0][0] <= s[1][0] ? s : [s[1], s[0]]))
+      .sort((s1, s2) => s1[0][0] - s2[0][0])
+    if (r % 2 === 0) segs.forEach((s) => legacy.push(s[0], s[1]))
+    else segs.slice().reverse().forEach((s) => legacy.push(s[1], s[0]))
+  })
+  let legacyLen = 0
+  for (let i = 1; i < legacy.length; i++) {
+    legacyLen += turf.distance(legacy[i - 1], legacy[i], { units: 'meters' })
+  }
+  check('U: percurso ≤ serpentina antiga', pu.stats.pathLengthM <= legacyLen + 1,
+    `${pu.stats.pathLengthM.toFixed(0)} vs ${legacyLen.toFixed(0)} m`)
+  check('U: ganho real sobre a serpentina', pu.stats.pathLengthM < legacyLen - 100,
+    `poupa ${(legacyLen - pu.stats.pathLengthM).toFixed(0)} m`)
+  let legacyOut = false
+  for (let i = 1; i + 1 < legacy.length; i += 2) {
+    const mid = turf.midpoint(turf.point(legacy[i]), turf.point(legacy[i + 1]))
+    if (!inU(mid)) legacyOut = true
+  }
+  check('U: a ordem antiga atravessava o vão (controlo)', legacyOut)
 }
 
 /* 8b. Direção de referência e distância da base */
