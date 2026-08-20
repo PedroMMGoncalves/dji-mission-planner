@@ -25,7 +25,7 @@ import { decodeTerrarium, despikeElevations, fitSlopePlane, simplifyProfile, ter
 import { readFileSync } from 'node:fs'
 import { groupApplies } from './src/data/checklist.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
-import { generateFacePlan } from './src/utils/faceMode.js'
+import { checkFaceClearance, generateFacePlan } from './src/utils/faceMode.js'
 import { generateOrbitPlan } from './src/utils/orbit.js'
 import {
   AIRCRAFT,
@@ -960,6 +960,41 @@ check('waylines Mapper+: sem acoes de camara',
     (wlFace.match(/smoothTransition/g) || []).length === fpl.waypoints.length)
   check('fachada: WPML com uma foto por waypoint',
     (wlFace.match(/takePhoto/g) || []).length === fpl.waypoints.length)
+}
+
+/* 9b2. Folga da fachada contra DSM local (R2.8) */
+{
+  // face E-O em y=0, drone a norte; DSM sintetico: ressalto de 22 m de topo
+  // entre 10 e 15 m a norte da baseline (a face abaula para o corredor em
+  // altura baixa); resto plano a cota 0
+  const straight = [toLL(0, 0), toLL(600, 0)]
+  const dsmBulge = (lon, lat) => {
+    const dN = (lat - 39.5) * 110574
+    return dN >= 10 && dN <= 15 ? 22 : 0
+  }
+  const mk = (standoff) => generateFacePlan(straight, {
+    sensor, faceHeightM: 60, standoffM: standoff, side: 'left',
+    verticalOverlapPct: 70, horizontalOverlapPct: 70, minHeightM: 16,
+  })
+  // alturas: 16, 20, 26.7, 33.3, 40, 46.7 — o ressalto (22 m) bloqueia o
+  // corredor das duas primeiras na amostra a 12.5 m do drone (< 15 m)
+  const near = checkFaceClearance(mk(25), dsmBulge, { minClearanceM: 15 })
+  check('folga: passagens baixas cortam o ressalto a 25 m',
+    near && !near.ok && near.passes.join(',') === '1,2',
+    `passes ${near?.passes.join(',')}, horiz min ${near?.minHorizontalM?.toFixed(1)} m`)
+  check('folga: passagens acima do ressalto livres', !near.passes.includes(3))
+  const far = checkFaceClearance(mk(60), dsmBulge, { minClearanceM: 15 })
+  check('folga: standoff maior limpa o aviso', far && far.ok && far.passes.length === 0,
+    `horiz min ${far?.minHorizontalM?.toFixed(1)} m`)
+  check('folga: standoff herdado do plano', mk(25).stats.standoffM === 25)
+  // solo elevado sob o corredor dispara a folga vertical (pe da face a 0)
+  const vert = checkFaceClearance(mk(25), () => 10, { minClearanceM: 15, footElevM: 0 })
+  check('folga vertical: solo elevado apanha as passagens baixas',
+    vert && !vert.ok && vert.passes.join(',') === '1,2' && Math.abs(vert.minVerticalM - 6) < 0.5,
+    `vert min ${vert?.minVerticalM?.toFixed(1)} m`)
+  // sem dados no DSM -> null (o chamador mostra standoff nao verificado)
+  check('folga: DSM sem dados -> null',
+    checkFaceClearance(mk(25), () => null, { minClearanceM: 15 }) === null)
 }
 
 /* 9c. Orbitas multi-nivel (T5.1 — gerador puro) */
