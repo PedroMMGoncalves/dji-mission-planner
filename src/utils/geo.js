@@ -304,6 +304,98 @@ export function longestEdgeBearing(ring) {
   return ((best % 180) + 180) % 180
 }
 
+// Ported from dronnix-io/FlyPath (GPL-3.0), grid_planner.py
+// find_optimal_direction/_best_angle/_flight_cost, adapted: QGIS geometry
+// replaced by a local planar frame in metres + the same scanline pairing
+// primitive used by generateFlightLines (turf.lineIntersect + midpoint-in-
+// polygon).
+/**
+ * Direção de voo (0–179°) que minimiza o tempo estimado de missão para a
+ * forma real do polígono. O comprimento total das faixas é ~área/espaçamento
+ * seja qual for a direção, por isso o tempo é dominado pelo número de
+ * passagens e viragens: escolhe-se a direção com MENOS troços de faixa
+ * dentro do polígono (uma concavidade que parte uma passagem em pedaços
+ * conta), com desempate pelo menor vão perpendicular. Pesquisa grosso-fino
+ * (5° em 0–179, depois ±4° a 1°) com um passo de varrimento único, limitado
+ * a ~200 scanlines, para os totais serem comparáveis entre ângulos.
+ */
+export function findOptimalDirection(ring, spacingM) {
+  if (!ring || ring.length < 3) return null
+  const spacing = spacingM > 0 ? spacingM : 1
+
+  // referencial planar local em metros, centrado no anel
+  const lat0 = ring.reduce((s, p) => s + p[1], 0) / ring.length
+  const lon0 = ring[0][0]
+  const mLon = metersPerDegLon(lat0)
+  const pts = ring.map(([lon, lat]) => [(lon - lon0) * mLon, (lat - lat0) * M_PER_DEG_LAT])
+  const poly = turf.polygon([[...pts, pts[0]]])
+
+  const xs = pts.map((p) => p[0])
+  const ys2 = pts.map((p) => p[1])
+  const diag = Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys2) - Math.min(...ys2))
+  if (!(diag > 0)) return null
+  const step = diag / spacing <= 200 ? spacing : diag / 200
+
+  const flightCost = (deg) => {
+    // azimute CW a partir do Norte, num referencial x=Este / y=Norte:
+    // as passagens correm ao longo de v=(sin, cos) e o varrimento das
+    // scanlines avança ao longo de u=(cos, -sin), como no gerador
+    const rad = (deg * Math.PI) / 180
+    const ux = Math.cos(rad)
+    const uy = -Math.sin(rad) // eixo do espaçamento (perpendicular às faixas)
+    const vx = Math.sin(rad)
+    const vy = Math.cos(rad) // eixo das passagens
+    const tv = pts.map(([x, y]) => x * ux + y * uy)
+    const sv = pts.map(([x, y]) => x * vx + y * vy)
+    const tMin = Math.min(...tv)
+    const tMax = Math.max(...tv)
+    const span = tMax - tMin
+    const a0 = Math.min(...sv) - step
+    const a1 = Math.max(...sv) + step
+
+    let segCount = 0
+    for (let t = tMin + step / 2; t <= tMax; t += step) {
+      const line = turf.lineString([
+        [a0 * vx + t * ux, a0 * vy + t * uy],
+        [a1 * vx + t * ux, a1 * vy + t * uy],
+      ])
+      const crossings = turf.lineIntersect(line, poly).features
+        .map((f) => f.geometry.coordinates[0] * vx + f.geometry.coordinates[1] * vy)
+        .sort((a, b) => a - b)
+        .filter((v, i, arr) => i === 0 || v - arr[i - 1] > 1e-9)
+      let k = 0
+      while (k < crossings.length - 1) {
+        const sMid = (crossings[k] + crossings[k + 1]) / 2
+        const mid = turf.point([sMid * vx + t * ux, sMid * vy + t * uy])
+        if (turf.booleanPointInPolygon(mid, poly)) {
+          segCount += 1
+          k += 2
+        } else {
+          k += 1
+        }
+      }
+    }
+    return [segCount, span]
+  }
+
+  const bestAngle = (angles) => {
+    let best = 0
+    let bestCost = null
+    for (const deg of angles) {
+      const c = flightCost(deg)
+      if (bestCost == null || c[0] < bestCost[0] || (c[0] === bestCost[0] && c[1] < bestCost[1])) {
+        bestCost = c
+        best = deg
+      }
+    }
+    return best
+  }
+
+  const coarse = bestAngle(Array.from({ length: 36 }, (_, i) => i * 5))
+  const fine = bestAngle(Array.from({ length: 9 }, (_, i) => (((coarse - 4 + i) % 180) + 180) % 180))
+  return fine % 180
+}
+
 /**
  * Distância (m) de um ponto (ex.: base do operador) ao polígono:
  * 0 se estiver dentro; caso contrário, distância mínima ao contorno.

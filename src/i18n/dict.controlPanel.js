@@ -49,6 +49,11 @@ export default {
     pt: 'Voltar ao FOV nominal do sensor ({fov}°)',
     en: 'Back to the sensor nominal FOV ({fov}°)',
   },
+  'cp.orientation.optimal': { pt: 'Ótima', en: 'Optimal' },
+  'cp.orientation.optimalTitle': {
+    pt: 'Procura a direção com menos faixas dentro do polígono real (menos viragens, menos tempo)',
+    en: 'Searches for the direction with the fewest lines inside the real polygon (fewer turns, less time)',
+  },
   'cp.orientation.tieLine': {
     pt: 'Fiada de amarração perpendicular',
     en: 'Perpendicular tie line',

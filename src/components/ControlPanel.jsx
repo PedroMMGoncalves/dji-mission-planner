@@ -114,6 +114,7 @@ export default function ControlPanel({
   onStartBase,
   onRemoveBase,
   onSetAngleRelative,
+  onSetAngleOptimal,
   onFinishDraw,
   onClear,
 }) {
@@ -533,7 +534,7 @@ export default function ControlPanel({
           <span className="text-xs text-slate-500">°</span>
         </div>
         <p className="mt-1 text-[11px] text-slate-500">{t('cp.orientation.azimuthHint')}</p>
-        <div className="mt-2 grid grid-cols-3 gap-1.5">
+        <div className="mt-2 grid grid-cols-4 gap-1.5">
           {[
             { key: 'cp.orientation.parallel', offset: 0 },
             { key: 'cp.orientation.perpendicular', offset: 90 },
@@ -549,6 +550,14 @@ export default function ControlPanel({
               {t(key)}
             </button>
           ))}
+          <button
+            onClick={onSetAngleOptimal}
+            disabled={!hasRing || !validation.valid}
+            title={t('cp.orientation.optimalTitle')}
+            className="rounded bg-slate-800 px-1.5 py-1.5 text-xs font-medium text-sky-300 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {t('cp.orientation.optimal')}
+          </button>
         </div>
         {refAzimuth != null && (
           <p className="mt-1 text-[11px] text-slate-500">

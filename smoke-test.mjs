@@ -2,6 +2,7 @@ import * as turf from '@turf/turf'
 import {
   computeAlignment,
   computeFootprint,
+  findOptimalDirection,
   generateFlightPlan,
   computeGSD,
   distanceToArea,
@@ -438,6 +439,45 @@ if (planL && !planL.error) {
     if (!inU(mid)) legacyOut = true
   }
   check('U: a ordem antiga atravessava o vão (controlo)', legacyOut)
+}
+
+/* 8a4. Direcao otima de voo (T3.2, port do FlyPath) */
+{
+  const opt = findOptimalDirection(rectNS, sp)
+  const d90 = Math.min(Math.abs(opt - 90), 180 - Math.abs(opt - 90))
+  check('otima: retangulo longo concorda com a aresta longa (±5°)', d90 <= 5, `${opt}°`)
+
+  const gen = (ring, ang) => generateFlightLines(ring, {
+    spacingM: 50, angleDeg: ang, bufferPct: 0, photoIntervalM: 0, speed: 10,
+  }).stats.lineCount
+
+  // trapezio com a aresta mais longa na diagonal (~104°): voar ao longo
+  // dela e otimo, e a pesquisa deve concordar com a heuristica da aresta
+  const trap = [toLL(0, 0), toLL(600, 0), toLL(600, 150), toLL(0, 300)]
+  const edgeT = longestEdgeBearing(trap)
+  const optT = findOptimalDirection(trap, 50)
+  const dT = Math.min(Math.abs(optT - edgeT), 180 - Math.abs(optT - edgeT))
+  check('otima: concorda com a diagonal do trapezio (±6°)', dT <= 6 && gen(trap, optT) <= gen(trap, edgeT),
+    `${Math.round(optT)}° vs aresta ${Math.round(edgeT)}°`)
+
+  // num U de bracos verticais com base larga, a aresta mais longa (base,
+  // 90°) parte as fiadas em dois trocos por fila acima da base — a
+  // pesquisa evita a concavidade e bate a heuristica
+  const uShape2 = [
+    toLL(0, 0), toLL(700, 0), toLL(700, 600), toLL(450, 600),
+    toLL(450, 200), toLL(250, 200), toLL(250, 600), toLL(0, 600),
+  ]
+  const edgeU = longestEdgeBearing(uShape2)
+  const optU = findOptimalDirection(uShape2, 50)
+  const nOptU = gen(uShape2, optU)
+  const nEdgeU = gen(uShape2, edgeU)
+  check('otima: bate a aresta mais longa no U', nOptU < nEdgeU,
+    `${nOptU} faixas a ${Math.round(optU)}° < ${nEdgeU} a ${Math.round(edgeU)}°`)
+
+  // no L classico nunca e pior do que a heuristica
+  const nOptL = gen(lShape, findOptimalDirection(lShape, 50))
+  const nEdgeL = gen(lShape, longestEdgeBearing(lShape))
+  check('otima: nunca pior que a aresta no L', nOptL <= nEdgeL, `${nOptL} <= ${nEdgeL}`)
 }
 
 /* 8b. Direção de referência e distância da base */
