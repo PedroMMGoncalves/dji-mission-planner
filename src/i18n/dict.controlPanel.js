@@ -49,6 +49,39 @@ export default {
     pt: 'Voltar ao FOV nominal do sensor ({fov}°)',
     en: 'Back to the sensor nominal FOV ({fov}°)',
   },
+  /* ---- Pontos de inspeção (R2.9) ---- */
+  'cp.inspect.title': { pt: 'Pontos de Inspeção', en: 'Inspection Points' },
+  'cp.inspect.mark': { pt: 'Marcar pontos no mapa', en: 'Place points on the map' },
+  'cp.inspect.markTitle': {
+    pt: 'Cada clique no mapa acrescenta um ponto de inspeção; volte a carregar para terminar',
+    en: 'Each map click adds an inspection point; press again to finish',
+  },
+  'cp.inspect.markHint': {
+    pt: 'Clique no mapa para acrescentar pontos. Arraste um marcador para o mover.',
+    en: 'Click the map to add points. Drag a marker to move it.',
+  },
+  'cp.inspect.height': { pt: 'alt', en: 'alt' },
+  'cp.inspect.heading': { pt: 'rumo', en: 'hdg' },
+  'cp.inspect.headingTitle': {
+    pt: 'Rumo fixo em graus; vazio = segue a rota',
+    en: 'Fixed heading in degrees; empty = follows the route',
+  },
+  'cp.inspect.pitch': { pt: 'pitch', en: 'pitch' },
+  'cp.inspect.pitchTitle': {
+    pt: 'Pitch do gimbal neste ponto; vazio = mantém o anterior',
+    en: 'Gimbal pitch at this point; empty = keeps the previous one',
+  },
+  'cp.inspect.photo': { pt: 'Fotografar neste ponto', en: 'Take a photo at this point' },
+  'cp.inspect.suggest': { pt: 'Sugerir ordem', en: 'Suggest order' },
+  'cp.inspect.suggestTitle': {
+    pt: 'Reordena por vizinho-mais-próximo a partir da base (ou do 1.º ponto)',
+    en: 'Reorders by nearest neighbour starting at the base (or the 1st point)',
+  },
+  'cp.inspect.export': { pt: 'Exportar KMZ', en: 'Export KMZ' },
+  'cp.inspect.hint': {
+    pt: 'Missão própria, independente da grelha: rumo e pitch por ponto, uma foto por ponto marcado. As alturas são relativas ao ponto de descolagem.',
+    en: 'A mission of its own, independent of the grid: per-point heading and pitch, one photo per marked point. Heights are relative to the takeoff point.',
+  },
   'cp.terrain.slopeHint': {
     pt: 'Encosta média de {slope}° a descer para {az}°. Para encostas íngremes com terrain follow: linhas ao longo das curvas de nível ({lines}°) e câmara oblíqua ({gimbal}°).',
     en: 'Mean slope of {slope}° descending toward {az}°. For steep slopes with terrain follow: lines along the contours ({lines}°) and an oblique camera ({gimbal}°).',

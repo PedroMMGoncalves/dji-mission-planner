@@ -27,6 +27,7 @@ import { groupApplies } from './src/data/checklist.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
 import { checkFaceClearance, generateFacePlan } from './src/utils/faceMode.js'
 import { generateOrbitPlan } from './src/utils/orbit.js'
+import { inspectionToWaypoints, nearestNeighbourOrder } from './src/utils/inspect.js'
 import {
   AIRCRAFT,
   PAYLOADS,
@@ -1051,6 +1052,44 @@ check('waylines Mapper+: sem acoes de camara',
       .stats.heights.join(',') === '20,35')
   check('orbita: raio invalido -> erro controlado',
     generateOrbitPlan(center, { sensor, radiusM: 0, levels: [30] })?.error === 'invalid-radius')
+}
+
+/* 9d. Pontos de inspecao (R2.9 — parte pura) */
+{
+  const P = (x, y, extra = {}) => ({ id: x + y, label: `P${x}`, point: toLL(x, y), heightM: 30, ...extra })
+  // pontos em linha, baralhados: o vizinho-mais-proximo a partir da base a
+  // oeste devolve a ordem geografica oeste->este
+  const pts = [P(400, 0), P(100, 0), P(300, 0), P(0, 0), P(200, 0)]
+  const ordered = nearestNeighbourOrder(pts, toLL(-50, 0))
+  check('inspecao: ordem por vizinho mais proximo',
+    ordered.map((p) => p.label).join(',') === 'P0,P100,P200,P300,P400',
+    ordered.map((p) => p.label).join(','))
+  check('inspecao: nao altera a lista original', pts[0].label === 'P400')
+  check('inspecao: sem base comeca no primeiro ponto',
+    nearestNeighbourOrder(pts)[0].label === 'P400')
+
+  const { waypoints: wps, perWaypoint: pw } = inspectionToWaypoints([
+    P(0, 0, { heading: 45, gimbalPitch: -30 }),
+    P(100, 0, { photo: false }),
+    P(200, 0, { heightM: 55.55 }),
+  ])
+  check('inspecao: waypoints com altura arredondada',
+    wps.length === 3 && wps[2][2] === 55.6, wps[2][2])
+  check('inspecao: heading/pitch so quando definidos',
+    pw[0].heading === 45 && pw[0].gimbalPitch === -30 &&
+      pw[1].heading === undefined && pw[1].gimbalPitch === undefined)
+  check('inspecao: photo=false nao dispara',
+    pw[1].actions.length === 0 && pw[0].actions.includes('takePhoto') && pw[2].actions.includes('takePhoto'))
+
+  // exportacao ponta-a-ponta: rumo fixo no 1.o, grupo de foto nos 1.o e 3.o
+  const wlInsp = buildWaylinesWPML({
+    name: 'inspecao', waypoints: wps, altitude: 30, speed: 5,
+    wpml: wpmlParams.wpml, photoIntervalM: 0, triggerMode: 'distance',
+    sensorType: 'camera', perWaypoint: pw,
+  })
+  check('inspecao: WPML com 1 rumo fixo e 2 fotos',
+    (wlInsp.match(/smoothTransition/g) || []).length === 1 &&
+      (wlInsp.match(/takePhoto/g) || []).length === 2)
 }
 
 /* 10b. Acoes por waypoint no exportador (T4.1) */

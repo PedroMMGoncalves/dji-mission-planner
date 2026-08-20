@@ -52,6 +52,7 @@ import {
   CRS_OPTIONS,
 } from './utils/importArea.js'
 import { fitSlopePlane, loadTerrain, terrainFollowLines } from './utils/terrain.js'
+import { inspectionToWaypoints, nearestNeighbourOrder } from './utils/inspect.js'
 import { loadDemFromFile } from './utils/demFile.js'
 import { parseWpmlKmz } from './utils/importWpml.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
@@ -122,7 +123,10 @@ function AppInner({ lang, setLang }) {
     overshoot: 0, // prolongamento de cada faixa nos dois extremos (m) — T2.2
     tieLine: false, // fiada de amarração perpendicular no fim — T2.3
   })
-  const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base'
+  const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect'
+  // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
+  const [inspectPoints, setInspectPoints] = useState([])
+  const inspectSeqRef = useRef(1)
   const [draftVertices, setDraftVertices] = useState([])
   const [ring, setRing] = useState(null) // anel aberto [[lon,lat], ...]
   const [areaOrigin, setAreaOrigin] = useState(null) // 'draw' | 'anchor' | null
@@ -551,10 +555,56 @@ function AppInner({ lang, setLang }) {
       } else if (mode === 'base') {
         setBasePoint(lonlat)
         setMode('idle')
+      } else if (mode === 'inspect') {
+        const n = inspectSeqRef.current++
+        setInspectPoints((pts) => [
+          ...pts,
+          {
+            id: n,
+            label: `P${String(n).padStart(2, '0')}`,
+            point: lonlat,
+            heightM: params.altitude,
+            heading: null, // null = segue a rota (followWayline)
+            gimbalPitch: null, // null = mantém o pitch em vigor
+            photo: true,
+          },
+        ])
       }
     },
-    [mode],
+    [mode, params.altitude],
   )
+
+  /* --------------------- Pontos de inspeção (R2.9) -------------------- */
+  const startInspect = useCallback(() => {
+    setMode((m) => (m === 'inspect' ? 'idle' : 'inspect'))
+  }, [])
+
+  const updateInspectPoint = useCallback((id, patch) => {
+    setInspectPoints((pts) => pts.map((p) => (p.id === id ? { ...p, ...patch } : p)))
+  }, [])
+
+  const removeInspectPoint = useCallback((id) => {
+    setInspectPoints((pts) => pts.filter((p) => p.id !== id))
+  }, [])
+
+  const moveInspectPoint = useCallback((id, dir) => {
+    setInspectPoints((pts) => {
+      const i = pts.findIndex((p) => p.id === id)
+      const j = i + dir
+      if (i < 0 || j < 0 || j >= pts.length) return pts
+      const next = pts.slice()
+      ;[next[i], next[j]] = [next[j], next[i]]
+      return next
+    })
+  }, [])
+
+  const suggestInspectOrder = useCallback(() => {
+    setInspectPoints((pts) => nearestNeighbourOrder(pts, basePoint ?? null))
+  }, [basePoint])
+
+  const handleInspectDrag = useCallback((id, lonlat) => {
+    setInspectPoints((pts) => pts.map((p) => (p.id === id ? { ...p, point: lonlat } : p)))
+  }, [])
 
   const handleFinishDraw = useCallback(() => {
     setDraftVertices((draft) => {
@@ -895,6 +945,11 @@ function AppInner({ lang, setLang }) {
     if (p.batteryByCombo && typeof p.batteryByCombo === 'object') {
       setBatteryByCombo((m) => ({ ...m, ...p.batteryByCombo }))
     }
+    if (Array.isArray(p.inspectPoints)) {
+      const pts = p.inspectPoints.filter((q) => q && Array.isArray(q.point))
+      setInspectPoints(pts)
+      inspectSeqRef.current = pts.reduce((mx, q) => Math.max(mx, (q.id ?? 0) + 1), 1)
+    }
     if (p.anchor) setAnchor((prev) => ({ ...prev, ...p.anchor }))
     if (Array.isArray(p.ring)) setRing(p.ring)
     setAreaOrigin(p.areaOrigin ?? null)
@@ -934,6 +989,7 @@ function AppInner({ lang, setLang }) {
             custom,
             payloadTuning,
             batteryByCombo,
+            inspectPoints,
             params,
             split,
             anchor,
@@ -950,7 +1006,7 @@ function AppInner({ lang, setLang }) {
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const exportProject = useCallback(() => {
     const data = {
@@ -960,6 +1016,7 @@ function AppInner({ lang, setLang }) {
       custom,
       payloadTuning,
       batteryByCombo,
+      inspectPoints,
       params,
       split,
       anchor,
@@ -974,7 +1031,7 @@ function AppInner({ lang, setLang }) {
       new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
       `${missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'}-projeto.json`,
     )
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const importProject = useCallback(
     async (file) => {
@@ -1127,6 +1184,25 @@ function AppInner({ lang, setLang }) {
     } else {
       exportWPMLKmz(exportParams)
     }
+  }
+
+  // Missão de inspeção (R2.9): KMZ próprio com os pontos avulsos, rumo e
+  // pitch por ponto via perWaypoint; sem disparo por distância
+  const handleExportInspection = () => {
+    if (inspectPoints.length === 0) return
+    const { waypoints, perWaypoint } = inspectionToWaypoints(inspectPoints)
+    exportWPMLKmz({
+      name: `${safeName}-inspecao`,
+      waypoints,
+      perWaypoint,
+      altitude: params.altitude,
+      speed: params.speed,
+      wpml,
+      photoIntervalM: 0,
+      triggerMode: 'distance',
+      gimbalPitch: params.gimbalPitch,
+      sensorType: sensor.type,
+    })
   }
 
   /* ----------------------------- Layout ------------------------------ */
@@ -1288,6 +1364,13 @@ function AppInner({ lang, setLang }) {
           gcpAutoCount={gcpAutoCount}
           gcpInfo={gcpInfo}
           onExportGcps={handleExportGcps}
+          inspectPoints={inspectPoints}
+          onStartInspect={startInspect}
+          onInspectUpdate={updateInspectPoint}
+          onInspectRemove={removeInspectPoint}
+          onInspectMove={moveInspectPoint}
+          onInspectSuggestOrder={suggestInspectOrder}
+          onExportInspection={handleExportInspection}
           onUndoVertex={removeLastDraftVertex}
           onStartDraw={startDraw}
           onStartAnchor={startAnchor}
@@ -1315,6 +1398,8 @@ function AppInner({ lang, setLang }) {
             disabledTiles={disabledTiles}
             onTileToggle={toggleTile}
             gcps={gcps}
+            inspectPoints={inspectPoints}
+            onInspectDrag={handleInspectDrag}
             fitKey={fitKey}
             editable={!gridCells && split.mode !== 'tiles' && split.mode !== 'battery'}
             onMapClick={handleMapClick}
@@ -1385,6 +1470,7 @@ function AppInner({ lang, setLang }) {
           <MissionReport
             missionName={missionName}
             droneLabel={hardwareLabel}
+            inspectPoints={inspectPoints}
             params={params}
             spacing={spacing}
             interval={interval}
