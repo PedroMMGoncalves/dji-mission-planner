@@ -192,16 +192,26 @@ check('GSD: |pitch| < 20 -> null (quase-horizonte)',
       lidarPointDensity({ prr: 0, speed: 10, swathM: 141 }) === null)
 }
 
-/* 1e3. Checklist condicional por payload (T2.4) */
+/* 1e3. Checklist condicional por payload e modo (T2.4/R2.6) */
 {
   check('groupApplies: grupo universal aparece sempre',
     groupApplies({ titulo: 'x' }, 'camera') && groupApplies({ titulo: 'x' }, 'lidar'))
   check('groupApplies: grupo lidar so com lidar',
     groupApplies({ appliesTo: 'lidar' }, 'lidar') && !groupApplies({ appliesTo: 'lidar' }, 'camera'))
-  // guarda estrutural: os dois grupos LiDAR existem e os tres loops filtram
+  check('groupApplies: grupo face so com missao de fachada ativa',
+    groupApplies({ appliesTo: 'face' }, 'camera', { face: true }) &&
+      !groupApplies({ appliesTo: 'face' }, 'camera') &&
+      !groupApplies({ appliesTo: 'face' }, 'lidar', { face: false }))
+  check('groupApplies: face independente do tipo de sensor',
+    groupApplies({ appliesTo: 'face' }, 'lidar', { face: true }))
+  // guarda estrutural: 2 grupos LiDAR + 1 face, filtragem nos tres loops,
+  // e o grupo face acrescentado DEPOIS do LiDAR (indices estaveis)
   const chk = readFileSync(new URL('./src/components/ChecklistPage.jsx', import.meta.url), 'utf8')
-  check('ChecklistPage: 2 grupos appliesTo lidar',
-    (chk.match(/appliesTo: 'lidar'/g) || []).length === 2)
+  check('ChecklistPage: 2 grupos lidar + 1 face',
+    (chk.match(/appliesTo: 'lidar'/g) || []).length === 2 &&
+      (chk.match(/appliesTo: 'face'/g) || []).length === 1)
+  check('ChecklistPage: grupo face depois do grupo lidar de campo',
+    chk.indexOf("appliesTo: 'face'") > chk.indexOf("'Manobras de calibração antes das fiadas'"))
   check('ChecklistPage: filtragem aplicada nos loops',
     (chk.match(/groupApplies\(/g) || []).length >= 3)
 }

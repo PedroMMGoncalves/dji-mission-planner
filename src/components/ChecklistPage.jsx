@@ -507,6 +507,63 @@ const FASES = [
           ),
         ],
       },
+      // Grupo condicional (R2.6): só aparece com uma missão de fachada
+      // ativa (appliesTo 'face'). Acrescentado DEPOIS do grupo LiDAR para
+      // não deslocar índices de grupos já publicados — o estado gravado é
+      // indexado por fase/grupo/item. Textos provisórios, o Pedro afina.
+      {
+        titulo: bi('Fachada / face', 'Face mode'),
+        appliesTo: 'face',
+        itens: [
+          it(
+            bi(
+              'Fix RTK verificado antes da primeira passagem',
+              'RTK fix verified before the first pass',
+            ),
+            null,
+            true,
+          ),
+          it(
+            bi(
+              'Sombreamento GNSS / multipath junto à face avaliado',
+              'GNSS shadowing / multipath near the face assessed',
+            ),
+            bi(
+              'Faces altas bloqueiam constelação — vigiar nº de satélites',
+              'High faces block the constellation — watch satellite count',
+            ),
+            true,
+          ),
+          it(
+            bi(
+              'Rotores de vento no lado de sotavento considerados',
+              'Wind rotors on the lee side considered',
+            ),
+            bi(
+              'Turbulência junto à crista e à base da face',
+              'Turbulence near the crest and the foot of the face',
+            ),
+            true,
+          ),
+          it(
+            bi(
+              'Linha de vista visual ao longo de toda a face',
+              'Visual line of sight along the whole face',
+            ),
+          ),
+          it(
+            bi(
+              'Standoff confirmado com o conhecimento mais recente da superfície',
+              'Standoff confirmed against the newest surface knowledge',
+            ),
+            bi(
+              'DSM local se existir; sem DSM o standoff segue por verificar',
+              'Local DSM when available; without it the standoff stays unverified',
+            ),
+            true,
+          ),
+        ],
+      },
     ],
   },
   {
@@ -904,21 +961,21 @@ function BarraProgresso({ feitos, total, acento }) {
   )
 }
 
-function ColunaFase({ fase, checked, onToggle, sensorType }) {
+function ColunaFase({ fase, checked, onToggle, sensorType, faceMode }) {
   const L = useL()
   const acento = ACENTOS[fase.id]
   const { feitos, total } = useMemo(() => {
     let f = 0
     let t = 0
     fase.grupos.forEach((g, gi) => {
-      if (!groupApplies(g, sensorType)) return
+      if (!groupApplies(g, sensorType, { face: faceMode })) return
       g.itens.forEach((_, ii) => {
         t += 1
         if (checked[chaveItem(fase.id, gi, ii)]) f += 1
       })
     })
     return { feitos: f, total: t }
-  }, [fase, checked, sensorType])
+  }, [fase, checked, sensorType, faceMode])
 
   return (
     <section className="chk-coluna flex flex-col rounded-lg border border-slate-800 bg-slate-900 p-4">
@@ -933,7 +990,7 @@ function ColunaFase({ fase, checked, onToggle, sensorType }) {
 
       <div className="flex-1 space-y-4">
         {/* filtragem sem reindexar: gi original preserva as chaves gravadas */}
-        {fase.grupos.map((grupo, gi) => groupApplies(grupo, sensorType) && (
+        {fase.grupos.map((grupo, gi) => groupApplies(grupo, sensorType, { face: faceMode }) && (
           <div key={`${fase.id}.${gi}`} className="chk-grupo">
             <h3 className="mb-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
               {L(grupo.titulo)}
@@ -1051,6 +1108,7 @@ export default function ChecklistPage({
   missionName = '',
   droneLabel = '',
   sensorType = 'camera',
+  faceMode = false, // liga o grupo 'face' quando houver missão de fachada
   blocks = [],
   plannedGcps = [],
   onBack,
@@ -1153,7 +1211,7 @@ export default function ChecklistPage({
     FASES.forEach((fase) => {
       const itens = []
       fase.grupos.forEach((g, gi) => {
-        if (!groupApplies(g, sensorType)) return
+        if (!groupApplies(g, sensorType, { face: faceMode })) return
         g.itens.forEach((item, ii) => {
           const texto = tr(item.texto, lang)
           const nota = tr(item.nota, lang)
@@ -1170,7 +1228,7 @@ export default function ChecklistPage({
       total += itens.length
     })
     return { porFase, feitos, total }
-  }, [checked, lang, sensorType])
+  }, [checked, lang, sensorType, faceMode])
 
   const importarBlocos = () => {
     if (!blocks || blocks.length === 0) return
@@ -1337,6 +1395,7 @@ export default function ChecklistPage({
               checked={checked}
               onToggle={toggle}
               sensorType={sensorType}
+              faceMode={faceMode}
             />
           ))}
         </div>
