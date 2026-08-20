@@ -150,6 +150,7 @@ function missionConfigXml({ wpml, speed }) {
  */
 export function buildTemplateKML(params) {
   const { name, waypoints, altitude, speed, wpml } = params
+  const turnMode = params.turnMode ?? 'toPointAndStopWithDiscontinuityCurvature'
   const now = Date.now()
 
   const placemarks = waypoints
@@ -195,7 +196,7 @@ ${missionConfigXml(params)}
       <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
       <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
     </wpml:globalWaypointHeadingParam>
-    <wpml:globalWaypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:globalWaypointTurnMode>
+    <wpml:globalWaypointTurnMode>${turnMode}</wpml:globalWaypointTurnMode>
     <wpml:globalUseStraightLine>1</wpml:globalUseStraightLine>
 ${placemarks}
   </Folder>
@@ -218,6 +219,10 @@ export function buildWaylinesWPML(params) {
     // smoothTransition); sem entrada, o comportamento global mantém-se
     // byte a byte (followWayline, sem grupos extra).
     perWaypoint = null,
+    // T5.1: modo de viragem (ex.: toPointAndPassWithContinuityCurvature
+    // para órbitas em voo curvo contínuo); por defeito o comportamento
+    // atual de parar em cada waypoint.
+    turnMode = 'toPointAndStopWithDiscontinuityCurvature',
   } = params
   const gimbalPitch = params.gimbalPitch ?? -90
 
@@ -361,7 +366,7 @@ ${actions.join('\n')}
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
-          <wpml:waypointTurnMode>toPointAndStopWithDiscontinuityCurvature</wpml:waypointTurnMode>
+          <wpml:waypointTurnMode>${turnMode}</wpml:waypointTurnMode>
           <wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>${groupsXml ? '\n' + groupsXml : ''}

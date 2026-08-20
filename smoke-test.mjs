@@ -26,6 +26,7 @@ import { readFileSync } from 'node:fs'
 import { groupApplies } from './src/data/checklist.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
 import { generateFacePlan } from './src/utils/faceMode.js'
+import { generateOrbitPlan } from './src/utils/orbit.js'
 import {
   AIRCRAFT,
   PAYLOADS,
@@ -908,6 +909,62 @@ check('waylines Mapper+: sem acoes de camara',
     (wlFace.match(/smoothTransition/g) || []).length === fpl.waypoints.length)
   check('fachada: WPML com uma foto por waypoint',
     (wlFace.match(/takePhoto/g) || []).length === fpl.waypoints.length)
+}
+
+/* 9c. Orbitas multi-nivel (T5.1 — gerador puro) */
+{
+  const orb = generateOrbitPlan(center, {
+    sensor, radiusM: 100, levels: [30, 50, 70],
+    horizontalOverlapPct: 80, poiHeightM: 10, speed: 4,
+  })
+  // corda = 141.8 x 0.2 = 28.36 -> n = ceil(628.3/28.36) = 23
+  check('orbita: 23 pontos por volta', orb && orb.stats.pointsPerOrbit === 23,
+    orb?.stats.pointsPerOrbit)
+  check('orbita: 3 niveis x (n+1) waypoints',
+    orb.stats.waypointCount === 3 * 24 && orb.perWaypoint.length === orb.stats.waypointCount)
+  // raio: erro < 1 m em todos os pontos
+  const radii = orb.waypoints.map((w) => turf.distance(center, [w[0], w[1]], { units: 'meters' }))
+  check('orbita: raio 100 m com erro < 1 m',
+    radii.every((r) => Math.abs(r - 100) < 1),
+    `${Math.min(...radii).toFixed(2)}-${Math.max(...radii).toFixed(2)}`)
+  // rumo aponta ao POI em todos os waypoints
+  const headOk = orb.waypoints.every((w, i) => {
+    const want = ((Math.round(turf.bearing([w[0], w[1]], center)) % 360) + 360) % 360
+    const diff = Math.abs(orb.perWaypoint[i].heading - want)
+    return Math.min(diff, 360 - diff) <= 1
+  })
+  check('orbita: rumo ao POI em todos os pontos', headOk)
+  // gimbal por nivel apontado a cota do centro: -atan((h-10)/100)
+  check('orbita: gimbal trigonometrico por nivel',
+    orb.perLevel[0].gimbalPitch === -11 && orb.perLevel[1].gimbalPitch === -22 &&
+      orb.perLevel[2].gimbalPitch === -31,
+    orb.perLevel.map((l) => l.gimbalPitch).join(','))
+  // a volta fecha no rumo inicial e a subida e vertical no mesmo ponto
+  const n1 = orb.stats.pointsPerOrbit + 1
+  check('orbita: volta fechada e subida vertical',
+    orb.waypoints[0][0] === orb.waypoints[n1 - 1][0] &&
+      orb.waypoints[n1 - 1][0] === orb.waypoints[n1][0] &&
+      orb.waypoints[n1][2] > orb.waypoints[n1 - 1][2])
+  // integracao com o exportador: voo curvo continuo + rumo fixo por ponto
+  const wlOrb = buildWaylinesWPML({
+    name: 'orbita', waypoints: orb.waypoints, altitude: 50, speed: 4,
+    wpml: wpmlParams.wpml, photoIntervalM: 0, triggerMode: 'distance',
+    sensorType: 'camera', perWaypoint: orb.perWaypoint, turnMode: orb.turnMode,
+  })
+  check('orbita: WPML em voo curvo continuo',
+    (wlOrb.match(/toPointAndPassWithContinuityCurvature/g) || []).length === orb.stats.waypointCount &&
+      !wlOrb.includes('toPointAndStopWithDiscontinuityCurvature'))
+  check('orbita: WPML com rumo e foto por waypoint',
+    (wlOrb.match(/smoothTransition/g) || []).length === orb.stats.waypointCount &&
+      (wlOrb.match(/takePhoto/g) || []).length === orb.stats.waypointCount)
+  // por defeito o modo de viragem antigo mantem-se
+  check('orbita: turnMode por defeito inalterado',
+    buildWaylinesWPML(wpmlParams).includes('toPointAndStopWithDiscontinuityCurvature'))
+  check('orbita: levels por contagem/passo',
+    generateOrbitPlan(center, { sensor, radiusM: 50, levels: { count: 2, startM: 20, stepM: 15 } })
+      .stats.heights.join(',') === '20,35')
+  check('orbita: raio invalido -> erro controlado',
+    generateOrbitPlan(center, { sensor, radiusM: 0, levels: [30] })?.error === 'invalid-radius')
 }
 
 /* 10b. Acoes por waypoint no exportador (T4.1) */
