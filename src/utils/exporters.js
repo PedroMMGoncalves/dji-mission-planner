@@ -209,6 +209,16 @@ ${placemarks}
  * waylines.wpml — a rota executável: waypoints 3D + ações de câmara.
  * O disparo automático usa um actionGroup que cobre toda a rota com trigger
  * multipleDistance (disparo a cada X metros) ou multipleTiming (a cada X s).
+ *
+ * Teto de waypoints por wayline (T3.3/R2.3, decisão: NÃO implementar corte):
+ * a especificação WPML documenta wpml:index com alcance [0, 65535]
+ * (dji-sdk/Cloud-API-Doc, waylines-wpml.md, verificado 2026-08-20) e nenhum
+ * limite menor por wayline. O pior caso realista desta app — terrain follow
+ * densificado (passo mínimo 40 m, simplificação Douglas-Peucker), teto de
+ * segurança de 2500 faixas e blocos cortados por bateria — fica ordens de
+ * grandeza abaixo de 65536, pelo que o padrão split_by_waypoint_count do
+ * FlyPath não foi portado de propósito. Se um teste real no comando revelar
+ * um limite prático menor do Pilot 2, reabrir a tarefa com essa evidência.
  */
 export function buildWaylinesWPML(params) {
   const {
