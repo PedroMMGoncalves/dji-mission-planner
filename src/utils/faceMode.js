@@ -52,6 +52,7 @@ export const DEFAULT_FACE_CONFIG = {
   horizontalOverlapPct: 70,
   gimbalPitch: 0,
   minClearanceM: 15,
+  speedMS: 5, // velocidade de voo da fachada (P1) — parâmetro explícito
 }
 
 /**
@@ -80,6 +81,7 @@ export function normalizeFaceConfig(stored) {
     horizontalOverlapPct: num(stored.horizontalOverlapPct, 0, 95, d.horizontalOverlapPct),
     gimbalPitch: num(stored.gimbalPitch, -90, 45, d.gimbalPitch),
     minClearanceM: num(stored.minClearanceM, 2, 100, d.minClearanceM),
+    speedMS: num(stored.speedMS, 1, 10, d.speedMS),
   }
 }
 

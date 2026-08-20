@@ -1088,6 +1088,38 @@ check('waylines Mapper+: sem acoes de camara',
       normalizeFaceConfig({ baseline: 'x' }).baseline === null)
   check('faceConfig: lado invalido cai em left',
     normalizeFaceConfig({ side: 'up' }).side === 'left')
+  // P1: velocidade explicita — projectos antigos recebem o default 5
+  check('faceConfig: speedMS default em projectos antigos',
+    normalizeFaceConfig({ heightM: 30 }).speedMS === 5)
+  check('faceConfig: speedMS limitada a 1-10',
+    normalizeFaceConfig({ speedMS: 99 }).speedMS === 10 &&
+      normalizeFaceConfig({ speedMS: 0.2 }).speedMS === 1)
+
+  // P1: o tempo do plano usa a velocidade configurada — a componente de
+  // deslocamento (tempo total menos os 2 s de paragem-e-disparo por
+  // waypoint) reduz para metade quando a velocidade duplica
+  const faceLine = [toLL(0, 0), toLL(600, 0)]
+  const mkSpeed = (v) => generateFacePlan(faceLine, {
+    sensor, faceHeightM: 60, standoffM: 25, side: 'left',
+    verticalOverlapPct: 70, horizontalOverlapPct: 70, speed: v,
+  })
+  const s2 = mkSpeed(2)
+  const s4 = mkSpeed(4)
+  const travel2 = s2.stats.flightTimeS - 2 * s2.stats.waypointCount
+  const travel4 = s4.stats.flightTimeS - 2 * s4.stats.waypointCount
+  check('P1: deslocamento reduz a metade quando a velocidade duplica',
+    Math.abs(travel2 / travel4 - 2) < 1e-9,
+    `${travel2.toFixed(1)} s vs ${travel4.toFixed(1)} s`)
+
+  // P1: o WPML exportado leva exactamente a velocidade configurada
+  const wlSpeed = buildWaylinesWPML({
+    name: 'face', waypoints: s4.waypoints, perWaypoint: s4.perWaypoint,
+    altitude: 47, speed: 4, wpml: wpmlParams.wpml,
+    photoIntervalM: 0, triggerMode: 'distance', sensorType: 'camera',
+  })
+  check('P1: autoFlightSpeed = velocidade configurada',
+    wlSpeed.includes('<wpml:autoFlightSpeed>4</wpml:autoFlightSpeed>') &&
+      wlSpeed.includes('<wpml:waypointSpeed>4</wpml:waypointSpeed>'))
 
   // ticks de rumo para a pre-visualizacao
   const tk = headingTicks(

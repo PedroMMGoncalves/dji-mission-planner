@@ -665,9 +665,11 @@ function AppInner({ lang, setLang }) {
       verticalOverlapPct: faceConfig.verticalOverlapPct,
       horizontalOverlapPct: faceConfig.horizontalOverlapPct,
       gimbalPitch: faceConfig.gimbalPitch,
-      speed: Math.min(params.speed, 5), // fachadas voam-se devagar
+      // P1: a velocidade é um parâmetro explícito da fachada — o tempo
+      // estimado usa exactamente o valor que a exportação escreve
+      speed: faceConfig.speedMS,
     })
-  }, [faceConfig, sensor, params.speed])
+  }, [faceConfig, sensor])
 
   // folga só contra DSM LOCAL; com Terrarium fica "standoff não verificado"
   const dsmLoaded = terrain.status === 'ready' && terrain.data?.source === 'file'
@@ -702,14 +704,14 @@ function AppInner({ lang, setLang }) {
       waypoints: facePlan.waypoints,
       perWaypoint: facePlan.perWaypoint,
       altitude: Math.round(facePlan.stats.heights[facePlan.stats.heights.length - 1]),
-      speed: Math.min(params.speed, 5),
+      speed: faceConfig.speedMS,
       wpml,
       photoIntervalM: 0,
       triggerMode: 'distance',
       gimbalPitch: faceConfig.gimbalPitch,
       sensorType: sensor.type,
     })
-  }, [facePlan, missionName, params.speed, wpml, faceConfig.gimbalPitch, sensor.type])
+  }, [facePlan, missionName, faceConfig.speedMS, wpml, faceConfig.gimbalPitch, sensor.type])
 
   /* ------------------------ Modo órbita (E1.2) ------------------------ */
   const setOrbitParam = useCallback((key, value) => {
