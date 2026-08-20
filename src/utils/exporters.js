@@ -434,7 +434,14 @@ export async function exportBlocksZip(params, blocks) {
   for (const block of blocks) {
     const nn = String(block.id).padStart(2, '0')
     const kmz = await buildKmz(
-      { ...params, name: `${params.name}-b${nn}`, waypoints: block.waypoints },
+      {
+        ...params,
+        name: `${params.name}-b${nn}`,
+        waypoints: block.waypoints,
+        // um perWaypoint global indexaria mal as fatias — cada bloco traz o
+        // seu (ex.: marcador de gimbal nadir do R2.10), ou nenhum
+        perWaypoint: block.perWaypoint ?? null,
+      },
       'arraybuffer',
     )
     master.file(`${params.name}-b${nn}.kmz`, kmz)

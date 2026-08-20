@@ -11,6 +11,7 @@ import {
   lidarPointDensity,
   lineSpacing,
   longestEdgeBearing,
+  nadirLineLocalPerBlock,
   photoInterval,
   rectangleFromAnchor,
   resolveSensor,
@@ -712,6 +713,54 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
     batteryMin: 25, reservePct: 30, speed: 10, spacingM: sp, transitS: 0, maxSideM: 2000, passes: 2,
   })
   check('bateria com crosshatch → lado menor', sideCross >= 400 && sideCross <= 440, sideCross)
+}
+
+/* 8h2. Passagem nadir extra no preset 3D (R2.10) */
+{
+  const base = { spacingM: sp, angleDeg: 90, bufferPct: 0, photoIntervalM: iv, speed: 10, crosshatch: true }
+  const two = generateFlightPlan(rectNS, base)
+  const three = generateFlightPlan(rectNS, { ...base, includeNadir: true })
+  check('nadir: 3.a grelha = repetir a 1.a no fim',
+    three && !three.error &&
+      three.stats.lineCount === two.stats.lineCount + plan90.stats.lineCount,
+    `${three?.stats.lineCount} = ${two.stats.lineCount} + ${plan90.stats.lineCount}`)
+  check('nadir: nadirStartLine e waypoint no fim das duas grelhas',
+    three.nadirStartLine === two.stats.lineCount &&
+      three.nadirStartWaypoint === two.stats.waypointCount)
+  check('nadir: fotos somam a 3.a passagem',
+    three.stats.photoCount === two.stats.photoCount + plan90.stats.photoCount)
+  check('nadir: tempo cresce ~50% face ao crosshatch',
+    three.stats.flightTimeS > two.stats.flightTimeS * 1.3 &&
+      three.stats.flightTimeS < two.stats.flightTimeS * 1.8,
+    `${Math.round(three.stats.flightTimeS)} vs ${Math.round(two.stats.flightTimeS)} s`)
+  check('nadir: sem a opcao o crosshatch fica igual',
+    two.nadirStartLine === null && two.stats.lineCount >= 20 && two.stats.lineCount <= 21)
+  const side3 = squareSideForBattery({
+    batteryMin: 25, reservePct: 30, speed: 10, spacingM: sp, transitS: 0, maxSideM: 2000, passes: 3,
+  })
+  const side2 = squareSideForBattery({
+    batteryMin: 25, reservePct: 30, speed: 10, spacingM: sp, transitS: 0, maxSideM: 2000, passes: 2,
+  })
+  check('nadir: bateria com 3 passagens da lado menor', side3 < side2, `${side3} < ${side2}`)
+  // aritmetica das anotacoes por bloco: [3,3,2] com nadir na linha global 4
+  check('nadir: anotacao por bloco [3,3,2]@4 -> [null,1,0]',
+    JSON.stringify(nadirLineLocalPerBlock([3, 3, 2], 4)) === '[null,1,0]')
+  check('nadir: sem nadir -> tudo null',
+    nadirLineLocalPerBlock([3, 3], null).every((v) => v === null))
+  check('nadir: nadir na fronteira do bloco -> [null,0]',
+    JSON.stringify(nadirLineLocalPerBlock([3, 3], 3)) === '[null,0]')
+  // exportacao: o marcador roda o gimbal a -90 no waypoint certo
+  const pwN = []
+  pwN[three.nadirStartWaypoint] = { gimbalPitch: -90 }
+  const wlN = buildWaylinesWPML({
+    name: 'tri', waypoints: three.waypoints, altitude: 100, speed: 10,
+    wpml: { droneEnumValue: 77, droneSubEnumValue: 0, payloadEnumValue: 66, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+    photoIntervalM: iv, triggerMode: 'distance', gimbalPitch: -60, perWaypoint: pwN,
+  })
+  check('nadir: WPML com -60 global e -90 no arranque da 3.a grelha',
+    wlN.includes('<wpml:gimbalPitchRotateAngle>-60</wpml:gimbalPitchRotateAngle>') &&
+      wlN.includes('<wpml:gimbalPitchRotateAngle>-90</wpml:gimbalPitchRotateAngle>') &&
+      wlN.includes(`<wpml:actionGroupStartIndex>${three.nadirStartWaypoint}</wpml:actionGroupStartIndex>`))
 }
 
 /* 8i. Planeamento de GCPs */
