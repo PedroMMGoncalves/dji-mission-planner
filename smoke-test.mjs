@@ -19,12 +19,37 @@ import {
 import { buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
 import { decodeTerrarium, despikeElevations, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
+import { DRONE_PROFILES, DEFAULT_CUSTOM_SENSOR } from './src/data/drones.js'
 
 let failures = 0
 function check(name, cond, extra = '') {
   console.log(`${cond ? 'PASS' : 'FAIL'}  ${name}${extra ? '  [' + extra + ']' : ''}`)
   if (!cond) failures++
 }
+
+/* 0. Sanidade dos perfis de hardware — plausibility ranges for every profile.
+   Guards against data-entry mistakes (a sensor in cm, a focal in px, a swapped
+   width/height) rather than against wrong-but-plausible values. */
+const inRange = (v, lo, hi) => typeof v === 'number' && v >= lo && v <= hi
+for (const p of Object.values(DRONE_PROFILES)) {
+  check(`perfil ${p.id}: speedRange valido`,
+    p.speedRange && p.speedRange.min > 0 && p.speedRange.max >= p.speedRange.min,
+    `${p.speedRange?.min}-${p.speedRange?.max} m/s`)
+  if (p.type === 'camera') {
+    check(`perfil ${p.id}: sensorWidth 4-60 mm`, inRange(p.sensorWidth, 4, 60), p.sensorWidth)
+    check(`perfil ${p.id}: sensorHeight 3-45 mm`, inRange(p.sensorHeight, 3, 45), p.sensorHeight)
+    check(`perfil ${p.id}: focalLength 2-100 mm`, inRange(p.focalLength, 2, 100), p.focalLength)
+    check(`perfil ${p.id}: imageWidth 1000-20000 px`, inRange(p.imageWidth, 1000, 20000), p.imageWidth)
+    check(`perfil ${p.id}: imageHeight 1000-20000 px`, inRange(p.imageHeight, 1000, 20000), p.imageHeight)
+  }
+}
+check('custom default: camara em intervalos validos',
+  inRange(DEFAULT_CUSTOM_SENSOR.sensorWidth, 4, 60) &&
+    inRange(DEFAULT_CUSTOM_SENSOR.sensorHeight, 3, 45) &&
+    inRange(DEFAULT_CUSTOM_SENSOR.focalLength, 2, 100) &&
+    inRange(DEFAULT_CUSTOM_SENSOR.imageWidth, 1000, 20000))
+check('custom default: FOV LiDAR 5-360 graus', inRange(DEFAULT_CUSTOM_SENSOR.fov, 5, 360),
+  DEFAULT_CUSTOM_SENSOR.fov)
 
 /* 1. Footprint / GSD / espaçamento — M3E a 100 m */
 const sensor = { type: 'camera', sensorWidth: 17.3, sensorHeight: 13.0, focalLength: 12.2, imageWidth: 5280 }
