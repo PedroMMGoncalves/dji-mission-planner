@@ -49,6 +49,14 @@ export default {
     pt: 'Voltar ao FOV nominal do sensor ({fov}°)',
     en: 'Back to the sensor nominal FOV ({fov}°)',
   },
+  'cp.orientation.tieLine': {
+    pt: 'Fiada de amarração perpendicular',
+    en: 'Perpendicular tie line',
+  },
+  'cp.orientation.tieLineHint': {
+    pt: 'Uma passagem extra a meio do bloco, perpendicular às faixas e voada em último lugar — cruza todas as fiadas para o ajuste de strips LiDAR (ex.: CloudStation).',
+    en: 'One extra pass across the middle of the block, perpendicular to the lines and flown last — it crosses every strip for LiDAR strip adjustment (e.g. CloudStation).',
+  },
   'cp.flight.overshoot': { pt: 'Overshoot por faixa', en: 'Per-line overshoot' },
   'cp.flight.overshootHint': {
     pt: 'Prolonga cada faixa nos dois extremos: as viragens ficam fora da área e os dados dentro dela são captados a velocidade e atitude estáveis. Sugerido 10–20 m para LiDAR; 0 desliga. Conta para o tempo e para os blocos.',

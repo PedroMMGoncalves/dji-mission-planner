@@ -367,7 +367,10 @@ export function computeAlignment(outlineRing, spacingM, angleDeg) {
  * Devolve { area, lines, waypoints, stats } ou { error }.
  */
 export function generateFlightLines(ring, options) {
-  const { spacingM, angleDeg, bufferPct, photoIntervalM, speed, align, overshootM = 0 } = options
+  const {
+    spacingM, angleDeg, bufferPct, photoIntervalM, speed, align,
+    overshootM = 0, tieLine = false,
+  } = options
   if (!ring || ring.length < 3 || !(spacingM > 0.05)) return null
 
   const basePoly = ringToPolygon(ring)
@@ -465,6 +468,48 @@ export function generateFlightLines(ring, options) {
     }
   })
 
+  // 5b) Fiada de amarração perpendicular (T2.3): uma passagem extra a meio
+  // do bloco, perpendicular às faixas (vertical no referencial rodado) e
+  // voada em último lugar — cruza todas as fiadas para o ajuste de strips
+  // LiDAR no pós-processamento. Recebe o mesmo overshoot das faixas.
+  if (tieLine) {
+    const xMid = (minX + maxX) / 2
+    const padY = (maxY - minY) * 0.1 + 1e-6
+    const vline = turf.lineString([
+      [xMid, minY - padY],
+      [xMid, maxY + padY],
+    ])
+    const yCross = turf.lineIntersect(vline, rotated).features
+      .map((f) => f.geometry.coordinates[1])
+      .sort((a, b) => a - b)
+      .filter((v, idx, arr) => idx === 0 || v - arr[idx - 1] > 1e-10)
+    const dyOver = overshootM > 0 ? overshootM / M_PER_DEG_LAT : 0
+    const tieSegs = []
+    let q = 0
+    while (q < yCross.length - 1) {
+      const ya = yCross[q]
+      const yb = yCross[q + 1]
+      const midTie = turf.point([xMid, (ya + yb) / 2])
+      if (turf.booleanPointInPolygon(midTie, rotated)) {
+        const lenM = turf.distance([xMid, ya], [xMid, yb], { units: 'meters' })
+        if (lenM >= MIN_SEGMENT_M) tieSegs.push([[xMid, ya - dyOver], [xMid, yb + dyOver]])
+        q += 2
+      } else {
+        q += 1
+      }
+    }
+    if (tieSegs.length > 0) {
+      // começa no extremo mais próximo do fim da última faixa voada
+      const lastY = serpentine.length > 0 ? serpentine[serpentine.length - 1][1][1] : minY
+      if (Math.abs(lastY - maxY) < Math.abs(lastY - minY)) {
+        tieSegs.reverse()
+        tieSegs.forEach((s) => serpentine.push([s[1], s[0]]))
+      } else {
+        tieSegs.forEach((s) => serpentine.push(s))
+      }
+    }
+  }
+
   // 6) Rodar de volta para o referencial geográfico
   const rotatedBack = turf.transformRotate(turf.multiLineString(serpentine), -delta, {
     pivot,
@@ -534,6 +579,7 @@ export function generateFlightPlan(ring, options) {
     ...options,
     angleDeg: (options.angleDeg + 90) % 360,
     align: options.align2 ?? null,
+    tieLine: false, // a fiada de amarração só acompanha a primeira grelha
   })
   if (!p2 || p2.error) return p2?.error ? p2 : p1
 

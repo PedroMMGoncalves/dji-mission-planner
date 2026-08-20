@@ -119,6 +119,7 @@ function AppInner({ lang, setLang }) {
     crosshatch: false, // dupla grelha perpendicular (3D)
     gimbalPitch: -90, // inclinação da câmara: -90 nadir · -60/-45 oblíqua
     overshoot: 0, // prolongamento de cada faixa nos dois extremos (m) — T2.2
+    tieLine: false, // fiada de amarração perpendicular no fim — T2.3
   })
   const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base'
   const [draftVertices, setDraftVertices] = useState([])
@@ -452,6 +453,7 @@ function AppInner({ lang, setLang }) {
       speed: params.speed,
       crosshatch: params.crosshatch,
       overshootM: Math.max(0, params.overshoot || 0),
+      tieLine: Boolean(params.tieLine),
     }
     if (!activeCells) return generateFlightPlan(ring, opts)
 
@@ -487,7 +489,7 @@ function AppInner({ lang, setLang }) {
         bufferedAreaHa: sum((s) => s.bufferedAreaHa),
       },
     }
-  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, params.crosshatch, params.overshoot, activeCells])
+  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, params.crosshatch, params.overshoot, params.tieLine, activeCells])
 
   const planOk = plan && !plan.error ? plan : null
 

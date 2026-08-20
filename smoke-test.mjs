@@ -268,6 +268,30 @@ if (plan90 && !plan90.error) {
   }
 }
 
+/* 5c. Fiada de amarracao perpendicular (T2.3) */
+{
+  const base = { spacingM: sp, angleDeg: 90, bufferPct: 0, photoIntervalM: iv, speed: 10 }
+  const pt2 = generateFlightLines(rectNS, { ...base, tieLine: true })
+  check('tie: +1 faixa', pt2 && !pt2.error && pt2.stats.lineCount === plan90.stats.lineCount + 1,
+    pt2?.stats.lineCount)
+  const tie = pt2.lines[pt2.lines.length - 1]
+  const bTie = (turf.bearing(tie[0], tie[1]) + 360) % 180
+  check('tie: perpendicular as faixas (~0 graus)', bTie < 2 || bTie > 178, bTie.toFixed(1))
+  const lenTie = turf.distance(tie[0], tie[1], { units: 'meters' })
+  check('tie: atravessa a largura do bloco (~300 m)', Math.abs(lenTie - 300) < 10, lenTie.toFixed(1))
+  const midT = turf.midpoint(turf.point(tie[0]), turf.point(tie[1]))
+  check('tie: a meio e dentro da area',
+    turf.booleanPointInPolygon(midT, turf.polygon([[...rectNS, rectNS[0]]])))
+  const pt3 = generateFlightLines(rectNS, { ...base, tieLine: true, overshootM: 20 })
+  const tie3 = pt3.lines[pt3.lines.length - 1]
+  check('tie com overshoot: ~340 m',
+    Math.abs(turf.distance(tie3[0], tie3[1], { units: 'meters' }) - 340) < 10,
+    turf.distance(tie3[0], tie3[1], { units: 'meters' }).toFixed(1))
+  const cx = generateFlightPlan(rectNS, { ...base, crosshatch: true, tieLine: true })
+  check('crosshatch: fiada so na 1.a grelha',
+    cx && !cx.error && cx.stats.lineCount >= 21 && cx.stats.lineCount <= 22, cx?.stats.lineCount)
+}
+
 /* 6. Grelha N-S (0°) */
 const plan0 = generateFlightLines(rectNS, {
   spacingM: sp, angleDeg: 0, bufferPct: 0, photoIntervalM: iv, speed: 10,
