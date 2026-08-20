@@ -104,7 +104,7 @@ O espaçamento entre faixas vem da pegada transversal no solo, `altitude × larg
 
 ## Estado da validação
 
-**Exportação verificada contra a especificação WPML e testes automáticos; validação em voo real prevista para setembro de 2026.** A suite (`smoke-test.mjs`, 300+ asserções) corre em cada push no CI e cobre a matemática de planeamento e a estrutura dos ficheiros exportados; o que ela não cobre está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release. Os enums WPML nunca foram testados num comando real — ver as notas abaixo.
+**Exportação verificada contra a especificação WPML e testes automáticos; validação em voo real prevista para setembro de 2026.** A suite (`smoke-test.mjs`, 310 asserções) corre em cada push no CI e cobre a matemática de planeamento e a estrutura dos ficheiros exportados; o que ela não cobre está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release — a passagem da versão corrente está ainda por fazer. Os enums WPML nunca foram testados num comando real — ver as notas abaixo.
 
 **Estado dos perfis:** as ópticas do **M4T são provisórias** (valores da classe M3E, assinalados no código) até chegarem dados EXIF reais — não confie na pegada/GSD do M4T para dimensionar missões. Os restantes perfis (M3E, P1, Mapper+) usam valores publicados.
 
