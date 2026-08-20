@@ -274,6 +274,37 @@ if (plan90 && !plan90.error) {
   check('plan90 espaçamento real ~42.5 m', Math.abs(gap - sp) < 1, gap.toFixed(2))
 }
 
+/* 5a2. Guarda de regressao T3.1/R2.5: num retangulo convexo a rota por
+   celulas tem de ser IGUAL a serpentina simples, coordenada a coordenada.
+   A serpentina e reconstruida aqui de forma independente: filas por
+   latitude ascendente, ziguezague, faixas pares oeste->este. */
+if (plan90 && !plan90.error) {
+  const rowsMap = new Map()
+  plan90.lines.forEach((seg) => {
+    const key = ((seg[0][1] + seg[1][1]) / 2).toFixed(9)
+    if (!rowsMap.has(key)) rowsMap.set(key, [])
+    rowsMap.get(key).push(seg)
+  })
+  const expected = []
+  const rowKeys = [...rowsMap.keys()].sort((a, b) => Number(a) - Number(b))
+  rowKeys.forEach((k, r) => {
+    const segs = rowsMap.get(k)
+      .map((s) => (s[0][0] <= s[1][0] ? s : [s[1], s[0]]))
+      .sort((s1, s2) => s1[0][0] - s2[0][0])
+    if (r % 2 === 0) segs.forEach((s) => expected.push(s[0], s[1]))
+    else segs.slice().reverse().forEach((s) => expected.push(s[1], s[0]))
+  })
+  const identical =
+    expected.length === plan90.waypoints.length &&
+    expected.every(
+      (p, i) =>
+        Math.abs(p[0] - plan90.waypoints[i][0]) < 1e-9 &&
+        Math.abs(p[1] - plan90.waypoints[i][1]) < 1e-9,
+    )
+  check('R2.5: retangulo convexo = serpentina simples (1e-9 deg)', identical,
+    `${plan90.waypoints.length} waypoints comparados`)
+}
+
 /* 5b. Overshoot por faixa (T2.2) */
 {
   const po = generateFlightLines(rectNS, {
