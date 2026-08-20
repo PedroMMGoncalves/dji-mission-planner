@@ -61,7 +61,15 @@ export default function StatsPanel({ gsd, footprint, spacing, pointDensity, inte
       <Stat label={t('stats.lines')} value={stats ? stats.lineCount : '—'} />
       <Stat label={t('stats.waypoints')} value={stats ? stats.waypointCount : '—'} />
       <Stat label={t('stats.totalDist')} value={stats ? fmtDist(stats.pathLengthM) : '—'} />
-      <Stat label={t('stats.photos')} value={stats?.photoCount ?? '—'} />
+      <Stat
+        label={t('stats.photos')}
+        value={
+          stats?.photoCountArea != null
+            ? `${stats.photoCount} (${stats.photoCountArea})`
+            : stats?.photoCount ?? '—'
+        }
+        hint={stats?.photoCountArea != null ? t('stats.photosHint') : undefined}
+      />
       <Stat label={t('stats.time')} value={stats ? fmtTime(stats.flightTimeS) : '—'} />
       {baseDistance != null && (
         <Stat

@@ -244,6 +244,30 @@ if (plan90 && !plan90.error) {
   check('plan90 espaçamento real ~42.5 m', Math.abs(gap - sp) < 1, gap.toFixed(2))
 }
 
+/* 5b. Overshoot por faixa (T2.2) */
+{
+  const po = generateFlightLines(rectNS, {
+    spacingM: sp, angleDeg: 90, bufferPct: 0, photoIntervalM: iv, speed: 10, overshootM: 20,
+  })
+  check('overshoot: plano gerado', po && !po.error)
+  if (po && !po.error) {
+    const len0 = turf.distance(po.lines[0][0], po.lines[0][1], { units: 'meters' })
+    check('overshoot 20: faixas ~40 m mais longas', Math.abs(len0 - 540) < 10, len0.toFixed(1))
+    check('overshoot: mesmo numero de faixas', po.stats.lineCount === plan90.stats.lineCount,
+      `${po.stats.lineCount} vs ${plan90.stats.lineCount}`)
+    check('overshoot: fotos sobre a area < fotos totais',
+      po.stats.photoCountArea != null && po.stats.photoCountArea < po.stats.photoCount,
+      `${po.stats.photoCountArea} < ${po.stats.photoCount}`)
+    check('overshoot: fotos/area = fotos do plano sem overshoot',
+      po.stats.photoCountArea === plan90.stats.photoCount,
+      `${po.stats.photoCountArea} vs ${plan90.stats.photoCount}`)
+    check('sem overshoot: photoCountArea null', plan90.stats.photoCountArea === null)
+    check('overshoot conta para o percurso',
+      po.stats.pathLengthM > plan90.stats.pathLengthM + 8 * 40 - 20,
+      `${po.stats.pathLengthM.toFixed(0)} vs ${plan90.stats.pathLengthM.toFixed(0)}`)
+  }
+}
+
 /* 6. Grelha N-S (0°) */
 const plan0 = generateFlightLines(rectNS, {
   spacingM: sp, angleDeg: 0, bufferPct: 0, photoIntervalM: iv, speed: 10,
