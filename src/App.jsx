@@ -51,7 +51,7 @@ import {
   simplifyRingIfNeeded,
   CRS_OPTIONS,
 } from './utils/importArea.js'
-import { loadTerrain, terrainFollowLines } from './utils/terrain.js'
+import { fitSlopePlane, loadTerrain, terrainFollowLines } from './utils/terrain.js'
 import { loadDemFromFile } from './utils/demFile.js'
 import { parseWpmlKmz } from './utils/importWpml.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
@@ -758,6 +758,25 @@ function AppInner({ lang, setLang }) {
     }
   }, [terrainFollow, terrainCovers, terrain.data, planOk, blocks, basePoint, params.altitude])
 
+  // Sugestões para encostas íngremes (T4.5): plano médio do terreno na área
+  // → linhas ao longo das curvas de nível e gimbal ≈ −(90 − inclinação).
+  // Só sugestões; nada é aplicado automaticamente.
+  const slopeHint = useMemo(() => {
+    if (terrain.status !== 'ready' || !terrainCovers || !ring || !validation.valid) return null
+    const fit = fitSlopePlane(terrain.data, ring)
+    if (!fit || fit.slopeDeg < 8) return null
+    const gimbal = Math.max(-90, Math.min(-45, -Math.round((90 - fit.slopeDeg) / 5) * 5))
+    return { ...fit, gimbal }
+  }, [terrain, terrainCovers, ring, validation.valid])
+
+  const applySlopeAngle = useCallback(() => {
+    if (slopeHint) setParams((p) => ({ ...p, angle: Math.round(slopeHint.contourAzimuthDeg) }))
+  }, [slopeHint])
+
+  const applySlopeGimbal = useCallback(() => {
+    if (slopeHint) setParams((p) => ({ ...p, gimbalPitch: slopeHint.gimbal }))
+  }, [slopeHint])
+
   // Teto operacional AGL do payload (T1.3), ex.: LiDAR limitado a 100 m
   const aglWarn = useMemo(
     () =>
@@ -1250,6 +1269,9 @@ function AppInner({ lang, setLang }) {
           onImportDem={handleImportDem}
           onShowProfile={() => setShowProfile(true)}
           terrainResult={terrainResult}
+          slopeHint={slopeHint}
+          onApplySlopeAngle={applySlopeAngle}
+          onApplySlopeGimbal={applySlopeGimbal}
           gcpConfig={gcpConfig}
           setGcpConfig={setGcpConfig}
           gcpAutoCount={gcpAutoCount}

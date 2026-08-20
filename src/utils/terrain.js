@@ -539,3 +539,91 @@ export function terrainFollowLines(terrain, lines, { agl, refElev, toleranceM = 
     warnings,
   }
 }
+
+/** Resolve um sistema linear 3x3 por eliminação gaussiana (ou null). */
+function solve3(A, B) {
+  const M = A.map((row, i) => [...row, B[i]])
+  for (let c = 0; c < 3; c++) {
+    let p = c
+    for (let r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r
+    if (Math.abs(M[p][c]) < 1e-12) return null
+    ;[M[c], M[p]] = [M[p], M[c]]
+    for (let r = 0; r < 3; r++) {
+      if (r === c) continue
+      const f = M[r][c] / M[c][c]
+      for (let k = c; k < 4; k++) M[r][k] -= f * M[c][k]
+    }
+  }
+  return [M[0][3] / M[0][0], M[1][3] / M[1][1], M[2][3] / M[2][2]]
+}
+
+/**
+ * T4.5: ajusta um plano médio z = a·x + b·y + c ao terreno dentro da bbox da
+ * área (amostragem n×n do DEM, mínimos quadrados em metros locais) e devolve
+ * a inclinação média, o azimute descendente e a direção das curvas de nível.
+ * Serve o painel de sugestões para encostas íngremes voadas com a grelha
+ * nadir + terrain follow: linhas ao longo das curvas de nível e gimbal
+ * ≈ −(90 − inclinação). São sugestões, não automação.
+ */
+export function fitSlopePlane(terrainData, ring, { n = 12 } = {}) {
+  if (!terrainData?.elevationAt || !ring || ring.length < 3) return null
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const [x, y] of ring) {
+    if (x < minX) minX = x
+    if (y < minY) minY = y
+    if (x > maxX) maxX = x
+    if (y > maxY) maxY = y
+  }
+  const lat0 = (minY + maxY) / 2
+  const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
+  const mLat = 110574
+
+  let sx = 0
+  let sy = 0
+  let sz = 0
+  let sxx = 0
+  let syy = 0
+  let sxy = 0
+  let sxz = 0
+  let syz = 0
+  let m = 0
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      const lon = minX + ((i + 0.5) / n) * (maxX - minX)
+      const lat = minY + ((j + 0.5) / n) * (maxY - minY)
+      const z = terrainData.elevationAt(lon, lat)
+      if (!Number.isFinite(z)) continue
+      const x = (lon - minX) * mLon
+      const y = (lat - minY) * mLat
+      sx += x
+      sy += y
+      sz += z
+      sxx += x * x
+      syy += y * y
+      sxy += x * y
+      sxz += x * z
+      syz += y * z
+      m += 1
+    }
+  }
+  if (m < 8) return null
+  const sol = solve3(
+    [
+      [sxx, sxy, sx],
+      [sxy, syy, sy],
+      [sx, sy, m],
+    ],
+    [sxz, syz, sz],
+  )
+  if (!sol) return null
+  const [a, b] = sol
+  const slopeDeg = (Math.atan(Math.hypot(a, b)) * 180) / Math.PI
+  // x=Este, y=Norte: azimute = atan2(componente E, componente N); o declive
+  // desce ao longo de −∇z = (−a, −b)
+  const downhillAzimuthDeg = ((Math.atan2(-a, -b) * 180) / Math.PI + 360) % 360
+  const contourAzimuthDeg = (downhillAzimuthDeg + 90) % 180
+  return { slopeDeg, downhillAzimuthDeg, contourAzimuthDeg, samples: m }
+}

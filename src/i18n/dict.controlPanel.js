@@ -49,6 +49,12 @@ export default {
     pt: 'Voltar ao FOV nominal do sensor ({fov}°)',
     en: 'Back to the sensor nominal FOV ({fov}°)',
   },
+  'cp.terrain.slopeHint': {
+    pt: 'Encosta média de {slope}° a descer para {az}°. Para encostas íngremes com terrain follow: linhas ao longo das curvas de nível ({lines}°) e câmara oblíqua ({gimbal}°).',
+    en: 'Mean slope of {slope}° descending toward {az}°. For steep slopes with terrain follow: lines along the contours ({lines}°) and an oblique camera ({gimbal}°).',
+  },
+  'cp.terrain.slopeApplyLines': { pt: 'Linhas a {lines}°', en: 'Lines at {lines}°' },
+  'cp.terrain.slopeApplyGimbal': { pt: 'Gimbal {gimbal}°', en: 'Gimbal {gimbal}°' },
   'cp.orientation.optimal': { pt: 'Ótima', en: 'Optimal' },
   'cp.orientation.optimalTitle': {
     pt: 'Procura a direção com menos faixas dentro do polígono real (menos viragens, menos tempo)',

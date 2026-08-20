@@ -21,7 +21,7 @@ import {
 } from './src/utils/geo.js'
 import { buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
-import { decodeTerrarium, despikeElevations, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
+import { decodeTerrarium, despikeElevations, fitSlopePlane, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
 import { readFileSync } from 'node:fs'
 import { groupApplies } from './src/data/checklist.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
@@ -716,6 +716,32 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
     check('elevMin/Max do terreno coerentes', tf.elevMin >= 145 && tf.elevMax <= 255,
       `${tf.elevMin.toFixed(0)}–${tf.elevMax.toFixed(0)}`)
   }
+}
+
+/* 8j2. Plano medio da encosta (T4.5) */
+{
+  // rampa que sobe 0.2 m/m para Este: inclinacao atan(0.2) = 11.31 graus,
+  // desce para Oeste (270), curvas de nivel N-S (0)
+  const rampa = { elevationAt: (lon) => 200 + (lon - center[0]) * mLon * 0.2 }
+  const fit = fitSlopePlane(rampa, rectNS)
+  check('encosta: inclinacao ~11.3 graus', fit && Math.abs(fit.slopeDeg - 11.31) < 0.3,
+    fit?.slopeDeg?.toFixed(2))
+  check('encosta: desce para Oeste (~270)', Math.abs(fit.downhillAzimuthDeg - 270) < 3,
+    fit?.downhillAzimuthDeg?.toFixed(1))
+  check('encosta: curvas de nivel N-S (~0)',
+    fit.contourAzimuthDeg < 3 || fit.contourAzimuthDeg > 177, fit?.contourAzimuthDeg?.toFixed(1))
+  // rampa para Norte: desce para Sul (180), curvas de nivel E-O (90)
+  const rampaN = { elevationAt: (lon, lat) => 200 + (lat - center[1]) * 110574 * 0.35 }
+  const fitN = fitSlopePlane(rampaN, rectNS)
+  check('encosta N: inclinacao ~19.3 graus', fitN && Math.abs(fitN.slopeDeg - 19.29) < 0.4,
+    fitN?.slopeDeg?.toFixed(2))
+  check('encosta N: desce para Sul e curvas E-O',
+    Math.abs(fitN.downhillAzimuthDeg - 180) < 3 && Math.abs(fitN.contourAzimuthDeg - 90) < 3,
+    `${fitN?.downhillAzimuthDeg?.toFixed(1)} / ${fitN?.contourAzimuthDeg?.toFixed(1)}`)
+  // terreno plano ou dados nulos: sem sugestao
+  check('encosta: plano -> inclinacao ~0',
+    fitSlopePlane({ elevationAt: () => 300 }, rectNS).slopeDeg < 0.01)
+  check('encosta: sem dados -> null', fitSlopePlane({ elevationAt: () => null }, rectNS) === null)
 }
 
 /* 8k. Filtro anti-picos do terreno */
