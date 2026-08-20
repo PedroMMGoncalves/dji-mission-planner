@@ -14,7 +14,38 @@ import { STRIP_OVERLAP_EPS_M, decomposeCells, orderCells } from './gridRoute.js'
 const M_PER_DEG_LAT = 110574 // metros por grau de latitude (aprox. WGS84)
 const MAX_LINES = 2500 // trava de segurança contra espaçamentos minúsculos
 const MIN_SEGMENT_M = 1 // segmentos mais curtos que isto são descartados
-const TURN_TIME_S = 3 // custo médio de cada inversão de sentido
+
+/*
+ * CALIBRAÇÃO COM LOGS DE VOO (E3.3 — prevista para setembro de 2026).
+ * Os logs reais devem produzir três valores medidos; cada um tem UM sítio
+ * onde encaixa, para a calibração ser entrada de dados e não arqueologia:
+ *
+ * 1. TEMPO DE VIRAGEM medido (s/inversão): mediana de
+ *    (tempo entre o fim de uma faixa e o início da seguinte) − (distância
+ *    da ligação ÷ velocidade), sobre missões de grelha reais.
+ *    → substitui TURN_TIME_S abaixo (afecta tempo estimado, blocos por
+ *      bateria e squareSideForBattery).
+ *
+ * 2. AUTONOMIA REAL por combinação aeronave+payload (min): tempo de motor
+ *    ligado até à reserva de regresso, por combinação (M300+P1, M300+
+ *    Mapper+, M3E, M4T), com vento típico.
+ *    → entra pela interface (campo de bateria, override por combinação —
+ *      batteryByCombo, T1.4) e, se o valor por omissão da aeronave estiver
+ *      sistematicamente errado, corrige-se `batteryMin` em
+ *      src/data/drones.js (AIRCRAFT).
+ *
+ * 3. VELOCIDADE EFECTIVA em faixa (m/s): distância de faixa voada ÷ tempo
+ *    em faixa, comparada com a velocidade programada. Se a razão medida
+ *    for estável e < 1 (aceleração/desaceleração nos extremos), aplica-se
+ *    como factor multiplicativo à velocidade nos DOIS modelos de tempo:
+ *    flightTimeS em generateFlightLines e o `v` de splitIntoBlocks /
+ *    squareSideForBattery. Overshoot (T2.2) reduz este efeito — medir com
+ *    e sem overshoot se possível.
+ *
+ * Registar no commit de calibração: datas dos voos, combinação, nº de
+ * faixas analisadas e os três valores com dispersão.
+ */
+const TURN_TIME_S = 3 // custo médio de cada inversão de sentido (a calibrar, ver acima)
 
 function metersPerDegLon(lat) {
   return 111320 * Math.cos((lat * Math.PI) / 180)
