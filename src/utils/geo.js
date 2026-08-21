@@ -534,15 +534,36 @@ export function generateFlightLines(ring, options) {
   //    exatos do espaçamento a partir da referência global (células alinhadas)
   let ys
   if (align) {
+    // Recuo mínimo para uma passagem nunca coincidir com a aresta da célula
+    // (intersecção degenerada, ponto médio na fronteira): 0.1 m ou 10% da
+    // altura da célula, o que for menor.
+    const insetDeg = Math.min(0.1 / M_PER_DEG_LAT, (maxY - minY) * 0.1)
+    // Intervalo SEMI-ABERTO [minY, maxY): um múltiplo global exactamente na
+    // aresta partilhada pertence só à célula de cima — com a tolerância
+    // simétrica antiga entrava nas duas células vizinhas e era voado duas
+    // vezes, colado à fronteira.
     const kMin = Math.ceil((minY - align.yRef) / align.latStep - 1e-9)
-    const kMax = Math.floor((maxY - align.yRef) / align.latStep + 1e-9)
+    const kMax = Math.floor((maxY - align.yRef) / align.latStep - 1e-9)
     if (kMax < kMin) {
-      // célula mais estreita que o espaçamento: usa a linha global mais próxima
+      // Célula mais estreita que o espaçamento: nenhum múltiplo global cai no
+      // seu intervalo, logo a linha global mais próxima do centro fica, por
+      // definição, FORA da célula — usá-la tal e qual deixava todas as filas
+      // vazias e a célula sem cobertura (A1). Fixa-se essa linha ao bordo da
+      // célula mais próximo da régua global, com um recuo mínimo para não
+      // coincidir com a aresta (intersecção degenerada). Compromisso: o
+      // desvio lateral face às células vizinhas é o menor possível
+      // (≤ latStep/2, 10 m na geometria do caso de teste) e a sobreposição
+      // lateral das passagens globais adjacentes cobre-o folgadamente; a
+      // colinearidade mantém-se sempre que um múltiplo cai dentro da célula.
       const k = Math.round(((minY + maxY) / 2 - align.yRef) / align.latStep)
-      ys = [align.yRef + k * align.latStep]
+      const yGlobal = align.yRef + k * align.latStep
+      ys = [Math.min(maxY - insetDeg, Math.max(minY + insetDeg, yGlobal))]
     } else {
       ys = []
-      for (let k = kMin; k <= kMax; k++) ys.push(align.yRef + k * align.latStep)
+      for (let k = kMin; k <= kMax; k++) {
+        // um múltiplo na aresta inferior é recuado para dentro da célula
+        ys.push(Math.max(minY + insetDeg, align.yRef + k * align.latStep))
+      }
     }
   } else {
     const nLines = Math.max(1, Math.floor(heightM / spacingM) + 1)
@@ -710,6 +731,39 @@ export function generateFlightLines(ring, options) {
       flightTimeS,
       areaHa: turf.area(basePoly) / 10000,
       bufferedAreaHa: turf.area(area) / 10000,
+    },
+  }
+}
+
+/**
+ * A1: composição dos planos por célula (grelha N×M / mosaico) num plano
+ * único. Fail loud: o erro de qualquer célula propaga-se tal e qual; uma
+ * célula SEM plano (null) devolve { error: 'cell-uncovered', cells: [...] }
+ * com os índices 1-based — nunca uma missão silenciosamente mais curta do
+ * que a área desenhada (era o comportamento do filter(Boolean) antigo).
+ */
+export function composeCellPlans(ring, perCell, { photoIntervalM = 0, overshootM = 0 } = {}) {
+  const failed = perCell.find((p) => p?.error)
+  if (failed) return failed
+  const missing = perCell.map((p, i) => (p ? null : i + 1)).filter((i) => i != null)
+  if (missing.length > 0) return { error: 'cell-uncovered', cells: missing }
+  if (perCell.length === 0) return null
+  const sum = (f) => perCell.reduce((acc, p) => acc + (f(p.stats) ?? 0), 0)
+  return {
+    area: ringToPolygon(ring),
+    lines: perCell.flatMap((p) => p.lines),
+    waypoints: perCell.flatMap((p) => p.waypoints),
+    cellPlans: perCell,
+    stats: {
+      lineCount: sum((s) => s.lineCount),
+      waypointCount: sum((s) => s.waypointCount),
+      totalLineLengthM: sum((s) => s.totalLineLengthM),
+      pathLengthM: sum((s) => s.pathLengthM),
+      photoCount: photoIntervalM > 0 ? sum((s) => s.photoCount) : null,
+      photoCountArea: photoIntervalM > 0 && overshootM > 0 ? sum((s) => s.photoCountArea) : null,
+      flightTimeS: sum((s) => s.flightTimeS),
+      areaHa: sum((s) => s.areaHa),
+      bufferedAreaHa: sum((s) => s.bufferedAreaHa),
     },
   }
 }

@@ -25,6 +25,7 @@ import {
 } from './data/drones.js'
 import {
   aggregatePlans,
+  composeCellPlans,
   computeAlignment,
   computeFootprint,
   computeGSD,
@@ -506,31 +507,15 @@ function AppInner({ lang, setLang }) {
     const align2 = params.crosshatch
       ? computeAlignment(ring, spacing, (params.angle + 90) % 360)
       : null
+    // A1: uma célula sem plano é um erro explícito (cell-uncovered), nunca
+    // uma missão silenciosamente mais curta do que a área desenhada
     const perCell = activeCells.map((cell) =>
       generateFlightPlan(cell, { ...opts, align, align2 }),
     )
-    if (perCell.some((p) => p?.error)) return { error: 'too-many-lines' }
-    const ok = perCell.filter(Boolean)
-    if (ok.length === 0) return null
-    const sum = (f) => ok.reduce((acc, p) => acc + (f(p.stats) ?? 0), 0)
-    return {
-      area: ringToPolygon(ring),
-      lines: ok.flatMap((p) => p.lines),
-      waypoints: ok.flatMap((p) => p.waypoints),
-      cellPlans: ok,
-      stats: {
-        lineCount: sum((s) => s.lineCount),
-        waypointCount: sum((s) => s.waypointCount),
-        totalLineLengthM: sum((s) => s.totalLineLengthM),
-        pathLengthM: sum((s) => s.pathLengthM),
-        photoCount: interval != null ? sum((s) => s.photoCount) : null,
-        photoCountArea:
-          interval != null && params.overshoot > 0 ? sum((s) => s.photoCountArea) : null,
-        flightTimeS: sum((s) => s.flightTimeS),
-        areaHa: sum((s) => s.areaHa),
-        bufferedAreaHa: sum((s) => s.bufferedAreaHa),
-      },
-    }
+    return composeCellPlans(ring, perCell, {
+      photoIntervalM: opts.photoIntervalM,
+      overshootM: opts.overshootM,
+    })
   }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, params.crosshatch, params.includeNadir, params.overshoot, params.tieLine, activeCells])
 
   const planOk = plan && !plan.error ? plan : null
@@ -1703,6 +1688,7 @@ function AppInner({ lang, setLang }) {
           hasRing={Boolean(ring)}
           validation={validation}
           planError={plan?.error ?? null}
+          planErrorCells={plan?.cells ?? null}
           anchor={anchor}
           setAnchorParam={setAnchorParam}
           hasBase={Boolean(basePoint)}

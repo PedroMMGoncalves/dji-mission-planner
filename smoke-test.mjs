@@ -1,6 +1,7 @@
 import * as turf from '@turf/turf'
 import {
   aggregatePlans,
+  composeCellPlans,
   computeAlignment,
   computeFootprint,
   findOptimalDirection,
@@ -671,6 +672,66 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
     check('faixas oblíquas em múltiplos do espaçamento (colineares)', worst < 1,
       `resíduo máx ${worst.toFixed(2)} m em ${residuals.length} faixas`)
   }
+}
+
+/* 8f2. Celulas alinhadas MAIS ESTREITAS que o espacamento (A1) — reproducao
+   do defeito do audit: 500x300 m a lat 41 em 10 filas de 500x30 m, espacamento
+   50 m, angulo 90, alinhamento global do contorno. Antes, as celulas 3 e 8
+   (y 60-90 e 210-240 m) devolviam null e desapareciam da missao. */
+{
+  const c41 = [-8.0, 41.0]
+  const grid10 = gridFromAnchor(c41, 500, 30, 90, 1, 10)
+  const alignN = computeAlignment(grid10.outline, 50, 90)
+  const optsN = { spacingM: 50, angleDeg: 90, bufferPct: 0, photoIntervalM: 0, speed: 10, align: alignN }
+  const plans = grid10.cells.map((cell) => generateFlightLines(cell, optsN))
+  check('A1: 10/10 celulas estreitas com plano (zero nulls)',
+    plans.every((p) => p && !p.error), plans.map((p) => (p && !p.error ? '1' : '0')).join(''))
+  const insideOwn = plans.every((p, i) => {
+    if (!p || p.error) return false
+    const poly = turf.polygon([[...grid10.cells[i], grid10.cells[i][0]]])
+    return p.lines.every((s) =>
+      turf.booleanPointInPolygon(turf.midpoint(turf.point(s[0]), turf.point(s[1])), poly))
+  })
+  check('A1: todas as passagens com o ponto medio dentro da propria celula', insideOwn)
+  // desvio lateral maximo face a regua global: <= latStep/2 (~10 m aqui)
+  const worstStep = Math.max(...plans.map((p) => {
+    const lat = p.lines[0][0][1]
+    const r = Math.abs(((lat - alignN.yRef) / alignN.latStep) % 1)
+    return Math.min(r, 1 - r) * 50
+  }))
+  check('A1: desvio face a regua global <= 10.2 m', worstStep <= 10.2, worstStep.toFixed(2) + ' m')
+
+  // composicao: celula sem plano -> erro explicito (indices 1-based), nunca
+  // uma missao mais curta; erro de celula propaga-se tal e qual
+  const composed = composeCellPlans(grid10.outline, [plans[0], null, plans[2]], { photoIntervalM: 0 })
+  check('A1: celula sem plano -> cell-uncovered [2]',
+    composed?.error === 'cell-uncovered' && composed.cells.join(',') === '2')
+  check('A1: varias celulas em falta listadas',
+    composeCellPlans(grid10.outline, [null, plans[1], null], {}).cells.join(',') === '1,3')
+  check('A1: erro de uma celula propaga-se',
+    composeCellPlans(grid10.outline, [plans[0], { error: 'too-many-lines' }], {}).error === 'too-many-lines')
+  const full = composeCellPlans(grid10.outline, plans, { photoIntervalM: 0 })
+  check('A1: composicao completa soma as 10 celulas',
+    full && !full.error && full.cellPlans.length === 10 &&
+      full.stats.lineCount === plans.reduce((a, p) => a + p.stats.lineCount, 0))
+}
+
+/* 8f3. Regua global exactamente na aresta partilhada (A1): a linha k=0 a
+   0 graus coincide com a aresta entre as duas celulas do 2x1 — voa-se UMA
+   vez (recuada 0.1 m para dentro da celula de cima), nunca duas */
+{
+  const outline2 = rectangleFromAnchor(center, 500, 250, 90)
+  const grid2b = gridFromAnchor(center, 250, 250, 90, 2, 1)
+  const align0 = computeAlignment(outline2, sp, 0)
+  const pl = grid2b.cells.map((c) => generateFlightLines(c, {
+    spacingM: sp, angleDeg: 0, bufferPct: 0, photoIntervalM: iv, speed: 10, align: align0,
+  }))
+  const lons = pl.flatMap((p) => p.lines.map((s) => ((s[0][0] + s[1][0]) / 2 - center[0]) * mLon)).sort((a, b) => a - b)
+  const gaps = lons.slice(1).map((x, i) => x - lons[i])
+  check('A1: linha da aresta partilhada voada uma so vez (gap minimo ~espacamento)',
+    Math.min(...gaps) > sp - 0.5, Math.min(...gaps).toFixed(2) + ' m')
+  check('A1: a linha da aresta fica a 0.1 m da aresta, dentro de uma das celulas',
+    lons.some((x) => Math.abs(x) > 0.05 && Math.abs(x) < 0.2), lons.map((x) => x.toFixed(2)).join(','))
 }
 
 /* 8g. Lado do quadrado por bateria */
