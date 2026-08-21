@@ -66,6 +66,7 @@ export default function ControlPanel({
   hasRing,
   validation,
   planError,
+  planErrorCells,
   anchor,
   setAnchorParam,
   hasBase,
@@ -907,6 +908,11 @@ export default function ControlPanel({
         {planError === 'too-many-lines' && (
           <div className="mt-3 rounded border border-amber-700 bg-amber-950/60 p-3 text-xs leading-relaxed text-amber-300">
             ⚠ {t('cp.area.tooManyLines')}
+          </div>
+        )}
+        {planError && planError !== 'too-many-lines' && (
+          <div className="mt-3 rounded border border-red-700 bg-red-950/60 p-3 text-xs leading-relaxed text-red-300">
+            ⚠ {t(`cp.area.planError.${planError}`, { cells: (planErrorCells ?? []).join(', ') })}
           </div>
         )}
       </Section>

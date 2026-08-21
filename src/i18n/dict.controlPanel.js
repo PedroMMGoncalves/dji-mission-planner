@@ -299,6 +299,18 @@ export default {
     pt: 'foram detectadas auto-interseções (marcadas a vermelho no mapa). Arraste os vértices para corrigir a geometria antes de gerar as linhas de voo.',
     en: 'self-intersections were detected (marked in red on the map). Drag the vertices to fix the geometry before generating the flight lines.',
   },
+  'cp.area.planError.cell-uncovered': {
+    pt: 'As células {cells} da grelha ficaram sem passagens de voo — a missão NÃO cobre toda a área desenhada. Ajuste o espaçamento, a orientação ou o tamanho das células.',
+    en: 'Grid cells {cells} received no flight passes — the mission does NOT cover the whole drawn area. Adjust the spacing, the direction or the cell size.',
+  },
+  'cp.area.planError.crosshatch-failed': {
+    pt: 'A segunda grelha (perpendicular) não pôde ser gerada — sem dupla grelha a missão não sai. Ajuste o espaçamento ou a área.',
+    en: 'The second (perpendicular) grid could not be generated — no mission without the double grid. Adjust the spacing or the area.',
+  },
+  'cp.area.planError.nadir-failed': {
+    pt: 'A passagem nadir extra não pôde ser gerada — a missão não sai sem ela. Ajuste o espaçamento ou desligue a passagem nadir.',
+    en: 'The extra nadir pass could not be generated — no mission without it. Adjust the spacing or switch the nadir pass off.',
+  },
   'cp.area.tooManyLines': {
     pt: 'O espaçamento calculado gera linhas em excesso (>2500). Aumente a altitude, reduza a sobreposição lateral ou diminua a área.',
     en: 'The computed spacing produces too many flight lines (>2500). Increase the altitude, reduce the side overlap or shrink the area.',
