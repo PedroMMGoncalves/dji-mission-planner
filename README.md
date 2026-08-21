@@ -104,7 +104,7 @@ Line spacing comes from the across-track ground footprint, `altitude × sensor_w
 
 ## Validation status
 
-**Export verified against the WPML specification and automated tests; real-flight validation planned for September 2026.** The suite (`smoke-test.mjs`, 310 assertions) runs in CI on every push and covers the planning math and the structure of the exported files; what it cannot cover is in the manual protocol [docs/QA_MANUAL.md](docs/QA_MANUAL.md), run once per release — the run for the current version is still pending. The WPML enums have never been tested on a real controller — see the notes below.
+**Export verified against the WPML specification and automated tests; real-flight validation planned for September 2026.** The suite (`smoke-test.mjs`, 300+ assertions) runs in CI on every push and covers the planning math and the structure of the exported files; what it cannot cover is in the manual protocol [docs/QA_MANUAL.md](docs/QA_MANUAL.md), run once per release — the run for the current version is still pending. The WPML enums have never been tested on a real controller — see the notes below.
 
 **Profile status:** the **M4T optics are placeholders** (M3E-class values, flagged in the code) until real EXIF data lands — do not trust the M4T footprint/GSD for mission sizing. The remaining profiles (M3E, P1, Mapper+) use published values.
 
