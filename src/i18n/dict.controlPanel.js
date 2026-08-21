@@ -164,6 +164,15 @@ export default {
   'cp.flight.triggerBy': { pt: 'Disparo por', en: 'Trigger by' },
   'cp.flight.triggerDistance': { pt: 'Distância', en: 'Distance' },
   'cp.flight.triggerTime': { pt: 'Tempo', en: 'Time' },
+  'cp.flight.triggerWaypoint': { pt: 'Waypoint', en: 'Waypoint' },
+  'cp.flight.triggerWaypointHint': {
+    pt: 'Uma foto por waypoint: cada passagem é densificada a passos iguais ≤ intervalo, cada ponto leva uma acção de foto e o overshoot não dispara. Não há gatilho por distância; o tempo de paragem em cada waypoint não entra no tempo de voo estimado. Incompatível com «Seguir terreno».',
+    en: 'One photo per waypoint: each pass is densified at equal steps ≤ interval, every point carries a take-photo action and the overshoot does not trigger. There is no distance trigger; the stop time at each waypoint is not included in the estimated flight time. Incompatible with "Follow terrain".',
+  },
+  'cp.flight.waypointWarn': {
+    pt: '{n} waypoints num só bloco — acima de 2000 a importação no Pilot 2 fica lenta; aumente o intervalo ou divida em blocos.',
+    en: '{n} waypoints in a single block — above 2000 the Pilot 2 import gets slow; increase the interval or split into blocks.',
+  },
   'cp.flight.gimbalPitch': { pt: 'Inclinação do gimbal', en: 'Gimbal pitch' },
   'cp.flight.gimbalHint': {
     pt: '−90° = nadir (2D) · −60°/−45° = oblíqua, para reconstrução 3D',
@@ -420,6 +429,10 @@ export default {
     en: 'Follow terrain (constant AGL)',
   },
   'cp.terrain.tolerance': { pt: 'Tolerância vertical', en: 'Vertical tolerance' },
+  'cp.terrain.photoWaypoint': {
+    pt: 'Seguir terreno não é compatível com o disparo por waypoint: a densificação do terreno reindexaria as fotos. Escolha disparo por distância/tempo ou desligue o seguimento — a exportação WPML fica bloqueada entretanto.',
+    en: 'Follow terrain is not compatible with the per-waypoint trigger: terrain densification would re-index the photos. Choose the distance/time trigger or disable following — the WPML export stays blocked meanwhile.',
+  },
   'cp.terrain.result': {
     pt: 'Terreno {min}–{max} m · {n} waypoints com altura própria (ref. {ref} m).',
     en: 'Terrain {min}–{max} m · {n} waypoints with individual heights (ref. {ref} m).',

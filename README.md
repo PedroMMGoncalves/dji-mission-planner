@@ -55,7 +55,7 @@ This tool is the **mission planning engine only**. Airspace authorisation, UAS-z
 - **3D double grid with an optional nadir pass**: crosshatch at −60° plus, when enabled, a third nadir grid flown last (the gimbal rotates to −90° through waypoint actions) — the displayed GSD switches to nadir, the governing ortho resolution.
 - **Blocks**: strips by maximum area; battery-sized squares solved from a flight-time model (duration × return reserve − transit, VLOS cap); manual mosaic with clickable cells and Ctrl+Z; centre-point N×M grids.
 - **Terrain following** (`src/utils/terrain.js`): Terrarium tiles (~30 m) with despiking, or a DGT LiDAR GeoTIFF read lazily by window (`src/utils/demFile.js`, multi-GB safe); densify + Douglas-Peucker into per-waypoint heights; steep-slope suggestions (lines along the contours, oblique gimbal).
-- **WPML exporter** (`src/utils/exporters.js`): per-waypoint actions (fixed heading, gimbal, photo), configurable turn mode, no camera actions for LiDAR payloads, file names encoding the mission type (`mission_area-crosshatch-nadir_b01`, `mission_face_p1-6`, `mission_orbit_n3`).
+- **WPML exporter** (`src/utils/exporters.js`): per-waypoint actions (fixed heading, gimbal, photo), a per-waypoint trigger mode for area grids (passes densified at equal steps ≤ interval, one take-photo action per point, no distance trigger), configurable turn mode, no camera actions for LiDAR payloads, file names encoding the mission type (`mission_area-crosshatch-nadir_b01`, `mission_face_p1-6`, `mission_orbit_n3`).
 - **GCPs, report and checklist**: edge+centre GCP heuristic; printable A4 report with a map; a 75+ item checklist with groups conditional on the payload (LiDAR) and on the mode (face), flight and GCP logs, JSON export and printing.
 - **Projects**: browser autosave plus save/open as JSON; an aggregate strip (time, batteries, photos) when several plans coexist. **Bilingual UI** (PT/EN).
 
@@ -132,7 +132,7 @@ Editing gestures: click adds vertices (Backspace or clicking a vertex removes, d
 | Export | Content | Use |
 | --- | --- | --- |
 | Simple KML | Area polygon, home point, GCPs, flight lines | Drawing the mission in Pilot 2; QGIS |
-| WPML (KMZ) — Area | `template.kml` + `waylines.wpml`, per-waypoint heights with terrain follow, distance/time trigger, `_area[-variants]_bNN` | Direct import in DJI Pilot 2; one KMZ per block (ZIP) |
+| WPML (KMZ) — Area | `template.kml` + `waylines.wpml`, per-waypoint heights with terrain follow, distance/time/per-waypoint trigger, `_area[-variants]_bNN` | Direct import in DJI Pilot 2; one KMZ per block (ZIP) |
 | WPML (KMZ) — Face | Fixed heading and one photo per waypoint, `_face_p1-N` | Faces, slopes, structures |
 | WPML (KMZ) — Orbit | Continuous curved flight, heading at the POI, per-level gimbal, `_orbit_nN` (single or per-level ZIP) | Inspection/3D of isolated targets |
 | WPML (KMZ) — Inspection | Individual points with heading/pitch/photo, `_inspect_nN` | Directed inspection |

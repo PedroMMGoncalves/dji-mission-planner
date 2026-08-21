@@ -86,6 +86,7 @@ export default function ControlPanel({
   presets,
   onApplyPreset,
   triggerWarn,
+  waypointWarn,
   aglWarn,
   importState,
   importError,
@@ -495,13 +496,27 @@ export default function ControlPanel({
         <Field label={t('cp.flight.triggerBy')}>
           <select
             className="w-28 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            value={params.triggerMode}
+            value={payload.type === 'camera' || params.triggerMode !== 'waypoint' ? params.triggerMode : 'distance'}
             onChange={(e) => setParam('triggerMode', e.target.value)}
           >
             <option value="distance">{t('cp.flight.triggerDistance')}</option>
             <option value="time">{t('cp.flight.triggerTime')}</option>
+            {/* B: foto por waypoint só faz sentido com câmara */}
+            {payload.type === 'camera' && (
+              <option value="waypoint">{t('cp.flight.triggerWaypoint')}</option>
+            )}
           </select>
         </Field>
+        {payload.type === 'camera' && params.triggerMode === 'waypoint' && (
+          <p className="-mt-1 mb-2 text-[11px] leading-relaxed text-slate-400">
+            {t('cp.flight.triggerWaypointHint')}
+          </p>
+        )}
+        {waypointWarn != null && (
+          <p className="mb-2 rounded border border-amber-800 bg-amber-950/40 p-2 text-xs text-amber-200">
+            ⚠ {t('cp.flight.waypointWarn', { n: waypointWarn })}
+          </p>
+        )}
         <Field label={t('cp.flight.gimbalPitch')} suffix="°">
           <NumberInput
             value={params.gimbalPitch}

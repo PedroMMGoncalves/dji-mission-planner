@@ -82,6 +82,7 @@ function InstrucoesPt() {
       <ul className="list-none">
         <Li><strong>KML Simples</strong> — polígono 2D + base + GCPs, para desenhar a missão no Pilot 2.</Li>
         <Li><strong>WPML (KMZ)</strong> — missão executável com waypoints e disparo automático; com blocos activos gera um ZIP com um KMZ por bloco.</Li>
+        <Li><strong>Disparo por waypoint</strong> — em «Disparo por: Waypoint», cada passagem é densificada em waypoints a passos iguais ≤ intervalo e cada um leva uma acção de foto (sem gatilho por distância); o overshoot não fotografa e o modo não é compatível com «Seguir terreno». O tempo de paragem em cada waypoint não entra na estimativa.</Li>
         <Li>O projecto grava-se automaticamente no browser; use «Guardar/Abrir projecto» para arquivar em ficheiro.</Li>
       </ul>
     </>
@@ -148,6 +149,7 @@ function InstrucoesEn() {
       <ul className="list-none">
         <Li><strong>Simple KML</strong> — 2D polygon + home point + GCPs, to draw the mission in Pilot 2.</Li>
         <Li><strong>WPML (KMZ)</strong> — executable mission with waypoints and automatic camera triggering; with blocks active it generates a ZIP with one KMZ per block.</Li>
+        <Li><strong>Per-waypoint trigger</strong> — with “Trigger by: Waypoint”, each pass is densified into waypoints at equal steps ≤ interval and every one carries a take-photo action (no distance trigger); the overshoot takes no photos and the mode is not compatible with “Follow terrain”. The stop time at each waypoint is not part of the estimate.</Li>
         <Li>The project auto-saves in the browser; use “Save/Open project” to archive it as a file.</Li>
       </ul>
     </>
