@@ -1415,5 +1415,13 @@ check('waylines Mapper+: sem acoes de camara',
       !wlPlain.includes('<wpml:actionGroupId>2</wpml:actionGroupId>'))
 }
 
+/* A3: uma contagem exacta de assercoes nos READMEs envelhece a cada tarefa —
+   so a forma "300+" e aceite; uma contagem de tres digitos faz a suite falhar */
+{
+  const stale = ['README.md', 'README.pt.md'].filter((f) =>
+    /\b\d{3} asser/.test(readFileSync(new URL('./' + f, import.meta.url), 'utf8')))
+  check('A3: READMEs sem contagem exacta de assercoes', stale.length === 0, stale.join(',') || 'ok')
+}
+
 console.log(failures === 0 ? '\nTODOS OS TESTES PASSARAM' : `\n${failures} TESTES FALHARAM`)
 process.exit(failures === 0 ? 0 : 1)
