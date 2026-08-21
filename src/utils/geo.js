@@ -506,9 +506,12 @@ export function computeAlignment(outlineRing, spacingM, angleDeg) {
 export function generateFlightLines(ring, options) {
   const {
     spacingM, angleDeg, bufferPct, photoIntervalM, speed, align,
-    overshootM = 0, tieLine = false,
+    overshootM = 0, tieLine = false, photoMode = 'distance',
   } = options
   if (!ring || ring.length < 3 || !(spacingM > 0.05)) return null
+  // B: foto por waypoint só com intervalo válido; caso contrário o modo é o
+  // de distância (sem densificação, sem acções por waypoint)
+  const perWaypointPhotos = photoMode === 'waypoint' && photoIntervalM > 0
 
   const basePoly = ringToPolygon(ring)
 
@@ -623,9 +626,13 @@ export function generateFlightLines(ring, options) {
   // da direção de voo, já com o sentido escolhido pela rota — as viragens
   // ficam fora da área e os dados dentro dela são captados estáveis.
   const serpentine = []
+  // B: núcleo (sem overshoot) de cada passagem, no referencial rodado — é o
+  // troço densificado com fotos no modo foto-por-waypoint
+  const cores = []
   for (let k = 0; k + 1 < routePts.length; k += 2) {
     let a = routePts[k]
     let b = routePts[k + 1]
+    cores.push([a, b])
     if (overshootM > 0) {
       const dxOver = overshootM / metersPerDegLon(a[1])
       if (a[0] <= b[0]) {
@@ -663,7 +670,9 @@ export function generateFlightLines(ring, options) {
       const midTie = turf.point([xMid, (ya + yb) / 2])
       if (turf.booleanPointInPolygon(midTie, rotated)) {
         const lenM = turf.distance([xMid, ya], [xMid, yb], { units: 'meters' })
-        if (lenM >= MIN_SEGMENT_M) tieSegs.push([[xMid, ya - dyOver], [xMid, yb + dyOver]])
+        if (lenM >= MIN_SEGMENT_M) {
+          tieSegs.push({ ext: [[xMid, ya - dyOver], [xMid, yb + dyOver]], core: [[xMid, ya], [xMid, yb]] })
+        }
         q += 2
       } else {
         q += 1
@@ -674,9 +683,15 @@ export function generateFlightLines(ring, options) {
       const lastY = serpentine.length > 0 ? serpentine[serpentine.length - 1][1][1] : minY
       if (Math.abs(lastY - maxY) < Math.abs(lastY - minY)) {
         tieSegs.reverse()
-        tieSegs.forEach((s) => serpentine.push([s[1], s[0]]))
+        tieSegs.forEach((s) => {
+          serpentine.push([s.ext[1], s.ext[0]])
+          cores.push([s.core[1], s.core[0]])
+        })
       } else {
-        tieSegs.forEach((s) => serpentine.push(s))
+        tieSegs.forEach((s) => {
+          serpentine.push(s.ext)
+          cores.push(s.core)
+        })
       }
     }
   }
@@ -687,11 +702,39 @@ export function generateFlightLines(ring, options) {
   })
   const lines = rotatedBack.geometry.coordinates
 
-  // Waypoints: extremos de cada faixa, pela ordem de voo
+  // Waypoints: extremos de cada faixa, pela ordem de voo. No modo
+  // foto-por-waypoint (B) o núcleo de cada passagem é densificado a passos
+  // iguais ≤ intervalo (passPoints) e cada ponto leva uma acção takePhoto;
+  // os extremos do overshoot continuam a ser waypoints, mas sem foto. Os
+  // pontos do núcleo são rodados de volta com o mesmo pivô/ângulo das linhas,
+  // pelo que os extremos coincidem bit a bit com os de `lines`.
   const waypoints = []
-  lines.forEach((seg) => {
-    waypoints.push(seg[0], seg[1])
-  })
+  let perLine = null
+  let perWaypoint = null
+  if (perWaypointPhotos && lines.length > 0) {
+    perLine = []
+    perWaypoint = []
+    const coreRot = cores.map(([a, b]) => passPoints(a, b, photoIntervalM))
+    const back = turf.transformRotate(turf.multiPoint(coreRot.flat()), -delta, { pivot })
+    const corePts = back.geometry.coordinates
+    let ci = 0
+    lines.forEach((seg, i) => {
+      const pts = corePts.slice(ci, ci + coreRot[i].length)
+      ci += coreRot[i].length
+      const start = waypoints.length
+      if (overshootM > 0) waypoints.push(seg[0])
+      pts.forEach((p) => {
+        perWaypoint[waypoints.length] = { actions: ['takePhoto'] }
+        waypoints.push(p)
+      })
+      if (overshootM > 0) waypoints.push(seg[1])
+      perLine.push(waypoints.length - start)
+    })
+  } else {
+    lines.forEach((seg) => {
+      waypoints.push(seg[0], seg[1])
+    })
+  }
 
   // Estatísticas. O disparo por distância cobre a rota inteira, overshoot
   // incluído — photoCount é o total real; photoCountArea desconta o
@@ -702,12 +745,15 @@ export function generateFlightLines(ring, options) {
   lines.forEach((seg) => {
     const len = turf.distance(seg[0], seg[1], { units: 'meters' })
     totalLineLengthM += len
-    if (photoIntervalM > 0) {
+    if (photoIntervalM > 0 && !perWaypointPhotos) {
       photoCount += Math.floor(len / photoIntervalM) + 1
       const core = Math.max(0, len - 2 * overshootM)
       photoCountArea += Math.floor(core / photoIntervalM) + 1
     }
   })
+
+  // B: no modo foto-por-waypoint, fotos = marcadores takePhoto
+  if (perWaypoint) photoCount = perWaypoint.reduce((n) => n + 1, 0)
 
   let pathLengthM = 0
   for (let i = 1; i < waypoints.length; i++) {
@@ -727,12 +773,65 @@ export function generateFlightLines(ring, options) {
       totalLineLengthM,
       pathLengthM,
       photoCount: photoIntervalM > 0 ? photoCount : null,
-      photoCountArea: photoIntervalM > 0 && overshootM > 0 ? photoCountArea : null,
+      // no modo foto-por-waypoint todas as fotos caem no núcleo da passagem
+      photoCountArea: photoIntervalM > 0 && overshootM > 0 && !perWaypointPhotos ? photoCountArea : null,
       flightTimeS,
       areaHa: turf.area(basePoly) / 10000,
       bufferedAreaHa: turf.area(area) / 10000,
     },
+    // B: só presentes no modo foto-por-waypoint — o modo distância devolve
+    // exactamente o objecto de sempre
+    ...(perLine ? { perLine, perWaypoint } : {}),
   }
+}
+
+/**
+ * B: pontos de uma passagem a passos iguais ≤ `intervalM`: n = max(1,
+ * ceil(len/intervalM)) passos de len/n, extremos incluídos (n+1 pontos).
+ * Ported from dronnix-io/FlyPath (GPL-3.0), grid_route.py `_pass_points`,
+ * adapted: interpolação linear no referencial rodado (passagens horizontais
+ * ou verticais, logo equidistantes em metros) em vez de vectores cartesianos.
+ * É a regra que garante que duas fotos consecutivas nunca ficam mais
+ * afastadas do que o intervalo calculado da sobreposição frontal.
+ */
+export function passPoints(a, b, intervalM) {
+  const lenM = turf.distance(a, b, { units: 'meters' })
+  const n = intervalM > 0 ? Math.max(1, Math.ceil(lenM / intervalM - 1e-9)) : 1
+  const pts = []
+  for (let i = 0; i <= n; i++) {
+    const f = i / n
+    pts.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f])
+  }
+  return pts
+}
+
+/**
+ * B: concatenação de `perLine`/`perWaypoint` de vários sub-planos voados em
+ * sequência (dupla grelha, células): os índices de perWaypoint deslocam-se
+ * pela contagem de waypoints dos sub-planos anteriores. Devolve {} quando
+ * nenhum sub-plano traz acções por waypoint (modo distância intacto).
+ */
+export function concatPerWaypoint(parts) {
+  if (!parts.some((p) => p?.perLine)) return {}
+  const perLine = []
+  const perWaypoint = []
+  let offset = 0
+  for (const p of parts) {
+    perLine.push(...(p.perLine ?? p.lines.map(() => 2)))
+    const pw = p.perWaypoint ?? []
+    pw.forEach((e, i) => {
+      perWaypoint[offset + i] = e
+    })
+    offset += p.waypoints.length
+  }
+  return { perLine, perWaypoint }
+}
+
+export const TRIGGER_MODES = ['distance', 'time', 'waypoint']
+
+/** B: projectos antigos ou valores inválidos carregam em disparo por distância */
+export function normalizeTriggerMode(value) {
+  return TRIGGER_MODES.includes(value) ? value : 'distance'
 }
 
 /**
@@ -742,7 +841,7 @@ export function generateFlightLines(ring, options) {
  * com os índices 1-based — nunca uma missão silenciosamente mais curta do
  * que a área desenhada (era o comportamento do filter(Boolean) antigo).
  */
-export function composeCellPlans(ring, perCell, { photoIntervalM = 0, overshootM = 0 } = {}) {
+export function composeCellPlans(ring, perCell, { photoIntervalM = 0, overshootM = 0, photoMode = 'distance' } = {}) {
   const failed = perCell.find((p) => p?.error)
   if (failed) return failed
   const missing = perCell.map((p, i) => (p ? null : i + 1)).filter((i) => i != null)
@@ -753,6 +852,7 @@ export function composeCellPlans(ring, perCell, { photoIntervalM = 0, overshootM
     area: ringToPolygon(ring),
     lines: perCell.flatMap((p) => p.lines),
     waypoints: perCell.flatMap((p) => p.waypoints),
+    ...concatPerWaypoint(perCell),
     cellPlans: perCell,
     stats: {
       lineCount: sum((s) => s.lineCount),
@@ -760,7 +860,7 @@ export function composeCellPlans(ring, perCell, { photoIntervalM = 0, overshootM
       totalLineLengthM: sum((s) => s.totalLineLengthM),
       pathLengthM: sum((s) => s.pathLengthM),
       photoCount: photoIntervalM > 0 ? sum((s) => s.photoCount) : null,
-      photoCountArea: photoIntervalM > 0 && overshootM > 0 ? sum((s) => s.photoCountArea) : null,
+      photoCountArea: photoIntervalM > 0 && overshootM > 0 && photoMode !== 'waypoint' ? sum((s) => s.photoCountArea) : null,
       flightTimeS: sum((s) => s.flightTimeS),
       areaHa: sum((s) => s.areaHa),
       bufferedAreaHa: sum((s) => s.bufferedAreaHa),
@@ -817,6 +917,7 @@ export function generateFlightPlan(ring, options, generate = generateFlightLines
     area: p1.area,
     lines: parts.flatMap((p) => p.lines),
     waypoints: parts.flatMap((p) => p.waypoints),
+    ...concatPerWaypoint(parts),
     nadirStartLine: nadir ? p1.stats.lineCount + p2.stats.lineCount : null,
     nadirStartWaypoint: nadir ? p1.stats.waypointCount + p2.stats.waypointCount : null,
     stats: {
@@ -919,9 +1020,10 @@ export function splitIntoBlocks(plan, options) {
   const blocks = []
   let cur = null
 
-  const openBlock = (firstPoint) => {
+  const openBlock = (firstPoint, startLine) => {
     cur = {
       lines: [],
+      startLine,
       cost: 0,
       transitS: transitFor(firstPoint),
       areaM2: 0,
@@ -932,7 +1034,7 @@ export function splitIntoBlocks(plan, options) {
   }
 
   let prevEnd = null
-  plan.lines.forEach((seg) => {
+  plan.lines.forEach((seg, li) => {
     const lenM = turf.distance(seg[0], seg[1], { units: 'meters' })
     const connM = prevEnd ? turf.distance(prevEnd, seg[0], { units: 'meters' }) : 0
     // Cost used by the fits-check below. The connection from the previous
@@ -944,7 +1046,7 @@ export function splitIntoBlocks(plan, options) {
     const lineCost =
       mode === 'area' ? lenM * spacingM : lenM / v + TURN_TIME_S
 
-    if (!cur) openBlock(seg[0])
+    if (!cur) openBlock(seg[0], li)
     const fits =
       mode === 'area'
         ? cur.cost + lineCost <= budget
@@ -952,7 +1054,7 @@ export function splitIntoBlocks(plan, options) {
 
     if (!fits && cur.lines.length > 0) {
       cur = null
-      openBlock(seg[0])
+      openBlock(seg[0], li)
     }
     // (uma faixa isolada que exceda o orçamento entra sozinha no bloco)
     cur.lines.push(seg)
@@ -962,9 +1064,26 @@ export function splitIntoBlocks(plan, options) {
     prevEnd = seg[1]
   })
 
+  // B: offsets dos waypoints por linha (2 por linha sem densificação)
+  const perLineAll = plan.perLine ?? plan.lines.map(() => 2)
+  const offsets = [0]
+  perLineAll.forEach((n) => offsets.push(offsets[offsets.length - 1] + n))
   return blocks.map((b, i) => {
-    const waypoints = []
-    b.lines.forEach((seg) => waypoints.push(seg[0], seg[1]))
+    let waypoints = []
+    let extra = {}
+    if (plan.perLine) {
+      // fatiar os waypoints densificados e os marcadores de foto do plano
+      const from = offsets[b.startLine]
+      const to = offsets[b.startLine + b.lines.length]
+      waypoints = plan.waypoints.slice(from, to)
+      const perWaypoint = []
+      for (let k = from; k < to; k++) {
+        if (plan.perWaypoint?.[k]) perWaypoint[k - from] = plan.perWaypoint[k]
+      }
+      extra = { perLine: plan.perLine.slice(b.startLine, b.startLine + b.lines.length), perWaypoint }
+    } else {
+      b.lines.forEach((seg) => waypoints.push(seg[0], seg[1]))
+    }
     let pathM = 0
     for (let k = 1; k < waypoints.length; k++) {
       pathM += turf.distance(waypoints[k - 1], waypoints[k], { units: 'meters' })
@@ -977,6 +1096,7 @@ export function splitIntoBlocks(plan, options) {
       lengthM: b.lengthM,
       transitS: b.transitS,
       timeS: pathM / v + b.lines.length * TURN_TIME_S + b.transitS,
+      ...extra,
     }
   })
 }

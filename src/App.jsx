@@ -26,6 +26,7 @@ import {
 import {
   aggregatePlans,
   composeCellPlans,
+  normalizeTriggerMode,
   computeAlignment,
   computeFootprint,
   computeGSD,
@@ -485,6 +486,13 @@ function AppInner({ lang, setLang }) {
     return null
   }, [gridCells, tiles, disabledTiles])
 
+  // B: disparo por waypoint só com câmara e intervalo válido; com LiDAR ou
+  // sem óptica o plano fica no modo distância (e a opção não aparece)
+  const photoMode =
+    sensor.type === 'camera' && params.triggerMode === 'waypoint' && interval > 0
+      ? 'waypoint'
+      : 'distance'
+
   const plan = useMemo(() => {
     if (!ring || !validation.valid) return null
     const opts = {
@@ -497,6 +505,7 @@ function AppInner({ lang, setLang }) {
       includeNadir: Boolean(params.crosshatch && params.includeNadir),
       overshootM: Math.max(0, params.overshoot || 0),
       tieLine: Boolean(params.tieLine),
+      photoMode,
     }
     if (!activeCells) return generateFlightPlan(ring, opts)
 
@@ -514,9 +523,10 @@ function AppInner({ lang, setLang }) {
     )
     return composeCellPlans(ring, perCell, {
       photoIntervalM: opts.photoIntervalM,
+      photoMode: opts.photoMode,
       overshootM: opts.overshootM,
     })
-  }, [ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, params.crosshatch, params.includeNadir, params.overshoot, params.tieLine, activeCells])
+  }, [photoMode, ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, params.crosshatch, params.includeNadir, params.overshoot, params.tieLine, activeCells])
 
   const planOk = plan && !plan.error ? plan : null
 
@@ -545,6 +555,9 @@ function AppInner({ lang, setLang }) {
         lengthM: p.stats.totalLineLengthM,
         transitS: 0,
         timeS: p.stats.flightTimeS ?? 0,
+        // B: waypoints densificados e acções de foto da célula
+        perLine: p.perLine ?? null,
+        perWaypoint: p.perWaypoint ?? null,
         // R2.10: cada célula tem a sua grelha nadir no fim
         nadirLineLocal: p.nadirStartLine ?? null,
       }))
@@ -565,6 +578,16 @@ function AppInner({ lang, setLang }) {
     const locals = nadirLineLocalPerBlock(cut.map((b) => b.lines.length), planOk.nadirStartLine)
     return cut.map((b, i) => ({ ...b, nadirLineLocal: locals[i] }))
   }, [planOk, activeCells, split, batteryMin, params.speed, spacing, basePoint])
+
+  // B: aviso brando — missões com milhares de waypoints importam lentamente
+  // no Pilot 2; o limite duro do WPML (65535 índices) fica longe
+  const waypointWarn = useMemo(() => {
+    if (photoMode !== 'waypoint' || !planOk) return null
+    const n = blocks?.length
+      ? Math.max(...blocks.map((b) => b.waypoints.length))
+      : planOk.waypoints.length
+    return n > 2000 ? n : null
+  }, [photoMode, planOk, blocks])
 
   /* --------------------------- Interações ---------------------------- */
   const handleMapClick = useCallback(
@@ -1007,6 +1030,10 @@ function AppInner({ lang, setLang }) {
 
   /* ------------- Terrain follow: alturas por waypoint ----------------- */
   const terrainResult = useMemo(() => {
+    // B: com foto por waypoint, a densificação do seguimento de terreno
+    // reindexaria as acções de foto — erro explícito (e exportação bloqueada)
+    // em vez de uma missão parcial com alturas planas ou fotos perdidas
+    if (terrainFollow.enabled && photoMode === 'waypoint') return { error: t('cp.terrain.photoWaypoint') }
     if (!terrainFollow.enabled || !terrainCovers || !planOk?.lines?.length) return null
     const data = terrain.data
     const refPt = basePoint ?? planOk.waypoints[0]
@@ -1048,7 +1075,7 @@ function AppInner({ lang, setLang }) {
     } catch (err) {
       return { error: err?.message ?? 'Falha no cálculo do terreno' }
     }
-  }, [terrainFollow, terrainCovers, terrain.data, planOk, blocks, basePoint, params.altitude])
+  }, [photoMode, t, terrainFollow, terrainCovers, terrain.data, planOk, blocks, basePoint, params.altitude])
 
   // Sugestões para encostas íngremes (T4.5): plano médio do terreno na área
   // → linhas ao longo das curvas de nível e gimbal ≈ −(90 − inclinação).
@@ -1203,7 +1230,14 @@ function AppInner({ lang, setLang }) {
     if (sel) setDrone(sel)
     if (p.custom) setCustom((c) => ({ ...c, ...p.custom }))
     if (p.payloadTuning && typeof p.payloadTuning === 'object') setPayloadTuning(p.payloadTuning)
-    if (p.params) setParams((prev) => ({ ...prev, ...p.params }))
+    if (p.params) {
+      // B: triggerMode desconhecido (ou ausente) carrega como distância
+      setParams((prev) => ({
+        ...prev,
+        ...p.params,
+        triggerMode: normalizeTriggerMode(p.params.triggerMode ?? prev.triggerMode),
+      }))
+    }
     if (p.split) {
       // projetos antigos guardavam uma duração de bateria única dentro de
       // split — preserva o comportamento exato como override da combinação
@@ -1433,7 +1467,10 @@ function AppInner({ lang, setLang }) {
   /* --------------------------- Exportação ---------------------------- */
   const safeName = missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'
   const canExportKML = Boolean(ring && validation.valid)
-  const canExportKMZ = Boolean(planOk && planOk.waypoints.length >= 2)
+  // B: seguir terreno + foto por waypoint é um erro explícito, não uma
+  // exportação com alturas planas
+  const canExportKMZ =
+    Boolean(planOk && planOk.waypoints.length >= 2) && !(terrainFollow.enabled && photoMode === 'waypoint')
 
   const handleExportKML = () => {
     if (canExportKML) exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null)
@@ -1467,12 +1504,22 @@ function AppInner({ lang, setLang }) {
       altitude: params.altitude,
       speed: params.speed,
       wpml,
-      photoIntervalM: sensor.type === 'camera' ? interval : 0,
+      // B: no modo foto-por-waypoint não há gatilho por distância — as fotos
+      // vão nas acções por waypoint (perWaypoint)
+      photoIntervalM: sensor.type === 'camera' && photoMode !== 'waypoint' ? interval : 0,
       triggerMode: params.triggerMode,
       gimbalPitch: params.gimbalPitch,
       sensorType: sensor.type,
     }
     const exportBlocks = terrainOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
+    // B: acções de foto por waypoint do plano (null no modo distância); o
+    // marcador de gimbal nadir funde-se com a entrada existente do waypoint
+    const photoPw = photoMode === 'waypoint' ? (planOk.perWaypoint ?? null) : null
+    const withPitch = (pw, at) => {
+      const out = pw ? [...pw] : []
+      out[at] = { ...(out[at] ?? {}), gimbalPitch: -90 }
+      return out
+    }
 
     // R2.10: com a passagem nadir extra, o gimbal roda a −90 no primeiro
     // waypoint da grelha nadir (a missão arranca no pitch oblíquo global)
@@ -1483,12 +1530,12 @@ function AppInner({ lang, setLang }) {
           const at = terrainOk
             ? b.nadirMarkerAt
             : b.nadirLineLocal != null
-              ? 2 * b.nadirLineLocal
+              ? b.perLine
+                ? b.perLine.slice(0, b.nadirLineLocal).reduce((s, n) => s + n, 0)
+                : 2 * b.nadirLineLocal
               : null
           if (at == null) return b
-          const pw = []
-          pw[at] = { gimbalPitch: -90 }
-          return { ...b, perWaypoint: pw }
+          return { ...b, perWaypoint: withPitch(b.perWaypoint, at) }
         })
         exportBlocksZip(exportParams, annotated)
         return
@@ -1500,9 +1547,9 @@ function AppInner({ lang, setLang }) {
       } else {
         at = planOk.nadirStartWaypoint ?? planOk.cellPlans?.[0]?.nadirStartWaypoint ?? 2 * nadirLine
       }
-      const pw = []
-      pw[at] = { gimbalPitch: -90 }
-      exportParams.perWaypoint = pw
+      exportParams.perWaypoint = withPitch(photoPw, at)
+    } else if (photoPw) {
+      exportParams.perWaypoint = photoPw
     }
 
     if (exportBlocks && exportBlocks.length > 1) {
@@ -1708,6 +1755,7 @@ function AppInner({ lang, setLang }) {
           presets={flightPresets}
           onApplyPreset={applyPreset}
           triggerWarn={triggerWarn}
+          waypointWarn={waypointWarn}
           aglWarn={aglWarn}
           importState={importState}
           importError={importError}

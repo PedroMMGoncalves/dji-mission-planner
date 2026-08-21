@@ -14,6 +14,8 @@ import {
   lineSpacing,
   longestEdgeBearing,
   nadirLineLocalPerBlock,
+  normalizeTriggerMode,
+  passPoints,
   photoInterval,
   rectangleFromAnchor,
   resolveSensor,
@@ -1413,6 +1415,144 @@ check('waylines Mapper+: sem acoes de camara',
   check('T4.1: sem perWaypoint nao ha smoothTransition nem grupos extra',
     !wlPlain.includes('smoothTransition') &&
       !wlPlain.includes('<wpml:actionGroupId>2</wpml:actionGroupId>'))
+}
+
+/* 8n. Disparo por waypoint (B): passagens densificadas a passos iguais <=
+   intervalo, fotos so no nucleo, overshoot sem foto, modo distancia intacto */
+{
+  const dist = (a, b) => turf.distance(a, b, { units: 'meters' })
+  const pA = [-8, 41]
+  const pB = turf.destination(pA, 0.09, 90, { units: 'kilometers' }).geometry.coordinates
+  const pts = passPoints(pA, pB, 20)
+  check('8n passPoints 90/20: 6 pontos', pts.length === 6, pts.length)
+  const steps = pts.slice(1).map((p, i) => dist(pts[i], p))
+  check('8n passPoints 90/20: passos de 18 m', steps.every((s) => Math.abs(s - 18) < 0.01), steps.map((s) => s.toFixed(3)).join(','))
+  const pC = turf.destination(pA, 0.1, 90, { units: 'kilometers' }).geometry.coordinates
+  check('8n passPoints 100/20: 6 pontos (5 passos exactos)', passPoints(pA, pC, 20).length === 6)
+  const pD = turf.destination(pA, 0.005, 90, { units: 'kilometers' }).geometry.coordinates
+  check('8n passPoints 5/20: so os extremos', passPoints(pA, pD, 20).length === 2)
+  check('8n passPoints: extremos exactos', pts[0][0] === pA[0] && pts[0][1] === pA[1] && pts[5][0] === pB[0] && pts[5][1] === pB[1])
+  check('8n normalizeTriggerMode',
+    normalizeTriggerMode('bogus') === 'distance' && normalizeTriggerMode(undefined) === 'distance' &&
+    normalizeTriggerMode('time') === 'time' && normalizeTriggerMode('waypoint') === 'waypoint')
+
+  // rectangulo 90 m (E-O) x 25 m (N-S): faixas E-O de 90 m
+  const rectB = rectangleFromAnchor(center, 90, 25, 90)
+  const base = { spacingM: 10, angleDeg: 90, bufferPct: 0, photoIntervalM: 20, speed: 5 }
+  const pDist = generateFlightLines(rectB, base)
+  const pDist2 = generateFlightLines(rectB, { ...base, photoMode: 'distance' })
+  const pWp = generateFlightLines(rectB, { ...base, photoMode: 'waypoint' })
+  check('8n planos gerados', pDist && !pDist.error && pWp && !pWp.error)
+  if (pDist && !pDist.error && pWp && !pWp.error) {
+    const n = pWp.lines.length
+    check('8n modo distancia: byte a byte igual com/sem photoMode', JSON.stringify(pDist) === JSON.stringify(pDist2))
+    check('8n modo distancia: sem perLine/perWaypoint, 2 waypoints/faixa',
+      !('perLine' in pDist) && !('perWaypoint' in pDist) && pDist.waypoints.length === 2 * n)
+    check('8n linhas iguais nos dois modos', JSON.stringify(pWp.lines) === JSON.stringify(pDist.lines))
+    check('8n faixas de ~90 m', pWp.lines.every((l) => Math.abs(dist(l[0], l[1]) - 90) < 0.5), n)
+    check('8n perLine: 6 waypoints por faixa', pWp.perLine.length === n && pWp.perLine.every((k) => k === 6), pWp.perLine.join(','))
+    check('8n waypointCount = 6 x faixas', pWp.stats.waypointCount === 6 * n && pWp.waypoints.length === 6 * n)
+    check('8n photoCount = waypoints com foto',
+      pWp.stats.photoCount === 6 * n && pWp.perWaypoint.filter(Boolean).length === 6 * n, pWp.stats.photoCount)
+    check('8n photoCountArea nulo no modo waypoint', pWp.stats.photoCountArea === null)
+    let okStep = true
+    let okMark = true
+    let okEnds = true
+    let idx = 0
+    pWp.perLine.forEach((k, li) => {
+      for (let j = 1; j < k; j++) {
+        if (Math.abs(dist(pWp.waypoints[idx + j - 1], pWp.waypoints[idx + j]) - 18) > 0.05) okStep = false
+      }
+      for (let j = 0; j < k; j++) {
+        if (!pWp.perWaypoint[idx + j]?.actions?.includes('takePhoto')) okMark = false
+      }
+      const first = pWp.waypoints[idx]
+      const last = pWp.waypoints[idx + k - 1]
+      const seg = pWp.lines[li]
+      if (first[0] !== seg[0][0] || first[1] !== seg[0][1] || last[0] !== seg[1][0] || last[1] !== seg[1][1]) okEnds = false
+      idx += k
+    })
+    check('8n passos de 18 m entre fotos consecutivas', okStep)
+    check('8n takePhoto em todos os pontos do nucleo', okMark)
+    check('8n extremos das faixas = 1.o/ultimo waypoint (exactos)', okEnds)
+
+    const pOv = generateFlightLines(rectB, { ...base, photoMode: 'waypoint', overshootM: 15 })
+    check('8n overshoot: faixas de ~120 m', pOv.lines.every((l) => Math.abs(dist(l[0], l[1]) - 120) < 0.5))
+    check('8n overshoot: 8 waypoints por faixa', pOv.perLine.every((k) => k === 8), pOv.perLine.join(','))
+    check('8n overshoot: sem fotos a mais', pOv.stats.photoCount === 6 * n && pOv.stats.photoCountArea === null, pOv.stats.photoCount)
+    let okOv = true
+    let o = 0
+    pOv.perLine.forEach((k) => {
+      if (pOv.perWaypoint[o] || pOv.perWaypoint[o + k - 1]) okOv = false
+      for (let j = 1; j < k - 1; j++) if (!pOv.perWaypoint[o + j]) okOv = false
+      if (Math.abs(dist(pOv.waypoints[o], pOv.waypoints[o + 1]) - 15) > 0.1) okOv = false
+      if (Math.abs(dist(pOv.waypoints[o + 1], pOv.waypoints[o + 2]) - 18) > 0.1) okOv = false
+      o += k
+    })
+    check('8n overshoot: extremos sem foto, 15 m ate ao nucleo, nucleo a 18 m', okOv)
+
+    const pTie = generateFlightLines(rectB, { ...base, photoMode: 'waypoint', tieLine: true })
+    check('8n fiada de amarracao densificada (25 m / 20 -> 3 pontos)',
+      pTie && pTie.perLine.length === n + 1 && pTie.perLine[n] === 3, pTie?.perLine?.join(','))
+
+    // WPML: um grupo takePhoto (reachPoint) por waypoint com foto, sem gatilho
+    const wlWp = buildWaylinesWPML({ ...wpmlParams, waypoints: pWp.waypoints, perWaypoint: pWp.perWaypoint, photoIntervalM: 0, triggerMode: 'waypoint' })
+    const nPhoto = (wlWp.match(/<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>/g) || []).length
+    check('8n WPML: um takePhoto por waypoint com foto', nPhoto === 6 * n, nPhoto)
+    check('8n WPML: sem gatilho por distancia/tempo', !wlWp.includes('multipleDistance') && !wlWp.includes('multipleTiming'))
+    const groups = (wlWp.match(/<wpml:actionGroup>/g) || []).length
+    check('8n WPML: grupos = gimbal inicial + 1 por foto', groups === 1 + 6 * n, groups)
+    const starts = [...wlWp.matchAll(/<wpml:actionGroupStartIndex>(\d+)<\/wpml:actionGroupStartIndex>/g)].map((m) => Number(m[1]))
+    const ends = [...wlWp.matchAll(/<wpml:actionGroupEndIndex>(\d+)<\/wpml:actionGroupEndIndex>/g)].map((m) => Number(m[1]))
+    check('8n WPML: cada grupo de foto no proprio waypoint (reachPoint)',
+      (wlWp.match(/reachPoint/g) || []).length === groups && starts.every((s, i) => s === ends[i]) && new Set(starts.slice(1)).size === 6 * n)
+    const ids = [...wlWp.matchAll(/<wpml:actionGroupId>(\d+)<\/wpml:actionGroupId>/g)].map((m) => Number(m[1]))
+    check('8n WPML: ids de grupo consecutivos', ids.every((id, i) => id === i))
+    const wlOv = buildWaylinesWPML({ ...wpmlParams, waypoints: pOv.waypoints, perWaypoint: pOv.perWaypoint, photoIntervalM: 0, triggerMode: 'waypoint' })
+    check('8n WPML overshoot: 6 fotos/faixa, ultimo waypoint sem grupo',
+      (wlOv.match(/<wpml:actionActuatorFunc>takePhoto<\/wpml:actionActuatorFunc>/g) || []).length === 6 * n &&
+      !wlOv.includes('<wpml:actionGroupStartIndex>' + (pOv.waypoints.length - 1) + '</wpml:actionGroupStartIndex>'))
+
+    // blocos por area: fatias contiguas dos waypoints densificados
+    const big = rectangleFromAnchor(center, 90, 125, 90)
+    const pBig = generateFlightLines(big, { ...base, photoMode: 'waypoint' })
+    const cut = splitIntoBlocks(pBig, { mode: 'area', maxAreaHa: 0.5, speed: 5, spacingM: 10 })
+    check('8n blocos: varios blocos', cut && cut.length >= 2, cut?.length)
+    if (cut) {
+      const total = cut.reduce((s, b) => s + b.waypoints.length, 0)
+      check('8n blocos: waypoints densificados fatiados sem perda', total === pBig.waypoints.length, total + '/' + pBig.waypoints.length)
+      check('8n blocos: perLine por bloco = 6 por faixa', cut.every((b) => b.perLine.length === b.lines.length && b.perLine.every((k) => k === 6)))
+      check('8n blocos: fotos por bloco = 6 x faixas', cut.every((b) => b.perWaypoint.filter(Boolean).length === 6 * b.lines.length))
+      let off = 0
+      let okSlice = true
+      cut.forEach((b) => {
+        if (JSON.stringify(b.waypoints) !== JSON.stringify(pBig.waypoints.slice(off, off + b.waypoints.length))) okSlice = false
+        off += b.waypoints.length
+      })
+      check('8n blocos: fatias contiguas pela ordem de voo', okSlice)
+      const cutD = splitIntoBlocks(generateFlightLines(big, base), { mode: 'area', maxAreaHa: 0.5, speed: 5, spacingM: 10 })
+      check('8n blocos modo distancia: forma intacta (2 waypoints/faixa, sem perLine)',
+        cutD.length === cut.length && cutD.every((b) => b.waypoints.length === 2 * b.lines.length && !('perLine' in b)))
+    }
+
+    // dupla grelha + nadir e celulas: perWaypoint concatenado com offsets
+    const pX = generateFlightPlan(rectB, { ...base, photoMode: 'waypoint', crosshatch: true, includeNadir: true })
+    check('8n dupla grelha + nadir: perLine/perWaypoint concatenados',
+      pX && !pX.error && pX.perLine.length === pX.lines.length && pX.perWaypoint.filter(Boolean).length === pX.stats.photoCount &&
+      pX.stats.photoCount === pX.perLine.reduce((s, k) => s + k, 0))
+    check('8n dupla grelha + nadir: nadirStartWaypoint coerente com perLine',
+      pX && pX.perLine.slice(0, pX.nadirStartLine).reduce((s, k) => s + k, 0) === pX.nadirStartWaypoint && pX.perWaypoint[pX.nadirStartWaypoint] != null)
+    const cB2 = rectangleFromAnchor(turf.destination(center, 0.03, 0, { units: 'kilometers' }).geometry.coordinates, 90, 25, 90)
+    const plans = [rectB, cB2].map((r) => generateFlightLines(r, { ...base, photoMode: 'waypoint' }))
+    const comp = composeCellPlans(rectB, plans, { photoIntervalM: 20, overshootM: 0, photoMode: 'waypoint' })
+    check('8n celulas: perWaypoint com offset da 1.a celula',
+      comp && comp.perWaypoint.filter(Boolean).length === plans[0].stats.photoCount + plans[1].stats.photoCount &&
+      comp.perWaypoint[plans[0].waypoints.length] != null && comp.perLine.length === comp.lines.length)
+    check('8n celulas: photoCountArea nulo no modo waypoint',
+      comp && comp.stats.photoCountArea === null && comp.stats.photoCount === plans[0].stats.photoCount + plans[1].stats.photoCount)
+    const compD = composeCellPlans(rectB, [rectB, cB2].map((r) => generateFlightLines(r, { ...base, overshootM: 10 })), { photoIntervalM: 20, overshootM: 10 })
+    check('8n celulas modo distancia: sem perLine, photoCountArea mantido', compD && !('perLine' in compD) && compD.stats.photoCountArea != null)
+  }
 }
 
 /* A3: uma contagem exacta de assercoes nos READMEs envelhece a cada tarefa —

@@ -115,7 +115,25 @@ com screenshot e os passos.
   **Esperado:** etiquetas e ordem sobrevivem ao ciclo gravar/abrir e a
   ordem do KMZ (`_inspect_nN.kmz`) segue a lista.
 
-## 9. Verificação em tablet (~1 min)
+## 9. Disparo por waypoint (~1.5 min)
+
+- ☐ Perfil de câmara (M3E); área rectangular ~100 × 60 m, overshoot 10 m;
+  **Disparo por: Waypoint**.
+  **Esperado:** a opção só existe com câmara (desaparece com o Mapper+); o
+  mapa mostra waypoints intermédios em cada faixa, nenhum nos troços de
+  overshoot; o cartão **Fotos** passa a contar waypoints com foto (sem o
+  valor entre parênteses) e **Waypoints** sobe em conformidade.
+- ☐ Exportar WPML e abrir `waylines.wpml`.
+  **Esperado:** um `actionGroup` com `takePhoto` por waypoint intermédio
+  (`reachPoint`), sem `multipleDistance`/`multipleTiming`; os extremos de
+  overshoot não têm grupo de foto.
+- ☐ Activar **Seguir terreno** com o disparo por waypoint.
+  **Esperado:** erro vermelho na secção de terreno e botão **WPML** desactivado;
+  voltar a **Distância** reactiva ambos.
+- ☐ Abrir um projecto gravado antes desta versão.
+  **Esperado:** carrega em **Distância** (nada muda no plano nem na exportação).
+
+## 10. Verificação em tablet (~1 min)
 
 A app é usada em campo: numa janela a **~768 px de largura** (DevTools ou
 tablet real):
