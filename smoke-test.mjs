@@ -826,6 +826,26 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
       wlN.includes(`<wpml:actionGroupStartIndex>${three.nadirStartWaypoint}</wpml:actionGroupStartIndex>`))
 }
 
+/* 8h3. Degradacoes silenciosas convertidas em erro explicito (A2) */
+{
+  const base = { spacingM: sp, angleDeg: 90, bufferPct: 0, photoIntervalM: iv, speed: 10, crosshatch: true }
+  let calls = 0
+  const nullSecond = (ring, o) => (++calls === 2 ? null : generateFlightLines(ring, o))
+  const r2 = generateFlightPlan(rectNS, base, nullSecond)
+  check('A2: segunda grelha nula -> crosshatch-failed, nunca um plano menor',
+    r2?.error === 'crosshatch-failed' && !r2.lines)
+  calls = 0
+  const nullThird = (ring, o) => (++calls === 3 ? null : generateFlightLines(ring, o))
+  check('A2: passagem nadir nula -> nadir-failed',
+    generateFlightPlan(rectNS, { ...base, includeNadir: true }, nullThird)?.error === 'nadir-failed')
+  calls = 0
+  const errSecond = (ring, o) => (++calls === 2 ? { error: 'too-many-lines' } : generateFlightLines(ring, o))
+  check('A2: erro da segunda grelha propaga-se tal e qual',
+    generateFlightPlan(rectNS, base, errSecond)?.error === 'too-many-lines')
+  check('A2: sem stub o crosshatch continua a gerar normalmente',
+    !generateFlightPlan(rectNS, base).error)
+}
+
 /* 8i. Planeamento de GCPs */
 {
   check('suggestedGcpCount: 3 ha → 5', suggestedGcpCount(3) === 5)

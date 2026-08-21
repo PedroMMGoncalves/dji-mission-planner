@@ -777,22 +777,28 @@ export function composeCellPlans(ring, perCell, { photoIntervalM = 0, overshootM
  * exportação a partir de `nadirStartLine`/`nadirStartWaypoint`. As
  * estatísticas somam todas as passagens, incluindo as ligações entre elas.
  */
-export function generateFlightPlan(ring, options) {
-  const p1 = generateFlightLines(ring, options)
+export function generateFlightPlan(ring, options, generate = generateFlightLines) {
+  // `generate` é injectável apenas para o smoke test forçar sub-planos
+  // nulos; em produção é sempre generateFlightLines
+  const p1 = generate(ring, options)
   if (!options.crosshatch || !p1 || p1.error) return p1
 
-  const p2 = generateFlightLines(ring, {
+  const p2 = generate(ring, {
     ...options,
     angleDeg: (options.angleDeg + 90) % 360,
     align: options.align2 ?? null,
     tieLine: false, // a fiada de amarração só acompanha a primeira grelha
   })
-  if (!p2 || p2.error) return p2?.error ? p2 : p1
+  // A2: sem segunda grelha não há dupla grelha — erro explícito, nunca a
+  // degradação silenciosa para uma grelha única que aqui existia
+  if (!p2) return { error: 'crosshatch-failed' }
+  if (p2.error) return p2
 
   const parts = [p1, p2]
   if (options.includeNadir) {
-    const p3 = generateFlightLines(ring, { ...options, tieLine: false })
-    if (!p3 || p3.error) return p3?.error ? p3 : p1
+    const p3 = generate(ring, { ...options, tieLine: false })
+    if (!p3) return { error: 'nadir-failed' }
+    if (p3.error) return p3
     parts.push(p3)
   }
 
