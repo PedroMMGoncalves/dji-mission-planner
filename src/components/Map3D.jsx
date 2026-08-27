@@ -605,7 +605,6 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
       renderer.domElement.remove()
     }
     // a cena é reconstruída apenas quando o CONTEÚDO muda (ver `sig`)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig])
 
   // Exagero vertical: atualiza a cena existente
