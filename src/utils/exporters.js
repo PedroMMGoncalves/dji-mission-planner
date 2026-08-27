@@ -22,7 +22,7 @@ export function buildExportName(missionName, type, { variant = null, part = null
   const safe = (s) =>
     String(s ?? '')
       .trim()
-      .replace(/[^\w\-]+/g, '-')
+      .replace(/[^\w-]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'missao'
   const variants = (Array.isArray(variant) ? variant : [variant]).filter(Boolean)
   const typeBit = [type, ...variants].filter(Boolean).join('-')
@@ -142,13 +142,68 @@ function escapeXml(s) {
   })[c])
 }
 
-function missionConfigXml({ wpml, speed }) {
+/**
+ * Ações de segurança admitidas pela especificação WPML (dji-sdk/Cloud-API-Doc,
+ * template-kml.md e waylines-wpml.md, verificado 2026-08-27). Valores fora
+ * destas listas são rejeitados pelo DJI Pilot 2, por isso o exportador
+ * valida e cai no valor por omissão em vez de escrever lixo no ficheiro.
+ */
+export const FINISH_ACTIONS = ['goHome', 'noAction', 'autoLand', 'gotoFirstWaypoint']
+export const RC_LOST_MODES = ['executeLostAction', 'goContinue']
+export const RC_LOST_ACTIONS = ['goBack', 'landing', 'hover']
+
+const pick = (value, allowed) => (allowed.includes(value) ? value : allowed[0])
+
+/**
+ * Parâmetros de viragem coerentes com o modo, conforme a especificação
+ * (common-element.md, `wpml:waypointTurnMode` / `wpml:waypointTurnDampingDist`
+ * / `wpml:useStraightLine`):
+ *
+ *  - `toPointAndStopWithDiscontinuityCurvature` — troço recto com paragem no
+ *    ponto. É o modo das grelhas e das fachadas: mantém-se `useStraightLine`
+ *    a 1 e amortecimento 0, exactamente como antes.
+ *  - `toPointAndPassWithContinuityCurvature` — voo curvo contínuo, sem parar
+ *    (órbitas). Exige `useStraightLine` a 0: a 1 significa "aproxima o troço
+ *    de uma recta entre os dois pontos", o que transformaria a órbita num
+ *    polígono de cantos arredondados. Com 0, `waypointTurnDampingDist` deixa
+ *    de ser obrigatório — só o é em `coordinateTurn` ou nesta curvatura com
+ *    `useStraightLine` a 1, e aí tem de ser > 0 (0 está fora do intervalo).
+ */
+const TURN_MODE_STRAIGHT_LINE = {
+  toPointAndStopWithDiscontinuityCurvature: 1,
+  toPointAndStopWithContinuityCurvature: 0,
+  toPointAndPassWithContinuityCurvature: 0,
+  coordinateTurn: 0,
+}
+
+export function turnParams(turnMode, dampingDistM = 0) {
+  const straightLine = TURN_MODE_STRAIGHT_LINE[turnMode] ?? 1
+  const needsDamping =
+    turnMode === 'coordinateTurn' ||
+    (turnMode === 'toPointAndPassWithContinuityCurvature' && straightLine === 1)
+  // Quando é obrigatório tem de ser > 0; sem valor utilizável cai em 1 m, o
+  // menor amortecimento que a especificação aceita para segmentos normais.
+  const damping = needsDamping ? Math.max(dampingDistM, 1) : 0
+  return { straightLine, damping }
+}
+
+function missionConfigXml({ wpml, speed, altitude, ...opts }) {
+  const finishAction = pick(opts.finishAction, FINISH_ACTIONS)
+  const exitOnRCLost = pick(opts.exitOnRCLost, RC_LOST_MODES)
+  const rcLostAction = pick(opts.executeRCLostAction, RC_LOST_ACTIONS)
+  const takeOffSecurityHeight = opts.takeOffSecurityHeightM ?? 30
+  // `wpml:globalRTHHeight` é obrigatório em waylines.wpml. O regresso é
+  // planeado acima do tecto da missão (mínimo 100 m, o valor por omissão do
+  // Pilot 2) para o trajecto de regresso não descer para dentro da área.
+  const rthHeight =
+    opts.rthHeightM ?? Math.max(100, Math.ceil(Number(altitude) || 0) + 20)
   return `  <wpml:missionConfig>
     <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
-    <wpml:finishAction>goHome</wpml:finishAction>
-    <wpml:exitOnRCLost>executeLostAction</wpml:exitOnRCLost>
-    <wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>
-    <wpml:takeOffSecurityHeight>30</wpml:takeOffSecurityHeight>
+    <wpml:finishAction>${finishAction}</wpml:finishAction>
+    <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
+    <wpml:executeRCLostAction>${rcLostAction}</wpml:executeRCLostAction>
+    <wpml:takeOffSecurityHeight>${takeOffSecurityHeight}</wpml:takeOffSecurityHeight>
+    <wpml:globalRTHHeight>${rthHeight}</wpml:globalRTHHeight>
     <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
     <wpml:droneInfo>
       <wpml:droneEnumValue>${wpml.droneEnumValue}</wpml:droneEnumValue>
@@ -167,8 +222,9 @@ function missionConfigXml({ wpml, speed }) {
  * O DJI Pilot 2 usa este ficheiro para reconstruir/editar a missão.
  */
 export function buildTemplateKML(params) {
-  const { name, waypoints, altitude, speed, wpml } = params
+  const { name, waypoints, altitude, speed } = params
   const turnMode = params.turnMode ?? 'toPointAndStopWithDiscontinuityCurvature'
+  const turn = turnParams(turnMode, params.turnDampingDistM)
   const now = Date.now()
 
   const placemarks = waypoints
@@ -184,7 +240,7 @@ export function buildTemplateKML(params) {
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
-        <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:useStraightLine>${turn.straightLine}</wpml:useStraightLine>
       </Placemark>`,
     )
     .join('\n')
@@ -215,7 +271,7 @@ ${missionConfigXml(params)}
       <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
     </wpml:globalWaypointHeadingParam>
     <wpml:globalWaypointTurnMode>${turnMode}</wpml:globalWaypointTurnMode>
-    <wpml:globalUseStraightLine>1</wpml:globalUseStraightLine>
+    <wpml:globalUseStraightLine>${turn.straightLine}</wpml:globalUseStraightLine>
 ${placemarks}
   </Folder>
 </Document>
@@ -251,7 +307,11 @@ export function buildWaylinesWPML(params) {
     // para órbitas em voo curvo contínuo); por defeito o comportamento
     // atual de parar em cada waypoint.
     turnMode = 'toPointAndStopWithDiscontinuityCurvature',
+    // Distância de amortecimento da viragem (m). Só é escrita quando a
+    // especificação a exige — ver turnParams().
+    turnDampingDistM = 0,
   } = params
+  const turn = turnParams(turnMode, turnDampingDistM)
   const gimbalPitch = params.gimbalPitch ?? -90
 
   const triggerXml = (() => {
@@ -395,9 +455,9 @@ ${actions.join('\n')}
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>${turnMode}</wpml:waypointTurnMode>
-          <wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>
+          <wpml:waypointTurnDampingDist>${turn.damping}</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
-        <wpml:useStraightLine>1</wpml:useStraightLine>${groupsXml ? '\n' + groupsXml : ''}
+        <wpml:useStraightLine>${turn.straightLine}</wpml:useStraightLine>${groupsXml ? '\n' + groupsXml : ''}
       </Placemark>`
     })
     .join('\n')
