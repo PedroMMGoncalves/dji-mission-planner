@@ -1,8 +1,8 @@
 # Protocolo de QA manual (≈10 min por release)
 
-O smoke test (`node smoke-test.mjs`, corre também no CI) cobre a matemática e
-o WPML; **não** cobre a integração de interface. Este protocolo verifica no
-browser o que o harness não vê. Correr uma vez por tag de release, contra a
+As suites automáticas (`npm test`, correm também no CI) cobrem a matemática, o
+WPML e a fronteira de leitura de ficheiros; **não** cobrem a integração de
+interface. Este protocolo verifica no browser o que as suites não veem. Correr uma vez por tag de release, contra a
 app publicada (<https://pedrommgoncalves.github.io/dji-mission-planner/>),
 de preferência num browser sem estado (janela privada) e depois uma segunda
 passagem rápida com o estado normal (migração de projectos antigos).

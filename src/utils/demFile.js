@@ -1,6 +1,7 @@
 import { fromBlob } from 'geotiff'
 import proj4 from 'proj4'
 import { CRS_OPTIONS } from './importArea.js'
+import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
 /**
  * MDT LOCAL — lê um GeoTIFF de Modelo Digital de Terreno do disco do
@@ -35,8 +36,6 @@ import { CRS_OPTIONS } from './importArea.js'
  * matemática (projeção, janela, interpolação) é pura.
  */
 
-const M_PER_DEG_LAT = 110574 // metros por grau de latitude (aprox. WGS84)
-
 /** Códigos EPSG geográficos (graus) tratados diretamente como lon/lat. */
 const GEOGRAPHIC_CODES = new Set([
   4326, // WGS 84
@@ -54,10 +53,6 @@ const EDGE_SAMPLES = 8 // pontos por aresta ao projetar bounding boxes
 
 /** Sentinela típico de "sem dados" em bandas float (−3.4e38 e afins). */
 const HUGE_SENTINEL = 1e30
-
-function metersPerDegLon(lat) {
-  return 111320 * Math.cos((lat * Math.PI) / 180)
-}
 
 function clamp(v, lo, hi) {
   return v < lo ? lo : v > hi ? hi : v

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { useT } from '../i18n.jsx'
+import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
 
 /**
  * VISUALIZADOR 3D DA MISSÃO
@@ -23,7 +24,6 @@ import { useT } from '../i18n.jsx'
  * que a relação entre o drone e o relevo se mantenha correta.
  */
 
-const M_PER_DEG_LAT = 110574 // metros por grau de latitude (aprox. WGS84)
 const SEGMENTS = 200 // ~200×200 quadrículas na malha do terreno
 const TILE = 256
 const MAX_IMAGERY_TILES = 144 // trava contra bboxes enormes
@@ -31,10 +31,6 @@ const IMAGERY_URL =
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
 const DEFAULT_REL_HEIGHT = 100 // altura relativa assumida quando não vem no waypoint
 const MAX_WP_SPHERES = 2000 // acima disto desenha-se apenas a polilinha
-
-function metersPerDegLon(lat) {
-  return 111320 * Math.cos((lat * Math.PI) / 180)
-}
 
 /** Fração vertical [0,1] de uma latitude em Web Mercator (0 = Norte). */
 function mercatorN(lat) {

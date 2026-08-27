@@ -1,5 +1,6 @@
 import * as turf from '@turf/turf'
 import { STRIP_OVERLAP_EPS_M, decomposeCells, orderCells } from './gridRoute.js'
+import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
 /**
  * Utilitários geoespaciais do planeador de missões.
@@ -11,7 +12,6 @@ import { STRIP_OVERLAP_EPS_M, decomposeCells, orderCells } from './gridRoute.js'
  *  - Todas as distâncias em metros; coordenadas em WGS84 (EPSG:4326).
  */
 
-const M_PER_DEG_LAT = 110574 // metros por grau de latitude (aprox. WGS84)
 const MAX_LINES = 2500 // trava de segurança contra espaçamentos minúsculos
 const MIN_SEGMENT_M = 1 // segmentos mais curtos que isto são descartados
 
@@ -46,10 +46,6 @@ const MIN_SEGMENT_M = 1 // segmentos mais curtos que isto são descartados
  * faixas analisadas e os três valores com dispersão.
  */
 const TURN_TIME_S = 3 // custo médio de cada inversão de sentido (a calibrar, ver acima)
-
-function metersPerDegLon(lat) {
-  return 111320 * Math.cos((lat * Math.PI) / 180)
-}
 
 /** Fecha um anel aberto e devolve um Feature<Polygon> do Turf. */
 export function ringToPolygon(ring) {

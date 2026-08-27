@@ -1,6 +1,7 @@
 import * as turf from '@turf/turf'
 import proj4 from 'proj4'
 import shp from 'shpjs'
+import { findAll, findFirst, parseXml, textOf } from './xml.js'
 
 /**
  * Importação de áreas de levantamento a partir de ficheiros:
@@ -132,22 +133,30 @@ export function simplifyRingIfNeeded(ring) {
   return current
 }
 
+/**
+ * Anéis exteriores de todos os `<Polygon>` de um KML.
+ *
+ * Procura pelo NOME LOCAL das tags (ver xml.js): um `<kml:Polygon>` de um
+ * ficheiro com prefixo de namespace conta como qualquer outro. Dentro de cada
+ * polígono prefere-se explicitamente o `<outerBoundaryIs>`; só quando ele não
+ * existe é que se cai no primeiro `<coordinates>` encontrado — assim um
+ * polígono cujo anel interior venha primeiro no documento não é confundido
+ * com o exterior.
+ */
 function parseKml(text) {
-  const doc = new DOMParser().parseFromString(text, 'application/xml')
-  if (doc.querySelector('parsererror')) throw new Error('KML inválido')
+  const doc = parseXml(text, 'KML inválido')
   const rings = []
-  doc.querySelectorAll('Polygon').forEach((poly) => {
-    const coords = poly
-      .querySelector('outerBoundaryIs coordinates, coordinates')
-      ?.textContent?.trim()
-    if (!coords) return
+  for (const poly of findAll(doc.documentElement, 'Polygon')) {
+    const outer = findFirst(poly, 'outerBoundaryIs')
+    const coords = textOf(findFirst(outer ?? poly, 'coordinates'))
+    if (!coords) continue
     const ring = coords
       .split(/\s+/)
       .map((triple) => triple.split(',').map(Number))
       .filter((c) => c.length >= 2 && Number.isFinite(c[0]) && Number.isFinite(c[1]))
       .map((c) => [c[0], c[1]])
     if (ring.length >= 4) rings.push(ring)
-  })
+  }
   return rings
 }
 

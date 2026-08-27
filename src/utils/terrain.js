@@ -20,9 +20,10 @@
  * objeto `terrain` sintético (basta um `elevationAt(lon, lat)`).
  */
 
+import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
+
 const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
 
-const M_PER_DEG_LAT = 110574 // metros por grau de latitude (aprox. WGS84)
 const DEFAULT_TILE_SIZE = 256 // lado dos tiles Terrarium, em píxeis
 const MAX_CONCURRENT_FETCHES = 8 // pedidos HTTP simultâneos
 const MAX_TILES = 600 // trava de segurança contra bboxes/zooms absurdos
@@ -30,10 +31,6 @@ const MAX_FAIL_RATIO = 0.2 // acima de 20% de tiles em falha, desiste
 const MIN_SAFE_REL_M = 20 // altura relativa mínima confortável (aviso)
 const MAX_PROFILE_POINTS = 20000 // trava contra `stepM` minúsculos
 const MIN_STEP_M = 1 // passo mínimo de densificação
-
-function metersPerDegLon(lat) {
-  return 111320 * Math.cos((lat * Math.PI) / 180)
-}
 
 /** Latitude limite do Web Mercator (a projeção diverge nos polos). */
 const MERCATOR_MAX_LAT = 85.05112878
@@ -578,8 +575,8 @@ export function fitSlopePlane(terrainData, ring, { n = 12 } = {}) {
     if (y > maxY) maxY = y
   }
   const lat0 = (minY + maxY) / 2
-  const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
-  const mLat = 110574
+  const mLon = metersPerDegLon(lat0)
+  const mLat = M_PER_DEG_LAT
 
   let sx = 0
   let sy = 0

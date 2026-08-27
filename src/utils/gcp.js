@@ -1,5 +1,6 @@
 import * as turf from '@turf/turf'
 import { ringToPolygon } from './geo.js'
+import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
 /**
  * PLANEAMENTO DE PONTOS DE CONTROLO NO SOLO (GCPs)
@@ -29,16 +30,11 @@ import { ringToPolygon } from './geo.js'
  *  - Coordenadas em WGS84 (EPSG:4326), distâncias em metros.
  */
 
-const M_PER_DEG_LAT = 110574 // metros por grau de latitude (aprox. WGS84)
 const BOUNDARY_SAMPLES = 64 // nº de amostras ao longo do perímetro
 const MAX_GRID_POINTS = 2500 // trava contra grelhas interiores enormes
 const MIN_SEPARATION_M = 10 // dois alvos mais próximos que isto não acrescentam informação
 const MIN_INSET_M = 15 // recuo mínimo do bordo
 const INSET_FRACTION = 0.03 // recuo = 3% de √área
-
-function metersPerDegLon(lat) {
-  return 111320 * Math.cos((lat * Math.PI) / 180)
-}
 
 /** Identificador normalizado: 1 → 'GCP-01'. */
 function gcpId(n) {
