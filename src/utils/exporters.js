@@ -7,6 +7,73 @@ import JSZip from 'jszip'
  *                 com waypoints 3D e disparo automático da câmara.
  */
 
+/**
+ * Erro de exportação com código estável, para a interface poder traduzir a
+ * mensagem sem depender do texto. Um plano inválido tem de falhar aqui: um
+ * KMZ com `NaN` numas coordenadas ou `undefined` numa altura é aceite por
+ * qualquer verificação de subcadeia mas rejeitado (ou pior, mal interpretado)
+ * pelo DJI Pilot 2, e o erro só aparece no campo.
+ */
+export class MissionExportError extends Error {
+  constructor(code, detail) {
+    super(detail ? `${code}: ${detail}` : code)
+    this.name = 'MissionExportError'
+    this.code = code
+    this.detail = detail
+  }
+}
+
+// wpml:index tem alcance [0, 65535], logo no máximo 65536 waypoints por rota.
+export const MAX_WAYPOINTS_PER_ROUTE = 65536
+
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v)
+
+/** Um waypoint é [lon, lat] ou [lon, lat, altura]; valida domínio e finitude. */
+function checkWaypoint(wp, i) {
+  if (!Array.isArray(wp) || wp.length < 2) {
+    throw new MissionExportError('waypoint-malformed', `índice ${i}`)
+  }
+  const [lon, lat, h] = wp
+  if (!isNum(lon) || !isNum(lat)) {
+    throw new MissionExportError('waypoint-not-finite', `índice ${i}`)
+  }
+  if (lon < -180 || lon > 180 || lat < -90 || lat > 90) {
+    throw new MissionExportError('waypoint-out-of-range', `índice ${i}: ${lon}, ${lat}`)
+  }
+  if (h !== undefined && h !== null && !isNum(h)) {
+    throw new MissionExportError('height-not-finite', `índice ${i}`)
+  }
+}
+
+/**
+ * Validação na fronteira da exportação. Corre antes de qualquer concatenação
+ * de XML, para nenhum valor não-finito ou em falta chegar ao ficheiro.
+ */
+export function validateExportParams(params) {
+  const { waypoints, altitude, speed, wpml } = params ?? {}
+  if (!Array.isArray(waypoints) || waypoints.length === 0) {
+    throw new MissionExportError('no-waypoints')
+  }
+  if (waypoints.length > MAX_WAYPOINTS_PER_ROUTE) {
+    throw new MissionExportError('too-many-waypoints', String(waypoints.length))
+  }
+  waypoints.forEach(checkWaypoint)
+  // A altitude global é o valor de recurso de cada waypoint sem altura
+  // própria, por isso tem de ser finita mesmo quando todos a trazem.
+  if (!isNum(altitude)) throw new MissionExportError('altitude-not-finite', String(altitude))
+  if (!isNum(speed) || speed <= 0) throw new MissionExportError('speed-invalid', String(speed))
+  if (!wpml || !isNum(wpml.droneEnumValue) || !isNum(wpml.payloadEnumValue)) {
+    throw new MissionExportError('wpml-enums-missing')
+  }
+  for (const key of ['photoIntervalM', 'gimbalPitch', 'rthHeightM', 'turnDampingDistM']) {
+    const v = params[key]
+    if (v !== undefined && v !== null && !isNum(v)) {
+      throw new MissionExportError('param-not-finite', key)
+    }
+  }
+  return params
+}
+
 function fmtCoord(v) {
   return Number(v.toFixed(8))
 }
@@ -45,6 +112,11 @@ export function downloadBlob(blob, filename) {
 /* ------------------------------------------------------------------ */
 
 export function buildSimpleKML(ring, name, basePoint = null, gcps = null, lines = null) {
+  if (!Array.isArray(ring) || ring.length < 3) throw new MissionExportError('ring-too-short')
+  ring.forEach(checkWaypoint)
+  if (basePoint) checkWaypoint(basePoint, -1)
+  gcps?.forEach((g, i) => checkWaypoint(g.point, i))
+  lines?.forEach((seg) => seg.forEach(checkWaypoint))
   const coords = [...ring, ring[0]]
     .map(([lon, lat]) => `${fmtCoord(lon)},${fmtCoord(lat)},0`)
     .join(' ')
@@ -132,14 +204,26 @@ export function exportSimpleKML(ring, name, basePoint = null, gcps = null, lines
 /* KMZ WPML (DJI Pilot 2)                                             */
 /* ------------------------------------------------------------------ */
 
-function escapeXml(s) {
-  return String(s).replace(/[<>&'"]/g, (c) => ({
-    '<': '&lt;',
-    '>': '&gt;',
-    '&': '&amp;',
-    "'": '&apos;',
-    '"': '&quot;',
-  })[c])
+/**
+ * Caracteres que a produção `Char` do XML 1.0 não admite (controlos C0 fora de
+ * tab/LF/CR, e os não-caracteres U+FFFE/U+FFFF), mais os controlos C1, que são
+ * legais mas nunca intencionais num nome de missão. Um único destes — colado
+ * sem querer de outra aplicação — produz um ficheiro que nenhum analisador
+ * conforme abre, e o Pilot 2 rejeita-o sem explicar porquê.
+ */
+// eslint-disable-next-line no-control-regex
+const XML_ILLEGAL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\uFFFE\uFFFF]/g
+
+export function escapeXml(s) {
+  return String(s)
+    .replace(XML_ILLEGAL, '')
+    .replace(/[<>&'"]/g, (c) => ({
+      '<': '&lt;',
+      '>': '&gt;',
+      '&': '&amp;',
+      "'": '&apos;',
+      '"': '&quot;',
+    })[c])
 }
 
 /**
@@ -222,10 +306,13 @@ function missionConfigXml({ wpml, speed, altitude, ...opts }) {
  * O DJI Pilot 2 usa este ficheiro para reconstruir/editar a missão.
  */
 export function buildTemplateKML(params) {
+  validateExportParams(params)
   const { name, waypoints, altitude, speed } = params
   const turnMode = params.turnMode ?? 'toPointAndStopWithDiscontinuityCurvature'
   const turn = turnParams(turnMode, params.turnDampingDistM)
-  const now = Date.now()
+  // Injectável para as comparações com ficheiros de referência serem
+  // determinísticas; em uso normal é o instante da exportação.
+  const now = params.createTimeMs ?? Date.now()
 
   const placemarks = waypoints
     .map(
@@ -295,6 +382,7 @@ ${placemarks}
  * um limite prático menor do Pilot 2, reabrir a tarefa com essa evidência.
  */
 export function buildWaylinesWPML(params) {
+  validateExportParams(params)
   const {
     waypoints, altitude, speed, wpml, photoIntervalM, triggerMode, sensorType,
     // T4.1: ações por waypoint — array paralelo a `waypoints` com entradas

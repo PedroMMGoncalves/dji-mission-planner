@@ -25,6 +25,8 @@ import {
   validateRing,
 } from './src/utils/geo.js'
 import {
+  MAX_WAYPOINTS_PER_ROUTE,
+  MissionExportError,
   FINISH_ACTIONS,
   RC_LOST_ACTIONS,
   RC_LOST_MODES,
@@ -32,11 +34,14 @@ import {
   buildSimpleKML,
   buildTemplateKML,
   buildWaylinesWPML,
+  escapeXml,
   turnParams,
+  validateExportParams,
 } from './src/utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
 import { decodeTerrarium, despikeElevations, fitSlopePlane, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
-import { readFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { XMLValidator } from 'fast-xml-parser'
 import { groupApplies } from './src/data/checklist.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
 import { DEFAULT_FACE_CONFIG, checkFaceClearance, generateFacePlan, normalizeFaceConfig } from './src/utils/faceMode.js'
@@ -1621,6 +1626,198 @@ check('waylines Mapper+: sem acoes de camara',
       comp && comp.stats.photoCountArea === null && comp.stats.photoCount === plans[0].stats.photoCount + plans[1].stats.photoCount)
     const compD = composeCellPlans(rectB, [rectB, cB2].map((r) => generateFlightLines(r, { ...base, overshootM: 10 })), { photoIntervalM: 20, overshootM: 10 })
     check('8n celulas modo distancia: sem perLine, photoCountArea mantido', compD && !('perLine' in compD) && compD.stats.photoCountArea != null)
+  }
+}
+
+/* 11. Endurecimento da exportacao (E4.1)
+   ---------------------------------------------------------------------------
+   As assercoes anteriores verificam o XML por subcadeia, o que nao distingue
+   um documento valido de um documento com `NaN` nas coordenadas ou
+   `undefined` numa altura: ambos contem a subcadeia procurada. Esta seccao
+   analisa o XML gerado com um analisador a serio, rejeita entrada invalida na
+   fronteira da exportacao e compara amostras representativas com ficheiros de
+   referencia versionados. */
+{
+  const xmlWellFormed = (xml) => {
+    const r = XMLValidator.validate(xml)
+    return r === true ? null : (r?.err?.msg ?? 'invalido')
+  }
+  const JUNK = /(^|>)\s*(NaN|undefined|Infinity|null)\s*(<|$)/
+  const enums = {
+    droneEnumValue: 77, droneSubEnumValue: 0,
+    payloadEnumValue: 66, payloadSubEnumValue: 0, payloadPositionIndex: 0,
+  }
+  const sensorCam = resolveSensor(PAYLOADS.M3E_WIDE, DEFAULT_CUSTOM_SENSOR)
+
+  /* 11a. Matriz de documentos representativos: todos tem de analisar. */
+  const areaPlan = generateFlightLines(rectNS, {
+    spacingM: 40, angleDeg: 90, bufferPct: 0, photoIntervalM: 20, speed: 10,
+  })
+  const areaWp = generateFlightLines(rectNS, {
+    spacingM: 40, angleDeg: 90, bufferPct: 0, photoIntervalM: 20, speed: 10,
+    overshootM: 15, photoMode: 'waypoint',
+  })
+  const faceCfgG = normalizeFaceConfig(DEFAULT_FACE_CONFIG)
+  const facePlanG = generateFacePlan([[-9.14, 38.70], [-9.138, 38.70]], {
+    sensor: sensorCam,
+    faceHeightM: faceCfgG.heightM,
+    standoffM: faceCfgG.standoffM,
+    side: faceCfgG.side,
+    verticalOverlapPct: faceCfgG.verticalOverlapPct,
+    horizontalOverlapPct: faceCfgG.horizontalOverlapPct,
+    gimbalPitch: faceCfgG.gimbalPitch,
+    speed: faceCfgG.speedMS,
+  })
+  const orbitPlanG = generateOrbitPlan([-9.14, 38.70], {
+    sensor: sensorCam, radiusM: 60, levels: { count: 2, startM: 30, stepM: 20 },
+    poiHeightM: 15, speed: 3,
+  })
+
+  const scenarios = [
+    ['area-distancia', {
+      name: 'ref_area', waypoints: areaPlan.waypoints, altitude: 100, speed: 10,
+      wpml: enums, photoIntervalM: 20, triggerMode: 'distance', sensorType: 'camera',
+    }],
+    ['area-waypoint-overshoot', {
+      name: 'ref_area_wp', waypoints: areaWp.waypoints, perWaypoint: areaWp.perWaypoint,
+      altitude: 100, speed: 10, wpml: enums, photoIntervalM: 0,
+      triggerMode: 'waypoint', sensorType: 'camera',
+    }],
+    ['area-lidar', {
+      name: 'ref_lidar', waypoints: areaPlan.waypoints, altitude: 80, speed: 8,
+      wpml: enums, photoIntervalM: 0, triggerMode: 'distance', sensorType: 'lidar',
+    }],
+    ['area-terreno', {
+      name: 'ref_terreno',
+      waypoints: areaPlan.waypoints.map(([lo, la], i) => [lo, la, 90 + (i % 7)]),
+      altitude: 90, speed: 10, wpml: enums, photoIntervalM: 25,
+      triggerMode: 'distance', sensorType: 'camera',
+    }],
+    ['fachada', {
+      name: 'ref_face', waypoints: facePlanG.waypoints, perWaypoint: facePlanG.perWaypoint,
+      altitude: 40, speed: 3, wpml: enums, photoIntervalM: 0,
+      triggerMode: 'distance', sensorType: 'camera', gimbalPitch: 0,
+    }],
+    ['orbita', {
+      name: 'ref_orbit', waypoints: orbitPlanG.waypoints, perWaypoint: orbitPlanG.perWaypoint,
+      turnMode: orbitPlanG.turnMode, altitude: 50, speed: 3, wpml: enums,
+      photoIntervalM: 0, triggerMode: 'distance', sensorType: 'camera',
+      gimbalPitch: orbitPlanG.perLevel[0].gimbalPitch,
+    }],
+  ]
+
+  for (const [label, params] of scenarios) {
+    const fixed = { ...params, createTimeMs: 1756000000000 }
+    const tplX = buildTemplateKML(fixed)
+    const wlX = buildWaylinesWPML(fixed)
+    check(`XML: ${label} template.kml analisa`, xmlWellFormed(tplX) === null, xmlWellFormed(tplX) ?? '')
+    check(`XML: ${label} waylines.wpml analisa`, xmlWellFormed(wlX) === null, xmlWellFormed(wlX) ?? '')
+    check(`XML: ${label} sem valores nao-finitos`,
+      !JUNK.test(tplX) && !JUNK.test(wlX))
+  }
+  const kmlDoc = buildSimpleKML(rectNS, 'Área & "teste" <x>', [-9.14, 38.7], null, areaPlan.lines)
+  check('XML: KML simples analisa com nome hostil', xmlWellFormed(kmlDoc) === null)
+
+  /* 11b. Entrada invalida tem de falhar na fronteira, nunca ser escrita. */
+  const rejects = (label, params, code) => {
+    let got = null
+    try { buildWaylinesWPML(params) } catch (e) { got = e }
+    check(`rejeita ${label}`,
+      got instanceof MissionExportError && got.code === code,
+      got ? `${got.code}` : 'nao lancou')
+  }
+  const okParams = scenarios[0][1]
+  rejects('coordenada NaN', { ...okParams, waypoints: [[NaN, 38.7]] }, 'waypoint-not-finite')
+  rejects('longitude fora de alcance', { ...okParams, waypoints: [[999, 38.7]] }, 'waypoint-out-of-range')
+  rejects('altura Infinity', { ...okParams, waypoints: [[-9.1, 38.7, Infinity]] }, 'height-not-finite')
+  rejects('altitude ausente', { ...okParams, altitude: undefined }, 'altitude-not-finite')
+  rejects('velocidade nula', { ...okParams, speed: 0 }, 'speed-invalid')
+  rejects('enums WPML em falta', { ...okParams, wpml: {} }, 'wpml-enums-missing')
+  rejects('sem waypoints', { ...okParams, waypoints: [] }, 'no-waypoints')
+  rejects('waypoint malformado', { ...okParams, waypoints: [[-9.1]] }, 'waypoint-malformed')
+  rejects('parametro nao-finito', { ...okParams, photoIntervalM: NaN }, 'param-not-finite')
+  check('limite de waypoints alinhado com wpml:index [0, 65535]',
+    MAX_WAYPOINTS_PER_ROUTE === 65536)
+  check('validateExportParams devolve os parametros validos',
+    validateExportParams(okParams) === okParams)
+
+  /* 11c. Caracteres proibidos pelo XML 1.0 nao podem chegar ao ficheiro. */
+  const ctl = String.fromCharCode(0x01, 0x07, 0x1b, 0x7f)
+  const dirty = buildSimpleKML(rectNS, `missao${ctl}x`)
+  check('escapeXml remove controlos ilegais em XML 1.0',
+    !new RegExp(`[${ctl}]`).test(dirty) && xmlWellFormed(dirty) === null)
+  check('escapeXml preserva tab/LF/CR e escapa metacaracteres',
+    escapeXml('a\tb\nc&d<e') === 'a\tb\nc&amp;d&lt;e')
+
+  /* 11d. Fuzz determinista: planos validos aleatorios, XML sempre analisavel.
+     Gerador congruencial com semente fixa para qualquer falha ser reproduzivel. */
+  {
+    let seed = 20260827
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff)
+    let bad = 0
+    let ran = 0
+    for (let i = 0; i < 60; i++) {
+      const lat = -60 + rnd() * 120
+      const lon = -170 + rnd() * 340
+      const d = 0.004 + rnd() * 0.02
+      const ring = [[lon, lat], [lon + d, lat], [lon + d, lat + d], [lon, lat + d]]
+      const plan = generateFlightLines(ring, {
+        spacingM: 20 + rnd() * 120, angleDeg: rnd() * 180, bufferPct: 0,
+        photoIntervalM: 5 + rnd() * 40, speed: 2 + rnd() * 13,
+        overshootM: rnd() < 0.5 ? rnd() * 20 : 0,
+      })
+      if (!plan || plan.error || !plan.waypoints?.length) continue
+      ran += 1
+      const xml = buildWaylinesWPML({
+        name: `fuzz${i}`, waypoints: plan.waypoints, altitude: 20 + rnd() * 200,
+        speed: 2 + rnd() * 13, wpml: enums, photoIntervalM: 10 + rnd() * 30,
+        triggerMode: 'distance', sensorType: 'camera',
+      })
+      if (xmlWellFormed(xml) !== null || JUNK.test(xml)) bad += 1
+    }
+    check('fuzz: 60 planos aleatorios produzem XML analisavel', bad === 0 && ran > 40,
+      `${ran} planos, ${bad} defeituosos`)
+  }
+
+  /* 11f. Cobertura de tradução: todo o código que o exportador consegue
+     lançar tem de ter mensagem nas duas línguas, ou a interface mostra a
+     chave crua ao operador em vez do motivo da falha. O i18n é JSX e não
+     importa em Node, por isso lê-se a fonte. */
+  {
+    const src = readFileSync(new URL('./src/utils/exporters.js', import.meta.url), 'utf8')
+    const dict = readFileSync(new URL('./src/i18n.jsx', import.meta.url), 'utf8')
+    const codes = [...new Set(
+      [...src.matchAll(/new MissionExportError\(\s*'([^']+)'/g)].map((m) => m[1]))]
+    const missing = codes.filter((c) => !dict.includes(`'export.err.${c}'`))
+    check('i18n: todos os códigos de erro de exportação têm tradução',
+      missing.length === 0 && codes.length >= 9,
+      missing.length ? `em falta: ${missing.join(', ')}` : `${codes.length} códigos`)
+  }
+
+  /* 11e. Ficheiros de referencia. Qualquer alteracao ao exportador passa a
+     aparecer como diferenca revisivel em tests/golden/, em vez de mudar em
+     silencio. Regenerar com UPDATE_GOLDEN=1 node smoke-test.mjs. */
+  {
+    const dir = new URL('./tests/golden/', import.meta.url)
+    const update = process.env.UPDATE_GOLDEN === '1'
+    if (update) mkdirSync(dir, { recursive: true })
+    for (const [label, params] of scenarios) {
+      const fixed = { ...params, createTimeMs: 1756000000000 }
+      for (const [suffix, xml] of [
+        ['template.kml', buildTemplateKML(fixed)],
+        ['waylines.wpml', buildWaylinesWPML(fixed)],
+      ]) {
+        const file = new URL(`${label}.${suffix}`, dir)
+        if (update) {
+          writeFileSync(file, xml)
+          continue
+        }
+        let ref = null
+        try { ref = readFileSync(file, 'utf8') } catch { ref = null }
+        check(`referencia: ${label}.${suffix}`, ref === xml,
+          ref === null ? 'em falta (UPDATE_GOLDEN=1 para gerar)' : (ref === xml ? '' : 'difere'))
+      }
+    }
   }
 }
 

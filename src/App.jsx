@@ -49,6 +49,7 @@ import {
 import {
   buildExportName,
   downloadBlob,
+  MissionExportError,
   exportBlocksZip,
   exportSimpleKML,
   exportWPMLKmz,
@@ -178,6 +179,23 @@ function AppInner({ lang, setLang }) {
   const [disabledTiles, setDisabledTiles] = useState(() => new Set())
   const [importState, setImportState] = useState(null) // {ring, filename} à espera de CRS
   const [importError, setImportError] = useState(null)
+  const [exportError, setExportError] = useState(null)
+
+  /**
+   * E4.1: nenhuma exportação escreve um ficheiro com valores inválidos. O
+   * exportador valida na fronteira e lança MissionExportError; aqui a falha
+   * vira uma mensagem no cabeçalho, em vez de uma promessa rejeitada sem
+   * dono e de um KMZ que só falha no comando, no campo.
+   */
+  const runExport = useCallback(async (fn) => {
+    setExportError(null)
+    try {
+      await fn()
+    } catch (err) {
+      setExportError(err instanceof MissionExportError ? err.code : 'unknown')
+      if (!(err instanceof MissionExportError)) console.error(err)
+    }
+  }, [])
   const [terrain, setTerrain] = useState({ status: 'idle', data: null, error: null })
   const [terrainFollow, setTerrainFollow] = useState({ enabled: false, tolerance: 5 })
   const [gcpConfig, setGcpConfig] = useState({ enabled: false, count: null }) // null = auto
@@ -711,7 +729,7 @@ function AppInner({ lang, setLang }) {
 
   const handleExportFace = useCallback(() => {
     if (!facePlan || facePlan.error) return
-    exportWPMLKmz({
+    runExport(() => exportWPMLKmz({
       name: buildExportName(missionName, 'face', {
         part: `p1-${facePlan.stats.passCount}`,
       }),
@@ -724,8 +742,8 @@ function AppInner({ lang, setLang }) {
       triggerMode: 'distance',
       gimbalPitch: faceConfig.gimbalPitch,
       sensorType: sensor.type,
-    })
-  }, [facePlan, missionName, faceConfig.speedMS, wpml, faceConfig.gimbalPitch, sensor.type])
+    }))
+  }, [facePlan, missionName, faceConfig.speedMS, wpml, faceConfig.gimbalPitch, sensor.type, runExport])
 
   /* ------------------------ Modo órbita (E1.2) ------------------------ */
   const setOrbitParam = useCallback((key, value) => {
@@ -810,13 +828,13 @@ function AppInner({ lang, setLang }) {
 
   const handleExportOrbitSingle = useCallback(() => {
     if (!orbitPlan || orbitPlan.error) return
-    exportWPMLKmz(orbitExportParams())
-  }, [orbitPlan, orbitExportParams])
+    runExport(() => exportWPMLKmz(orbitExportParams()))
+  }, [orbitPlan, orbitExportParams, runExport])
 
   const handleExportOrbitPerLevel = useCallback(() => {
     if (!orbitPlan || orbitPlan.error) return
-    exportBlocksZip(orbitExportParams(), orbitLevelsToBlocks(orbitPlan))
-  }, [orbitPlan, orbitExportParams])
+    runExport(() => exportBlocksZip(orbitExportParams(), orbitLevelsToBlocks(orbitPlan)))
+  }, [orbitPlan, orbitExportParams, runExport])
 
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const startInspect = useCallback(() => {
@@ -1479,7 +1497,7 @@ function AppInner({ lang, setLang }) {
     Boolean(planOk && planOk.waypoints.length >= 2) && !(terrainFollow.enabled && photoMode === 'waypoint')
 
   const handleExportKML = () => {
-    if (canExportKML) exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null)
+    if (canExportKML) runExport(() => exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null))
   }
 
   const handleExportGcps = () => {
@@ -1543,7 +1561,7 @@ function AppInner({ lang, setLang }) {
           if (at == null) return b
           return { ...b, perWaypoint: withPitch(b.perWaypoint, at) }
         })
-        exportBlocksZip(exportParams, annotated)
+        runExport(() => exportBlocksZip(exportParams, annotated))
         return
       }
       let at
@@ -1559,9 +1577,9 @@ function AppInner({ lang, setLang }) {
     }
 
     if (exportBlocks && exportBlocks.length > 1) {
-      exportBlocksZip(exportParams, exportBlocks)
+      runExport(() => exportBlocksZip(exportParams, exportBlocks))
     } else {
-      exportWPMLKmz(exportParams)
+      runExport(() => exportWPMLKmz(exportParams))
     }
   }
 
@@ -1570,7 +1588,7 @@ function AppInner({ lang, setLang }) {
   const handleExportInspection = () => {
     if (inspectPoints.length === 0) return
     const { waypoints, perWaypoint } = inspectionToWaypoints(inspectPoints)
-    exportWPMLKmz({
+    runExport(() => exportWPMLKmz({
       name: buildExportName(missionName, 'inspect', { part: `n${inspectPoints.length}` }),
       waypoints,
       perWaypoint,
@@ -1581,7 +1599,7 @@ function AppInner({ lang, setLang }) {
       triggerMode: 'distance',
       gimbalPitch: params.gimbalPitch,
       sensorType: sensor.type,
-    })
+    }))
   }
 
   /* ----------------------------- Layout ------------------------------ */
@@ -1687,6 +1705,22 @@ function AppInner({ lang, setLang }) {
           </div>
         </div>
       </header>
+
+      {exportError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 border-b border-red-800 bg-red-950/60 px-4 py-2 text-xs text-red-200"
+        >
+          <span className="font-semibold">⚠ {t('export.failed')}</span>
+          <span>{t(`export.err.${exportError}`)}</span>
+          <button
+            onClick={() => setExportError(null)}
+            className="ml-auto rounded border border-red-700 px-2 py-0.5 font-medium hover:bg-red-900"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       <div className="flex min-h-0 flex-1">
         <div className="flex h-full shrink-0 flex-col">
