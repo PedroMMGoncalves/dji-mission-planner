@@ -41,7 +41,6 @@ import {
   photoInterval,
   rectangleFromAnchor,
   resolveSensor,
-  ringToPolygon,
   splitIntoBlocks,
   squareSideForBattery,
   tilePolygonWithSquares,
@@ -404,6 +403,13 @@ function AppInner({ lang, setLang }) {
     params.speed,
     spacing,
     basePoint,
+    // O lado do quadrado dimensionado por bateria depende do número de
+    // passagens (cross-hatch e passagem nadir extra multiplicam o voo por
+    // célula). Sem estas duas dependências o lado ficava preso ao valor
+    // anterior ao ligar/desligar o cross-hatch, e a célula podia exceder o
+    // que uma bateria voa.
+    params.crosshatch,
+    params.includeNadir,
   ])
 
   const tiles = Array.isArray(tilesResult?.cells) ? tilesResult.cells : null
@@ -1160,7 +1166,7 @@ function AppInner({ lang, setLang }) {
     setImportState(null)
     setImportError(null)
     setFitKey((k) => k + 1)
-  }, [])
+  }, [pushHistory])
 
   const handleImportFile = useCallback(
     async (file) => {
@@ -1348,7 +1354,7 @@ function AppInner({ lang, setLang }) {
     }
     downloadBlob(
       new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
-      `${missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'}-projeto.json`,
+      `${missionName.trim().replace(/[^\w-]+/g, '-') || 'missao'}-projeto.json`,
     )
   }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
@@ -1465,7 +1471,7 @@ function AppInner({ lang, setLang }) {
   }, [ring, validation.valid, spacing])
 
   /* --------------------------- Exportação ---------------------------- */
-  const safeName = missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'
+  const safeName = missionName.trim().replace(/[^\w-]+/g, '-') || 'missao'
   const canExportKML = Boolean(ring && validation.valid)
   // B: seguir terreno + foto por waypoint é um erro explícito, não uma
   // exportação com alturas planas
