@@ -135,18 +135,33 @@ export function generateFacePlan(baseline, options) {
 
   // alturas das passagens: centros de imagem de imgH/2 até H − imgH/2,
   // distribuídos uniformemente com passo ≤ vStep; passagem única centrada
-  // quando a face cabe numa imagem
+  // quando a face cabe numa imagem.
+  //
+  // O piso de segurança `minHeightM` entra no INÍCIO do intervalo, não como
+  // correcção da passagem mais baixa depois de a grelha estar feita: com
+  // afastamentos curtos a imagem é estreita (a 5 m um M3E cobre ~2.7 m de
+  // face) e o passo fica muito abaixo do piso, pelo que subir só a primeira
+  // passagem punha-a ACIMA das seguintes — serpentina fora de ordem, passo
+  // vertical negativo nas estatísticas e as restantes passagens na mesma
+  // abaixo do piso. Aplicado ao intervalo, o piso vale para todas.
+  const floorM = Math.max(0, minHeightM)
   let heights
   if (faceHeightM <= imgH) {
-    heights = [Math.max(minHeightM, faceHeightM / 2)]
+    heights = [Math.max(floorM, faceHeightM / 2)]
   } else {
-    const first = imgH / 2
+    const first = Math.max(imgH / 2, floorM)
     const last = faceHeightM - imgH / 2
-    const n = Math.max(2, Math.ceil((last - first) / vStep) + 1)
-    const step = (last - first) / (n - 1)
-    heights = Array.from({ length: n }, (_, k) => first + k * step)
-    if (heights[0] < minHeightM) heights[0] = minHeightM
+    if (last <= first) {
+      // o piso já está acima do centro da passagem de topo: uma só passagem
+      heights = [first]
+    } else {
+      const n = Math.max(2, Math.ceil((last - first) / vStep) + 1)
+      const step = (last - first) / (n - 1)
+      heights = Array.from({ length: n }, (_, k) => first + k * step)
+    }
   }
+  // faixa no pé da face que nenhuma imagem apanha por causa do piso
+  const uncoveredBottomM = Math.max(0, heights[0] - imgH / 2)
 
   // linha afastada: standoff para o lado escolhido, em métrica local
   const offset = turf.lineString(
@@ -206,6 +221,8 @@ export function generateFacePlan(baseline, options) {
       hStepM: stepM,
       imageWidthM: imgW,
       imageHeightM: imgH,
+      minHeightM: floorM,
+      uncoveredBottomM,
       gsdCm: computeGSD(sensor, standoffM),
       standoffM,
       heights,

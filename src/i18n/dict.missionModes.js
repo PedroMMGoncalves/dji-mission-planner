@@ -47,6 +47,10 @@ export default {
   'fp.plan.vstep': { pt: 'passo vertical {v} m', en: 'vertical step {v} m' },
   'fp.plan.path': { pt: 'percurso {km} km', en: 'path {km} km' },
   'fp.plan.time': { pt: '~{min} min', en: '~{min} min' },
+  'fp.warn.bottom': {
+    pt: 'Piso de segurança de {floor} m: os primeiros {n} m no pé da face ficam sem cobertura — a esta distância a imagem tem {img} m de altura e a passagem mais baixa não pode descer mais. Aumente o afastamento para alargar a imagem, ou fotografe o pé da face à parte.',
+    en: 'Safety floor of {floor} m: the bottom {n} m of the face are left uncovered — at this distance the image is {img} m tall and the lowest pass cannot go any lower. Raise the standoff to widen the image, or shoot the foot of the face separately.',
+  },
   'fp.warn.unverified': {
     pt: 'Afastamento NÃO verificado contra o terreno: sem MDT/DSM local carregado, os tiles globais não têm resolução à escala de uma face. Importe um GeoTIFF local no modo Área (secção Terreno) para activar a verificação de folga.',
     en: 'Standoff NOT verified against the terrain: without a local DEM/DSM, global tiles lack resolution at face scale. Import a local GeoTIFF in Area mode (Terrain section) to enable the clearance check.',

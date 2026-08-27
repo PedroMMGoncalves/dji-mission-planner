@@ -76,6 +76,11 @@ com screenshot e os passos.
 - ☐ Trocar o **Lado do voo**.
   **Esperado:** a linha afastada salta para o outro lado da baseline e os
   rumos invertem.
+- ☐ Baixar o **Afastamento** para 5 m (o mínimo) e ler o painel.
+  **Esperado:** passo vertical POSITIVO e aviso âmbar do piso de segurança
+  com a faixa por cobrir no pé da face; as alturas das passagens sobem
+  sempre, nenhuma abaixo dos 5 m. Repor o afastamento a 25 m faz o aviso
+  desaparecer.
 - ☐ Sem GeoTIFF local carregado, observar os avisos.
   **Esperado:** aviso âmbar "afastamento NÃO verificado" (os tiles globais
   nunca validam uma face).
