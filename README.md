@@ -24,7 +24,8 @@ This tool is the **mission planning engine only**. Airspace authorisation, UAS-z
 
 **Live app:** <https://pedrommgoncalves.github.io/dji-mission-planner/>
 
-![Planner overview](docs/img/overview.png "Planner: area, grid and panel — screenshot to be added")
+<!-- Screenshots are captured during the release QA pass and restored here.
+![Planner overview](docs/img/overview.png "Planner: area, grid and panel — screenshot to be added") -->
 
 ## Contents
 
@@ -47,7 +48,7 @@ This tool is the **mission planning engine only**. Airspace authorisation, UAS-z
 ## Summary
 
 - **Aircraft + payload model** (`src/data/drones.js`): aircraft with speed limits, default battery and WPML enums; payloads with camera optics or LiDAR beam geometry, including the YellowScan Mapper+ on the M300 (documented PSDK enum 65534); battery per aircraft+payload combination; automatic migration of old projects.
-- **Concave-safe flight grid** (`src/utils/geo.js` + `src/utils/gridRoute.js`): boustrophedon cellular decomposition (ported from FlyPath, GPL-3.0) — on concave polygons the legs between passes never cross the gaps of the area; on convex areas the route is exactly the classic serpentine (guarded by test). **Optimal direction** search (fewest segments inside the real polygon), per-line **overshoot** (turns outside the area), a perpendicular **tie line** for LiDAR strip adjustment, and global line alignment across blocks.
+- **Concave-safe flight grid** (`src/utils/geo.js` + `src/utils/gridRoute.js`): boustrophedon cellular decomposition ([Choset & Pignon, 1998](#third-party-code)) — on concave polygons the legs between passes never cross the gaps of the area; on convex areas the route is exactly the classic serpentine (guarded by test). **Optimal direction** search (fewest segments inside the real polygon), per-line **overshoot** (turns outside the area), a perpendicular **tie line** for LiDAR strip adjustment, and global line alignment across blocks.
 - **Numerical honesty**: oblique GSD from the slant range to the frame centre (at −60° it is ~15% worse than nadir; spacing deliberately stays nadir-based because the error is conservative); LiDAR point density (PRR ÷ speed × swath, with the Mapper+ 170 pts/m² anchor verified); per-payload operational AGL ceiling warning.
 - **Face mode** (`src/utils/faceMode.js`): vertical serpentine over the face foot drawn on the map — passes at increasing heights, heading perpendicular to the local segment, one photo per waypoint; **clearance check against a local DSM** (vertical and along-heading), with an explicit "standoff unverified" warning when only global tiles are available.
 - **Multi-level orbits** (`src/utils/orbit.js`): stacked circles around a POI, points per revolution from the overlap, heading at the target, per-level gimbal aimed at the target centre height, continuous curved flight export — single mission or one KMZ per level.
@@ -59,8 +60,10 @@ This tool is the **mission planning engine only**. Airspace authorisation, UAS-z
 - **GCPs, report and checklist**: edge+centre GCP heuristic; printable A4 report with a map; a 75+ item checklist with groups conditional on the payload (LiDAR) and on the mode (face), flight and GCP logs, JSON export and printing.
 - **Projects**: browser autosave plus save/open as JSON; an aggregate strip (time, batteries, photos) when several plans coexist. **Bilingual UI** (PT/EN).
 
-![Face mode preview](docs/img/face-mode.png "Face mode: baseline, offset line and headings — screenshot to be added")
-![Multi-level orbits](docs/img/orbit-mode.png "Orbit: ring, POI and headings — screenshot to be added")
+<!-- Screenshots are captured during the release QA pass and restored here.
+![Face mode preview](docs/img/face-mode.png "Face mode: baseline, offset line and headings — screenshot to be added") -->
+<!-- Screenshots are captured during the release QA pass and restored here.
+![Multi-level orbits](docs/img/orbit-mode.png "Orbit: ring, POI and headings — screenshot to be added") -->
 
 ---
 
@@ -145,6 +148,10 @@ Editing gestures: click adds vertices (Backspace or clicking a vertex removes, d
 
 The WPML enums shipped are `M3E = 77/66`, `M4T = 99/1/89`, `M300 RTK + P1 = 60/50` and `M300 + Mapper+ = 60/65534` (65534 is the documented value for third-party PSDK payloads). They follow DJI's WPML documentation but **have never been tested on a real controller** — if Pilot 2 rejects an import, adjust the enums in `src/data/drones.js` (or in the UI for the custom profile) against the [DJI Cloud API WPML reference](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html). Heights are relative to the takeoff point: for terrain-following missions mark the home point at the real takeoff location before exporting; for faces, take off at the face-foot elevation.
 
+Mission-level safety fields are written from the WPML enumerations and validated on export, so an out-of-range value can never reach the file: `finishAction` (`goHome` / `noAction` / `autoLand` / `gotoFirstWaypoint`), `exitOnRCLost` (`executeLostAction` / `goContinue`) and `executeRCLostAction` (`goBack` / `landing` / `hover`). They default to return-to-home; the exporter accepts overrides (`finishAction`, `exitOnRCLost`, `executeRCLostAction`, `rthHeightM`) but the panel does not expose them yet. `globalRTHHeight` defaults to the higher of 100 m and the mission ceiling plus 20 m, so the return leg never descends into the survey area — **check it against the terrain and obstacles on your site before flying.**
+
+Turn parameters follow the turn mode rather than being fixed: area and face grids fly straight legs with a stop at each waypoint (`useStraightLine` 1), while orbits use continuous curvature with `useStraightLine` 0, which is what the specification requires for a genuine curved path.
+
 ## Development
 
 ```bash
@@ -167,6 +174,21 @@ Pushes to `main` build and publish automatically to GitHub Pages via [.github/wo
 - Mosaic/battery cells fly the full square even where it exceeds the polygon (disable unwanted cells by clicking them).
 - GCP placement is a geometric heuristic; it does not model image geometry.
 - No offline mode by design: planning is office work.
+
+## Third-party code
+
+The planning engine is original to this project, with one exception, noted here
+so the provenance is explicit rather than buried in file headers.
+
+| Component | Origin |
+| --- | --- |
+| `src/utils/gridRoute.js` — boustrophedon cellular decomposition | Algorithm: Choset & Pignon, *Coverage Path Planning: The Boustrophedon Cellular Decomposition*, Field and Service Robotics, 1998. Implementation began as a translation of `grid_route.py` from [dronnix-io/FlyPath](https://github.com/dronnix-io/FlyPath) (GPL-3.0), modified for geographic-degree routing; modifications are listed in the file header. |
+| `findOptimalDirection` in `src/utils/geo.js` | Search strategy follows the approach in FlyPath's `find_optimal_direction`; implementation is independent (Turf.js in a local metric frame rather than QGIS geometry). |
+
+Everything else — the payload model, terrain following, block splitting, face
+mode, orbits, inspection points, the WPML exporter, GCPs, the report and the
+checklist — is written for this project. This repository is GPL-3.0, the same
+licence as the reused component.
 
 ## License
 
