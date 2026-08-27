@@ -44,6 +44,43 @@ const BASE_DICT = {
     pt: 'Instruções e informação da aplicação',
     en: 'Instructions and app information',
   },
+  /* ---- Falhas de exportação (E4.1) ---- */
+  'export.failed': {
+    pt: 'A exportação foi cancelada: o plano tem valores inválidos e o ficheiro não foi escrito.',
+    en: 'Export cancelled: the plan has invalid values and no file was written.',
+  },
+  'export.err.no-waypoints': { pt: 'O plano não tem waypoints.', en: 'The plan has no waypoints.' },
+  'export.err.too-many-waypoints': {
+    pt: 'O plano excede os 65536 waypoints que uma rota WPML admite.',
+    en: 'The plan exceeds the 65536 waypoints a WPML route allows.',
+  },
+  'export.err.waypoint-malformed': { pt: 'Waypoint malformado.', en: 'Malformed waypoint.' },
+  'export.err.waypoint-not-finite': {
+    pt: 'Coordenada não numérica num waypoint.',
+    en: 'Non-numeric coordinate in a waypoint.',
+  },
+  'export.err.waypoint-out-of-range': {
+    pt: 'Coordenada fora do alcance geográfico válido.',
+    en: 'Coordinate outside the valid geographic range.',
+  },
+  'export.err.height-not-finite': {
+    pt: 'Altura não numérica num waypoint (verifique o seguimento de terreno).',
+    en: 'Non-numeric height in a waypoint (check terrain follow).',
+  },
+  'export.err.altitude-not-finite': { pt: 'Altitude inválida.', en: 'Invalid altitude.' },
+  'export.err.speed-invalid': { pt: 'Velocidade inválida.', en: 'Invalid speed.' },
+  'export.err.wpml-enums-missing': {
+    pt: 'Perfil de aeronave/payload sem os enums WPML necessários.',
+    en: 'Aircraft/payload profile is missing the required WPML enums.',
+  },
+  'export.err.param-not-finite': {
+    pt: 'Parâmetro de missão não numérico.',
+    en: 'Non-numeric mission parameter.',
+  },
+  'export.err.ring-too-short': {
+    pt: 'A área precisa de pelo menos três vértices.',
+    en: 'The area needs at least three vertices.',
+  },
   'app.view3d': { pt: 'Vista 3D', en: '3D View' },
   'app.view3dReady': {
     pt: 'Ver as linhas de voo em 3D sobre o relevo',
