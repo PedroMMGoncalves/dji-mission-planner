@@ -210,6 +210,16 @@ export default function FacePanel({
           </div>
         )}
 
+        {stats && stats.uncoveredBottomM > 0.5 && (
+          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+            ⚠{' '}
+            {t('fp.warn.bottom', {
+              floor: stats.minHeightM,
+              n: stats.uncoveredBottomM.toFixed(1),
+              img: stats.imageHeightM.toFixed(1),
+            })}
+          </p>
+        )}
         {stats && !dsmLoaded && (
           <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
             ⚠ {t('fp.warn.unverified')}

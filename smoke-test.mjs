@@ -1118,6 +1118,50 @@ check('waylines Mapper+: sem acoes de camara',
     (wlFace.match(/takePhoto/g) || []).length === fpl.waypoints.length)
 }
 
+/* 9b1. Piso de seguranca da fachada (C) */
+{
+  // afastamento curto (5 m, o minimo da interface): a imagem na face fica
+  // com 5.3 m de altura, logo imgH/2 = 2.7 m cai abaixo do piso de 5 m.
+  // Subir so a passagem mais baixa punha-a ACIMA das seguintes; o piso
+  // entra agora no inicio do intervalo e vale para todas.
+  const wall = [toLL(0, 0), toLL(200, 0)]
+  const mkFloor = (standoffM, extra = {}) => generateFacePlan(wall, {
+    sensor, faceHeightM: 30, standoffM, side: 'left',
+    verticalOverlapPct: 70, horizontalOverlapPct: 70, ...extra,
+  })
+
+  const near = mkFloor(5)
+  const hN = near.stats.heights
+  const vStepN = near.stats.imageHeightM * 0.3
+  check('C fachada: alturas estritamente crescentes com afastamento curto',
+    hN.every((h, i) => i === 0 || h > hN[i - 1]),
+    hN.slice(0, 3).map((h) => h.toFixed(2)).join(', '))
+  check('C fachada: nenhuma passagem abaixo do piso',
+    hN.every((h) => h >= near.stats.minHeightM - 1e-9),
+    `min ${Math.min(...hN).toFixed(2)} m, piso ${near.stats.minHeightM} m`)
+  check('C fachada: passo vertical positivo e <= vStep',
+    near.stats.vStepM > 0 && hN.every((h, i) => i === 0 || h - hN[i - 1] <= vStepN + 1e-9),
+    near.stats.vStepM?.toFixed(2))
+  check('C fachada: waypoints sobem em serpentina, sem descer para o pe',
+    near.waypoints.every((w) => w[2] >= near.stats.minHeightM - 1e-9))
+  check('C fachada: faixa por cobrir no pe = piso - imgH/2',
+    Math.abs(near.stats.uncoveredBottomM - (5 - near.stats.imageHeightM / 2)) < 1e-9,
+    `${near.stats.uncoveredBottomM.toFixed(2)} m`)
+
+  // piso inactivo (imgH/2 acima dele): distribuicao antiga intacta
+  const far = mkFloor(25)
+  check('C fachada: sem piso activo a distribuicao mantem-se',
+    Math.abs(far.stats.heights[0] - far.stats.imageHeightM / 2) < 1e-9 &&
+      far.stats.uncoveredBottomM === 0,
+    far.stats.heights[0].toFixed(2))
+
+  // piso acima do centro da passagem de topo -> uma so passagem
+  const tiny = mkFloor(5, { faceHeightM: 6, minHeightM: 16 })
+  check('C fachada: piso acima do topo -> uma passagem no piso',
+    tiny.stats.passCount === 1 && tiny.stats.heights[0] === 16 && tiny.stats.vStepM === null,
+    tiny.stats.heights.join(','))
+}
+
 /* 9b2. Folga da fachada contra DSM local (R2.8) */
 {
   // face E-O em y=0, drone a norte; DSM sintetico: ressalto de 22 m de topo
@@ -1132,13 +1176,15 @@ check('waylines Mapper+: sem acoes de camara',
     sensor, faceHeightM: 60, standoffM: standoff, side: 'left',
     verticalOverlapPct: 70, horizontalOverlapPct: 70, minHeightM: 16,
   })
-  // alturas: 16, 20, 26.7, 33.3, 40, 46.7 — o ressalto (22 m) bloqueia o
-  // corredor das duas primeiras na amostra a 12.5 m do drone (< 15 m)
+  // alturas: 16, 23.7, 31.3, 39, 46.7 (piso de 16 m no inicio do intervalo)
+  // — o ressalto (22 m) bloqueia o corredor da primeira na amostra a 12.5 m
+  // do drone (< 15 m); a segunda ja passa por cima
   const near = checkFaceClearance(mk(25), dsmBulge, { minClearanceM: 15 })
   check('folga: passagens baixas cortam o ressalto a 25 m',
-    near && !near.ok && near.passes.join(',') === '1,2',
+    near && !near.ok && near.passes.join(',') === '1',
     `passes ${near?.passes.join(',')}, horiz min ${near?.minHorizontalM?.toFixed(1)} m`)
-  check('folga: passagens acima do ressalto livres', !near.passes.includes(3))
+  check('folga: passagens acima do ressalto livres',
+    !near.passes.includes(2) && !near.passes.includes(3))
   const far = checkFaceClearance(mk(60), dsmBulge, { minClearanceM: 15 })
   check('folga: standoff maior limpa o aviso', far && far.ok && far.passes.length === 0,
     `horiz min ${far?.minHorizontalM?.toFixed(1)} m`)

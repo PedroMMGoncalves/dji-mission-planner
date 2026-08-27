@@ -36,7 +36,7 @@ function InstrucoesPt() {
       <H>Tipos de missão</H>
       <ul className="list-none">
         <Li><strong>Área</strong> (selector no topo do painel) — grelha nadir/oblíqua sobre um polígono; inclui a dupla grelha 3D com «Passagem nadir extra (orto)» e os <strong>pontos de inspecção</strong> como camada extra: marque pontos no mapa, edite etiqueta/rumo/pitch/foto, reordene por arrasto ou «Sugerir ordem», e exporte como missão própria.</Li>
-        <Li><strong>Fachada</strong> — clique «Desenhar» e marque o pé da face no mapa (o sentido do desenho define a esquerda/direita); conclua com duplo clique. Ajuste altura, afastamento, lado e sobreposições; a pré-visualização mostra a linha de voo afastada e os rumos. Exporta com rumo fixo e uma foto por waypoint.</Li>
+        <Li><strong>Fachada</strong> — clique «Desenhar» e marque o pé da face no mapa (o sentido do desenho define a esquerda/direita); conclua com duplo clique. Ajuste altura, afastamento, lado e sobreposições; a pré-visualização mostra a linha de voo afastada e os rumos. Nenhuma passagem desce abaixo do piso de segurança de 5 m — com afastamentos curtos a imagem é estreita e o painel avisa da faixa que fica sem cobertura no pé da face. Exporta com rumo fixo e uma foto por waypoint.</Li>
         <Li><strong>Órbita</strong> — «Marcar POI» e clicar no alvo; defina raio (ou GSD alvo), níveis e passo. Exporta em voo curvo contínuo, missão única ou um KMZ por nível (ZIP).</Li>
       </ul>
 
@@ -103,7 +103,7 @@ function InstrucoesEn() {
       <H>Mission types</H>
       <ul className="list-none">
         <Li><strong>Area</strong> (selector at the top of the panel) — nadir/oblique grid over a polygon; includes the 3D double grid with “Extra nadir pass (ortho)” and <strong>inspection points</strong> as an extra layer: place points on the map, edit label/heading/pitch/photo, reorder by drag or “Suggest order”, and export as a mission of its own.</Li>
-        <Li><strong>Face</strong> — click “Draw” and mark the foot of the face on the map (the drawing direction defines left/right); finish with a double click. Set height, standoff, side and overlaps; the preview shows the offset flight line and the headings. Exports with a fixed heading and one photo per waypoint.</Li>
+        <Li><strong>Face</strong> — click “Draw” and mark the foot of the face on the map (the drawing direction defines left/right); finish with a double click. Set height, standoff, side and overlaps; the preview shows the offset flight line and the headings. No pass drops below the 5 m safety floor — at short standoffs the image is narrow and the panel warns about the strip left uncovered at the foot of the face. Exports with a fixed heading and one photo per waypoint.</Li>
         <Li><strong>Orbit</strong> — “Mark POI” and click the target; set radius (or target GSD), levels and step. Exports in continuous curved flight, single mission or one KMZ per level (ZIP).</Li>
       </ul>
 
