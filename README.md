@@ -181,6 +181,7 @@ Pushes to `main` build and publish automatically to GitHub Pages via [.github/wo
 - Heights use the WPML `relativeToStartPoint` mode; the reference is the marked home point (or the first waypoint). In face mode the standoff is only verified with a local DSM — global tiles lack resolution at face scale.
 - Battery block sizing uses a flight-time model (line length, connectors, turn cost, transit) — it is an estimate; validate against your aircraft's real endurance (log-based calibration planned for September 2026).
 - Mosaic/battery cells fly the full square even where it exceeds the polygon (disable unwanted cells by clicking them).
+- Corridor line spacing lands about 0.6% wider than requested (the planar-frame constant against the true metres-per-degree), so the realised side overlap is marginally *below* the figure you set — 69.8% for a requested 70%. Immaterial at normal overlaps; worth knowing if you plan close to a minimum.
 - Corridor mapping is nadir only and does not yet support terrain following or battery block splitting — the passes fly at a single altitude relative to the takeoff point. The buffered strip drawn on the map is illustrative: it shows the requested width, not the width actually covered, which is smaller wherever a pass had to be split.
 - GCP placement is a geometric heuristic; it does not model image geometry.
 - No offline mode by design: planning is office work.

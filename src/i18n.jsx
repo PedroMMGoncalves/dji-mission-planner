@@ -68,6 +68,18 @@ const BASE_DICT = {
     en: 'Non-numeric height in a waypoint (check terrain follow).',
   },
   'export.err.altitude-not-finite': { pt: 'Altitude inválida.', en: 'Invalid altitude.' },
+  'export.err.altitude-not-positive': {
+    pt: 'A altitude tem de ser positiva.',
+    en: 'The altitude must be positive.',
+  },
+  'export.err.speed-out-of-range': {
+    pt: 'Velocidade fora do intervalo admissível.',
+    en: 'Speed outside the admissible range.',
+  },
+  'export.err.param-out-of-range': {
+    pt: 'Parâmetro de missão fora do intervalo admissível.',
+    en: 'Mission parameter outside the admissible range.',
+  },
   'export.err.speed-invalid': { pt: 'Velocidade inválida.', en: 'Invalid speed.' },
   'export.err.wpml-enums-missing': {
     pt: 'Perfil de aeronave/payload sem os enums WPML necessários.',

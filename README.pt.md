@@ -178,6 +178,7 @@ Pushes a `main` constroem e publicam automaticamente no GitHub Pages via [.githu
 - Alturas em modo `relativeToStartPoint`; a referência é a base marcada (ou o 1.º waypoint). No modo fachada o afastamento só é verificado com um DSM local — os tiles globais não têm resolução à escala de uma face.
 - O dimensionamento por bateria usa um modelo de tempo (faixas, ligações, custo de viragem, trânsito) — é uma estimativa; valide contra a autonomia real da aeronave (calibração com logs prevista para setembro de 2026).
 - As células do mosaico voam o quadrado inteiro mesmo onde excede o polígono (desactive células a clicar).
+- O espaçamento das passagens do corredor fica cerca de 0,6% acima do pedido (constante do referencial planar face aos metros por grau reais), pelo que a sobreposição lateral efectiva fica marginalmente *abaixo* do valor definido — 69,8% para 70% pedidos. Irrelevante em sobreposições normais; a ter em conta ao planear junto a um mínimo.
 - O mapeamento de corredor é apenas nadir e ainda não suporta seguimento de terreno nem divisão em blocos por bateria — as passagens voam a uma altitude única relativa ao ponto de descolagem. A faixa desenhada no mapa é ilustrativa: mostra a largura pedida, não a efectivamente coberta, que é menor onde uma passagem teve de ser partida.
 - A colocação de GCPs é uma heurística geométrica; não modela a geometria das imagens.
 - Sem modo offline, de propósito: o planeamento é trabalho de gabinete.

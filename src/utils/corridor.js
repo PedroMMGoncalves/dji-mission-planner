@@ -32,7 +32,12 @@ import { computeFootprint, lineSpacing } from './geo.js'
 
 const M_PER_DEG_LAT = 110574
 const MIN_RUN_M = 5 // troços mais curtos do que isto não são passagens úteis
-const MAX_PASSES = 200 // trava contra buffers absurdos face ao espaçamento
+// Trava contra buffers absurdos face ao espaçamento. NÃO é um recorte
+// silencioso: passOffsets devolve o número que a cobertura exige, e
+// generateCorridorPlan recusa o plano acima deste limite, porque entregar
+// menos passagens do que a largura pedida seria dizer ao operador que
+// mapeou uma faixa que na verdade não voou.
+export const MAX_PASSES = 200
 const MAX_SAMPLES = 20000 // trava contra passos de amostragem minúsculos
 
 function metersPerDegLon(lat) {
@@ -90,8 +95,7 @@ export function passOffsets(halfWidthM, spacingM, footprintAcrossM) {
   const across = Math.max(Number(footprintAcrossM) || 0, 0)
   const total = 2 * half
   if (total <= across + 1e-9 || total <= 1e-9) return [0]
-  const nExtra = Math.ceil((total - across) / spacing)
-  const nPasses = Math.min(MAX_PASSES, nExtra + 1)
+  const nPasses = Math.ceil((total - across) / spacing) + 1
   const centre = (nPasses - 1) / 2
   return Array.from({ length: nPasses }, (_, i) => (i - centre) * spacing)
 }
@@ -126,8 +130,15 @@ export function resamplePolyline(pts, spacing) {
     for (let k = 1; k <= n; k++) {
       const t = k / n
       out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t])
+      // Verificado por ponto, não por vértice: uma polilinha de dois pontos
+      // percorre um único segmento, pelo que uma verificação por vértice só
+      // corria depois de o segmento inteiro estar em memória e nunca travava
+      // nada. Ao parar aqui garante-se o último ponto e o fim do troço.
+      if (out.length >= MAX_SAMPLES) {
+        if (out[out.length - 1] !== clean[clean.length - 1]) out.push(clean[clean.length - 1])
+        return out
+      }
     }
-    if (out.length > MAX_SAMPLES) break
   }
   return out
 }
@@ -353,6 +364,7 @@ export function generateCorridorPlan(centreline, options) {
   if (!(corridorLengthM > 0)) return { error: 'degenerate-centreline' }
 
   const offsets = passOffsets(bufferM, spacing, across)
+  if (offsets.length > MAX_PASSES) return { error: 'too-many-passes' }
 
   // Passo de amostragem do eixo: fino o bastante para as normais seguirem a
   // curvatura e para o critério de validade apanhar as dobras, sem explodir

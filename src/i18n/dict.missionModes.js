@@ -22,9 +22,9 @@ export default {
     pt: 'Desenhe o eixo no mapa para gerar as passagens do corredor.',
     en: 'Draw the centreline on the map to generate the corridor passes.',
   },
-  'co.cameraRequired': {
-    pt: 'O modo corredor precisa de um payload de câmara — seleccione uma câmara no modo Área.',
-    en: 'Corridor mode needs a camera payload — select a camera in Area mode.',
+  'co.lidarNote': {
+    pt: 'Payload LiDAR: o espaçamento das passagens sai da largura de varrimento do feixe e a missão não leva acções de câmara, pelo que não há disparo a configurar.',
+    en: 'LiDAR payload: pass spacing comes from the beam swath width and the mission carries no camera actions, so there is no trigger to configure.',
   },
   'co.params.title': { pt: 'Parâmetros do Corredor', en: 'Corridor Parameters' },
   'co.params.buffer': { pt: 'Meia-largura', en: 'Half-width' },
@@ -63,6 +63,10 @@ export default {
   'co.err.sensor-required': { pt: 'É necessário um payload de câmara.', en: 'A camera payload is required.' },
   'co.err.invalid-footprint': { pt: 'Pegada da câmara inválida.', en: 'Invalid camera footprint.' },
   'co.err.degenerate-centreline': { pt: 'Eixo degenerado.', en: 'Degenerate centreline.' },
+  'co.err.too-many-passes': {
+    pt: 'A meia-largura pedida exige mais passagens do que um plano admite. Reduza a meia-largura, suba a altitude ou baixe a sobreposição lateral.',
+    en: 'The requested half-width needs more passes than one plan allows. Reduce the half-width, raise the altitude, or lower the side overlap.',
+  },
   'co.err.no-coverage': {
     pt: 'Nenhuma passagem é geometricamente possível com estes parâmetros.',
     en: 'No pass is geometrically possible with these parameters.',
