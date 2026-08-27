@@ -25,6 +25,10 @@ export class MissionExportError extends Error {
 
 // wpml:index tem alcance [0, 65535], logo no máximo 65536 waypoints por rota.
 export const MAX_WAYPOINTS_PER_ROUTE = 65536
+// Limiares de sanidade, não limites de modelo: apanham unidades trocadas e
+// campos em bruto antes de chegarem ao ficheiro.
+export const MAX_SPEED_MS = 30
+export const MAX_RTH_HEIGHT_M = 1500
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v)
 
@@ -59,9 +63,16 @@ export function validateExportParams(params) {
   }
   waypoints.forEach(checkWaypoint)
   // A altitude global é o valor de recurso de cada waypoint sem altura
-  // própria, por isso tem de ser finita mesmo quando todos a trazem.
+  // própria, por isso tem de ser finita mesmo quando todos a trazem. Tem
+  // também de ser positiva: um valor nulo ou negativo é aceite por qualquer
+  // verificação de finitude mas não descreve nenhuma missão real.
   if (!isNum(altitude)) throw new MissionExportError('altitude-not-finite', String(altitude))
+  if (altitude <= 0) throw new MissionExportError('altitude-not-positive', String(altitude))
+  // MAX_SPEED_MS é generoso face ao mais rápido dos DJI suportados (~23 m/s);
+  // serve para apanhar unidades trocadas ou um campo em bruto, não para
+  // impor o limite de um modelo, que é validado na interface.
   if (!isNum(speed) || speed <= 0) throw new MissionExportError('speed-invalid', String(speed))
+  if (speed > MAX_SPEED_MS) throw new MissionExportError('speed-out-of-range', String(speed))
   if (!wpml || !isNum(wpml.droneEnumValue) || !isNum(wpml.payloadEnumValue)) {
     throw new MissionExportError('wpml-enums-missing')
   }
@@ -70,6 +81,18 @@ export function validateExportParams(params) {
     if (v !== undefined && v !== null && !isNum(v)) {
       throw new MissionExportError('param-not-finite', key)
     }
+  }
+  // Domínios: um intervalo de disparo negativo desliga o disparo em silêncio,
+  // e uma altura de regresso negativa mandaria o regresso para baixo do
+  // ponto de descolagem.
+  if (isNum(params.photoIntervalM) && params.photoIntervalM < 0) {
+    throw new MissionExportError('param-out-of-range', 'photoIntervalM')
+  }
+  if (isNum(params.rthHeightM) && (params.rthHeightM <= 0 || params.rthHeightM > MAX_RTH_HEIGHT_M)) {
+    throw new MissionExportError('param-out-of-range', 'rthHeightM')
+  }
+  if (isNum(params.gimbalPitch) && (params.gimbalPitch < -120 || params.gimbalPitch > 60)) {
+    throw new MissionExportError('param-out-of-range', 'gimbalPitch')
   }
   return params
 }
@@ -214,9 +237,19 @@ export function exportSimpleKML(ring, name, basePoint = null, gcps = null, lines
 // eslint-disable-next-line no-control-regex
 const XML_ILLEGAL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\uFFFE\uFFFF]/g
 
+/**
+ * Substitutos isolados (uma metade de um par sem a outra). Também não são
+ * caracteres XML válidos, mas nenhum analisador em JavaScript os denuncia,
+ * porque as strings de JavaScript admitem-nos: chegariam ao ficheiro e só o
+ * leitor do Pilot 2 recusaria. Aparecem em texto truncado a meio de um
+ * emoji ou colado de uma aplicação que cortou por unidades de código.
+ */
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g
+
 export function escapeXml(s) {
   return String(s)
     .replace(XML_ILLEGAL, '')
+    .replace(LONE_SURROGATE, '')
     .replace(/[<>&'"]/g, (c) => ({
       '<': '&lt;',
       '>': '&gt;',

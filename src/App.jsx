@@ -1237,6 +1237,18 @@ function AppInner({ lang, setLang }) {
       const ground = elevAt?.(orbitConfig.poi[0], orbitConfig.poi[1])
       return { waypoints: orbitPlan.waypoints, refElev: Number.isFinite(ground) ? ground : 0 }
     }
+    // Sem este ramo o modo corredor caía no plano de ÁREA: com um polígono
+    // desenhado antes, a vista 3D e o perfil mostravam a grelha da área
+    // enquanto o painel do corredor estava aberto — a missão errada.
+    if (missionMode === 'corridor') {
+      if (!corridorPlan || corridorPlan.error) return null
+      const head = corridorConfig.centreline?.[0]
+      const ground = head ? elevAt?.(head[0], head[1]) : null
+      return {
+        waypoints: corridorPlan.waypoints.map(([lon, lat, h]) => [lon, lat, h ?? params.altitude]),
+        refElev: Number.isFinite(ground) ? ground : 0,
+      }
+    }
     if (!planOk) return null
     const wps =
       terrainResult && !terrainResult.error
@@ -1247,7 +1259,7 @@ function AppInner({ lang, setLang }) {
         ? terrainResult.refElev
         : (elevAt?.((basePoint ?? planOk.waypoints[0])[0], (basePoint ?? planOk.waypoints[0])[1]) ?? 0)
     return { waypoints: wps, refElev: ref }
-  }, [missionMode, facePlan, faceConfig.baseline, orbitPlan, orbitConfig.poi, planOk, terrainResult, terrain, basePoint, params.altitude])
+  }, [missionMode, facePlan, faceConfig.baseline, orbitPlan, orbitConfig.poi, corridorPlan, corridorConfig.centreline, planOk, terrainResult, terrain, basePoint, params.altitude])
 
   // Teto operacional AGL do payload (T1.3), ex.: LiDAR limitado a 100 m
   const aglWarn = useMemo(
@@ -1856,7 +1868,7 @@ function AppInner({ lang, setLang }) {
                 corridorConfig={corridorConfig}
                 setCorridorParam={setCorridorParam}
                 corridorPlan={corridorPlan}
-                cameraOk={sensor.type === 'camera'}
+                sensorType={sensor.type}
                 mode={mode}
                 onStartAxis={startCorridorDraw}
                 onFinishAxis={handleFinishCorridor}

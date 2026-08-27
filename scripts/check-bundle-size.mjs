@@ -11,9 +11,12 @@
  */
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const BUDGET_KB = 2200
-const DIST = new URL('../dist/', import.meta.url).pathname
+// fileURLToPath e não .pathname: este descodifica percent-encoding e trata
+// os caminhos do Windows, o outro devolve-os em bruto.
+const DIST = fileURLToPath(new URL('../dist/', import.meta.url))
 
 function walk(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {

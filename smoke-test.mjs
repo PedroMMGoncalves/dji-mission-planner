@@ -25,6 +25,8 @@ import {
   validateRing,
 } from './src/utils/geo.js'
 import {
+  MAX_RTH_HEIGHT_M,
+  MAX_SPEED_MS,
   MAX_WAYPOINTS_PER_ROUTE,
   MissionExportError,
   FINISH_ACTIONS,
@@ -48,6 +50,7 @@ import { DEFAULT_FACE_CONFIG, checkFaceClearance, generateFacePlan, normalizeFac
 import { headingTicks } from './src/utils/preview.js'
 import {
   DEFAULT_CORRIDOR_CONFIG,
+  MAX_PASSES,
   corridorBufferRing,
   generateCorridorPlan,
   normalizeCorridorConfig,
@@ -1764,6 +1767,21 @@ check('waylines Mapper+: sem acoes de camara',
   rejects('parametro nao-finito', { ...okParams, photoIntervalM: NaN }, 'param-not-finite')
   check('limite de waypoints alinhado com wpml:index [0, 65535]',
     MAX_WAYPOINTS_PER_ROUTE === 65536)
+
+  /* 11b2. Auditoria: a validacao original so verificava finitude, pelo que
+     valores finitos mas absurdos (altitude nula ou negativa, velocidade de
+     1e9, intervalo de disparo negativo, altura de regresso negativa) eram
+     escritos no ficheiro. Dominio agora verificado. */
+  rejects('altitude nula', { ...okParams, altitude: 0 }, 'altitude-not-positive')
+  rejects('altitude negativa', { ...okParams, altitude: -100 }, 'altitude-not-positive')
+  rejects('velocidade absurda', { ...okParams, speed: 1e9 }, 'speed-out-of-range')
+  rejects('intervalo de disparo negativo', { ...okParams, photoIntervalM: -5 }, 'param-out-of-range')
+  rejects('altura de regresso negativa', { ...okParams, rthHeightM: -50 }, 'param-out-of-range')
+  rejects('altura de regresso absurda', { ...okParams, rthHeightM: 9000 }, 'param-out-of-range')
+  rejects('pitch de gimbal impossivel', { ...okParams, gimbalPitch: -400 }, 'param-out-of-range')
+  check('limiares de sanidade declarados', MAX_SPEED_MS === 30 && MAX_RTH_HEIGHT_M === 1500)
+  check('velocidade e altitude plausiveis continuam a passar',
+    Boolean(buildWaylinesWPML({ ...okParams, speed: 23, altitude: 120, rthHeightM: 150 })))
   check('validateExportParams devolve os parametros validos',
     validateExportParams(okParams) === okParams)
 
@@ -1774,6 +1792,19 @@ check('waylines Mapper+: sem acoes de camara',
     !new RegExp(`[${ctl}]`).test(dirty) && xmlWellFormed(dirty) === null)
   check('escapeXml preserva tab/LF/CR e escapa metacaracteres',
     escapeXml('a\tb\nc&d<e') === 'a\tb\nc&amp;d&lt;e')
+    /* Auditoria: um substituto isolado (metade de um par) tambem nao e um
+       caractere XML valido, mas as strings de JavaScript admitem-no e nenhum
+       analisador em JavaScript o denuncia — o gate de XML nao o via, e o
+       ficheiro so seria recusado pelo leitor do Pilot 2. */
+    const hi = String.fromCharCode(0xd800)
+    const lo = String.fromCharCode(0xdc00)
+    check('escapeXml remove substitutos isolados',
+      !/[\uD800-\uDFFF]/.test(escapeXml(`a${hi}b${lo}c`)),
+      JSON.stringify(escapeXml(`a${hi}b${lo}c`)))
+    check('escapeXml preserva pares substitutos validos (emoji)',
+      escapeXml('a\u{1F680}b') === 'a\u{1F680}b')
+    check('documento com substituto isolado sai limpo',
+      !/[\uD800-\uDFFF]/.test(buildSimpleKML(rectNS, `missao${hi}x`)))
 
   /* 11d. Fuzz determinista: planos validos aleatorios, XML sempre analisavel.
      Gerador congruencial com semente fixa para qualquer falha ser reproduzivel. */
@@ -1897,6 +1928,14 @@ check('waylines Mapper+: sem acoes de camara',
       prev = n
     }
     check('corredor: contagem de passagens cresce uma de cada vez', jump === null, jump ?? 'ok')
+    /* Auditoria: passOffsets recortava a contagem em MAX_PASSES e devolvia
+       menos passagens do que a largura pedida, sem qualquer aviso — o
+       operador julgaria ter mapeado uma faixa que nunca voou. Agora devolve
+       o numero exigido e o plano recusa acima do limite. */
+    const wide = passOffsets(6000, spacing, across)
+    check('corredor: desvios cobrem sempre a largura pedida, sem recorte',
+      Math.max(...wide) + across / 2 >= 6000,
+      `${wide.length} passagens, alcance ${(Math.max(...wide) + across / 2).toFixed(0)} m`)
   }
 
   /* 12b. Desvio em esquadria: um vertice mantem-se a |desvio| dos DOIS
@@ -1972,6 +2011,31 @@ check('waylines Mapper+: sem acoes de camara',
       plan.perLine.reduce((a, b) => a + b, 0) === plan.waypoints.length)
   }
 
+  /* 12e2. Payload LiDAR: o corredor e um caso de uso real (linhas
+     electricas, condutas). O espacamento sai da largura de varrimento e a
+     missao nao leva accoes de camara. O painel chegou a marcar isto como
+     erro, copiando a regra do modo fachada, onde a camara e mesmo exigida. */
+  {
+    const lidar = resolveSensor(
+      { id: 'X', type: 'lidar', fov: 70, effectiveFov: 70 }, DEFAULT_CUSTOM_SENSOR)
+    const plan = generateCorridorPlan(bend, {
+      ...baseOpts, sensor: lidar, photoIntervalM: 0, sideOverlapPct: 60,
+    })
+    check('corredor: payload LiDAR gera plano valido',
+      !plan.error && plan.stats.passCount > 1, plan.error ?? `${plan.stats.passCount} passagens`)
+    check('corredor: LiDAR espaca pelas passagens da largura de varrimento',
+      Math.abs(plan.stats.footprintAcrossM - 2 * 100 * Math.tan((70 * Math.PI) / 180 / 2)) < 0.01,
+      plan.stats.footprintAcrossM.toFixed(2))
+    check('corredor: LiDAR nao conta fotografias', plan.stats.photoCount === null)
+    const xml = buildWaylinesWPML({
+      name: 'lidar_corr', waypoints: plan.waypoints, altitude: 100, speed: 8,
+      wpml: { droneEnumValue: 60, payloadEnumValue: 65534 },
+      photoIntervalM: 0, triggerMode: 'distance', sensorType: 'lidar',
+    })
+    check('corredor: WPML LiDAR sem accoes de camara nem de gimbal',
+      !xml.includes('takePhoto') && !xml.includes('gimbalRotate'))
+  }
+
   /* 12f. Modo distancia: sem accoes por waypoint, geometria preservada. */
   {
     const plan = generateCorridorPlan(bend, baseOpts)
@@ -1979,8 +2043,19 @@ check('waylines Mapper+: sem acoes de camara',
       plan.perWaypoint === undefined && plan.perLine === undefined)
     check('corredor: modo distancia estima fotos pelo comprimento',
       plan.stats.photoCount > 0)
-    check('corredor: extremos das passagens preservados na simplificacao',
-      plan.lines.every((l) => l.length >= 2))
+    // A simplificacao nao pode encurtar a passagem: os extremos tem de ser
+    // exactamente os do troco original, ou a cobertura perde as pontas.
+    const dense = generateCorridorPlan(bend, { ...baseOpts, simplifyM: 0 })
+    check('corredor: simplificacao preserva os extremos exactos de cada passagem',
+      plan.lines.length === dense.lines.length &&
+        plan.lines.every((l, i) => {
+          const d = dense.lines[i]
+          return turf.distance(l[0], d[0], { units: 'meters' }) < 0.01 &&
+            turf.distance(l[l.length - 1], d[d.length - 1], { units: 'meters' }) < 0.01
+        }))
+    check('corredor: simplificacao reduz mesmo o numero de pontos',
+      plan.lines.reduce((n, l) => n + l.length, 0) <
+        dense.lines.reduce((n, l) => n + l.length, 0))
   }
 
   /* 12g. Auxiliares puros. */
@@ -1999,6 +2074,13 @@ check('waylines Mapper+: sem acoes de camara',
       simplifyPolyline([[0, 0], [10, 0], [20, 0], [30, 0], [30, 10]], 0.5).length === 3)
     check('corredor: comprimento de polilinha',
       Math.abs(polylineLength([[0, 0], [3, 4], [3, 14]]) - 15) < 1e-9)
+    /* Auditoria: a trava de amostras era verificada por vertice, pelo que uma
+       polilinha de dois pontos gerava o segmento inteiro em memoria antes de
+       a trava correr — nunca travava nada. Verificada agora por ponto. */
+    const huge = resamplePolyline([[0, 0], [300000, 0]], 0.5)
+    check('corredor: trava de amostras efectiva', huge.length <= 20001, `${huge.length} amostras`)
+    check('corredor: trava preserva o ponto final do eixo', huge[huge.length - 1][0] === 300000)
+    check('corredor: limite de passagens exposto', MAX_PASSES === 200)
     check('corredor: desvio nulo devolve o proprio eixo',
       offsetRuns([[0, 0], [10, 0]], 0, 1).length === 1)
     const ringBuf = corridorBufferRing([[-9.14, 38.70], [-9.13, 38.70]], 100)
@@ -2020,6 +2102,7 @@ check('waylines Mapper+: sem acoes de camara',
       ['altitude nula', bend, { altitude: 0 }, 'invalid-altitude'],
       ['sobreposicao 100%', bend, { sideOverlapPct: 100 }, 'overlap-too-high'],
       ['sem sensor', bend, { sensor: null }, 'sensor-required'],
+      ['largura acima do limite', bend, { bufferM: 20000 }, 'too-many-passes'],
     ]
     for (const [label, line, over, want] of cases) {
       let got

@@ -64,7 +64,7 @@ export default function CorridorPanel({
   corridorConfig,
   setCorridorParam,
   corridorPlan,
-  cameraOk,
+  sensorType,
   mode,
   onStartAxis,
   onFinishAxis,
@@ -75,6 +75,10 @@ export default function CorridorPanel({
 }) {
   const t = useT()
   const drawing = mode === 'corridor'
+  // O corredor com LiDAR é um caso de uso real (linhas eléctricas, condutas):
+  // o espaçamento sai da largura de varrimento do feixe e a missão não leva
+  // acções de câmara. Não é um erro — só não tem disparo para configurar.
+  const isLidar = sensorType === 'lidar'
   const axis = corridorConfig.centreline
   const stats = corridorPlan && !corridorPlan.error ? corridorPlan.stats : null
   const errorKey = corridorPlan?.error ? `co.err.${corridorPlan.error}` : null
@@ -83,9 +87,9 @@ export default function CorridorPanel({
   return (
     <div className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-800 bg-slate-950 lg:w-96">
       <Section title={t('co.axis.title')}>
-        {!cameraOk && (
-          <p className="mb-2 rounded border border-amber-800 bg-amber-950/50 p-2 text-xs text-amber-300">
-            ⚠ {t('co.cameraRequired')}
+        {isLidar && (
+          <p className="mb-2 rounded border border-slate-700 bg-slate-900 p-2 text-xs text-slate-400">
+            {t('co.lidarNote')}
           </p>
         )}
         <div className="grid grid-cols-2 gap-2">
@@ -136,26 +140,30 @@ export default function CorridorPanel({
           />
         </Field>
 
-        <div className="mb-2 text-sm text-slate-300">{t('co.params.photoMode')}</div>
-        <div className="grid grid-cols-2 gap-1.5">
-          {[
-            ['distance', 'co.params.photoDistance'],
-            ['waypoint', 'co.params.photoWaypoint'],
-          ].map(([id, key]) => (
-            <button
-              key={id}
-              onClick={() => setCorridorParam('photoMode', id)}
-              className={`rounded px-2 py-1.5 text-xs font-semibold transition-colors ${
-                corridorConfig.photoMode === id
-                  ? 'bg-sky-500 text-slate-950'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              {t(key)}
-            </button>
-          ))}
-        </div>
-        <p className="mt-2 text-xs text-slate-500">{t('co.params.photoHint')}</p>
+        {!isLidar && (
+          <>
+            <div className="mb-2 text-sm text-slate-300">{t('co.params.photoMode')}</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                ['distance', 'co.params.photoDistance'],
+                ['waypoint', 'co.params.photoWaypoint'],
+              ].map(([id, key]) => (
+                <button
+                  key={id}
+                  onClick={() => setCorridorParam('photoMode', id)}
+                  className={`rounded px-2 py-1.5 text-xs font-semibold transition-colors ${
+                    corridorConfig.photoMode === id
+                      ? 'bg-sky-500 text-slate-950'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {t(key)}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-slate-500">{t('co.params.photoHint')}</p>
+          </>
+        )}
       </Section>
 
       <Section title={t('co.plan.title')}>
