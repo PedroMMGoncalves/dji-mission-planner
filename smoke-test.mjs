@@ -46,6 +46,20 @@ import { groupApplies } from './src/data/checklist.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
 import { DEFAULT_FACE_CONFIG, checkFaceClearance, generateFacePlan, normalizeFaceConfig } from './src/utils/faceMode.js'
 import { headingTicks } from './src/utils/preview.js'
+import {
+  DEFAULT_CORRIDOR_CONFIG,
+  corridorBufferRing,
+  generateCorridorPlan,
+  normalizeCorridorConfig,
+  offsetPolylineMiter,
+  offsetRuns,
+  passOffsets,
+  pointPolylineDistance,
+  polylineLength,
+  resamplePolyline,
+  sampleByArcLength,
+  simplifyPolyline,
+} from './src/utils/corridor.js'
 import { DEFAULT_ORBIT_CONFIG, generateOrbitPlan, normalizeOrbitConfig, orbitLevelsToBlocks } from './src/utils/orbit.js'
 import { inspectionToWaypoints, nearestNeighbourOrder, reorderList } from './src/utils/inspect.js'
 import {
@@ -1698,6 +1712,18 @@ check('waylines Mapper+: sem acoes de camara',
       altitude: 40, speed: 3, wpml: enums, photoIntervalM: 0,
       triggerMode: 'distance', sensorType: 'camera', gimbalPitch: 0,
     }],
+    ['corredor', (() => {
+      const axis = [[-9.14, 38.70], [-9.13, 38.70], [-9.125, 38.7035]]
+      const cp = generateCorridorPlan(axis, {
+        sensor: sensorCam, altitude: 100, bufferM: 150, sideOverlapPct: 70,
+        photoIntervalM: 20, speed: 8, photoMode: 'waypoint',
+      })
+      return {
+        name: 'ref_corridor', waypoints: cp.waypoints, perWaypoint: cp.perWaypoint,
+        altitude: 100, speed: 8, wpml: enums, photoIntervalM: 0,
+        triggerMode: 'waypoint', sensorType: 'camera', gimbalPitch: -90,
+      }
+    })()],
     ['orbita', {
       name: 'ref_orbit', waypoints: orbitPlanG.waypoints, perWaypoint: orbitPlanG.perWaypoint,
       turnMode: orbitPlanG.turnMode, altitude: 50, speed: 3, wpml: enums,
@@ -1818,6 +1844,202 @@ check('waylines Mapper+: sem acoes de camara',
           ref === null ? 'em falta (UPDATE_GOLDEN=1 para gerar)' : (ref === xml ? '' : 'difere'))
       }
     }
+  }
+}
+
+/* 12. Mapeamento de corredor (E5.1)
+   ---------------------------------------------------------------------------
+   Cobertura de infraestruturas lineares a partir de um eixo. As duas
+   propriedades que distinguem uma implementacao correcta de uma ingenua sao
+   (a) o desvio paralelo nao pode dobrar-se sobre si proprio onde a curvatura
+   e mais apertada do que o desvio, e (b) as posicoes de fotografia tem de ser
+   medidas por comprimento de arco DE CADA passagem, nao projectadas do eixo,
+   ou a sobreposicao frontal falha na berma exterior. */
+{
+  const sensorC = resolveSensor(PAYLOADS.M3E_WIDE, DEFAULT_CUSTOM_SENSOR)
+  const baseOpts = {
+    sensor: sensorC, altitude: 100, bufferM: 150, sideOverlapPct: 70,
+    photoIntervalM: 20, speed: 8,
+  }
+  const straight = [[-9.14, 38.70], [-9.10, 38.70]]
+  const bend = [[-9.14, 38.70], [-9.13, 38.70], [-9.125, 38.7035], [-9.115, 38.704]]
+  // Meia-circunferencia de raio ~60 m: mais apertada do que os desvios
+  // exteriores, portanto as passagens interiores TEM de dobrar.
+  const halfCircle = []
+  for (let a = 0; a <= 180; a += 10) {
+    const rLon = 60 / (111320 * Math.cos((38.7 * Math.PI) / 180))
+    halfCircle.push([-9.14 + rLon * Math.cos((a * Math.PI) / 180),
+                     38.70 + (60 / 110574) * Math.sin((a * Math.PI) / 180)])
+  }
+
+  /* 12a. Distribuicao das passagens. */
+  {
+    const across = 140.76
+    const spacing = 42.23
+    check('corredor: pegada cobre o corredor -> passagem central unica',
+      passOffsets(50, spacing, across).join() === '0')
+    const o = passOffsets(150, spacing, across)
+    check('corredor: desvios simetricos e centrados em 0',
+      o.length > 1 && Math.abs(o[0] + o[o.length - 1]) < 1e-9,
+      o.map((v) => v.toFixed(1)).join(','))
+    const gaps = o.slice(1).map((v, i) => v - o[i])
+    check('corredor: espacamento entre passagens nunca excede o exigido',
+      gaps.every((g) => g <= spacing + 1e-9), `${Math.max(...gaps).toFixed(2)} <= ${spacing}`)
+    check('corredor: passagem exterior cobre a berma',
+      Math.max(...o) + across / 2 >= 150)
+    // A contagem cresce uma de cada vez: um salto significaria uma
+    // descontinuidade visivel no painel ao arrastar o buffer.
+    let prev = passOffsets(60, spacing, across).length
+    let jump = null
+    for (let b = 61; b <= 400; b += 1) {
+      const n = passOffsets(b, spacing, across).length
+      if (n - prev > 1) { jump = `${b} m: ${prev}->${n}`; break }
+      prev = n
+    }
+    check('corredor: contagem de passagens cresce uma de cada vez', jump === null, jump ?? 'ok')
+  }
+
+  /* 12b. Desvio em esquadria: um vertice mantem-se a |desvio| dos DOIS
+     segmentos. Uma normal media daria |desvio|*cos(phi) e encolheria a
+     cobertura na curva. */
+  {
+    const corner = [[0, 0], [100, 0], [100, 100]]   // canto de 90 graus
+    const out = offsetPolylineMiter(corner, 20)
+    const mid = out[1]
+    check('corredor: esquadria a 90 graus fica a 20 m dos dois segmentos',
+      Math.abs(pointPolylineDistance(mid, corner) - 20) < 1e-6,
+      pointPolylineDistance(mid, corner).toFixed(4))
+    check('corredor: esquadria mantem um ponto por vertice', out.length === corner.length)
+    // Inversao quase completa: a esquadria dispara, tem de cair em bisel.
+    const spike = [[0, 0], [100, 0], [0, 0.5]]
+    check('corredor: inversao aguda cai em bisel finito',
+      offsetPolylineMiter(spike, 20).every((q) => Number.isFinite(q[0]) && Number.isFinite(q[1])))
+  }
+
+  /* 12c. Nenhuma passagem voa dentro de uma dobra. */
+  {
+    const plan = generateCorridorPlan(halfCircle, { ...baseOpts, altitude: 60, bufferM: 120, photoIntervalM: 15, photoMode: 'waypoint' })
+    check('corredor: curva apertada produz plano valido', Boolean(plan?.lines?.length), plan?.error ?? '')
+    const axisM = halfCircle.map(([lo, la]) => [
+      (lo + 9.14) * (111320 * Math.cos((38.7 * Math.PI) / 180)), (la - 38.70) * 110574,
+    ])
+    let violations = 0
+    for (const seg of plan.lines) {
+      const ptsM = seg.map(([lo, la]) => [
+        (lo + 9.14) * (111320 * Math.cos((38.7 * Math.PI) / 180)), (la - 38.70) * 110574,
+      ])
+      const ds = ptsM.map((q) => pointPolylineDistance(q, axisM))
+      // a que desvio pertence esta passagem
+      const own = plan.stats.offsets
+        .map(Math.abs)
+        .reduce((best, o) => (Math.abs(o - Math.min(...ds)) < Math.abs(best - Math.min(...ds)) ? o : best))
+      for (const d of ds) if (d < own - Math.max(0.5, own * 0.02)) violations += 1
+    }
+    check('corredor: nenhum waypoint cai dentro de uma dobra', violations === 0, `${violations} violacoes`)
+    check('corredor: passagens impossiveis sao eliminadas, nao voadas em laco',
+      plan.stats.runCount < plan.stats.passCount,
+      `${plan.stats.runCount} trocos para ${plan.stats.passCount} passagens`)
+  }
+
+  /* 12d. Um eixo recto ou de curvatura suave nao parte passagens: cada
+     desvio da exactamente um troco. */
+  for (const [label, line] of [['recto', straight], ['curvatura suave', bend]]) {
+    const plan = generateCorridorPlan(line, baseOpts)
+    check(`corredor: eixo ${label} -> um troco por passagem`,
+      plan.stats.runCount === plan.stats.passCount,
+      `${plan.stats.runCount}/${plan.stats.passCount}`)
+  }
+
+  /* 12e. Amostragem por comprimento de arco de cada passagem. */
+  {
+    const plan = generateCorridorPlan(bend, { ...baseOpts, photoMode: 'waypoint' })
+    let worst = 0
+    for (const seg of plan.lines) {
+      for (let i = 1; i < seg.length; i++) {
+        worst = Math.max(worst, turf.distance(seg[i - 1], seg[i], { units: 'meters' }))
+      }
+    }
+    check('corredor: fotos consecutivas nunca acima do intervalo',
+      worst <= 20 * 1.02, `${worst.toFixed(2)} m para 20 m`)
+    // Passagens de comprimentos diferentes tem contagens diferentes: prova de
+    // que a amostragem e por passagem e nao projectada do eixo.
+    const counts = plan.lines.map((l) => l.length)
+    check('corredor: cada passagem amostrada pelo seu proprio arco',
+      new Set(counts).size > 1, counts.join(','))
+    check('corredor: cada waypoint leva accao de fotografia',
+      plan.perWaypoint.filter(Boolean).length === plan.waypoints.length)
+    check('corredor: perLine soma aos waypoints',
+      plan.perLine.reduce((a, b) => a + b, 0) === plan.waypoints.length)
+  }
+
+  /* 12f. Modo distancia: sem accoes por waypoint, geometria preservada. */
+  {
+    const plan = generateCorridorPlan(bend, baseOpts)
+    check('corredor: modo distancia nao emite accoes por waypoint',
+      plan.perWaypoint === undefined && plan.perLine === undefined)
+    check('corredor: modo distancia estima fotos pelo comprimento',
+      plan.stats.photoCount > 0)
+    check('corredor: extremos das passagens preservados na simplificacao',
+      plan.lines.every((l) => l.length >= 2))
+  }
+
+  /* 12g. Auxiliares puros. */
+  {
+    check('corredor: resample mantem todos os vertices originais',
+      [[0, 0], [50, 0], [50, 40]].every((v) =>
+        resamplePolyline([[0, 0], [50, 0], [50, 40]], 7).some(
+          (q) => Math.hypot(q[0] - v[0], q[1] - v[1]) < 1e-9)))
+    const arc = sampleByArcLength([[0, 0], [100, 0], [100, 100]], 30)
+    check('corredor: amostragem por arco fixa os extremos',
+      arc[0][0] === 0 && arc[0][1] === 0 &&
+        arc[arc.length - 1][0] === 100 && arc[arc.length - 1][1] === 100)
+    check('corredor: amostragem por arco respeita o passo',
+      arc.slice(1).every((q, i) => Math.hypot(q[0] - arc[i][0], q[1] - arc[i][1]) <= 30 + 1e-6))
+    check('corredor: simplificacao remove colineares e guarda o canto',
+      simplifyPolyline([[0, 0], [10, 0], [20, 0], [30, 0], [30, 10]], 0.5).length === 3)
+    check('corredor: comprimento de polilinha',
+      Math.abs(polylineLength([[0, 0], [3, 4], [3, 14]]) - 15) < 1e-9)
+    check('corredor: desvio nulo devolve o proprio eixo',
+      offsetRuns([[0, 0], [10, 0]], 0, 1).length === 1)
+    const ringBuf = corridorBufferRing([[-9.14, 38.70], [-9.13, 38.70]], 100)
+    check('corredor: anel ilustrativo fecha e envolve o eixo',
+      Array.isArray(ringBuf) && ringBuf.length >= 4 &&
+        turf.booleanPointInPolygon(turf.point([-9.135, 38.70]), turf.polygon([ringBuf])),
+      `${ringBuf?.length ?? 0} vertices`)
+    check('corredor: anel invalido devolve null, nao rebenta',
+      corridorBufferRing([[-9.14, 38.7]], 100) === null &&
+        corridorBufferRing([[-9.14, 38.7], [-9.13, 38.7]], 0) === null)
+  }
+
+  /* 12h. Entrada degenerada devolve erro controlado, nunca excepcao. */
+  {
+    const cases = [
+      ['eixo com um ponto', [[-9.14, 38.7]], {}, null],
+      ['pontos duplicados', [[-9.14, 38.7], [-9.14, 38.7]], {}, 'degenerate-centreline'],
+      ['buffer nulo', bend, { bufferM: 0 }, 'invalid-buffer'],
+      ['altitude nula', bend, { altitude: 0 }, 'invalid-altitude'],
+      ['sobreposicao 100%', bend, { sideOverlapPct: 100 }, 'overlap-too-high'],
+      ['sem sensor', bend, { sensor: null }, 'sensor-required'],
+    ]
+    for (const [label, line, over, want] of cases) {
+      let got
+      try { got = generateCorridorPlan(line, { ...baseOpts, ...over }) } catch (e) { got = { threw: e.message } }
+      const code = got === null ? null : (got.error ?? (got.threw ? `THREW ${got.threw}` : 'plano'))
+      check(`corredor: ${label} -> erro controlado`, code === want, String(code))
+    }
+  }
+
+  /* 12i. Persistencia da configuracao (projectos antigos, lixo). */
+  {
+    const d = normalizeCorridorConfig(undefined)
+    check('corredor: config em falta cai nos valores por omissao',
+      d.bufferM === DEFAULT_CORRIDOR_CONFIG.bufferM && d.centreline === null &&
+        d.photoMode === 'distance')
+    const junk = normalizeCorridorConfig({ bufferM: 'x', speedMS: 999, photoMode: 'zz', centreline: [[1, 2], ['a', 'b']] })
+    check('corredor: config invalida e saneada, nao rebenta',
+      junk.bufferM === DEFAULT_CORRIDOR_CONFIG.bufferM && junk.speedMS <= 25 &&
+        junk.photoMode === 'distance' && junk.centreline === null,
+      `${junk.bufferM}/${junk.speedMS}/${junk.photoMode}`)
   }
 }
 
