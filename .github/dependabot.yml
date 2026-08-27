@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # Actualizações de segurança e de versão das dependências npm.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # Uma alteração de patch/minor por lote mantém o ruído baixo; as
+      # alterações maiores vêm isoladas para serem revistas uma a uma.
+      dev-minor:
+        dependency-type: development
+        update-types: [minor, patch]
+      prod-minor:
+        dependency-type: production
+        update-types: [minor, patch]
+
+  # As próprias acções estão fixadas ao SHA, por isso precisam de quem as
+  # avance quando sai uma versão nova.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5

@@ -156,12 +156,19 @@ Turn parameters follow the turn mode rather than being fixed: area and face grid
 
 ```bash
 npm install
-npm run dev          # local dev server
-npm run build        # production build in dist/
-node smoke-test.mjs  # test suite (also runs in CI before every deploy)
+npm run dev                # local dev server
+npm run lint               # ESLint (react-hooks rules included)
+npm run test               # test suite
+npm run test:update-golden # regenerate tests/golden/ after an intended export change
+npm run build              # production build in dist/
+npm run size               # bundle budget check (needs a build first)
 ```
 
-CI only deploys with the suite green. On top of that, each release runs the ~10-minute manual protocol in [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (browser UI, including a tablet check), recording the run in the table at the end.
+[.github/workflows/ci.yml](.github/workflows/ci.yml) runs lint, the suite, a production build, the bundle budget and `npm audit` on every push and every pull request; the deploy workflow repeats them before publishing, so `main` cannot publish red. [codeql.yml](.github/workflows/codeql.yml) runs GitHub's static analysis on `main`, on pull requests and weekly, and Dependabot keeps npm packages and the workflow actions current. Every action is pinned to a commit SHA, and both workflows declare `contents: read` — the deploy job is the only place with write scope.
+
+Exported documents are compared against reference files in `tests/golden/`, so any change to the WPML output appears as a reviewable diff. When the change is intended, regenerate with `npm run test:update-golden` and include the diff in the commit.
+
+On top of that, each release runs the ~10-minute manual protocol in [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (browser UI, including a tablet check), recording the run in the table at the end.
 
 ## Deployment
 
