@@ -104,7 +104,7 @@ O espaçamento entre faixas vem da pegada transversal no solo, `altitude × larg
 
 ## Estado da validação
 
-**Exportação verificada contra a especificação WPML e testes automáticos; validação em voo real prevista para setembro de 2026.** A suite (`smoke-test.mjs`, 300+ asserções) corre em cada push no CI e cobre a matemática de planeamento e a estrutura dos ficheiros exportados; o que ela não cobre está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release — a passagem da versão corrente está ainda por fazer. Os enums WPML nunca foram testados num comando real — ver as notas abaixo.
+**Exportação verificada contra a especificação WPML e testes automáticos; validação em voo real prevista para setembro de 2026.** Duas suites correm em cada push no CI (`npm test`): a `smoke-test.mjs` cobre a matemática de planeamento e a estrutura dos ficheiros exportados, e a `smoke-test-io.mjs` cobre a fronteira dos ficheiros — os leitores de KML/GeoJSON, WPML e GeoTIFF, incluindo entradas malformadas, com uma ida e volta que exporta uma missão e a volta a importar. Ao todo, 400+ asserções; o que elas não cobrem está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release — a passagem da versão corrente está ainda por fazer. Os enums WPML nunca foram testados num comando real — ver as notas abaixo.
 
 **Estado dos perfis:** as ópticas do **M4T são provisórias** (valores da classe M3E, assinalados no código) até chegarem dados EXIF reais — não confie na pegada/GSD do M4T para dimensionar missões. Os restantes perfis (M3E, P1, Mapper+) usam valores publicados.
 
@@ -151,7 +151,7 @@ Os enums WPML embarcados são `M3E = 77/66`, `M4T = 99/1/89`, `M300 RTK + P1 = 6
 npm install
 npm run dev          # servidor local
 npm run build        # build de produção em dist/
-node smoke-test.mjs  # suite de testes (corre também no CI antes de cada deploy)
+npm test             # as duas suites (correm também no CI antes de cada deploy)
 ```
 
 O CI só publica com a suite verde. A cada release corre-se além disso o protocolo manual de ~10 minutos em [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (interface no browser, incluindo verificação em tablet), registando a passagem na tabela do fim.

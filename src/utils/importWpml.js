@@ -1,5 +1,7 @@
 import JSZip from 'jszip'
 import * as turf from '@turf/turf'
+import { M_PER_DEG_LAT, metersPerDegLonSafe as metersPerDegLon } from './units.js'
+import { childNamed, findAll, findFirst, parseXml, textOf } from './xml.js'
 
 /**
  * Importação de missões WPML (.kmz da DJI) — o caminho inverso de exporters.js.
@@ -14,61 +16,14 @@ import * as turf from '@turf/turf'
  * editável é reconstruída a partir do invólucro convexo dos waypoints.
  */
 
-const M_PER_DEG_LAT = 110574 // metros por grau de latitude (aprox. WGS84)
 const RECT_MARGIN_M = 20 // folga do retângulo de recurso (pontos colineares)
 // Um invólucro é degenerado quando a sua área é ínfima face à extensão dos
 // pontos (lâmina de pontos quase-colineares): exige-se ≥ 5% da área da bbox.
 const MIN_HULL_BBOX_RATIO = 0.05
 
-function metersPerDegLon(lat) {
-  return Math.max(1, 111320 * Math.cos((lat * Math.PI) / 180))
-}
-
-/* ------------------------------------------------------------------ */
-/* Utilitários DOM (tolerantes a prefixos de namespace)               */
-/* ------------------------------------------------------------------ */
-
-/** Nome da tag sem prefixo: `wpml:executeHeight` → `executeHeight`. */
-function localNameOf(node) {
-  return node.localName || String(node.nodeName || '').split(':').pop()
-}
-
-function elementChildren(node) {
-  const out = []
-  const kids = node?.childNodes || []
-  for (let i = 0; i < kids.length; i++) {
-    if (kids[i].nodeType === 1) out.push(kids[i])
-  }
-  return out
-}
-
-/** Primeiro filho DIRETO com este nome local (ex.: `<name>` do Folder). */
-function childNamed(node, name) {
-  return elementChildren(node).find((el) => localNameOf(el) === name) || null
-}
-
-/** Todos os descendentes com este nome local, por ordem do documento. */
-function findAll(node, name, out = []) {
-  for (const el of elementChildren(node)) {
-    if (localNameOf(el) === name) out.push(el)
-    findAll(el, name, out)
-  }
-  return out
-}
-
-/** Primeiro descendente com este nome local. */
-function findFirst(node, name) {
-  for (const el of elementChildren(node)) {
-    if (localNameOf(el) === name) return el
-    const deep = findFirst(el, name)
-    if (deep) return deep
-  }
-  return null
-}
-
-function textOf(el) {
-  const t = el?.textContent
-  return typeof t === 'string' ? t.trim() : ''
+/** Lê XML de missão; erro legível quando o ficheiro está corrompido. */
+function parseMissionXml(text) {
+  return parseXml(text, 'XML da missão ilegível — o ficheiro WPML está corrompido')
 }
 
 /** Primeiro dos nomes dados que exista sob `node` e contenha um número. */
@@ -100,17 +55,6 @@ function round1(v) {
 /* ------------------------------------------------------------------ */
 /* Leitura do XML                                                      */
 /* ------------------------------------------------------------------ */
-
-function parseXmlText(text) {
-  const doc = new DOMParser().parseFromString(text, 'application/xml')
-  const root = doc?.documentElement
-  const failed =
-    !root ||
-    localNameOf(root) === 'parsererror' ||
-    elementChildren(root).some((el) => localNameOf(el) === 'parsererror')
-  if (failed) throw new Error('XML da missão ilegível — o ficheiro WPML está corrompido')
-  return doc
-}
 
 /**
  * Primeiro par lon,lat de um bloco <coordinates> ("lon,lat[,alt] ...").
@@ -292,8 +236,8 @@ export async function parseWpmlKmz(file) {
     throw new Error('KMZ sem waylines.wpml nem template.kml — não é uma missão WPML')
   }
 
-  const waylines = waylinesEntry ? extractFromDoc(parseXmlText(await waylinesEntry.async('string'))) : null
-  const template = templateEntry ? extractFromDoc(parseXmlText(await templateEntry.async('string'))) : null
+  const waylines = waylinesEntry ? extractFromDoc(parseMissionXml(await waylinesEntry.async('string'))) : null
+  const template = templateEntry ? extractFromDoc(parseMissionXml(await templateEntry.async('string'))) : null
 
   // A rota manda; o template serve de reserva (e dá o nome da missão).
   const main = waylines?.waypoints.length ? waylines : template

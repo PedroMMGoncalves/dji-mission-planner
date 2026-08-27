@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLang } from '../i18n.jsx'
+import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
 
 /* ------------------------------------------------------------------ *
  * Relatório de plano de missão — página imprimível (A4 retrato).
@@ -463,13 +464,10 @@ function drawGcps(ctx, view, gcps) {
 
 /* ------------------------ Blocos ↔ faixas de voo ------------------------ */
 
-const M_PER_DEG_LAT = 110574
-
 /** Comprimento aproximado de um segmento [lon,lat] → [lon,lat], em metros. */
 function segLengthM(seg) {
   const [a, b] = seg
-  const midLat = ((a[1] + b[1]) / 2) * (Math.PI / 180)
-  const dx = (b[0] - a[0]) * 111320 * Math.cos(midLat)
+  const dx = (b[0] - a[0]) * metersPerDegLon((a[1] + b[1]) / 2)
   const dy = (b[1] - a[1]) * M_PER_DEG_LAT
   return Math.hypot(dx, dy)
 }

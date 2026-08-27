@@ -1,8 +1,6 @@
 import * as turf from '@turf/turf'
 import { computeFootprint, computeGSD } from './geo.js'
-
-const M_PER_DEG_LAT = 110574
-const mPerDegLon = (lat) => 111320 * Math.cos((lat * Math.PI) / 180)
+import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
 /**
  * Offsets a lon/lat polyline sideways by dM metres (positive = LEFT of the
@@ -12,7 +10,7 @@ const mPerDegLon = (lat) => 111320 * Math.cos((lat * Math.PI) / 180)
  */
 function offsetPolyline(coords, dM) {
   const lat0 = coords.reduce((s, c) => s + c[1], 0) / coords.length
-  const kx = mPerDegLon(lat0)
+  const kx = metersPerDegLon(lat0)
   const ky = M_PER_DEG_LAT
   const P = coords.map(([lon, lat]) => [lon * kx, lat * ky])
   const nSeg = []

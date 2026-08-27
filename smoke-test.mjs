@@ -29,6 +29,7 @@ import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/
 import { decodeTerrarium, despikeElevations, fitSlopePlane, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
 import { readFileSync } from 'node:fs'
 import { groupApplies } from './src/data/checklist.js'
+import { M_PER_DEG_LAT, metersPerDegLon, metersPerDegLonSafe } from './src/utils/units.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
 import { DEFAULT_FACE_CONFIG, checkFaceClearance, generateFacePlan, normalizeFaceConfig } from './src/utils/faceMode.js'
 import { headingTicks } from './src/utils/preview.js'
@@ -1599,6 +1600,23 @@ check('waylines Mapper+: sem acoes de camara',
     const compD = composeCellPlans(rectB, [rectB, cB2].map((r) => generateFlightLines(r, { ...base, overshootM: 10 })), { photoIntervalM: 20, overshootM: 10 })
     check('8n celulas modo distancia: sem perLine, photoCountArea mantido', compD && !('perLine' in compD) && compD.stats.photoCountArea != null)
   }
+}
+
+/* U: conversoes geodesicas partilhadas (units.js) — viviam duplicadas por
+   nove modulos; a variante Safe e a unica com semantica diferente */
+{
+  check('U: metro por grau de latitude', M_PER_DEG_LAT === 110574)
+  check('U: metro por grau de longitude no equador = 111320',
+    Math.abs(metersPerDegLon(0) - 111320) < 1e-9)
+  check('U: encolhe com o cosseno da latitude (60 graus -> metade)',
+    Math.abs(metersPerDegLon(60) - 111320 / 2) < 1e-6, metersPerDegLon(60).toFixed(2))
+  check('U: simetrico no hemisferio sul',
+    Math.abs(metersPerDegLon(-39.5) - metersPerDegLon(39.5)) < 1e-9)
+  check('U: variante Safe tem piso de 1 m/grau (divisoes junto aos polos)',
+    metersPerDegLonSafe(90) === 1 && metersPerDegLon(90) < 1e-6,
+    `${metersPerDegLonSafe(90)} vs ${metersPerDegLon(90).toExponential(1)}`)
+  check('U: fora dos polos a variante Safe e igual a normal',
+    metersPerDegLonSafe(39.5) === metersPerDegLon(39.5))
 }
 
 /* A3: uma contagem exacta de assercoes nos READMEs envelhece a cada tarefa —
