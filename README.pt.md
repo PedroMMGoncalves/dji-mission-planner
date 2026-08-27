@@ -24,7 +24,8 @@ Esta ferramenta é **apenas o motor de planeamento**. A autorização de espaço
 
 **App publicada:** <https://pedrommgoncalves.github.io/dji-mission-planner/>
 
-![Vista geral do planeador](docs/img/overview.png "Planeador: área, grelha e painel — captura por acrescentar")
+<!-- As capturas são feitas na passagem de QA de cada versão e repostas aqui.
+![Vista geral do planeador](docs/img/overview.png "Planeador: área, grelha e painel — captura por acrescentar") -->
 
 ## Índice
 
@@ -47,7 +48,7 @@ Esta ferramenta é **apenas o motor de planeamento**. A autorização de espaço
 ## Resumo
 
 - **Modelo aeronave + payload** (`src/data/drones.js`): aeronaves com limites de velocidade, bateria por omissão e enums WPML; payloads com óptica (câmara) ou geometria do feixe (LiDAR), incluindo o YellowScan Mapper+ no M300 (enum PSDK 65534, documentado); bateria por combinação aeronave+payload; migração automática de projectos antigos.
-- **Grelha de voo côncava-segura** (`src/utils/geo.js` + `src/utils/gridRoute.js`): decomposição celular boustrophedon (portada do FlyPath, GPL-3.0) — em polígonos côncavos as ligações entre faixas nunca atravessam os vãos da área; em áreas convexas a rota é exactamente a serpentina clássica (garantido por teste). Pesquisa de **direcção óptima** (menos faixas no polígono real), **overshoot** por faixa (viragens fora da área), **fiada de amarração** perpendicular para LiDAR e alinhamento global das faixas entre blocos.
+- **Grelha de voo côncava-segura** (`src/utils/geo.js` + `src/utils/gridRoute.js`): decomposição celular boustrophedon ([Choset & Pignon, 1998](#código-de-terceiros)) — em polígonos côncavos as ligações entre faixas nunca atravessam os vãos da área; em áreas convexas a rota é exactamente a serpentina clássica (garantido por teste). Pesquisa de **direcção óptima** (menos faixas no polígono real), **overshoot** por faixa (viragens fora da área), **fiada de amarração** perpendicular para LiDAR e alinhamento global das faixas entre blocos.
 - **Honestidade numérica**: GSD oblíquo pelo alcance inclinado ao centro do quadro (a −60° é ~15% pior que o nadir; o espaçamento continua nadir-based por ser conservador); densidade de pontos LiDAR (PRR ÷ velocidade × faixa, com a âncora de 170 pts/m² do Mapper+ verificada); aviso de tecto operacional AGL por payload.
 - **Modo fachada** (`src/utils/faceMode.js`): serpentina vertical sobre o pé da face desenhado no mapa — passagens a alturas crescentes, rumo perpendicular ao troço local, uma foto por waypoint; verificação de **folga contra um DSM local** (vertical e ao longo do rumo), com aviso claro de "afastamento não verificado" quando só há tiles globais.
 - **Órbitas multi-nível** (`src/utils/orbit.js`): círculos empilhados em torno de um POI, pontos por volta a partir da sobreposição, rumo ao alvo, gimbal por nível apontado à cota do centro, exportação em voo curvo contínuo — missão única ou um KMZ por nível.
@@ -59,8 +60,10 @@ Esta ferramenta é **apenas o motor de planeamento**. A autorização de espaço
 - **GCPs, relatório e checklist**: heurística bordo+centro para GCPs; relatório A4 com mapa; checklist de 75+ itens com grupos condicionais por payload (LiDAR) e por modo (fachada), registos de voo e GCPs, exportação JSON e impressão.
 - **Projectos**: gravação automática no browser + ficheiro JSON; resumo agregado (tempo, baterias, fotos) quando coexistem vários planos. **UI bilingue** (PT/EN).
 
-![Modo fachada com pré-visualização](docs/img/face-mode.png "Fachada: baseline, linha afastada e rumos — captura por acrescentar")
-![Órbitas multi-nível](docs/img/orbit-mode.png "Órbita: anel, POI e rumos — captura por acrescentar")
+<!-- As capturas são feitas na passagem de QA de cada versão e repostas aqui.
+![Modo fachada com pré-visualização](docs/img/face-mode.png "Fachada: baseline, linha afastada e rumos — captura por acrescentar") -->
+<!-- As capturas são feitas na passagem de QA de cada versão e repostas aqui.
+![Órbitas multi-nível](docs/img/orbit-mode.png "Órbita: anel, POI e rumos — captura por acrescentar") -->
 
 ---
 
@@ -145,16 +148,21 @@ Gestos de edição: clique acrescenta vértices (Backspace ou clique num vértic
 
 Os enums WPML embarcados são `M3E = 77/66`, `M4T = 99/1/89`, `M300 RTK + P1 = 60/50` e `M300 + Mapper+ = 60/65534` (o 65534 é o valor documentado para payloads PSDK de terceiros). Seguem a documentação WPML da DJI mas **nunca foram testados num comando real** — se o Pilot 2 rejeitar uma importação, ajuste em `src/data/drones.js` (ou na UI, no perfil custom) contra a [referência WPML da Cloud API](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html). As alturas são relativas ao ponto de descolagem: nas missões com terrain follow, marque a base no local real de descolagem antes de exportar; nas fachadas, descole à cota do pé da face.
 
+Os campos de segurança da missão são escritos a partir das enumerações WPML e validados na exportação, pelo que um valor fora do intervalo nunca chega ao ficheiro: `finishAction` (`goHome` / `noAction` / `autoLand` / `gotoFirstWaypoint`), `exitOnRCLost` (`executeLostAction` / `goContinue`) e `executeRCLostAction` (`goBack` / `landing` / `hover`). Por omissão regressam a casa; o exportador aceita valores próprios (`finishAction`, `exitOnRCLost`, `executeRCLostAction`, `rthHeightM`), mas o painel ainda não os expõe. O `globalRTHHeight` assume o maior valor entre 100 m e o tecto da missão mais 20 m, para o regresso não descer para dentro da área — **confirme-o contra o terreno e os obstáculos do local antes de voar.**
+
+Os parâmetros de viragem seguem o modo em vez de serem fixos: as grelhas de área e as fachadas voam troços rectos com paragem em cada waypoint (`useStraightLine` 1), enquanto as órbitas usam curvatura contínua com `useStraightLine` 0, como a especificação exige para uma trajectória curva verdadeira.
+
 ## Desenvolvimento
 
 ```bash
 npm install
-npm run dev          # servidor local
-npm run build        # build de produção em dist/
-node smoke-test.mjs  # suite de testes (corre também no CI antes de cada deploy)
+npm run dev     # servidor local
+npm run lint    # ESLint (inclui as regras react-hooks)
+npm run test    # suite de testes
+npm run build   # build de produção em dist/
 ```
 
-O CI só publica com a suite verde. A cada release corre-se além disso o protocolo manual de ~10 minutos em [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (interface no browser, incluindo verificação em tablet), registando a passagem na tabela do fim.
+O [.github/workflows/ci.yml](.github/workflows/ci.yml) corre lint, suite e build de produção em cada push e em cada pull request; o workflow de publicação repete-os antes de publicar, pelo que o `main` não pode publicar em vermelho. A cada release corre-se além disso o protocolo manual de ~10 minutos em [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (interface no browser, incluindo verificação em tablet), registando a passagem na tabela do fim.
 
 ## Publicação
 
@@ -167,6 +175,21 @@ Pushes a `main` constroem e publicam automaticamente no GitHub Pages via [.githu
 - As células do mosaico voam o quadrado inteiro mesmo onde excede o polígono (desactive células a clicar).
 - A colocação de GCPs é uma heurística geométrica; não modela a geometria das imagens.
 - Sem modo offline, de propósito: o planeamento é trabalho de gabinete.
+
+## Código de terceiros
+
+O motor de planeamento é original deste projecto, com uma excepção, registada
+aqui para a proveniência ficar explícita e não enterrada em cabeçalhos.
+
+| Componente | Origem |
+| --- | --- |
+| `src/utils/gridRoute.js` — decomposição celular boustrophedon | Algoritmo: Choset & Pignon, *Coverage Path Planning: The Boustrophedon Cellular Decomposition*, Field and Service Robotics, 1998. A implementação começou como tradução de `grid_route.py` do [dronnix-io/FlyPath](https://github.com/dronnix-io/FlyPath) (GPL-3.0), modificada para roteamento em graus geográficos; as modificações estão listadas no cabeçalho do ficheiro. |
+| `findOptimalDirection` em `src/utils/geo.js` | A estratégia de pesquisa segue a abordagem do `find_optimal_direction` do FlyPath; a implementação é independente (Turf.js num referencial métrico local, em vez de geometria QGIS). |
+
+Todo o resto — modelo de payloads, seguimento de terreno, divisão em blocos,
+modo fachada, órbitas, pontos de inspecção, exportador WPML, GCPs, relatório e
+checklist — foi escrito para este projecto. Este repositório é GPL-3.0, a mesma
+licença do componente reutilizado.
 
 ## Licença
 

@@ -24,7 +24,16 @@ import {
   tilePolygonWithSquares,
   validateRing,
 } from './src/utils/geo.js'
-import { buildExportName, buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
+import {
+  FINISH_ACTIONS,
+  RC_LOST_ACTIONS,
+  RC_LOST_MODES,
+  buildExportName,
+  buildSimpleKML,
+  buildTemplateKML,
+  buildWaylinesWPML,
+  turnParams,
+} from './src/utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
 import { decodeTerrarium, despikeElevations, fitSlopePlane, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
 import { readFileSync } from 'node:fs'
@@ -415,7 +424,7 @@ if (planL && !planL.error) {
   check('planL troços dentro da área', allInside)
 }
 
-/* 8a2. Decomposição celular boustrophedon (T3.1, port do FlyPath) */
+/* 8a2. Decomposição celular boustrophedon (T3.1, Choset & Pignon 1998) */
 {
   // duas linhas cheias, depois duas com um vão ao meio → 3 células:
   // base + dois braços, ambos adjacentes à base
@@ -501,7 +510,7 @@ if (planL && !planL.error) {
   check('U: a ordem antiga atravessava o vão (controlo)', legacyOut)
 }
 
-/* 8a4. Direcao otima de voo (T3.2, port do FlyPath) */
+/* 8a4. Direcao otima de voo (T3.2) */
 {
   const opt = findOptimalDirection(rectNS, sp)
   const d90 = Math.min(Math.abs(opt - 90), 180 - Math.abs(opt - 90))
@@ -1265,8 +1274,68 @@ check('waylines Mapper+: sem acoes de camara',
     (wlOrb.match(/smoothTransition/g) || []).length === orb.stats.waypointCount &&
       (wlOrb.match(/takePhoto/g) || []).length === orb.stats.waypointCount)
   // por defeito o modo de viragem antigo mantem-se
+  const wlOrbBase = buildWaylinesWPML(wpmlParams)
   check('orbita: turnMode por defeito inalterado',
-    buildWaylinesWPML(wpmlParams).includes('toPointAndStopWithDiscontinuityCurvature'))
+    wlOrbBase.includes('toPointAndStopWithDiscontinuityCurvature'))
+  /* 9c1. Parâmetros de viragem coerentes com o modo (especificação WPML,
+     common-element.md). O voo curvo contínuo das órbitas exige
+     useStraightLine=0: a 1 a especificação aproxima cada troço de uma recta
+     entre os dois pontos, o que transformaria a órbita num polígono, e passa
+     a exigir waypointTurnDampingDist > 0 (0 está fora do intervalo). */
+  {
+    const straightLineOf = (xml) => [...new Set(
+      [...xml.matchAll(/<wpml:useStraightLine>([^<]*)</g)].map((m) => m[1]))]
+    const dampingOf = (xml) => [...new Set(
+      [...xml.matchAll(/<wpml:waypointTurnDampingDist>([^<]*)</g)].map((m) => m[1]))]
+
+    check('viragem: grelha/fachada mantém recta com paragem (inalterado)',
+      straightLineOf(wlOrbBase).join() === '1' && dampingOf(wlOrbBase).join() === '0')
+    check('viragem: órbita em curva contínua usa useStraightLine=0',
+      straightLineOf(wlOrb).join() === '0',
+      straightLineOf(wlOrb).join())
+    check('viragem: órbita não escreve amortecimento fora do intervalo',
+      dampingOf(wlOrb).every((d) => Number(d) === 0),
+      dampingOf(wlOrb).join())
+    check('viragem: coordinateTurn escreve amortecimento > 0 (obrigatório)',
+      turnParams('coordinateTurn', 0).damping > 0 &&
+        turnParams('toPointAndPassWithContinuityCurvature', 0).straightLine === 0)
+    check('viragem: template.kml segue o mesmo modo da rota',
+      buildTemplateKML({ ...wpmlParams, turnMode: 'toPointAndPassWithContinuityCurvature' })
+        .includes('<wpml:globalUseStraightLine>0</wpml:globalUseStraightLine>'))
+  }
+
+  /* 9c2. missionConfig: globalRTHHeight é obrigatório em waylines.wpml
+     (waylines-wpml.md) e as acções de segurança têm enums fechados. */
+  {
+    const tag = (xml, t) => xml.match(new RegExp(`<wpml:${t}>([^<]*)<`))?.[1]
+    check('missionConfig: globalRTHHeight presente (obrigatório)',
+      tag(wlOrbBase, 'globalRTHHeight') != null, tag(wlOrbBase, 'globalRTHHeight'))
+    check('missionConfig: RTH acima do tecto da missão',
+      Number(tag(wlOrbBase, 'globalRTHHeight')) >= Number(wpmlParams.altitude))
+    const custom = buildWaylinesWPML({
+      ...wpmlParams, finishAction: 'autoLand', exitOnRCLost: 'goContinue',
+      executeRCLostAction: 'hover', rthHeightM: 123,
+    })
+    check('missionConfig: acções de segurança configuráveis',
+      tag(custom, 'finishAction') === 'autoLand' &&
+        tag(custom, 'exitOnRCLost') === 'goContinue' &&
+        tag(custom, 'executeRCLostAction') === 'hover' &&
+        tag(custom, 'globalRTHHeight') === '123')
+    const bogus = buildWaylinesWPML({
+      ...wpmlParams, finishAction: 'hover', executeRCLostAction: 'zzz', exitOnRCLost: 'zzz',
+    })
+    // 'hover' é válido para RC-lost mas NÃO para finishAction; um valor fora
+    // do enum tem de cair no seguro, nunca ser escrito tal e qual.
+    check('missionConfig: enum inválido cai no valor por omissão',
+      tag(bogus, 'finishAction') === 'goHome' &&
+        tag(bogus, 'executeRCLostAction') === 'goBack' &&
+        tag(bogus, 'exitOnRCLost') === 'executeLostAction')
+    check('missionConfig: enums declarados batem com a especificação',
+      FINISH_ACTIONS.join() === 'goHome,noAction,autoLand,gotoFirstWaypoint' &&
+        RC_LOST_MODES.join() === 'executeLostAction,goContinue' &&
+        RC_LOST_ACTIONS.join() === 'goBack,landing,hover')
+  }
+
   check('orbita: levels por contagem/passo',
     generateOrbitPlan(center, { sensor, radiusM: 50, levels: { count: 2, startM: 20, stepM: 15 } })
       .stats.heights.join(',') === '20,35')
