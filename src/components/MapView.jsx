@@ -31,6 +31,7 @@ export default function MapView({
   inspectPoints,
   onInspectDrag,
   facePreview,
+  corridorPreview,
   orbitPreview,
   onOrbitPoiDrag,
   fitKey,
@@ -173,6 +174,7 @@ export default function MapView({
       gcps: L.layerGroup().addTo(map),
       inspect: L.layerGroup().addTo(map),
       face: L.layerGroup().addTo(map),
+      corridor: L.layerGroup().addTo(map),
       orbit: L.layerGroup().addTo(map),
       canvas: L.canvas({ padding: 0.3 }),
     }
@@ -181,14 +183,15 @@ export default function MapView({
       const s = stateRef.current
       if (
         s.mode === 'draw' || s.mode === 'anchor' || s.mode === 'base' ||
-        s.mode === 'inspect' || s.mode === 'face' || s.mode === 'orbit'
+        s.mode === 'inspect' || s.mode === 'face' || s.mode === 'orbit' ||
+        s.mode === 'corridor'
       ) {
         s.onMapClick([e.latlng.lng, e.latlng.lat])
       }
     })
     map.on('dblclick', () => {
       const s = stateRef.current
-      if (s.mode === 'draw' || s.mode === 'face') s.onFinishDraw()
+      if (s.mode === 'draw' || s.mode === 'face' || s.mode === 'corridor') s.onFinishDraw()
     })
     // Duplo clique DIREITO fecha o polígono; o menu do browser fica suprimido
     // durante o desenho (evita cliques fantasma ao dispensá-lo)
@@ -240,7 +243,8 @@ export default function MapView({
       el.classList.toggle(
         'cursor-crosshair',
         mode === 'draw' || mode === 'anchor' || mode === 'base' ||
-          mode === 'inspect' || mode === 'face' || mode === 'orbit',
+          mode === 'inspect' || mode === 'face' || mode === 'orbit' ||
+          mode === 'corridor',
       )
   }, [mode])
 
@@ -280,7 +284,7 @@ export default function MapView({
     const g = layersRef.current?.draft
     if (!g) return
     g.clearLayers()
-    if ((mode !== 'draw' && mode !== 'face') || draftVertices.length === 0) return
+    if ((mode !== 'draw' && mode !== 'face' && mode !== 'corridor') || draftVertices.length === 0) return
 
     if (draftVertices.length > 1) {
       L.polyline(draftVertices.map(toLatLng), {
@@ -540,6 +544,40 @@ export default function MapView({
       })
     }
   }, [facePreview])
+
+  // Pré-visualização do modo corredor (E5.1): eixo, faixa coberta e
+  // passagens geradas. Onde a curvatura parte uma passagem em troços, cada
+  // troço é desenhado por si, para o corte ser visível antes do voo.
+  useEffect(() => {
+    const g = layersRef.current?.corridor
+    if (!g) return
+    g.clearLayers()
+    if (!corridorPreview) return
+    if (corridorPreview.buffer?.length >= 3) {
+      L.polygon(corridorPreview.buffer.map(toLatLng), {
+        color: '#f97316',
+        weight: 1,
+        opacity: 0.5,
+        fillColor: '#f97316',
+        fillOpacity: 0.08,
+        interactive: false,
+      }).addTo(g)
+    }
+    if (corridorPreview.centreline?.length >= 2) {
+      L.polyline(corridorPreview.centreline.map(toLatLng), {
+        color: '#f97316',
+        weight: 3,
+      }).addTo(g)
+    }
+    corridorPreview.passes?.forEach((seg) => {
+      if (seg.length < 2) return
+      L.polyline(seg.map(toLatLng), {
+        color: '#fde047',
+        weight: 2,
+        opacity: 0.95,
+      }).addTo(g)
+    })
+  }, [corridorPreview])
 
   // Pré-visualização do modo órbita (E1.2): POI arrastável, anel do 1.º
   // nível e traços de rumo a apontar ao alvo

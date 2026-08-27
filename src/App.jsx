@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MapView from './components/MapView.jsx'
 import ControlPanel from './components/ControlPanel.jsx'
+import CorridorPanel from './components/CorridorPanel.jsx'
 import MissionModeSelector from './components/MissionModeSelector.jsx'
 import FacePanel from './components/FacePanel.jsx'
 import OrbitPanel from './components/OrbitPanel.jsx'
@@ -69,6 +70,12 @@ import {
   normalizeFaceConfig,
 } from './utils/faceMode.js'
 import { headingTicks } from './utils/preview.js'
+import {
+  DEFAULT_CORRIDOR_CONFIG,
+  corridorBufferRing,
+  generateCorridorPlan,
+  normalizeCorridorConfig,
+} from './utils/corridor.js'
 import {
   DEFAULT_ORBIT_CONFIG,
   generateOrbitPlan,
@@ -148,7 +155,8 @@ function AppInner({ lang, setLang }) {
   })
   const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect' | 'face'
   // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
-  const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit'
+  const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit' | 'corridor'
+  const [corridorConfig, setCorridorConfig] = useState(DEFAULT_CORRIDOR_CONFIG)
   const [faceConfig, setFaceConfig] = useState(() => ({ ...DEFAULT_FACE_CONFIG }))
   const [orbitConfig, setOrbitConfig] = useState(() => ({ ...DEFAULT_ORBIT_CONFIG }))
   // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
@@ -623,7 +631,7 @@ function AppInner({ lang, setLang }) {
       } else if (mode === 'base') {
         setBasePoint(lonlat)
         setMode('idle')
-      } else if (mode === 'face') {
+      } else if (mode === 'face' || mode === 'corridor') {
         setDraftVertices((d) => [...d, lonlat])
       } else if (mode === 'orbit') {
         setOrbitConfig((c) => ({ ...c, poi: lonlat }))
@@ -679,6 +687,40 @@ function AppInner({ lang, setLang }) {
       }
       return draft
     })
+  }, [])
+
+  /* ---------------------- Modo corredor (E5.1) ----------------------- */
+  const setCorridorParam = useCallback((key, value) => {
+    setCorridorConfig((c) => ({ ...c, [key]: value }))
+  }, [])
+
+  const startCorridorDraw = useCallback(() => {
+    setMode((m) => (m === 'corridor' ? 'idle' : 'corridor'))
+    setDraftVertices([])
+  }, [])
+
+  const handleFinishCorridor = useCallback(() => {
+    setDraftVertices((draft) => {
+      const EPS = 1e-6
+      const clean = draft.filter(
+        (v, i) =>
+          i === 0 ||
+          Math.abs(v[0] - draft[i - 1][0]) > EPS ||
+          Math.abs(v[1] - draft[i - 1][1]) > EPS,
+      )
+      if (clean.length >= 2) {
+        setCorridorConfig((c) => ({ ...c, centreline: clean }))
+        setMode('idle')
+        return []
+      }
+      return draft
+    })
+  }, [])
+
+  const clearCorridorAxis = useCallback(() => {
+    setCorridorConfig((c) => ({ ...c, centreline: null }))
+    setDraftVertices([])
+    setMode('idle')
   }, [])
 
   const clearFaceBaseline = useCallback(() => {
@@ -836,6 +878,53 @@ function AppInner({ lang, setLang }) {
     runExport(() => exportBlocksZip(orbitExportParams(), orbitLevelsToBlocks(orbitPlan)))
   }, [orbitPlan, orbitExportParams, runExport])
 
+  const corridorPlan = useMemo(() => {
+    if (missionMode !== 'corridor') return null
+    if (!corridorConfig.centreline) return null
+    return generateCorridorPlan(corridorConfig.centreline, {
+      sensor,
+      altitude: params.altitude,
+      bufferM: corridorConfig.bufferM,
+      sideOverlapPct: params.sideOverlap,
+      photoIntervalM: interval ?? 0,
+      speed: corridorConfig.speedMS,
+      photoMode: corridorConfig.photoMode,
+      simplifyM: corridorConfig.simplifyM,
+    })
+  }, [missionMode, corridorConfig, sensor, params.altitude, params.sideOverlap, interval])
+
+  const corridorPreview = useMemo(() => {
+    if (missionMode !== 'corridor') return null
+    const axis = corridorConfig.centreline
+    if (!axis || axis.length < 2) return null
+    return {
+      centreline: axis,
+      buffer: corridorBufferRing(axis, corridorConfig.bufferM),
+      passes: corridorPlan && !corridorPlan.error ? corridorPlan.lines : null,
+    }
+  }, [missionMode, corridorConfig.centreline, corridorConfig.bufferM, corridorPlan])
+
+  const handleExportCorridor = useCallback(() => {
+    if (!corridorPlan || corridorPlan.error) return
+    const perWaypointPhotos = corridorConfig.photoMode === 'waypoint'
+    runExport(() => exportWPMLKmz({
+      name: buildExportName(missionName, 'corridor', {
+        part: `n${corridorPlan.stats.passCount}`,
+      }),
+      waypoints: corridorPlan.waypoints,
+      ...(corridorPlan.perWaypoint ? { perWaypoint: corridorPlan.perWaypoint } : {}),
+      altitude: params.altitude,
+      speed: corridorConfig.speedMS,
+      wpml,
+      // No modo por waypoint cada ponto dispara a sua foto, logo não há
+      // gatilho por distância; no modo distância é o inverso.
+      photoIntervalM: perWaypointPhotos ? 0 : (interval ?? 0),
+      triggerMode: perWaypointPhotos ? 'waypoint' : 'distance',
+      gimbalPitch: -90,
+      sensorType: sensor.type,
+    }))
+  }, [corridorPlan, corridorConfig, missionName, params.altitude, wpml, interval, sensor.type, runExport])
+
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const startInspect = useCallback(() => {
     setMode((m) => (m === 'inspect' ? 'idle' : 'inspect'))
@@ -894,11 +983,12 @@ function AppInner({ lang, setLang }) {
     })
   }, [pushHistory])
 
-  // o duplo clique no mapa conclui o desenho activo (área ou baseline)
+  // o duplo clique no mapa conclui o desenho activo (área, baseline ou eixo)
   const handleFinishAny = useCallback(() => {
     if (mode === 'face') handleFinishFace()
+    else if (mode === 'corridor') handleFinishCorridor()
     else handleFinishDraw()
-  }, [mode, handleFinishFace, handleFinishDraw])
+  }, [mode, handleFinishFace, handleFinishCorridor, handleFinishDraw])
 
   const removeDraftVertex = useCallback((index) => {
     setDraftVertices((d) => d.filter((_, i) => i !== index))
@@ -1277,11 +1367,12 @@ function AppInner({ lang, setLang }) {
     if (p.batteryByCombo && typeof p.batteryByCombo === 'object') {
       setBatteryByCombo((m) => ({ ...m, ...p.batteryByCombo }))
     }
-    if (p.missionMode === 'area' || p.missionMode === 'face' || p.missionMode === 'orbit') {
+    if (['area', 'face', 'orbit', 'corridor'].includes(p.missionMode)) {
       setMissionMode(p.missionMode)
     }
     if (p.faceConfig) setFaceConfig(normalizeFaceConfig(p.faceConfig))
     if (p.orbitConfig) setOrbitConfig(normalizeOrbitConfig(p.orbitConfig))
+    if (p.corridorConfig) setCorridorConfig(normalizeCorridorConfig(p.corridorConfig))
     if (Array.isArray(p.inspectPoints)) {
       const pts = p.inspectPoints.filter((q) => q && Array.isArray(q.point))
       setInspectPoints(pts)
@@ -1329,6 +1420,7 @@ function AppInner({ lang, setLang }) {
             inspectPoints,
             missionMode,
             faceConfig,
+            corridorConfig,
             orbitConfig,
             params,
             split,
@@ -1346,7 +1438,7 @@ function AppInner({ lang, setLang }) {
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const exportProject = useCallback(() => {
     const data = {
@@ -1359,6 +1451,7 @@ function AppInner({ lang, setLang }) {
       inspectPoints,
       missionMode,
       faceConfig,
+      corridorConfig,
       orbitConfig,
       params,
       split,
@@ -1374,7 +1467,7 @@ function AppInner({ lang, setLang }) {
       new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
       `${missionName.trim().replace(/[^\w-]+/g, '-') || 'missao'}-projeto.json`,
     )
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const importProject = useCallback(
     async (file) => {
@@ -1758,6 +1851,21 @@ function AppInner({ lang, setLang }) {
                 onExportPerLevel={handleExportOrbitPerLevel}
               />
             )}
+            {missionMode === 'corridor' && (
+              <CorridorPanel
+                corridorConfig={corridorConfig}
+                setCorridorParam={setCorridorParam}
+                corridorPlan={corridorPlan}
+                cameraOk={sensor.type === 'camera'}
+                mode={mode}
+                onStartAxis={startCorridorDraw}
+                onFinishAxis={handleFinishCorridor}
+                onUndoAxisPoint={() => setDraftVertices((d) => d.slice(0, -1))}
+                onClearAxis={clearCorridorAxis}
+                draftCount={draftVertices.length}
+                onExport={handleExportCorridor}
+              />
+            )}
             {missionMode === 'area' && (
         <ControlPanel
           missionName={missionName}
@@ -1864,6 +1972,7 @@ function AppInner({ lang, setLang }) {
             inspectPoints={inspectPoints}
             onInspectDrag={handleInspectDrag}
             facePreview={facePreview}
+            corridorPreview={corridorPreview}
             orbitPreview={orbitPreview}
             onOrbitPoiDrag={handleOrbitPoiDrag}
             fitKey={fitKey}

@@ -2,7 +2,7 @@
 
 English | **[Português](README.pt.md)**
 
-> Browser-based drone mapping mission planner: survey areas, photogrammetric/LiDAR flight grids with terrain following, facades, orbits and inspection points, battery-sized block splitting, and KML / DJI WPML (KMZ) export for DJI Pilot 2.
+> Browser-based drone mapping mission planner: survey areas, photogrammetric/LiDAR flight grids with terrain following, corridors along linear features, facades, orbits and inspection points, battery-sized block splitting, and KML / DJI WPML (KMZ) export for DJI Pilot 2.
 
 [![React](https://img.shields.io/badge/React-18-20232a.svg?logo=react&logoColor=61dafb)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-5-646cff.svg?logo=vite&logoColor=ffd62e)](https://vitejs.dev)
@@ -37,7 +37,7 @@ This tool is the **mission planning engine only**. Airspace authorisation, UAS-z
 
 1. **Open the app** at the live URL (or `npm install && npm run dev` locally).
 2. **Pick the aircraft and payload** (M3E, M4T, M300 RTK with P1, YellowScan Mapper+ or custom) and a **mission preset** — or set altitude/GSD, speed and overlaps by hand.
-3. **Pick the mission type** in the selector at the top of the panel: **Area** (nadir/oblique grid), **Face** (vertical serpentine over a wall) or **Orbit** (multi-level circles around a target). Inspection points live as an extra layer of the Area mode.
+3. **Pick the mission type** in the selector at the top of the panel: **Area** (nadir/oblique grid), **Corridor** (parallel passes along a centreline), **Face** (vertical serpentine over a wall) or **Orbit** (multi-level circles around a target). Inspection points live as an extra layer of the Area mode.
 4. **Area**: draw a polygon, generate a centre-point rectangle/square, or import KML / GeoJSON / zipped Shapefile / WPML KMZ. The **Optimal** direction shortcut finds the orientation with the fewest lines inside the real polygon.
 5. **Split into blocks** when the area exceeds one battery: strips by area, battery-sized squares (VLOS-capped) or a manual mosaic with clickable cells.
 6. **Terrain**: the global DEM loads automatically; enable *terrain follow* for per-waypoint heights, or import a DGT LiDAR GeoTIFF (50 cm / 2 m). Check the **3D view** and the **elevation profile** — the 3D view also renders face passes and orbit rings.
@@ -50,6 +50,7 @@ This tool is the **mission planning engine only**. Airspace authorisation, UAS-z
 - **Aircraft + payload model** (`src/data/drones.js`): aircraft with speed limits, default battery and WPML enums; payloads with camera optics or LiDAR beam geometry, including the YellowScan Mapper+ on the M300 (documented PSDK enum 65534); battery per aircraft+payload combination; automatic migration of old projects.
 - **Concave-safe flight grid** (`src/utils/geo.js` + `src/utils/gridRoute.js`): boustrophedon cellular decomposition ([Choset & Pignon, 1998](#third-party-code)) — on concave polygons the legs between passes never cross the gaps of the area; on convex areas the route is exactly the classic serpentine (guarded by test). **Optimal direction** search (fewest segments inside the real polygon), per-line **overshoot** (turns outside the area), a perpendicular **tie line** for LiDAR strip adjustment, and global line alignment across blocks.
 - **Numerical honesty**: oblique GSD from the slant range to the frame centre (at −60° it is ~15% worse than nadir; spacing deliberately stays nadir-based because the error is conservative); LiDAR point density (PRR ÷ speed × swath, with the Mapper+ 170 pts/m² anchor verified); per-payload operational AGL ceiling warning.
+- **Corridor mapping** (`src/utils/corridor.js`): covers linear infrastructure — roads, pipelines, watercourses, power lines — from a drawn centreline instead of a polygon. Set a half-width and the pass count follows from it, the altitude and the side overlap; the count grows one pass at a time as the corridor widens, never in jumps. Parallel offsetting uses **miter joins**, so a vertex stays exactly the offset distance from *both* adjoining segments (an averaged normal would shrink coverage to `offset · cos φ` precisely on the bend). Where the curvature is tighter than the offset, the offset line would fold back on itself and the aircraft would fly a loop: every offset point is therefore kept only if it lies the full offset distance from the centreline, so folds vanish by construction and the pass splits into runs — the panel says how many split and why. Photo positions are sampled **by each pass's own arc length**, not projected outward from the centreline, because on a curve the inner pass is shorter than the outer one and projecting would over-sample inside and under-sample on the outer verge, exactly where the overlap is needed.
 - **Face mode** (`src/utils/faceMode.js`): vertical serpentine over the face foot drawn on the map — passes at increasing heights, heading perpendicular to the local segment, one photo per waypoint; **clearance check against a local DSM** (vertical and along-heading), with an explicit "standoff unverified" warning when only global tiles are available.
 - **Multi-level orbits** (`src/utils/orbit.js`): stacked circles around a POI, points per revolution from the overlap, heading at the target, per-level gimbal aimed at the target centre height, continuous curved flight export — single mission or one KMZ per level.
 - **Inspection points** (`src/utils/inspect.js`): individually placed waypoints with a label, per-point heading/pitch/photo, drag ordering or nearest-neighbour suggestion, their own export and a table in the mission report.
@@ -136,6 +137,7 @@ Editing gestures: click adds vertices (Backspace or clicking a vertex removes, d
 | --- | --- | --- |
 | Simple KML | Area polygon, home point, GCPs, flight lines | Drawing the mission in Pilot 2; QGIS |
 | WPML (KMZ) — Area | `template.kml` + `waylines.wpml`, per-waypoint heights with terrain follow, distance/time/per-waypoint trigger, `_area[-variants]_bNN` | Direct import in DJI Pilot 2; one KMZ per block (ZIP) |
+| WPML (KMZ) — Corridor | Passes along a centreline, nadir gimbal, distance or per-waypoint trigger, `_corridor_nN` | Roads, pipelines, watercourses, power lines |
 | WPML (KMZ) — Face | Fixed heading and one photo per waypoint, `_face_p1-N` | Faces, slopes, structures |
 | WPML (KMZ) — Orbit | Continuous curved flight, heading at the POI, per-level gimbal, `_orbit_nN` (single or per-level ZIP) | Inspection/3D of isolated targets |
 | WPML (KMZ) — Inspection | Individual points with heading/pitch/photo, `_inspect_nN` | Directed inspection |
@@ -179,6 +181,7 @@ Pushes to `main` build and publish automatically to GitHub Pages via [.github/wo
 - Heights use the WPML `relativeToStartPoint` mode; the reference is the marked home point (or the first waypoint). In face mode the standoff is only verified with a local DSM — global tiles lack resolution at face scale.
 - Battery block sizing uses a flight-time model (line length, connectors, turn cost, transit) — it is an estimate; validate against your aircraft's real endurance (log-based calibration planned for September 2026).
 - Mosaic/battery cells fly the full square even where it exceeds the polygon (disable unwanted cells by clicking them).
+- Corridor mapping is nadir only and does not yet support terrain following or battery block splitting — the passes fly at a single altitude relative to the takeoff point. The buffered strip drawn on the map is illustrative: it shows the requested width, not the width actually covered, which is smaller wherever a pass had to be split.
 - GCP placement is a geometric heuristic; it does not model image geometry.
 - No offline mode by design: planning is office work.
 
