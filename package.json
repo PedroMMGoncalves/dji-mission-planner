@@ -17,11 +17,11 @@
     "geotiff": "^2.1.3",
     "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
-    "proj4": "^2.15.0",
+    "proj4": "^2.21.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "shpjs": "^6.1.0",
-    "three": "^0.170.0"
+    "shpjs": "^6.2.0",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.0",
