@@ -1287,7 +1287,7 @@ export default function ChecklistPage({
   }
 
   const semId = (linhas) =>
-    linhas.map(({ _id, ...resto }) => resto) // eslint-disable-line no-unused-vars
+    linhas.map(({ _id, ...resto }) => resto)
 
   const exportarJSON = () => {
     const payload = {

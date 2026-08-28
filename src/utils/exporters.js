@@ -7,6 +7,96 @@ import JSZip from 'jszip'
  *                 com waypoints 3D e disparo automático da câmara.
  */
 
+/**
+ * Erro de exportação com código estável, para a interface poder traduzir a
+ * mensagem sem depender do texto. Um plano inválido tem de falhar aqui: um
+ * KMZ com `NaN` numas coordenadas ou `undefined` numa altura é aceite por
+ * qualquer verificação de subcadeia mas rejeitado (ou pior, mal interpretado)
+ * pelo DJI Pilot 2, e o erro só aparece no campo.
+ */
+export class MissionExportError extends Error {
+  constructor(code, detail) {
+    super(detail ? `${code}: ${detail}` : code)
+    this.name = 'MissionExportError'
+    this.code = code
+    this.detail = detail
+  }
+}
+
+// wpml:index tem alcance [0, 65535], logo no máximo 65536 waypoints por rota.
+export const MAX_WAYPOINTS_PER_ROUTE = 65536
+// Limiares de sanidade, não limites de modelo: apanham unidades trocadas e
+// campos em bruto antes de chegarem ao ficheiro.
+export const MAX_SPEED_MS = 30
+export const MAX_RTH_HEIGHT_M = 1500
+
+const isNum = (v) => typeof v === 'number' && Number.isFinite(v)
+
+/** Um waypoint é [lon, lat] ou [lon, lat, altura]; valida domínio e finitude. */
+function checkWaypoint(wp, i) {
+  if (!Array.isArray(wp) || wp.length < 2) {
+    throw new MissionExportError('waypoint-malformed', `índice ${i}`)
+  }
+  const [lon, lat, h] = wp
+  if (!isNum(lon) || !isNum(lat)) {
+    throw new MissionExportError('waypoint-not-finite', `índice ${i}`)
+  }
+  if (lon < -180 || lon > 180 || lat < -90 || lat > 90) {
+    throw new MissionExportError('waypoint-out-of-range', `índice ${i}: ${lon}, ${lat}`)
+  }
+  if (h !== undefined && h !== null && !isNum(h)) {
+    throw new MissionExportError('height-not-finite', `índice ${i}`)
+  }
+}
+
+/**
+ * Validação na fronteira da exportação. Corre antes de qualquer concatenação
+ * de XML, para nenhum valor não-finito ou em falta chegar ao ficheiro.
+ */
+export function validateExportParams(params) {
+  const { waypoints, altitude, speed, wpml } = params ?? {}
+  if (!Array.isArray(waypoints) || waypoints.length === 0) {
+    throw new MissionExportError('no-waypoints')
+  }
+  if (waypoints.length > MAX_WAYPOINTS_PER_ROUTE) {
+    throw new MissionExportError('too-many-waypoints', String(waypoints.length))
+  }
+  waypoints.forEach(checkWaypoint)
+  // A altitude global é o valor de recurso de cada waypoint sem altura
+  // própria, por isso tem de ser finita mesmo quando todos a trazem. Tem
+  // também de ser positiva: um valor nulo ou negativo é aceite por qualquer
+  // verificação de finitude mas não descreve nenhuma missão real.
+  if (!isNum(altitude)) throw new MissionExportError('altitude-not-finite', String(altitude))
+  if (altitude <= 0) throw new MissionExportError('altitude-not-positive', String(altitude))
+  // MAX_SPEED_MS é generoso face ao mais rápido dos DJI suportados (~23 m/s);
+  // serve para apanhar unidades trocadas ou um campo em bruto, não para
+  // impor o limite de um modelo, que é validado na interface.
+  if (!isNum(speed) || speed <= 0) throw new MissionExportError('speed-invalid', String(speed))
+  if (speed > MAX_SPEED_MS) throw new MissionExportError('speed-out-of-range', String(speed))
+  if (!wpml || !isNum(wpml.droneEnumValue) || !isNum(wpml.payloadEnumValue)) {
+    throw new MissionExportError('wpml-enums-missing')
+  }
+  for (const key of ['photoIntervalM', 'gimbalPitch', 'rthHeightM', 'turnDampingDistM']) {
+    const v = params[key]
+    if (v !== undefined && v !== null && !isNum(v)) {
+      throw new MissionExportError('param-not-finite', key)
+    }
+  }
+  // Domínios: um intervalo de disparo negativo desliga o disparo em silêncio,
+  // e uma altura de regresso negativa mandaria o regresso para baixo do
+  // ponto de descolagem.
+  if (isNum(params.photoIntervalM) && params.photoIntervalM < 0) {
+    throw new MissionExportError('param-out-of-range', 'photoIntervalM')
+  }
+  if (isNum(params.rthHeightM) && (params.rthHeightM <= 0 || params.rthHeightM > MAX_RTH_HEIGHT_M)) {
+    throw new MissionExportError('param-out-of-range', 'rthHeightM')
+  }
+  if (isNum(params.gimbalPitch) && (params.gimbalPitch < -120 || params.gimbalPitch > 60)) {
+    throw new MissionExportError('param-out-of-range', 'gimbalPitch')
+  }
+  return params
+}
+
 function fmtCoord(v) {
   return Number(v.toFixed(8))
 }
@@ -22,7 +112,7 @@ export function buildExportName(missionName, type, { variant = null, part = null
   const safe = (s) =>
     String(s ?? '')
       .trim()
-      .replace(/[^\w\-]+/g, '-')
+      .replace(/[^\w-]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'missao'
   const variants = (Array.isArray(variant) ? variant : [variant]).filter(Boolean)
   const typeBit = [type, ...variants].filter(Boolean).join('-')
@@ -45,6 +135,11 @@ export function downloadBlob(blob, filename) {
 /* ------------------------------------------------------------------ */
 
 export function buildSimpleKML(ring, name, basePoint = null, gcps = null, lines = null) {
+  if (!Array.isArray(ring) || ring.length < 3) throw new MissionExportError('ring-too-short')
+  ring.forEach(checkWaypoint)
+  if (basePoint) checkWaypoint(basePoint, -1)
+  gcps?.forEach((g, i) => checkWaypoint(g.point, i))
+  lines?.forEach((seg) => seg.forEach(checkWaypoint))
   const coords = [...ring, ring[0]]
     .map(([lon, lat]) => `${fmtCoord(lon)},${fmtCoord(lat)},0`)
     .join(' ')
@@ -132,23 +227,100 @@ export function exportSimpleKML(ring, name, basePoint = null, gcps = null, lines
 /* KMZ WPML (DJI Pilot 2)                                             */
 /* ------------------------------------------------------------------ */
 
-function escapeXml(s) {
-  return String(s).replace(/[<>&'"]/g, (c) => ({
-    '<': '&lt;',
-    '>': '&gt;',
-    '&': '&amp;',
-    "'": '&apos;',
-    '"': '&quot;',
-  })[c])
+/**
+ * Caracteres que a produção `Char` do XML 1.0 não admite (controlos C0 fora de
+ * tab/LF/CR, e os não-caracteres U+FFFE/U+FFFF), mais os controlos C1, que são
+ * legais mas nunca intencionais num nome de missão. Um único destes — colado
+ * sem querer de outra aplicação — produz um ficheiro que nenhum analisador
+ * conforme abre, e o Pilot 2 rejeita-o sem explicar porquê.
+ */
+// eslint-disable-next-line no-control-regex
+const XML_ILLEGAL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\uFFFE\uFFFF]/g
+
+/**
+ * Substitutos isolados (uma metade de um par sem a outra). Também não são
+ * caracteres XML válidos, mas nenhum analisador em JavaScript os denuncia,
+ * porque as strings de JavaScript admitem-nos: chegariam ao ficheiro e só o
+ * leitor do Pilot 2 recusaria. Aparecem em texto truncado a meio de um
+ * emoji ou colado de uma aplicação que cortou por unidades de código.
+ */
+const LONE_SURROGATE = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g
+
+export function escapeXml(s) {
+  return String(s)
+    .replace(XML_ILLEGAL, '')
+    .replace(LONE_SURROGATE, '')
+    .replace(/[<>&'"]/g, (c) => ({
+      '<': '&lt;',
+      '>': '&gt;',
+      '&': '&amp;',
+      "'": '&apos;',
+      '"': '&quot;',
+    })[c])
 }
 
-function missionConfigXml({ wpml, speed }) {
+/**
+ * Ações de segurança admitidas pela especificação WPML (dji-sdk/Cloud-API-Doc,
+ * template-kml.md e waylines-wpml.md, verificado 2026-08-27). Valores fora
+ * destas listas são rejeitados pelo DJI Pilot 2, por isso o exportador
+ * valida e cai no valor por omissão em vez de escrever lixo no ficheiro.
+ */
+export const FINISH_ACTIONS = ['goHome', 'noAction', 'autoLand', 'gotoFirstWaypoint']
+export const RC_LOST_MODES = ['executeLostAction', 'goContinue']
+export const RC_LOST_ACTIONS = ['goBack', 'landing', 'hover']
+
+const pick = (value, allowed) => (allowed.includes(value) ? value : allowed[0])
+
+/**
+ * Parâmetros de viragem coerentes com o modo, conforme a especificação
+ * (common-element.md, `wpml:waypointTurnMode` / `wpml:waypointTurnDampingDist`
+ * / `wpml:useStraightLine`):
+ *
+ *  - `toPointAndStopWithDiscontinuityCurvature` — troço recto com paragem no
+ *    ponto. É o modo das grelhas e das fachadas: mantém-se `useStraightLine`
+ *    a 1 e amortecimento 0, exactamente como antes.
+ *  - `toPointAndPassWithContinuityCurvature` — voo curvo contínuo, sem parar
+ *    (órbitas). Exige `useStraightLine` a 0: a 1 significa "aproxima o troço
+ *    de uma recta entre os dois pontos", o que transformaria a órbita num
+ *    polígono de cantos arredondados. Com 0, `waypointTurnDampingDist` deixa
+ *    de ser obrigatório — só o é em `coordinateTurn` ou nesta curvatura com
+ *    `useStraightLine` a 1, e aí tem de ser > 0 (0 está fora do intervalo).
+ */
+const TURN_MODE_STRAIGHT_LINE = {
+  toPointAndStopWithDiscontinuityCurvature: 1,
+  toPointAndStopWithContinuityCurvature: 0,
+  toPointAndPassWithContinuityCurvature: 0,
+  coordinateTurn: 0,
+}
+
+export function turnParams(turnMode, dampingDistM = 0) {
+  const straightLine = TURN_MODE_STRAIGHT_LINE[turnMode] ?? 1
+  const needsDamping =
+    turnMode === 'coordinateTurn' ||
+    (turnMode === 'toPointAndPassWithContinuityCurvature' && straightLine === 1)
+  // Quando é obrigatório tem de ser > 0; sem valor utilizável cai em 1 m, o
+  // menor amortecimento que a especificação aceita para segmentos normais.
+  const damping = needsDamping ? Math.max(dampingDistM, 1) : 0
+  return { straightLine, damping }
+}
+
+function missionConfigXml({ wpml, speed, altitude, ...opts }) {
+  const finishAction = pick(opts.finishAction, FINISH_ACTIONS)
+  const exitOnRCLost = pick(opts.exitOnRCLost, RC_LOST_MODES)
+  const rcLostAction = pick(opts.executeRCLostAction, RC_LOST_ACTIONS)
+  const takeOffSecurityHeight = opts.takeOffSecurityHeightM ?? 30
+  // `wpml:globalRTHHeight` é obrigatório em waylines.wpml. O regresso é
+  // planeado acima do tecto da missão (mínimo 100 m, o valor por omissão do
+  // Pilot 2) para o trajecto de regresso não descer para dentro da área.
+  const rthHeight =
+    opts.rthHeightM ?? Math.max(100, Math.ceil(Number(altitude) || 0) + 20)
   return `  <wpml:missionConfig>
     <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
-    <wpml:finishAction>goHome</wpml:finishAction>
-    <wpml:exitOnRCLost>executeLostAction</wpml:exitOnRCLost>
-    <wpml:executeRCLostAction>goBack</wpml:executeRCLostAction>
-    <wpml:takeOffSecurityHeight>30</wpml:takeOffSecurityHeight>
+    <wpml:finishAction>${finishAction}</wpml:finishAction>
+    <wpml:exitOnRCLost>${exitOnRCLost}</wpml:exitOnRCLost>
+    <wpml:executeRCLostAction>${rcLostAction}</wpml:executeRCLostAction>
+    <wpml:takeOffSecurityHeight>${takeOffSecurityHeight}</wpml:takeOffSecurityHeight>
+    <wpml:globalRTHHeight>${rthHeight}</wpml:globalRTHHeight>
     <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
     <wpml:droneInfo>
       <wpml:droneEnumValue>${wpml.droneEnumValue}</wpml:droneEnumValue>
@@ -167,9 +339,13 @@ function missionConfigXml({ wpml, speed }) {
  * O DJI Pilot 2 usa este ficheiro para reconstruir/editar a missão.
  */
 export function buildTemplateKML(params) {
-  const { name, waypoints, altitude, speed, wpml } = params
+  validateExportParams(params)
+  const { name, waypoints, altitude, speed } = params
   const turnMode = params.turnMode ?? 'toPointAndStopWithDiscontinuityCurvature'
-  const now = Date.now()
+  const turn = turnParams(turnMode, params.turnDampingDistM)
+  // Injectável para as comparações com ficheiros de referência serem
+  // determinísticas; em uso normal é o instante da exportação.
+  const now = params.createTimeMs ?? Date.now()
 
   const placemarks = waypoints
     .map(
@@ -184,7 +360,7 @@ export function buildTemplateKML(params) {
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
-        <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:useStraightLine>${turn.straightLine}</wpml:useStraightLine>
       </Placemark>`,
     )
     .join('\n')
@@ -215,7 +391,7 @@ ${missionConfigXml(params)}
       <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
     </wpml:globalWaypointHeadingParam>
     <wpml:globalWaypointTurnMode>${turnMode}</wpml:globalWaypointTurnMode>
-    <wpml:globalUseStraightLine>1</wpml:globalUseStraightLine>
+    <wpml:globalUseStraightLine>${turn.straightLine}</wpml:globalUseStraightLine>
 ${placemarks}
   </Folder>
 </Document>
@@ -239,6 +415,7 @@ ${placemarks}
  * um limite prático menor do Pilot 2, reabrir a tarefa com essa evidência.
  */
 export function buildWaylinesWPML(params) {
+  validateExportParams(params)
   const {
     waypoints, altitude, speed, wpml, photoIntervalM, triggerMode, sensorType,
     // T4.1: ações por waypoint — array paralelo a `waypoints` com entradas
@@ -251,7 +428,11 @@ export function buildWaylinesWPML(params) {
     // para órbitas em voo curvo contínuo); por defeito o comportamento
     // atual de parar em cada waypoint.
     turnMode = 'toPointAndStopWithDiscontinuityCurvature',
+    // Distância de amortecimento da viragem (m). Só é escrita quando a
+    // especificação a exige — ver turnParams().
+    turnDampingDistM = 0,
   } = params
+  const turn = turnParams(turnMode, turnDampingDistM)
   const gimbalPitch = params.gimbalPitch ?? -90
 
   const triggerXml = (() => {
@@ -395,9 +576,9 @@ ${actions.join('\n')}
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>${turnMode}</wpml:waypointTurnMode>
-          <wpml:waypointTurnDampingDist>0</wpml:waypointTurnDampingDist>
+          <wpml:waypointTurnDampingDist>${turn.damping}</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
-        <wpml:useStraightLine>1</wpml:useStraightLine>${groupsXml ? '\n' + groupsXml : ''}
+        <wpml:useStraightLine>${turn.straightLine}</wpml:useStraightLine>${groupsXml ? '\n' + groupsXml : ''}
       </Placemark>`
     })
     .join('\n')

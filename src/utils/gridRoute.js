@@ -1,12 +1,22 @@
-// Ported from dronnix-io/FlyPath (GPL-3.0), grid_route.py, adapted.
+// Boustrophedon cellular decomposition — the standard coverage-path-planning
+// algorithm of Choset & Pignon, "Coverage Path Planning: The Boustrophedon
+// Cellular Decomposition" (Field and Service Robotics, 1998). A sweep line
+// crosses the region; the in-region pieces of each sweep are grouped into
+// cells that break at every split and merge, and the cells are then visited in
+// graph order so the legs between passes stay inside the region.
 //
-// Adaptations: axes swapped (FlyPath sweeps vertical columns with segments in
-// y; our scanlines are horizontal rows with segments in x, so a cell segment
-// here is [y, xLo, xHi] and route points are [x, y] in the rotated frame);
-// the strip-overlap epsilon is metres in FlyPath and is converted to degrees
-// by the caller; pass densification is not ported (terrain follow densifies
-// later in this codebase); the nearest-entry tie-break weighs x by the local
-// metres-per-degree ratio because rotated-frame coordinates are anisotropic.
+// Provenance: this implementation started as a translation of grid_route.py in
+// dronnix-io/FlyPath (GPL-3.0) and is redistributed here under the same
+// licence. Modified from the original as follows: axes swapped (FlyPath sweeps
+// vertical columns with segments in y; our scanlines are horizontal rows with
+// segments in x, so a cell segment here is [y, xLo, xHi] and route points are
+// [x, y] in the rotated frame); the strip-overlap epsilon is metres in FlyPath
+// and is converted to degrees by the caller; pass densification is not carried
+// over (terrain follow densifies later in this codebase); and the nearest-entry
+// tie-break weighs x by the local metres-per-degree ratio, because this
+// codebase routes in geographic degrees where the rotated frame is
+// anisotropic — an unweighted distance would pick the wrong cell entry at high
+// latitude.
 
 /** Two segments on adjacent scan lines belong to the same strip when their
  * along-track ranges overlap by more than this (metres). A real gap between

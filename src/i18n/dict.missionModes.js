@@ -6,6 +6,72 @@ export default {
   'mode.area': { pt: 'Área', en: 'Area' },
   'mode.face': { pt: 'Fachada', en: 'Face' },
   'mode.orbit': { pt: 'Órbita', en: 'Orbit' },
+  'mode.corridor': { pt: 'Corredor', en: 'Corridor' },
+
+  /* ---- Painel de corredor (E5.1) ---- */
+  'co.axis.title': { pt: 'Eixo do Corredor', en: 'Corridor Centreline' },
+  'co.axis.draw': { pt: 'Desenhar', en: 'Draw' },
+  'co.axis.clear': { pt: 'Limpar', en: 'Clear' },
+  'co.axis.finish': { pt: 'Concluir', en: 'Finish' },
+  'co.axis.undo': { pt: 'Anular ponto', en: 'Undo point' },
+  'co.axis.hint': {
+    pt: '{n} vértice(s). Clique ao longo do eixo (estrada, conduta, linha de água); duplo clique ou Concluir para terminar.',
+    en: '{n} vertex(es). Click along the centreline (road, pipeline, watercourse); double-click or Finish to end.',
+  },
+  'co.axis.none': {
+    pt: 'Desenhe o eixo no mapa para gerar as passagens do corredor.',
+    en: 'Draw the centreline on the map to generate the corridor passes.',
+  },
+  'co.lidarNote': {
+    pt: 'Payload LiDAR: o espaçamento das passagens sai da largura de varrimento do feixe e a missão não leva acções de câmara, pelo que não há disparo a configurar.',
+    en: 'LiDAR payload: pass spacing comes from the beam swath width and the mission carries no camera actions, so there is no trigger to configure.',
+  },
+  'co.params.title': { pt: 'Parâmetros do Corredor', en: 'Corridor Parameters' },
+  'co.params.buffer': { pt: 'Meia-largura', en: 'Half-width' },
+  'co.params.bufferHint': {
+    pt: 'Distância coberta de cada lado do eixo; a largura total é o dobro. O número de passagens sai daqui, da altitude e da sobreposição lateral.',
+    en: 'Distance covered on each side of the centreline; total width is twice this. The pass count follows from it, the altitude and the side overlap.',
+  },
+  'co.params.speed': { pt: 'Velocidade', en: 'Speed' },
+  'co.params.photoMode': { pt: 'Disparo', en: 'Trigger' },
+  'co.params.photoDistance': { pt: 'Por distância', en: 'By distance' },
+  'co.params.photoWaypoint': { pt: 'Por waypoint', en: 'Per waypoint' },
+  'co.params.photoHint': {
+    pt: 'Por distância: o disparo é feito a cada X metros ao longo da rota. Por waypoint: cada posição de fotografia é um waypoint com acção própria.',
+    en: 'By distance: the camera triggers every X metres along the route. Per waypoint: each photo position is a waypoint with its own action.',
+  },
+  'co.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
+  'co.plan.length': { pt: 'Comprimento do eixo', en: 'Centreline length' },
+  'co.plan.passes': { pt: '{n} passagens ({r} troços)', en: '{n} passes ({r} runs)' },
+  'co.plan.width': { pt: 'Largura coberta', en: 'Covered width' },
+  'co.plan.spacing': { pt: 'Espaçamento', en: 'Line spacing' },
+  'co.plan.waypoints': { pt: '{n} waypoints', en: '{n} waypoints' },
+  'co.plan.photos': { pt: '{n} fotos', en: '{n} photos' },
+  'co.plan.distance': { pt: 'Distância de voo', en: 'Flight distance' },
+  'co.plan.time': { pt: 'Tempo estimado', en: 'Estimated time' },
+  'co.plan.split': {
+    pt: 'Curvatura mais apertada do que o desvio: {n} passagem(ns) partida(s) em troços; a cobertura pára onde deixaria de ser geometricamente possível.',
+    en: 'Curvature tighter than the offset: {n} pass(es) split into runs; coverage stops where it would no longer be geometrically possible.',
+  },
+  'co.plan.export': { pt: 'Exportar WPML (KMZ)', en: 'Export WPML (KMZ)' },
+  'co.err.invalid-buffer': { pt: 'Meia-largura inválida.', en: 'Invalid half-width.' },
+  'co.err.invalid-altitude': { pt: 'Altitude inválida.', en: 'Invalid altitude.' },
+  'co.err.overlap-too-high': {
+    pt: 'Sobreposição lateral demasiado alta para gerar passagens.',
+    en: 'Side overlap too high to generate passes.',
+  },
+  'co.err.sensor-required': { pt: 'É necessário um payload de câmara.', en: 'A camera payload is required.' },
+  'co.err.invalid-footprint': { pt: 'Pegada da câmara inválida.', en: 'Invalid camera footprint.' },
+  'co.err.degenerate-centreline': { pt: 'Eixo degenerado.', en: 'Degenerate centreline.' },
+  'co.err.too-many-passes': {
+    pt: 'A meia-largura pedida exige mais passagens do que um plano admite. Reduza a meia-largura, suba a altitude ou baixe a sobreposição lateral.',
+    en: 'The requested half-width needs more passes than one plan allows. Reduce the half-width, raise the altitude, or lower the side overlap.',
+  },
+  'co.err.no-coverage': {
+    pt: 'Nenhuma passagem é geometricamente possível com estes parâmetros.',
+    en: 'No pass is geometrically possible with these parameters.',
+  },
+  'co.err.invalid-latitude': { pt: 'Latitude fora do domínio suportado.', en: 'Latitude outside the supported domain.' },
 
   /* ---- Painel de fachada (E1.1) ---- */
   'fp.baseline.title': { pt: 'Pé da Face (baseline)', en: 'Face Foot (baseline)' },
