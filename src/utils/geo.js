@@ -341,11 +341,12 @@ export function longestEdgeBearing(ring) {
   return ((best % 180) + 180) % 180
 }
 
-// Ported from dronnix-io/FlyPath (GPL-3.0), grid_planner.py
-// find_optimal_direction/_best_angle/_flight_cost, adapted: QGIS geometry
-// replaced by a local planar frame in metres + the same scanline pairing
-// primitive used by generateFlightLines (turf.lineIntersect + midpoint-in-
-// polygon).
+// Search strategy (cost = in-polygon segment count, tie-broken by
+// perpendicular span; coarse 5° sweep then ±4° at 1°) follows the approach
+// taken by find_optimal_direction in dronnix-io/FlyPath. The implementation
+// here is independent: a local planar frame in metres with the same scanline
+// pairing primitive used by generateFlightLines (turf.lineIntersect +
+// midpoint-in-polygon), rather than QGIS geometry.
 /**
  * Direção de voo (0–179°) que minimiza o tempo estimado de missão para a
  * forma real do polígono. O comprimento total das faixas é ~área/espaçamento
@@ -491,10 +492,10 @@ export function computeAlignment(outlineRing, spacingM, angleDeg) {
  *    de cruzamento por longitude e empareha-os; o ponto médio de cada par é testado
  *    com turf.booleanPointInPolygon para reter apenas os troços interiores
  *    (funciona também com polígonos côncavos → várias faixas por linha).
- * 5. Ordena as passagens com decomposição celular boustrophedon (gridRoute.js,
- *    portado do FlyPath): strips contíguas viram células visitadas em ordem de
- *    grafo, cada célula em ziguezague — num polígono convexo é a serpentina
- *    clássica; num côncavo as ligações nunca atravessam os vãos da área.
+ * 5. Ordena as passagens com decomposição celular boustrophedon (Choset &
+ *    Pignon 1998; ver gridRoute.js): strips contíguas viram células visitadas
+ *    em ordem de grafo, cada célula em ziguezague — num polígono convexo é a
+ *    serpentina clássica; num côncavo as ligações nunca atravessam os vãos.
  * 6. Roda tudo de volta pelo ângulo simétrico, em torno do mesmo pivô.
  *
  * Devolve { area, lines, waypoints, stats } ou { error }.
@@ -610,7 +611,7 @@ export function generateFlightLines(ring, options) {
   if (rows.every(([, segs]) => segs.length === 0)) return null
 
   // 5) Ordenação côncava-segura (T3.1): decomposição celular boustrophedon
-  //    portada do FlyPath. As strips contíguas viram células; a rota visita
+  //    (ver gridRoute.js). As strips contíguas viram células; a rota visita
   //    as células em ordem de grafo, pelo que as ligações entre passagens
   //    seguem a "espinha" da área e nunca atravessam um vão. Num polígono
   //    convexo o resultado é exatamente a serpentina antiga.
@@ -784,11 +785,10 @@ export function generateFlightLines(ring, options) {
 /**
  * B: pontos de uma passagem a passos iguais ≤ `intervalM`: n = max(1,
  * ceil(len/intervalM)) passos de len/n, extremos incluídos (n+1 pontos).
- * Ported from dronnix-io/FlyPath (GPL-3.0), grid_route.py `_pass_points`,
- * adapted: interpolação linear no referencial rodado (passagens horizontais
- * ou verticais, logo equidistantes em metros) em vez de vectores cartesianos.
- * É a regra que garante que duas fotos consecutivas nunca ficam mais
- * afastadas do que o intervalo calculado da sobreposição frontal.
+ * Interpolação linear no referencial rodado (passagens horizontais ou
+ * verticais, logo equidistantes em metros). É a regra que garante que duas
+ * fotos consecutivas nunca ficam mais afastadas do que o intervalo calculado
+ * da sobreposição frontal.
  */
 export function passPoints(a, b, intervalM) {
   const lenM = turf.distance(a, b, { units: 'meters' })

@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import MapView from './components/MapView.jsx'
 import ControlPanel from './components/ControlPanel.jsx'
+import CorridorPanel from './components/CorridorPanel.jsx'
 import MissionModeSelector from './components/MissionModeSelector.jsx'
 import FacePanel from './components/FacePanel.jsx'
 import OrbitPanel from './components/OrbitPanel.jsx'
@@ -41,7 +42,6 @@ import {
   photoInterval,
   rectangleFromAnchor,
   resolveSensor,
-  ringToPolygon,
   splitIntoBlocks,
   squareSideForBattery,
   tilePolygonWithSquares,
@@ -50,6 +50,7 @@ import {
 import {
   buildExportName,
   downloadBlob,
+  MissionExportError,
   exportBlocksZip,
   exportSimpleKML,
   exportWPMLKmz,
@@ -69,6 +70,12 @@ import {
   normalizeFaceConfig,
 } from './utils/faceMode.js'
 import { headingTicks } from './utils/preview.js'
+import {
+  DEFAULT_CORRIDOR_CONFIG,
+  corridorBufferRing,
+  generateCorridorPlan,
+  normalizeCorridorConfig,
+} from './utils/corridor.js'
 import {
   DEFAULT_ORBIT_CONFIG,
   generateOrbitPlan,
@@ -148,7 +155,8 @@ function AppInner({ lang, setLang }) {
   })
   const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect' | 'face'
   // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
-  const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit'
+  const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit' | 'corridor'
+  const [corridorConfig, setCorridorConfig] = useState(DEFAULT_CORRIDOR_CONFIG)
   const [faceConfig, setFaceConfig] = useState(() => ({ ...DEFAULT_FACE_CONFIG }))
   const [orbitConfig, setOrbitConfig] = useState(() => ({ ...DEFAULT_ORBIT_CONFIG }))
   // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
@@ -179,6 +187,23 @@ function AppInner({ lang, setLang }) {
   const [disabledTiles, setDisabledTiles] = useState(() => new Set())
   const [importState, setImportState] = useState(null) // {ring, filename} à espera de CRS
   const [importError, setImportError] = useState(null)
+  const [exportError, setExportError] = useState(null)
+
+  /**
+   * E4.1: nenhuma exportação escreve um ficheiro com valores inválidos. O
+   * exportador valida na fronteira e lança MissionExportError; aqui a falha
+   * vira uma mensagem no cabeçalho, em vez de uma promessa rejeitada sem
+   * dono e de um KMZ que só falha no comando, no campo.
+   */
+  const runExport = useCallback(async (fn) => {
+    setExportError(null)
+    try {
+      await fn()
+    } catch (err) {
+      setExportError(err instanceof MissionExportError ? err.code : 'unknown')
+      if (!(err instanceof MissionExportError)) console.error(err)
+    }
+  }, [])
   const [terrain, setTerrain] = useState({ status: 'idle', data: null, error: null })
   const [terrainFollow, setTerrainFollow] = useState({ enabled: false, tolerance: 5 })
   const [gcpConfig, setGcpConfig] = useState({ enabled: false, count: null }) // null = auto
@@ -404,6 +429,13 @@ function AppInner({ lang, setLang }) {
     params.speed,
     spacing,
     basePoint,
+    // O lado do quadrado dimensionado por bateria depende do número de
+    // passagens (cross-hatch e passagem nadir extra multiplicam o voo por
+    // célula). Sem estas duas dependências o lado ficava preso ao valor
+    // anterior ao ligar/desligar o cross-hatch, e a célula podia exceder o
+    // que uma bateria voa.
+    params.crosshatch,
+    params.includeNadir,
   ])
 
   const tiles = Array.isArray(tilesResult?.cells) ? tilesResult.cells : null
@@ -599,7 +631,7 @@ function AppInner({ lang, setLang }) {
       } else if (mode === 'base') {
         setBasePoint(lonlat)
         setMode('idle')
-      } else if (mode === 'face') {
+      } else if (mode === 'face' || mode === 'corridor') {
         setDraftVertices((d) => [...d, lonlat])
       } else if (mode === 'orbit') {
         setOrbitConfig((c) => ({ ...c, poi: lonlat }))
@@ -657,6 +689,40 @@ function AppInner({ lang, setLang }) {
     })
   }, [])
 
+  /* ---------------------- Modo corredor (E5.1) ----------------------- */
+  const setCorridorParam = useCallback((key, value) => {
+    setCorridorConfig((c) => ({ ...c, [key]: value }))
+  }, [])
+
+  const startCorridorDraw = useCallback(() => {
+    setMode((m) => (m === 'corridor' ? 'idle' : 'corridor'))
+    setDraftVertices([])
+  }, [])
+
+  const handleFinishCorridor = useCallback(() => {
+    setDraftVertices((draft) => {
+      const EPS = 1e-6
+      const clean = draft.filter(
+        (v, i) =>
+          i === 0 ||
+          Math.abs(v[0] - draft[i - 1][0]) > EPS ||
+          Math.abs(v[1] - draft[i - 1][1]) > EPS,
+      )
+      if (clean.length >= 2) {
+        setCorridorConfig((c) => ({ ...c, centreline: clean }))
+        setMode('idle')
+        return []
+      }
+      return draft
+    })
+  }, [])
+
+  const clearCorridorAxis = useCallback(() => {
+    setCorridorConfig((c) => ({ ...c, centreline: null }))
+    setDraftVertices([])
+    setMode('idle')
+  }, [])
+
   const clearFaceBaseline = useCallback(() => {
     setFaceConfig((c) => ({ ...c, baseline: null }))
     setDraftVertices([])
@@ -705,7 +771,7 @@ function AppInner({ lang, setLang }) {
 
   const handleExportFace = useCallback(() => {
     if (!facePlan || facePlan.error) return
-    exportWPMLKmz({
+    runExport(() => exportWPMLKmz({
       name: buildExportName(missionName, 'face', {
         part: `p1-${facePlan.stats.passCount}`,
       }),
@@ -718,8 +784,8 @@ function AppInner({ lang, setLang }) {
       triggerMode: 'distance',
       gimbalPitch: faceConfig.gimbalPitch,
       sensorType: sensor.type,
-    })
-  }, [facePlan, missionName, faceConfig.speedMS, wpml, faceConfig.gimbalPitch, sensor.type])
+    }))
+  }, [facePlan, missionName, faceConfig.speedMS, wpml, faceConfig.gimbalPitch, sensor.type, runExport])
 
   /* ------------------------ Modo órbita (E1.2) ------------------------ */
   const setOrbitParam = useCallback((key, value) => {
@@ -804,13 +870,60 @@ function AppInner({ lang, setLang }) {
 
   const handleExportOrbitSingle = useCallback(() => {
     if (!orbitPlan || orbitPlan.error) return
-    exportWPMLKmz(orbitExportParams())
-  }, [orbitPlan, orbitExportParams])
+    runExport(() => exportWPMLKmz(orbitExportParams()))
+  }, [orbitPlan, orbitExportParams, runExport])
 
   const handleExportOrbitPerLevel = useCallback(() => {
     if (!orbitPlan || orbitPlan.error) return
-    exportBlocksZip(orbitExportParams(), orbitLevelsToBlocks(orbitPlan))
-  }, [orbitPlan, orbitExportParams])
+    runExport(() => exportBlocksZip(orbitExportParams(), orbitLevelsToBlocks(orbitPlan)))
+  }, [orbitPlan, orbitExportParams, runExport])
+
+  const corridorPlan = useMemo(() => {
+    if (missionMode !== 'corridor') return null
+    if (!corridorConfig.centreline) return null
+    return generateCorridorPlan(corridorConfig.centreline, {
+      sensor,
+      altitude: params.altitude,
+      bufferM: corridorConfig.bufferM,
+      sideOverlapPct: params.sideOverlap,
+      photoIntervalM: interval ?? 0,
+      speed: corridorConfig.speedMS,
+      photoMode: corridorConfig.photoMode,
+      simplifyM: corridorConfig.simplifyM,
+    })
+  }, [missionMode, corridorConfig, sensor, params.altitude, params.sideOverlap, interval])
+
+  const corridorPreview = useMemo(() => {
+    if (missionMode !== 'corridor') return null
+    const axis = corridorConfig.centreline
+    if (!axis || axis.length < 2) return null
+    return {
+      centreline: axis,
+      buffer: corridorBufferRing(axis, corridorConfig.bufferM),
+      passes: corridorPlan && !corridorPlan.error ? corridorPlan.lines : null,
+    }
+  }, [missionMode, corridorConfig.centreline, corridorConfig.bufferM, corridorPlan])
+
+  const handleExportCorridor = useCallback(() => {
+    if (!corridorPlan || corridorPlan.error) return
+    const perWaypointPhotos = corridorConfig.photoMode === 'waypoint'
+    runExport(() => exportWPMLKmz({
+      name: buildExportName(missionName, 'corridor', {
+        part: `n${corridorPlan.stats.passCount}`,
+      }),
+      waypoints: corridorPlan.waypoints,
+      ...(corridorPlan.perWaypoint ? { perWaypoint: corridorPlan.perWaypoint } : {}),
+      altitude: params.altitude,
+      speed: corridorConfig.speedMS,
+      wpml,
+      // No modo por waypoint cada ponto dispara a sua foto, logo não há
+      // gatilho por distância; no modo distância é o inverso.
+      photoIntervalM: perWaypointPhotos ? 0 : (interval ?? 0),
+      triggerMode: perWaypointPhotos ? 'waypoint' : 'distance',
+      gimbalPitch: -90,
+      sensorType: sensor.type,
+    }))
+  }, [corridorPlan, corridorConfig, missionName, params.altitude, wpml, interval, sensor.type, runExport])
 
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const startInspect = useCallback(() => {
@@ -870,11 +983,12 @@ function AppInner({ lang, setLang }) {
     })
   }, [pushHistory])
 
-  // o duplo clique no mapa conclui o desenho activo (área ou baseline)
+  // o duplo clique no mapa conclui o desenho activo (área, baseline ou eixo)
   const handleFinishAny = useCallback(() => {
     if (mode === 'face') handleFinishFace()
+    else if (mode === 'corridor') handleFinishCorridor()
     else handleFinishDraw()
-  }, [mode, handleFinishFace, handleFinishDraw])
+  }, [mode, handleFinishFace, handleFinishCorridor, handleFinishDraw])
 
   const removeDraftVertex = useCallback((index) => {
     setDraftVertices((d) => d.filter((_, i) => i !== index))
@@ -1123,6 +1237,18 @@ function AppInner({ lang, setLang }) {
       const ground = elevAt?.(orbitConfig.poi[0], orbitConfig.poi[1])
       return { waypoints: orbitPlan.waypoints, refElev: Number.isFinite(ground) ? ground : 0 }
     }
+    // Sem este ramo o modo corredor caía no plano de ÁREA: com um polígono
+    // desenhado antes, a vista 3D e o perfil mostravam a grelha da área
+    // enquanto o painel do corredor estava aberto — a missão errada.
+    if (missionMode === 'corridor') {
+      if (!corridorPlan || corridorPlan.error) return null
+      const head = corridorConfig.centreline?.[0]
+      const ground = head ? elevAt?.(head[0], head[1]) : null
+      return {
+        waypoints: corridorPlan.waypoints.map(([lon, lat, h]) => [lon, lat, h ?? params.altitude]),
+        refElev: Number.isFinite(ground) ? ground : 0,
+      }
+    }
     if (!planOk) return null
     const wps =
       terrainResult && !terrainResult.error
@@ -1133,7 +1259,7 @@ function AppInner({ lang, setLang }) {
         ? terrainResult.refElev
         : (elevAt?.((basePoint ?? planOk.waypoints[0])[0], (basePoint ?? planOk.waypoints[0])[1]) ?? 0)
     return { waypoints: wps, refElev: ref }
-  }, [missionMode, facePlan, faceConfig.baseline, orbitPlan, orbitConfig.poi, planOk, terrainResult, terrain, basePoint, params.altitude])
+  }, [missionMode, facePlan, faceConfig.baseline, orbitPlan, orbitConfig.poi, corridorPlan, corridorConfig.centreline, planOk, terrainResult, terrain, basePoint, params.altitude])
 
   // Teto operacional AGL do payload (T1.3), ex.: LiDAR limitado a 100 m
   const aglWarn = useMemo(
@@ -1160,7 +1286,7 @@ function AppInner({ lang, setLang }) {
     setImportState(null)
     setImportError(null)
     setFitKey((k) => k + 1)
-  }, [])
+  }, [pushHistory])
 
   const handleImportFile = useCallback(
     async (file) => {
@@ -1253,11 +1379,12 @@ function AppInner({ lang, setLang }) {
     if (p.batteryByCombo && typeof p.batteryByCombo === 'object') {
       setBatteryByCombo((m) => ({ ...m, ...p.batteryByCombo }))
     }
-    if (p.missionMode === 'area' || p.missionMode === 'face' || p.missionMode === 'orbit') {
+    if (['area', 'face', 'orbit', 'corridor'].includes(p.missionMode)) {
       setMissionMode(p.missionMode)
     }
     if (p.faceConfig) setFaceConfig(normalizeFaceConfig(p.faceConfig))
     if (p.orbitConfig) setOrbitConfig(normalizeOrbitConfig(p.orbitConfig))
+    if (p.corridorConfig) setCorridorConfig(normalizeCorridorConfig(p.corridorConfig))
     if (Array.isArray(p.inspectPoints)) {
       const pts = p.inspectPoints.filter((q) => q && Array.isArray(q.point))
       setInspectPoints(pts)
@@ -1305,6 +1432,7 @@ function AppInner({ lang, setLang }) {
             inspectPoints,
             missionMode,
             faceConfig,
+            corridorConfig,
             orbitConfig,
             params,
             split,
@@ -1322,7 +1450,7 @@ function AppInner({ lang, setLang }) {
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const exportProject = useCallback(() => {
     const data = {
@@ -1335,6 +1463,7 @@ function AppInner({ lang, setLang }) {
       inspectPoints,
       missionMode,
       faceConfig,
+      corridorConfig,
       orbitConfig,
       params,
       split,
@@ -1348,9 +1477,9 @@ function AppInner({ lang, setLang }) {
     }
     downloadBlob(
       new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
-      `${missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'}-projeto.json`,
+      `${missionName.trim().replace(/[^\w-]+/g, '-') || 'missao'}-projeto.json`,
     )
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
 
   const importProject = useCallback(
     async (file) => {
@@ -1465,7 +1594,7 @@ function AppInner({ lang, setLang }) {
   }, [ring, validation.valid, spacing])
 
   /* --------------------------- Exportação ---------------------------- */
-  const safeName = missionName.trim().replace(/[^\w\-]+/g, '-') || 'missao'
+  const safeName = missionName.trim().replace(/[^\w-]+/g, '-') || 'missao'
   const canExportKML = Boolean(ring && validation.valid)
   // B: seguir terreno + foto por waypoint é um erro explícito, não uma
   // exportação com alturas planas
@@ -1473,7 +1602,7 @@ function AppInner({ lang, setLang }) {
     Boolean(planOk && planOk.waypoints.length >= 2) && !(terrainFollow.enabled && photoMode === 'waypoint')
 
   const handleExportKML = () => {
-    if (canExportKML) exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null)
+    if (canExportKML) runExport(() => exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null))
   }
 
   const handleExportGcps = () => {
@@ -1537,7 +1666,7 @@ function AppInner({ lang, setLang }) {
           if (at == null) return b
           return { ...b, perWaypoint: withPitch(b.perWaypoint, at) }
         })
-        exportBlocksZip(exportParams, annotated)
+        runExport(() => exportBlocksZip(exportParams, annotated))
         return
       }
       let at
@@ -1553,9 +1682,9 @@ function AppInner({ lang, setLang }) {
     }
 
     if (exportBlocks && exportBlocks.length > 1) {
-      exportBlocksZip(exportParams, exportBlocks)
+      runExport(() => exportBlocksZip(exportParams, exportBlocks))
     } else {
-      exportWPMLKmz(exportParams)
+      runExport(() => exportWPMLKmz(exportParams))
     }
   }
 
@@ -1564,7 +1693,7 @@ function AppInner({ lang, setLang }) {
   const handleExportInspection = () => {
     if (inspectPoints.length === 0) return
     const { waypoints, perWaypoint } = inspectionToWaypoints(inspectPoints)
-    exportWPMLKmz({
+    runExport(() => exportWPMLKmz({
       name: buildExportName(missionName, 'inspect', { part: `n${inspectPoints.length}` }),
       waypoints,
       perWaypoint,
@@ -1575,7 +1704,7 @@ function AppInner({ lang, setLang }) {
       triggerMode: 'distance',
       gimbalPitch: params.gimbalPitch,
       sensorType: sensor.type,
-    })
+    }))
   }
 
   /* ----------------------------- Layout ------------------------------ */
@@ -1682,6 +1811,22 @@ function AppInner({ lang, setLang }) {
         </div>
       </header>
 
+      {exportError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 border-b border-red-800 bg-red-950/60 px-4 py-2 text-xs text-red-200"
+        >
+          <span className="font-semibold">⚠ {t('export.failed')}</span>
+          <span>{t(`export.err.${exportError}`)}</span>
+          <button
+            onClick={() => setExportError(null)}
+            className="ml-auto rounded border border-red-700 px-2 py-0.5 font-medium hover:bg-red-900"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="flex min-h-0 flex-1">
         <div className="flex h-full shrink-0 flex-col">
           <MissionModeSelector mode={missionMode} onChange={changeMissionMode} />
@@ -1716,6 +1861,21 @@ function AppInner({ lang, setLang }) {
                 onClearPoi={clearOrbitPoi}
                 onExportSingle={handleExportOrbitSingle}
                 onExportPerLevel={handleExportOrbitPerLevel}
+              />
+            )}
+            {missionMode === 'corridor' && (
+              <CorridorPanel
+                corridorConfig={corridorConfig}
+                setCorridorParam={setCorridorParam}
+                corridorPlan={corridorPlan}
+                sensorType={sensor.type}
+                mode={mode}
+                onStartAxis={startCorridorDraw}
+                onFinishAxis={handleFinishCorridor}
+                onUndoAxisPoint={() => setDraftVertices((d) => d.slice(0, -1))}
+                onClearAxis={clearCorridorAxis}
+                draftCount={draftVertices.length}
+                onExport={handleExportCorridor}
               />
             )}
             {missionMode === 'area' && (
@@ -1824,6 +1984,7 @@ function AppInner({ lang, setLang }) {
             inspectPoints={inspectPoints}
             onInspectDrag={handleInspectDrag}
             facePreview={facePreview}
+            corridorPreview={corridorPreview}
             orbitPreview={orbitPreview}
             onOrbitPoiDrag={handleOrbitPoiDrag}
             fitKey={fitKey}

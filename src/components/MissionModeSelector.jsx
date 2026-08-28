@@ -9,13 +9,14 @@ const MODES = [
   { id: 'area', key: 'mode.area' },
   { id: 'face', key: 'mode.face' },
   { id: 'orbit', key: 'mode.orbit' },
+  { id: 'corridor', key: 'mode.corridor' },
 ]
 
 export default function MissionModeSelector({ mode, onChange }) {
   const t = useT()
   return (
     <div className="w-80 shrink-0 border-b border-r border-slate-800 bg-slate-950 px-4 py-2.5 lg:w-96">
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         {MODES.map((m) => (
           <button
             key={m.id}

@@ -24,15 +24,46 @@ import {
   tilePolygonWithSquares,
   validateRing,
 } from './src/utils/geo.js'
-import { buildExportName, buildSimpleKML, buildTemplateKML, buildWaylinesWPML } from './src/utils/exporters.js'
+import {
+  MAX_RTH_HEIGHT_M,
+  MAX_SPEED_MS,
+  MAX_WAYPOINTS_PER_ROUTE,
+  MissionExportError,
+  FINISH_ACTIONS,
+  RC_LOST_ACTIONS,
+  RC_LOST_MODES,
+  buildExportName,
+  buildSimpleKML,
+  buildTemplateKML,
+  buildWaylinesWPML,
+  escapeXml,
+  turnParams,
+  validateExportParams,
+} from './src/utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
 import { decodeTerrarium, despikeElevations, fitSlopePlane, simplifyProfile, terrainFollowLines } from './src/utils/terrain.js'
-import { readFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { XMLValidator } from 'fast-xml-parser'
 import { groupApplies } from './src/data/checklist.js'
 import { M_PER_DEG_LAT, metersPerDegLon, metersPerDegLonSafe } from './src/utils/units.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
 import { DEFAULT_FACE_CONFIG, checkFaceClearance, generateFacePlan, normalizeFaceConfig } from './src/utils/faceMode.js'
 import { headingTicks } from './src/utils/preview.js'
+import {
+  DEFAULT_CORRIDOR_CONFIG,
+  MAX_PASSES,
+  corridorBufferRing,
+  generateCorridorPlan,
+  normalizeCorridorConfig,
+  offsetPolylineMiter,
+  offsetRuns,
+  passOffsets,
+  pointPolylineDistance,
+  polylineLength,
+  resamplePolyline,
+  sampleByArcLength,
+  simplifyPolyline,
+} from './src/utils/corridor.js'
 import { DEFAULT_ORBIT_CONFIG, generateOrbitPlan, normalizeOrbitConfig, orbitLevelsToBlocks } from './src/utils/orbit.js'
 import { inspectionToWaypoints, nearestNeighbourOrder, reorderList } from './src/utils/inspect.js'
 import {
@@ -416,7 +447,7 @@ if (planL && !planL.error) {
   check('planL troços dentro da área', allInside)
 }
 
-/* 8a2. Decomposição celular boustrophedon (T3.1, port do FlyPath) */
+/* 8a2. Decomposição celular boustrophedon (T3.1, Choset & Pignon 1998) */
 {
   // duas linhas cheias, depois duas com um vão ao meio → 3 células:
   // base + dois braços, ambos adjacentes à base
@@ -502,7 +533,7 @@ if (planL && !planL.error) {
   check('U: a ordem antiga atravessava o vão (controlo)', legacyOut)
 }
 
-/* 8a4. Direcao otima de voo (T3.2, port do FlyPath) */
+/* 8a4. Direcao otima de voo (T3.2) */
 {
   const opt = findOptimalDirection(rectNS, sp)
   const d90 = Math.min(Math.abs(opt - 90), 180 - Math.abs(opt - 90))
@@ -1312,8 +1343,68 @@ check('waylines Mapper+: sem acoes de camara',
     (wlOrb.match(/smoothTransition/g) || []).length === orb.stats.waypointCount &&
       (wlOrb.match(/takePhoto/g) || []).length === orb.stats.waypointCount)
   // por defeito o modo de viragem antigo mantem-se
+  const wlOrbBase = buildWaylinesWPML(wpmlParams)
   check('orbita: turnMode por defeito inalterado',
-    buildWaylinesWPML(wpmlParams).includes('toPointAndStopWithDiscontinuityCurvature'))
+    wlOrbBase.includes('toPointAndStopWithDiscontinuityCurvature'))
+  /* 9c1. Parâmetros de viragem coerentes com o modo (especificação WPML,
+     common-element.md). O voo curvo contínuo das órbitas exige
+     useStraightLine=0: a 1 a especificação aproxima cada troço de uma recta
+     entre os dois pontos, o que transformaria a órbita num polígono, e passa
+     a exigir waypointTurnDampingDist > 0 (0 está fora do intervalo). */
+  {
+    const straightLineOf = (xml) => [...new Set(
+      [...xml.matchAll(/<wpml:useStraightLine>([^<]*)</g)].map((m) => m[1]))]
+    const dampingOf = (xml) => [...new Set(
+      [...xml.matchAll(/<wpml:waypointTurnDampingDist>([^<]*)</g)].map((m) => m[1]))]
+
+    check('viragem: grelha/fachada mantém recta com paragem (inalterado)',
+      straightLineOf(wlOrbBase).join() === '1' && dampingOf(wlOrbBase).join() === '0')
+    check('viragem: órbita em curva contínua usa useStraightLine=0',
+      straightLineOf(wlOrb).join() === '0',
+      straightLineOf(wlOrb).join())
+    check('viragem: órbita não escreve amortecimento fora do intervalo',
+      dampingOf(wlOrb).every((d) => Number(d) === 0),
+      dampingOf(wlOrb).join())
+    check('viragem: coordinateTurn escreve amortecimento > 0 (obrigatório)',
+      turnParams('coordinateTurn', 0).damping > 0 &&
+        turnParams('toPointAndPassWithContinuityCurvature', 0).straightLine === 0)
+    check('viragem: template.kml segue o mesmo modo da rota',
+      buildTemplateKML({ ...wpmlParams, turnMode: 'toPointAndPassWithContinuityCurvature' })
+        .includes('<wpml:globalUseStraightLine>0</wpml:globalUseStraightLine>'))
+  }
+
+  /* 9c2. missionConfig: globalRTHHeight é obrigatório em waylines.wpml
+     (waylines-wpml.md) e as acções de segurança têm enums fechados. */
+  {
+    const tag = (xml, t) => xml.match(new RegExp(`<wpml:${t}>([^<]*)<`))?.[1]
+    check('missionConfig: globalRTHHeight presente (obrigatório)',
+      tag(wlOrbBase, 'globalRTHHeight') != null, tag(wlOrbBase, 'globalRTHHeight'))
+    check('missionConfig: RTH acima do tecto da missão',
+      Number(tag(wlOrbBase, 'globalRTHHeight')) >= Number(wpmlParams.altitude))
+    const custom = buildWaylinesWPML({
+      ...wpmlParams, finishAction: 'autoLand', exitOnRCLost: 'goContinue',
+      executeRCLostAction: 'hover', rthHeightM: 123,
+    })
+    check('missionConfig: acções de segurança configuráveis',
+      tag(custom, 'finishAction') === 'autoLand' &&
+        tag(custom, 'exitOnRCLost') === 'goContinue' &&
+        tag(custom, 'executeRCLostAction') === 'hover' &&
+        tag(custom, 'globalRTHHeight') === '123')
+    const bogus = buildWaylinesWPML({
+      ...wpmlParams, finishAction: 'hover', executeRCLostAction: 'zzz', exitOnRCLost: 'zzz',
+    })
+    // 'hover' é válido para RC-lost mas NÃO para finishAction; um valor fora
+    // do enum tem de cair no seguro, nunca ser escrito tal e qual.
+    check('missionConfig: enum inválido cai no valor por omissão',
+      tag(bogus, 'finishAction') === 'goHome' &&
+        tag(bogus, 'executeRCLostAction') === 'goBack' &&
+        tag(bogus, 'exitOnRCLost') === 'executeLostAction')
+    check('missionConfig: enums declarados batem com a especificação',
+      FINISH_ACTIONS.join() === 'goHome,noAction,autoLand,gotoFirstWaypoint' &&
+        RC_LOST_MODES.join() === 'executeLostAction,goContinue' &&
+        RC_LOST_ACTIONS.join() === 'goBack,landing,hover')
+  }
+
   check('orbita: levels por contagem/passo',
     generateOrbitPlan(center, { sensor, radiusM: 50, levels: { count: 2, startM: 20, stepM: 15 } })
       .stats.heights.join(',') === '20,35')
@@ -1599,6 +1690,486 @@ check('waylines Mapper+: sem acoes de camara',
       comp && comp.stats.photoCountArea === null && comp.stats.photoCount === plans[0].stats.photoCount + plans[1].stats.photoCount)
     const compD = composeCellPlans(rectB, [rectB, cB2].map((r) => generateFlightLines(r, { ...base, overshootM: 10 })), { photoIntervalM: 20, overshootM: 10 })
     check('8n celulas modo distancia: sem perLine, photoCountArea mantido', compD && !('perLine' in compD) && compD.stats.photoCountArea != null)
+  }
+}
+
+/* 11. Endurecimento da exportacao (E4.1)
+   ---------------------------------------------------------------------------
+   As assercoes anteriores verificam o XML por subcadeia, o que nao distingue
+   um documento valido de um documento com `NaN` nas coordenadas ou
+   `undefined` numa altura: ambos contem a subcadeia procurada. Esta seccao
+   analisa o XML gerado com um analisador a serio, rejeita entrada invalida na
+   fronteira da exportacao e compara amostras representativas com ficheiros de
+   referencia versionados. */
+{
+  const xmlWellFormed = (xml) => {
+    const r = XMLValidator.validate(xml)
+    return r === true ? null : (r?.err?.msg ?? 'invalido')
+  }
+  const JUNK = /(^|>)\s*(NaN|undefined|Infinity|null)\s*(<|$)/
+  const enums = {
+    droneEnumValue: 77, droneSubEnumValue: 0,
+    payloadEnumValue: 66, payloadSubEnumValue: 0, payloadPositionIndex: 0,
+  }
+  const sensorCam = resolveSensor(PAYLOADS.M3E_WIDE, DEFAULT_CUSTOM_SENSOR)
+
+  /* 11a. Matriz de documentos representativos: todos tem de analisar. */
+  const areaPlan = generateFlightLines(rectNS, {
+    spacingM: 40, angleDeg: 90, bufferPct: 0, photoIntervalM: 20, speed: 10,
+  })
+  const areaWp = generateFlightLines(rectNS, {
+    spacingM: 40, angleDeg: 90, bufferPct: 0, photoIntervalM: 20, speed: 10,
+    overshootM: 15, photoMode: 'waypoint',
+  })
+  const faceCfgG = normalizeFaceConfig(DEFAULT_FACE_CONFIG)
+  const facePlanG = generateFacePlan([[-9.14, 38.70], [-9.138, 38.70]], {
+    sensor: sensorCam,
+    faceHeightM: faceCfgG.heightM,
+    standoffM: faceCfgG.standoffM,
+    side: faceCfgG.side,
+    verticalOverlapPct: faceCfgG.verticalOverlapPct,
+    horizontalOverlapPct: faceCfgG.horizontalOverlapPct,
+    gimbalPitch: faceCfgG.gimbalPitch,
+    speed: faceCfgG.speedMS,
+  })
+  const orbitPlanG = generateOrbitPlan([-9.14, 38.70], {
+    sensor: sensorCam, radiusM: 60, levels: { count: 2, startM: 30, stepM: 20 },
+    poiHeightM: 15, speed: 3,
+  })
+
+  const scenarios = [
+    ['area-distancia', {
+      name: 'ref_area', waypoints: areaPlan.waypoints, altitude: 100, speed: 10,
+      wpml: enums, photoIntervalM: 20, triggerMode: 'distance', sensorType: 'camera',
+    }],
+    ['area-waypoint-overshoot', {
+      name: 'ref_area_wp', waypoints: areaWp.waypoints, perWaypoint: areaWp.perWaypoint,
+      altitude: 100, speed: 10, wpml: enums, photoIntervalM: 0,
+      triggerMode: 'waypoint', sensorType: 'camera',
+    }],
+    ['area-lidar', {
+      name: 'ref_lidar', waypoints: areaPlan.waypoints, altitude: 80, speed: 8,
+      wpml: enums, photoIntervalM: 0, triggerMode: 'distance', sensorType: 'lidar',
+    }],
+    ['area-terreno', {
+      name: 'ref_terreno',
+      waypoints: areaPlan.waypoints.map(([lo, la], i) => [lo, la, 90 + (i % 7)]),
+      altitude: 90, speed: 10, wpml: enums, photoIntervalM: 25,
+      triggerMode: 'distance', sensorType: 'camera',
+    }],
+    ['fachada', {
+      name: 'ref_face', waypoints: facePlanG.waypoints, perWaypoint: facePlanG.perWaypoint,
+      altitude: 40, speed: 3, wpml: enums, photoIntervalM: 0,
+      triggerMode: 'distance', sensorType: 'camera', gimbalPitch: 0,
+    }],
+    ['corredor', (() => {
+      const axis = [[-9.14, 38.70], [-9.13, 38.70], [-9.125, 38.7035]]
+      const cp = generateCorridorPlan(axis, {
+        sensor: sensorCam, altitude: 100, bufferM: 150, sideOverlapPct: 70,
+        photoIntervalM: 20, speed: 8, photoMode: 'waypoint',
+      })
+      return {
+        name: 'ref_corridor', waypoints: cp.waypoints, perWaypoint: cp.perWaypoint,
+        altitude: 100, speed: 8, wpml: enums, photoIntervalM: 0,
+        triggerMode: 'waypoint', sensorType: 'camera', gimbalPitch: -90,
+      }
+    })()],
+    ['orbita', {
+      name: 'ref_orbit', waypoints: orbitPlanG.waypoints, perWaypoint: orbitPlanG.perWaypoint,
+      turnMode: orbitPlanG.turnMode, altitude: 50, speed: 3, wpml: enums,
+      photoIntervalM: 0, triggerMode: 'distance', sensorType: 'camera',
+      gimbalPitch: orbitPlanG.perLevel[0].gimbalPitch,
+    }],
+  ]
+
+  for (const [label, params] of scenarios) {
+    const fixed = { ...params, createTimeMs: 1756000000000 }
+    const tplX = buildTemplateKML(fixed)
+    const wlX = buildWaylinesWPML(fixed)
+    check(`XML: ${label} template.kml analisa`, xmlWellFormed(tplX) === null, xmlWellFormed(tplX) ?? '')
+    check(`XML: ${label} waylines.wpml analisa`, xmlWellFormed(wlX) === null, xmlWellFormed(wlX) ?? '')
+    check(`XML: ${label} sem valores nao-finitos`,
+      !JUNK.test(tplX) && !JUNK.test(wlX))
+  }
+  const kmlDoc = buildSimpleKML(rectNS, 'Área & "teste" <x>', [-9.14, 38.7], null, areaPlan.lines)
+  check('XML: KML simples analisa com nome hostil', xmlWellFormed(kmlDoc) === null)
+
+  /* 11b. Entrada invalida tem de falhar na fronteira, nunca ser escrita. */
+  const rejects = (label, params, code) => {
+    let got = null
+    try { buildWaylinesWPML(params) } catch (e) { got = e }
+    check(`rejeita ${label}`,
+      got instanceof MissionExportError && got.code === code,
+      got ? `${got.code}` : 'nao lancou')
+  }
+  const okParams = scenarios[0][1]
+  rejects('coordenada NaN', { ...okParams, waypoints: [[NaN, 38.7]] }, 'waypoint-not-finite')
+  rejects('longitude fora de alcance', { ...okParams, waypoints: [[999, 38.7]] }, 'waypoint-out-of-range')
+  rejects('altura Infinity', { ...okParams, waypoints: [[-9.1, 38.7, Infinity]] }, 'height-not-finite')
+  rejects('altitude ausente', { ...okParams, altitude: undefined }, 'altitude-not-finite')
+  rejects('velocidade nula', { ...okParams, speed: 0 }, 'speed-invalid')
+  rejects('enums WPML em falta', { ...okParams, wpml: {} }, 'wpml-enums-missing')
+  rejects('sem waypoints', { ...okParams, waypoints: [] }, 'no-waypoints')
+  rejects('waypoint malformado', { ...okParams, waypoints: [[-9.1]] }, 'waypoint-malformed')
+  rejects('parametro nao-finito', { ...okParams, photoIntervalM: NaN }, 'param-not-finite')
+  check('limite de waypoints alinhado com wpml:index [0, 65535]',
+    MAX_WAYPOINTS_PER_ROUTE === 65536)
+
+  /* 11b2. Auditoria: a validacao original so verificava finitude, pelo que
+     valores finitos mas absurdos (altitude nula ou negativa, velocidade de
+     1e9, intervalo de disparo negativo, altura de regresso negativa) eram
+     escritos no ficheiro. Dominio agora verificado. */
+  rejects('altitude nula', { ...okParams, altitude: 0 }, 'altitude-not-positive')
+  rejects('altitude negativa', { ...okParams, altitude: -100 }, 'altitude-not-positive')
+  rejects('velocidade absurda', { ...okParams, speed: 1e9 }, 'speed-out-of-range')
+  rejects('intervalo de disparo negativo', { ...okParams, photoIntervalM: -5 }, 'param-out-of-range')
+  rejects('altura de regresso negativa', { ...okParams, rthHeightM: -50 }, 'param-out-of-range')
+  rejects('altura de regresso absurda', { ...okParams, rthHeightM: 9000 }, 'param-out-of-range')
+  rejects('pitch de gimbal impossivel', { ...okParams, gimbalPitch: -400 }, 'param-out-of-range')
+  check('limiares de sanidade declarados', MAX_SPEED_MS === 30 && MAX_RTH_HEIGHT_M === 1500)
+  check('velocidade e altitude plausiveis continuam a passar',
+    Boolean(buildWaylinesWPML({ ...okParams, speed: 23, altitude: 120, rthHeightM: 150 })))
+  check('validateExportParams devolve os parametros validos',
+    validateExportParams(okParams) === okParams)
+
+  /* 11c. Caracteres proibidos pelo XML 1.0 nao podem chegar ao ficheiro. */
+  const ctl = String.fromCharCode(0x01, 0x07, 0x1b, 0x7f)
+  const dirty = buildSimpleKML(rectNS, `missao${ctl}x`)
+  check('escapeXml remove controlos ilegais em XML 1.0',
+    !new RegExp(`[${ctl}]`).test(dirty) && xmlWellFormed(dirty) === null)
+  check('escapeXml preserva tab/LF/CR e escapa metacaracteres',
+    escapeXml('a\tb\nc&d<e') === 'a\tb\nc&amp;d&lt;e')
+    /* Auditoria: um substituto isolado (metade de um par) tambem nao e um
+       caractere XML valido, mas as strings de JavaScript admitem-no e nenhum
+       analisador em JavaScript o denuncia — o gate de XML nao o via, e o
+       ficheiro so seria recusado pelo leitor do Pilot 2. */
+    const hi = String.fromCharCode(0xd800)
+    const lo = String.fromCharCode(0xdc00)
+    check('escapeXml remove substitutos isolados',
+      !/[\uD800-\uDFFF]/.test(escapeXml(`a${hi}b${lo}c`)),
+      JSON.stringify(escapeXml(`a${hi}b${lo}c`)))
+    check('escapeXml preserva pares substitutos validos (emoji)',
+      escapeXml('a\u{1F680}b') === 'a\u{1F680}b')
+    check('documento com substituto isolado sai limpo',
+      !/[\uD800-\uDFFF]/.test(buildSimpleKML(rectNS, `missao${hi}x`)))
+
+  /* 11d. Fuzz determinista: planos validos aleatorios, XML sempre analisavel.
+     Gerador congruencial com semente fixa para qualquer falha ser reproduzivel. */
+  {
+    let seed = 20260827
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff)
+    let bad = 0
+    let ran = 0
+    for (let i = 0; i < 60; i++) {
+      const lat = -60 + rnd() * 120
+      const lon = -170 + rnd() * 340
+      const d = 0.004 + rnd() * 0.02
+      const ring = [[lon, lat], [lon + d, lat], [lon + d, lat + d], [lon, lat + d]]
+      const plan = generateFlightLines(ring, {
+        spacingM: 20 + rnd() * 120, angleDeg: rnd() * 180, bufferPct: 0,
+        photoIntervalM: 5 + rnd() * 40, speed: 2 + rnd() * 13,
+        overshootM: rnd() < 0.5 ? rnd() * 20 : 0,
+      })
+      if (!plan || plan.error || !plan.waypoints?.length) continue
+      ran += 1
+      const xml = buildWaylinesWPML({
+        name: `fuzz${i}`, waypoints: plan.waypoints, altitude: 20 + rnd() * 200,
+        speed: 2 + rnd() * 13, wpml: enums, photoIntervalM: 10 + rnd() * 30,
+        triggerMode: 'distance', sensorType: 'camera',
+      })
+      if (xmlWellFormed(xml) !== null || JUNK.test(xml)) bad += 1
+    }
+    check('fuzz: 60 planos aleatorios produzem XML analisavel', bad === 0 && ran > 40,
+      `${ran} planos, ${bad} defeituosos`)
+  }
+
+  /* 11f. Cobertura de tradução: todo o código que o exportador consegue
+     lançar tem de ter mensagem nas duas línguas, ou a interface mostra a
+     chave crua ao operador em vez do motivo da falha. O i18n é JSX e não
+     importa em Node, por isso lê-se a fonte. */
+  {
+    const src = readFileSync(new URL('./src/utils/exporters.js', import.meta.url), 'utf8')
+    const dict = readFileSync(new URL('./src/i18n.jsx', import.meta.url), 'utf8')
+    const codes = [...new Set(
+      [...src.matchAll(/new MissionExportError\(\s*'([^']+)'/g)].map((m) => m[1]))]
+    const missing = codes.filter((c) => !dict.includes(`'export.err.${c}'`))
+    check('i18n: todos os códigos de erro de exportação têm tradução',
+      missing.length === 0 && codes.length >= 9,
+      missing.length ? `em falta: ${missing.join(', ')}` : `${codes.length} códigos`)
+  }
+
+  /* 11e. Ficheiros de referencia. Qualquer alteracao ao exportador passa a
+     aparecer como diferenca revisivel em tests/golden/, em vez de mudar em
+     silencio. Regenerar com UPDATE_GOLDEN=1 node smoke-test.mjs. */
+  {
+    const dir = new URL('./tests/golden/', import.meta.url)
+    const update = process.env.UPDATE_GOLDEN === '1'
+    if (update) mkdirSync(dir, { recursive: true })
+    for (const [label, params] of scenarios) {
+      const fixed = { ...params, createTimeMs: 1756000000000 }
+      for (const [suffix, xml] of [
+        ['template.kml', buildTemplateKML(fixed)],
+        ['waylines.wpml', buildWaylinesWPML(fixed)],
+      ]) {
+        const file = new URL(`${label}.${suffix}`, dir)
+        if (update) {
+          writeFileSync(file, xml)
+          continue
+        }
+        let ref = null
+        try { ref = readFileSync(file, 'utf8') } catch { ref = null }
+        check(`referencia: ${label}.${suffix}`, ref === xml,
+          ref === null ? 'em falta (UPDATE_GOLDEN=1 para gerar)' : (ref === xml ? '' : 'difere'))
+      }
+    }
+  }
+}
+
+/* 12. Mapeamento de corredor (E5.1)
+   ---------------------------------------------------------------------------
+   Cobertura de infraestruturas lineares a partir de um eixo. As duas
+   propriedades que distinguem uma implementacao correcta de uma ingenua sao
+   (a) o desvio paralelo nao pode dobrar-se sobre si proprio onde a curvatura
+   e mais apertada do que o desvio, e (b) as posicoes de fotografia tem de ser
+   medidas por comprimento de arco DE CADA passagem, nao projectadas do eixo,
+   ou a sobreposicao frontal falha na berma exterior. */
+{
+  const sensorC = resolveSensor(PAYLOADS.M3E_WIDE, DEFAULT_CUSTOM_SENSOR)
+  const baseOpts = {
+    sensor: sensorC, altitude: 100, bufferM: 150, sideOverlapPct: 70,
+    photoIntervalM: 20, speed: 8,
+  }
+  const straight = [[-9.14, 38.70], [-9.10, 38.70]]
+  const bend = [[-9.14, 38.70], [-9.13, 38.70], [-9.125, 38.7035], [-9.115, 38.704]]
+  // Meia-circunferencia de raio ~60 m: mais apertada do que os desvios
+  // exteriores, portanto as passagens interiores TEM de dobrar.
+  const halfCircle = []
+  for (let a = 0; a <= 180; a += 10) {
+    const rLon = 60 / (111320 * Math.cos((38.7 * Math.PI) / 180))
+    halfCircle.push([-9.14 + rLon * Math.cos((a * Math.PI) / 180),
+                     38.70 + (60 / 110574) * Math.sin((a * Math.PI) / 180)])
+  }
+
+  /* 12a. Distribuicao das passagens. */
+  {
+    const across = 140.76
+    const spacing = 42.23
+    check('corredor: pegada cobre o corredor -> passagem central unica',
+      passOffsets(50, spacing, across).join() === '0')
+    const o = passOffsets(150, spacing, across)
+    check('corredor: desvios simetricos e centrados em 0',
+      o.length > 1 && Math.abs(o[0] + o[o.length - 1]) < 1e-9,
+      o.map((v) => v.toFixed(1)).join(','))
+    const gaps = o.slice(1).map((v, i) => v - o[i])
+    check('corredor: espacamento entre passagens nunca excede o exigido',
+      gaps.every((g) => g <= spacing + 1e-9), `${Math.max(...gaps).toFixed(2)} <= ${spacing}`)
+    check('corredor: passagem exterior cobre a berma',
+      Math.max(...o) + across / 2 >= 150)
+    // A contagem cresce uma de cada vez: um salto significaria uma
+    // descontinuidade visivel no painel ao arrastar o buffer.
+    let prev = passOffsets(60, spacing, across).length
+    let jump = null
+    for (let b = 61; b <= 400; b += 1) {
+      const n = passOffsets(b, spacing, across).length
+      if (n - prev > 1) { jump = `${b} m: ${prev}->${n}`; break }
+      prev = n
+    }
+    check('corredor: contagem de passagens cresce uma de cada vez', jump === null, jump ?? 'ok')
+    /* Auditoria: passOffsets recortava a contagem em MAX_PASSES e devolvia
+       menos passagens do que a largura pedida, sem qualquer aviso — o
+       operador julgaria ter mapeado uma faixa que nunca voou. Agora devolve
+       o numero exigido e o plano recusa acima do limite. */
+    const wide = passOffsets(6000, spacing, across)
+    check('corredor: desvios cobrem sempre a largura pedida, sem recorte',
+      Math.max(...wide) + across / 2 >= 6000,
+      `${wide.length} passagens, alcance ${(Math.max(...wide) + across / 2).toFixed(0)} m`)
+  }
+
+  /* 12b. Desvio em esquadria: um vertice mantem-se a |desvio| dos DOIS
+     segmentos. Uma normal media daria |desvio|*cos(phi) e encolheria a
+     cobertura na curva. */
+  {
+    const corner = [[0, 0], [100, 0], [100, 100]]   // canto de 90 graus
+    const out = offsetPolylineMiter(corner, 20)
+    const mid = out[1]
+    check('corredor: esquadria a 90 graus fica a 20 m dos dois segmentos',
+      Math.abs(pointPolylineDistance(mid, corner) - 20) < 1e-6,
+      pointPolylineDistance(mid, corner).toFixed(4))
+    check('corredor: esquadria mantem um ponto por vertice', out.length === corner.length)
+    // Inversao quase completa: a esquadria dispara, tem de cair em bisel.
+    const spike = [[0, 0], [100, 0], [0, 0.5]]
+    check('corredor: inversao aguda cai em bisel finito',
+      offsetPolylineMiter(spike, 20).every((q) => Number.isFinite(q[0]) && Number.isFinite(q[1])))
+  }
+
+  /* 12c. Nenhuma passagem voa dentro de uma dobra. */
+  {
+    const plan = generateCorridorPlan(halfCircle, { ...baseOpts, altitude: 60, bufferM: 120, photoIntervalM: 15, photoMode: 'waypoint' })
+    check('corredor: curva apertada produz plano valido', Boolean(plan?.lines?.length), plan?.error ?? '')
+    const axisM = halfCircle.map(([lo, la]) => [
+      (lo + 9.14) * (111320 * Math.cos((38.7 * Math.PI) / 180)), (la - 38.70) * 110574,
+    ])
+    let violations = 0
+    for (const seg of plan.lines) {
+      const ptsM = seg.map(([lo, la]) => [
+        (lo + 9.14) * (111320 * Math.cos((38.7 * Math.PI) / 180)), (la - 38.70) * 110574,
+      ])
+      const ds = ptsM.map((q) => pointPolylineDistance(q, axisM))
+      // a que desvio pertence esta passagem
+      const own = plan.stats.offsets
+        .map(Math.abs)
+        .reduce((best, o) => (Math.abs(o - Math.min(...ds)) < Math.abs(best - Math.min(...ds)) ? o : best))
+      for (const d of ds) if (d < own - Math.max(0.5, own * 0.02)) violations += 1
+    }
+    check('corredor: nenhum waypoint cai dentro de uma dobra', violations === 0, `${violations} violacoes`)
+    check('corredor: passagens impossiveis sao eliminadas, nao voadas em laco',
+      plan.stats.runCount < plan.stats.passCount,
+      `${plan.stats.runCount} trocos para ${plan.stats.passCount} passagens`)
+  }
+
+  /* 12d. Um eixo recto ou de curvatura suave nao parte passagens: cada
+     desvio da exactamente um troco. */
+  for (const [label, line] of [['recto', straight], ['curvatura suave', bend]]) {
+    const plan = generateCorridorPlan(line, baseOpts)
+    check(`corredor: eixo ${label} -> um troco por passagem`,
+      plan.stats.runCount === plan.stats.passCount,
+      `${plan.stats.runCount}/${plan.stats.passCount}`)
+  }
+
+  /* 12e. Amostragem por comprimento de arco de cada passagem. */
+  {
+    const plan = generateCorridorPlan(bend, { ...baseOpts, photoMode: 'waypoint' })
+    let worst = 0
+    for (const seg of plan.lines) {
+      for (let i = 1; i < seg.length; i++) {
+        worst = Math.max(worst, turf.distance(seg[i - 1], seg[i], { units: 'meters' }))
+      }
+    }
+    check('corredor: fotos consecutivas nunca acima do intervalo',
+      worst <= 20 * 1.02, `${worst.toFixed(2)} m para 20 m`)
+    // Passagens de comprimentos diferentes tem contagens diferentes: prova de
+    // que a amostragem e por passagem e nao projectada do eixo.
+    const counts = plan.lines.map((l) => l.length)
+    check('corredor: cada passagem amostrada pelo seu proprio arco',
+      new Set(counts).size > 1, counts.join(','))
+    check('corredor: cada waypoint leva accao de fotografia',
+      plan.perWaypoint.filter(Boolean).length === plan.waypoints.length)
+    check('corredor: perLine soma aos waypoints',
+      plan.perLine.reduce((a, b) => a + b, 0) === plan.waypoints.length)
+  }
+
+  /* 12e2. Payload LiDAR: o corredor e um caso de uso real (linhas
+     electricas, condutas). O espacamento sai da largura de varrimento e a
+     missao nao leva accoes de camara. O painel chegou a marcar isto como
+     erro, copiando a regra do modo fachada, onde a camara e mesmo exigida. */
+  {
+    const lidar = resolveSensor(
+      { id: 'X', type: 'lidar', fov: 70, effectiveFov: 70 }, DEFAULT_CUSTOM_SENSOR)
+    const plan = generateCorridorPlan(bend, {
+      ...baseOpts, sensor: lidar, photoIntervalM: 0, sideOverlapPct: 60,
+    })
+    check('corredor: payload LiDAR gera plano valido',
+      !plan.error && plan.stats.passCount > 1, plan.error ?? `${plan.stats.passCount} passagens`)
+    check('corredor: LiDAR espaca pelas passagens da largura de varrimento',
+      Math.abs(plan.stats.footprintAcrossM - 2 * 100 * Math.tan((70 * Math.PI) / 180 / 2)) < 0.01,
+      plan.stats.footprintAcrossM.toFixed(2))
+    check('corredor: LiDAR nao conta fotografias', plan.stats.photoCount === null)
+    const xml = buildWaylinesWPML({
+      name: 'lidar_corr', waypoints: plan.waypoints, altitude: 100, speed: 8,
+      wpml: { droneEnumValue: 60, payloadEnumValue: 65534 },
+      photoIntervalM: 0, triggerMode: 'distance', sensorType: 'lidar',
+    })
+    check('corredor: WPML LiDAR sem accoes de camara nem de gimbal',
+      !xml.includes('takePhoto') && !xml.includes('gimbalRotate'))
+  }
+
+  /* 12f. Modo distancia: sem accoes por waypoint, geometria preservada. */
+  {
+    const plan = generateCorridorPlan(bend, baseOpts)
+    check('corredor: modo distancia nao emite accoes por waypoint',
+      plan.perWaypoint === undefined && plan.perLine === undefined)
+    check('corredor: modo distancia estima fotos pelo comprimento',
+      plan.stats.photoCount > 0)
+    // A simplificacao nao pode encurtar a passagem: os extremos tem de ser
+    // exactamente os do troco original, ou a cobertura perde as pontas.
+    const dense = generateCorridorPlan(bend, { ...baseOpts, simplifyM: 0 })
+    check('corredor: simplificacao preserva os extremos exactos de cada passagem',
+      plan.lines.length === dense.lines.length &&
+        plan.lines.every((l, i) => {
+          const d = dense.lines[i]
+          return turf.distance(l[0], d[0], { units: 'meters' }) < 0.01 &&
+            turf.distance(l[l.length - 1], d[d.length - 1], { units: 'meters' }) < 0.01
+        }))
+    check('corredor: simplificacao reduz mesmo o numero de pontos',
+      plan.lines.reduce((n, l) => n + l.length, 0) <
+        dense.lines.reduce((n, l) => n + l.length, 0))
+  }
+
+  /* 12g. Auxiliares puros. */
+  {
+    check('corredor: resample mantem todos os vertices originais',
+      [[0, 0], [50, 0], [50, 40]].every((v) =>
+        resamplePolyline([[0, 0], [50, 0], [50, 40]], 7).some(
+          (q) => Math.hypot(q[0] - v[0], q[1] - v[1]) < 1e-9)))
+    const arc = sampleByArcLength([[0, 0], [100, 0], [100, 100]], 30)
+    check('corredor: amostragem por arco fixa os extremos',
+      arc[0][0] === 0 && arc[0][1] === 0 &&
+        arc[arc.length - 1][0] === 100 && arc[arc.length - 1][1] === 100)
+    check('corredor: amostragem por arco respeita o passo',
+      arc.slice(1).every((q, i) => Math.hypot(q[0] - arc[i][0], q[1] - arc[i][1]) <= 30 + 1e-6))
+    check('corredor: simplificacao remove colineares e guarda o canto',
+      simplifyPolyline([[0, 0], [10, 0], [20, 0], [30, 0], [30, 10]], 0.5).length === 3)
+    check('corredor: comprimento de polilinha',
+      Math.abs(polylineLength([[0, 0], [3, 4], [3, 14]]) - 15) < 1e-9)
+    /* Auditoria: a trava de amostras era verificada por vertice, pelo que uma
+       polilinha de dois pontos gerava o segmento inteiro em memoria antes de
+       a trava correr — nunca travava nada. Verificada agora por ponto. */
+    const huge = resamplePolyline([[0, 0], [300000, 0]], 0.5)
+    check('corredor: trava de amostras efectiva', huge.length <= 20001, `${huge.length} amostras`)
+    check('corredor: trava preserva o ponto final do eixo', huge[huge.length - 1][0] === 300000)
+    check('corredor: limite de passagens exposto', MAX_PASSES === 200)
+    check('corredor: desvio nulo devolve o proprio eixo',
+      offsetRuns([[0, 0], [10, 0]], 0, 1).length === 1)
+    const ringBuf = corridorBufferRing([[-9.14, 38.70], [-9.13, 38.70]], 100)
+    check('corredor: anel ilustrativo fecha e envolve o eixo',
+      Array.isArray(ringBuf) && ringBuf.length >= 4 &&
+        turf.booleanPointInPolygon(turf.point([-9.135, 38.70]), turf.polygon([ringBuf])),
+      `${ringBuf?.length ?? 0} vertices`)
+    check('corredor: anel invalido devolve null, nao rebenta',
+      corridorBufferRing([[-9.14, 38.7]], 100) === null &&
+        corridorBufferRing([[-9.14, 38.7], [-9.13, 38.7]], 0) === null)
+  }
+
+  /* 12h. Entrada degenerada devolve erro controlado, nunca excepcao. */
+  {
+    const cases = [
+      ['eixo com um ponto', [[-9.14, 38.7]], {}, null],
+      ['pontos duplicados', [[-9.14, 38.7], [-9.14, 38.7]], {}, 'degenerate-centreline'],
+      ['buffer nulo', bend, { bufferM: 0 }, 'invalid-buffer'],
+      ['altitude nula', bend, { altitude: 0 }, 'invalid-altitude'],
+      ['sobreposicao 100%', bend, { sideOverlapPct: 100 }, 'overlap-too-high'],
+      ['sem sensor', bend, { sensor: null }, 'sensor-required'],
+      ['largura acima do limite', bend, { bufferM: 20000 }, 'too-many-passes'],
+    ]
+    for (const [label, line, over, want] of cases) {
+      let got
+      try { got = generateCorridorPlan(line, { ...baseOpts, ...over }) } catch (e) { got = { threw: e.message } }
+      const code = got === null ? null : (got.error ?? (got.threw ? `THREW ${got.threw}` : 'plano'))
+      check(`corredor: ${label} -> erro controlado`, code === want, String(code))
+    }
+  }
+
+  /* 12i. Persistencia da configuracao (projectos antigos, lixo). */
+  {
+    const d = normalizeCorridorConfig(undefined)
+    check('corredor: config em falta cai nos valores por omissao',
+      d.bufferM === DEFAULT_CORRIDOR_CONFIG.bufferM && d.centreline === null &&
+        d.photoMode === 'distance')
+    const junk = normalizeCorridorConfig({ bufferM: 'x', speedMS: 999, photoMode: 'zz', centreline: [[1, 2], ['a', 'b']] })
+    check('corredor: config invalida e saneada, nao rebenta',
+      junk.bufferM === DEFAULT_CORRIDOR_CONFIG.bufferM && junk.speedMS <= 25 &&
+        junk.photoMode === 'distance' && junk.centreline === null,
+      `${junk.bufferM}/${junk.speedMS}/${junk.photoMode}`)
   }
 }
 

@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Um push novo no mesmo ramo cancela a execução anterior; em main nada é
+# cancelado, para o histórico de integração ficar completo.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# Privilégio mínimo: a verificação só lê o repositório.
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Acções fixadas ao SHA: uma etiqueta móvel pode ser reapontada para
+      # código diferente sem o repositório mudar.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install (lockfile exacto)
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test suite
+        run: npm run test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Bundle budget
+        run: npm run size
+
+      # A árvore de produção é o que chega ao utilizador e tem de estar limpa.
+      - name: Audit (production dependencies)
+        run: npm audit --omit=dev --audit-level=high
+
+      # As dependências de desenvolvimento não são servidas, mas um aviso aqui
+      # é o sinal para actualizar; informativo, não bloqueia.
+      - name: Audit (all dependencies, informational)
+        run: npm audit --audit-level=moderate || true
