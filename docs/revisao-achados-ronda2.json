@@ -1,0 +1,64 @@
+{
+  "nota": "Extraído de journal.jsonl por tools/checkpoint-revisao.mjs. NÃO editar à mão.",
+  "corridas": [
+    "/root/.claude/projects/-home-user-dji-mission-planner/42bf9da5-0238-5a9a-a161-7eeeed4ed32b/subagents/workflows/wf_dc1c1a20-4ef/journal.jsonl"
+  ],
+  "resumo": {
+    "achados": 5,
+    "vereditos": 0,
+    "agentes_falhados": 6
+  },
+  "achados": [
+    {
+      "file": "src/utils/corridor.js",
+      "line": 277,
+      "title": "offsetRuns deita fora a marca `truncated`: a recusa corridor-too-long não cobre as passagens desviadas",
+      "detail": "A guarda nova (linha 469) testa `resamplePolyline(axis, sampleStep).truncated` — o EIXO. Mas o que é de facto reamostrado e truncado é `raw = offsetPolylineMiter(axis, offset)`, uma polilinha DIFERENTE e mais comprida: as juntas redondas acrescentam arco em cada vértice convexo e, num eixo com curvatura líquida (arco, laço, anel), o lado de fora é |desvio| × (viragem líquida) mais longo do que o eixo. Na linha 277 `dense` é consumido sem ninguém ler `dense.truncated`. Quando a passagem desviada passa MAX_SAMPLES, resamplePolyline devolve cedo, o troço acaba a meio do corredor, `runs.length === 1` (nem partida nem perdida), e o plano sai sem erro, sem splitPasses e sem droppedPasses. É exactamente a perda silenciosa de cobertura que o commit e7a03a1/dcc3c19 foram escritos para eliminar, sobrevivendo no mesmo caminho de código: a marca existe, quem chama no eixo lê-a, quem chama no desvio ignora-a.",
+      "failure": "Entradas: eixo = arco de circunferência R=6000 m, 21 200 m de comprimento, 40 segmentos, ancorado em [-8, 40]; sensor M3E_WIDE (17.3/13.0/12.2), altitude 30 m, sideOverlapPct 90, bufferM 60, photoMode 'distance'. spacing=4.254, sampleStep=1.0635, amostras do eixo = 19 981 -> a guarda NÃO dispara. Mas offsetPolylineMiter dá 21 204–21 337 m para os 10 desvios negativos (-2.13 … -40.41 m): cada um bate nos 20 000 pontos e vem `truncated`, ignorado. O plano sai com stats {passCount:20, runCount:20, splitPasses:0, droppedPasses:0, coveredWidthM:120} e cada uma dessas 10 passagens pára 124 m antes do fim do corredor (167 m de linha em falta por passagem, verificado comparando o último ponto do troço com o último ponto de `raw`): os últimos 124 m de um flanco inteiro do corredor nunca são voados e o painel anuncia 120 m de largura sem uma palavra. O mesmo eixo com bufferM 300 (133 passagens, abaixo de MAX_PASSES=200): 49 das 133 passagens truncadas, 19 445 m de linha de voo em falta no total, a pior 740 m curta — e continua splitPasses 0, droppedPasses 0, sem erro.",
+      "severity": "alta",
+      "agentId": "a1e9a95d59bdaee7b",
+      "agentKey": "v2:6b0b1ef125867bc6d288092fc7b17f5017525290866efe56599b908ea00ad775"
+    },
+    {
+      "file": "src/utils/corridor.js",
+      "line": 277,
+      "title": "offsetRuns ignora a marca `truncated`: passagens acabam antes do fim do corredor sem aviso nenhum",
+      "detail": "O commit e7a03a1 substituiu a costura com recta por `out.truncated = true` em resamplePolyline (linha 160) e diz \"quem chama recusa o plano\". Mas o unico sitio que le a marca e generateCorridorPlan na linha 469, e le-a sobre o EIXO. A truncagem que interessa acontece noutro sitio: em offsetRuns, linha 277, `resamplePolyline(raw, sampleStep)` corre sobre a POLILINHA DESVIADA, que e sistematicamente mais comprida do que o eixo — a junta redonda nova acrescenta |delta|x|offset| de arco em cada vertice, e a esquadria do lado concavo (agora sem miterLimit, que o mesmo commit removeu da assinatura na linha 211) acrescenta muito mais. O valor devolvido e atribuido a `dense` e a propriedade `.truncated` nunca e consultada. A guarda da linha 469 e portanto um proxy que falha exactamente no regime para que foi escrita: eixo abaixo de MAX_SAMPLES, desvio acima. Quando dispara, offsetRuns limita-se a devolver troços mais curtos, cada desvio rende 1 troço, `splitPasses` fica 0 e `droppedPasses` fica 0 — nenhum dos dois contadores novos apanha uma passagem que simplesmente acaba a meio. E `coveredWidthM` continua a anunciar a largura pedida.",
+      "failure": "Eixo meandrico (rio) y = 100·sin(2·pi·x/400) para x = 0..14500 de 40 em 40 m (363 vertices, 21024 m de eixo), camara M3E (sensorWidth 17.3, focalLength 12.2), altitude 30 m, sobreposicao lateral 90%, bufferM 60. sampleStep = 1.06 m. Verificado com node: `resamplePolyline(axis, 1.06).truncated === undefined`, logo generateCorridorPlan NAO devolve 'corridor-too-long' e entrega o plano. Mas 17 dos 20 desvios batem em MAX_SAMPLES dentro de offsetRuns (`resamplePolyline(offsetPolylineMiter(axis, off), 1.06).truncated === true`), com 6386 m de geometria de passagem nunca amostrada. As estatisticas devolvidas sao passCount 20, runCount 20, splitPasses 0, droppedPasses 0, coveredWidthM 120 — sem um unico aviso. Medido contra a mesma logica sem a trava, cada passagem perde entre 284 e 418 m e o ultimo waypoint fica ate 431 m aquem do fim do eixo (ex.: desvio -40.4 m termina em x=14228 quando devia terminar em x=14507; o eixo acaba em x=14480). O KMZ exportado deixa a ponta do corredor por voar e o painel diz ao operador que a faixa de 120 m foi coberta de ponta a ponta.",
+      "severity": "alta",
+      "agentId": "aea2d6ef3d7ee5698",
+      "agentKey": "v2:11700762c8411a2d828e12c0093c449eff590702fd609c9e73572d857ec3a688"
+    },
+    {
+      "file": "src/App.jsx",
+      "line": 917,
+      "title": "corridorPlan só existe no modo corredor: o resumo do projecto volta a esconder o corredor assim que se troca de separador",
+      "detail": "74a4da3 acrescentou `corridorPlan.stats` a aggregatePlans (linha 1259), mas `corridorPlan` devolve null sempre que `missionMode !== 'corridor'` (linha 917). facePlan (linha 767) e orbitPlan (linha 843) NÃO têm essa guarda — são calculados sempre que a geometria respectiva existe, seja qual for o modo. E <ProjectSummary> (linha 2021) é renderizado por cima do mapa em todos os modos. Resultado: o agregado só conta o corredor enquanto o separador do corredor estiver aberto; basta clicar em 'área' para o mesmo projecto, sem nada mudar, passar a mostrar menos planos, menos tempo e menos baterias. O corredor é o único plano com este comportamento.",
+      "failure": "Projecto com polígono de área (planOk: flightTimeS 1200 s, 400 fotos) e eixo de corredor configurado (corridorPlan: flightTimeS 2400 s, 900 fotos), batteryMin 30, reservePct 30. Verificado a correr aggregatePlans directamente: com o separador do corredor aberto -> {plans:2, flightTimeS:3600, photoCount:1300, batteries:3}; a mesma configuração vista no modo 'área' (corridorPlan === null) -> {plans:1, flightTimeS:1200, photoCount:400, batteries:1}. O operador que abre o projecto no modo área lê 1 bateria e 20:00 para um projecto de 60:00 que precisa de 3, e é deste número que sai o pack que vai para o campo. Com uma fachada ou uma órbita no mesmo projecto isto não acontece — só o corredor desaparece.",
+      "severity": "media",
+      "agentId": "a1e9a95d59bdaee7b",
+      "agentKey": "v2:6b0b1ef125867bc6d288092fc7b17f5017525290866efe56599b908ea00ad775"
+    },
+    {
+      "file": "src/utils/corridor.js",
+      "line": 301,
+      "title": "O plano do corredor bloqueia o render dezenas de segundos: o limiar novo deixa passar até 200 × 20 000 × |vértices| cálculos de distância",
+      "detail": "Resposta directa à pergunta do custo: a reamostragem EXTRA do eixo introduzida pela guarda é irrelevante (medida em 0,09 ms, 0,25 ms, 0,53 ms e 14 ms nos quatro cenários abaixo). O custo está em offsetRuns, que chama pointPolylineDistance por cada ponto denso contra TODOS os segmentos do eixo: passagens × amostras × vértices. A guarda `corridor-too-long` não o limita — pelo contrário, define explicitamente que tudo abaixo de 20 000 amostras por passagem é aceite, e MAX_PASSES permite 200 passagens. `corridorPlan` é um useMemo cujas dependências incluem o objecto `corridorConfig` inteiro (App.jsx:929), e o NumberInput do CorridorPanel dispara onChange a cada tecla, sem debounce — o custo todo é pago sincronamente dentro do render a cada tecla.",
+      "failure": "Medido com node (mesmo hardware do repositório): eixo em serpentina (seno A=114 m, P=1500 m) de 18,5 km com 400 vértices, altitude 30 m, sideOverlapPct 90, bufferM 400 -> 180 passagens, generateCorridorPlan demora 55 376 ms, sem erro e sem aviso (a guarda não dispara: 18 543 amostras do eixo). O mesmo eixo a 12 km/120 vértices com bufferM 100 -> 39 passagens, 2 491 ms; com bufferM 60 -> 20 passagens, 1 278 ms. Como o campo da meia-largura recalcula por tecla, escrever '400' corre os planos de 4, 40 e 400 em sequência e deixa o separador do navegador sem resposta durante minutos — o mesmo sintoma (ecrã morto, trabalho por gravar) que motivou a guarda de alocação de passOffsets, por outra via.",
+      "severity": "media",
+      "agentId": "a1e9a95d59bdaee7b",
+      "agentKey": "v2:6b0b1ef125867bc6d288092fc7b17f5017525290866efe56599b908ea00ad775"
+    },
+    {
+      "file": "src/utils/corridor.js",
+      "line": 244,
+      "title": "Junta redonda dispara em segmentos de comprimento nulo: `atan2(0, -0)` vale PI e o arco sai num eixo perfeitamente recto",
+      "detail": "segmentNormals (linha 195) faz `const len = Math.hypot(dx, dy) || 1`, pelo que um segmento de comprimento nulo (vertice repetido) rende a normal `[-0, 0]` em vez de lançar. O codigo antigo tolerava-a: usava so o produto interno, `denom` dava 1 e a esquadria devolvia o ponto certo. O codigo novo passou a decidir o lado por angulos — linhas 230/231 `Math.atan2(a[1], a[0])` / `Math.atan2(b[1], b[0])` — e `Math.atan2(0, -0)` e Math.PI, nao 0. A normal degenerada entra assim no calculo como se apontasse para oeste, `delta` fica com um valor arbitrario de +-PI/2, e o teste `delta * offset < 0` da linha 244 acende o ramo do arco num vertice onde nao ha deflexao nenhuma. O arco emitido tem centro no vertice e raio |offset|, mas percorre um sector que nao tem relacao com a geometria: os seus pontos caem em cima do proprio eixo. Como o vertice repetido tambem sobrevive a normalizeCorridorConfig (linhas 70-76: filtra so coordenadas nao finitas, nao remove pontos repetidos), a fronteira de leitura de um projecto guardado deixa passar exactamente a entrada que parte isto. A desduplicacao existe apenas no caminho de desenho, em App.jsx handleFinishCorridor, fora do modulo de geometria.",
+      "failure": "Eixo perfeitamente RECTO com um vertice repetido, [[0,0],[500,0],[500,0],[1000,0]] em metros. Verificado com node: `offsetPolylineMiter(axis, 30)` devolvia com o codigo antigo `[0,30] [500,30] [500,30] [1000,30]` (recta exacta); devolve agora `[0,30] [500,30] [470,0] [470.1,2.6] [470.5,5.2] ...` — 19 pontos de arco cujo primeiro esta EM CIMA do eixo, a 30 m da linha de passagem pretendida (distancias ao eixo: 30.0, 30.0, 0.0, 2.6, 5.2, ...). Levado ate ao plano (altitude 60, bufferM 120, sobreposicao lateral 80%, camara M3E), o mesmo eixo recto de 1 km da: sem duplicado, passes 11 / runs 11 / splitPasses 0 / 22 waypoints; com o duplicado, passes 11 / runs 21 / splitPasses 10 / 42 waypoints. O painel mostra ao operador o aviso vermelho-ambar de 10 passagens partidas — 'o eixo curva mais apertado do que a distancia da passagem' — num corredor que e uma recta, e cada passagem lateral e cortada em duas com uma paragem e inversao extra a meio (tempo estimado sobe de 1425 s para 1470 s).",
+      "severity": "media",
+      "agentId": "aea2d6ef3d7ee5698",
+      "agentKey": "v2:11700762c8411a2d828e12c0093c449eff590702fd609c9e73572d857ec3a688"
+    }
+  ],
+  "vereditos": []
+}
