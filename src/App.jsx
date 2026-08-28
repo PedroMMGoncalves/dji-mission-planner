@@ -284,25 +284,19 @@ function AppInner({ lang, setLang }) {
     aircraftRef.current = aircraft
   })
 
+  // A velocidade gravada pode ficar fora dos limites quando a aeronave muda —
+  // pelo selector, por carregar um projecto ou por aplicar um preset. Em vez
+  // de a corrigir com um efeito (um render extra e uma cascata de estado),
+  // limita-se aqui, no render: é este o valor que o painel mostra e que entra
+  // no plano, nas estatísticas e na exportação. A escrita já vinha limitada
+  // por setParam, pelo que isto só actua quando a aeronave muda por baixo.
+  const speedRange = aircraft.speedRange ?? { min: 1, max: 20 }
+  const speed = Math.min(speedRange.max, Math.max(speedRange.min, params.speed))
+
   // rótulo composto para o relatório/checklist: a aeronave, e o payload
   // quando a aeronave tem mais do que um montável
   const hardwareLabel =
     aircraft.payloads.length > 1 ? `${aircraft.label} + ${payload.label}` : aircraft.label
-
-  // ao trocar de aeronave, a velocidade atual é reencaixada nos novos limites
-  // O efeito existe justamente para apanhar TODAS as formas de trocar de
-  // aeronave (selector, carregar projecto, aplicar preset). Mover o limite
-  // para cada uma delas volta a abrir a porta a esquecer uma.
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    const r = aircraft.speedRange ?? { min: 1, max: 20 }
-    setParams((p) =>
-      p.speed < r.min || p.speed > r.max
-        ? { ...p, speed: Math.min(r.max, Math.max(r.min, p.speed)) }
-        : p,
-    )
-  }, [aircraft])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // payload ativo com a afinação aplicada: um LiDAR pode voar com um corte
   // de trabalho do feixe (effectiveFov) mais estreito do que o nominal
@@ -394,19 +388,19 @@ function AppInner({ lang, setLang }) {
   const pointDensity = useMemo(
     () =>
       sensor.type === 'lidar' && payload.maxPrr
-        ? lidarPointDensity({ prr: payload.maxPrr, speed: params.speed, swathM: footprint.across })
+        ? lidarPointDensity({ prr: payload.maxPrr, speed: speed, swathM: footprint.across })
         : null,
-    [sensor.type, payload, params.speed, footprint],
+    [sensor.type, payload, speed, footprint],
   )
 
   // intervalo entre fotos abaixo do que o obturador consegue?
   const triggerWarn = useMemo(() => {
-    if (interval == null || !(params.speed > 0)) return null
+    if (interval == null || !(speed > 0)) return null
     const minS = payload.minTriggerS ?? 0.7
-    const actualS = interval / params.speed
+    const actualS = interval / speed
     if (actualS >= minS) return null
     return { actualS, minS, maxSpeed: interval / minS }
-  }, [interval, params.speed, payload])
+  }, [interval, speed, payload])
 
   const validation = useMemo(
     () => (ring ? validateRing(ring) : { valid: false, kinks: [] }),
@@ -421,11 +415,11 @@ function AppInner({ lang, setLang }) {
     let side = split.tileSize
     if (split.mode === 'battery') {
       const dist = basePoint ? distanceToArea(basePoint, ring) : null
-      const transitS = dist != null ? (2 * dist) / (params.speed || 10) : 0
+      const transitS = dist != null ? (2 * dist) / (speed || 10) : 0
       side = squareSideForBattery({
         batteryMin,
         reservePct: split.reservePct,
-        speed: params.speed,
+        speed: speed,
         spacingM: spacing,
         transitS,
         maxSideM: split.maxSide,
@@ -443,7 +437,7 @@ function AppInner({ lang, setLang }) {
     batteryMin,
     split.reservePct,
     split.maxSide,
-    params.speed,
+    speed,
     spacing,
     basePoint,
     // O lado do quadrado dimensionado por bateria depende do número de
@@ -549,7 +543,7 @@ function AppInner({ lang, setLang }) {
       angleDeg: params.angle,
       bufferPct: params.bufferPct,
       photoIntervalM: interval ?? 0,
-      speed: params.speed,
+      speed: speed,
       crosshatch: params.crosshatch,
       includeNadir: Boolean(params.crosshatch && params.includeNadir),
       overshootM: Math.max(0, params.overshoot || 0),
@@ -575,7 +569,7 @@ function AppInner({ lang, setLang }) {
       photoMode: opts.photoMode,
       overshootM: opts.overshootM,
     })
-  }, [photoMode, ring, validation.valid, spacing, params.angle, params.bufferPct, interval, params.speed, params.crosshatch, params.includeNadir, params.overshoot, params.tieLine, activeCells])
+  }, [photoMode, ring, validation.valid, spacing, params.angle, params.bufferPct, interval, speed, params.crosshatch, params.includeNadir, params.overshoot, params.tieLine, activeCells])
 
   const planOk = plan && !plan.error ? plan : null
 
@@ -618,7 +612,7 @@ function AppInner({ lang, setLang }) {
       maxAreaHa: split.maxAreaHa,
       batteryMin,
       reservePct: split.reservePct,
-      speed: params.speed,
+      speed: speed,
       spacingM: spacing,
       basePoint,
     })
@@ -626,7 +620,7 @@ function AppInner({ lang, setLang }) {
     // R2.10: em que linha local de cada bloco começa a grelha nadir
     const locals = nadirLineLocalPerBlock(cut.map((b) => b.lines.length), planOk.nadirStartLine)
     return cut.map((b, i) => ({ ...b, nadirLineLocal: locals[i] }))
-  }, [planOk, activeCells, split, batteryMin, params.speed, spacing, basePoint])
+  }, [planOk, activeCells, split, batteryMin, speed, spacing, basePoint])
 
   // B: aviso brando — missões com milhares de waypoints importam lentamente
   // no Pilot 2; o limite duro do WPML (65535 índices) fica longe
@@ -1654,7 +1648,7 @@ function AppInner({ lang, setLang }) {
       name: areaName,
       waypoints: terrainOk ? terrainResult.waypoints : planOk.waypoints,
       altitude: params.altitude,
-      speed: params.speed,
+      speed: speed,
       wpml,
       // B: no modo foto-por-waypoint não há gatilho por distância — as fotos
       // vão nas acções por waypoint (perWaypoint)
@@ -1721,7 +1715,7 @@ function AppInner({ lang, setLang }) {
       waypoints,
       perWaypoint,
       altitude: params.altitude,
-      speed: params.speed,
+      speed: speed,
       wpml,
       photoIntervalM: 0,
       triggerMode: 'distance',
@@ -1912,7 +1906,9 @@ function AppInner({ lang, setLang }) {
           setCustom={setCustom}
           effectiveFov={effectiveFov}
           onEffectiveFov={setEffectiveFov}
-          params={params}
+          // o painel lê params.speed directamente; recebe-o já limitado aos
+          // limites da aeronave, sem que o estado guardado seja reescrito
+          params={params.speed === speed ? params : { ...params, speed }}
           setParam={setParam}
           mode={mode}
           draftCount={draftVertices.length}
@@ -2030,7 +2026,7 @@ function AppInner({ lang, setLang }) {
             pointDensity={pointDensity}
             interval={interval}
             triggerMode={params.triggerMode}
-            speed={params.speed}
+            speed={speed}
             stats={planOk?.stats ?? null}
             baseDistance={baseDistance}
             blockCount={blocks?.length ?? null}
