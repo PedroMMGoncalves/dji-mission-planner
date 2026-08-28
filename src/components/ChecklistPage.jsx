@@ -26,6 +26,24 @@ const tr = (v, lang) => {
 }
 
 /** Hook de conveniência: `const L = useL()` e depois `L(par)`. */
+/**
+ * Lê o estado gravado do checklist. Corre uma vez, no inicializador
+ * preguiçoso do `useState`: assim os átomos nascem já com os valores
+ * gravados, em vez de nascerem vazios e serem corrigidos por um efeito —
+ * que custava um render extra e deixava uma janela em que a gravação podia
+ * escrever por cima da leitura (era o que o `hidratado` guardava).
+ */
+function lerGuardado() {
+  try {
+    const bruto = window.localStorage.getItem(STORAGE_KEY)
+    const g = bruto ? JSON.parse(bruto) : null
+    return g && typeof g === 'object' ? g : {}
+  } catch {
+    /* armazenamento indisponível ou dados corrompidos */
+    return {}
+  }
+}
+
 function useL() {
   const lang = useLang()
   return (v) => tr(v, lang)
@@ -1267,73 +1285,46 @@ export default function ChecklistPage({
   const lang = useLang()
   const L = (v) => tr(v, lang)
 
-  const [hidratado, setHidratado] = useState(false)
-  const [checked, setChecked] = useState({})
-  const [missao, setMissao] = useState(() => ({
-    operador: '',
-    missao: missionName || '',
-    local: '',
-    plataforma: droneLabel || '',
-    data: hoje(),
-  }))
-  const [voos, setVoos] = useState(() => [
-    linhaVazia(COLS_VOO),
-    linhaVazia(COLS_VOO),
-    linhaVazia(COLS_VOO),
-  ])
-  const [gcps, setGcps] = useState(() =>
-    Array.from({ length: 5 }, () => linhaVazia(COLS_GCP)),
+  // O estado gravado é lido UMA vez e semeia todos os átomos abaixo
+  const [guardado] = useState(lerGuardado)
+  const [checked, setChecked] = useState(() =>
+    guardado.checked && typeof guardado.checked === 'object' ? guardado.checked : {},
   )
-  const [notas, setNotas] = useState({
+  const [missao, setMissao] = useState(() => {
+    const g = guardado.missao && typeof guardado.missao === 'object' ? guardado.missao : {}
+    return {
+      operador: '',
+      local: '',
+      ...g,
+      // um valor vazio gravado não apaga o que vem do planeador
+      missao: g.missao || missionName || '',
+      plataforma: g.plataforma || droneLabel || '',
+      data: g.data || hoje(),
+    }
+  })
+  const [voos, setVoos] = useState(() =>
+    Array.isArray(guardado.voos)
+      ? guardado.voos.map((l) => ({ ...linhaVazia(COLS_VOO), ...l, _id: uid() }))
+      : [linhaVazia(COLS_VOO), linhaVazia(COLS_VOO), linhaVazia(COLS_VOO)],
+  )
+  const [gcps, setGcps] = useState(() =>
+    Array.isArray(guardado.gcps)
+      ? guardado.gcps.map((l) => ({ ...linhaVazia(COLS_GCP), ...l, _id: uid() }))
+      : Array.from({ length: 5 }, () => linhaVazia(COLS_GCP)),
+  )
+  const [notas, setNotas] = useState(() => ({
     anomalias: '',
     qualidade: '',
     condicoes: '',
     seguimento: '',
-  })
+    ...(guardado.notas && typeof guardado.notas === 'object' ? guardado.notas : {}),
+  }))
 
-  /* ---------- Hidratação a partir do localStorage (uma vez) ---------- */
-  // Hidratação única no arranque, sobre seis átomos de estado; `hidratado`
-  // existe para a gravação não escrever por cima antes de a leitura acabar.
-  // Passar tudo a inicializadores preguiçosos arriscava a memória do
-  // checklist em campo, que não tem testes a protegê-la.
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    try {
-      const bruto = window.localStorage.getItem(STORAGE_KEY)
-      if (bruto) {
-        const g = JSON.parse(bruto)
-        if (g && typeof g === 'object') {
-          if (g.checked && typeof g.checked === 'object') setChecked(g.checked)
-          if (g.missao && typeof g.missao === 'object') {
-            setMissao((m) => ({
-              ...m,
-              ...g.missao,
-              missao: g.missao.missao || m.missao,
-              plataforma: g.missao.plataforma || m.plataforma,
-              data: g.missao.data || m.data,
-            }))
-          }
-          if (Array.isArray(g.voos)) {
-            setVoos(g.voos.map((l) => ({ ...linhaVazia(COLS_VOO), ...l, _id: uid() })))
-          }
-          if (Array.isArray(g.gcps)) {
-            setGcps(g.gcps.map((l) => ({ ...linhaVazia(COLS_GCP), ...l, _id: uid() })))
-          }
-          if (g.notas && typeof g.notas === 'object') {
-            setNotas((n) => ({ ...n, ...g.notas }))
-          }
-        }
-      }
-    } catch {
-      /* armazenamento indisponível ou dados corrompidos — ignorar */
-    }
-    setHidratado(true)
-  }, [])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   /* ------------- Gravação automática com debounce simples ------------- */
+  // Sem guarda de hidratação: o estado já nasce com o que estava gravado,
+  // pelo que a primeira gravação reescreve exactamente o mesmo conteúdo.
   useEffect(() => {
-    if (!hidratado) return undefined
     const t = setTimeout(() => {
       try {
         window.localStorage.setItem(
@@ -1345,7 +1336,7 @@ export default function ChecklistPage({
       }
     }, SAVE_DELAY_MS)
     return () => clearTimeout(t)
-  }, [hidratado, checked, missao, voos, gcps, notas])
+  }, [checked, missao, voos, gcps, notas])
 
   /* ------------------------------ Acções ------------------------------ */
   const toggle = (k) => setChecked((c) => ({ ...c, [k]: !c[k] }))
