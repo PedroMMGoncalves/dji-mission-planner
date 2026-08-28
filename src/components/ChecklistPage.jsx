@@ -295,6 +295,55 @@ const FASES = [
           ),
         ],
       },
+      // Grupo condicional: só aparece com uma missão de corredor activa
+      // (appliesTo 'corridor'). Acrescentado no FIM dos grupos da fase, como
+      // o de fachada, para não deslocar índices já publicados — o estado
+      // gravado é indexado por fase/grupo/item.
+      {
+        titulo: bi('Corredor', 'Corridor'),
+        appliesTo: 'corridor',
+        itens: [
+          it(
+            bi(
+              'Traçado do eixo confirmado contra cartografia actual',
+              'Centreline checked against current mapping',
+            ),
+            bi(
+              'Obras, desvios e troços cortados desde o último levantamento',
+              'Works, diversions and closed sections since the last survey',
+            ),
+          ),
+          it(
+            bi(
+              'Autorização de sobrevoo da faixa e do domínio público envolvido',
+              'Overflight permission for the corridor and the public domain crossed',
+            ),
+            null,
+            true,
+          ),
+          it(
+            bi(
+              'Pontos de descolagem e recolha ao longo do traçado, com acesso viário',
+              'Take-off and recovery points along the route, with road access',
+            ),
+            bi(
+              'O corredor não se divide por bateria — os pontos são planeados à mão',
+              'The corridor does not split by battery — the points are planned by hand',
+            ),
+          ),
+          it(
+            bi(
+              'Altura única validada contra o ponto mais alto de todo o traçado',
+              'Single altitude validated against the highest point of the whole route',
+            ),
+            bi(
+              'Modo nadir sem seguimento de terreno: a cota de descolagem é a referência de tudo',
+              'Nadir only, no terrain following: the take-off elevation is the reference throughout',
+            ),
+            true,
+          ),
+        ],
+      },
     ],
   },
   {
@@ -564,6 +613,76 @@ const FASES = [
           ),
         ],
       },
+      // Grupo condicional: só aparece com uma missão de corredor activa
+      // (appliesTo 'corridor'). Acrescentado no FIM dos grupos da fase, como
+      // o de fachada, para não deslocar índices já publicados — o estado
+      // gravado é indexado por fase/grupo/item.
+      {
+        titulo: bi('Corredor', 'Corridor'),
+        appliesTo: 'corridor',
+        itens: [
+          it(
+            bi(
+              'Obstáculos verticais na faixa levantados',
+              'Vertical obstacles in the corridor surveyed',
+            ),
+            bi(
+              'Postes, cabos, pontes, antenas, guindastes',
+              'Poles, cables, bridges, antennas, cranes',
+            ),
+            true,
+          ),
+          it(
+            bi(
+              'Distância mínima a linhas eléctricas em tensão respeitada',
+              'Minimum distance to live power lines respected',
+            ),
+            bi(
+              'Vigiar também a interferência electromagnética na bússola',
+              'Watch for electromagnetic interference on the compass as well',
+            ),
+            true,
+          ),
+          it(
+            bi(
+              'Trânsito por baixo do corredor acautelado e avisado',
+              'Traffic under the corridor accounted for and warned',
+            ),
+            bi(
+              'Rodoviário, ferroviário, pedonal — e quem faz o aviso',
+              'Road, rail, pedestrian — and who issues the warning',
+            ),
+          ),
+          it(
+            bi(
+              'Passagens partidas do planeamento revistas troço a troço',
+              'Split passes from planning reviewed run by run',
+            ),
+            bi(
+              'Decidir o que fazer à cobertura em falta nas curvas apertadas',
+              'Decide what to do about the coverage missing on tight bends',
+            ),
+          ),
+          it(
+            bi(
+              'Vento transversal ao eixo avaliado',
+              'Crosswind to the centreline assessed',
+            ),
+            bi(
+              'Corredores longos dão exposição prolongada num só rumo',
+              'Long corridors mean prolonged exposure on a single heading',
+            ),
+          ),
+          it(
+            bi(
+              'Ponto de retoma anotado a cada troca de bateria',
+              'Resume point noted at every battery change',
+            ),
+            null,
+            true,
+          ),
+        ],
+      },
     ],
   },
   {
@@ -689,6 +808,37 @@ const FASES = [
           it(
             bi('Inventário conferido', 'Inventory checked'),
             bi('saída = chegada', 'out = back'),
+          ),
+        ],
+      },
+      // Grupo condicional: só aparece com uma missão de corredor activa
+      // (appliesTo 'corridor'). Acrescentado no FIM dos grupos da fase, como
+      // o de fachada, para não deslocar índices já publicados — o estado
+      // gravado é indexado por fase/grupo/item.
+      {
+        titulo: bi('Corredor', 'Corridor'),
+        appliesTo: 'corridor',
+        itens: [
+          it(
+            bi(
+              'Cobertura contínua verificada nas curvas',
+              'Continuous coverage verified on the bends',
+            ),
+            bi(
+              'A faixa desenhada mostra a largura pedida, não a coberta',
+              'The drawn band shows the requested width, not the covered one',
+            ),
+            true,
+          ),
+          it(
+            bi(
+              'Troços voados em sessões separadas conferidos ponta a ponta',
+              'Runs flown in separate sorties checked end to end',
+            ),
+            bi(
+              'Sem divisão automática, as junções entre troços são manuais',
+              'With no automatic splitting, the joins between runs are manual',
+            ),
           ),
         ],
       },
@@ -961,21 +1111,21 @@ function BarraProgresso({ feitos, total, acento }) {
   )
 }
 
-function ColunaFase({ fase, checked, onToggle, sensorType, faceMode }) {
+function ColunaFase({ fase, checked, onToggle, sensorType, faceMode, corridorMode }) {
   const L = useL()
   const acento = ACENTOS[fase.id]
   const { feitos, total } = useMemo(() => {
     let f = 0
     let t = 0
     fase.grupos.forEach((g, gi) => {
-      if (!groupApplies(g, sensorType, { face: faceMode })) return
+      if (!groupApplies(g, sensorType, { face: faceMode, corridor: corridorMode })) return
       g.itens.forEach((_, ii) => {
         t += 1
         if (checked[chaveItem(fase.id, gi, ii)]) f += 1
       })
     })
     return { feitos: f, total: t }
-  }, [fase, checked, sensorType, faceMode])
+  }, [fase, checked, sensorType, faceMode, corridorMode])
 
   return (
     <section className="chk-coluna flex flex-col rounded-lg border border-slate-800 bg-slate-900 p-4">
@@ -990,7 +1140,7 @@ function ColunaFase({ fase, checked, onToggle, sensorType, faceMode }) {
 
       <div className="flex-1 space-y-4">
         {/* filtragem sem reindexar: gi original preserva as chaves gravadas */}
-        {fase.grupos.map((grupo, gi) => groupApplies(grupo, sensorType, { face: faceMode }) && (
+        {fase.grupos.map((grupo, gi) => groupApplies(grupo, sensorType, { face: faceMode, corridor: corridorMode }) && (
           <div key={`${fase.id}.${gi}`} className="chk-grupo">
             <h3 className="mb-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
               {L(grupo.titulo)}
@@ -1109,6 +1259,7 @@ export default function ChecklistPage({
   droneLabel = '',
   sensorType = 'camera',
   faceMode = false, // liga o grupo 'face' quando houver missão de fachada
+  corridorMode = false, // idem para o grupo 'corridor'
   blocks = [],
   plannedGcps = [],
   onBack,
@@ -1211,7 +1362,7 @@ export default function ChecklistPage({
     FASES.forEach((fase) => {
       const itens = []
       fase.grupos.forEach((g, gi) => {
-        if (!groupApplies(g, sensorType, { face: faceMode })) return
+        if (!groupApplies(g, sensorType, { face: faceMode, corridor: corridorMode })) return
         g.itens.forEach((item, ii) => {
           const texto = tr(item.texto, lang)
           const nota = tr(item.nota, lang)
@@ -1228,7 +1379,7 @@ export default function ChecklistPage({
       total += itens.length
     })
     return { porFase, feitos, total }
-  }, [checked, lang, sensorType, faceMode])
+  }, [checked, lang, sensorType, faceMode, corridorMode])
 
   const importarBlocos = () => {
     if (!blocks || blocks.length === 0) return

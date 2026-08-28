@@ -243,6 +243,13 @@ check('GSD: |pitch| < 20 -> null (quase-horizonte)',
       !groupApplies({ appliesTo: 'face' }, 'lidar', { face: false }))
   check('groupApplies: face independente do tipo de sensor',
     groupApplies({ appliesTo: 'face' }, 'lidar', { face: true }))
+  check('groupApplies: grupo corredor so com missao de corredor activa',
+    groupApplies({ appliesTo: 'corridor' }, 'camera', { corridor: true }) &&
+      !groupApplies({ appliesTo: 'corridor' }, 'camera') &&
+      !groupApplies({ appliesTo: 'corridor' }, 'camera', { corridor: false }))
+  check('groupApplies: corredor e fachada nao se activam um ao outro',
+    !groupApplies({ appliesTo: 'corridor' }, 'camera', { face: true }) &&
+      !groupApplies({ appliesTo: 'face' }, 'camera', { corridor: true }))
   // guarda estrutural: 2 grupos LiDAR + 1 face, filtragem nos tres loops,
   // e o grupo face acrescentado DEPOIS do LiDAR (indices estaveis)
   const chk = readFileSync(new URL('./src/components/ChecklistPage.jsx', import.meta.url), 'utf8')

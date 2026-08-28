@@ -1715,6 +1715,7 @@ function AppInner({ lang, setLang }) {
         droneLabel={hardwareLabel}
         sensorType={sensor.type}
         faceMode={missionMode === 'face' && Boolean(faceConfig.baseline)}
+        corridorMode={missionMode === 'corridor' && Boolean(corridorConfig.centreline)}
         blocks={blocks ?? []}
         plannedGcps={gcps ?? []}
         onBack={() => setView('planner')}
