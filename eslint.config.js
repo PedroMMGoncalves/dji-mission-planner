@@ -10,7 +10,18 @@ import react from 'eslint-plugin-react'
  * obsoleto no ficheiro exportado, sem qualquer aviso em execução.
  */
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'public/**'] },
+  {
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'public/**',
+      // Scripts de workflow: o runtime embrulha-os numa funcao assincrona e
+      // injecta os globais (agent, pipeline, args...), pelo que o `return` no
+      // topo e a API e nao um erro. O ESLint le-os como modulos e falha a
+      // analise — e uma falha de analise trava o lint inteiro, e com ele o CI.
+      'tools/ronda-auditoria.js',
+    ],
+  },
   js.configs.recommended,
   {
     files: ['**/*.{js,jsx,mjs}'],
