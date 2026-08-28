@@ -82,7 +82,11 @@ export default function CorridorPanel({
   const axis = corridorConfig.centreline
   const stats = corridorPlan && !corridorPlan.error ? corridorPlan.stats : null
   const errorKey = corridorPlan?.error ? `co.err.${corridorPlan.error}` : null
-  const splitPasses = stats ? stats.runCount - stats.passCount : 0
+  // Vêm do motor, já separadas. A subtração que aqui estava (runCount −
+  // passCount) anulava uma passagem partida contra uma perdida e calava o
+  // aviso justamente quando havia cobertura em falta.
+  const splitPasses = stats?.splitPasses ?? 0
+  const droppedPasses = stats?.droppedPasses ?? 0
 
   return (
     <div className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-800 bg-slate-950 lg:w-96">
@@ -180,13 +184,21 @@ export default function CorridorPanel({
               label={t('co.plan.passes', { n: stats.passCount, r: stats.runCount })}
               value={`${fmt(stats.spacingM, 1)} m`}
             />
-            <Row label={t('co.plan.width')} value={`${fmt(stats.coveredWidthM)} m`} />
+            <Row
+              label={droppedPasses > 0 ? t('co.plan.widthRequested') : t('co.plan.width')}
+              value={`${fmt(stats.coveredWidthM)} m`}
+            />
             <Row label={t('co.plan.waypoints', { n: stats.waypointCount })} value={stats.waypointCount} />
             {stats.photoCount != null && (
               <Row label={t('co.plan.photos', { n: stats.photoCount })} value={stats.photoCount} />
             )}
             <Row label={t('co.plan.distance')} value={`${fmt(stats.pathLengthM)} m`} />
             <Row label={t('co.plan.time')} value={duration(stats.flightTimeS)} />
+            {droppedPasses > 0 && (
+              <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs leading-relaxed text-red-300">
+                ⚠ {t('co.plan.dropped', { n: droppedPasses })}
+              </p>
+            )}
             {splitPasses > 0 && (
               <p className="mt-2 rounded border border-amber-800 bg-amber-950/40 p-2 text-xs text-amber-300">
                 ⚠ {t('co.plan.split', { n: splitPasses })}

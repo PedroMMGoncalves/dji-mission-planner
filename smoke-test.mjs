@@ -2067,6 +2067,41 @@ check('waylines Mapper+: sem acoes de camara',
     check('corredor: passagens impossiveis sao eliminadas, nao voadas em laco',
       plan.stats.runCount < plan.stats.passCount,
       `${plan.stats.runCount} trocos para ${plan.stats.passCount} passagens`)
+
+  /* C2: uma passagem PERDIDA e uma passagem PARTIDA sao coisas diferentes e
+     tem de ser contadas em separado. O painel derivava o aviso de
+     runCount - passCount, em que uma partida somava +1 e uma perdida subtraia
+     -1: as duas juntas davam zero e o aviso desaparecia justamente quando
+     havia faixa por voar. */
+  {
+    const R = 60
+    const semi = Array.from({ length: 25 }, (_, i) => {
+      const a = (Math.PI * i) / 24
+      return toLL(R * Math.cos(a), R * Math.sin(a))
+    })
+    const perdidas = generateCorridorPlan(semi, {
+      sensor, altitude: 60, bufferM: 120, sideOverlapPct: 70, speed: 8,
+      photoMode: 'distance', photoIntervalM: 20,
+    })
+    check('C2 corredor: passagens perdidas sao contadas',
+      perdidas.stats.droppedPasses === 2,
+      `${perdidas.stats.droppedPasses} perdidas de ${perdidas.stats.passCount} pedidas`)
+    check('C2 corredor: os desvios perdidos sao os do lado concavo, maiores que o raio',
+      perdidas.stats.droppedOffsets.every((o) => Math.abs(o) > R),
+      perdidas.stats.droppedOffsets.map((o) => o.toFixed(1)).join(', '))
+    check('C2 corredor: a subtraccao antiga anulava-se e calava o aviso (controlo)',
+      perdidas.stats.runCount - perdidas.stats.passCount < 0 && perdidas.stats.droppedPasses > 0,
+      `runCount-passCount = ${perdidas.stats.runCount - perdidas.stats.passCount}`)
+
+    // eixo recto: nada se perde nem se parte
+    const recto = generateCorridorPlan([toLL(0, 0), toLL(600, 0)], {
+      sensor, altitude: 60, bufferM: 120, sideOverlapPct: 70, speed: 8,
+      photoMode: 'distance', photoIntervalM: 20,
+    })
+    check('C2 corredor: eixo recto nao perde nem parte passagens',
+      recto.stats.droppedPasses === 0 && recto.stats.splitPasses === 0 &&
+        recto.stats.runCount === recto.stats.passCount)
+  }
   }
 
   /* 12d. Um eixo recto ou de curvatura suave nao parte passagens: cada
