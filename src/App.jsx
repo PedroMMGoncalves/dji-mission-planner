@@ -293,6 +293,16 @@ function AppInner({ lang, setLang }) {
   const speedRange = aircraft.speedRange ?? { min: 1, max: 20 }
   const speed = Math.min(speedRange.max, Math.max(speedRange.min, params.speed))
 
+  // Mesma regra para o corredor, que tem o seu proprio campo de velocidade: o
+  // painel aceita ate 25 m/s (normalizeCorridorConfig) e um M3E voa 15. Sem
+  // limitar, o WPML saia com autoFlightSpeed acima do que a aeronave faz e o
+  // tempo estimado ficava optimista — e e desse tempo que sai o numero de
+  // baterias que o operador leva para o campo.
+  const corridorSpeed = Math.min(
+    speedRange.max,
+    Math.max(speedRange.min, corridorConfig.speedMS),
+  )
+
   // rótulo composto para o relatório/checklist: a aeronave, e o payload
   // quando a aeronave tem mais do que um montável
   const hardwareLabel =
@@ -898,11 +908,11 @@ function AppInner({ lang, setLang }) {
       bufferM: corridorConfig.bufferM,
       sideOverlapPct: params.sideOverlap,
       photoIntervalM: interval ?? 0,
-      speed: corridorConfig.speedMS,
+      speed: corridorSpeed,
       photoMode: corridorConfig.photoMode,
       simplifyM: corridorConfig.simplifyM,
     })
-  }, [missionMode, corridorConfig, sensor, params.altitude, params.sideOverlap, interval])
+  }, [missionMode, corridorConfig, corridorSpeed, sensor, params.altitude, params.sideOverlap, interval])
 
   const corridorPreview = useMemo(() => {
     if (missionMode !== 'corridor') return null
@@ -925,7 +935,7 @@ function AppInner({ lang, setLang }) {
       waypoints: corridorPlan.waypoints,
       ...(corridorPlan.perWaypoint ? { perWaypoint: corridorPlan.perWaypoint } : {}),
       altitude: params.altitude,
-      speed: corridorConfig.speedMS,
+      speed: corridorSpeed,
       wpml,
       // No modo por waypoint cada ponto dispara a sua foto, logo não há
       // gatilho por distância; no modo distância é o inverso.
@@ -934,7 +944,7 @@ function AppInner({ lang, setLang }) {
       gimbalPitch: -90,
       sensorType: sensor.type,
     }))
-  }, [corridorPlan, corridorConfig, missionName, params.altitude, wpml, interval, sensor.type, runExport])
+  }, [corridorPlan, corridorConfig, corridorSpeed, missionName, params.altitude, wpml, interval, sensor.type, runExport])
 
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const startInspect = useCallback(() => {
@@ -1229,10 +1239,14 @@ function AppInner({ lang, setLang }) {
           planOk?.stats,
           facePlan && !facePlan.error ? facePlan.stats : null,
           orbitPlan && !orbitPlan.error ? orbitPlan.stats : null,
+          // O corredor entrou depois e ficou de fora desta lista: um projecto
+          // com corredor mostrava menos planos, menos tempo e menos baterias
+          // do que tem, e e daqui que sai o pack que vai para o campo.
+          corridorPlan && !corridorPlan.error ? corridorPlan.stats : null,
         ],
         { batteryMin, reservePct: split.reservePct },
       ),
-    [planOk, facePlan, orbitPlan, batteryMin, split.reservePct],
+    [planOk, facePlan, orbitPlan, corridorPlan, batteryMin, split.reservePct],
   )
 
   // E1.4: a vista 3D cobre o modo activo — grelha (com terrain follow),
@@ -1883,7 +1897,11 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'corridor' && (
               <CorridorPanel
-                corridorConfig={corridorConfig}
+                corridorConfig={
+                  corridorConfig.speedMS === corridorSpeed
+                    ? corridorConfig
+                    : { ...corridorConfig, speedMS: corridorSpeed }
+                }
                 setCorridorParam={setCorridorParam}
                 corridorPlan={corridorPlan}
                 sensorType={sensor.type}
@@ -2078,7 +2096,8 @@ function AppInner({ lang, setLang }) {
             missionName={missionName}
             droneLabel={hardwareLabel}
             inspectPoints={inspectPoints}
-            params={params}
+            // a mesma velocidade limitada que entra no plano e no ficheiro
+            params={params.speed === speed ? params : { ...params, speed }}
             spacing={spacing}
             interval={interval}
             gsd={gsd}

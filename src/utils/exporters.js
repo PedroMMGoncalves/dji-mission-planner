@@ -91,6 +91,35 @@ export function validateExportParams(params) {
   if (isNum(params.rthHeightM) && (params.rthHeightM <= 0 || params.rthHeightM > MAX_RTH_HEIGHT_M)) {
     throw new MissionExportError('param-out-of-range', 'rthHeightM')
   }
+  // As acções por waypoint escapavam a esta fronteira: um rumo ou um pitch
+  // não numérico — vindo de um projecto importado à mão, ou de um campo de
+  // texto — era interpolado tal e qual no XML. Um `heading` de "270°" saía
+  // como <wpml:waypointHeadingAngle>NaN</...> e um pitch de "nadir" saía
+  // literalmente, sem excepção nenhuma. O ficheiro passava a validação
+  // sintáctica de XML e só o comando o recusava, no campo.
+  if (params.perWaypoint != null) {
+    if (!Array.isArray(params.perWaypoint)) {
+      throw new MissionExportError('param-not-finite', 'perWaypoint')
+    }
+    params.perWaypoint.forEach((pw, i) => {
+      if (pw == null) return // buracos são normais: só alguns waypoints têm acções
+      if (typeof pw !== 'object') {
+        throw new MissionExportError('per-waypoint-invalid', `${i}`)
+      }
+      if (pw.heading != null && !isNum(pw.heading)) {
+        throw new MissionExportError('per-waypoint-not-finite', `${i}.heading=${pw.heading}`)
+      }
+      if (pw.gimbalPitch != null && !isNum(pw.gimbalPitch)) {
+        throw new MissionExportError('per-waypoint-not-finite', `${i}.gimbalPitch=${pw.gimbalPitch}`)
+      }
+      if (isNum(pw.gimbalPitch) && (pw.gimbalPitch < -120 || pw.gimbalPitch > 60)) {
+        throw new MissionExportError('param-out-of-range', `perWaypoint[${i}].gimbalPitch`)
+      }
+      if (pw.actions != null && !Array.isArray(pw.actions)) {
+        throw new MissionExportError('per-waypoint-invalid', `${i}.actions`)
+      }
+    })
+  }
   if (isNum(params.gimbalPitch) && (params.gimbalPitch < -120 || params.gimbalPitch > 60)) {
     throw new MissionExportError('param-out-of-range', 'gimbalPitch')
   }
