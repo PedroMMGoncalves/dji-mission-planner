@@ -109,6 +109,13 @@ export function validateExportParams(params) {
       if (pw.heading != null && !isNum(pw.heading)) {
         throw new MissionExportError('per-waypoint-not-finite', `${i}.heading=${pw.heading}`)
       }
+      // Os geradores produzem rumos em 0..359 (faceMode, orbit, pontos de
+      // inspecção) e o WPML exige [-180, 180] em smoothTransition. Aceita-se a
+      // convenção de entrada dos geradores e normaliza-se na escrita; o que
+      // não se aceita é um valor fora de ambas as convenções.
+      if (isNum(pw.heading) && (pw.heading < -180 || pw.heading >= 360)) {
+        throw new MissionExportError('param-out-of-range', `perWaypoint[${i}].heading`)
+      }
       if (pw.gimbalPitch != null && !isNum(pw.gimbalPitch)) {
         throw new MissionExportError('per-waypoint-not-finite', `${i}.gimbalPitch=${pw.gimbalPitch}`)
       }
@@ -611,7 +618,7 @@ ${actions.join('\n')}
         <wpml:waypointSpeed>${speed}</wpml:waypointSpeed>
         <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>${hasHeading ? 'smoothTransition' : 'followWayline'}</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>${hasHeading ? Math.round(pw.heading) : 0}</wpml:waypointHeadingAngle>
+          <wpml:waypointHeadingAngle>${hasHeading ? ((Math.round(pw.heading) + 540) % 360) - 180 : 0}</wpml:waypointHeadingAngle>
           <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
           <wpml:waypointHeadingAngleEnable>${hasHeading ? 1 : 0}</wpml:waypointHeadingAngleEnable>
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>

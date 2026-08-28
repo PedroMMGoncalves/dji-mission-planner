@@ -49,6 +49,10 @@ export default {
   'co.plan.photos': { pt: '{n} fotos', en: '{n} photos' },
   'co.plan.distance': { pt: 'Distância de voo', en: 'Flight distance' },
   'co.plan.time': { pt: 'Tempo estimado', en: 'Estimated time' },
+  'co.err.corridor-too-long': {
+    pt: 'O eixo é longo demais para ser amostrado com esta sobreposição: a passagem teria de ser cosida com um segmento recto que sai do corredor. Divida o eixo em troços, suba a altitude ou baixe a sobreposição lateral.',
+    en: 'The centreline is too long to sample at this overlap: the pass would have to be stitched with a straight segment that leaves the corridor. Split the centreline, raise the altitude, or lower the side overlap.',
+  },
   'co.plan.dropped': {
     pt: '{n} passagem(ns) não pôde(puderam) ser voada(s): nessa(s) faixa(s) a curvatura do eixo é mais apertada do que a distância ao eixo, e o corredor fica SEM COBERTURA aí. A largura indicada é a pedida, não a coberta. Reduza a meia-largura, suavize a curva ou voe essa faixa à parte.',
     en: '{n} pass(es) could not be flown: there the centreline curves tighter than the pass distance, and the corridor is LEFT UNCOVERED. The width shown is the requested one, not the covered one. Reduce the half-width, ease the bend, or fly that strip separately.',

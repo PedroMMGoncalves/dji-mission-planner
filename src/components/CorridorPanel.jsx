@@ -61,6 +61,7 @@ function duration(seconds) {
 }
 
 export default function CorridorPanel({
+  triggerWarn,
   corridorConfig,
   setCorridorParam,
   corridorPlan,
@@ -134,6 +135,16 @@ export default function CorridorPanel({
         </Field>
         <p className="mb-3 text-xs text-slate-500">{t('co.params.bufferHint')}</p>
 
+        {triggerWarn && (
+          <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+            ⚠{' '}
+            {t('cp.flight.triggerFast', {
+              s: triggerWarn.actualS.toFixed(2),
+              min: triggerWarn.minS.toFixed(1),
+              vmax: triggerWarn.maxSpeed.toFixed(1),
+            })}
+          </p>
+        )}
         <Field label={t('co.params.speed')} suffix="m/s">
           <NumberInput
             value={corridorConfig.speedMS}

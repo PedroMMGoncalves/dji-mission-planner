@@ -31,6 +31,10 @@ import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
  * O cálculo corre num referencial planar local em metros, centrado no eixo.
  */
 
+// Passo angular do arco das juntas redondas. A 5° a flecha da corda é 0,08 m
+// para um desvio de 85 m — muito abaixo da tolerância do critério de validade,
+// pelo que a corda não é confundida com uma dobra.
+const ARC_STEP_RAD = (5 * Math.PI) / 180
 const MIN_RUN_M = 5 // troços mais curtos do que isto não são passagens úteis
 // Trava contra buffers absurdos face ao espaçamento. NÃO é um recorte
 // silencioso: passOffsets devolve o número que a cobertura exige, e
@@ -145,7 +149,15 @@ export function resamplePolyline(pts, spacing) {
       // corria depois de o segmento inteiro estar em memória e nunca travava
       // nada. Ao parar aqui garante-se o último ponto e o fim do troço.
       if (out.length >= MAX_SAMPLES) {
-        if (out[out.length - 1] !== clean[clean.length - 1]) out.push(clean[clean.length - 1])
+        // NÃO se cose o ponto de corte ao último vértice. Fazê-lo produzia um
+        // segmento recto de quilómetros que o critério de validade nunca
+        // apanhava — ele avalia PONTOS, e os dois extremos do salto estão à
+        // distância certa do eixo, pelo que o troço inteiro era aceite e
+        // chegava ao KMZ como perna de voo. Numa conduta em L de 26 km saíam
+        // vinte passagens de três pontos, com um salto de 21 km que se
+        // afastava 624 m de um corredor de 60 m — sem erro e sem aviso.
+        // Marca-se como truncada e quem chama recusa o plano.
+        out.truncated = true
         return out
       }
     }
@@ -196,7 +208,7 @@ function segmentNormals(pts) {
  * o infinito, pelo que acima de `miterLimit` se usa um bisel (os dois pontos
  * desviados do vértice) — a alternativa segura e finita.
  */
-export function offsetPolylineMiter(axis, offset, miterLimit = 2) {
+export function offsetPolylineMiter(axis, offset) {
   const n = axis.length
   if (n < 2) return []
   const sn = segmentNormals(axis)
@@ -205,13 +217,44 @@ export function offsetPolylineMiter(axis, offset, miterLimit = 2) {
   for (let i = 1; i < n - 1; i++) {
     const a = sn[i - 1]
     const b = sn[i]
+    // Junta REDONDA, e não em esquadria. O vértice em esquadria dista |offset|
+    // das duas RECTAS de suporte mas |offset|/cos(θ/2) da POLILINHA: numa
+    // deflexão de 120° com desvio de 85 m ficava a 170 m — fora de um corredor
+    // de 150 m de meia-largura. Baixar o miterLimit só trocava a explosão por
+    // uma falésia: 120° dava 170 m e 121° dava 85 m, um grau no traçado a
+    // mudar a passagem em 85 metros. O arco fica a |offset| EXACTOS do vértice
+    // em qualquer deflexão, e do lado côncavo mergulha para dentro — que é
+    // precisamente o que o critério de validade deve cortar. Um bisel
+    // resolveria o transbordo mas abriria um vazio de cobertura na parte de
+    // fora da curva, que é o que a junta lá está para tapar.
+    const angA = Math.atan2(a[1], a[0])
+    const angB = Math.atan2(b[1], b[0])
+    let delta = angB - angA
+    while (delta > Math.PI) delta -= 2 * Math.PI
+    while (delta < -Math.PI) delta += 2 * Math.PI
+
+    // O arco só serve o lado CONVEXO da curva, que é onde a junta tem de tapar
+    // um vazio. Do lado côncavo os dois desvios sobrepõem-se e o arco
+    // mergulharia para dentro do corredor: cada ponto do arco caía abaixo do
+    // piso do critério de validade e partia a passagem, o que transformava uma
+    // curva suave em nove troços onde deviam ser cinco. Aí mantém-se o ponto
+    // de intersecção (esquadria), que é a construção correcta para o interior
+    // — e as dobras a sério continuam a ser cortadas pelo critério.
     const denom = 1 + (a[0] * b[0] + a[1] * b[1])
-    const mx = denom > 1e-9 ? (a[0] + b[0]) / denom : Infinity
-    const my = denom > 1e-9 ? (a[1] + b[1]) / denom : Infinity
-    if (!Number.isFinite(mx) || !Number.isFinite(my) || Math.hypot(mx, my) > miterLimit) {
-      out.push(at(axis[i], a), at(axis[i], b))
+    const convexo = delta * offset < 0
+    if (convexo) {
+      const passos = Math.max(1, Math.ceil(Math.abs(delta) / ARC_STEP_RAD))
+      for (let k = 0; k <= passos; k++) {
+        const ang = angA + (delta * k) / passos
+        out.push([axis[i][0] + Math.cos(ang) * offset, axis[i][1] + Math.sin(ang) * offset])
+      }
+    } else if (denom > 1e-9) {
+      out.push([
+        axis[i][0] + ((a[0] + b[0]) / denom) * offset,
+        axis[i][1] + ((a[1] + b[1]) / denom) * offset,
+      ])
     } else {
-      out.push([axis[i][0] + mx * offset, axis[i][1] + my * offset])
+      out.push(at(axis[i], a), at(axis[i], b))
     }
   }
   out.push(at(axis[n - 1], sn[n - 2]))
@@ -232,12 +275,31 @@ export function offsetRuns(axis, offset, sampleStep) {
   const raw = offsetPolylineMiter(axis, offset)
   if (raw.length < 2) return []
   const dense = resamplePolyline(raw, sampleStep)
+  // Intervalo, e não meio-intervalo. Com a junta redonda um ponto legítimo
+  // está a |offset| EXACTOS do eixo, pelo que o tecto deixa de partir curvas
+  // boas — o que acontecia com a junta em esquadria, onde a distância excedia
+  // |offset| junto a qualquer canto por geometria correcta. Aqui é rede de
+  // segurança barata: apanha qualquer transbordo futuro, venha de onde vier.
   const tol = Math.max(0.25, Math.abs(offset) * 0.01)
   const limit = Math.abs(offset) - tol
+  const limitFar = Math.abs(offset) + tol
   const runs = []
   let current = []
   for (const q of dense) {
-    if (pointPolylineDistance(q, axis) >= limit) {
+    // Defesa em profundidade: dois pontos densos consecutivos nunca podem
+    // distar muito mais do que o passo de amostragem. Se distarem, aconteceu
+    // um salto — e o critério de distância ao eixo não o apanha, porque avalia
+    // pontos e não o interior do segmento que os une. Parte-se o troço aí,
+    // seja qual for a origem do salto.
+    const saltou = current.length > 0 &&
+      Math.hypot(q[0] - current[current.length - 1][0], q[1] - current[current.length - 1][1]) >
+        sampleStep * 2 + 1e-6
+    if (saltou) {
+      runs.push(current)
+      current = []
+    }
+    const dEixo = pointPolylineDistance(q, axis)
+    if (dEixo >= limit && dEixo <= limitFar) {
       current.push(q)
     } else if (current.length > 0) {
       runs.push(current)
@@ -400,6 +462,14 @@ export function generateCorridorPlan(centreline, options) {
   // nenhum com cobertura em falta. Numa semicircunferência de raio 60 m com
   // meia-largura de 120 m, duas passagens do lado côncavo desapareciam e o
   // painel anunciava a largura pedida, sem uma palavra.
+  // Um eixo tão longo que a amostragem não o cobre: recusa-se o plano em vez
+  // de o entregar com um salto lá dentro. O limiar prático é
+  // MAX_SAMPLES x sampleStep — ~21 km a 30 m de altitude com 90% de
+  // sobreposição lateral, que é o regime de uma linha eléctrica ou conduta.
+  if (resamplePolyline(axis, sampleStep).truncated) {
+    return { error: 'corridor-too-long' }
+  }
+
   const runsMetric = []
   let splitPasses = 0
   const droppedOffsets = []
