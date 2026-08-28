@@ -1,4 +1,4 @@
-# Protocolo de QA manual (≈10 min por release)
+# Protocolo de QA manual (≈12 min por release)
 
 As suites automáticas (`npm test`, correm também no CI) cobrem a matemática, o
 WPML e a fronteira de leitura de ficheiros; **não** cobrem a integração de
@@ -110,7 +110,32 @@ com screenshot e os passos.
   **Esperado:** ZIP com N ficheiros `_b01..bNN`, um nível cada, alturas
   crescentes.
 
-## 8. Pontos de inspecção — ordem e persistência (~1.5 min)
+## 8. Modo corredor (~2 min)
+
+- ☐ Selector do topo → **Corredor**; Desenhar; clicar um eixo com uma curva
+  larga (3–4 vértices, ~500 m); Concluir (ou duplo clique).
+  **Esperado:** eixo desenhado, faixa ilustrativa da largura pedida e as
+  passagens paralelas; painel com o número de passagens, waypoints e tempo.
+- ☐ Aumentar a **meia-largura** de 60 para 120 m.
+  **Esperado:** o número de passagens cresce **uma de cada vez**, nunca aos
+  saltos, e a faixa alarga em conformidade.
+- ☐ Desenhar um eixo com uma curva APERTADA (raio menor do que a
+  meia-largura) e ler o painel.
+  **Esperado:** aviso de passagens partidas, com a contagem; nenhuma
+  passagem desenha um laço sobre si própria no mapa.
+- ☐ Trocar o **Disparo** entre «Por distância» e «Por waypoint».
+  **Esperado:** por waypoint, a contagem de waypoints sobe e a de fotos
+  iguala-a; por distância, volta aos extremos das passagens.
+- ☐ Exportar WPML e abrir o KMZ.
+  **Esperado:** `waylines.wpml` analisa, gimbal a −90 em todos os waypoints
+  (o corredor é apenas nadir) e nenhum valor não-finito nas coordenadas.
+- ☐ Confirmar que **Seguir terreno** e a divisão por bateria não se aplicam.
+  **Esperado:** o corredor voa a altitude única — é limitação conhecida,
+  não defeito.
+- ☐ Guardar o projecto, limpar tudo, reabrir.
+  **Esperado:** eixo, meia-largura e modo de disparo restaurados.
+
+## 9. Pontos de inspecção — ordem e persistência (~1.5 min)
 
 - ☐ Modo Área → marcar 4 pontos; renomear dois; arrastar o cartão do 4.º
   para a 2.ª posição; carregar em Sugerir ordem.
@@ -120,7 +145,7 @@ com screenshot e os passos.
   **Esperado:** etiquetas e ordem sobrevivem ao ciclo gravar/abrir e a
   ordem do KMZ (`_inspect_nN.kmz`) segue a lista.
 
-## 9. Disparo por waypoint (~1.5 min)
+## 10. Disparo por waypoint (~1.5 min)
 
 - ☐ Perfil de câmara (M3E); área rectangular ~100 × 60 m, overshoot 10 m;
   **Disparo por: Waypoint**.
@@ -138,7 +163,7 @@ com screenshot e os passos.
 - ☐ Abrir um projecto gravado antes desta versão.
   **Esperado:** carrega em **Distância** (nada muda no plano nem na exportação).
 
-## 10. Verificação em tablet (~1 min)
+## 11. Verificação em tablet (~1 min)
 
 A app é usada em campo: numa janela a **~768 px de largura** (DevTools ou
 tablet real):

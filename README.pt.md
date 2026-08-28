@@ -167,7 +167,7 @@ npm run size               # orçamento do pacote (exige build)
 
 O [.github/workflows/ci.yml](.github/workflows/ci.yml) corre lint, suite, build de produção, orçamento do pacote e `npm audit` em cada push e em cada pull request; o workflow de publicação repete-os antes de publicar, pelo que o `main` não pode publicar em vermelho. O [codeql.yml](.github/workflows/codeql.yml) corre a análise estática do GitHub no `main`, em pull request e semanalmente, e o Dependabot mantém os pacotes npm e as acções dos workflows actualizados. Todas as acções estão fixadas ao SHA e ambos os workflows declaram `contents: read` — o job de publicação é o único com permissão de escrita.
 
-Os documentos exportados são comparados com ficheiros de referência em `tests/golden/`, pelo que qualquer alteração ao WPML aparece como diferença revisível. Quando é intencional, regenerar com `npm run test:update-golden` e incluir a diferença no commit. A cada release corre-se além disso o protocolo manual de ~10 minutos em [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (interface no browser, incluindo verificação em tablet), registando a passagem na tabela do fim.
+Os documentos exportados são comparados com ficheiros de referência em `tests/golden/`, pelo que qualquer alteração ao WPML aparece como diferença revisível. Quando é intencional, regenerar com `npm run test:update-golden` e incluir a diferença no commit. A cada release corre-se além disso o protocolo manual de ~12 minutos em [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (interface no browser, incluindo verificação em tablet), registando a passagem na tabela do fim.
 
 ## Publicação
 

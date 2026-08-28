@@ -170,7 +170,7 @@ npm run size               # bundle budget check (needs a build first)
 
 Exported documents are compared against reference files in `tests/golden/`, so any change to the WPML output appears as a reviewable diff. When the change is intended, regenerate with `npm run test:update-golden` and include the diff in the commit.
 
-On top of that, each release runs the ~10-minute manual protocol in [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (browser UI, including a tablet check), recording the run in the table at the end.
+On top of that, each release runs the ~12-minute manual protocol in [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (browser UI, including a tablet check), recording the run in the table at the end.
 
 ## Deployment
 
