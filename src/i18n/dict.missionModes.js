@@ -49,6 +49,11 @@ export default {
   'co.plan.photos': { pt: '{n} fotos', en: '{n} photos' },
   'co.plan.distance': { pt: 'Distância de voo', en: 'Flight distance' },
   'co.plan.time': { pt: 'Tempo estimado', en: 'Estimated time' },
+  'co.plan.dropped': {
+    pt: '{n} passagem(ns) não pôde(puderam) ser voada(s): nessa(s) faixa(s) a curvatura do eixo é mais apertada do que a distância ao eixo, e o corredor fica SEM COBERTURA aí. A largura indicada é a pedida, não a coberta. Reduza a meia-largura, suavize a curva ou voe essa faixa à parte.',
+    en: '{n} pass(es) could not be flown: there the centreline curves tighter than the pass distance, and the corridor is LEFT UNCOVERED. The width shown is the requested one, not the covered one. Reduce the half-width, ease the bend, or fly that strip separately.',
+  },
+  'co.plan.widthRequested': { pt: 'Largura pedida (não coberta)', en: 'Requested width (not covered)' },
   'co.plan.split': {
     pt: 'Curvatura mais apertada do que o desvio: {n} passagem(ns) partida(s) em troços; a cobertura pára onde deixaria de ser geometricamente possível.',
     en: 'Curvature tighter than the offset: {n} pass(es) split into runs; coverage stops where it would no longer be geometrically possible.',

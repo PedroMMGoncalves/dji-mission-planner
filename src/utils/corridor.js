@@ -372,9 +372,24 @@ export function generateCorridorPlan(centreline, options) {
   // Passagens: cada desvio pode partir-se em vários troços onde a curvatura
   // impede a cobertura. Alterna-se o sentido (boustrophedon) para o percurso
   // entre passagens ser curto.
+  //
+  // Contam-se DUAS coisas diferentes, que antes se anulavam uma a outra:
+  //  - partidas: um desvio que rende mais do que um troço (a curvatura obriga
+  //    a interromper a passagem, mas o corredor continua a ser voado);
+  //  - PERDIDAS: um desvio que não rende troço nenhum. Aí a faixa inteira fica
+  //    por voar, e é o caso que o operador tem mesmo de saber.
+  // O painel derivava o aviso de `runCount - passCount`: uma passagem partida
+  // somava +1, uma perdida subtraía −1, e as duas juntas davam zero — aviso
+  // nenhum com cobertura em falta. Numa semicircunferência de raio 60 m com
+  // meia-largura de 120 m, duas passagens do lado côncavo desapareciam e o
+  // painel anunciava a largura pedida, sem uma palavra.
   const runsMetric = []
+  let splitPasses = 0
+  const droppedOffsets = []
   offsets.forEach((offset, k) => {
     const runs = offsetRuns(axis, offset, sampleStep)
+    if (runs.length === 0) droppedOffsets.push(offset)
+    else if (runs.length > 1) splitPasses += 1
     const ordered = k % 2 === 0 ? runs : runs.slice().reverse()
     for (const run of ordered) runsMetric.push(k % 2 === 0 ? run : run.slice().reverse())
   })
@@ -423,9 +438,17 @@ export function generateCorridorPlan(centreline, options) {
       corridorLengthM,
       passCount: offsets.length,
       runCount: lines.length,
+      splitPasses,
+      droppedPasses: droppedOffsets.length,
+      droppedOffsets,
       offsets,
       spacingM: spacing,
       footprintAcrossM: across,
+      // Largura PEDIDA. Continua a ser este o número mostrado e desenhado no
+      // mapa, mas quando `droppedPasses > 0` não é a largura voada — nenhum
+      // número único o consegue dizer, porque uma passagem perdida a meio
+      // deixa um vazio interior sem encolher a extensão exterior. Quem lê isto
+      // tem de olhar também para droppedPasses.
       coveredWidthM: 2 * bufferM,
       lineCount: lines.length,
       waypointCount: waypoints.length,
