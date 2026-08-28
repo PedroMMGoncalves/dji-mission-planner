@@ -312,8 +312,21 @@ function missionConfigXml({ wpml, speed, altitude, ...opts }) {
   // `wpml:globalRTHHeight` é obrigatório em waylines.wpml. O regresso é
   // planeado acima do tecto da missão (mínimo 100 m, o valor por omissão do
   // Pilot 2) para o trajecto de regresso não descer para dentro da área.
+  //
+  // O tecto é o ponto MAIS ALTO da rota, não a altitude nominal. Com
+  // seguimento de terreno cada waypoint leva a sua própria altura
+  // (agl + relevo − cota de descolagem): numa missão sobre um planalto 250 m
+  // acima do ponto de descolagem, os waypoints ficam a ~350 m enquanto a
+  // altitude pedida continua a ser 100. Derivar só de `altitude` dava um
+  // regresso a 120 m — 230 m abaixo da própria rota, e abaixo do relevo que
+  // ela acompanha. O valor derivado é limitado ao mesmo tecto que a validação
+  // na fronteira exige de um valor vindo do chamador.
+  const alturasRota = (opts.waypoints ?? [])
+    .map((w) => Number(w?.[2]))
+    .filter((h) => Number.isFinite(h))
+  const tectoM = Math.max(Number(altitude) || 0, ...(alturasRota.length ? alturasRota : [0]))
   const rthHeight =
-    opts.rthHeightM ?? Math.max(100, Math.ceil(Number(altitude) || 0) + 20)
+    opts.rthHeightM ?? Math.min(MAX_RTH_HEIGHT_M, Math.max(100, Math.ceil(tectoM) + 20))
   return `  <wpml:missionConfig>
     <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
     <wpml:finishAction>${finishAction}</wpml:finishAction>

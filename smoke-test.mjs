@@ -1388,6 +1388,41 @@ check('waylines Mapper+: sem acoes de camara',
       tag(wlOrbBase, 'globalRTHHeight') != null, tag(wlOrbBase, 'globalRTHHeight'))
     check('missionConfig: RTH acima do tecto da missão',
       Number(tag(wlOrbBase, 'globalRTHHeight')) >= Number(wpmlParams.altitude))
+
+    /* R: o tecto da missão é o ponto MAIS ALTO da rota, não a altitude
+       nominal. Com seguimento de terreno cada waypoint leva a sua altura
+       (agl + relevo − cota de descolagem); num planalto acima do ponto de
+       descolagem essas alturas passam muito a altitude pedida, e um RTH
+       derivado só dela punha o regresso abaixo da própria rota. */
+    {
+      const planalto = [
+        [-8.50, 39.50, 350], [-8.49, 39.50, 352],
+        [-8.49, 39.51, 348], [-8.50, 39.51, 351],
+      ]
+      const wlAlto = buildWaylinesWPML({ ...wpmlParams, waypoints: planalto, altitude: 100 })
+      const rth = Number(tag(wlAlto, 'globalRTHHeight'))
+      const maisAlto = Math.max(...planalto.map((w) => w[2]))
+      check('R: RTH acima do waypoint mais alto, nao so da altitude nominal',
+        rth > maisAlto, `${rth} m vs waypoint mais alto ${maisAlto} m`)
+      check('R: rota com alturas proprias nao fica acima do RTH',
+        planalto.every((w) => w[2] < rth))
+
+      // waypoints sem altura propria: o comportamento antigo mantem-se
+      const wlPlano = buildWaylinesWPML({
+        ...wpmlParams, waypoints: planalto.map(([x, y]) => [x, y]), altitude: 100,
+      })
+      check('R: sem alturas por waypoint, o RTH continua a sair da altitude',
+        Number(tag(wlPlano, 'globalRTHHeight')) === 120,
+        tag(wlPlano, 'globalRTHHeight'))
+
+      // o valor derivado respeita o mesmo tecto que a validacao exige do chamador
+      const wlExtremo = buildWaylinesWPML({
+        ...wpmlParams, waypoints: [[-8.5, 39.5, 9000], [-8.49, 39.5, 9000]], altitude: 100,
+      })
+      check('R: RTH derivado limitado ao mesmo tecto que a validacao impoe',
+        Number(tag(wlExtremo, 'globalRTHHeight')) === MAX_RTH_HEIGHT_M,
+        tag(wlExtremo, 'globalRTHHeight'))
+    }
     const custom = buildWaylinesWPML({
       ...wpmlParams, finishAction: 'autoLand', exitOnRCLost: 'goContinue',
       executeRCLostAction: 'hover', rthHeightM: 123,
