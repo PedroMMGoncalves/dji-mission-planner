@@ -6,7 +6,9 @@
   "resumo": {
     "achados": 30,
     "vereditos": 57,
-    "agentes_falhados": 87
+    "agentes_falhados": 87,
+    "corrigidos": 12,
+    "por_tratar": 18
   },
   "achados": [
     {
@@ -18,7 +20,8 @@
       "severity": "alta",
       "verified_how": "Executei generateCorridorPlan e offsetRuns por desvio com node sobre src/utils/corridor.js. Caso A: passCount 8, runCount 6, splitPasses -2, desvios +63.8 e +89.3 com 0 troços. Caso B: passCount 8, runCount 8, splitPasses 0, com [1,1,1,1,1,2,1,0] troços por desvio. Varri bufferM de 150 a 600 m em vários eixos: o contador ou subestima (mistura de partidas e perdidas) ou fica negativo (só perdidas).",
       "agentId": "a8e5ea9dc7ed75f86",
-      "agentKey": "v2:57086f62d45505b66f2a8416fbb46dbf75d8785e95de336d40883787df4955eb"
+      "agentKey": "v2:57086f62d45505b66f2a8416fbb46dbf75d8785e95de336d40883787df4955eb",
+      "estado": "corrigido"
     },
     {
       "file": "src/utils/corridor.js",
@@ -29,7 +32,8 @@
       "severity": "alta",
       "verified_how": "node sobre generateCorridorPlan/offsetPolylineMiter/pointPolylineDistance: varrimento do ângulo de viragem de 1° a 179,9° nos dois sinais de desvio (tabela acima), medição da distância ao eixo de todos os waypoints do plano nos dois modos de disparo, e varrimento de 600 eixos aleatórios com turf.kinks (18 passagens desviadas com cruzamento interior, excluindo eixos já auto-intersectados e a passagem central). npm test verde (573) antes e depois.",
       "agentId": "a372c21590ea4ed30",
-      "agentKey": "v2:20ffbf192c015c5f290b18c07a19c002ff591e3152e27d87d7bf8502b1c17225"
+      "agentKey": "v2:20ffbf192c015c5f290b18c07a19c002ff591e3152e27d87d7bf8502b1c17225",
+      "estado": "corrigido"
     },
     {
       "file": "src/utils/exporters.js",
@@ -40,7 +44,8 @@
       "severity": "alta",
       "verified_how": "Executei terrainFollowLines + buildWaylinesWPML em node e extraí `globalRTHHeight` (120) e o máximo de `executeHeight` (350) do XML gerado; confirmei em App.jsx:1646-1648 que o caminho de terreno passa `altitude: params.altitude` com os waypoints densificados, e por grep que `rthHeightM` nunca é passado pela aplicação.",
       "agentId": "a34f79686cf5ab5e8",
-      "agentKey": "v2:613848fd22f0bedeaf7467e4edc77e126aa6b0be4287cbed78ddc3b181731bde"
+      "agentKey": "v2:613848fd22f0bedeaf7467e4edc77e126aa6b0be4287cbed78ddc3b181731bde",
+      "estado": "corrigido"
     },
     {
       "file": "src/App.jsx",
@@ -51,7 +56,8 @@
       "severity": "alta",
       "verified_how": "Li App.jsx:1990-2020 (props de MapView sem filtro), App.jsx:539-574 (planOk depende só de ring/params), MapView.jsx:317-425 e 426-497 (efeitos de desenho sem missionMode), e contrastei com App.jsx:1252-1261, 2106-2110 e 1757-1763, onde o mesmo problema foi tratado. `npm test` e `npm run lint` passam — nenhuma das duas suites cobre a ligação de props do mapa.",
       "agentId": "ae8959b8b80a96b3b",
-      "agentKey": "v2:e650b21a0518747b4d02a280f73eddca7afce68af3c2a00fbe307d10131a1bdb"
+      "agentKey": "v2:e650b21a0518747b4d02a280f73eddca7afce68af3c2a00fbe307d10131a1bdb",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/corridor.js",
@@ -62,7 +68,8 @@
       "verified_how": "Executado `node` sobre src/utils/corridor.js: `generateCorridorPlan` nos dois cenários, e depois `offsetRuns(axis, offset, sampleStep)` desvio a desvio para contar os troços de cada passagem. Confirmado 0 troços no desvio 340.3 (caso R=300) e no desvio 42.5 (caso R=20), com o plano a ser devolvido sem `error`.",
       "severity": "alta",
       "agentId": "a842d72c20f48cf11",
-      "agentKey": "v2:c2eb203816962b4a800016e7612fb005169d43608f490ca311fd310540693aed"
+      "agentKey": "v2:c2eb203816962b4a800016e7612fb005169d43608f490ca311fd310540693aed",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/corridor.js",
@@ -73,7 +80,8 @@
       "severity": "alta",
       "verified_how": "node com generateCorridorPlan sobre eixos de 40/55/60/70/120 km e sobre o eixo em L, imprimindo os pontos convertidos para metros; o maior salto passa de 117 m (40 km, sem truncagem) para 15.3 km (70 km) e 64 km (120 km). Confirmado que o corte cai em 20000·sampleStep = 56.8 km.",
       "agentId": "af46ba55bbee7afac",
-      "agentKey": "v2:452e5838579585c9b0aed549d0bb70ab11eedf9cc991658a9e5b30b23577ae0f"
+      "agentKey": "v2:452e5838579585c9b0aed549d0bb70ab11eedf9cc991658a9e5b30b23577ae0f",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/corridor.js",
@@ -84,7 +92,8 @@
       "severity": "alta",
       "verified_how": "node: generateCorridorPlan + offsetRuns por offset, contando os desvios com 0 troços e comparando a meia-largura coberta (max|offset| voado + pegada/2) com bufferM; varredura de r∈[25..80] × buf∈[50..240] × alt∈[30..120].",
       "agentId": "ac6df975c5b6a51be",
-      "agentKey": "v2:bcda713de82b988b06797283f5883e8f41d6c1411744ddc04edd65b0b1a02d65"
+      "agentKey": "v2:bcda713de82b988b06797283f5883e8f41d6c1411744ddc04edd65b0b1a02d65",
+      "estado": "corrigido"
     },
     {
       "file": "/home/user/dji-mission-planner/src/components/CorridorPanel.jsx",
@@ -95,7 +104,8 @@
       "severity": "media",
       "verified_how": "Gerei o plano e chamei buildWaylinesWPML com speed 25 e os enums reais do M3E: as três tags saem com 25. Confirmei AIRCRAFT.M3E.speedRange = {min:1,max:15} e MAX_SPEED_MS = 30 (validateExportParams aceita 30). Calculei photoInterval/velocidade para altitude 60/100 m e sobreposição 80/85/90% contra minTriggerS 0.7 s.",
       "agentId": "a8e5ea9dc7ed75f86",
-      "agentKey": "v2:57086f62d45505b66f2a8416fbb46dbf75d8785e95de336d40883787df4955eb"
+      "agentKey": "v2:57086f62d45505b66f2a8416fbb46dbf75d8785e95de336d40883787df4955eb",
+      "estado": "corrigido"
     },
     {
       "file": "/home/user/dji-mission-planner/src/App.jsx",
@@ -106,7 +116,8 @@
       "severity": "media",
       "verified_how": "Chamei aggregatePlans de src/utils/geo.js com e sem o stats do corredor: {plans:1, 458.5 s, 273 fotos, 1 bateria} vs {plans:2, 1940.9 s, 825 fotos, 3 baterias}. Confirmei em App.jsx que facePlan/orbitPlan não são condicionados por missionMode e que corridorPlan é.",
       "agentId": "a8e5ea9dc7ed75f86",
-      "agentKey": "v2:57086f62d45505b66f2a8416fbb46dbf75d8785e95de336d40883787df4955eb"
+      "agentKey": "v2:57086f62d45505b66f2a8416fbb46dbf75d8785e95de336d40883787df4955eb",
+      "estado": "corrigido"
     },
     {
       "file": "/home/user/dji-mission-planner/src/App.jsx",
@@ -117,7 +128,8 @@
       "severity": "media",
       "verified_how": "Calculei computeFootprint(M3E_WIDE, 100).across = 141.80 m, lineSpacing(141.80, 70) = 42.54 m e passOffsets(150, 20, 141.80).length = 9 contra as 5 passagens que generateCorridorPlan devolve. Confirmei em StatsPanel.jsx:55 que a linha de espaçamento é incondicional e em App.jsx:1898/1919 que o CorridorPanel e o StatsPanel coexistem no ecrã.",
       "agentId": "a8e5ea9dc7ed75f86",
-      "agentKey": "v2:57086f62d45505b66f2a8416fbb46dbf75d8785e95de336d40883787df4955eb"
+      "agentKey": "v2:57086f62d45505b66f2a8416fbb46dbf75d8785e95de336d40883787df4955eb",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/corridor.js",
@@ -128,7 +140,8 @@
       "severity": "media",
       "verified_how": "node --max-old-space-size=512 sobre passOffsets: 5000->233 desvios (0 ms), 1e6->47 013 (4 ms), 1e9->47 014 573 (4485 ms), 1e12 e 1e15->RangeError: Invalid array length. Leitura de NumberInput em ControlPanel.jsx, do useMemo em App.jsx:892-905 e confirmação por grep de que não há ErrorBoundary/componentDidCatch/getDerivedStateFromError em src/.",
       "agentId": "a372c21590ea4ed30",
-      "agentKey": "v2:20ffbf192c015c5f290b18c07a19c002ff591e3152e27d87d7bf8502b1c17225"
+      "agentKey": "v2:20ffbf192c015c5f290b18c07a19c002ff591e3152e27d87d7bf8502b1c17225",
+      "estado": "corrigido"
     },
     {
       "file": "src/utils/exporters.js",
@@ -139,7 +152,8 @@
       "severity": "media",
       "verified_how": "Corri buildWaylinesWPML em node com altitude 1481 e 1500 e li o `globalRTHHeight` gerado (1501 e 1520, ambos > MAX_RTH_HEIGHT_M = 1500), e a seguir o mesmo 1520 passado como `rthHeightM`, que é recusado; confirmei o max=1500 do campo de altitude em ControlPanel.jsx.",
       "agentId": "a34f79686cf5ab5e8",
-      "agentKey": "v2:613848fd22f0bedeaf7467e4edc77e126aa6b0be4287cbed78ddc3b181731bde"
+      "agentKey": "v2:613848fd22f0bedeaf7467e4edc77e126aa6b0be4287cbed78ddc3b181731bde",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/exporters.js",
@@ -150,7 +164,8 @@
       "severity": "media",
       "verified_how": "Executei inspectionToWaypoints + buildWaylinesWPML em node com esses pontos e li as tags geradas; validei os documentos com XMLValidator do fast-xml-parser (o caso com `&` dá inválido). Também corri uma matriz de campos a NaN/Infinity: `rthHeightM`, `gimbalPitch`, `altitude` e `speed` globais são recusados, mas `perWaypoint.heading`, `perWaypoint.gimbalPitch`, `takeOffSecurityHeightM`, os sub-enums de `wpml` e `turnMode` são escritos.",
       "agentId": "a34f79686cf5ab5e8",
-      "agentKey": "v2:613848fd22f0bedeaf7467e4edc77e126aa6b0be4287cbed78ddc3b181731bde"
+      "agentKey": "v2:613848fd22f0bedeaf7467e4edc77e126aa6b0be4287cbed78ddc3b181731bde",
+      "estado": "corrigido"
     },
     {
       "file": "src/App.jsx",
@@ -161,7 +176,8 @@
       "severity": "media",
       "verified_how": "Li o diff completo de App.jsx (git diff 622ea92..HEAD) e listei todos os sítios de params.speed antes e depois (git show 622ea92:src/App.jsx + grep): os nove consumidores antigos migraram, o passe de params ao MissionReport na linha 2081 não. Confirmei em src/components/MissionReport.jsx:693/680-688/822 que o componente lê p.speed em bruto e stats.flightTimeS do plano. Confirmei os speedRange em src/data/drones.js (CUSTOM 20, M3E 15) e que ControlPanel.jsx:198 só chama setDrone, sem tocar em params. Calculei os números com node: footprint M3E a 100 m -> intervalo 26,639 m; 26,639/20 = 1,3 s contra 26,639/15 = 1,8 s.",
       "agentId": "a3f956516a94ed10a",
-      "agentKey": "v2:c871f75114abeb838a9b83aa8c754e1784b9a7e19704dab3527b1d06c34fc89d"
+      "agentKey": "v2:c871f75114abeb838a9b83aa8c754e1784b9a7e19704dab3527b1d06c34fc89d",
+      "estado": "corrigido"
     },
     {
       "file": "src/App.jsx",
@@ -172,7 +188,8 @@
       "severity": "media",
       "verified_how": "Li projectSummary em src/App.jsx:1225-1237 (nem corpo nem dependências mencionam corridorPlan), src/components/ProjectSummary.jsx (guarda plans < 2) e src/utils/geo.js:960-978 (aggregatePlans). Confirmei que facePlan (App.jsx:743) e orbitPlan (App.jsx:819) não filtram por missionMode, logo coexistem com corridorPlan. Corri com node generateCorridorPlan para o eixo [-9.15,38.72]->[-9.08,38.72], sensor M3E_WIDE, altitude 100, buffer 60, overlap 70, speed 8: 6080 m, 759 s (12,7 min), 229 fotos; e aggregatePlans com e sem essas stats: {plans:2, 1080 s, 520 fotos, 2 baterias} contra {plans:3, 1839 s, 749 fotos, 3 baterias}.",
       "agentId": "a3f956516a94ed10a",
-      "agentKey": "v2:c871f75114abeb838a9b83aa8c754e1784b9a7e19704dab3527b1d06c34fc89d"
+      "agentKey": "v2:c871f75114abeb838a9b83aa8c754e1784b9a7e19704dab3527b1d06c34fc89d",
+      "estado": "corrigido"
     },
     {
       "file": "src/App.jsx",
@@ -183,7 +200,8 @@
       "severity": "media",
       "verified_how": "Leitura directa das duas ligações (`grep -n 'params={' src/App.jsx` devolve exactamente duas linhas: 1911 remendada, 2081 em bruto) e das três leituras de `p.speed` em MissionReport.jsx (680, 686, 693) contra `stats.flightTimeS` (822). `git show ab2a21f` confirma que o efeito de reencaixe foi removido e que só o ControlPanel recebeu a cópia limitada. Limites confirmados em src/data/drones.js (15/15/17/20).",
       "agentId": "a5b5f3ea7eb3a3dc7",
-      "agentKey": "v2:0686ca5d9ddc643d3b09cfba4b3343e1e214af843d3ab5a86746a5c14841ec59"
+      "agentKey": "v2:0686ca5d9ddc643d3b09cfba4b3343e1e214af843d3ab5a86746a5c14841ec59",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/exporters.js",
@@ -194,7 +212,8 @@
       "severity": "media",
       "verified_how": "Executado em node contra os módulos reais: `inspectionToWaypoints` com esse ponto devolve `perWaypoint: [{heading:'N', gimbalPitch:'baixo', actions:['takePhoto']}]`; `validateExportParams(params)` não lança; `buildWaylinesWPML(params)` produz as linhas `<wpml:waypointHeadingAngle>NaN</...>` e `<wpml:gimbalPitchRotateAngle>baixo</...>`. Confirmado por leitura que `applyProject` (App.jsx:1400) só testa `Array.isArray(q.point)` e que os inputs `type=\"number\"` da interface não conseguem produzir estes valores — a via é o ficheiro de projecto.",
       "agentId": "a5b5f3ea7eb3a3dc7",
-      "agentKey": "v2:0686ca5d9ddc643d3b09cfba4b3343e1e214af843d3ab5a86746a5c14841ec59"
+      "agentKey": "v2:0686ca5d9ddc643d3b09cfba4b3343e1e214af843d3ab5a86746a5c14841ec59",
+      "estado": "corrigido"
     },
     {
       "file": "src/App.jsx",
@@ -205,7 +224,8 @@
       "severity": "media",
       "verified_how": "Li App.jsx:1735-1738, 1770-1777 e 2069-2090; ChecklistPage.jsx:1280-1281, 1381-1394 e 1555-1570; MissionReport.jsx:33 e 740-760. Confirmei em App.jsx:179-185 que `split.mode` por omissão é 'none' (logo `blocks` é null e o caso (b) exige que o utilizador tenha escolhido uma divisão); o caso (a) do relatório basta um polígono desenhado.",
       "agentId": "ae8959b8b80a96b3b",
-      "agentKey": "v2:e650b21a0518747b4d02a280f73eddca7afce68af3c2a00fbe307d10131a1bdb"
+      "agentKey": "v2:e650b21a0518747b4d02a280f73eddca7afce68af3c2a00fbe307d10131a1bdb",
+      "estado": "por tratar"
     },
     {
       "file": "src/components/CorridorPanel.jsx",
@@ -216,7 +236,8 @@
       "verified_how": "Executado `node` sobre src/utils/corridor.js com os dois eixos, contando os troços por desvio com `offsetRuns` e comparando com `stats.runCount - stats.passCount` tal como CorridorPanel.jsx:85 o calcula.",
       "severity": "media",
       "agentId": "a842d72c20f48cf11",
-      "agentKey": "v2:c2eb203816962b4a800016e7612fb005169d43608f490ca311fd310540693aed"
+      "agentKey": "v2:c2eb203816962b4a800016e7612fb005169d43608f490ca311fd310540693aed",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/corridor.js",
@@ -227,7 +248,8 @@
       "verified_how": "Executado `node` sobre src/utils/corridor.js: `offsetRuns` directo com sampleStep 1 m, e depois `generateCorridorPlan` de ponta a ponta com os parâmetros acima, medindo o maior salto entre waypoints consecutivos de cada `line` convertida para metros.",
       "severity": "media",
       "agentId": "a842d72c20f48cf11",
-      "agentKey": "v2:c2eb203816962b4a800016e7612fb005169d43608f490ca311fd310540693aed"
+      "agentKey": "v2:c2eb203816962b4a800016e7612fb005169d43608f490ca311fd310540693aed",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/exporters.js",
@@ -238,7 +260,8 @@
       "severity": "media",
       "verified_how": "Três mutações aplicadas e revertidas uma a uma com o suite completo a correr: troca lon/lat em buildGcpKML, nos Placemarks de GCP de buildSimpleKML e no Placemark Base. Todas sobreviveram (0 FAIL nas duas suites). Para contraste, mutei três asserções que pareciam fortes e TODAS falharam como devido: retirar o desvio de meio píxel em demFile.elevationAt (3 FAIL na suite de E/S), trocar o mapeamento de meia célula da grelha reamostrada (1 FAIL), e substituir a esquadria de offsetPolylineMiter por normal média (4 FAIL, incluindo os dois goldens do corredor).",
       "agentId": "af46ba55bbee7afac",
-      "agentKey": "v2:452e5838579585c9b0aed549d0bb70ab11eedf9cc991658a9e5b30b23577ae0f"
+      "agentKey": "v2:452e5838579585c9b0aed549d0bb70ab11eedf9cc991658a9e5b30b23577ae0f",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/corridor.js",
@@ -249,7 +272,8 @@
       "severity": "media",
       "verified_how": "Mutação aplicada e revertida com as duas suites a correr: 0 FAIL em ambas.",
       "agentId": "af46ba55bbee7afac",
-      "agentKey": "v2:452e5838579585c9b0aed549d0bb70ab11eedf9cc991658a9e5b30b23577ae0f"
+      "agentKey": "v2:452e5838579585c9b0aed549d0bb70ab11eedf9cc991658a9e5b30b23577ae0f",
+      "estado": "por tratar"
     },
     {
       "file": "src/components/CorridorPanel.jsx",
@@ -260,7 +284,8 @@
       "severity": "media",
       "verified_how": "node: generateCorridorPlan(speed:25) + buildWaylinesWPML, grep dos elementos de velocidade no XML; comparação com os handlers de FacePanel/OrbitPanel e com AIRCRAFT['M3E'].speedRange.",
       "agentId": "ac6df975c5b6a51be",
-      "agentKey": "v2:bcda713de82b988b06797283f5883e8f41d6c1411744ddc04edd65b0b1a02d65"
+      "agentKey": "v2:bcda713de82b988b06797283f5883e8f41d6c1411744ddc04edd65b0b1a02d65",
+      "estado": "por tratar"
     },
     {
       "file": "src/App.jsx",
@@ -271,7 +296,8 @@
       "severity": "media",
       "verified_how": "Leitura do caminho de dados: App.jsx:294 (limite no render), 1911 (ControlPanel recebe limitado), 2029 (StatsPanel recebe limitado), 2081 (MissionReport recebe `params` cru), MissionReport.jsx:693 e 686; AIRCRAFT confirmado por node (CUSTOM max 20, M3E max 15).",
       "agentId": "ac6df975c5b6a51be",
-      "agentKey": "v2:bcda713de82b988b06797283f5883e8f41d6c1411744ddc04edd65b0b1a02d65"
+      "agentKey": "v2:bcda713de82b988b06797283f5883e8f41d6c1411744ddc04edd65b0b1a02d65",
+      "estado": "corrigido"
     },
     {
       "file": "src/utils/corridor.js",
@@ -282,7 +308,8 @@
       "severity": "baixa",
       "verified_how": "node sobre generateCorridorPlan: medição do maior salto entre waypoints consecutivos e amostragem fina desse segmento com pointPolylineDistance; comparação com o mesmo eixo a 30 km (maior salto 5502 m, igual em todas as linhas, apenas simplificação Douglas-Peucker) e com o caso sinusoidal de 60 km (salto de 17 633 m). O teste existente \"trava preserva o ponto final do eixo\" consagra o comportamento num eixo recto, onde é inofensivo.",
       "agentId": "a372c21590ea4ed30",
-      "agentKey": "v2:20ffbf192c015c5f290b18c07a19c002ff591e3152e27d87d7bf8502b1c17225"
+      "agentKey": "v2:20ffbf192c015c5f290b18c07a19c002ff591e3152e27d87d7bf8502b1c17225",
+      "estado": "por tratar"
     },
     {
       "file": "src/App.jsx",
@@ -293,7 +320,8 @@
       "severity": "baixa",
       "verified_how": "Li o efeito em src/App.jsx:1014-1029 e confirmei por grep que 'corridor' foi acrescentado a todos os outros pontos de decisão sobre mode (handleMapClick, handleFinishAny, MapView click/dblclick/cursor/draft) menos a este. Li handleFinishCorridor (App.jsx:713-729) e os botões do CorridorPanel (CorridorPanel.jsx:94-108) para confirmar que não existe cancelamento durante o desenho, e handleMapClick (App.jsx:645) para confirmar que o clique continua a acrescentar vértices enquanto mode === 'corridor'.",
       "agentId": "a3f956516a94ed10a",
-      "agentKey": "v2:c871f75114abeb838a9b83aa8c754e1784b9a7e19704dab3527b1d06c34fc89d"
+      "agentKey": "v2:c871f75114abeb838a9b83aa8c754e1784b9a7e19704dab3527b1d06c34fc89d",
+      "estado": "por tratar"
     },
     {
       "file": "src/components/ChecklistPage.jsx",
@@ -304,7 +332,8 @@
       "severity": "baixa",
       "verified_how": "Li o efeito em src/components/ChecklistPage.jsx:1327-1339 e comparei com `git show 622ea92:src/components/ChecklistPage.jsx` (linhas 1177-1191), que tem o mesmo cleanup — logo é pré-existente, não regressão. Confirmei que `onBack` desmonta o componente lendo src/App.jsx:1728-1740 (`if (view === 'checklist') return <ChecklistPage ... onBack={() => setView('planner')} />`) e src/components/ChecklistPage.jsx:1487-1493. Confirmei a ausência de flush de último recurso com `grep -rn 'beforeunload|pagehide|visibilitychange' src/` (zero resultados). Os totais 87 (camera+corredor) e 100 (itens totais) vêm de um script node que reavalia o literal FASES do ficheiro actual.",
       "agentId": "a8ddeb493b8c5ed81",
-      "agentKey": "v2:0cb787d3f46bb3dfe1dd8458975ab36a7fca027e52de9014bac9c5c574db093f"
+      "agentKey": "v2:0cb787d3f46bb3dfe1dd8458975ab36a7fca027e52de9014bac9c5c574db093f",
+      "estado": "por tratar"
     },
     {
       "file": "src/App.jsx",
@@ -315,7 +344,8 @@
       "severity": "baixa",
       "verified_how": "Li App.jsx:1392-1425 (applyProject e hidratação), App.jsx:1501-1515 (importProject), App.jsx:1299 (o único outro sítio que incrementa fitKey, no caminho de importação de área) e MapView.jsx:257-266 e 76-81. Nenhum dos caminhos cobre um projecto sem `ring`.",
       "agentId": "ae8959b8b80a96b3b",
-      "agentKey": "v2:e650b21a0518747b4d02a280f73eddca7afce68af3c2a00fbe307d10131a1bdb"
+      "agentKey": "v2:e650b21a0518747b4d02a280f73eddca7afce68af3c2a00fbe307d10131a1bdb",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/faceMode.js",
@@ -326,7 +356,8 @@
       "severity": "baixa",
       "verified_how": "Duas mutações: `floorM = 0` (piso desligado) foi apanhada — 5 FAIL, incluindo a asserção da faixa por cobrir e as três de folga contra DSM; `minHeightM: 0` só no objecto stats sobreviveu com 0 FAIL nas duas suites.",
       "agentId": "af46ba55bbee7afac",
-      "agentKey": "v2:452e5838579585c9b0aed549d0bb70ab11eedf9cc991658a9e5b30b23577ae0f"
+      "agentKey": "v2:452e5838579585c9b0aed549d0bb70ab11eedf9cc991658a9e5b30b23577ae0f",
+      "estado": "por tratar"
     },
     {
       "file": "src/utils/corridor.js",
@@ -337,7 +368,8 @@
       "severity": "baixa",
       "verified_how": "node: resamplePolyline sobre um segmento recto de 30 km com passo 1 m (maior salto 10001 m no índice 20000); e offsetPolylineMiter+resamplePolyline sobre eixos em ziguezague de 60/120/200/400 vértices para localizar o limiar de comprimento.",
       "agentId": "ac6df975c5b6a51be",
-      "agentKey": "v2:bcda713de82b988b06797283f5883e8f41d6c1411744ddc04edd65b0b1a02d65"
+      "agentKey": "v2:bcda713de82b988b06797283f5883e8f41d6c1411744ddc04edd65b0b1a02d65",
+      "estado": "por tratar"
     }
   ],
   "vereditos": [
