@@ -127,6 +127,29 @@ export function validateExportParams(params) {
       }
     })
   }
+  // Divida da fronteira que a auditoria registou: estes campos chegavam ao
+  // ficheiro em cru. Nenhum e hoje alimentado por um campo da interface, mas
+  // `turnMode: 'a & b'` e `payloadPositionIndex: '<mau>'` produzem XML MAL
+  // FORMADO — um KMZ que o Pilot 2 nem chega a abrir — e um
+  // takeOffSecurityHeightM nao numerico escreve NaN. Fecha-se agora, antes de
+  // alguem os ligar a um campo.
+  if (params.turnMode != null && !TURN_MODES.includes(params.turnMode)) {
+    throw new MissionExportError('param-out-of-range', `turnMode=${params.turnMode}`)
+  }
+  if (params.takeOffSecurityHeightM != null) {
+    if (!isNum(params.takeOffSecurityHeightM)) {
+      throw new MissionExportError('param-not-finite', 'takeOffSecurityHeightM')
+    }
+    if (params.takeOffSecurityHeightM <= 0 || params.takeOffSecurityHeightM > 200) {
+      throw new MissionExportError('param-out-of-range', 'takeOffSecurityHeightM')
+    }
+  }
+  for (const chave of ['droneSubEnumValue', 'payloadSubEnumValue', 'payloadPositionIndex']) {
+    const v = wpml[chave]
+    if (v !== undefined && v !== null && !isNum(v)) {
+      throw new MissionExportError('param-not-finite', `wpml.${chave}`)
+    }
+  }
   if (isNum(params.gimbalPitch) && (params.gimbalPitch < -120 || params.gimbalPitch > 60)) {
     throw new MissionExportError('param-out-of-range', 'gimbalPitch')
   }
@@ -328,6 +351,9 @@ const TURN_MODE_STRAIGHT_LINE = {
   toPointAndPassWithContinuityCurvature: 0,
   coordinateTurn: 0,
 }
+
+/** Modos de viragem aceites — as chaves do mapa acima, sem os repetir. */
+export const TURN_MODES = Object.keys(TURN_MODE_STRAIGHT_LINE)
 
 export function turnParams(turnMode, dampingDistM = 0) {
   const straightLine = TURN_MODE_STRAIGHT_LINE[turnMode] ?? 1
