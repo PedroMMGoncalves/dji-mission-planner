@@ -1292,6 +1292,11 @@ export default function ChecklistPage({
   })
 
   /* ---------- Hidratação a partir do localStorage (uma vez) ---------- */
+  // Hidratação única no arranque, sobre seis átomos de estado; `hidratado`
+  // existe para a gravação não escrever por cima antes de a leitura acabar.
+  // Passar tudo a inicializadores preguiçosos arriscava a memória do
+  // checklist em campo, que não tem testes a protegê-la.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
       const bruto = window.localStorage.getItem(STORAGE_KEY)
@@ -1324,6 +1329,7 @@ export default function ChecklistPage({
     }
     setHidratado(true)
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   /* ------------- Gravação automática com debounce simples ------------- */
   useEffect(() => {
@@ -1547,6 +1553,7 @@ export default function ChecklistPage({
               onToggle={toggle}
               sensorType={sensorType}
               faceMode={faceMode}
+              corridorMode={corridorMode}
             />
           ))}
         </div>

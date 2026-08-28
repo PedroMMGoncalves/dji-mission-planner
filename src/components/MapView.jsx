@@ -52,20 +52,27 @@ export default function MapView({
   // As callbacks/modo vivem num ref para os handlers Leaflet (registados uma
   // única vez) lerem sempre a versão atual sem re-registos.
   const stateRef = useRef({})
-  stateRef.current = {
-    mode,
-    onMapClick,
-    onFinishDraw,
-    onVertexDrag,
-    onVertexInsert,
-    onVertexDelete,
-    onDraftVertexRemove,
-    onAnchorDrag,
-    onBaseDrag,
-    onTileToggle,
-    onInspectDrag,
-    onOrbitPoiDrag,
-  }
+  // Escrito num efeito e não durante o render: mutar um ref no corpo do
+  // componente é inseguro com renderização concorrente (React pode repetir
+  // ou descartar o render). Os handlers imperativos abaixo só disparam por
+  // acção do utilizador, sempre depois de o efeito ter corrido, pelo que
+  // continuam a ler a versão mais recente.
+  useEffect(() => {
+    stateRef.current = {
+      mode,
+      onMapClick,
+      onFinishDraw,
+      onVertexDrag,
+      onVertexInsert,
+      onVertexDelete,
+      onDraftVertexRemove,
+      onAnchorDrag,
+      onBaseDrag,
+      onTileToggle,
+      onInspectDrag,
+      onOrbitPoiDrag,
+    }
+  })
 
   // Inicialização única do mapa
   useEffect(() => {

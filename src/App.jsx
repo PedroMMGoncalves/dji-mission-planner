@@ -247,6 +247,11 @@ function AppInner({ lang, setLang }) {
   }, [])
 
   /* ------- Modo âncora → retângulo perfeito ou grelha de células ------- */
+  // O anel é estado com várias origens — desenho no mapa, importação de
+  // ficheiro, âncora. Derivá-lo do render exigiria uma só fonte de verdade
+  // para a área, o que é uma reestruturação do componente e não um acerto
+  // local; fica registado em vez de forçado.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (anchor.center && anchor.length > 0 && anchor.width > 0) {
       const cols = Math.max(1, Math.round(anchor.cols))
@@ -266,11 +271,18 @@ function AppInner({ lang, setLang }) {
       setAreaOrigin('anchor')
     }
   }, [anchor])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   /* ------------------- Pipeline de cálculo (memo) -------------------- */
   const aircraft = AIRCRAFT[drone.aircraftId]
   const payload = PAYLOADS[drone.payloadId]
-  aircraftRef.current = aircraft
+  // Escrito num efeito e não durante o render: mutar um ref no corpo do
+  // componente é inseguro com renderização concorrente (React pode repetir ou
+  // descartar o render). aircraftRef só é lido dentro de callbacks, por acção
+  // do utilizador, sempre depois de o efeito ter corrido.
+  useEffect(() => {
+    aircraftRef.current = aircraft
+  })
 
   // rótulo composto para o relatório/checklist: a aeronave, e o payload
   // quando a aeronave tem mais do que um montável
@@ -278,6 +290,10 @@ function AppInner({ lang, setLang }) {
     aircraft.payloads.length > 1 ? `${aircraft.label} + ${payload.label}` : aircraft.label
 
   // ao trocar de aeronave, a velocidade atual é reencaixada nos novos limites
+  // O efeito existe justamente para apanhar TODAS as formas de trocar de
+  // aeronave (selector, carregar projecto, aplicar preset). Mover o limite
+  // para cada uma delas volta a abrir a porta a esquecer uma.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const r = aircraft.speedRange ?? { min: 1, max: 20 }
     setParams((p) =>
@@ -286,6 +302,7 @@ function AppInner({ lang, setLang }) {
         : p,
     )
   }, [aircraft])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // payload ativo com a afinação aplicada: um LiDAR pode voar com um corte
   // de trabalho do feixe (effectiveFov) mais estreito do que o nominal
@@ -1401,6 +1418,11 @@ function AppInner({ lang, setLang }) {
   }, [])
 
   // hidratar uma vez no arranque
+  // Hidratação única no arranque: applyProject reconstitui uma dezena de
+  // átomos de estado a partir do projecto gravado, e passá-los todos a
+  // inicializadores preguiçosos de useState não é um acerto local. Custa um
+  // render extra, uma só vez.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
       const raw = localStorage.getItem(PROJECT_KEY)
@@ -1414,6 +1436,7 @@ function AppInner({ lang, setLang }) {
     hydratedRef.current = true
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // gravação automática (debounce 500 ms)
   useEffect(() => {
