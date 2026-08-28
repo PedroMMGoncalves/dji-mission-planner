@@ -178,9 +178,16 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
   const [exag, setExag] = useState(1)
   const [imagery, setImagery] = useState('loading') // 'loading' | 'ok' | 'fallback'
 
-  propsRef.current = { terrain, ring, waypoints, refElev, basePoint, gcps }
-  onCloseRef.current = onClose
-  exagRef.current = exag
+  // Escrito num efeito e não durante o render: mutar um ref no corpo do
+  // componente é inseguro com renderização concorrente (React pode repetir
+  // ou descartar o render). Os handlers imperativos abaixo só disparam por
+  // acção do utilizador, sempre depois de o efeito ter corrido, pelo que
+  // continuam a ler a versão mais recente.
+  useEffect(() => {
+    propsRef.current = { terrain, ring, waypoints, refElev, basePoint, gcps }
+    onCloseRef.current = onClose
+    exagRef.current = exag
+  })
 
   const hasTerrain =
     Array.isArray(terrain?.bbox) && terrain.bbox.length >= 4 && typeof terrain?.elevationAt === 'function'
