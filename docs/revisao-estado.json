@@ -1,0 +1,36 @@
+{
+  "rondas": [
+    {
+      "ronda": "auditoria-1",
+      "areas": [
+        "corredor-geometria",
+        "corredor-integracao",
+        "exportacao-wpml",
+        "refactor-preservacao",
+        "app-estado",
+        "checklist-persistencia",
+        "mapa-preview",
+        "fusao-integridade",
+        "testes-confianca",
+        "seguranca-voo",
+        "completude"
+      ]
+    }
+  ],
+  "areasCobertas": [
+    "corredor-geometria",
+    "corredor-integracao",
+    "exportacao-wpml",
+    "refactor-preservacao",
+    "app-estado",
+    "checklist-persistencia",
+    "mapa-preview",
+    "fusao-integridade",
+    "testes-confianca",
+    "seguranca-voo",
+    "completude"
+  ],
+  "runId": null,
+  "scriptPath": null,
+  "actualizado": "2026-08-28 16:08 UTC"
+}
