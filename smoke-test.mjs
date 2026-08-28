@@ -26,6 +26,7 @@ import {
 } from './src/utils/geo.js'
 import {
   MAX_RTH_HEIGHT_M,
+  TURN_MODES,
   MAX_SPEED_MS,
   MAX_WAYPOINTS_PER_ROUTE,
   MissionExportError,
@@ -1964,6 +1965,30 @@ check('waylines Mapper+: sem acoes de camara',
           ref === null ? 'em falta (UPDATE_GOLDEN=1 para gerar)' : (ref === xml ? '' : 'difere'))
       }
     }
+  }
+
+  /* Divida da fronteira: campos que chegavam ao ficheiro em cru. turnMode e
+     payloadPositionIndex com caracteres de marcacao produziam XML MAL
+     FORMADO — um KMZ que o comando nem chega a abrir. */
+  {
+    const baseVal = {
+      name: 'v', waypoints: [toLL(0, 0), toLL(100, 0)], altitude: 100, speed: 8,
+      wpml: wpmlParams.wpml, photoIntervalM: 0, triggerMode: 'distance', sensorType: 'camera',
+    }
+    const recusa = (extra) => {
+      try { buildWaylinesWPML({ ...baseVal, ...extra }); return false } catch { return true }
+    }
+    check('fronteira: turnMode desconhecido recusado', recusa({ turnMode: 'a & b' }))
+    check('fronteira: turnMode valido continua a passar',
+      !recusa({ turnMode: 'toPointAndPassWithContinuityCurvature' }))
+    check('fronteira: takeOffSecurityHeightM nao numerico recusado',
+      recusa({ takeOffSecurityHeightM: NaN }) && recusa({ takeOffSecurityHeightM: 'alto' }))
+    check('fronteira: sub-enums do wpml nao numericos recusados',
+      recusa({ wpml: { ...wpmlParams.wpml, payloadPositionIndex: '<mau>' } }) &&
+        recusa({ wpml: { ...wpmlParams.wpml, droneSubEnumValue: 'x' } }))
+    check('fronteira: todos os modos de viragem do mapa sao aceites',
+      TURN_MODES.length === 4 && TURN_MODES.every((m) => !recusa({ turnMode: m })),
+      TURN_MODES.join(', '))
   }
 
   /* A2: o WPML exige waypointHeadingAngle em [-180, 180] no modo
