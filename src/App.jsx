@@ -404,13 +404,27 @@ function AppInner({ lang, setLang }) {
   )
 
   // intervalo entre fotos abaixo do que o obturador consegue?
-  const triggerWarn = useMemo(() => {
-    if (interval == null || !(speed > 0)) return null
+  const avisoObturador = (v) => {
+    if (interval == null || !(v > 0)) return null
     const minS = payload.minTriggerS ?? 0.7
-    const actualS = interval / speed
+    const actualS = interval / v
     if (actualS >= minS) return null
     return { actualS, minS, maxSpeed: interval / minS }
-  }, [interval, speed, payload])
+  }
+  const triggerWarn = useMemo(
+    () => avisoObturador(speed),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [interval, speed, payload],
+  )
+  // O mesmo aviso para o corredor, que tem a sua propria velocidade. Era
+  // calculado so com a velocidade da area e so entregue ao ControlPanel, que
+  // em modo corredor nem sequer e renderizado: o operador via 2460 fotos
+  // anunciadas quando o obturador so consegue ~1995, sem uma palavra.
+  const corridorTriggerWarn = useMemo(
+    () => avisoObturador(corridorSpeed),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [interval, corridorSpeed, payload],
+  )
 
   const validation = useMemo(
     () => (ring ? validateRing(ring) : { valid: false, kinks: [] }),
@@ -1897,6 +1911,7 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'corridor' && (
               <CorridorPanel
+                triggerWarn={corridorTriggerWarn}
                 corridorConfig={
                   corridorConfig.speedMS === corridorSpeed
                     ? corridorConfig

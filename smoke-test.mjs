@@ -1965,6 +1965,30 @@ check('waylines Mapper+: sem acoes de camara',
       }
     }
   }
+
+  /* A2: o WPML exige waypointHeadingAngle em [-180, 180] no modo
+     smoothTransition, e os geradores produzem rumos em 0..359. O exportador
+     nao convertia: 108 de 108 waypoints de uma fachada saiam a 270. Os
+     ficheiros de referencia chegaram a selar os valores errados, por isso a
+     varredura corre sobre TODOS eles — se um golden voltar a ser regenerado
+     com rumos fora do intervalo, falha aqui em vez de passar despercebido. */
+  {
+    let fora = 0
+    let total = 0
+    const nomes = ['area-distancia', 'area-lidar', 'area-terreno',
+      'area-waypoint-overshoot', 'corredor', 'fachada', 'orbita']
+    for (const nome of nomes) {
+      let texto = null
+      try { texto = readFileSync(new URL(`./tests/golden/${nome}.waylines.wpml`, import.meta.url), 'utf8') } catch { continue }
+      for (const m of texto.matchAll(/<wpml:waypointHeadingAngle>(-?[0-9.]+)</g)) {
+        total += 1
+        const v = Number(m[1])
+        if (!(v >= -180 && v <= 180)) fora += 1
+      }
+    }
+    check('A2: todos os rumos dos ficheiros de referencia em [-180, 180]',
+      total > 0 && fora === 0, `${fora} fora de ${total} rumos`)
+  }
 }
 
 /* 12. Mapeamento de corredor (E5.1)
@@ -2104,6 +2128,71 @@ check('waylines Mapper+: sem acoes de camara',
   }
   }
 
+  /* 12c2. COBERTURA MEDIDA, e nao contada. As assercoes de corredor contavam
+     pontos, verificavam vertices e preservavam extremos, mas nenhuma media a
+     distancia ao eixo NO INTERIOR dos segmentos — e e ai que vivia a classe
+     inteira de defeitos que a auditoria encontrou: o salto de 21 km cosido
+     pela trava de amostragem e o transbordo de 2x da junta em esquadria. Os
+     dois extremos de um salto estao a distancia certa; o meio nao esta.
+     Esta assercao percorre cada perna de voo exportada e mede. */
+  {
+    const distSeg = (p, a, b) => {
+      const vx = b[0] - a[0]
+      const vy = b[1] - a[1]
+      const wx = p[0] - a[0]
+      const wy = p[1] - a[1]
+      const t = Math.max(0, Math.min(1, (wx * vx + wy * vy) / (vx * vx + vy * vy || 1)))
+      return Math.hypot(wx - t * vx, wy - t * vy)
+    }
+    // inversa de toLL, para medir no plano local em metros
+    const toM = ([lon, lat]) => [(lon + 8.0) * mLon, (lat - 39.5) * 110574]
+    const eixos = [
+      ['recto', straight],
+      ['curvatura suave', bend],
+      ['cotovelo 120 graus', [toLL(0, 0), toLL(500, 0), toLL(250, 433)]],
+      ['ziguezague', [toLL(0, 0), toLL(300, 0), toLL(500, 250), toLL(800, 100)]],
+    ]
+    for (const [rotulo, eixo] of eixos) {
+      const plan = generateCorridorPlan(eixo, baseOpts)
+      if (plan.error) {
+        check(`corredor cobertura: ${rotulo} gera plano`, false, plan.error)
+        continue
+      }
+      const eixoM = eixo.map(toM)
+      let pior = 0
+      for (const seg of plan.lines) {
+        const m = seg.map(toM)
+        for (let i = 0; i < m.length; i++) {
+          // o ponto em si
+          let d = Infinity
+          for (let k = 1; k < eixoM.length; k++) d = Math.min(d, distSeg(m[i], eixoM[k - 1], eixoM[k]))
+          pior = Math.max(pior, d)
+          if (i === 0) continue
+          // AO LONGO do segmento que o liga ao anterior, nao so nos extremos.
+          // Uma perna recta longa e legitima (o Douglas-Peucker reduz uma
+          // passagem recta aos seus extremos, e 3 km entre waypoints num eixo
+          // recto esta certo); o que nao e legitimo e o segmento afastar-se do
+          // eixo pelo meio, que e como um salto cosido ou um transbordo se
+          // escondem de uma verificacao feita so por pontos.
+          const passos = 20
+          for (let t = 1; t < passos; t++) {
+            const q = [
+              m[i - 1][0] + ((m[i][0] - m[i - 1][0]) * t) / passos,
+              m[i - 1][1] + ((m[i][1] - m[i - 1][1]) * t) / passos,
+            ]
+            let dq = Infinity
+            for (let k = 1; k < eixoM.length; k++) dq = Math.min(dq, distSeg(q, eixoM[k - 1], eixoM[k]))
+            pior = Math.max(pior, dq)
+          }
+        }
+      }
+      check(`corredor cobertura: ${rotulo} nunca sai da meia-largura pedida`,
+        pior <= baseOpts.bufferM + 1,
+        `max ${pior.toFixed(1)} m de ${baseOpts.bufferM} m`)
+
+    }
+  }
+
   /* 12d. Um eixo recto ou de curvatura suave nao parte passagens: cada
      desvio da exactamente um troco. */
   for (const [label, line] of [['recto', straight], ['curvatura suave', bend]]) {
@@ -2203,7 +2292,22 @@ check('waylines Mapper+: sem acoes de camara',
        a trava correr — nunca travava nada. Verificada agora por ponto. */
     const huge = resamplePolyline([[0, 0], [300000, 0]], 0.5)
     check('corredor: trava de amostras efectiva', huge.length <= 20001, `${huge.length} amostras`)
-    check('corredor: trava preserva o ponto final do eixo', huge[huge.length - 1][0] === 300000)
+    /* A assercao que aqui estava exigia que a trava PRESERVASSE o ponto final
+       do eixo — ou seja, certificava exactamente o defeito: com passo 0,5 num
+       eixo de 300 km, o resultado que ela declarava correcto eram 10 km
+       amostrados seguidos de um segmento recto de 290 km, que o criterio de
+       validade nunca apanha porque avalia pontos e nao o interior dos
+       segmentos. A trava passa a MARCAR o corte e quem chama recusa o plano. */
+    check('corredor: trava marca o corte em vez de coser o resto',
+      huge.truncated === true && huge[huge.length - 1][0] < 300000,
+      `truncated=${huge.truncated}, ultimo x=${huge[huge.length - 1][0]}`)
+    check('corredor: eixo longo demais e recusado, nao entregue com um salto',
+      generateCorridorPlan(
+        [toLL(0, 0), toLL(22000, 0), toLL(22000, 4000)],
+        { ...baseOpts, altitude: 30, bufferM: 60, sideOverlapPct: 90 },
+      ).error === 'corridor-too-long')
+    check('corredor: eixo normal continua a gerar plano',
+      generateCorridorPlan([toLL(0, 0), toLL(3500, 0)], baseOpts).lines.length > 0)
     check('corredor: limite de passagens exposto', MAX_PASSES === 200)
     check('corredor: desvio nulo devolve o proprio eixo',
       offsetRuns([[0, 0], [10, 0]], 0, 1).length === 1)
