@@ -38,6 +38,12 @@ const MIN_RUN_M = 5 // troços mais curtos do que isto não são passagens útei
 // menos passagens do que a largura pedida seria dizer ao operador que
 // mapeou uma faixa que na verdade não voou.
 export const MAX_PASSES = 200
+// Guarda de ALOCAÇÃO, distinta de MAX_PASSES: passOffsets tem de continuar a
+// devolver a contagem exacta que a largura pedida exige — é isso que impede o
+// recorte silencioso, e há uma asserção a protegê-lo — mas não vale a pena
+// construir um array que nenhum plano pode usar. Muito acima de qualquer uso
+// legítimo (MAX_PASSES é 200) e muito abaixo do que esgota a memória.
+const MAX_OFFSET_ALLOC = 100000
 const MAX_SAMPLES = 20000 // trava contra passos de amostragem minúsculos
 
 export const DEFAULT_CORRIDOR_CONFIG = {
@@ -92,6 +98,14 @@ export function passOffsets(halfWidthM, spacingM, footprintAcrossM) {
   const total = 2 * half
   if (total <= across + 1e-9 || total <= 1e-9) return [0]
   const nPasses = Math.ceil((total - across) / spacing) + 1
+  // A contagem e devolvida ANTES de se construir o array. Quem chama recusa o
+  // plano acima de MAX_PASSES, mas essa recusa vinha depois de `Array.from`
+  // ja ter tentado alocar: uma meia-largura absurda escrita no campo do painel
+  // (e o onChange dispara a cada tecla, portanto passa-se por todos os
+  // prefixos do numero) alocava centenas de milhoes de elementos ou lancava
+  // RangeError a partir do render, sem apanha-erros — ecra em branco e perda
+  // do trabalho posterior a ultima gravacao automatica.
+  if (!Number.isFinite(nPasses) || nPasses > MAX_OFFSET_ALLOC) return { count: nPasses }
   const centre = (nPasses - 1) / 2
   return Array.from({ length: nPasses }, (_, i) => (i - centre) * spacing)
 }
@@ -182,7 +196,7 @@ function segmentNormals(pts) {
  * o infinito, pelo que acima de `miterLimit` se usa um bisel (os dois pontos
  * desviados do vértice) — a alternativa segura e finita.
  */
-export function offsetPolylineMiter(axis, offset, miterLimit = 4) {
+export function offsetPolylineMiter(axis, offset, miterLimit = 2) {
   const n = axis.length
   if (n < 2) return []
   const sn = segmentNormals(axis)
@@ -360,6 +374,9 @@ export function generateCorridorPlan(centreline, options) {
   if (!(corridorLengthM > 0)) return { error: 'degenerate-centreline' }
 
   const offsets = passOffsets(bufferM, spacing, across)
+  // passOffsets devolve { count } em vez do array quando a contagem passa o
+  // limite, para nao se alocar o que vai ser recusado a seguir
+  if (!Array.isArray(offsets)) return { error: 'too-many-passes' }
   if (offsets.length > MAX_PASSES) return { error: 'too-many-passes' }
 
   // Passo de amostragem do eixo: fino o bastante para as normais seguirem a

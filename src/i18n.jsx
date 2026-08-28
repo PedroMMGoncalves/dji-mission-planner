@@ -76,6 +76,14 @@ const BASE_DICT = {
     pt: 'Velocidade fora do intervalo admissível.',
     en: 'Speed outside the admissible range.',
   },
+  'export.err.per-waypoint-not-finite': {
+    pt: 'Uma acção por waypoint tem um rumo ou um pitch que não é número ({d}). A exportação foi travada — sem isto o valor entrava tal e qual no ficheiro e só o comando o recusaria, já no campo.',
+    en: 'A per-waypoint action has a non-numeric heading or pitch ({d}). Export was stopped — without this the value would land verbatim in the file and only the controller would reject it, already in the field.',
+  },
+  'export.err.per-waypoint-invalid': {
+    pt: 'Uma entrada de acções por waypoint tem um formato inesperado ({d}).',
+    en: 'A per-waypoint action entry has an unexpected shape ({d}).',
+  },
   'export.err.param-out-of-range': {
     pt: 'Parâmetro de missão fora do intervalo admissível.',
     en: 'Mission parameter outside the admissible range.',
