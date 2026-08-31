@@ -24,7 +24,7 @@
     "three": "^0.170.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^6.1.0",
+    "@vitejs/plugin-react": "^6.1.1",
     "@xmldom/xmldom": "^0.9.12",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.39.5",
