@@ -15,7 +15,7 @@
 [![Data](https://img.shields.io/badge/Elevação-Terrarium_%7C_LiDAR_DGT-8a63d2.svg)](#fontes-de-dados)
 [![License: GPL v3](https://img.shields.io/badge/Licença-GPLv3-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/PedroMMGoncalves/dji-mission-planner?logo=github&label=Release)](https://github.com/PedroMMGoncalves/dji-mission-planner/releases)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22238441.svg)](https://doi.org/10.5281/zenodo.22238441)
+[![DOI](https://zenodo.org/badge/1332291768.svg)](https://doi.org/10.5281/zenodo.22238440)
 [![deploy](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml/badge.svg)](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml)
 [![Live](https://img.shields.io/website?url=https%3A%2F%2Fpedrommgoncalves.github.io%2Fdji-mission-planner%2F&label=GitHub%20Pages&logo=github&up_message=online&down_message=offline)](https://pedrommgoncalves.github.io/dji-mission-planner/)
 [![Last commit](https://img.shields.io/github/last-commit/PedroMMGoncalves/dji-mission-planner.svg?logo=github)](https://github.com/PedroMMGoncalves/dji-mission-planner/commits/main)
@@ -202,9 +202,12 @@ licença do componente reutilizado.
 
 ## Citação
 
-Cada release é arquivada no Zenodo com o seu DOI; o DOI abaixo resolve
-sempre para a versão mais recente. O repositório inclui um `CITATION.cff`
-(o GitHub mostra-o em *Cite this repository*).
+Cada release é arquivada no Zenodo com o seu DOI. Para citar uma versão
+específica usa-se o DOI dela (v1.0.1: 10.5281/zenodo.22238441); para citar o
+software independentemente da versão usa-se o DOI conceptual
+**10.5281/zenodo.22238440**, que resolve sempre para a release mais recente. O
+repositório inclui um `CITATION.cff` (o GitHub mostra-o em *Cite this
+repository*).
 
 > Gonçalves, P. (2026). *dji-mission-planner: browser-based drone mapping
 > mission planner for DJI Pilot 2* (v1.0.1) [Software]. Zenodo.
