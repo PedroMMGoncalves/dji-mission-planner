@@ -4,6 +4,16 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); versões
 [SemVer](https://semver.org/lang/pt-BR/). A etiqueta git `vX.Y.Z` é a
 versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
+## 1.0.1 — 2026-09-01
+
+Sem alterações funcionais. Primeira versão arquivada no Zenodo.
+
+- Metadados de citação: `.zenodo.json`, `CITATION.cff` e os campos
+  `description`, `license`, `author`, `repository` e `homepage` do
+  `package.json`.
+- Workflow de release: publica a partir do push a `main` quando a etiqueta
+  da versão ainda não existe; aceita também etiqueta ou disparo manual.
+
 ## 1.0.0 — 2026-09-01
 
 Primeira versão estável. Aplicação 100% no browser, sem servidor nem chaves,
