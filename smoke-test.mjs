@@ -1989,6 +1989,19 @@ check('waylines Mapper+: sem acoes de camara',
     check('fronteira: todos os modos de viragem do mapa sao aceites',
       TURN_MODES.length === 4 && TURN_MODES.every((m) => !recusa({ turnMode: m })),
       TURN_MODES.join(', '))
+    /* Ronda correccoes-1: os ramos de INTERVALO ficaram sem assercao — so os
+       de tipo eram exercitados, e apagar qualquer um deles deixava um
+       takeOffSecurityHeightM de -50 m ou um pitch por waypoint de +85 graus
+       chegar ao ficheiro sem que a suite desse por isso. */
+    check('fronteira: takeOffSecurityHeightM fora de (0, 200] recusado',
+      recusa({ takeOffSecurityHeightM: -50 }) && recusa({ takeOffSecurityHeightM: 0 }) &&
+        recusa({ takeOffSecurityHeightM: 5000 }) && !recusa({ takeOffSecurityHeightM: 30 }))
+    check('fronteira: pitch por waypoint fora de [-120, 60] recusado',
+      recusa({ perWaypoint: [{ gimbalPitch: 85 }] }) && recusa({ perWaypoint: [{ gimbalPitch: -300 }] }) &&
+        !recusa({ perWaypoint: [{ gimbalPitch: 60 }, { gimbalPitch: -120 }] }))
+    check('fronteira: rumo por waypoint fora de [-180, 360) recusado',
+      recusa({ perWaypoint: [{ heading: 400 }] }) && recusa({ perWaypoint: [{ heading: -200 }] }) &&
+        !recusa({ perWaypoint: [{ heading: -180 }, { heading: 359.9 }] }))
   }
 
   /* A2: o WPML exige waypointHeadingAngle em [-180, 180] no modo
@@ -2333,6 +2346,48 @@ check('waylines Mapper+: sem acoes de camara',
       ).error === 'corridor-too-long')
     check('corredor: eixo normal continua a gerar plano',
       generateCorridorPlan([toLL(0, 0), toLL(3500, 0)], baseOpts).lines.length > 0)
+    /* Ronda correccoes-1: a guarda testava o EIXO e a trava disparava no
+       DESVIO. Rio com meandros de 14,5 km a 30 m e 90%: o eixo cabia na
+       amostragem (19 769 amostras) e 17 dos 20 desvios nao — e o plano saia
+       com 20 trocos, 0 partidas, 0 perdidas e a largura inteira, com
+       passagens a acabar quilometros antes do fim. */
+    {
+      const rioM = []
+      for (let x = 0; x <= 14500; x += 40) rioM.push([x, 100 * Math.sin((2 * Math.PI * x) / 400)])
+      const passo = 1.064 // o passo que o plano usa a 30 m com 90% (M3E)
+      check('corredor: eixo dos meandros cabe na amostragem',
+        resamplePolyline(rioM, passo).truncated !== true)
+      const cortado = offsetRuns(rioM, 60, passo)
+      check('corredor: desvio cortado pela trava sobe marcado e vazio',
+        cortado.truncated === true && cortado.length === 0,
+        `truncated=${cortado.truncated}, ${cortado.length} trocos`)
+      const mLonR = 111320 * Math.cos((38.7 * Math.PI) / 180)
+      const rioLL = rioM.map(([x, y]) => [-9.14 + x / mLonR, 38.7 + y / 110574])
+      const rio = generateCorridorPlan(rioLL, { ...baseOpts, altitude: 30, bufferM: 60, sideOverlapPct: 90 })
+      check('corredor: desvio longo demais e recusado mesmo com o eixo dentro da trava',
+        rio?.error === 'corridor-too-long',
+        rio?.error ?? `plano com ${rio?.stats?.runCount} trocos`)
+      const rioLargo = generateCorridorPlan(rioLL, { ...baseOpts, bufferM: 150 })
+      check('corredor: os mesmos meandros com passo largo continuam a dar plano',
+        Boolean(rioLargo?.lines?.length), rioLargo?.error ?? '')
+    }
+    /* Ronda correccoes-1: vertice repetido num eixo recto. segmentNormals
+       devolvia [-0, 0] para o segmento nulo e Math.atan2(0, -0) e PI: a junta
+       redonda via uma deflexao onde nao ha nenhuma e emitia um arco em cima
+       do eixo — 5 passagens rendiam 9 trocos e o painel acusava 4 partidas. */
+    {
+      const eixoRecto = [[0, 0], [1000, 0]]
+      const dup = offsetPolylineMiter([[0, 0], [500, 0], [500, 0], [1000, 0]], 30)
+      check('corredor: vertice repetido nao gera junta',
+        dup.length === 3 && dup.every((q) => Math.abs(pointPolylineDistance(q, eixoRecto) - 30) < 1e-6),
+        `${dup.length} pontos`)
+      const plano = generateCorridorPlan([toLL(0, 0), toLL(500, 0), toLL(500, 0), toLL(1000, 0)], baseOpts)
+      check('corredor: eixo recto com vertice repetido nao parte passagens',
+        !plano.error && plano.stats.splitPasses === 0 && plano.stats.runCount === plano.stats.passCount,
+        plano.error ?? `${plano.stats.passCount} passagens, ${plano.stats.runCount} trocos`)
+      const norm = normalizeCorridorConfig({ centreline: [[-9.14, 38.7], [-9.14, 38.7], [-9.13, 38.7]] })
+      check('corredor: config guardada perde vertices repetidos', norm.centreline?.length === 2)
+    }
     check('corredor: limite de passagens exposto', MAX_PASSES === 200)
     check('corredor: desvio nulo devolve o proprio eixo',
       offsetRuns([[0, 0], [10, 0]], 0, 1).length === 1)

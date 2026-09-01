@@ -913,8 +913,14 @@ function AppInner({ lang, setLang }) {
     runExport(() => exportBlocksZip(orbitExportParams(), orbitLevelsToBlocks(orbitPlan)))
   }, [orbitPlan, orbitExportParams, runExport])
 
+  // Sem guarda de missionMode, tal como facePlan e orbitPlan: o resumo do
+  // projecto agrega os planos que EXISTEM, seja qual for o separador aberto.
+  // Com a guarda, trocar do corredor para a área fazia o resumo perder um
+  // plano, o seu tempo e as suas baterias — 46 min e 4 baterias passavam a
+  // 20 min e 2 num projecto com área, fachada e corredor, e é daí que sai o
+  // pack que vai para o campo. A pré-visualização, a vista 3D e o painel
+  // continuam a depender do modo, como deve ser.
   const corridorPlan = useMemo(() => {
-    if (missionMode !== 'corridor') return null
     if (!corridorConfig.centreline) return null
     return generateCorridorPlan(corridorConfig.centreline, {
       sensor,
@@ -926,7 +932,7 @@ function AppInner({ lang, setLang }) {
       photoMode: corridorConfig.photoMode,
       simplifyM: corridorConfig.simplifyM,
     })
-  }, [missionMode, corridorConfig, corridorSpeed, sensor, params.altitude, params.sideOverlap, interval])
+  }, [corridorConfig, corridorSpeed, sensor, params.altitude, params.sideOverlap, interval])
 
   const corridorPreview = useMemo(() => {
     if (missionMode !== 'corridor') return null

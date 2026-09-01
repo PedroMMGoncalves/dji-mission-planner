@@ -67,9 +67,14 @@ export function normalizeCorridorConfig(stored) {
     if (!Number.isFinite(n)) return fallback
     return Math.min(hi, Math.max(lo, n))
   }
+  // Vértices repetidos saem aqui, na fronteira de leitura, com a mesma
+  // tolerância do desenho (App.jsx, handleFinishCorridor): ~0,1 m em graus.
   const line = Array.isArray(s.centreline)
-    ? s.centreline.filter(
-        (p) => Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1]),
+    ? dedupePolyline(
+        s.centreline.filter(
+          (p) => Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1]),
+        ),
+        1e-6,
       )
     : null
   return {
@@ -122,6 +127,28 @@ export function polylineLength(pts) {
 }
 
 /**
+ * Remove vértices consecutivos repetidos (a menos de `eps`).
+ *
+ * Um vértice repetido rende um segmento de comprimento nulo, cuja normal é
+ * indeterminada: segmentNormals devolve [-0, 0] e Math.atan2(0, -0) é π, não
+ * 0. A junta redonda via aí uma deflexão de 90° num eixo perfeitamente recto
+ * e emitia um arco em cima do próprio eixo, que o critério de validade
+ * cortava — cinco passagens rendiam nove troços e o painel acusava quatro
+ * passagens partidas sem uma curva à vista. O desenho já filtrava cliques
+ * repetidos, mas um projecto guardado entra por normalizeCorridorConfig, que
+ * só filtrava coordenadas não finitas.
+ */
+export function dedupePolyline(pts, eps = 1e-9) {
+  if (!Array.isArray(pts) || pts.length === 0) return []
+  const out = [pts[0]]
+  for (let i = 1; i < pts.length; i++) {
+    const q = out[out.length - 1]
+    if (Math.hypot(pts[i][0] - q[0], pts[i][1] - q[1]) > eps) out.push(pts[i])
+  }
+  return out
+}
+
+/**
  * Reamostra uma polilinha a passos ≤ `spacing` MANTENDO todos os vértices
  * originais, para o percurso passar exactamente por cada dobra do eixo e não
  * cortar curvas.
@@ -129,11 +156,7 @@ export function polylineLength(pts) {
 export function resamplePolyline(pts, spacing) {
   if (!Array.isArray(pts) || pts.length === 0) return []
   const step = Math.max(Number(spacing) || 0, 0.25)
-  const clean = [pts[0]]
-  for (const p of pts.slice(1)) {
-    const q = clean[clean.length - 1]
-    if (Math.hypot(p[0] - q[0], p[1] - q[1]) > 1e-9) clean.push(p)
-  }
+  const clean = dedupePolyline(pts)
   if (clean.length === 1) return clean
   const out = [clean[0]]
   for (let i = 1; i < clean.length; i++) {
@@ -199,16 +222,21 @@ function segmentNormals(pts) {
 }
 
 /**
- * Desvio paralelo de uma polilinha com juntas em esquadria (miter).
+ * Desvio paralelo de uma polilinha, com juntas redondas do lado convexo.
  *
- * Em cada vértice interior o ponto desviado é a intersecção das duas rectas
- * desviadas, que é o único ponto a distar |offset| dos DOIS segmentos: uma
- * normal média simples ficaria a |offset|·cos(φ) e encolheria a cobertura
- * justamente na curva. Em inversões quase completas a esquadria dispara para
- * o infinito, pelo que acima de `miterLimit` se usa um bisel (os dois pontos
- * desviados do vértice) — a alternativa segura e finita.
+ * Nos vértices interiores o lado convexo recebe um arco de raio |offset|
+ * centrado no vértice, que fica a |offset| exactos da polilinha em qualquer
+ * deflexão; o lado côncavo mantém o ponto de intersecção das duas rectas
+ * desviadas (esquadria), que é o único ponto a distar |offset| dos DOIS
+ * segmentos — uma normal média simples ficaria a |offset|·cos(φ) e encolheria
+ * a cobertura justamente na curva. Numa inversão quase completa a esquadria
+ * dispara para o infinito e cai-se em bisel. O nome ficou da construção
+ * original, só em esquadria; está nos testes e no histórico.
  */
-export function offsetPolylineMiter(axis, offset) {
+export function offsetPolylineMiter(rawAxis, offset) {
+  // Sem vértices repetidos: ver dedupePolyline — um segmento nulo tem normal
+  // indeterminada e fazia a junta redonda disparar num eixo recto.
+  const axis = dedupePolyline(rawAxis)
   const n = axis.length
   if (n < 2) return []
   const sn = segmentNormals(axis)
@@ -275,6 +303,20 @@ export function offsetRuns(axis, offset, sampleStep) {
   const raw = offsetPolylineMiter(axis, offset)
   if (raw.length < 2) return []
   const dense = resamplePolyline(raw, sampleStep)
+  // A marca de corte tem de subir daqui. A guarda de generateCorridorPlan
+  // testava-a só no EIXO, e a trava dispara no DESVIO: a passagem exterior de
+  // uma curva é mais comprida do que o eixo, e a junta redonda acrescenta
+  // arco em cada vértice convexo. Num rio com meandros de 14,5 km o eixo
+  // cabia na amostragem e 17 dos 20 desvios batiam em MAX_SAMPLES aqui
+  // dentro — as passagens acabavam quilómetros antes do fim, com splitPasses
+  // 0, droppedPasses 0 e a largura pedida anunciada por inteiro. Devolve-se
+  // vazio e marcado: quem lê a marca recusa o plano; quem não a lê vê pelo
+  // menos uma passagem PERDIDA, que é um aviso vermelho e não silêncio.
+  if (dense.truncated) {
+    const none = []
+    none.truncated = true
+    return none
+  }
   // Intervalo, e não meio-intervalo. Com a junta redonda um ponto legítimo
   // está a |offset| EXACTOS do eixo, pelo que o tecto deixa de partir curvas
   // boas — o que acontecia com a junta em esquadria, onde a distância excedia
@@ -431,9 +473,9 @@ export function generateCorridorPlan(centreline, options) {
   const toM = ([lon, lat]) => [(lon - lon0) * mLon, (lat - lat0) * M_PER_DEG_LAT]
   const toLL = ([x, y]) => [lon0 + x / mLon, lat0 + y / M_PER_DEG_LAT]
 
-  const axis = centreline.map(toM)
+  const axis = dedupePolyline(centreline.map(toM))
   const corridorLengthM = polylineLength(axis)
-  if (!(corridorLengthM > 0)) return { error: 'degenerate-centreline' }
+  if (axis.length < 2 || !(corridorLengthM > 0)) return { error: 'degenerate-centreline' }
 
   const offsets = passOffsets(bufferM, spacing, across)
   // passOffsets devolve { count } em vez do array quando a contagem passa o
@@ -466,6 +508,10 @@ export function generateCorridorPlan(centreline, options) {
   // de o entregar com um salto lá dentro. O limiar prático é
   // MAX_SAMPLES x sampleStep — ~21 km a 30 m de altitude com 90% de
   // sobreposição lateral, que é o regime de uma linha eléctrica ou conduta.
+  // Isto é só o ATALHO barato: se nem o eixo cabe, nenhuma passagem cabe. A
+  // guarda a sério é desvio a desvio, no ciclo abaixo, porque as passagens
+  // desviadas são mais compridas do que o eixo — lado exterior das curvas,
+  // arco das juntas redondas — e batem na trava quando o eixo ainda passa.
   if (resamplePolyline(axis, sampleStep).truncated) {
     return { error: 'corridor-too-long' }
   }
@@ -473,13 +519,15 @@ export function generateCorridorPlan(centreline, options) {
   const runsMetric = []
   let splitPasses = 0
   const droppedOffsets = []
-  offsets.forEach((offset, k) => {
+  for (let k = 0; k < offsets.length; k++) {
+    const offset = offsets[k]
     const runs = offsetRuns(axis, offset, sampleStep)
+    if (runs.truncated) return { error: 'corridor-too-long' }
     if (runs.length === 0) droppedOffsets.push(offset)
     else if (runs.length > 1) splitPasses += 1
     const ordered = k % 2 === 0 ? runs : runs.slice().reverse()
     for (const run of ordered) runsMetric.push(k % 2 === 0 ? run : run.slice().reverse())
-  })
+  }
   if (runsMetric.length === 0) return { error: 'no-coverage' }
 
   const lines = []
