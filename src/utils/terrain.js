@@ -426,7 +426,10 @@ function segmentLengthM(a, b) {
  * TERRAIN FOLLOW — converte linhas de voo planas em waypoints com altura
  * relativa ao ponto de descolagem, seguindo o relevo.
  *
- * Para cada segmento (já em ordem de voo, serpentina):
+ * Para cada segmento (já em ordem de voo, serpentina) — e também para a
+ * LIGAÇÃO recta que a serpentina voa do fim de um segmento ao início do
+ * seguinte; os pontos dessa ligação contam para o segmento a que conduzem em
+ * `perLine` e ficam registados à parte em `perLink`:
  *  1. densifica a cada `stepM` metros (interpolação linear em lon/lat — os
  *     segmentos têm poucos km, o erro face à geodésica é desprezável);
  *  2. amostra `terrain.elevationAt` em cada ponto do perfil;
@@ -443,14 +446,15 @@ function segmentLengthM(a, b) {
  * @param {Array<Array<[number, number]>>} lines segmentos [[lonA,latA],[lonB,latB]]
  * @param {{agl: number, refElev: number, toleranceM?: number, stepM?: number}} options
  * @returns {{waypoints: Array<[number, number, number]>, perLine: number[],
- *   elevMin: number|null, elevMax: number|null, warnings: string[]}}
+ *   perLink: number[], elevMin: number|null, elevMax: number|null, warnings: string[]}}
  */
 export function terrainFollowLines(terrain, lines, { agl, refElev, toleranceM = 5, stepM = 40 } = {}) {
   const waypoints = []
   const perLine = []
+  const perLink = []
   const warnings = []
 
-  const empty = { waypoints, perLine, elevMin: null, elevMax: null, warnings }
+  const empty = { waypoints, perLine, perLink, elevMin: null, elevMax: null, warnings }
   if (!Array.isArray(lines) || lines.length === 0) return empty
 
   const sampler = typeof terrain?.elevationAt === 'function' ? terrain.elevationAt : null
@@ -466,18 +470,9 @@ export function terrainFollowLines(terrain, lines, { agl, refElev, toleranceM = 
   let sampleCount = 0
   let lastValid = null
 
-  for (const seg of lines) {
-    if (!Array.isArray(seg) || seg.length < 2) {
-      perLine.push(0)
-      continue
-    }
-    const a = seg[0]
-    const b = seg[1]
-    if (!Array.isArray(a) || !Array.isArray(b) || ![a[0], a[1], b[0], b[1]].every(Number.isFinite)) {
-      perLine.push(0)
-      continue
-    }
-
+  // Perfil de um troço recto a→b: densifica, amostra o relevo, simplifica e
+  // devolve os waypoints retidos [lon, lat, alturaRel], extremos incluídos.
+  const profileWaypoints = (a, b) => {
     // 1) Densificação a cada `step` metros
     const lenM = segmentLengthM(a, b)
     let nSteps = lenM > 0 ? Math.max(1, Math.ceil(lenM / step)) : 0
@@ -507,13 +502,56 @@ export function terrainFollowLines(terrain, lines, { agl, refElev, toleranceM = 
     }
 
     // 3) Simplificação + 4) waypoints
-    const kept = simplifyProfile(profile, tol)
-    for (const idx of kept) {
+    const out = []
+    for (const idx of simplifyProfile(profile, tol)) {
       const rel = Math.round((height + (profile[idx].value - ref)) * 10) / 10
       if (rel < minRel) minRel = rel
-      waypoints.push([coords[idx][0], coords[idx][1], rel])
+      out.push([coords[idx][0], coords[idx][1], rel])
     }
-    perLine.push(kept.length)
+    return out
+  }
+
+  let prevEnd = null
+  for (const seg of lines) {
+    if (!Array.isArray(seg) || seg.length < 2) {
+      perLine.push(0)
+      perLink.push(0)
+      continue
+    }
+    const a = seg[0]
+    const b = seg[1]
+    if (!Array.isArray(a) || !Array.isArray(b) || ![a[0], a[1], b[0], b[1]].every(Number.isFinite)) {
+      perLine.push(0)
+      perLink.push(0)
+      continue
+    }
+
+    // 0) A LIGAÇÃO desde o fim da linha anterior. A serpentina voa do fim de
+    //    uma linha ao início da seguinte em linha recta, com a altura
+    //    interpolada entre os dois extremos — e só as LINHAS eram amostradas.
+    //    Num polígono convexo a ligação mede o espaçamento e o relevo mal
+    //    muda; num polígono côncavo, entre as duas passagens da dupla grelha
+    //    ou entre células, pode ter mais de um quilómetro e cruzar uma
+    //    encosta que nenhuma linha viu. Num U com uma colina de 120 m no
+    //    entalhe, a ligação de 1,15 km entre duas linhas N-S passava a 17,8 m
+    //    do solo com 100 m de AGL pedidos, sem aviso. Amostra-se a ligação
+    //    com as mesmas regras das linhas e inserem-se os pontos interiores
+    //    que a tolerância exigir (os extremos já são waypoints). Contam para
+    //    a linha a que conduzem, para `perLine` continuar a somar tudo, e
+    //    ficam à parte em `perLink` para quem exporta por blocos os deitar
+    //    fora: cada bloco arranca da base, não do fim do bloco anterior.
+    let linkCount = 0
+    if (prevEnd) {
+      const link = profileWaypoints(prevEnd, a).slice(1, -1)
+      waypoints.push(...link)
+      linkCount = link.length
+    }
+
+    const kept = profileWaypoints(a, b)
+    waypoints.push(...kept)
+    perLine.push(linkCount + kept.length)
+    perLink.push(linkCount)
+    prevEnd = b
   }
 
   // Avisos operacionais
@@ -531,6 +569,7 @@ export function terrainFollowLines(terrain, lines, { agl, refElev, toleranceM = 
   return {
     waypoints,
     perLine,
+    perLink,
     elevMin: Number.isFinite(elevMin) ? elevMin : null,
     elevMax: Number.isFinite(elevMax) ? elevMax : null,
     warnings,

@@ -943,6 +943,51 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
     check('elevMin/Max do terreno coerentes', tf.elevMin >= 145 && tf.elevMax <= 255,
       `${tf.elevMin.toFixed(0)}–${tf.elevMax.toFixed(0)}`)
   }
+
+  /* Ligacoes entre linhas: o seguimento de terreno amostrava cada LINHA e
+     ignorava o troco recto que a serpentina voa do fim de uma linha ao
+     inicio da seguinte, com a altura interpolada entre os dois extremos.
+     Num poligono convexo e um troco do tamanho do espacamento; num U, entre
+     as passagens da dupla grelha ou entre celulas pode ter mais de um
+     quilometro e cruzar uma encosta que nenhuma linha amostrou. Num U com
+     uma colina de 120 m no entalhe, a ligacao de 1,15 km entre duas linhas
+     N-S passava a 17,8 m do solo com 100 m de AGL pedidos. */
+  {
+    const mLonC = 111320 * Math.cos((center[1] * Math.PI) / 180)
+    const at = (x, y) => [center[0] + x / mLonC, center[1] + y / 110574]
+    // duas linhas E-O afastadas 1 km; colina de 80 m a meio da ligacao
+    const colina = {
+      elevationAt: (lon, lat) => {
+        const x = (lon - center[0]) * mLonC
+        const y = (lat - center[1]) * 110574
+        return 200 + 80 * Math.exp(-((x - 1000) ** 2 + (y - 500) ** 2) / (2 * 120 ** 2))
+      },
+    }
+    const linhas = [[at(0, 0), at(1000, 0)], [at(1000, 1000), at(0, 1000)]]
+    const tf = terrainFollowLines(colina, linhas, { agl: 100, refElev: 200, toleranceM: 5, stepM: 40 })
+    check('TF: ligacao entre linhas ganha waypoints sobre a colina',
+      tf.perLink?.length === 2 && tf.perLink[0] === 0 && tf.perLink[1] >= 1, (tf.perLink ?? ['sem perLink']).join(','))
+    check('TF: perLine continua a somar os waypoints, ligacoes incluidas',
+      tf.perLine.reduce((a, b) => a + b, 0) === tf.waypoints.length)
+    let folgaMin = Infinity
+    for (let i = 1; i < tf.waypoints.length; i++) {
+      const [lo0, la0, h0] = tf.waypoints[i - 1]
+      const [lo1, la1, h1] = tf.waypoints[i]
+      for (let s = 0; s <= 20; s++) {
+        const t = s / 20
+        const z = 200 + h0 + (h1 - h0) * t
+        folgaMin = Math.min(folgaMin, z - colina.elevationAt(lo0 + (lo1 - lo0) * t, la0 + (la1 - la0) * t))
+      }
+    }
+    check('TF: a rota nunca desce abaixo de AGL - tolerancia, ligacao incluida',
+      folgaMin >= 100 - 5 - 0.5, `folga minima ${folgaMin.toFixed(1)} m`)
+    // sem relevo, uma ligacao curta nao ganha pontos espurios
+    const plano = { elevationAt: () => 200 }
+    const tfPlano = terrainFollowLines(plano, [[at(0, 0), at(500, 0)], [at(500, 40), at(0, 40)]], { agl: 100, refElev: 200, toleranceM: 5 })
+    check('TF: ligacao curta em terreno plano nao acrescenta waypoints',
+      tfPlano.perLink?.every((n) => n === 0) && tfPlano.waypoints.length === 4,
+      `${tfPlano.waypoints.length} waypoints`)
+  }
 }
 
 /* 8j2. Plano medio da encosta (T4.5) */

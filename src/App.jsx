@@ -1213,15 +1213,26 @@ function AppInner({ lang, setLang }) {
         blocks3 = blocks.map((b) => {
           const startLine = li
           const wps = []
-          for (let k = 0; k < b.lines.length; k++) wps.push(...(porLinha[li++] ?? []))
+          // A ligação que antecede a primeira linha do bloco não se voa: o
+          // bloco arranca da base, não do fim do bloco anterior. Os pontos
+          // que o seguimento de terreno inseriu nessa ligação (perLink) saem.
+          const pontosDaLinha = (i) => {
+            const pts = porLinha[i] ?? []
+            return i === startLine ? pts.slice(res.perLink?.[i] ?? 0) : pts
+          }
+          for (let k = 0; k < b.lines.length; k++) wps.push(...pontosDaLinha(li++))
           // R2.10: com densificação, o waypoint local onde o nadir começa é a
-          // soma dos comprimentos das linhas anteriores do bloco
+          // soma dos comprimentos das linhas anteriores do bloco, mais a
+          // ligação que conduz à grelha nadir — o gimbal roda no primeiro
+          // waypoint DA GRELHA, não no troço de aproximação (na primeira
+          // linha do bloco já não há ligação)
           let nadirMarkerAt = null
           if (b.nadirLineLocal != null) {
             nadirMarkerAt = 0
             for (let k = 0; k < b.nadirLineLocal; k++) {
-              nadirMarkerAt += porLinha[startLine + k]?.length ?? 0
+              nadirMarkerAt += pontosDaLinha(startLine + k).length
             }
+            if (b.nadirLineLocal > 0) nadirMarkerAt += res.perLink?.[startLine + b.nadirLineLocal] ?? 0
           }
           return { ...b, waypoints: wps, nadirMarkerAt }
         })
@@ -1724,6 +1735,9 @@ function AppInner({ lang, setLang }) {
       if (terrainOk) {
         at = 0
         for (let k = 0; k < nadirLine; k++) at += terrainResult.perLine[k] ?? 0
+        // depois da ligação que conduz à grelha nadir: o gimbal roda no
+        // primeiro waypoint da grelha, não no troço de aproximação
+        at += terrainResult.perLink?.[nadirLine] ?? 0
       } else {
         at = planOk.nadirStartWaypoint ?? planOk.cellPlans?.[0]?.nadirStartWaypoint ?? 2 * nadirLine
       }

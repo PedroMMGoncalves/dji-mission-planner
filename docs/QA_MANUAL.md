@@ -33,6 +33,11 @@ com screenshot e os passos.
 - ☐ Abrir o **perfil de elevação**.
   **Esperado:** a linha de voo acompanha o terreno dentro da tolerância; sem
   buracos inesperados.
+- ☐ Desenhar a área em **U** (com uma concavidade) sobre uma encosta, com a
+  dupla grelha e o terrain follow activos, e abrir a **vista 3D**.
+  **Esperado:** as ligações entre linhas e entre as duas grelhas — os troços
+  rectos que atravessam a concavidade — sobem sobre o relevo tal como as
+  linhas; nenhum troço corta uma encosta.
 - ☐ Exportar WPML e abrir o KMZ (unzip) num editor.
   **Esperado:** `waylines.wpml` com `executeHeight` variável por waypoint e
   grupo de `gimbalRotate` a −60.
