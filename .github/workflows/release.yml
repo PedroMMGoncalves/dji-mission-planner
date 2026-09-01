@@ -1,0 +1,59 @@
+name: Release
+
+# Uma etiqueta vX.Y.Z (a mesma versão do package.json) corre as verificações
+# do CI, constrói a aplicação e publica a GitHub Release com as notas do
+# CHANGELOG e o build estático em zip — a app é 100% cliente, o zip serve
+# qualquer servidor web ou uso offline.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # só este job cria a release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+      - run: npm run size
+
+      - name: A etiqueta tem de ser a versão do package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "etiqueta v$TAG != package.json $PKG"; exit 1
+          fi
+
+      - name: Notas da release a partir do CHANGELOG
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VER" '
+            /^## / { on = index($0, "## " ver) == 1; next }
+            on { print }
+          ' CHANGELOG.md > notas.md
+          test -s notas.md || { echo "CHANGELOG.md sem seccao ## $VER"; exit 1; }
+
+      - name: Zip do build estático
+        run: (cd dist && zip -qr "../dji-mission-planner-${GITHUB_REF_NAME}.zip" .)
+
+      - name: Criar a GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file notas.md \
+            "dji-mission-planner-${GITHUB_REF_NAME}.zip"

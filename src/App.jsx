@@ -1838,7 +1838,10 @@ function AppInner({ lang, setLang }) {
         <div className="flex items-center gap-2.5">
           <IconDrone className="h-7 w-7 text-sky-400" />
           <div>
-            <h1 className="text-base font-semibold tracking-tight">DJI Mission Planner</h1>
+            <h1 className="text-base font-semibold tracking-tight">
+              DJI Mission Planner{' '}
+              <span className="text-[11px] font-normal text-slate-500">v{import.meta.env.APP_VERSION}</span>
+            </h1>
             <p className="text-[11px] text-slate-500">{t('app.subtitle')}</p>
           </div>
         </div>
