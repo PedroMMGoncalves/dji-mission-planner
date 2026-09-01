@@ -2,6 +2,14 @@
   "name": "dji-mission-planner",
   "private": true,
   "version": "1.0.0",
+  "description": "Browser-based drone mapping mission planner for DJI Pilot 2 (KML / WPML KMZ export)",
+  "license": "GPL-3.0-only",
+  "author": "Pedro Goncalves",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PedroMMGoncalves/dji-mission-planner.git"
+  },
+  "homepage": "https://pedrommgoncalves.github.io/dji-mission-planner/",
   "type": "module",
   "scripts": {
     "dev": "vite",

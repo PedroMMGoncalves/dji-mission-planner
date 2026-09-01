@@ -1,0 +1,30 @@
+# Metadados de citação (Citation File Format 1.2.0). O GitHub mostra-os em
+# "Cite this repository"; o Zenodo usa-os quando não há .zenodo.json.
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+type: software
+title: "dji-mission-planner: browser-based drone mapping mission planner for DJI Pilot 2"
+authors:
+  - family-names: "Gonçalves"
+    given-names: "Pedro"
+    affiliation: "LNEG — Laboratório Nacional de Energia e Geologia"
+version: 1.0.0
+date-released: 2026-09-01
+license: GPL-3.0-only
+repository-code: "https://github.com/PedroMMGoncalves/dji-mission-planner"
+url: "https://pedrommgoncalves.github.io/dji-mission-planner/"
+keywords:
+  - UAV
+  - drone
+  - mission planning
+  - photogrammetry
+  - LiDAR
+  - terrain following
+  - DJI
+  - WPML
+abstract: >-
+  Single-page, client-side web application that plans drone mapping missions
+  end to end: survey areas with photogrammetric or LiDAR grids, corridors,
+  facades, orbits and inspection points, terrain following from a DEM,
+  battery-sized block splitting, and export as KML or DJI WPML (KMZ) for
+  DJI Pilot 2.

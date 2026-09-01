@@ -1,0 +1,26 @@
+{
+  "title": "dji-mission-planner: browser-based drone mapping mission planner for DJI Pilot 2",
+  "description": "<p>Single-page, 100% client-side web application that plans drone mapping missions end to end: aircraft and payload profiles (camera and LiDAR), survey areas with photogrammetric or LiDAR flight grids, corridor mapping along linear features, facades, multi-level orbits and inspection points, terrain following from a global DEM or a local LiDAR GeoTIFF, battery-sized block splitting, GCP placement, mission report and field checklist. Missions export as plain KML or as the DJI WPML structure (template.kml + waylines.wpml in a KMZ) ready to import in DJI Pilot 2.</p><p>The release archive contains the built static application; the source is the tagged commit.</p>",
+  "upload_type": "software",
+  "license": "gpl-3.0-only",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Gonçalves, Pedro",
+      "affiliation": "LNEG — Laboratório Nacional de Energia e Geologia"
+    }
+  ],
+  "keywords": [
+    "UAV", "drone", "mission planning", "photogrammetry", "LiDAR",
+    "terrain following", "DJI", "WPML", "KMZ", "flight planning", "GIS"
+  ],
+  "language": "eng",
+  "related_identifiers": [
+    {
+      "identifier": "https://pedrommgoncalves.github.io/dji-mission-planner/",
+      "relation": "isSupplementTo",
+      "resource_type": "software",
+      "scheme": "url"
+    }
+  ]
+}
