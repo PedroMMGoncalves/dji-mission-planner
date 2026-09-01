@@ -15,6 +15,7 @@
 [![Data](https://img.shields.io/badge/Elevação-Terrarium_%7C_LiDAR_DGT-8a63d2.svg)](#fontes-de-dados)
 [![License: GPL v3](https://img.shields.io/badge/Licença-GPLv3-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/PedroMMGoncalves/dji-mission-planner?logo=github&label=Release)](https://github.com/PedroMMGoncalves/dji-mission-planner/releases)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22238441.svg)](https://doi.org/10.5281/zenodo.22238441)
 [![deploy](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml/badge.svg)](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml)
 [![Live](https://img.shields.io/website?url=https%3A%2F%2Fpedrommgoncalves.github.io%2Fdji-mission-planner%2F&label=GitHub%20Pages&logo=github&up_message=online&down_message=offline)](https://pedrommgoncalves.github.io/dji-mission-planner/)
 [![Last commit](https://img.shields.io/github/last-commit/PedroMMGoncalves/dji-mission-planner.svg?logo=github)](https://github.com/PedroMMGoncalves/dji-mission-planner/commits/main)
@@ -30,7 +31,7 @@ Esta ferramenta é **apenas o motor de planeamento**. A autorização de espaço
 
 ## Índice
 
-[Começo rápido](#comeco-rapido) - [Resumo](#resumo) - [Método](#metodo) - [Estado da validação](#estado-da-validacao) - [Requisitos](#requisitos) - [Fontes de dados](#fontes-de-dados) - [Utilização](#utilizacao) - [Exportações](#exportacoes) - [Notas DJI Pilot 2](#notas-dji-pilot-2) - [Desenvolvimento](#desenvolvimento) - [Publicação](#publicacao) - [Limitações e notas](#limitacoes-e-notas) - [Licença](#licenca)
+[Começo rápido](#comeco-rapido) - [Resumo](#resumo) - [Método](#metodo) - [Estado da validação](#estado-da-validacao) - [Requisitos](#requisitos) - [Fontes de dados](#fontes-de-dados) - [Utilização](#utilizacao) - [Exportações](#exportacoes) - [Notas DJI Pilot 2](#notas-dji-pilot-2) - [Desenvolvimento](#desenvolvimento) - [Publicação](#publicacao) - [Limitações e notas](#limitacoes-e-notas) - [Citação](#citacao) - [Licença](#licenca)
 
 ---
 
@@ -198,6 +199,27 @@ Todo o resto — modelo de payloads, seguimento de terreno, divisão em blocos,
 modo fachada, órbitas, pontos de inspecção, exportador WPML, GCPs, relatório e
 checklist — foi escrito para este projecto. Este repositório é GPL-3.0, a mesma
 licença do componente reutilizado.
+
+## Citação
+
+Cada release é arquivada no Zenodo com o seu DOI; o DOI abaixo resolve
+sempre para a versão mais recente. O repositório inclui um `CITATION.cff`
+(o GitHub mostra-o em *Cite this repository*).
+
+> Gonçalves, P. (2026). *dji-mission-planner: browser-based drone mapping
+> mission planner for DJI Pilot 2* (v1.0.1) [Software]. Zenodo.
+> https://doi.org/10.5281/zenodo.22238441
+
+```bibtex
+@software{goncalves_dji_mission_planner,
+  author  = {Gon\c{c}alves, Pedro},
+  title   = {dji-mission-planner: browser-based drone mapping mission planner for DJI Pilot 2},
+  year    = {2026},
+  version = {1.0.1},
+  doi     = {10.5281/zenodo.22238441},
+  url     = {https://doi.org/10.5281/zenodo.22238441}
+}
+```
 
 ## Licença
 

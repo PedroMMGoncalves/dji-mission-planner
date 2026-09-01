@@ -15,6 +15,7 @@ English | **[Português](README.pt.md)**
 [![Data](https://img.shields.io/badge/Elevation-Terrarium_%7C_DGT_LiDAR-8a63d2.svg)](#data-sources)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/PedroMMGoncalves/dji-mission-planner?logo=github&label=Release)](https://github.com/PedroMMGoncalves/dji-mission-planner/releases)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22238441.svg)](https://doi.org/10.5281/zenodo.22238441)
 [![deploy](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml/badge.svg)](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml)
 [![Live](https://img.shields.io/website?url=https%3A%2F%2Fpedrommgoncalves.github.io%2Fdji-mission-planner%2F&label=GitHub%20Pages&logo=github&up_message=online&down_message=offline)](https://pedrommgoncalves.github.io/dji-mission-planner/)
 [![Last commit](https://img.shields.io/github/last-commit/PedroMMGoncalves/dji-mission-planner.svg?logo=github)](https://github.com/PedroMMGoncalves/dji-mission-planner/commits/main)
@@ -30,7 +31,7 @@ This tool is the **mission planning engine only**. Airspace authorisation, UAS-z
 
 ## Contents
 
-[Quick start](#quick-start) - [Summary](#summary) - [Method](#method) - [Validation status](#validation-status) - [Requirements](#requirements) - [Data sources](#data-sources) - [Usage](#usage) - [Exports](#exports) - [DJI Pilot 2 notes](#dji-pilot-2-notes) - [Development](#development) - [Deployment](#deployment) - [Limitations and notes](#limitations-and-notes) - [License](#license)
+[Quick start](#quick-start) - [Summary](#summary) - [Method](#method) - [Validation status](#validation-status) - [Requirements](#requirements) - [Data sources](#data-sources) - [Usage](#usage) - [Exports](#exports) - [DJI Pilot 2 notes](#dji-pilot-2-notes) - [Development](#development) - [Deployment](#deployment) - [Limitations and notes](#limitations-and-notes) - [Citation](#citation) - [License](#license)
 
 ---
 
@@ -201,6 +202,27 @@ Everything else — the payload model, terrain following, block splitting, face
 mode, orbits, inspection points, the WPML exporter, GCPs, the report and the
 checklist — is written for this project. This repository is GPL-3.0, the same
 licence as the reused component.
+
+## Citation
+
+Every release is archived on Zenodo with its own DOI; the DOI below always
+resolves to the latest version. The repository also ships a `CITATION.cff`
+(GitHub shows it under *Cite this repository*).
+
+> Gonçalves, P. (2026). *dji-mission-planner: browser-based drone mapping
+> mission planner for DJI Pilot 2* (v1.0.1) [Software]. Zenodo.
+> https://doi.org/10.5281/zenodo.22238441
+
+```bibtex
+@software{goncalves_dji_mission_planner,
+  author  = {Gon\c{c}alves, Pedro},
+  title   = {dji-mission-planner: browser-based drone mapping mission planner for DJI Pilot 2},
+  year    = {2026},
+  version = {1.0.1},
+  doi     = {10.5281/zenodo.22238441},
+  url     = {https://doi.org/10.5281/zenodo.22238441}
+}
+```
 
 ## License
 
