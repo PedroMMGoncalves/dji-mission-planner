@@ -3,10 +3,18 @@ name: Release
 # Uma etiqueta vX.Y.Z (a mesma versão do package.json) corre as verificações
 # do CI, constrói a aplicação e publica a GitHub Release com as notas do
 # CHANGELOG e o build estático em zip — a app é 100% cliente, o zip serve
-# qualquer servidor web ou uso offline.
+# qualquer servidor web ou uso offline. Também se pode disparar à mão sobre
+# um ramo: nesse caso a etiqueta é criada pela própria release, no commit
+# escolhido, e tem de ser a versão do package.json.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão a publicar (sem o v; por omissão, a do package.json)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -30,16 +38,23 @@ jobs:
       - run: npm run size
 
       - name: A etiqueta tem de ser a versão do package.json
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
           PKG="$(node -p "require('./package.json').version")"
-          if [ "$TAG" != "$PKG" ]; then
-            echo "etiqueta v$TAG != package.json $PKG"; exit 1
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            VER="${INPUT_VERSION:-$PKG}"
+          else
+            VER="${GITHUB_REF_NAME#v}"
           fi
+          if [ "$VER" != "$PKG" ]; then
+            echo "versao v$VER != package.json $PKG"; exit 1
+          fi
+          echo "TAG=v$VER" >> "$GITHUB_ENV"
 
       - name: Notas da release a partir do CHANGELOG
         run: |
-          VER="${GITHUB_REF_NAME#v}"
+          VER="${TAG#v}"
           awk -v ver="$VER" '
             /^## / { on = index($0, "## " ver) == 1; next }
             on { print }
@@ -47,13 +62,15 @@ jobs:
           test -s notas.md || { echo "CHANGELOG.md sem seccao ## $VER"; exit 1; }
 
       - name: Zip do build estático
-        run: (cd dist && zip -qr "../dji-mission-planner-${GITHUB_REF_NAME}.zip" .)
+        run: (cd dist && zip -qr "../dji-mission-planner-${TAG}.zip" .)
 
       - name: Criar a GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --title "$GITHUB_REF_NAME" \
+          # sem etiqueta ainda (disparo manual), o gh cria-a no commit alvo
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
             --notes-file notas.md \
-            "dji-mission-planner-${GITHUB_REF_NAME}.zip"
+            "dji-mission-planner-${TAG}.zip"
