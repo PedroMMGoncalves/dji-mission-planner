@@ -15,6 +15,16 @@
         "seguranca-voo",
         "completude"
       ]
+    },
+    {
+      "ronda": "correccoes-1",
+      "areas": [
+        "junta-redonda",
+        "recusa-corredor-longo",
+        "velocidades-derivadas",
+        "validacao-fronteira",
+        "assercoes-novas"
+      ]
     }
   ],
   "areasCobertas": [
@@ -28,9 +38,14 @@
     "fusao-integridade",
     "testes-confianca",
     "seguranca-voo",
-    "completude"
+    "completude",
+    "junta-redonda",
+    "recusa-corredor-longo",
+    "velocidades-derivadas",
+    "validacao-fronteira",
+    "assercoes-novas"
   ],
   "runId": null,
   "scriptPath": null,
-  "actualizado": "2026-08-28 16:08 UTC"
+  "actualizado": "2026-09-01 19:35 UTC"
 }
