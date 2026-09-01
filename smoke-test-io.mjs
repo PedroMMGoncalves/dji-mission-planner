@@ -118,7 +118,20 @@ const polygonKml = (coords, tag = 'Polygon') =>
     <innerBoundaryIs><LinearRing><coordinates>${small}</coordinates></LinearRing></innerBoundaryIs>
     <outerBoundaryIs><LinearRing><coordinates>${square}</coordinates></LinearRing></outerBoundaryIs>
   </Polygon></Placemark>`
+  // partes ignoradas: escolhe-se o maior poligono e avisa-se quantos ficaram
+  // de fora (um buraco NAO conta como parte)
+  check('KML: um poligono -> nenhuma parte ignorada', r.discardedParts === 0)
+  check('KML: dois poligonos -> uma parte ignorada', rBoth.discardedParts === 1)
+  const multi = { type: 'MultiPolygon', coordinates: [
+    [[[-8.5, 39.5], [-8.49, 39.5], [-8.49, 39.51], [-8.5, 39.51], [-8.5, 39.5]]],
+    [[[-8.6, 39.6], [-8.599, 39.6], [-8.599, 39.601], [-8.6, 39.601], [-8.6, 39.6]]],
+    [[[-8.7, 39.7], [-8.699, 39.7], [-8.699, 39.701], [-8.7, 39.701], [-8.7, 39.7]]],
+  ] }
+  const rMulti = await parseAreaFile(fakeFile('multi.geojson', JSON.stringify(multi)))
+  check('GeoJSON: MultiPolygon com tres partes -> maior escolhida, duas ignoradas',
+    rMulti.discardedParts === 2 && rMulti.ring.length === 4 && Math.abs(rMulti.ring[0][0] + 8.5) < 1e-9)
   const rDonut = await parseAreaFile(fakeFile('area.kml', kmlDoc(donut)))
+  check('KML: buraco nao conta como parte ignorada', rDonut.discardedParts === 0)
   check('KML: anel exterior preferido mesmo com o interior primeiro',
     Math.abs(rDonut.ring[0][0] - -8.5) < 1e-9, JSON.stringify(rDonut.ring[0]))
 

@@ -45,6 +45,7 @@ import {
   splitIntoBlocks,
   squareSideForBattery,
   tilePolygonWithSquares,
+  triggerRangesForLines,
   validateRing,
 } from './utils/geo.js'
 import {
@@ -187,6 +188,8 @@ function AppInner({ lang, setLang }) {
   const [disabledTiles, setDisabledTiles] = useState(() => new Set())
   const [importState, setImportState] = useState(null) // {ring, filename} à espera de CRS
   const [importError, setImportError] = useState(null)
+  // aviso brando da importação (ex.: MultiPolygon com partes ignoradas)
+  const [importWarning, setImportWarning] = useState(null)
   const [exportError, setExportError] = useState(null)
 
   /**
@@ -961,6 +964,13 @@ function AppInner({ lang, setLang }) {
       // gatilho por distância; no modo distância é o inverso.
       photoIntervalM: perWaypointPhotos ? 0 : (interval ?? 0),
       triggerMode: perWaypointPhotos ? 'waypoint' : 'distance',
+      // passagens partidas por uma dobra: a ligação entre os troços não
+      // dispara (ver triggerRangesForLines)
+      triggerRanges: perWaypointPhotos
+        ? null
+        : triggerRangesForLines(corridorPlan.lines, corridorPlan.lines.map((l) => l.length), null, {
+            maxLinkM: Math.max(2.5 * corridorPlan.stats.spacingM, 60),
+          }),
       gimbalPitch: -90,
       sensorType: sensor.type,
     }))
@@ -1220,7 +1230,15 @@ function AppInner({ lang, setLang }) {
             const pts = porLinha[i] ?? []
             return i === startLine ? pts.slice(res.perLink?.[i] ?? 0) : pts
           }
-          for (let k = 0; k < b.lines.length; k++) wps.push(...pontosDaLinha(li++))
+          const perLine3 = []
+          const perLink3 = []
+          for (let k = 0; k < b.lines.length; k++) {
+            const pts = pontosDaLinha(li)
+            wps.push(...pts)
+            perLine3.push(pts.length)
+            perLink3.push(k === 0 ? 0 : (res.perLink?.[li] ?? 0))
+            li++
+          }
           // R2.10: com densificação, o waypoint local onde o nadir começa é a
           // soma dos comprimentos das linhas anteriores do bloco, mais a
           // ligação que conduz à grelha nadir — o gimbal roda no primeiro
@@ -1234,7 +1252,7 @@ function AppInner({ lang, setLang }) {
             }
             if (b.nadirLineLocal > 0) nadirMarkerAt += res.perLink?.[startLine + b.nadirLineLocal] ?? 0
           }
-          return { ...b, waypoints: wps, nadirMarkerAt }
+          return { ...b, waypoints: wps, nadirMarkerAt, perLine: perLine3, perLink: perLink3 }
         })
       }
       return { ...res, refElev, blocks3 }
@@ -1348,6 +1366,7 @@ function AppInner({ lang, setLang }) {
     async (file) => {
       if (!file) return
       setImportError(null)
+      setImportWarning(null)
       try {
         // Reimportar uma missão WPML existente: reconstrói a área a partir
         // dos waypoints e recupera altitude/velocidade/nome
@@ -1368,16 +1387,22 @@ function AppInner({ lang, setLang }) {
         }
         const result = await parseAreaFile(file)
         if (result.needsCrs) {
-          setImportState({ ring: result.ring, filename: file.name })
+          setImportState({ ring: result.ring, filename: file.name, discardedParts: result.discardedParts })
         } else {
           applyImportedRing(result.ring)
+          // O import escolhe o maior polígono de um MultiPolygon e deitava os
+          // outros fora em silêncio — o operador ficava a planear uma parte
+          // da área convencido de que tinha a área toda.
+          if (result.discardedParts > 0) {
+            setImportWarning(t('cp.area.importDiscarded', { n: result.discardedParts }))
+          }
         }
       } catch (err) {
         setImportError(err?.message ?? 'Falha ao ler o ficheiro')
         setImportState(null)
       }
     },
-    [applyImportedRing],
+    [applyImportedRing, t],
   )
 
   const handleImportCrs = useCallback(
@@ -1387,17 +1412,21 @@ function AppInner({ lang, setLang }) {
       if (!crs) return
       try {
         applyImportedRing(reprojectRing(importState.ring, crs.def))
+        if (importState.discardedParts > 0) {
+          setImportWarning(t('cp.area.importDiscarded', { n: importState.discardedParts }))
+        }
       } catch {
         setImportError('Falha na conversão de coordenadas')
         setImportState(null)
       }
     },
-    [importState, applyImportedRing],
+    [importState, applyImportedRing, t],
   )
 
   const cancelImport = useCallback(() => {
     setImportState(null)
     setImportError(null)
+    setImportWarning(null)
   }, [])
 
   /* --------------- Persistência do projeto (localStorage) -------------- */
@@ -1702,7 +1731,22 @@ function AppInner({ lang, setLang }) {
       gimbalPitch: params.gimbalPitch,
       sensorType: sensor.type,
     }
-    const exportBlocks = terrainOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
+    // Disparo suspenso nas ligações longas (mais de 2,5 espaçamentos): as
+    // viragens normais continuam a disparar; as travessias de concavidades,
+    // as ligações entre grelhas e entre células deixam de encher o cartão
+    // com fotos fora da área. Índices locais a cada bloco.
+    const maxLinkM = Math.max(2.5 * spacing, 60)
+    const comIntervalos = (b) => ({
+      ...b,
+      triggerRanges: triggerRangesForLines(b.lines, b.perLine ?? null, b.perLink ?? null, { maxLinkM }),
+    })
+    exportParams.triggerRanges = triggerRangesForLines(
+      planOk.lines,
+      terrainOk ? terrainResult.perLine : null,
+      terrainOk ? terrainResult.perLink : null,
+      { maxLinkM },
+    )
+    const exportBlocks = (terrainOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks)?.map(comIntervalos) ?? null
     // B: acções de foto por waypoint do plano (null no modo distância); o
     // marcador de gimbal nadir funde-se com a entrada existente do waypoint
     const photoPw = photoMode === 'waypoint' ? (planOk.perWaypoint ?? null) : null
@@ -1992,6 +2036,7 @@ function AppInner({ lang, setLang }) {
           aglWarn={aglWarn}
           importState={importState}
           importError={importError}
+          importWarning={importWarning}
           onImportFile={handleImportFile}
           onImportCrs={handleImportCrs}
           onImportCancel={cancelImport}

@@ -935,6 +935,48 @@ export function generateFlightPlan(ring, options, generate = generateFlightLines
 }
 
 /**
+ * Intervalos de waypoints [início, fim] em que o disparo automático
+ * (distância ou tempo) deve estar activo.
+ *
+ * A serpentina liga o fim de cada linha ao início da seguinte, e o grupo de
+ * disparo cobria a rota inteira: em cada ligação continuava a fotografar.
+ * Numa viragem normal isso é um par de fotos a mais na berma; numa ligação
+ * LONGA — através de uma concavidade, entre as duas grelhas da dupla grelha,
+ * entre células — são dezenas de fotos fora da área, e com terrain follow a
+ * alturas de trânsito, que só pesam no processamento. Quebra-se o intervalo
+ * onde a ligação excede `maxLinkM`; os pontos que o terrain follow inseriu
+ * nessa ligação (`perLink`, contados no início da linha seguinte) ficam de
+ * fora. Sem quebra, o intervalo continua pelas viragens curtas, como sempre.
+ *
+ * `lines` em ordem de voo (cada uma um segmento ou uma polilinha);
+ * `perLine` waypoints por linha (2 por omissão); `perLink` pontos de
+ * ligação no início de cada linha (0 por omissão).
+ */
+export function triggerRangesForLines(lines, perLine, perLink, { maxLinkM } = {}) {
+  const ranges = []
+  if (!Array.isArray(lines)) return ranges
+  const limit = Number.isFinite(maxLinkM) && maxLinkM > 0 ? maxLinkM : Infinity
+  let idx = 0
+  let start = 0
+  let prevEnd = null
+  lines.forEach((seg, i) => {
+    const n = perLine?.[i] ?? 2
+    if (!(n > 0) || !Array.isArray(seg) || seg.length < 2) return
+    const link = perLink?.[i] ?? 0
+    const a = seg[0]
+    const b = seg[seg.length - 1]
+    if (prevEnd && turf.distance(prevEnd, a, { units: 'meters' }) > limit) {
+      if (idx - 1 >= start) ranges.push([start, idx - 1])
+      start = idx + link
+    }
+    idx += n
+    prevEnd = b
+  })
+  if (idx - 1 >= start) ranges.push([start, idx - 1])
+  return ranges
+}
+
+/**
  * R2.10: para planos com grelha nadir no fim, devolve por bloco o índice
  * LOCAL da linha onde o nadir começa: null (bloco sem linhas nadir), 0
  * (bloco inteiramente nadir) ou 0<k<n (misto — rodar o gimbal a −90 no

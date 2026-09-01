@@ -163,6 +163,8 @@ function parseKml(text) {
 /**
  * Lê um ficheiro de área. Devolve:
  *  { ring }                     → pronto a usar (WGS84)
+ *  discardedParts               → polígonos a mais no ficheiro, ignorados:
+ *                                 usa-se o maior e quem chama avisa o operador
  *  { ring, needsCrs: true }     → coordenadas projetadas; escolher CRS e
  *                                 chamar reprojectRing(ring, def)
  * Lança Error com mensagem legível em caso de falha.
@@ -173,16 +175,17 @@ export async function parseAreaFile(file) {
   if (name.endsWith('.zip')) {
     const buffer = await file.arrayBuffer()
     const geojson = await shp(buffer) // reprojeta via .prj quando presente
-    const ring = largestRing(collectOuterRings(geojson))
+    const rings = collectOuterRings(geojson)
+    const ring = largestRing(rings)
     if (!ring || ring.length < 3) throw new Error('Nenhum polígono encontrado no shapefile')
-    return looksProjected(ring) ? { ring, needsCrs: true } : { ring }
+    return { ring, discardedParts: rings.length - 1, ...(looksProjected(ring) ? { needsCrs: true } : {}) }
   }
 
   if (name.endsWith('.kml')) {
     const rings = parseKml(await file.text())
     const ring = largestRing(rings)
     if (!ring || ring.length < 3) throw new Error('Nenhum polígono encontrado no KML')
-    return { ring }
+    return { ring, discardedParts: rings.length - 1 }
   }
 
   if (name.endsWith('.geojson') || name.endsWith('.json')) {
@@ -192,9 +195,10 @@ export async function parseAreaFile(file) {
     } catch {
       throw new Error('GeoJSON inválido')
     }
-    const ring = largestRing(collectOuterRings(geojson))
+    const rings = collectOuterRings(geojson)
+    const ring = largestRing(rings)
     if (!ring || ring.length < 3) throw new Error('Nenhum polígono encontrado no GeoJSON')
-    return looksProjected(ring) ? { ring, needsCrs: true } : { ring }
+    return { ring, discardedParts: rings.length - 1, ...(looksProjected(ring) ? { needsCrs: true } : {}) }
   }
 
   throw new Error('Formato não suportado — use .kml, .geojson/.json ou .zip (shapefile)')

@@ -233,6 +233,10 @@ export default {
     pt: 'Importar área (KML · GeoJSON · SHP · KMZ WPML)',
     en: 'Import area (KML · GeoJSON · SHP · WPML KMZ)',
   },
+  'cp.area.importDiscarded': {
+    pt: 'O ficheiro traz {n} polígono(s) a mais: usou-se o maior e o(s) restante(s) foi(ram) ignorado(s). Se também os quiser voar, importe-os como projectos separados.',
+    en: '{n} extra polygon(s) in the file: the largest one was used and the rest were ignored. To fly them too, import them as separate projects.',
+  },
   'cp.area.importTitle': {
     pt: 'Importar área de ficheiro KML, GeoJSON ou Shapefile zipado',
     en: 'Import an area from a KML, GeoJSON or zipped Shapefile',
@@ -440,6 +444,10 @@ export default {
   'cp.terrain.sourceHint': {
     pt: 'Fonte: Terrarium/AWS (~30 m). As alturas por waypoint são relativas ao ponto de descolagem — marque a base no local real de descolagem e valide no Pilot 2.',
     en: 'Source: Terrarium/AWS (~30 m). Waypoint heights are relative to the takeoff point — set the base at the actual takeoff location and validate in Pilot 2.',
+  },
+  'cp.terrain.sourceHintFile': {
+    pt: 'Fonte: MDT local {label} ({res} m). As alturas por waypoint são relativas ao ponto de descolagem — marque a base no local real de descolagem e valide no Pilot 2.',
+    en: 'Source: local DTM {label} ({res} m). Waypoint heights are relative to the takeoff point — set the base at the actual takeoff location and validate in Pilot 2.',
   },
 
   /* ---- GCPs ---- */

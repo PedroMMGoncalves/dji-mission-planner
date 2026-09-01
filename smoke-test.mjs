@@ -6,6 +6,7 @@ import {
   computeFootprint,
   findOptimalDirection,
   generateFlightPlan,
+  triggerRangesForLines,
   computeGSD,
   distanceToArea,
   generateFlightLines,
@@ -2477,6 +2478,53 @@ check('waylines Mapper+: sem acoes de camara',
         junk.photoMode === 'distance' && junk.centreline === null,
       `${junk.bufferM}/${junk.speedMS}/${junk.photoMode}`)
   }
+}
+
+/* Disparo suspenso nas ligacoes longas: o grupo de disparo cobria a rota
+   inteira e fotografava tambem nas ligacoes da serpentina. Numa viragem
+   normal e um par de fotos a mais; numa travessia de concavidade, entre as
+   duas grelhas do crosshatch ou entre celulas sao dezenas de fotos fora da
+   area. Um grupo por intervalo contiguo; a ligacao longa fica de fora. */
+{
+  const mLonT = 111320 * Math.cos((38.7 * Math.PI) / 180)
+  const em = (x, y) => [-9.14 + x / mLonT, 38.7 + y / 110574]
+  const linhas = [
+    [em(0, 0), em(1000, 0)],       // A
+    [em(1000, 40), em(0, 40)],     // B: ligacao curta (40 m)
+    [em(0, 1500), em(1000, 1500)], // C: ligacao longa (1460 m)
+  ]
+  const r1 = triggerRangesForLines(linhas, null, null, { maxLinkM: 100 })
+  check('disparo: ligacao curta mantem o intervalo, longa quebra-o',
+    JSON.stringify(r1) === '[[0,3],[4,5]]', JSON.stringify(r1))
+  // com terrain follow a ligacao longa tem 3 pontos proprios, contados no
+  // inicio da linha C (perLine 5, perLink 3): ficam FORA do intervalo
+  const r2 = triggerRangesForLines(linhas, [2, 2, 5], [0, 0, 3], { maxLinkM: 100 })
+  check('disparo: pontos da ligacao (terrain follow) ficam fora do intervalo',
+    JSON.stringify(r2) === '[[0,3],[7,8]]', JSON.stringify(r2))
+  check('disparo: sem limite, um so intervalo',
+    JSON.stringify(triggerRangesForLines(linhas, null, null, {})) === '[[0,5]]')
+  const wps = [em(0, 0), em(1000, 0), em(1000, 40), em(0, 40), em(0, 500), em(0, 1000), em(0, 1450), em(0, 1500), em(1000, 1500)]
+  const base = {
+    name: 'ligacoes', waypoints: wps, altitude: 100, speed: 8, wpml: wpmlParams.wpml,
+    photoIntervalM: 20, triggerMode: 'distance', sensorType: 'camera',
+  }
+  const xml = buildWaylinesWPML({ ...base, triggerRanges: r2 })
+  const grupos = [...xml.matchAll(/<wpml:actionGroupStartIndex>(\d+)<\/wpml:actionGroupStartIndex>\s*<wpml:actionGroupEndIndex>(\d+)</g)].map((m) => [Number(m[1]), Number(m[2])])
+  check('disparo: um actionGroup multipleDistance por intervalo, no waypoint onde comeca',
+    (xml.match(/multipleDistance/g) ?? []).length === 2 &&
+      JSON.stringify(grupos) === '[[0,0],[0,3],[7,8]]' &&
+      xml.indexOf('<wpml:actionGroupStartIndex>7<') > xml.indexOf('<wpml:index>7</wpml:index>'),
+    JSON.stringify(grupos))
+  check('disparo: ids dos grupos consecutivos (gimbal 0, disparos 1 e 2)',
+    [...xml.matchAll(/<wpml:actionGroupId>(\d+)</g)].map((m) => m[1]).join(',') === '0,1,2')
+  check('disparo: XML com varios grupos continua bem formado', XMLValidator.validate(xml) === true)
+  check('disparo: sem intervalos, um grupo a cobrir a rota inteira',
+    (buildWaylinesWPML(base).match(/multipleDistance/g) ?? []).length === 1 &&
+      buildWaylinesWPML(base).includes('<wpml:actionGroupEndIndex>8<'))
+  const recusaR = (triggerRanges) => { try { buildWaylinesWPML({ ...base, triggerRanges }); return false } catch { return true } }
+  check('disparo: intervalos tortos recusados na fronteira',
+    recusaR([[0, 9]]) && recusaR([[3, 1]]) && recusaR([[0, 4], [4, 8]]) && recusaR([[0, 1.5]]) && recusaR('x') &&
+      !recusaR([[0, 3], [5, 8]]) && !recusaR(null))
 }
 
 /* U: conversoes geodesicas partilhadas (units.js) — viviam duplicadas por

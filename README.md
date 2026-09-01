@@ -136,7 +136,7 @@ Editing gestures: click adds vertices (Backspace or clicking a vertex removes, d
 | Export | Content | Use |
 | --- | --- | --- |
 | Simple KML | Area polygon, home point, GCPs, flight lines | Drawing the mission in Pilot 2; QGIS |
-| WPML (KMZ) — Area | `template.kml` + `waylines.wpml`, per-waypoint heights with terrain follow, distance/time/per-waypoint trigger, `_area[-variants]_bNN` | Direct import in DJI Pilot 2; one KMZ per block (ZIP) |
+| WPML (KMZ) — Area | `template.kml` + `waylines.wpml`, per-waypoint heights with terrain follow, distance/time/per-waypoint trigger (suspended on links longer than 2.5 line spacings: one action group per contiguous run), `_area[-variants]_bNN` | Direct import in DJI Pilot 2; one KMZ per block (ZIP) |
 | WPML (KMZ) — Corridor | Passes along a centreline, nadir gimbal, distance or per-waypoint trigger, `_corridor_nN` | Roads, pipelines, watercourses, power lines |
 | WPML (KMZ) — Face | Fixed heading and one photo per waypoint, `_face_p1-N` | Faces, slopes, structures |
 | WPML (KMZ) — Orbit | Continuous curved flight, heading at the POI, per-level gimbal, `_orbit_nN` (single or per-level ZIP) | Inspection/3D of isolated targets |

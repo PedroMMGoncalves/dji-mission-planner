@@ -38,6 +38,14 @@ com screenshot e os passos.
   **Esperado:** as ligações entre linhas e entre as duas grelhas — os troços
   rectos que atravessam a concavidade — sobem sobre o relevo tal como as
   linhas; nenhum troço corta uma encosta.
+- ☐ Exportar o KMZ dessa área em U e abri-lo no Pilot 2.
+  **Esperado:** vários grupos de disparo (um por troço contíguo de linhas);
+  nas ligações longas — através da concavidade e entre as duas grelhas — a
+  câmara não dispara. Nas viragens normais continua a disparar.
+- ☐ Importar um GeoJSON/KML com **dois polígonos**.
+  **Esperado:** usa-se o maior e aparece o aviso âmbar "1 polígono a mais…
+  ignorado"; com um MDT local carregado, a nota do terreno diz **"Fonte: MDT
+  local <ficheiro>"** e não Terrarium.
 - ☐ Exportar WPML e abrir o KMZ (unzip) num editor.
   **Esperado:** `waylines.wpml` com `executeHeight` variável por waypoint e
   grupo de `gimbalRotate` a −60.

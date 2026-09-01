@@ -90,6 +90,7 @@ export default function ControlPanel({
   aglWarn,
   importState,
   importError,
+  importWarning = null,
   onImportFile,
   onImportCrs,
   onImportCancel,
@@ -753,6 +754,11 @@ export default function ControlPanel({
             ⚠ {importError}
           </p>
         )}
+        {importWarning && (
+          <p className="mt-2 rounded border border-amber-800 bg-amber-950/40 p-2 text-xs text-amber-200">
+            ⚠ {importWarning}
+          </p>
+        )}
 
         <div className="mt-2 grid grid-cols-2 gap-2">
           <button
@@ -1285,7 +1291,14 @@ export default function ControlPanel({
             </div>
           </div>
         )}
-        <p className="mt-1.5 text-[11px] text-slate-500">{t('cp.terrain.sourceHint')}</p>
+        <p className="mt-1.5 text-[11px] text-slate-500">
+          {terrain.data?.source === 'file'
+            ? t('cp.terrain.sourceHintFile', {
+                label: terrain.data.label,
+                res: terrain.data.resolutionM?.toFixed(1),
+              })
+            : t('cp.terrain.sourceHint')}
+        </p>
       </Section>
 
       {/* GCPs */}

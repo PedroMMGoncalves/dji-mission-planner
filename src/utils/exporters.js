@@ -153,6 +153,21 @@ export function validateExportParams(params) {
   if (isNum(params.gimbalPitch) && (params.gimbalPitch < -120 || params.gimbalPitch > 60)) {
     throw new MissionExportError('param-out-of-range', 'gimbalPitch')
   }
+  // Intervalos de disparo: pares [inicio, fim] de indices inteiros, crescentes
+  // e sem sobreposicao, dentro da rota. Um intervalo torto escreveria um
+  // actionGroup a apontar para waypoints que nao existem.
+  if (params.triggerRanges != null) {
+    if (!Array.isArray(params.triggerRanges)) {
+      throw new MissionExportError('param-not-finite', 'triggerRanges')
+    }
+    let prevEnd = -1
+    for (const r of params.triggerRanges) {
+      const ok = Array.isArray(r) && r.length === 2 && Number.isInteger(r[0]) && Number.isInteger(r[1]) &&
+        r[0] > prevEnd && r[1] >= r[0] && r[1] < waypoints.length
+      if (!ok) throw new MissionExportError('param-out-of-range', `triggerRanges=${JSON.stringify(r)}`)
+      prevEnd = r[1]
+    }
+  }
   return params
 }
 
@@ -506,6 +521,9 @@ export function buildWaylinesWPML(params) {
     // Distância de amortecimento da viragem (m). Só é escrita quando a
     // especificação a exige — ver turnParams().
     turnDampingDistM = 0,
+    // Intervalos [inicio, fim] de waypoints com disparo activo; null = a
+    // rota inteira. Ver triggerRangesForLines em geo.js.
+    triggerRanges = null,
   } = params
   const turn = turnParams(turnMode, turnDampingDistM)
   const gimbalPitch = params.gimbalPitch ?? -90
@@ -555,18 +573,27 @@ export function buildWaylinesWPML(params) {
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>`
-  const photoGroupId = gimbalGroup ? 1 : 0
-  const photoGroup = triggerXml
-    ? `        <wpml:actionGroup>
-          <wpml:actionGroupId>${photoGroupId}</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>0</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>${waypoints.length - 1}</wpml:actionGroupEndIndex>
+  // Grupos de disparo: por omissão um só, a cobrir a rota inteira. Com
+  // `triggerRanges` há um por intervalo contíguo de waypoints, escrito no
+  // Placemark do waypoint onde começa: entre o fim de um intervalo e o início
+  // do seguinte — as ligações longas da serpentina, entre as duas grelhas da
+  // dupla grelha ou através de uma concavidade — não se dispara nada.
+  const photoGroupBase = gimbalGroup ? 1 : 0
+  const ranges = triggerXml
+    ? Array.isArray(triggerRanges) && triggerRanges.length > 0
+      ? triggerRanges
+      : [[0, waypoints.length - 1]]
+    : []
+  const photoGroupXml = (gid, [from, to]) => `        <wpml:actionGroup>
+          <wpml:actionGroupId>${gid}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${from}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${to}</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
           <wpml:actionTrigger>
 ${triggerXml}
           </wpml:actionTrigger>
           <wpml:action>
-            <wpml:actionId>${photoGroupId}</wpml:actionId>
+            <wpml:actionId>${gid}</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>
@@ -574,12 +601,19 @@ ${triggerXml}
             </wpml:actionActuatorFuncParam>
           </wpml:action>
         </wpml:actionGroup>`
-    : null
-  const firstWaypointActions = [gimbalGroup, photoGroup].filter(Boolean).join('\n')
+  // grupos globais por waypoint de arranque: o gimbal no 0, cada grupo de
+  // disparo no primeiro waypoint do seu intervalo
+  const globalGroupsAt = new Map()
+  if (gimbalGroup) globalGroupsAt.set(0, [gimbalGroup])
+  ranges.forEach((r, k) => {
+    const list = globalGroupsAt.get(r[0]) ?? []
+    list.push(photoGroupXml(photoGroupBase + k, r))
+    globalGroupsAt.set(r[0], list)
+  })
 
   // T4.1: grupos de ações por waypoint, com ids consecutivos a seguir aos
   // grupos globais. Cada grupo dispara em reachPoint no próprio waypoint.
-  let nextGroupId = (gimbalGroup ? 1 : 0) + (photoGroup ? 1 : 0)
+  let nextGroupId = photoGroupBase + ranges.length
   const perWaypointGroup = (i, pw) => {
     const actions = []
     if (pw.gimbalPitch != null) {
@@ -632,7 +666,7 @@ ${actions.join('\n')}
       const pw = perWaypoint?.[i] ?? null
       const hasHeading = pw?.heading != null
       const pwGroup = pw ? perWaypointGroup(i, pw) : ''
-      const groupsXml = [i === 0 ? firstWaypointActions : '', pwGroup]
+      const groupsXml = [...(globalGroupsAt.get(i) ?? []), pwGroup]
         .filter(Boolean)
         .join('\n')
       return `      <Placemark>
@@ -715,6 +749,8 @@ export async function exportBlocksZip(params, blocks) {
         // um perWaypoint global indexaria mal as fatias — cada bloco traz o
         // seu (ex.: marcador de gimbal nadir do R2.10), ou nenhum
         perWaypoint: block.perWaypoint ?? null,
+        // idem para os intervalos de disparo: indices locais ao bloco
+        triggerRanges: block.triggerRanges ?? null,
       },
       'arraybuffer',
     )
