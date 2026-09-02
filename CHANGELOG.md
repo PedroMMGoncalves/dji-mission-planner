@@ -33,7 +33,13 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   de projecto — serialização, leitura e migração v1 → v2
   (`src/mission/project.js`) — com testes de ida e volta e de lixo.
 - Quarto corte: o plano de área com células alinhadas
-  (`src/mission/areaPlan.js`). `App.jsx` passou de 2219 para 1966 linhas.
+  (`src/mission/areaPlan.js`).
+- Hooks por modo em `src/hooks/`: `useCorridorMission`, `useOrbitMission`,
+  `useFaceMission`, `useInspection` e `useTerrain` — estado, planos,
+  pré-visualizações, desenho no mapa e exportação de cada modo, fora do
+  `App.jsx`, que passou de 2219 para 1609 linhas.
+- E2E com o corredor, a fachada e a órbita desenhados no mapa por cliques,
+  como o operador faz.
 
 ## 1.0.1 — 2026-09-01
 

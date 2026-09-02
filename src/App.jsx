@@ -54,7 +54,6 @@ import {
   simplifyRingIfNeeded,
   CRS_OPTIONS,
 } from './utils/importArea.js'
-import { fitSlopePlane, loadTerrain } from './utils/terrain.js'
 import { planTerrainFollow } from './mission/terrainFollow.js'
 import { buildAreaExport } from './mission/areaExport.js'
 import { planBlocks } from './mission/blocks.js'
@@ -62,11 +61,11 @@ import { useCorridorMission } from './hooks/useCorridorMission.js'
 import { useOrbitMission } from './hooks/useOrbitMission.js'
 import { useFaceMission } from './hooks/useFaceMission.js'
 import { useInspection } from './hooks/useInspection.js'
+import { useTerrain } from './hooks/useTerrain.js'
 import { planArea } from './mission/areaPlan.js'
 import { PROJECT_STORAGE_KEY, normalizeProject, projectFileName, serializeProject } from './mission/project.js'
 import {
 } from './utils/corridor.js'
-import { loadDemFromFile } from './utils/demFile.js'
 import { parseWpmlKmz } from './utils/importWpml.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
 import {
@@ -185,8 +184,6 @@ function AppInner({ lang, setLang }) {
       if (!(err instanceof MissionExportError)) console.error(err)
     }
   }, [])
-  const [terrain, setTerrain] = useState({ status: 'idle', data: null, error: null })
-  const [terrainFollow, setTerrainFollow] = useState({ enabled: false, tolerance: 5 })
   const [gcpConfig, setGcpConfig] = useState({ enabled: false, count: null }) // null = auto
   const [showHelp, setShowHelp] = useState(false)
   const [show3d, setShow3d] = useState(false)
@@ -408,12 +405,6 @@ function AppInner({ lang, setLang }) {
     orbitPlan, gsdAtRadius, setRadiusFromGsd, orbitPreview, handleExportOrbitSingle, handleExportOrbitPerLevel,
   } = useOrbitMission({ sensor, missionMode, missionName, wpml, setMode, runExport })
 
-  /* ----------------------- Modo fachada (E1.1) ------------------------ */
-  const {
-    faceConfig, setFaceConfig, setFaceParam, startFaceDraw, handleFinishFace, clearFaceBaseline,
-    facePlan, dsmLoaded, faceClearance, facePreview, handleExportFace,
-  } = useFaceMission({ sensor, terrain, missionMode, missionName, wpml, setMode, setDraftVertices, runExport })
-
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const {
     inspectPoints, setInspectPoints, inspectSeqRef, startInspect, addInspectPoint, updateInspectPoint,
@@ -608,6 +599,30 @@ function AppInner({ lang, setLang }) {
   }, [photoMode, planOk, blocks])
 
   /* --------------------------- Interações ---------------------------- */
+  const ringBbox = useMemo(() => {
+    if (!ring) return null
+    let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity]
+    ring.forEach(([x, y]) => {
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x)
+      maxY = Math.max(maxY, y)
+    })
+    return [minX, minY, maxX, maxY]
+  }, [ring])
+
+  /* ------------------------------ Terreno ----------------------------- */
+  const {
+    terrain, terrainFollow, setTerrainFollow, handleLoadTerrain, handleImportDem,
+    terrainCovers, slopeHint,
+  } = useTerrain({ ring, ringBbox, ringValid: validation.valid })
+
+  /* ----------------------- Modo fachada (E1.1) ------------------------ */
+  const {
+    faceConfig, setFaceConfig, setFaceParam, startFaceDraw, handleFinishFace, clearFaceBaseline,
+    facePlan, dsmLoaded, faceClearance, facePreview, handleExportFace,
+  } = useFaceMission({ sensor, terrain, missionMode, missionName, wpml, setMode, setDraftVertices, runExport })
+
   const handleMapClick = useCallback(
     (lonlat) => {
       if (mode === 'draw') {
@@ -732,72 +747,6 @@ function AppInner({ lang, setLang }) {
   }, [])
 
   /* ------------------------- Terreno (DEM) --------------------------- */
-  const ringBbox = useMemo(() => {
-    if (!ring) return null
-    let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity]
-    ring.forEach(([x, y]) => {
-      minX = Math.min(minX, x)
-      minY = Math.min(minY, y)
-      maxX = Math.max(maxX, x)
-      maxY = Math.max(maxY, y)
-    })
-    return [minX, minY, maxX, maxY]
-  }, [ring])
-
-  const handleLoadTerrain = useCallback(async () => {
-    if (!ringBbox) return
-    setTerrain({ status: 'loading', data: null, error: null })
-    try {
-      const m = 0.01 // ~1 km de margem para incluir a base
-      const bbox = [ringBbox[0] - m, ringBbox[1] - m, ringBbox[2] + m, ringBbox[3] + m]
-      const data = await loadTerrain(bbox)
-      setTerrain({ status: 'ready', data, error: null })
-    } catch (err) {
-      setTerrain({ status: 'error', data: null, error: err?.message ?? 'Falha no terreno' })
-    }
-  }, [ringBbox])
-
-  // Importar um MDT GeoTIFF local (ex.: LiDAR DGT 50 cm/2 m) como fonte
-  const handleImportDem = useCallback(
-    async (file) => {
-      if (!file || !ringBbox) return
-      setTerrain({ status: 'loading', data: null, error: null })
-      try {
-        const data = await loadDemFromFile(file, ringBbox)
-        setTerrain({ status: 'ready', data, error: null })
-      } catch (err) {
-        setTerrain({ status: 'error', data: null, error: err?.message ?? 'Falha ao ler o MDT' })
-      }
-    },
-    [ringBbox],
-  )
-
-  // a área ainda está coberta pelo terreno carregado?
-  const terrainCovers = useMemo(() => {
-    if (terrain.status !== 'ready' || !ringBbox || !terrain.data?.bbox) return false
-    const [a, b, c, d] = terrain.data.bbox
-    return ringBbox[0] >= a && ringBbox[1] >= b && ringBbox[2] <= c && ringBbox[3] <= d
-  }, [terrain, ringBbox])
-
-  // Descarga automática do relevo global quando a área fica definida:
-  // com debounce (não dispara enquanto se arrastam vértices), sem nunca
-  // substituir um MDT local importado, e sem repetir sozinha após um erro
-  // na mesma área (o botão manual fica como recurso).
-  const autoTerrainTriedRef = useRef(null)
-  useEffect(() => {
-    if (!ring || !validation.valid || !ringBbox) return
-    if (terrain.status === 'loading') return
-    if (terrain.data?.source === 'file') return
-    if (terrain.status === 'ready' && terrainCovers) return
-    const key = ringBbox.map((v) => v.toFixed(3)).join(',')
-    if (terrain.status === 'error' && autoTerrainTriedRef.current === key) return
-    const timer = setTimeout(() => {
-      autoTerrainTriedRef.current = key
-      handleLoadTerrain()
-    }, 1500)
-    return () => clearTimeout(timer)
-  }, [ring, validation.valid, ringBbox, terrain, terrainCovers, handleLoadTerrain])
-
   /* ------------------------------ GCPs -------------------------------- */
   const gcpAutoCount = useMemo(() => {
     const areaHa = planOk?.stats?.areaHa
@@ -838,17 +787,6 @@ function AppInner({ lang, setLang }) {
       return { error: err?.message ?? 'Falha no cálculo do terreno' }
     }
   }, [photoMode, t, terrainFollow, terrainCovers, terrain.data, planOk, blocks, basePoint, params.altitude])
-
-  // Sugestões para encostas íngremes (T4.5): plano médio do terreno na área
-  // → linhas ao longo das curvas de nível e gimbal ≈ −(90 − inclinação).
-  // Só sugestões; nada é aplicado automaticamente.
-  const slopeHint = useMemo(() => {
-    if (terrain.status !== 'ready' || !terrainCovers || !ring || !validation.valid) return null
-    const fit = fitSlopePlane(terrain.data, ring)
-    if (!fit || fit.slopeDeg < 8) return null
-    const gimbal = Math.max(-90, Math.min(-45, -Math.round((90 - fit.slopeDeg) / 5) * 5))
-    return { ...fit, gimbal }
-  }, [terrain, terrainCovers, ring, validation.valid])
 
   const applySlopeAngle = useCallback(() => {
     if (slopeHint) setParams((p) => ({ ...p, angle: Math.round(slopeHint.contourAzimuthDeg) }))
@@ -1050,7 +988,7 @@ function AppInner({ lang, setLang }) {
     if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
     if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
     return true
-  }, [setCorridorConfig, setOrbitConfig, setFaceConfig, setInspectPoints, inspectSeqRef])
+  }, [setCorridorConfig, setOrbitConfig, setFaceConfig, setInspectPoints, inspectSeqRef, setTerrainFollow])
 
   // hidratar uma vez no arranque
   // Hidratação única no arranque: applyProject reconstitui uma dezena de
