@@ -73,13 +73,15 @@ describe('corridorExportParams', () => {
 describe('inspectionExportParams', () => {
   test('um waypoint por ponto, rumo e pitch por ponto, passa a validação', () => {
     const points = [
-      { id: 'a', lonlat: [-9.14, 38.7], heading: 45, gimbalPitch: -30, altitude: 40 },
-      { id: 'b', lonlat: [-9.139, 38.7], heading: 270, gimbalPitch: -60, altitude: 50 },
+      { id: 'a', point: [-9.14, 38.7], heading: 45, gimbalPitch: -30, heightM: 40 },
+      { id: 'b', point: [-9.139, 38.7], heading: 270, gimbalPitch: -60, heightM: 50 },
     ]
     const p = inspectionExportParams({ ...comum, points, altitude: 60, speed: 5, gimbalPitch: -45 })
     expect(p.name).toBe('Quinta-do-Lago_inspect_n2')
     expect(p.waypoints).toHaveLength(2)
     expect(p.perWaypoint).toHaveLength(2)
+    expect(p.waypoints[1][2]).toBe(50)
+    expect(p.perWaypoint[0]).toEqual({ heading: 45, gimbalPitch: -30, actions: ['takePhoto'] })
     expect(p.photoIntervalM).toBe(0)
     expect(validateExportParams(p)).toBe(p)
   })
