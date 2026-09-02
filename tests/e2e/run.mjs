@@ -18,6 +18,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { chromium } from 'playwright'
+import Ajv2020 from 'ajv/dist/2020.js'
 import { ground, makeFixtures, toM } from './fixtures.mjs'
 import { analyseRoute, readRoutes } from './kmz.mjs'
 
@@ -332,6 +333,11 @@ await scenario('projecto-autosave-ficheiro', async () => {
   const file = join(OUT, 'projecto-e2e.json')
   await dl.saveAs(file)
   const onDisk = JSON.parse(readFileSync(file, 'utf8'))
+  // o ficheiro que a aplicação escreve tem de cumprir o contrato publicado
+  const ajv = new Ajv2020({ allErrors: true })
+  const valid = ajv.compile(JSON.parse(readFileSync('public/schema/project-v2.schema.json', 'utf8')))
+  check('projecto: o ficheiro guardado valida contra public/schema/project-v2.schema.json',
+    valid(onDisk) === true, (valid.errors ?? []).map((e) => `${e.instancePath} ${e.message}`).join('; '))
   check('projecto: ficheiro guardado com o mesmo conteúdo do autosave',
     onDisk.version === 2 && onDisk.missionName === 'projecto-e2e' && onDisk.params?.crosshatch === true &&
       JSON.stringify(onDisk.ring) === JSON.stringify(saved.ring))

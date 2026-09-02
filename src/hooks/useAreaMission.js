@@ -13,6 +13,7 @@ import { planTerrainFollow } from '../mission/terrainFollow.js'
 import { buildAreaExport } from '../mission/areaExport.js'
 import { downloadBlob, exportBlocksZip, exportSimpleKML, exportWPMLKmz } from '../utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from '../utils/gcp.js'
+import { DEFAULT_GCP_CONFIG } from '../mission/defaults.js'
 
 export function useAreaMission({
   ring,
@@ -34,7 +35,7 @@ export function useAreaMission({
   runExport,
   t,
 }) {
-  const [gcpConfig, setGcpConfig] = useState({ enabled: false, count: null }) // null = auto
+  const [gcpConfig, setGcpConfig] = useState(() => ({ ...DEFAULT_GCP_CONFIG }))
 
   // B: disparo por waypoint só com câmara e intervalo válido; com LiDAR ou
   // sem óptica o plano fica no modo distância (e a opção não aparece)

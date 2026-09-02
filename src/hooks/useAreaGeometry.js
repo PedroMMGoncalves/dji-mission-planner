@@ -18,6 +18,7 @@ import {
 } from '../utils/geo.js'
 import { parseAreaFile, reprojectRing, simplifyRingIfNeeded, CRS_OPTIONS } from '../utils/importArea.js'
 import { parseWpmlKmz } from '../utils/importWpml.js'
+import { DEFAULT_ANCHOR, DEFAULT_SPLIT } from '../mission/defaults.js'
 
 /**
  * @param {object} args
@@ -46,24 +47,9 @@ export function useAreaGeometry({
 }) {
   const [ring, setRing] = useState(null) // anel aberto [[lon,lat], ...]
   const [areaOrigin, setAreaOrigin] = useState(null) // 'draw' | 'anchor' | null
-  const [anchor, setAnchor] = useState({
-    center: null,
-    length: 500,
-    width: 300,
-    orientation: 90,
-    shape: 'rect', // 'rect' | 'square'
-    cols: 1, // grelha de blocos: colunas ao longo da orientação
-    rows: 1, // grelha de blocos: linhas perpendiculares
-  })
+  const [anchor, setAnchor] = useState(() => ({ ...DEFAULT_ANCHOR }))
   const [gridCells, setGridCells] = useState(null) // anéis das células da grelha
-  const [split, setSplit] = useState({
-    mode: 'none', // 'none' | 'area' | 'battery' | 'tiles'
-    maxAreaHa: 20,
-    reservePct: 30, // regressar à base com 30% de bateria
-    maxSide: 500, // teto do lado do bloco por bateria (conforto VLOS)
-    tileSize: 250, // lado dos quadrados do mosaico (m)
-    tileOrientation: 0, // azimute da malha do mosaico
-  })
+  const [split, setSplit] = useState(() => ({ ...DEFAULT_SPLIT }))
   const [disabledTiles, setDisabledTiles] = useState(() => new Set())
   const [importState, setImportState] = useState(null) // {ring, filename} à espera de CRS
   const [importError, setImportError] = useState(null)

@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pedrommgoncalves.github.io/dji-mission-planner/schema/project-v2.schema.json",
+  "title": "DJI Mission Planner - ficheiro de projecto (v2)",
+  "description": "Projecto guardado pela aplicacao (botao Guardar projecto) e pela gravacao automatica. Coordenadas em WGS84 (EPSG:4326), [longitude, latitude] em graus; distancias em metros; alturas relativas ao ponto de descolagem. Todos os campos alem de version sao opcionais: um campo em falta carrega com o valor por omissao.",
+  "type": "object",
+  "required": ["version"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 2 },
+    "missionName": { "type": "string" },
+    "drone": {
+      "description": "Aeronave e payload do catalogo (src/data/drones.js).",
+      "type": "object",
+      "required": ["aircraftId", "payloadId"],
+      "additionalProperties": false,
+      "properties": {
+        "aircraftId": { "type": "string", "minLength": 1 },
+        "payloadId": { "type": "string", "minLength": 1 }
+      }
+    },
+    "custom": {
+      "description": "Sensor personalizado (payload CUSTOM).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["camera", "lidar"] },
+        "sensorWidth": { "type": "number", "exclusiveMinimum": 0 },
+        "sensorHeight": { "type": "number", "exclusiveMinimum": 0 },
+        "focalLength": { "type": "number", "exclusiveMinimum": 0 },
+        "imageWidth": { "type": "number", "exclusiveMinimum": 0 },
+        "fov": { "type": "number", "exclusiveMinimum": 0, "maximum": 180 },
+        "droneEnumValue": { "type": "integer", "minimum": 0 },
+        "payloadEnumValue": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "payloadTuning": {
+      "description": "Afinacoes por payload: { payloadId: { effectiveFov } }.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": { "effectiveFov": { "type": "number", "exclusiveMinimum": 0, "maximum": 180 } }
+      }
+    },
+    "batteryByCombo": {
+      "description": "Duracao de bateria em minutos por combinacao 'aircraftId:payloadId'.",
+      "type": "object",
+      "additionalProperties": { "type": "number", "exclusiveMinimum": 0 }
+    },
+    "inspectPoints": { "type": "array", "items": { "$ref": "#/$defs/inspectPoint" } },
+    "missionMode": { "enum": ["area", "face", "orbit", "corridor"] },
+    "faceConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baseline": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/polyline" }] },
+        "heightM": { "type": "number", "exclusiveMinimum": 0 },
+        "standoffM": { "type": "number", "exclusiveMinimum": 0 },
+        "side": { "enum": ["left", "right"] },
+        "verticalOverlapPct": { "$ref": "#/$defs/pct" },
+        "horizontalOverlapPct": { "$ref": "#/$defs/pct" },
+        "gimbalPitch": { "type": "number", "minimum": -90, "maximum": 90 },
+        "minClearanceM": { "type": "number", "minimum": 0 },
+        "speedMS": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "corridorConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "centreline": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/polyline" }] },
+        "bufferM": { "type": "number", "exclusiveMinimum": 0 },
+        "speedMS": { "type": "number", "exclusiveMinimum": 0 },
+        "photoMode": { "$ref": "#/$defs/photoMode" },
+        "simplifyM": { "type": "number", "minimum": 0 }
+      }
+    },
+    "orbitConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "poi": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/lonLat" }] },
+        "radiusM": { "type": "number", "exclusiveMinimum": 0 },
+        "levelCount": { "type": "integer", "minimum": 1 },
+        "levelStartM": { "type": "number", "exclusiveMinimum": 0 },
+        "levelStepM": { "type": "number", "exclusiveMinimum": 0 },
+        "horizontalOverlapPct": { "$ref": "#/$defs/pct" },
+        "poiHeightM": { "type": "number" },
+        "clockwise": { "type": "boolean" },
+        "speedMS": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "params": {
+      "description": "Parametros de voo da missao de area.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "altitude": { "type": "number", "exclusiveMinimum": 0 },
+        "speed": { "type": "number", "exclusiveMinimum": 0 },
+        "frontOverlap": { "$ref": "#/$defs/pct" },
+        "sideOverlap": { "$ref": "#/$defs/pct" },
+        "angle": { "type": "number", "minimum": 0, "maximum": 360 },
+        "bufferPct": { "type": "number", "minimum": -50, "maximum": 100 },
+        "triggerMode": { "$ref": "#/$defs/photoMode" },
+        "spacingMode": { "enum": ["auto", "manual"] },
+        "manualSpacing": { "type": "number", "exclusiveMinimum": 0 },
+        "crosshatch": { "type": "boolean" },
+        "includeNadir": { "type": "boolean" },
+        "gimbalPitch": { "type": "number", "minimum": -90, "maximum": 0 },
+        "overshoot": { "type": "number", "minimum": 0 },
+        "tieLine": { "type": "boolean" }
+      }
+    },
+    "split": {
+      "description": "Divisao da missao em blocos.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["none", "area", "battery", "tiles"] },
+        "maxAreaHa": { "type": "number", "exclusiveMinimum": 0 },
+        "reservePct": { "$ref": "#/$defs/pct" },
+        "maxSide": { "type": "number", "exclusiveMinimum": 0 },
+        "tileSize": { "type": "number", "exclusiveMinimum": 0 },
+        "tileOrientation": { "type": "number", "minimum": 0, "maximum": 360 }
+      }
+    },
+    "anchor": {
+      "description": "Rectangulo ou grelha gerados a partir de um ponto-ancora.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "center": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/lonLat" }] },
+        "length": { "type": "number", "exclusiveMinimum": 0 },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "orientation": { "type": "number", "minimum": 0, "maximum": 360 },
+        "shape": { "enum": ["rect", "square"] },
+        "cols": { "type": "integer", "minimum": 1 },
+        "rows": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "ring": {
+      "description": "Anel aberto da area (o ultimo vertice nao repete o primeiro).",
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/ring" }]
+    },
+    "areaOrigin": { "enum": ["draw", "anchor", null] },
+    "basePoint": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/lonLat" }] },
+    "disabledTiles": {
+      "description": "Indices das celulas do mosaico desactivadas.",
+      "type": "array",
+      "items": { "type": "integer", "minimum": 0 }
+    },
+    "terrainFollow": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "tolerance": { "type": "number", "minimum": 0 }
+      }
+    },
+    "gcpConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "count": { "oneOf": [{ "type": "null" }, { "type": "integer", "minimum": 1 }] }
+      }
+    }
+  },
+  "$defs": {
+    "lonLat": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        { "type": "number", "minimum": -180, "maximum": 180 },
+        { "type": "number", "minimum": -90, "maximum": 90 }
+      ],
+      "items": false
+    },
+    "polyline": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/lonLat" } },
+    "ring": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/lonLat" } },
+    "pct": { "type": "number", "minimum": 0, "maximum": 100 },
+    "photoMode": { "enum": ["distance", "waypoint"] },
+    "inspectPoint": {
+      "type": "object",
+      "required": ["id", "point"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "integer", "minimum": 1 },
+        "label": { "type": "string" },
+        "point": { "$ref": "#/$defs/lonLat" },
+        "heightM": { "type": "number" },
+        "heading": { "oneOf": [{ "type": "null" }, { "type": "number", "minimum": -180, "maximum": 360 }] },
+        "gimbalPitch": { "oneOf": [{ "type": "null" }, { "type": "number", "minimum": -90, "maximum": 90 }] },
+        "photo": { "type": "boolean" }
+      }
+    }
+  }
+}

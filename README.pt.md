@@ -143,7 +143,7 @@ Gestos de edição: clique acrescenta vértices (Backspace ou clique num vértic
 | WPML (KMZ) — Órbita | Voo curvo contínuo, rumo ao POI, gimbal por nível, `_orbit_nN` (única ou ZIP por nível) | Inspecção/3D de alvos isolados |
 | WPML (KMZ) — Inspecção | Pontos avulsos com rumo/pitch/foto, `_inspect_nN` | Inspecção dirigida |
 | KML de GCPs | Pontos numerados | Rover RTK / campo |
-| JSON do projecto | Estado completo do planeador | Arquivo, partilha |
+| JSON do projecto | Estado completo do planeador; documentado pelo [esquema JSON](public/schema/project-v2.schema.json) publicado (`$schema` no ficheiro) | Arquivo, partilha |
 | Checklist JSON / impressão | Registo de campo | Diário de operações |
 | Relatório de missão (impressão) | Mapa, parâmetros, blocos, GCPs, pontos de inspecção, assinaturas | Pasta de campo / anexos |
 

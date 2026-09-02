@@ -144,7 +144,7 @@ Editing gestures: click adds vertices (Backspace or clicking a vertex removes, d
 | WPML (KMZ) — Orbit | Continuous curved flight, heading at the POI, per-level gimbal, `_orbit_nN` (single or per-level ZIP) | Inspection/3D of isolated targets |
 | WPML (KMZ) — Inspection | Individual points with heading/pitch/photo, `_inspect_nN` | Directed inspection |
 | GCPs KML | Numbered GCP points | RTK rover / field |
-| Project JSON | Full planner state | Archive, sharing |
+| Project JSON | Full planner state; documented by the published [JSON Schema](public/schema/project-v2.schema.json) (`$schema` in the file) | Archive, sharing |
 | Checklist JSON / print | Field record | Operations log |
 | Mission report (print) | Map, parameters, blocks, GCPs, inspection points, signatures | Field folder / annexes |
 

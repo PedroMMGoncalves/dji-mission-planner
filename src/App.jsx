@@ -43,6 +43,7 @@ import { useFaceMission } from './hooks/useFaceMission.js'
 import { useInspection } from './hooks/useInspection.js'
 import { useTerrain } from './hooks/useTerrain.js'
 import { useProject } from './hooks/useProject.js'
+import { DEFAULT_PARAMS } from './mission/defaults.js'
 import {
   FlagGB,
   FlagPT,
@@ -95,22 +96,7 @@ function AppInner({ lang, setLang }) {
   const [payloadTuning, setPayloadTuning] = useState({})
   // duração de bateria por combinação (T1.4): { 'aircraftId:payloadId': min }
   const [batteryByCombo, setBatteryByCombo] = useState({})
-  const [params, setParams] = useState({
-    altitude: 100,
-    speed: 10,
-    frontOverlap: 80,
-    sideOverlap: 70,
-    angle: 90,
-    bufferPct: 0,
-    triggerMode: 'distance',
-    spacingMode: 'auto', // 'auto' (sobreposição) | 'manual' (distância em m)
-    manualSpacing: 50,
-    crosshatch: false, // dupla grelha perpendicular (3D)
-    includeNadir: false, // passagem nadir extra no fim do crosshatch — R2.10
-    gimbalPitch: -90, // inclinação da câmara: -90 nadir · -60/-45 oblíqua
-    overshoot: 0, // prolongamento de cada faixa nos dois extremos (m) — T2.2
-    tieLine: false, // fiada de amarração perpendicular no fim — T2.3
-  })
+  const [params, setParams] = useState(() => ({ ...DEFAULT_PARAMS }))
   const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect' | 'face'
   // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
   const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit' | 'corridor'

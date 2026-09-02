@@ -12,6 +12,9 @@ import { normalizeOrbitConfig } from '../utils/orbit.js'
 import { normalizeCorridorConfig } from '../utils/corridor.js'
 
 export const PROJECT_VERSION = 2
+/** Esquema JSON (draft 2020-12) do ficheiro v2, servido com a aplicação: public/schema/. */
+export const PROJECT_SCHEMA_URL =
+  'https://pedrommgoncalves.github.io/dji-mission-planner/schema/project-v2.schema.json'
 export const PROJECT_STORAGE_KEY = 'dji-mission-planner:project:v1'
 export const MISSION_MODES = ['area', 'face', 'orbit', 'corridor']
 
@@ -23,6 +26,7 @@ export function serializeProject(state) {
     disabledTiles, terrainFollow, gcpConfig,
   } = state
   return {
+    $schema: PROJECT_SCHEMA_URL,
     version: PROJECT_VERSION,
     missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode,
     faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint,

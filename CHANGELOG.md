@@ -45,7 +45,13 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   com debounce, hidratação no arranque, guardar e abrir ficheiro) está em
   `useProject`; o App só distribui o projecto normalizado pelo estado.
 - Cenário E2E do projecto: autosave em localStorage, recarregar a página,
-  guardar em ficheiro e abrir com o estado limpo (35 asserções E2E no total).
+  guardar em ficheiro e abrir com o estado limpo (36 asserções E2E no total).
+- Esquema JSON (draft 2020-12) do ficheiro de projecto v2, publicado com a
+  aplicação em `schema/project-v2.schema.json` e referenciado pelo campo
+  `$schema` de cada ficheiro guardado. Os testes validam contra ele o estado
+  por omissão, cada preset e um projecto completo, e recusam lixo; o E2E
+  valida o ficheiro que a aplicação realmente escreve. Os valores por
+  omissão do estado guardado passam a viver em `src/mission/defaults.js`.
 - Verificação de tipos sem TypeScript no código: `npm run typecheck` corre
   `tsc --checkJs` sobre os tipos JSDoc de `src/utils/`, `src/mission/`,
   `src/data/` e `src/hooks/` (sem emitir ficheiros) e faz parte do CI. Os

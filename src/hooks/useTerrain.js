@@ -8,10 +8,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fitSlopePlane, loadTerrain } from '../utils/terrain.js'
 import { loadDemFromFile } from '../utils/demFile.js'
+import { DEFAULT_TERRAIN_FOLLOW } from '../mission/defaults.js'
 
 export function useTerrain({ ring, ringBbox, ringValid }) {
   const [terrain, setTerrain] = useState({ status: 'idle', data: null, error: null })
-  const [terrainFollow, setTerrainFollow] = useState({ enabled: false, tolerance: 5 })
+  const [terrainFollow, setTerrainFollow] = useState(() => ({ ...DEFAULT_TERRAIN_FOLLOW }))
 
   const handleLoadTerrain = useCallback(async () => {
     if (!ringBbox) return
