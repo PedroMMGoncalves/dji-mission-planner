@@ -41,9 +41,18 @@ if (!existsSync('dist/index.html')) {
 mkdirSync(OUT, { recursive: true })
 
 /* ---- servidor da build ------------------------------------------------ */
-const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], {
-  stdio: ['ignore', 'pipe', 'pipe'],
-})
+// O vite é lançado directamente (sem npx) e no seu próprio grupo de
+// processos: matar só o npx deixava o vite vivo com o pipe aberto, e o
+// Node nunca terminava — no CI o job ficou pendurado até ao timeout com
+// os 19 PASS já impressos.
+const server = spawn(
+  process.execPath,
+  ['node_modules/vite/bin/vite.js', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'],
+  { stdio: ['ignore', 'pipe', 'pipe'], detached: true },
+)
+const stopServer = () => {
+  try { process.kill(-server.pid, 'SIGTERM') } catch { /* já terminou */ }
+}
 let serverLog = ''
 server.stdout.on('data', (d) => (serverLog += d))
 server.stderr.on('data', (d) => (serverLog += d))
@@ -58,7 +67,7 @@ const up = async () => {
 }
 if (!(await up())) {
   console.error(`servidor não respondeu em ${URL}\n${serverLog}`)
-  server.kill()
+  stopServer()
   process.exit(2)
 }
 
@@ -212,10 +221,11 @@ await scenario('multipoligono-aviso', async () => {
 
 /* ---- fim ----------------------------------------------------------------- */
 await browser.close()
-server.kill()
+stopServer()
 console.log(`\n${passes} PASS, ${fails} FAIL`)
 if (fails > 0) {
   console.log(`capturas e ficheiros em ${OUT}`)
   process.exit(1)
 }
 console.log('E2E: TODOS OS CENARIOS PASSARAM')
+process.exit(0)
