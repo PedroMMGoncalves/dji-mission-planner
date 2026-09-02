@@ -15,11 +15,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "node smoke-test.mjs && node smoke-test-io.mjs",
+    "test": "npm run test:smoke && npm run test:unit",
     "test:update-golden": "UPDATE_GOLDEN=1 node smoke-test.mjs",
     "size": "node scripts/check-bundle-size.mjs",
     "preview": "vite preview",
-    "test:e2e": "node tests/e2e/run.mjs"
+    "test:e2e": "node tests/e2e/run.mjs",
+    "test:smoke": "node smoke-test.mjs && node smoke-test-io.mjs",
+    "test:unit": "vitest run",
+    "test:coverage": "c8 --include \"src/utils/**\" --reporter=text-summary --reporter=text --check-coverage --lines 92 --functions 90 --branches 82 npm run test:smoke"
   },
   "dependencies": {
     "@turf/turf": "^7.2.0",
@@ -36,14 +39,17 @@
     "@vitejs/plugin-react": "^6.1.0",
     "@xmldom/xmldom": "^0.9.12",
     "autoprefixer": "^10.4.20",
+    "c8": "^12.0.0",
     "eslint": "^9.39.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "fast-check": "^4.9.0",
     "fast-xml-parser": "^5.11.1",
     "globals": "^17.11.0",
     "playwright": "^1.62.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
   }
 }

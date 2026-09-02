@@ -162,6 +162,8 @@ npm install
 npm run dev                # servidor local
 npm run lint               # ESLint (inclui as regras react-hooks)
 npm run test               # as duas suites (correm também no CI antes de cada deploy)
+npm run test:unit          # só os testes por propriedades (Vitest + fast-check, tests/unit/)
+npm run test:coverage      # suites sob c8 com limiares de cobertura em src/utils/
 npm run test:update-golden # regenerar tests/golden/ após alteração intencional
 npm run test:e2e           # E2E no browser sobre a build de produção (precisa de npm run build; Chromium via Playwright)
 npm run build              # build de produção em dist/

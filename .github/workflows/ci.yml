@@ -34,8 +34,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test suite
-        run: npm run test
+      # Suites historicas sob c8, com limiares que so podem subir
+      - name: Test suite (with coverage thresholds)
+        run: npm run test:coverage
+      - name: Property-based tests
+        run: npm run test:unit
 
       - name: Production build
         run: npm run build

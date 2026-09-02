@@ -14,6 +14,11 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   polígonos ignorados). Corre no CI a seguir às verificações.
 - Escritor de GeoTIFF sintético partilhado entre o teste de E/S e o E2E
   (`tests/lib/geotiff.mjs`).
+- Testes por propriedades (Vitest + fast-check, `npm run test:unit`) sobre os
+  invariantes do corredor, do terrain follow, dos intervalos de disparo, da
+  fronteira de exportação e da grelha de área, com entradas aleatórias.
+- Limiares de cobertura (c8) sobre `src/utils/` no CI: 92 % linhas, 90 %
+  funções, 82 % ramos — só podem subir.
 
 ## 1.0.1 — 2026-09-01
 
