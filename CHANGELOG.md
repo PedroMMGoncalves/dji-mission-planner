@@ -31,6 +31,17 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   ponto de base; alturas relativas ao ponto de descolagem). Cobre os quatro
   modos; oito testes unitários e um cenário E2E (42 asserções E2E no total).
 
+### Validação de campo
+- Ferramenta planeado-vs-medido (`tools/planeado-vs-medido.mjs`): a partir
+  do ficheiro de projecto e das fotos (EXIF/XMP ou CSV do exiftool), da
+  nuvem LAS (com o CRS do ficheiro) e do registo de voo, mede altura AGL,
+  GSD, intervalo e sobreposição frontal, espaçamento e sobreposição lateral
+  (faixas detectadas pelo rumo dos passos), fotos dentro da área, duração,
+  densidade de pontos global e mínima por célula, velocidade e distância à
+  base, e escreve o relatório planeado / medido / desvio em Markdown e JSON.
+  Leitor de LAS 1.2–1.4 sem dependências; seis testes com voos sintéticos
+  gerados do próprio plano (um igual ao plano, outro desviado).
+
 ### Manutenção
 - Prettier como formatador único (`npm run format`, `format:check` no CI),
   com uma passagem única de formatação sem alteração de comportamento;

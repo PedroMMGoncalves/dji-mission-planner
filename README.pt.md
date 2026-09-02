@@ -229,6 +229,17 @@ repository*).
 }
 ```
 
+## Planeado vs medido (validação de campo)
+
+Depois de um voo real, `tools/planeado-vs-medido.mjs` compara o que o planeador previu com o que o voo produziu, a partir do ficheiro de projecto e de qualquer combinação de: fotos (pasta de JPEG lidos por EXIF/XMP, ou CSV do `exiftool -csv -n`), nuvem LiDAR (`.las`, com o CRS do ficheiro) e registo de voo (CSV tipo Airdata). Dá altura AGL, GSD, intervalo entre fotos e sobreposição frontal, espaçamento e sobreposição lateral, contagem de faixas e fotos, fotos dentro da área, duração, densidade de pontos (global e mínima por célula de 10 m) e velocidade, cada uma como planeado / medido / desvio:
+
+```bash
+node tools/planeado-vs-medido.mjs --projecto missao-projeto.json --fotos fotos.csv \
+  --las nuvem.las --crs EPSG:3763 --log voo.csv --md relatorio.md
+```
+
+Corre sobre dados sintéticos na suite de testes; os voos de Setembro de 2026 são a primeira entrada real.
+
 ## Contribuir
 
 Ver [CONTRIBUTING.md](CONTRIBUTING.md): ciclo de desenvolvimento, o que cada camada de testes garante, convenções e processo de release. As releases levam um SBOM CycloneDX e uma atestação de proveniência SLSA (`gh attestation verify <ficheiro> --repo PedroMMGoncalves/dji-mission-planner`).

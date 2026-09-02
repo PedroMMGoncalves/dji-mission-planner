@@ -231,6 +231,17 @@ resolves to the latest release. The repository also ships a `CITATION.cff`
 }
 ```
 
+## Planned vs measured (field validation)
+
+After a real flight, `tools/planeado-vs-medido.mjs` compares what the planner predicted with what the flight produced, from the project file plus any of: the photos (a folder of JPEGs read via EXIF/XMP, or a CSV from `exiftool -csv -n`), the LiDAR cloud (`.las`, with the CRS of the file) and the flight log (Airdata-style CSV). It reports AGL height, GSD, photo interval and front overlap, strip spacing and side overlap, strip and photo counts, photos inside the area, duration, point density (overall and minimum per 10 m cell) and speed, each as planned / measured / deviation:
+
+```bash
+node tools/planeado-vs-medido.mjs --projecto missao-projeto.json --fotos fotos.csv \
+  --las nuvem.las --crs EPSG:3763 --log voo.csv --md relatorio.md
+```
+
+It runs on synthetic data in the test suite; the September 2026 flights are its first real input.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md): development loop, what each test layer guarantees, conventions and the release process. Releases ship a CycloneDX SBOM and a SLSA provenance attestation (`gh attestation verify <file> --repo PedroMMGoncalves/dji-mission-planner`).
