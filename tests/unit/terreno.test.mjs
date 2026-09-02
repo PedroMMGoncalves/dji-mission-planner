@@ -28,7 +28,9 @@ describe('simplifyProfile', () => {
             const b = points[kept[k]]
             for (let i = kept[k - 1]; i <= kept[k]; i++) {
               const t = (points[i].distM - a.distM) / (b.distM - a.distM)
-              expect(Math.abs(a.value + (b.value - a.value) * t - points[i].value)).toBeLessThanOrEqual(tol + 1e-9)
+              expect(
+                Math.abs(a.value + (b.value - a.value) * t - points[i].value),
+              ).toBeLessThanOrEqual(tol + 1e-9)
             }
           }
         },
@@ -53,8 +55,15 @@ const relevo = fc
       { minLength: 1, maxLength: 3 },
     ),
   })
-  .map(({ rampa, colinas }) => (x, y) =>
-    200 + rampa * x + colinas.reduce((z, c) => z + c.a * Math.exp(-((x - c.cx) ** 2 + (y - c.cy) ** 2) / (2 * c.s * c.s)), 0),
+  .map(
+    ({ rampa, colinas }) =>
+      (x, y) =>
+        200 +
+        rampa * x +
+        colinas.reduce(
+          (z, c) => z + c.a * Math.exp(-((x - c.cx) ** 2 + (y - c.cy) ** 2) / (2 * c.s * c.s)),
+          0,
+        ),
   )
 
 /** Serpentina de 2 a 5 linhas E-O afastadas entre 40 e 600 m. */
@@ -65,7 +74,9 @@ const serpentina = fc
     gap: fc.integer({ min: 40, max: 600 }),
   })
   .map(({ n, len, gap }) =>
-    Array.from({ length: n }, (_, i) => (i % 2 === 0 ? [em(0, i * gap), em(len, i * gap)] : [em(len, i * gap), em(0, i * gap)])),
+    Array.from({ length: n }, (_, i) =>
+      i % 2 === 0 ? [em(0, i * gap), em(len, i * gap)] : [em(len, i * gap), em(0, i * gap)],
+    ),
   )
 
 describe('terrainFollowLines', () => {
@@ -74,7 +85,12 @@ describe('terrainFollowLines', () => {
       fc.property(relevo, serpentina, fc.integer({ min: 50, max: 120 }), (ground, lines, agl) => {
         const terrain = { elevationAt: (lon, lat) => ground(...toM([lon, lat])) }
         const ref = ground(...toM(lines[0][0]))
-        const tf = terrainFollowLines(terrain, lines, { agl, refElev: ref, toleranceM: 5, stepM: 40 })
+        const tf = terrainFollowLines(terrain, lines, {
+          agl,
+          refElev: ref,
+          toleranceM: 5,
+          stepM: 40,
+        })
         expect(tf.perLine.reduce((a, b) => a + b, 0)).toBe(tf.waypoints.length)
         expect(tf.perLink[0]).toBe(0)
         expect(tf.perLink).toHaveLength(lines.length)
@@ -122,26 +138,32 @@ describe('triggerRangesForLines', () => {
 
   test('intervalos crescentes, sem sobreposição, dentro da rota; os pontos de ligação ficam de fora quando há quebra', () => {
     fc.assert(
-      fc.property(cenario, fc.integer({ min: 30, max: 900 }), ({ lines, perLine, perLink }, maxLinkM) => {
-        const total = perLine.reduce((a, b) => a + b, 0)
-        const ranges = triggerRangesForLines(lines, perLine, perLink, { maxLinkM })
-        let prevEnd = -1
-        for (const [s, e] of ranges) {
-          expect(s).toBeGreaterThan(prevEnd)
-          expect(e).toBeGreaterThanOrEqual(s)
-          expect(e).toBeLessThan(total)
-          prevEnd = e
-        }
-        // sem limite: um só intervalo com tudo
-        expect(triggerRangesForLines(lines, perLine, perLink, {})).toEqual([[0, total - 1]])
-        // os índices dos pontos de ligação de uma linha que abre intervalo não pertencem a nenhum intervalo
-        let idx = 0
-        lines.forEach((seg, i) => {
-          const abre = ranges.some(([s]) => s === idx + perLink[i]) && perLink[i] > 0
-          if (abre) for (let k = idx; k < idx + perLink[i]; k++) expect(ranges.some(([s, e]) => k >= s && k <= e)).toBe(false)
-          idx += perLine[i]
-        })
-      }),
+      fc.property(
+        cenario,
+        fc.integer({ min: 30, max: 900 }),
+        ({ lines, perLine, perLink }, maxLinkM) => {
+          const total = perLine.reduce((a, b) => a + b, 0)
+          const ranges = triggerRangesForLines(lines, perLine, perLink, { maxLinkM })
+          let prevEnd = -1
+          for (const [s, e] of ranges) {
+            expect(s).toBeGreaterThan(prevEnd)
+            expect(e).toBeGreaterThanOrEqual(s)
+            expect(e).toBeLessThan(total)
+            prevEnd = e
+          }
+          // sem limite: um só intervalo com tudo
+          expect(triggerRangesForLines(lines, perLine, perLink, {})).toEqual([[0, total - 1]])
+          // os índices dos pontos de ligação de uma linha que abre intervalo não pertencem a nenhum intervalo
+          let idx = 0
+          lines.forEach((seg, i) => {
+            const abre = ranges.some(([s]) => s === idx + perLink[i]) && perLink[i] > 0
+            if (abre)
+              for (let k = idx; k < idx + perLink[i]; k++)
+                expect(ranges.some(([s, e]) => k >= s && k <= e)).toBe(false)
+            idx += perLine[i]
+          })
+        },
+      ),
       { numRuns: 300 },
     )
   })

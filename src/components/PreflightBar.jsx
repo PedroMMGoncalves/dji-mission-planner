@@ -22,7 +22,10 @@ export function PreflightPill({ items, open, onToggle }) {
       : c.warn > 0
         ? 'border-amber-700 text-amber-200 hover:bg-amber-950/60'
         : 'border-emerald-700 text-emerald-200 hover:bg-emerald-950/60'
-  const label = c.block > 0 || c.warn > 0 ? t('preflight.summary', { b: c.block, w: c.warn }) : t('preflight.ok')
+  const label =
+    c.block > 0 || c.warn > 0
+      ? t('preflight.summary', { b: c.block, w: c.warn })
+      : t('preflight.ok')
   return (
     <button
       type="button"

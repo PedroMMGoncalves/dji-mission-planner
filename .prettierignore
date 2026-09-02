@@ -1,0 +1,10 @@
+# Formatacao so do codigo-fonte e dos testes (ver scripts format/format:check).
+node_modules
+dist
+coverage
+tests/golden
+tests/e2e/out
+public
+docs
+*.md
+package-lock.json

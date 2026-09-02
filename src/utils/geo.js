@@ -397,8 +397,9 @@ export function findOptimalDirection(ring, spacingM) {
         [a0 * vx + t * ux, a0 * vy + t * uy],
         [a1 * vx + t * ux, a1 * vy + t * uy],
       ])
-      const crossings = turf.lineIntersect(line, poly).features
-        .map((f) => f.geometry.coordinates[0] * vx + f.geometry.coordinates[1] * vy)
+      const crossings = turf
+        .lineIntersect(line, poly)
+        .features.map((f) => f.geometry.coordinates[0] * vx + f.geometry.coordinates[1] * vy)
         .sort((a, b) => a - b)
         .filter((v, i, arr) => i === 0 || v - arr[i - 1] > 1e-9)
       let k = 0
@@ -430,7 +431,9 @@ export function findOptimalDirection(ring, spacingM) {
   }
 
   const coarse = bestAngle(Array.from({ length: 36 }, (_, i) => i * 5))
-  const fine = bestAngle(Array.from({ length: 9 }, (_, i) => (((coarse - 4 + i) % 180) + 180) % 180))
+  const fine = bestAngle(
+    Array.from({ length: 9 }, (_, i) => (((coarse - 4 + i) % 180) + 180) % 180),
+  )
   return fine % 180
 }
 
@@ -502,8 +505,15 @@ export function computeAlignment(outlineRing, spacingM, angleDeg) {
  */
 export function generateFlightLines(ring, options) {
   const {
-    spacingM, angleDeg, bufferPct, photoIntervalM, speed, align,
-    overshootM = 0, tieLine = false, photoMode = 'distance',
+    spacingM,
+    angleDeg,
+    bufferPct,
+    photoIntervalM,
+    speed,
+    align,
+    overshootM = 0,
+    tieLine = false,
+    photoMode = 'distance',
   } = options
   if (!ring || ring.length < 3 || !(spacingM > 0.05)) return null
   // B: foto por waypoint só com intervalo válido; caso contrário o modo é o
@@ -586,8 +596,9 @@ export function generateFlightLines(ring, options) {
       [maxX + padX, y],
     ])
 
-    const crossings = turf.lineIntersect(scanline, rotated).features
-      .map((f) => f.geometry.coordinates[0])
+    const crossings = turf
+      .lineIntersect(scanline, rotated)
+      .features.map((f) => f.geometry.coordinates[0])
       .sort((a, b) => a - b)
       .filter((x, idx, arr) => idx === 0 || x - arr[idx - 1] > 1e-10)
 
@@ -616,7 +627,10 @@ export function generateFlightLines(ring, options) {
   //    seguem a "espinha" da área e nunca atravessam um vão. Num polígono
   //    convexo o resultado é exatamente a serpentina antiga.
   const midLatRot = (minY + maxY) / 2
-  const { cells, adjacency } = decomposeCells(rows, STRIP_OVERLAP_EPS_M / metersPerDegLon(midLatRot))
+  const { cells, adjacency } = decomposeCells(
+    rows,
+    STRIP_OVERLAP_EPS_M / metersPerDegLon(midLatRot),
+  )
   const routePts = orderCells(cells, adjacency, metersPerDegLon(midLatRot) / M_PER_DEG_LAT)
 
   // Overshoot (T2.2): cada passagem é prolongada nos dois extremos ao longo
@@ -654,8 +668,9 @@ export function generateFlightLines(ring, options) {
       [xMid, minY - padY],
       [xMid, maxY + padY],
     ])
-    const yCross = turf.lineIntersect(vline, rotated).features
-      .map((f) => f.geometry.coordinates[1])
+    const yCross = turf
+      .lineIntersect(vline, rotated)
+      .features.map((f) => f.geometry.coordinates[1])
       .sort((a, b) => a - b)
       .filter((v, idx, arr) => idx === 0 || v - arr[idx - 1] > 1e-10)
     const dyOver = overshootM > 0 ? overshootM / M_PER_DEG_LAT : 0
@@ -668,7 +683,16 @@ export function generateFlightLines(ring, options) {
       if (turf.booleanPointInPolygon(midTie, rotated)) {
         const lenM = turf.distance([xMid, ya], [xMid, yb], { units: 'meters' })
         if (lenM >= MIN_SEGMENT_M) {
-          tieSegs.push({ ext: [[xMid, ya - dyOver], [xMid, yb + dyOver]], core: [[xMid, ya], [xMid, yb]] })
+          tieSegs.push({
+            ext: [
+              [xMid, ya - dyOver],
+              [xMid, yb + dyOver],
+            ],
+            core: [
+              [xMid, ya],
+              [xMid, yb],
+            ],
+          })
         }
         q += 2
       } else {
@@ -757,8 +781,7 @@ export function generateFlightLines(ring, options) {
     pathLengthM += turf.distance(waypoints[i - 1], waypoints[i], { units: 'meters' })
   }
 
-  const flightTimeS =
-    speed > 0 ? pathLengthM / speed + lines.length * TURN_TIME_S : null
+  const flightTimeS = speed > 0 ? pathLengthM / speed + lines.length * TURN_TIME_S : null
 
   return {
     area,
@@ -771,7 +794,8 @@ export function generateFlightLines(ring, options) {
       pathLengthM,
       photoCount: photoIntervalM > 0 ? photoCount : null,
       // no modo foto-por-waypoint todas as fotos caem no núcleo da passagem
-      photoCountArea: photoIntervalM > 0 && overshootM > 0 && !perWaypointPhotos ? photoCountArea : null,
+      photoCountArea:
+        photoIntervalM > 0 && overshootM > 0 && !perWaypointPhotos ? photoCountArea : null,
       flightTimeS,
       areaHa: turf.area(basePoly) / 10000,
       bufferedAreaHa: turf.area(area) / 10000,
@@ -837,7 +861,11 @@ export function normalizeTriggerMode(value) {
  * com os índices 1-based — nunca uma missão silenciosamente mais curta do
  * que a área desenhada (era o comportamento do filter(Boolean) antigo).
  */
-export function composeCellPlans(ring, perCell, { photoIntervalM = 0, overshootM = 0, photoMode = 'distance' } = {}) {
+export function composeCellPlans(
+  ring,
+  perCell,
+  { photoIntervalM = 0, overshootM = 0, photoMode = 'distance' } = {},
+) {
   const failed = perCell.find((p) => p?.error)
   if (failed) return failed
   const missing = perCell.map((p, i) => (p ? null : i + 1)).filter((i) => i != null)
@@ -856,7 +884,10 @@ export function composeCellPlans(ring, perCell, { photoIntervalM = 0, overshootM
       totalLineLengthM: sum((s) => s.totalLineLengthM),
       pathLengthM: sum((s) => s.pathLengthM),
       photoCount: photoIntervalM > 0 ? sum((s) => s.photoCount) : null,
-      photoCountArea: photoIntervalM > 0 && overshootM > 0 && photoMode !== 'waypoint' ? sum((s) => s.photoCountArea) : null,
+      photoCountArea:
+        photoIntervalM > 0 && overshootM > 0 && photoMode !== 'waypoint'
+          ? sum((s) => s.photoCountArea)
+          : null,
       flightTimeS: sum((s) => s.flightTimeS),
       areaHa: sum((s) => s.areaHa),
       bufferedAreaHa: sum((s) => s.bufferedAreaHa),
@@ -1090,14 +1121,11 @@ export function splitIntoBlocks(plan, options) {
     // extra hop (~spacing/v) is covered by the battery reserve. cur.cost does
     // accumulate flown connections, so the budget overshoot is bounded by one
     // connection per block.
-    const lineCost =
-      mode === 'area' ? lenM * spacingM : lenM / v + TURN_TIME_S
+    const lineCost = mode === 'area' ? lenM * spacingM : lenM / v + TURN_TIME_S
 
     if (!cur) openBlock(seg[0], li)
     const fits =
-      mode === 'area'
-        ? cur.cost + lineCost <= budget
-        : cur.cost + lineCost + cur.transitS <= budget
+      mode === 'area' ? cur.cost + lineCost <= budget : cur.cost + lineCost + cur.transitS <= budget
 
     if (!fits && cur.lines.length > 0) {
       cur = null
@@ -1105,7 +1133,10 @@ export function splitIntoBlocks(plan, options) {
     }
     // (uma faixa isolada que exceda o orçamento entra sozinha no bloco)
     cur.lines.push(seg)
-    cur.cost += mode === 'area' ? lenM * spacingM : lenM / v + TURN_TIME_S + (cur.lines.length > 1 ? connM / v : 0)
+    cur.cost +=
+      mode === 'area'
+        ? lenM * spacingM
+        : lenM / v + TURN_TIME_S + (cur.lines.length > 1 ? connM / v : 0)
     cur.areaM2 += lenM * spacingM
     cur.lengthM += lenM
     prevEnd = seg[1]
@@ -1127,7 +1158,10 @@ export function splitIntoBlocks(plan, options) {
       for (let k = from; k < to; k++) {
         if (plan.perWaypoint?.[k]) perWaypoint[k - from] = plan.perWaypoint[k]
       }
-      extra = { perLine: plan.perLine.slice(b.startLine, b.startLine + b.lines.length), perWaypoint }
+      extra = {
+        perLine: plan.perLine.slice(b.startLine, b.startLine + b.lines.length),
+        perWaypoint,
+      }
     } else {
       b.lines.forEach((seg) => waypoints.push(seg[0], seg[1]))
     }

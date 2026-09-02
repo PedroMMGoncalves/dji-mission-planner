@@ -202,7 +202,11 @@ export function migrateDroneSelection(stored) {
  * point (larger deviations over rough ground surface via terrain warnings).
  * Returns { cap, worstAgl } when exceeded, null otherwise.
  */
-export function aglCapWarning(payload, altitudeM, { terrainFollowActive = false, toleranceM = 0 } = {}) {
+export function aglCapWarning(
+  payload,
+  altitudeM,
+  { terrainFollowActive = false, toleranceM = 0 } = {},
+) {
   const cap = payload?.maxAglM
   if (!cap || !Number.isFinite(altitudeM)) return null
   const worstAgl = terrainFollowActive ? altitudeM + Math.max(0, toleranceM) : altitudeM

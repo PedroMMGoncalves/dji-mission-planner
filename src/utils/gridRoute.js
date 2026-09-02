@@ -79,7 +79,10 @@ export function decomposeCells(rows, overlapEps) {
         cells[ci].push([y, clo, chi])
         curIdx[j] = ci
       } else {
-        curIdx[j] = openCell([y, clo, chi], prevs.map((i) => prevIdx[i]))
+        curIdx[j] = openCell(
+          [y, clo, chi],
+          prevs.map((i) => prevIdx[i]),
+        )
       }
     })
 

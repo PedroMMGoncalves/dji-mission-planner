@@ -138,7 +138,11 @@ export function IconChart({ className }) {
 /** Bandeira de Portugal (simplificada) — o Windows não renderiza emojis 🇵🇹. */
 export function FlagPT({ className = 'h-3.5 w-5' }) {
   return (
-    <svg viewBox="0 0 20 14" className={`inline-block rounded-[2px] ${className}`} aria-hidden="true">
+    <svg
+      viewBox="0 0 20 14"
+      className={`inline-block rounded-[2px] ${className}`}
+      aria-hidden="true"
+    >
       <rect width="8" height="14" fill="#046a38" />
       <rect x="8" width="12" height="14" fill="#da291c" />
       <circle cx="8" cy="7" r="3" fill="#ffe900" />
@@ -150,7 +154,11 @@ export function FlagPT({ className = 'h-3.5 w-5' }) {
 /** Bandeira do Reino Unido (simplificada). */
 export function FlagGB({ className = 'h-3.5 w-5' }) {
   return (
-    <svg viewBox="0 0 20 14" className={`inline-block rounded-[2px] ${className}`} aria-hidden="true">
+    <svg
+      viewBox="0 0 20 14"
+      className={`inline-block rounded-[2px] ${className}`}
+      aria-hidden="true"
+    >
       <rect width="20" height="14" fill="#012169" />
       <path d="M0 0 20 14M20 0 0 14" stroke="#fff" strokeWidth="2.6" />
       <path d="M0 0 20 14M20 0 0 14" stroke="#C8102E" strokeWidth="1.1" />

@@ -4,7 +4,11 @@
  * utils/corridor.js e os parâmetros de exportação em mission/exportParams.js.
  */
 import { useCallback, useMemo, useState } from 'react'
-import { DEFAULT_CORRIDOR_CONFIG, corridorBufferRing, generateCorridorPlan } from '../utils/corridor.js'
+import {
+  DEFAULT_CORRIDOR_CONFIG,
+  corridorBufferRing,
+  generateCorridorPlan,
+} from '../utils/corridor.js'
 import { corridorExportParams } from '../mission/exportParams.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
 
@@ -27,7 +31,10 @@ export function useCorridorMission({
   // A velocidade guardada pode exceder a aeronave (o painel aceita até
   // 25 m/s): o plano e a exportação usam sempre a versão limitada.
   const corridorSpeed = Math.min(speedRange.max, Math.max(speedRange.min, corridorConfig.speedMS))
-  const corridorTriggerWarn = useMemo(() => avisoObturador(corridorSpeed), [avisoObturador, corridorSpeed])
+  const corridorTriggerWarn = useMemo(
+    () => avisoObturador(corridorSpeed),
+    [avisoObturador, corridorSpeed],
+  )
 
   const setCorridorParam = useCallback((key, value) => {
     setCorridorConfig((c) => ({ ...c, [key]: value }))
@@ -106,7 +113,17 @@ export function useCorridorMission({
         }),
       ),
     )
-  }, [corridorPlan, corridorConfig.photoMode, corridorSpeed, missionName, altitude, wpml, interval, sensor.type, runExport])
+  }, [
+    corridorPlan,
+    corridorConfig.photoMode,
+    corridorSpeed,
+    missionName,
+    altitude,
+    wpml,
+    interval,
+    sensor.type,
+    runExport,
+  ])
 
   return {
     corridorConfig,

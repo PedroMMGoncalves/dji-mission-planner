@@ -23,7 +23,19 @@ function Stat({ label, value, hint }) {
   )
 }
 
-export default function StatsPanel({ gsd, gimbalPitch = -90, footprint, spacing, pointDensity, interval, triggerMode, speed, stats, baseDistance, blockCount }) {
+export default function StatsPanel({
+  gsd,
+  gimbalPitch = -90,
+  footprint,
+  spacing,
+  pointDensity,
+  interval,
+  triggerMode,
+  speed,
+  stats,
+  baseDistance,
+  blockCount,
+}) {
   const t = useT()
   return (
     <div className="pointer-events-none absolute bottom-4 right-4 z-[1000] grid max-w-md grid-cols-2 gap-1.5 sm:grid-cols-3">
@@ -70,7 +82,7 @@ export default function StatsPanel({ gsd, gimbalPitch = -90, footprint, spacing,
         value={
           stats?.photoCountArea != null
             ? `${stats.photoCount} (${stats.photoCountArea})`
-            : stats?.photoCount ?? '—'
+            : (stats?.photoCount ?? '—')
         }
         hint={stats?.photoCountArea != null ? t('stats.photosHint') : undefined}
       />

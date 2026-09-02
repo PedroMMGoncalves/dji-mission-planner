@@ -62,8 +62,7 @@ export const DEFAULT_FACE_CONFIG = {
 export function normalizeFaceConfig(stored) {
   const d = { ...DEFAULT_FACE_CONFIG }
   if (!stored || typeof stored !== 'object') return d
-  const num = (v, lo, hi, dflt) =>
-    Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : dflt
+  const num = (v, lo, hi, dflt) => (Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : dflt)
   const baseline =
     Array.isArray(stored.baseline) &&
     stored.baseline.length >= 2 &&
@@ -162,9 +161,7 @@ export function generateFacePlan(baseline, options) {
   const uncoveredBottomM = Math.max(0, heights[0] - imgH / 2)
 
   // linha afastada: standoff para o lado escolhido, em métrica local
-  const offset = turf.lineString(
-    offsetPolyline(baseline, side === 'left' ? standoffM : -standoffM),
-  )
+  const offset = turf.lineString(offsetPolyline(baseline, side === 'left' ? standoffM : -standoffM))
   const offLenM = turf.length(offset, { units: 'meters' })
   if (!(offLenM > 0)) return null
 
@@ -289,12 +286,9 @@ export function checkFaceClearance(plan, elevationAt, options = {}) {
     if (heading != null && standoffM > 0) {
       for (let k = 1; k <= 3; k++) {
         const d = (k / 4) * standoffM
-        const p = turf.destination(
-          turf.point([w[0], w[1]]),
-          d,
-          ((heading + 540) % 360) - 180,
-          { units: 'meters' },
-        ).geometry.coordinates
+        const p = turf.destination(turf.point([w[0], w[1]]), d, ((heading + 540) % 360) - 180, {
+          units: 'meters',
+        }).geometry.coordinates
         const z = elevationAt(p[0], p[1])
         if (!Number.isFinite(z)) continue
         sampled += 1

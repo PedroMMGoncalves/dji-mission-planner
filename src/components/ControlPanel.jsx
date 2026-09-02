@@ -198,9 +198,7 @@ export default function ControlPanel({
             // keep the payload when the new aircraft also mounts it
             setDrone({
               aircraftId: a.id,
-              payloadId: a.payloads.includes(drone.payloadId)
-                ? drone.payloadId
-                : a.payloads[0],
+              payloadId: a.payloads.includes(drone.payloadId) ? drone.payloadId : a.payloads[0],
             })
           }}
         >
@@ -373,9 +371,8 @@ export default function ControlPanel({
         {presets?.length > 0 &&
           (() => {
             const activeId =
-              presets.find((p) =>
-                Object.entries(p.values).every(([k, v]) => params[k] === v),
-              )?.id ?? ''
+              presets.find((p) => Object.entries(p.values).every(([k, v]) => params[k] === v))
+                ?.id ?? ''
             const chosen = presets.find((p) => p.id === activeId)
             return (
               <div className="mb-3">
@@ -422,8 +419,7 @@ export default function ControlPanel({
         )}
         {params.altitude > 120 && (
           <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
-            ⚠ {t('cp.flight.altWarnPre')} <strong>120 m AGL</strong>{' '}
-            {t('cp.flight.altWarnPost')}
+            ⚠ {t('cp.flight.altWarnPre')} <strong>120 m AGL</strong> {t('cp.flight.altWarnPost')}
           </p>
         )}
         {aglWarn && (
@@ -497,7 +493,11 @@ export default function ControlPanel({
         <Field label={t('cp.flight.triggerBy')}>
           <select
             className="w-28 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            value={payload.type === 'camera' || params.triggerMode !== 'waypoint' ? params.triggerMode : 'distance'}
+            value={
+              payload.type === 'camera' || params.triggerMode !== 'waypoint'
+                ? params.triggerMode
+                : 'distance'
+            }
             onChange={(e) => setParam('triggerMode', e.target.value)}
           >
             <option value="distance">{t('cp.flight.triggerDistance')}</option>
@@ -781,16 +781,13 @@ export default function ControlPanel({
           </button>
         </div>
 
-        {mode === 'base' && (
-          <p className="mt-2 text-xs text-slate-400">{t('cp.area.baseHint')}</p>
-        )}
+        {mode === 'base' && <p className="mt-2 text-xs text-slate-400">{t('cp.area.baseHint')}</p>}
 
         {mode === 'draw' && (
           <div className="mt-2 space-y-2">
             <p className="text-xs leading-relaxed text-slate-400">
               {t('cp.area.drawHintA', { n: draftCount })}{' '}
-              <strong className="text-slate-300">Backspace</strong>{' '}
-              {t('cp.area.drawHintB')}{' '}
+              <strong className="text-slate-300">Backspace</strong> {t('cp.area.drawHintB')}{' '}
               <strong className="text-slate-300">{t('cp.area.drawHintDblClick')}</strong>{' '}
               {t('cp.area.drawHintC')}
             </p>
@@ -828,9 +825,7 @@ export default function ControlPanel({
                     if (anchor.shape !== 'square') setAnchorParam('width', s)
                   }}
                   title={
-                    s === 250
-                      ? t('cp.area.sizeTitleBattery', { s })
-                      : t('cp.area.sizeTitle', { s })
+                    s === 250 ? t('cp.area.sizeTitleBattery', { s }) : t('cp.area.sizeTitle', { s })
                   }
                   className={`rounded px-1 py-1.5 text-xs font-medium transition-colors ${
                     anchor.length === s && anchor.width === s
@@ -946,26 +941,26 @@ export default function ControlPanel({
           </p>
         )}
         {!gridActive && (
-        <div className="grid grid-cols-4 gap-1.5">
-          {[
-            { value: 'none', key: 'cp.split.modeNone' },
-            { value: 'area', key: 'cp.split.modeArea' },
-            { value: 'battery', key: 'cp.split.modeBattery' },
-            { value: 'tiles', key: 'cp.split.modeTiles' },
-          ].map(({ value, key }) => (
-            <button
-              key={value}
-              onClick={() => setSplitParam('mode', value)}
-              className={`rounded px-1 py-1.5 text-xs font-medium transition-colors ${
-                split.mode === value
-                  ? 'bg-sky-500 text-slate-950'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              {t(key)}
-            </button>
-          ))}
-        </div>
+          <div className="grid grid-cols-4 gap-1.5">
+            {[
+              { value: 'none', key: 'cp.split.modeNone' },
+              { value: 'area', key: 'cp.split.modeArea' },
+              { value: 'battery', key: 'cp.split.modeBattery' },
+              { value: 'tiles', key: 'cp.split.modeTiles' },
+            ].map(({ value, key }) => (
+              <button
+                key={value}
+                onClick={() => setSplitParam('mode', value)}
+                className={`rounded px-1 py-1.5 text-xs font-medium transition-colors ${
+                  split.mode === value
+                    ? 'bg-sky-500 text-slate-950'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                {t(key)}
+              </button>
+            ))}
+          </div>
         )}
 
         {!gridActive && split.mode === 'tiles' && (
@@ -1059,12 +1054,7 @@ export default function ControlPanel({
           <div className="mt-2">
             <Field label={t('cp.split.batteryDuration')} suffix="min">
               <div className="flex items-center gap-1.5">
-                <NumberInput
-                  value={batteryMin}
-                  min={5}
-                  max={120}
-                  onChange={onBatteryMin}
-                />
+                <NumberInput value={batteryMin} min={5} max={120} onChange={onBatteryMin} />
                 {batteryMin !== batteryDefault && (
                   <button
                     onClick={() => onBatteryMin(batteryDefault)}
@@ -1129,9 +1119,7 @@ export default function ControlPanel({
               {tilesTotal != null && (
                 <>
                   {' '}
-                  <span className="text-sky-300">
-                    {t('cp.split.cells', { n: tilesTotal })}
-                  </span>
+                  <span className="text-sky-300">{t('cp.split.cells', { n: tilesTotal })}</span>
                   {t('cp.split.cellsActive', { n: blocks ? blocks.length : 0 })}.
                 </>
               )}
@@ -1147,10 +1135,7 @@ export default function ControlPanel({
         {(gridActive || split.mode !== 'none') && blocks && (
           <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded border border-slate-800 bg-slate-900/60 p-2">
             {blocks.map((b) => (
-              <div
-                key={b.id}
-                className="flex items-center justify-between text-xs text-slate-300"
-              >
+              <div key={b.id} className="flex items-center justify-between text-xs text-slate-300">
                 <span className="font-mono text-sky-300">B{String(b.id).padStart(2, '0')}</span>
                 <span>{b.areaHa.toFixed(1)} ha</span>
                 <span>{(b.lengthM / 1000).toFixed(1)} km</span>
@@ -1194,9 +1179,7 @@ export default function ControlPanel({
             }}
           />
         </div>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
-          {t('cp.terrain.auto')}
-        </p>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{t('cp.terrain.auto')}</p>
         <button
           onClick={onShowProfile}
           disabled={!(terrain.status === 'ready' && terrainCovers)}
@@ -1258,7 +1241,9 @@ export default function ControlPanel({
               ref: Math.round(terrainResult.refElev),
             })}
             {terrainResult.warnings?.map((w, i) => (
-              <p key={i} className="mt-1 text-amber-300">⚠ {w}</p>
+              <p key={i} className="mt-1 text-amber-300">
+                ⚠ {w}
+              </p>
             ))}
           </div>
         )}
@@ -1280,7 +1265,9 @@ export default function ControlPanel({
                 onClick={onApplySlopeAngle}
                 className="rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700"
               >
-                {t('cp.terrain.slopeApplyLines', { lines: Math.round(slopeHint.contourAzimuthDeg) })}
+                {t('cp.terrain.slopeApplyLines', {
+                  lines: Math.round(slopeHint.contourAzimuthDeg),
+                })}
               </button>
               <button
                 onClick={onApplySlopeGimbal}
@@ -1353,9 +1340,7 @@ export default function ControlPanel({
             >
               <IconDownload /> {t('cp.gcp.export')}
             </button>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
-              {t('cp.gcp.hint')}
-            </p>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{t('cp.gcp.hint')}</p>
           </div>
         )}
       </Section>
@@ -1454,7 +1439,10 @@ export default function ControlPanel({
                       max={359}
                       onChange={(e) =>
                         onInspectUpdate(p.id, {
-                          heading: e.target.value === '' ? null : Math.max(0, Math.min(359, Number(e.target.value))),
+                          heading:
+                            e.target.value === ''
+                              ? null
+                              : Math.max(0, Math.min(359, Number(e.target.value))),
                         })
                       }
                     />
@@ -1470,7 +1458,10 @@ export default function ControlPanel({
                       max={20}
                       onChange={(e) =>
                         onInspectUpdate(p.id, {
-                          gimbalPitch: e.target.value === '' ? null : Math.max(-90, Math.min(20, Number(e.target.value))),
+                          gimbalPitch:
+                            e.target.value === ''
+                              ? null
+                              : Math.max(-90, Math.min(20, Number(e.target.value))),
                         })
                       }
                     />

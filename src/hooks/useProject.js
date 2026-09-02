@@ -6,7 +6,12 @@
  * que é quem tem os setters.
  */
 import { useCallback, useEffect, useRef } from 'react'
-import { PROJECT_STORAGE_KEY, normalizeProject, projectFileName, serializeProject } from '../mission/project.js'
+import {
+  PROJECT_STORAGE_KEY,
+  normalizeProject,
+  projectFileName,
+  serializeProject,
+} from '../mission/project.js'
 import { downloadBlob } from '../utils/exporters.js'
 
 /**

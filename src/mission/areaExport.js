@@ -54,7 +54,12 @@ export function buildAreaExport({
   const terrainOk = Boolean(terrainResult && !terrainResult.error)
   // E3.1: tipo e variantes codificados no nome do ficheiro
   const name = buildExportName(missionName, 'area', {
-    variant: [crosshatch && 'crosshatch', crosshatch && includeNadir && 'nadir', tieLine && 'tie', terrainOk && 'tf'],
+    variant: [
+      crosshatch && 'crosshatch',
+      crosshatch && includeNadir && 'nadir',
+      tieLine && 'tie',
+      terrainOk && 'tf',
+    ],
   })
   const params = {
     name,
@@ -85,7 +90,9 @@ export function buildAreaExport({
   let exportBlocks =
     source?.map((b) => ({
       ...b,
-      triggerRanges: triggerRangesForLines(b.lines, b.perLine ?? null, b.perLink ?? null, { maxLinkM }),
+      triggerRanges: triggerRangesForLines(b.lines, b.perLine ?? null, b.perLink ?? null, {
+        maxLinkM,
+      }),
     })) ?? null
   const multiBlock = Boolean(exportBlocks && exportBlocks.length > 1)
 

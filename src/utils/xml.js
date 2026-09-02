@@ -14,7 +14,12 @@
 
 /** Nome da tag sem prefixo: `wpml:executeHeight` → `executeHeight`. */
 export function localNameOf(node) {
-  return node.localName || String(node.nodeName || '').split(':').pop()
+  return (
+    node.localName ||
+    String(node.nodeName || '')
+      .split(':')
+      .pop()
+  )
 }
 
 /** Filhos DIRECTOS que são elementos. */

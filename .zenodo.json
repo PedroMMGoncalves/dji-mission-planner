@@ -11,8 +11,17 @@
     }
   ],
   "keywords": [
-    "UAV", "drone", "mission planning", "photogrammetry", "LiDAR",
-    "terrain following", "DJI", "WPML", "KMZ", "flight planning", "GIS"
+    "UAV",
+    "drone",
+    "mission planning",
+    "photogrammetry",
+    "LiDAR",
+    "terrain following",
+    "DJI",
+    "WPML",
+    "KMZ",
+    "flight planning",
+    "GIS"
   ],
   "language": "eng",
   "related_identifiers": [

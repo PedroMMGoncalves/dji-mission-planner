@@ -44,8 +44,12 @@ export function reorderList(list, from, to) {
   if (!Array.isArray(list)) return []
   if (
     from === to ||
-    !Number.isInteger(from) || !Number.isInteger(to) ||
-    from < 0 || to < 0 || from >= list.length || to >= list.length
+    !Number.isInteger(from) ||
+    !Number.isInteger(to) ||
+    from < 0 ||
+    to < 0 ||
+    from >= list.length ||
+    to >= list.length
   ) {
     return list
   }

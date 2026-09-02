@@ -92,8 +92,7 @@ export function planGcps(ring, count, { insetM = null } = {}) {
   const isInside = (c) => turf.booleanPointInPolygon(turf.point(c), poly)
   /** dentro do polígono E a pelo menos `m` metros do contorno */
   const isClear = (c, m) =>
-    isInside(c) &&
-    turf.pointToLineDistance(turf.point(c), outline, { units: 'meters' }) >= m
+    isInside(c) && turf.pointToLineDistance(turf.point(c), outline, { units: 'meters' }) >= m
 
   // Alvo do deslocamento para o interior. Em polígonos côncavos o centróide
   // pode cair fora da área — nesse caso usa-se um ponto garantidamente interior.
@@ -162,7 +161,10 @@ export function planGcps(ring, count, { insetM = null } = {}) {
   }
 
   // ids por ordem de seleção (o array já está ordenado por id)
-  return chosen.map((point, i) => ({ id: gcpId(i + 1), point: /** @type {[number, number]} */ (point) }))
+  return chosen.map((point, i) => ({
+    id: gcpId(i + 1),
+    point: /** @type {[number, number]} */ (point),
+  }))
 }
 
 /**

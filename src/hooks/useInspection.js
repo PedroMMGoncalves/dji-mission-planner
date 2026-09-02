@@ -7,7 +7,17 @@ import { nearestNeighbourOrder, reorderList } from '../utils/inspect.js'
 import { inspectionExportParams } from '../mission/exportParams.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
 
-export function useInspection({ basePoint, altitude, speed, gimbalPitch, sensorType, missionName, wpml, setMode, runExport }) {
+export function useInspection({
+  basePoint,
+  altitude,
+  speed,
+  gimbalPitch,
+  sensorType,
+  missionName,
+  wpml,
+  setMode,
+  runExport,
+}) {
   const [inspectPoints, setInspectPoints] = useState([])
   const inspectSeqRef = useRef(1)
 
@@ -70,7 +80,15 @@ export function useInspection({ basePoint, altitude, speed, gimbalPitch, sensorT
     if (inspectPoints.length === 0) return
     runExport(() =>
       exportWPMLKmz(
-        inspectionExportParams({ missionName, points: inspectPoints, altitude, speed, wpml, gimbalPitch, sensorType }),
+        inspectionExportParams({
+          missionName,
+          points: inspectPoints,
+          altitude,
+          speed,
+          wpml,
+          gimbalPitch,
+          sensorType,
+        }),
       ),
     )
   }, [inspectPoints, missionName, altitude, speed, wpml, gimbalPitch, sensorType, runExport])

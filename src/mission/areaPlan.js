@@ -12,7 +12,9 @@ export function planArea(ring, activeCells, opts) {
   if (!ring) return null
   if (!activeCells) return generateFlightPlan(ring, opts)
   const align = computeAlignment(ring, opts.spacingM, opts.angleDeg)
-  const align2 = opts.crosshatch ? computeAlignment(ring, opts.spacingM, (opts.angleDeg + 90) % 360) : null
+  const align2 = opts.crosshatch
+    ? computeAlignment(ring, opts.spacingM, (opts.angleDeg + 90) % 360)
+    : null
   const perCell = activeCells.map((cell) => generateFlightPlan(cell, { ...opts, align, align2 }))
   return composeCellPlans(ring, perCell, {
     photoIntervalM: opts.photoIntervalM,

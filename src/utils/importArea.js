@@ -178,7 +178,11 @@ export async function parseAreaFile(file) {
     const rings = collectOuterRings(geojson)
     const ring = largestRing(rings)
     if (!ring || ring.length < 3) throw new Error('Nenhum polígono encontrado no shapefile')
-    return { ring, discardedParts: rings.length - 1, ...(looksProjected(ring) ? { needsCrs: true } : {}) }
+    return {
+      ring,
+      discardedParts: rings.length - 1,
+      ...(looksProjected(ring) ? { needsCrs: true } : {}),
+    }
   }
 
   if (name.endsWith('.kml')) {
@@ -198,7 +202,11 @@ export async function parseAreaFile(file) {
     const rings = collectOuterRings(geojson)
     const ring = largestRing(rings)
     if (!ring || ring.length < 3) throw new Error('Nenhum polígono encontrado no GeoJSON')
-    return { ring, discardedParts: rings.length - 1, ...(looksProjected(ring) ? { needsCrs: true } : {}) }
+    return {
+      ring,
+      discardedParts: rings.length - 1,
+      ...(looksProjected(ring) ? { needsCrs: true } : {}),
+    }
   }
 
   throw new Error('Formato não suportado — use .kml, .geojson/.json ou .zip (shapefile)')

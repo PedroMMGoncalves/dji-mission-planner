@@ -6,16 +6,26 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, test } from 'vitest'
 import Ajv2020 from 'ajv/dist/2020.js'
-import { PROJECT_SCHEMA_URL, normalizeProject, serializeProject } from '../../src/mission/project.js'
 import {
-  DEFAULT_ANCHOR, DEFAULT_GCP_CONFIG, DEFAULT_PARAMS, DEFAULT_SPLIT, DEFAULT_TERRAIN_FOLLOW,
+  PROJECT_SCHEMA_URL,
+  normalizeProject,
+  serializeProject,
+} from '../../src/mission/project.js'
+import {
+  DEFAULT_ANCHOR,
+  DEFAULT_GCP_CONFIG,
+  DEFAULT_PARAMS,
+  DEFAULT_SPLIT,
+  DEFAULT_TERRAIN_FOLLOW,
 } from '../../src/mission/defaults.js'
 import { DEFAULT_CUSTOM_SENSOR, DEFAULT_SELECTION, MISSION_PRESETS } from '../../src/data/drones.js'
 import { DEFAULT_CORRIDOR_CONFIG } from '../../src/utils/corridor.js'
 import { DEFAULT_ORBIT_CONFIG } from '../../src/utils/orbit.js'
 import { DEFAULT_FACE_CONFIG } from '../../src/utils/faceMode.js'
 
-const schema = JSON.parse(readFileSync(new URL('../../public/schema/project-v2.schema.json', import.meta.url), 'utf8'))
+const schema = JSON.parse(
+  readFileSync(new URL('../../public/schema/project-v2.schema.json', import.meta.url), 'utf8'),
+)
 const ajv = new Ajv2020({ allErrors: true, strict: true })
 const validate = ajv.compile(schema)
 const errors = () => (validate.errors ?? []).map((e) => `${e.instancePath} ${e.message}`).join('; ')
@@ -65,7 +75,12 @@ describe('esquema JSON do ficheiro de projecto', () => {
     const st = defaults()
     st.missionName = 'Quinta'
     st.missionMode = 'corridor'
-    st.ring = [[-9.14, 38.7], [-9.13, 38.7], [-9.13, 38.71], [-9.14, 38.71]]
+    st.ring = [
+      [-9.14, 38.7],
+      [-9.13, 38.7],
+      [-9.13, 38.71],
+      [-9.14, 38.71],
+    ]
     st.areaOrigin = 'anchor'
     st.anchor = { ...st.anchor, center: [-9.135, 38.705], shape: 'square', cols: 2, rows: 3 }
     st.basePoint = [-9.141, 38.699]
@@ -74,11 +89,40 @@ describe('esquema JSON do ficheiro de projecto', () => {
     st.payloadTuning = { M4T_LIDAR: { effectiveFov: 50 } }
     st.batteryByCombo = { 'M3E:M3E_WIDE': 28 }
     st.inspectPoints = [
-      { id: 1, label: 'P01', point: [-9.14, 38.7], heightM: 40, heading: null, gimbalPitch: null, photo: true },
-      { id: 2, label: 'P02', point: [-9.139, 38.7], heightM: 35, heading: 90, gimbalPitch: -30, photo: false },
+      {
+        id: 1,
+        label: 'P01',
+        point: [-9.14, 38.7],
+        heightM: 40,
+        heading: null,
+        gimbalPitch: null,
+        photo: true,
+      },
+      {
+        id: 2,
+        label: 'P02',
+        point: [-9.139, 38.7],
+        heightM: 35,
+        heading: 90,
+        gimbalPitch: -30,
+        photo: false,
+      },
     ]
-    st.faceConfig = { ...st.faceConfig, baseline: [[-9.14, 38.7], [-9.139, 38.7]] }
-    st.corridorConfig = { ...st.corridorConfig, centreline: [[-9.14, 38.7], [-9.13, 38.7], [-9.12, 38.71]] }
+    st.faceConfig = {
+      ...st.faceConfig,
+      baseline: [
+        [-9.14, 38.7],
+        [-9.139, 38.7],
+      ],
+    }
+    st.corridorConfig = {
+      ...st.corridorConfig,
+      centreline: [
+        [-9.14, 38.7],
+        [-9.13, 38.7],
+        [-9.12, 38.71],
+      ],
+    }
     st.orbitConfig = { ...st.orbitConfig, poi: [-9.135, 38.705] }
     st.terrainFollow = { enabled: true, tolerance: 3 }
     st.gcpConfig = { enabled: true, count: 7 }
@@ -93,7 +137,15 @@ describe('esquema JSON do ficheiro de projecto', () => {
   test('lixo falha: versao errada, anel com dois vertices, altitude em texto, campo desconhecido', () => {
     const ok = roundTrip(defaults())
     expect(validate({ ...ok, version: 1 })).toBe(false)
-    expect(validate({ ...ok, ring: [[-9.14, 38.7], [-9.13, 38.7]] })).toBe(false)
+    expect(
+      validate({
+        ...ok,
+        ring: [
+          [-9.14, 38.7],
+          [-9.13, 38.7],
+        ],
+      }),
+    ).toBe(false)
     expect(validate({ ...ok, params: { ...ok.params, altitude: '100' } })).toBe(false)
     expect(validate({ ...ok, params: { ...ok.params, altitude: 0 } })).toBe(false)
     expect(validate({ ...ok, basePoint: [200, 0] })).toBe(false)

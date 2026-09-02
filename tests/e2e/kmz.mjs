@@ -12,7 +12,9 @@ export async function readRoutes(file) {
   const zip = await JSZip.loadAsync(readFileSync(file))
   const inner = Object.keys(zip.files).filter((n) => n.endsWith('.kmz'))
   if (inner.length === 0) {
-    return [{ name: file.split('/').pop(), wpml: await zip.file('wpmz/waylines.wpml').async('string') }]
+    return [
+      { name: file.split('/').pop(), wpml: await zip.file('wpmz/waylines.wpml').async('string') },
+    ]
   }
   const out = []
   for (const name of inner.sort()) {
@@ -29,16 +31,21 @@ export async function readRoutes(file) {
  * base não está marcada), pelo que o AGL pedido é a altura do primeiro.
  */
 export function analyseRoute(wpml, { toM, ground }) {
-  const wps = wpml.split('<Placemark>').slice(1).map((p) => {
-    const c = /<coordinates>\s*([-\d.]+),([-\d.]+)/.exec(p)
-    const h = /<wpml:executeHeight>([-\d.]+)</.exec(p)
-    return [...toM(Number(c[1]), Number(c[2])), Number(h[1])]
-  })
+  const wps = wpml
+    .split('<Placemark>')
+    .slice(1)
+    .map((p) => {
+      const c = /<coordinates>\s*([-\d.]+),([-\d.]+)/.exec(p)
+      const h = /<wpml:executeHeight>([-\d.]+)</.exec(p)
+      return [...toM(Number(c[1]), Number(c[2])), Number(h[1])]
+    })
   const ref = ground(wps[0][0], wps[0][1])
   const agl = wps[0][2]
-  const groups = [...wpml.matchAll(
-    /<wpml:actionGroupStartIndex>(\d+)<\/wpml:actionGroupStartIndex>\s*<wpml:actionGroupEndIndex>(\d+)<\/wpml:actionGroupEndIndex>\s*<wpml:actionGroupMode>parallel/g,
-  )].map((m) => [Number(m[1]), Number(m[2])])
+  const groups = [
+    ...wpml.matchAll(
+      /<wpml:actionGroupStartIndex>(\d+)<\/wpml:actionGroupStartIndex>\s*<wpml:actionGroupEndIndex>(\d+)<\/wpml:actionGroupEndIndex>\s*<wpml:actionGroupMode>parallel/g,
+    ),
+  ].map((m) => [Number(m[1]), Number(m[2])])
   const inGroup = (i) => groups.some(([s, e]) => i - 1 >= s && i <= e)
 
   let minClearance = Infinity
@@ -61,5 +68,15 @@ export function analyseRoute(wpml, { toM, ground }) {
   }
   const firstSegM = wps.length > 1 ? Math.hypot(wps[1][0] - wps[0][0], wps[1][1] - wps[0][1]) : 0
   const nan = wps.filter((w) => !w.every(Number.isFinite)).length
-  return { n: wps.length, agl, groups, minClearance, minAt, maxJump, linksWithoutTrigger, firstSegM, nan }
+  return {
+    n: wps.length,
+    agl,
+    groups,
+    minClearance,
+    minAt,
+    maxJump,
+    linksWithoutTrigger,
+    firstSegM,
+    nan,
+  }
 }

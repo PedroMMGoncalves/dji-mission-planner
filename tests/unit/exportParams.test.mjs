@@ -4,7 +4,12 @@
  * exportWPMLKmz recebe, e tem de passar a fronteira de validação.
  */
 import { describe, expect, test } from 'vitest'
-import { corridorExportParams, faceExportParams, inspectionExportParams, orbitExportParams } from '../../src/mission/exportParams.js'
+import {
+  corridorExportParams,
+  faceExportParams,
+  inspectionExportParams,
+  orbitExportParams,
+} from '../../src/mission/exportParams.js'
 import { validateExportParams } from '../../src/utils/exporters.js'
 import { generateFacePlan } from '../../src/utils/faceMode.js'
 import { generateOrbitPlan } from '../../src/utils/orbit.js'
@@ -17,9 +22,22 @@ const wpml = { droneEnumValue: 77, payloadEnumValue: 66, payloadPositionIndex: 0
 const comum = { missionName: 'Quinta do Lago', wpml, sensorType: 'camera' }
 
 describe('faceExportParams', () => {
-  const plan = generateFacePlan([[-9.14, 38.7], [-9.139, 38.7]], {
-    sensor, faceHeightM: 30, standoffM: 12, side: 'left', verticalOverlapPct: 70, horizontalOverlapPct: 70, gimbalPitch: 0, speed: 3,
-  })
+  const plan = generateFacePlan(
+    [
+      [-9.14, 38.7],
+      [-9.139, 38.7],
+    ],
+    {
+      sensor,
+      faceHeightM: 30,
+      standoffM: 12,
+      side: 'left',
+      verticalOverlapPct: 70,
+      horizontalOverlapPct: 70,
+      gimbalPitch: 0,
+      speed: 3,
+    },
+  )
   test('uma foto por waypoint, altitude = passagem mais alta, passa a validação', () => {
     const p = faceExportParams({ ...comum, plan, speed: 3, gimbalPitch: 0 })
     expect(p.name).toBe(`Quinta-do-Lago_face_p1-${plan.stats.passCount}`)
@@ -32,7 +50,13 @@ describe('faceExportParams', () => {
 
 describe('orbitExportParams', () => {
   const plan = generateOrbitPlan([-9.14, 38.7], {
-    sensor, radiusM: 40, levels: { count: 2, startM: 20, stepM: 15 }, horizontalOverlapPct: 70, poiHeightM: 10, clockwise: true, speed: 3,
+    sensor,
+    radiusM: 40,
+    levels: { count: 2, startM: 20, stepM: 15 },
+    horizontalOverlapPct: 70,
+    poiHeightM: 10,
+    clockwise: true,
+    speed: 3,
   })
   test('voo curvo do plano, pitch do primeiro nível, passa a validação', () => {
     const p = orbitExportParams({ ...comum, plan, speed: 3 })
@@ -44,12 +68,30 @@ describe('orbitExportParams', () => {
 })
 
 describe('corridorExportParams', () => {
-  const axis = [[-9.14, 38.7], [-9.13, 38.7], [-9.125, 38.7035]]
-  const opts = { sensor, altitude: 100, bufferM: 150, sideOverlapPct: 70, photoIntervalM: 20, speed: 8 }
+  const axis = [
+    [-9.14, 38.7],
+    [-9.13, 38.7],
+    [-9.125, 38.7035],
+  ]
+  const opts = {
+    sensor,
+    altitude: 100,
+    bufferM: 150,
+    sideOverlapPct: 70,
+    photoIntervalM: 20,
+    speed: 8,
+  }
 
   test('modo distância: gatilho por distância, intervalos por troço, sem perWaypoint', () => {
     const plan = generateCorridorPlan(axis, opts)
-    const p = corridorExportParams({ ...comum, plan, photoMode: 'distance', altitude: 100, speed: 8, photoIntervalM: 20 })
+    const p = corridorExportParams({
+      ...comum,
+      plan,
+      photoMode: 'distance',
+      altitude: 100,
+      speed: 8,
+      photoIntervalM: 20,
+    })
     expect(p.name).toBe(`Quinta-do-Lago_corridor_n${plan.stats.passCount}`)
     expect(p.photoIntervalM).toBe(20)
     expect(p.triggerMode).toBe('distance')
@@ -61,7 +103,14 @@ describe('corridorExportParams', () => {
 
   test('modo waypoint: sem gatilho por distância, fotos nas acções, sem intervalos', () => {
     const plan = generateCorridorPlan(axis, { ...opts, photoMode: 'waypoint' })
-    const p = corridorExportParams({ ...comum, plan, photoMode: 'waypoint', altitude: 100, speed: 8, photoIntervalM: 20 })
+    const p = corridorExportParams({
+      ...comum,
+      plan,
+      photoMode: 'waypoint',
+      altitude: 100,
+      speed: 8,
+      photoIntervalM: 20,
+    })
     expect(p.photoIntervalM).toBe(0)
     expect(p.triggerMode).toBe('waypoint')
     expect(p.triggerRanges).toBeNull()

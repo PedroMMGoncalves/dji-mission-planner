@@ -59,9 +59,7 @@ const FLAG_BY_LANG = { pt: FlagPT, en: FlagGB }
 import { LANGS, LangContext, useT } from './i18n.jsx'
 
 export default function App() {
-  const [lang, setLang] = useState(
-    () => localStorage.getItem('dji-mission-planner:lang') ?? 'pt',
-  )
+  const [lang, setLang] = useState(() => localStorage.getItem('dji-mission-planner:lang') ?? 'pt')
   useEffect(() => {
     try {
       localStorage.setItem('dji-mission-planner:lang', lang)
@@ -176,10 +174,7 @@ function AppInner({ lang, setLang }) {
   // de trabalho do feixe (effectiveFov) mais estreito do que o nominal
   const effectiveFov = payloadTuning[drone.payloadId]?.effectiveFov ?? null
   const activePayload = useMemo(
-    () =>
-      payload.type === 'lidar' && effectiveFov
-        ? { ...payload, effectiveFov }
-        : payload,
+    () => (payload.type === 'lidar' && effectiveFov ? { ...payload, effectiveFov } : payload),
     [payload, effectiveFov],
   )
   const sensor = useMemo(() => resolveSensor(activePayload, custom), [activePayload, custom])
@@ -251,8 +246,7 @@ function AppInner({ lang, setLang }) {
   )
   // com a passagem nadir extra (R2.10) o produto orto é governado pelo GSD
   // nadir — é esse que se mostra e que serve de alvo
-  const gsdPitch =
-    params.crosshatch && params.includeNadir ? -90 : params.gimbalPitch
+  const gsdPitch = params.crosshatch && params.includeNadir ? -90 : params.gimbalPitch
   const gsd = useMemo(
     () => computeGSD(sensor, params.altitude, gsdPitch),
     [sensor, params.altitude, gsdPitch],
@@ -281,28 +275,72 @@ function AppInner({ lang, setLang }) {
   const triggerWarn = useMemo(() => avisoObturador(speed), [avisoObturador, speed])
   /* ------------------------- Modo corredor ---------------------------- */
   const {
-    corridorConfig, setCorridorConfig, setCorridorParam, corridorSpeed, corridorTriggerWarn,
-    corridorPlan, corridorPreview, startCorridorDraw, handleFinishCorridor, clearCorridorAxis,
+    corridorConfig,
+    setCorridorConfig,
+    setCorridorParam,
+    corridorSpeed,
+    corridorTriggerWarn,
+    corridorPlan,
+    corridorPreview,
+    startCorridorDraw,
+    handleFinishCorridor,
+    clearCorridorAxis,
     handleExportCorridor,
   } = useCorridorMission({
-    sensor, speedRange, altitude: params.altitude, sideOverlap: params.sideOverlap, interval, missionMode,
-    missionName, wpml, setMode, setDraftVertices, runExport, avisoObturador,
+    sensor,
+    speedRange,
+    altitude: params.altitude,
+    sideOverlap: params.sideOverlap,
+    interval,
+    missionMode,
+    missionName,
+    wpml,
+    setMode,
+    setDraftVertices,
+    runExport,
+    avisoObturador,
   })
 
   /* ------------------------ Modo órbita (E1.2) ------------------------ */
   const {
-    orbitConfig, setOrbitConfig, setOrbitParam, startOrbitPoi, clearOrbitPoi, handleOrbitPoiDrag,
-    orbitPlan, gsdAtRadius, setRadiusFromGsd, orbitPreview, handleExportOrbitSingle, handleExportOrbitPerLevel,
+    orbitConfig,
+    setOrbitConfig,
+    setOrbitParam,
+    startOrbitPoi,
+    clearOrbitPoi,
+    handleOrbitPoiDrag,
+    orbitPlan,
+    gsdAtRadius,
+    setRadiusFromGsd,
+    orbitPreview,
+    handleExportOrbitSingle,
+    handleExportOrbitPerLevel,
   } = useOrbitMission({ sensor, missionMode, missionName, wpml, setMode, runExport })
 
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const {
-    inspectPoints, setInspectPoints, inspectSeqRef, startInspect, addInspectPoint, updateInspectPoint,
-    removeInspectPoint, moveInspectPoint, reorderInspectPoints, suggestInspectOrder, handleInspectDrag,
+    inspectPoints,
+    setInspectPoints,
+    inspectSeqRef,
+    startInspect,
+    addInspectPoint,
+    updateInspectPoint,
+    removeInspectPoint,
+    moveInspectPoint,
+    reorderInspectPoints,
+    suggestInspectOrder,
+    handleInspectDrag,
     handleExportInspection,
   } = useInspection({
-    basePoint, altitude: params.altitude, speed, gimbalPitch: params.gimbalPitch, sensorType: sensor.type,
-    missionName, wpml, setMode, runExport,
+    basePoint,
+    altitude: params.altitude,
+    speed,
+    gimbalPitch: params.gimbalPitch,
+    sensorType: sensor.type,
+    missionName,
+    wpml,
+    setMode,
+    runExport,
   })
 
   /* ------------------ Modo área, parte 1: geometria ------------------- */
@@ -320,37 +358,130 @@ function AppInner({ lang, setLang }) {
     })
   }, [])
   const {
-    ring, areaOrigin, anchor, setAnchorParam, gridCells, split, setSplitParam, disabledTiles, validation,
-    ringBbox, tiles, tilesError, tileSide, activeCells, refAzimuth, baseDistance, undoEdit, toggleTile,
-    restoreAllTiles, startDraw, startAnchor, clearAll, handleFinishDraw, handleAreaClick, handleVertexDrag,
-    handleVertexInsert, handleVertexDelete, handleAnchorDrag, importState, importError, setImportError,
-    importWarning, handleImportFile, handleImportCrs, cancelImport, fitKey, setFitKey, applyProjectGeometry,
+    ring,
+    areaOrigin,
+    anchor,
+    setAnchorParam,
+    gridCells,
+    split,
+    setSplitParam,
+    disabledTiles,
+    validation,
+    ringBbox,
+    tiles,
+    tilesError,
+    tileSide,
+    activeCells,
+    refAzimuth,
+    baseDistance,
+    undoEdit,
+    toggleTile,
+    restoreAllTiles,
+    startDraw,
+    startAnchor,
+    clearAll,
+    handleFinishDraw,
+    handleAreaClick,
+    handleVertexDrag,
+    handleVertexInsert,
+    handleVertexDelete,
+    handleAnchorDrag,
+    importState,
+    importError,
+    setImportError,
+    importWarning,
+    handleImportFile,
+    handleImportCrs,
+    cancelImport,
+    fitKey,
+    setFitKey,
+    applyProjectGeometry,
   } = useAreaGeometry({
-    mode, setMode, setDraftVertices, basePoint, speed, spacing, batteryMin,
+    mode,
+    setMode,
+    setDraftVertices,
+    basePoint,
+    speed,
+    spacing,
+    batteryMin,
     passes: params.crosshatch ? (params.includeNadir ? 3 : 2) : 1,
-    onImportedMission, t,
+    onImportedMission,
+    t,
   })
 
   /* ------------------------------ Terreno ----------------------------- */
   const {
-    terrain, terrainFollow, setTerrainFollow, handleLoadTerrain, handleImportDem,
-    terrainCovers, slopeHint,
+    terrain,
+    terrainFollow,
+    setTerrainFollow,
+    handleLoadTerrain,
+    handleImportDem,
+    terrainCovers,
+    slopeHint,
   } = useTerrain({ ring, ringBbox, ringValid: validation.valid })
 
   /* ---------- Modo área, parte 2: plano, blocos, GCPs, exportação ------ */
   const {
-    gcpConfig, setGcpConfig, photoMode, plan, planOk, blocks, waypointWarn, gcpAutoCount, gcps, gcpInfo,
-    terrainResult, canExportKML, canExportKMZ, handleExportKML, handleExportGcps, handleExportKMZ,
+    gcpConfig,
+    setGcpConfig,
+    photoMode,
+    plan,
+    planOk,
+    blocks,
+    waypointWarn,
+    gcpAutoCount,
+    gcps,
+    gcpInfo,
+    terrainResult,
+    canExportKML,
+    canExportKMZ,
+    handleExportKML,
+    handleExportGcps,
+    handleExportKMZ,
   } = useAreaMission({
-    ring, validation, activeCells, basePoint, params, spacing, interval, speed, batteryMin, split, sensor,
-    wpml, missionName, terrain, terrainFollow, terrainCovers, runExport, t,
+    ring,
+    validation,
+    activeCells,
+    basePoint,
+    params,
+    spacing,
+    interval,
+    speed,
+    batteryMin,
+    split,
+    sensor,
+    wpml,
+    missionName,
+    terrain,
+    terrainFollow,
+    terrainCovers,
+    runExport,
+    t,
   })
 
   /* ----------------------- Modo fachada (E1.1) ------------------------ */
   const {
-    faceConfig, setFaceConfig, setFaceParam, startFaceDraw, handleFinishFace, clearFaceBaseline,
-    facePlan, dsmLoaded, faceClearance, facePreview, handleExportFace,
-  } = useFaceMission({ sensor, terrain, missionMode, missionName, wpml, setMode, setDraftVertices, runExport })
+    faceConfig,
+    setFaceConfig,
+    setFaceParam,
+    startFaceDraw,
+    handleFinishFace,
+    clearFaceBaseline,
+    facePlan,
+    dsmLoaded,
+    faceClearance,
+    facePreview,
+    handleExportFace,
+  } = useFaceMission({
+    sensor,
+    terrain,
+    missionMode,
+    missionName,
+    wpml,
+    setMode,
+    setDraftVertices,
+    runExport,
+  })
 
   const handleMapClick = useCallback(
     (lonlat) => {
@@ -474,9 +605,23 @@ function AppInner({ lang, setLang }) {
     const ref =
       terrainResult && !terrainResult.error
         ? terrainResult.refElev
-        : (elevAt?.((basePoint ?? planOk.waypoints[0])[0], (basePoint ?? planOk.waypoints[0])[1]) ?? 0)
+        : (elevAt?.((basePoint ?? planOk.waypoints[0])[0], (basePoint ?? planOk.waypoints[0])[1]) ??
+          0)
     return { waypoints: wps, refElev: ref }
-  }, [missionMode, facePlan, faceConfig.baseline, orbitPlan, orbitConfig.poi, corridorPlan, corridorConfig.centreline, planOk, terrainResult, terrain, basePoint, params.altitude])
+  }, [
+    missionMode,
+    facePlan,
+    faceConfig.baseline,
+    orbitPlan,
+    orbitConfig.poi,
+    corridorPlan,
+    corridorConfig.centreline,
+    planOk,
+    terrainResult,
+    terrain,
+    basePoint,
+    params.altitude,
+  ])
 
   // Teto operacional AGL do payload (T1.3), ex.: LiDAR limitado a 100 m
   const aglWarn = useMemo(
@@ -496,17 +641,50 @@ function AppInner({ lang, setLang }) {
   const preflight = useMemo(() => {
     if (missionMode === 'area') {
       return preflightArea({
-        plan, blocks, photoMode, terrainFollow, terrainCovers, terrainResult, basePoint, baseDistance,
-        speed, batteryMin, reservePct: split.reservePct, aglWarn, triggerWarn,
+        plan,
+        blocks,
+        photoMode,
+        terrainFollow,
+        terrainCovers,
+        terrainResult,
+        basePoint,
+        baseDistance,
+        speed,
+        batteryMin,
+        reservePct: split.reservePct,
+        aglWarn,
+        triggerWarn,
       })
     }
     const other = { batteryMin, reservePct: split.reservePct }
-    if (missionMode === 'corridor') return preflightPlan({ ...other, plan: corridorPlan, aglWarn, triggerWarn: corridorTriggerWarn })
+    if (missionMode === 'corridor')
+      return preflightPlan({
+        ...other,
+        plan: corridorPlan,
+        aglWarn,
+        triggerWarn: corridorTriggerWarn,
+      })
     if (missionMode === 'face') return preflightPlan({ ...other, plan: facePlan })
     return preflightPlan({ ...other, plan: orbitPlan })
   }, [
-    missionMode, plan, blocks, photoMode, terrainFollow, terrainCovers, terrainResult, basePoint, baseDistance,
-    speed, batteryMin, split.reservePct, aglWarn, triggerWarn, corridorPlan, corridorTriggerWarn, facePlan, orbitPlan,
+    missionMode,
+    plan,
+    blocks,
+    photoMode,
+    terrainFollow,
+    terrainCovers,
+    terrainResult,
+    basePoint,
+    baseDistance,
+    speed,
+    batteryMin,
+    split.reservePct,
+    aglWarn,
+    triggerWarn,
+    corridorPlan,
+    corridorTriggerWarn,
+    facePlan,
+    orbitPlan,
   ])
   const exportBlocked = hasBlockers(preflight)
 
@@ -515,55 +693,107 @@ function AppInner({ lang, setLang }) {
   // leitura e migração (v1/v2) em src/mission/project.js e mecânica de
   // gravação/ficheiro em hooks/useProject.js; aqui só se distribui o
   // projecto normalizado pelo estado, porque é o App que tem os setters
-  const applyNormalized = useCallback((n) => {
-    if (n.missionName != null) setMissionName(n.missionName)
-    if (n.drone) setDrone(n.drone)
-    if (n.custom) setCustom((c) => ({ ...c, ...n.custom }))
-    if (n.payloadTuning) setPayloadTuning(n.payloadTuning)
-    if (n.params) {
-      // triggerMode desconhecido (ou ausente) carrega como distância
-      setParams((prev) => ({
-        ...prev,
-        ...n.params,
-        triggerMode: normalizeTriggerMode(n.params.triggerMode ?? prev.triggerMode),
-      }))
-    }
-    // projectos antigos guardavam uma duração de bateria única dentro de
-    // split — preserva o comportamento exacto como override da combinação
-    if (n.legacyBatteryMin != null && n.drone) {
-      setBatteryByCombo((m) => ({ ...m, [`${n.drone.aircraftId}:${n.drone.payloadId}`]: n.legacyBatteryMin }))
-    }
-    if (n.batteryByCombo) setBatteryByCombo((m) => ({ ...m, ...n.batteryByCombo }))
-    if (n.missionMode) setMissionMode(n.missionMode)
-    if (n.faceConfig) setFaceConfig(n.faceConfig)
-    if (n.orbitConfig) setOrbitConfig(n.orbitConfig)
-    if (n.corridorConfig) setCorridorConfig(n.corridorConfig)
-    if (n.inspectPoints) {
-      setInspectPoints(n.inspectPoints)
-      inspectSeqRef.current = n.nextInspectId
-    }
-    applyProjectGeometry(n) // split, anchor, ring, origem e células desactivadas
-    setBasePoint(n.basePoint)
-    if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
-    if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
-  }, [
-    setCorridorConfig, setOrbitConfig, setFaceConfig, setInspectPoints, inspectSeqRef, setTerrainFollow,
-    applyProjectGeometry, setGcpConfig,
-  ])
+  const applyNormalized = useCallback(
+    (n) => {
+      if (n.missionName != null) setMissionName(n.missionName)
+      if (n.drone) setDrone(n.drone)
+      if (n.custom) setCustom((c) => ({ ...c, ...n.custom }))
+      if (n.payloadTuning) setPayloadTuning(n.payloadTuning)
+      if (n.params) {
+        // triggerMode desconhecido (ou ausente) carrega como distância
+        setParams((prev) => ({
+          ...prev,
+          ...n.params,
+          triggerMode: normalizeTriggerMode(n.params.triggerMode ?? prev.triggerMode),
+        }))
+      }
+      // projectos antigos guardavam uma duração de bateria única dentro de
+      // split — preserva o comportamento exacto como override da combinação
+      if (n.legacyBatteryMin != null && n.drone) {
+        setBatteryByCombo((m) => ({
+          ...m,
+          [`${n.drone.aircraftId}:${n.drone.payloadId}`]: n.legacyBatteryMin,
+        }))
+      }
+      if (n.batteryByCombo) setBatteryByCombo((m) => ({ ...m, ...n.batteryByCombo }))
+      if (n.missionMode) setMissionMode(n.missionMode)
+      if (n.faceConfig) setFaceConfig(n.faceConfig)
+      if (n.orbitConfig) setOrbitConfig(n.orbitConfig)
+      if (n.corridorConfig) setCorridorConfig(n.corridorConfig)
+      if (n.inspectPoints) {
+        setInspectPoints(n.inspectPoints)
+        inspectSeqRef.current = n.nextInspectId
+      }
+      applyProjectGeometry(n) // split, anchor, ring, origem e células desactivadas
+      setBasePoint(n.basePoint)
+      if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
+      if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
+    },
+    [
+      setCorridorConfig,
+      setOrbitConfig,
+      setFaceConfig,
+      setInspectPoints,
+      inspectSeqRef,
+      setTerrainFollow,
+      applyProjectGeometry,
+      setGcpConfig,
+    ],
+  )
 
   // tudo o que o projecto guarda, num só objecto (autosave e ficheiro)
   const projectState = useMemo(
     () => ({
-      missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig,
-      corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles,
-      terrainFollow, gcpConfig,
+      missionName,
+      drone,
+      custom,
+      payloadTuning,
+      batteryByCombo,
+      inspectPoints,
+      missionMode,
+      faceConfig,
+      corridorConfig,
+      orbitConfig,
+      params,
+      split,
+      anchor,
+      ring,
+      areaOrigin,
+      basePoint,
+      disabledTiles,
+      terrainFollow,
+      gcpConfig,
     }),
-    [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig],
+    [
+      missionName,
+      drone,
+      custom,
+      payloadTuning,
+      batteryByCombo,
+      inspectPoints,
+      missionMode,
+      faceConfig,
+      corridorConfig,
+      orbitConfig,
+      params,
+      split,
+      anchor,
+      ring,
+      areaOrigin,
+      basePoint,
+      disabledTiles,
+      terrainFollow,
+      gcpConfig,
+    ],
   )
 
   const fitToArea = useCallback(() => setFitKey((k) => k + 1), [setFitKey])
   const { exportProject, importProject } = useProject({
-    state: projectState, missionName, applyNormalized, onLoaded: fitToArea, setImportError,
+    state: projectState,
+    missionName,
+    applyNormalized,
+    onLoaded: fitToArea,
+    setImportError,
   })
 
   const startBase = useCallback(() => {
@@ -653,7 +883,9 @@ function AppInner({ lang, setLang }) {
           <div>
             <h1 className="text-base font-semibold tracking-tight">
               DJI Mission Planner{' '}
-              <span className="text-[11px] font-normal text-slate-500">v{import.meta.env.APP_VERSION}</span>
+              <span className="text-[11px] font-normal text-slate-500">
+                v{import.meta.env.APP_VERSION}
+              </span>
             </h1>
             <p className="text-[11px] text-slate-500">{t('app.subtitle')}</p>
           </div>
@@ -668,9 +900,7 @@ function AppInner({ lang, setLang }) {
                 (missionMode !== 'area' || (terrainCovers && planOk))
               )
             }
-            title={
-              terrain.status === 'ready' ? t('app.view3dReady') : t('app.view3dNotReady')
-            }
+            title={terrain.status === 'ready' ? t('app.view3dReady') : t('app.view3dNotReady')}
             className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconCube /> {t('app.view3d')}
@@ -698,7 +928,11 @@ function AppInner({ lang, setLang }) {
           >
             <IconDownload /> {t('app.exportKml')}
           </button>
-          <PreflightPill items={preflight} open={showPreflight} onToggle={() => setShowPreflight((v) => !v)} />
+          <PreflightPill
+            items={preflight}
+            open={showPreflight}
+            onToggle={() => setShowPreflight((v) => !v)}
+          />
           <button
             onClick={handleExportKMZ}
             disabled={!canExportKMZ || exportBlocked}
@@ -813,90 +1047,90 @@ function AppInner({ lang, setLang }) {
               />
             )}
             {missionMode === 'area' && (
-        <ControlPanel
-          missionName={missionName}
-          setMissionName={setMissionName}
-          drone={drone}
-          setDrone={setDrone}
-          custom={custom}
-          setCustom={setCustom}
-          effectiveFov={effectiveFov}
-          onEffectiveFov={setEffectiveFov}
-          // o painel lê params.speed directamente; recebe-o já limitado aos
-          // limites da aeronave, sem que o estado guardado seja reescrito
-          params={params.speed === speed ? params : { ...params, speed }}
-          setParam={setParam}
-          mode={mode}
-          draftCount={draftVertices.length}
-          hasRing={Boolean(ring)}
-          validation={validation}
-          planError={plan?.error ?? null}
-          planErrorCells={plan?.cells ?? null}
-          anchor={anchor}
-          setAnchorParam={setAnchorParam}
-          hasBase={Boolean(basePoint)}
-          refAzimuth={refAzimuth}
-          split={split}
-          setSplitParam={setSplitParam}
-          batteryMin={batteryMin}
-          batteryDefault={aircraft.batteryMin}
-          onBatteryMin={setBatteryMin}
-          blocks={blocks}
-          gridActive={Boolean(gridCells)}
-          tilesTotal={tiles?.length ?? null}
-          tilesError={tilesError}
-          tileSide={tileSide}
-          gsd={gsd}
-          onGsdTarget={setAltitudeFromGsd}
-          presets={flightPresets}
-          onApplyPreset={applyPreset}
-          triggerWarn={triggerWarn}
-          waypointWarn={waypointWarn}
-          aglWarn={aglWarn}
-          importState={importState}
-          importError={importError}
-          importWarning={importWarning}
-          onImportFile={handleImportFile}
-          onImportCrs={handleImportCrs}
-          onImportCancel={cancelImport}
-          onProjectExport={exportProject}
-          onProjectImport={importProject}
-          onTilesUndo={undoEdit}
-          onTilesRestoreAll={restoreAllTiles}
-          terrain={terrain}
-          terrainCovers={terrainCovers}
-          terrainFollow={terrainFollow}
-          setTerrainFollow={setTerrainFollow}
-          onLoadTerrain={handleLoadTerrain}
-          onImportDem={handleImportDem}
-          onShowProfile={() => setShowProfile(true)}
-          terrainResult={terrainResult}
-          slopeHint={slopeHint}
-          onApplySlopeAngle={applySlopeAngle}
-          onApplySlopeGimbal={applySlopeGimbal}
-          gcpConfig={gcpConfig}
-          setGcpConfig={setGcpConfig}
-          gcpAutoCount={gcpAutoCount}
-          gcpInfo={gcpInfo}
-          onExportGcps={handleExportGcps}
-          inspectPoints={inspectPoints}
-          onStartInspect={startInspect}
-          onInspectUpdate={updateInspectPoint}
-          onInspectRemove={removeInspectPoint}
-          onInspectMove={moveInspectPoint}
-          onInspectReorder={reorderInspectPoints}
-          onInspectSuggestOrder={suggestInspectOrder}
-          onExportInspection={handleExportInspection}
-          onUndoVertex={removeLastDraftVertex}
-          onStartDraw={startDraw}
-          onStartAnchor={startAnchor}
-          onStartBase={startBase}
-          onRemoveBase={removeBase}
-          onSetAngleRelative={setAngleRelative}
-          onSetAngleOptimal={setAngleOptimal}
-          onFinishDraw={handleFinishDraw}
-          onClear={clearAll}
-        />
+              <ControlPanel
+                missionName={missionName}
+                setMissionName={setMissionName}
+                drone={drone}
+                setDrone={setDrone}
+                custom={custom}
+                setCustom={setCustom}
+                effectiveFov={effectiveFov}
+                onEffectiveFov={setEffectiveFov}
+                // o painel lê params.speed directamente; recebe-o já limitado aos
+                // limites da aeronave, sem que o estado guardado seja reescrito
+                params={params.speed === speed ? params : { ...params, speed }}
+                setParam={setParam}
+                mode={mode}
+                draftCount={draftVertices.length}
+                hasRing={Boolean(ring)}
+                validation={validation}
+                planError={plan?.error ?? null}
+                planErrorCells={plan?.cells ?? null}
+                anchor={anchor}
+                setAnchorParam={setAnchorParam}
+                hasBase={Boolean(basePoint)}
+                refAzimuth={refAzimuth}
+                split={split}
+                setSplitParam={setSplitParam}
+                batteryMin={batteryMin}
+                batteryDefault={aircraft.batteryMin}
+                onBatteryMin={setBatteryMin}
+                blocks={blocks}
+                gridActive={Boolean(gridCells)}
+                tilesTotal={tiles?.length ?? null}
+                tilesError={tilesError}
+                tileSide={tileSide}
+                gsd={gsd}
+                onGsdTarget={setAltitudeFromGsd}
+                presets={flightPresets}
+                onApplyPreset={applyPreset}
+                triggerWarn={triggerWarn}
+                waypointWarn={waypointWarn}
+                aglWarn={aglWarn}
+                importState={importState}
+                importError={importError}
+                importWarning={importWarning}
+                onImportFile={handleImportFile}
+                onImportCrs={handleImportCrs}
+                onImportCancel={cancelImport}
+                onProjectExport={exportProject}
+                onProjectImport={importProject}
+                onTilesUndo={undoEdit}
+                onTilesRestoreAll={restoreAllTiles}
+                terrain={terrain}
+                terrainCovers={terrainCovers}
+                terrainFollow={terrainFollow}
+                setTerrainFollow={setTerrainFollow}
+                onLoadTerrain={handleLoadTerrain}
+                onImportDem={handleImportDem}
+                onShowProfile={() => setShowProfile(true)}
+                terrainResult={terrainResult}
+                slopeHint={slopeHint}
+                onApplySlopeAngle={applySlopeAngle}
+                onApplySlopeGimbal={applySlopeGimbal}
+                gcpConfig={gcpConfig}
+                setGcpConfig={setGcpConfig}
+                gcpAutoCount={gcpAutoCount}
+                gcpInfo={gcpInfo}
+                onExportGcps={handleExportGcps}
+                inspectPoints={inspectPoints}
+                onStartInspect={startInspect}
+                onInspectUpdate={updateInspectPoint}
+                onInspectRemove={removeInspectPoint}
+                onInspectMove={moveInspectPoint}
+                onInspectReorder={reorderInspectPoints}
+                onInspectSuggestOrder={suggestInspectOrder}
+                onExportInspection={handleExportInspection}
+                onUndoVertex={removeLastDraftVertex}
+                onStartDraw={startDraw}
+                onStartAnchor={startAnchor}
+                onStartBase={startBase}
+                onRemoveBase={removeBase}
+                onSetAngleRelative={setAngleRelative}
+                onSetAngleOptimal={setAngleOptimal}
+                onFinishDraw={handleFinishDraw}
+                onClear={clearAll}
+              />
             )}
           </div>
         </div>
@@ -965,18 +1199,18 @@ function AppInner({ lang, setLang }) {
             refElev={
               terrainResult && !terrainResult.error
                 ? terrainResult.refElev
-                : terrain.data.elevationAt(
+                : (terrain.data.elevationAt(
                     (basePoint ?? planOk.waypoints[0])[0],
                     (basePoint ?? planOk.waypoints[0])[1],
-                  ) ?? 0
+                  ) ?? 0)
             }
             blocks={
               terrainResult && !terrainResult.error && terrainResult.blocks3
                 ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
-                : blocks?.map((b) => ({
+                : (blocks?.map((b) => ({
                     id: b.id,
                     waypoints: b.waypoints.map(([lon, lat]) => [lon, lat, params.altitude]),
-                  })) ?? null
+                  })) ?? null)
             }
             onClose={() => setShowProfile(false)}
           />

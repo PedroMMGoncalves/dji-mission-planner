@@ -10,8 +10,14 @@ export default {
     pt: 'Verificação única antes de exportar: bloqueios, avisos e lembretes da missão activa',
     en: 'Single check before exporting: blockers, warnings and reminders for the active mission',
   },
-  'preflight.no-plan': { pt: 'Sem plano de voo: defina a área, o eixo, a linha de base ou o POI.', en: 'No flight plan yet: define the area, axis, baseline or POI.' },
-  'preflight.plan-error': { pt: 'O plano tem um erro ({error}); corrija-o antes de exportar.', en: 'The plan has an error ({error}); fix it before exporting.' },
+  'preflight.no-plan': {
+    pt: 'Sem plano de voo: defina a área, o eixo, a linha de base ou o POI.',
+    en: 'No flight plan yet: define the area, axis, baseline or POI.',
+  },
+  'preflight.plan-error': {
+    pt: 'O plano tem um erro ({error}); corrija-o antes de exportar.',
+    en: 'The plan has an error ({error}); fix it before exporting.',
+  },
   'preflight.terrain-photo-waypoint': {
     pt: 'Seguir terreno e foto por waypoint não podem coexistir: escolha disparo por distância ou desligue o terreno.',
     en: 'Follow terrain and photo-per-waypoint cannot coexist: choose distance triggering or turn terrain off.',
@@ -20,7 +26,10 @@ export default {
     pt: 'Seguir terreno está ligado mas não há relevo a cobrir a área; sem ele o KMZ sairia com alturas planas.',
     en: 'Follow terrain is on but no elevation data covers the area; without it the KMZ would carry flat heights.',
   },
-  'preflight.terrain-error': { pt: 'Seguir terreno falhou: {msg}', en: 'Follow terrain failed: {msg}' },
+  'preflight.terrain-error': {
+    pt: 'Seguir terreno falhou: {msg}',
+    en: 'Follow terrain failed: {msg}',
+  },
   'preflight.too-many-waypoints': {
     pt: '{n} waypoints numa rota excede o limite WPML de {max}: divida a missão em blocos.',
     en: '{n} waypoints in one route exceeds the WPML limit of {max}: split the mission into blocks.',

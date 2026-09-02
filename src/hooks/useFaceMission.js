@@ -9,7 +9,16 @@ import { headingTicks } from '../utils/preview.js'
 import { faceExportParams } from '../mission/exportParams.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
 
-export function useFaceMission({ sensor, terrain, missionMode, missionName, wpml, setMode, setDraftVertices, runExport }) {
+export function useFaceMission({
+  sensor,
+  terrain,
+  missionMode,
+  missionName,
+  wpml,
+  setMode,
+  setDraftVertices,
+  runExport,
+}) {
   const [faceConfig, setFaceConfig] = useState(() => ({ ...DEFAULT_FACE_CONFIG }))
 
   const setFaceParam = useCallback((key, value) => {
@@ -99,7 +108,15 @@ export function useFaceMission({ sensor, terrain, missionMode, missionName, wpml
         }),
       ),
     )
-  }, [facePlan, missionName, faceConfig.speedMS, wpml, faceConfig.gimbalPitch, sensor.type, runExport])
+  }, [
+    facePlan,
+    missionName,
+    faceConfig.speedMS,
+    wpml,
+    faceConfig.gimbalPitch,
+    sensor.type,
+    runExport,
+  ])
 
   return {
     faceConfig,

@@ -101,7 +101,9 @@ export default function CorridorPanel({
           <button
             onClick={drawing ? onFinishAxis : onStartAxis}
             className={`rounded px-2 py-2 text-sm font-medium transition-colors ${
-              drawing ? 'bg-sky-500 text-slate-950' : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+              drawing
+                ? 'bg-sky-500 text-slate-950'
+                : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
             }`}
           >
             {drawing ? t('co.axis.finish') : t('co.axis.draw')}
@@ -111,7 +113,13 @@ export default function CorridorPanel({
             disabled={drawing ? draftCount === 0 : !axis}
             className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {drawing ? t('co.axis.undo') : (<><IconTrash /> {t('co.axis.clear')}</>)}
+            {drawing ? (
+              t('co.axis.undo')
+            ) : (
+              <>
+                <IconTrash /> {t('co.axis.clear')}
+              </>
+            )}
           </button>
         </div>
         <p className="mt-2 text-xs text-slate-500">
@@ -199,7 +207,10 @@ export default function CorridorPanel({
               label={droppedPasses > 0 ? t('co.plan.widthRequested') : t('co.plan.width')}
               value={`${fmt(stats.coveredWidthM)} m`}
             />
-            <Row label={t('co.plan.waypoints', { n: stats.waypointCount })} value={stats.waypointCount} />
+            <Row
+              label={t('co.plan.waypoints', { n: stats.waypointCount })}
+              value={stats.waypointCount}
+            />
             {stats.photoCount != null && (
               <Row label={t('co.plan.photos', { n: stats.photoCount })} value={stats.photoCount} />
             )}

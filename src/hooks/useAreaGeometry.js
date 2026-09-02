@@ -16,7 +16,12 @@ import {
   tilePolygonWithSquares,
   validateRing,
 } from '../utils/geo.js'
-import { parseAreaFile, reprojectRing, simplifyRingIfNeeded, CRS_OPTIONS } from '../utils/importArea.js'
+import {
+  parseAreaFile,
+  reprojectRing,
+  simplifyRingIfNeeded,
+  CRS_OPTIONS,
+} from '../utils/importArea.js'
 import { parseWpmlKmz } from '../utils/importWpml.js'
 import { DEFAULT_ANCHOR, DEFAULT_SPLIT } from '../mission/defaults.js'
 
@@ -89,14 +94,17 @@ export function useAreaGeometry({
       const rows = Math.max(1, Math.round(anchor.rows))
       if (cols * rows > 1) {
         const grid = gridFromAnchor(
-          anchor.center, anchor.length, anchor.width, anchor.orientation, cols, rows,
+          anchor.center,
+          anchor.length,
+          anchor.width,
+          anchor.orientation,
+          cols,
+          rows,
         )
         setRing(grid.outline)
         setGridCells(grid.cells)
       } else {
-        setRing(
-          rectangleFromAnchor(anchor.center, anchor.length, anchor.width, anchor.orientation),
-        )
+        setRing(rectangleFromAnchor(anchor.center, anchor.length, anchor.width, anchor.orientation))
         setGridCells(null)
       }
       setAreaOrigin('anchor')
@@ -396,7 +404,11 @@ export function useAreaGeometry({
         }
         const result = await parseAreaFile(file)
         if (result.needsCrs) {
-          setImportState({ ring: result.ring, filename: file.name, discardedParts: result.discardedParts })
+          setImportState({
+            ring: result.ring,
+            filename: file.name,
+            discardedParts: result.discardedParts,
+          })
         } else {
           applyImportedRing(result.ring)
           // O import escolhe o maior polígono de um MultiPolygon e deitava os

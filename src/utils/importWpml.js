@@ -97,9 +97,7 @@ function extractFromDoc(doc) {
 
   // Ordem de voo: <wpml:index> quando existe em todos, senão ordem do documento.
   const byIndex = rows.length > 0 && rows.every((r) => r.index != null)
-  const ordered = byIndex
-    ? [...rows].sort((a, b) => a.index - b.index || a.order - b.order)
-    : rows
+  const ordered = byIndex ? [...rows].sort((a, b) => a.index - b.index || a.order - b.order) : rows
 
   // --- configuração global -------------------------------------------
   const folder = findFirst(root, 'Folder')
@@ -107,8 +105,7 @@ function extractFromDoc(doc) {
   const droneInfo = findFirst(root, 'droneInfo')
   const payloadInfo = findFirst(root, 'payloadInfo')
 
-  const name =
-    textOf(childNamed(folder, 'name')) || textOf(childNamed(docEl, 'name')) || null
+  const name = textOf(childNamed(folder, 'name')) || textOf(childNamed(docEl, 'name')) || null
 
   return {
     waypoints: ordered.map((r) => r.point),
@@ -117,9 +114,7 @@ function extractFromDoc(doc) {
     speed: numIn(root, 'autoFlightSpeed'),
     globalHeight: numIn(root, 'globalHeight'),
     name,
-    droneEnumValue: droneInfo
-      ? numIn(droneInfo, 'droneEnumValue')
-      : numIn(root, 'droneEnumValue'),
+    droneEnumValue: droneInfo ? numIn(droneInfo, 'droneEnumValue') : numIn(root, 'droneEnumValue'),
     payloadEnumValue: payloadInfo
       ? numIn(payloadInfo, 'payloadEnumValue')
       : numIn(root, 'payloadEnumValue'),
@@ -238,8 +233,12 @@ export async function parseWpmlKmz(file) {
     throw new Error('KMZ sem waylines.wpml nem template.kml — não é uma missão WPML')
   }
 
-  const waylines = waylinesEntry ? extractFromDoc(parseMissionXml(await waylinesEntry.async('string'))) : null
-  const template = templateEntry ? extractFromDoc(parseMissionXml(await templateEntry.async('string'))) : null
+  const waylines = waylinesEntry
+    ? extractFromDoc(parseMissionXml(await waylinesEntry.async('string')))
+    : null
+  const template = templateEntry
+    ? extractFromDoc(parseMissionXml(await templateEntry.async('string')))
+    : null
 
   // A rota manda; o template serve de reserva (e dá o nome da missão).
   const main = waylines?.waypoints.length ? waylines : template
@@ -251,7 +250,7 @@ export async function parseWpmlKmz(file) {
   const waypoints = main.waypoints
 
   // Altitude: única se todas as alturas coincidirem, senão mediana.
-  const heights = main.heights.length ? main.heights : alt?.heights ?? []
+  const heights = main.heights.length ? main.heights : (alt?.heights ?? [])
   let altitude = null
   if (heights.length) {
     const uniform = heights.every((h) => Math.abs(h - heights[0]) < 1e-6)

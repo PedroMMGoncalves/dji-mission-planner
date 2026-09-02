@@ -29,14 +29,18 @@ if (!journalPath || !existsSync(journalPath)) {
   process.exit(1)
 }
 
-const linhas = readFileSync(journalPath, 'utf8').split('\n').filter((l) => l.trim())
-const registos = linhas.map((l) => {
-  try {
-    return JSON.parse(l)
-  } catch {
-    return null // linha truncada: a corrida pode ter morrido a meio de uma escrita
-  }
-}).filter(Boolean)
+const linhas = readFileSync(journalPath, 'utf8')
+  .split('\n')
+  .filter((l) => l.trim())
+const registos = linhas
+  .map((l) => {
+    try {
+      return JSON.parse(l)
+    } catch {
+      return null // linha truncada: a corrida pode ter morrido a meio de uma escrita
+    }
+  })
+  .filter(Boolean)
 
 const chave = (f) => `${f.file}::${f.title}`
 
@@ -54,8 +58,19 @@ for (const r of registos) {
 
 /** Vereditos: resultado com `refuted`. A chave do agente diz de que achado é. */
 const vereditos = registos
-  .filter((r) => r.type === 'result' && r.result && typeof r.result === 'object' && typeof r.result.refuted === 'boolean')
-  .map((r) => ({ agentId: r.agentId, agentKey: r.key, refuted: r.result.refuted, reason: r.result.reason }))
+  .filter(
+    (r) =>
+      r.type === 'result' &&
+      r.result &&
+      typeof r.result === 'object' &&
+      typeof r.result.refuted === 'boolean',
+  )
+  .map((r) => ({
+    agentId: r.agentId,
+    agentKey: r.key,
+    refuted: r.result.refuted,
+    reason: r.result.reason,
+  }))
 
 const falhas = registos.filter((r) => r.type === 'failed').length
 
@@ -89,4 +104,6 @@ const saida = {
 }
 
 writeFileSync(outPath, JSON.stringify(saida, null, 2) + '\n')
-console.log(`${saida.resumo.achados} achados, ${saida.resumo.vereditos} vereditos, ${falhas} agentes falhados -> ${outPath}`)
+console.log(
+  `${saida.resumo.achados} achados, ${saida.resumo.vereditos} vereditos, ${falhas} agentes falhados -> ${outPath}`,
+)

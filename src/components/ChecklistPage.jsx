@@ -82,12 +82,7 @@ const FASES = [
               'Motors free of debris, no abnormal noise',
             ),
           ),
-          it(
-            bi(
-              'Sistema de aterragem / patins verificado',
-              'Landing gear / skids checked',
-            ),
-          ),
+          it(bi('Sistema de aterragem / patins verificado', 'Landing gear / skids checked')),
         ],
       },
       {
@@ -105,10 +100,7 @@ const FASES = [
             true,
           ),
           it(
-            bi(
-              'Software de missão actualizado',
-              'Mission planning software up to date',
-            ),
+            bi('Software de missão actualizado', 'Mission planning software up to date'),
             bi('DJI Pilot 2', 'DJI Pilot 2'),
           ),
           it(
@@ -119,14 +111,8 @@ const FASES = [
             bi('WebODM, Pix4D, Metashape', 'WebODM, Pix4D, Metashape'),
           ),
           it(
-            bi(
-              'Plano de voo carregado e validado',
-              'Flight plan uploaded and validated',
-            ),
-            bi(
-              'Overlap lateral ≥ 70%, frontal ≥ 80%',
-              'Side overlap ≥ 70%, forward overlap ≥ 80%',
-            ),
+            bi('Plano de voo carregado e validado', 'Flight plan uploaded and validated'),
+            bi('Overlap lateral ≥ 70%, frontal ≥ 80%', 'Side overlap ≥ 70%, forward overlap ≥ 80%'),
             true,
           ),
         ],
@@ -190,12 +176,7 @@ const FASES = [
             bi('Parâmetros da câmara configurados', 'Camera settings configured'),
             bi('ISO, obturador', 'ISO, shutter speed'),
           ),
-          it(
-            bi(
-              'Gimbal desbloqueado com movimentação livre',
-              'Gimbal unlocked and moving freely',
-            ),
-          ),
+          it(bi('Gimbal desbloqueado com movimentação livre', 'Gimbal unlocked and moving freely')),
           it(
             bi('Painel radiométrico incluído', 'Radiometric panel packed'),
             bi(
@@ -222,21 +203,13 @@ const FASES = [
             ),
           ),
           it(
-            bi(
-              'Targets GCP preparados e identificados',
-              'GCP targets prepared and labelled',
-            ),
+            bi('Targets GCP preparados e identificados', 'GCP targets prepared and labelled'),
             bi(
               'Contraste com o terreno; mínimo 5 por bloco',
               'Contrast against the ground; minimum 5 per block',
             ),
           ),
-          it(
-            bi(
-              'Cartografia de base da área disponível',
-              'Base mapping of the area available',
-            ),
-          ),
+          it(bi('Cartografia de base da área disponível', 'Base mapping of the area available')),
         ],
       },
       {
@@ -255,10 +228,7 @@ const FASES = [
             ),
           ),
           it(
-            bi(
-              'Autorização de voo / NOTAM obtida',
-              'Flight authorisation / NOTAM obtained',
-            ),
+            bi('Autorização de voo / NOTAM obtida', 'Flight authorisation / NOTAM obtained'),
             null,
             true,
           ),
@@ -271,10 +241,7 @@ const FASES = [
             true,
           ),
           it(
-            bi(
-              'Briefing de segurança à equipa preparado',
-              'Safety briefing for the crew prepared',
-            ),
+            bi('Briefing de segurança à equipa preparado', 'Safety briefing for the crew prepared'),
           ),
         ],
       },
@@ -285,26 +252,16 @@ const FASES = [
         appliesTo: 'lidar',
         itens: [
           it(
-            bi(
-              'Armazenamento do scanner com espaço livre',
-              'Scanner storage with free space',
-            ),
+            bi('Armazenamento do scanner com espaço livre', 'Scanner storage with free space'),
             bi(
               'Cartão/SSD formatado; capacidade para o dia',
               'Card/SSD formatted; capacity for the day',
             ),
             true,
           ),
+          it(bi('Bateria própria do scanner carregada', 'Scanner battery charged'), null, true),
           it(
-            bi('Bateria própria do scanner carregada', 'Scanner battery charged'),
-            null,
-            true,
-          ),
-          it(
-            bi(
-              'Plano PPK: base GNSS e ficheiros RINEX',
-              'PPK plan: GNSS base and RINEX files',
-            ),
+            bi('Plano PPK: base GNSS e ficheiros RINEX', 'PPK plan: GNSS base and RINEX files'),
             bi(
               'Estação base própria montada ou CORS definida',
               'Own base station planned or CORS chosen',
@@ -385,10 +342,7 @@ const FASES = [
             ),
           ),
           it(
-            bi(
-              'GCPs colocados e coordenadas registadas',
-              'GCPs laid out and coordinates recorded',
-            ),
+            bi('GCPs colocados e coordenadas registadas', 'GCPs laid out and coordinates recorded'),
             null,
             true,
           ),
@@ -398,10 +352,7 @@ const FASES = [
           ),
           it(
             bi('Calibração da bússola se necessário', 'Compass calibration if required'),
-            bi(
-              'Obrigatório após transporte longo',
-              'Mandatory after long-distance transport',
-            ),
+            bi('Obrigatório após transporte longo', 'Mandatory after long-distance transport'),
           ),
           it(
             bi(
@@ -419,11 +370,7 @@ const FASES = [
             bi('≥ 12 satélites, HDOP < 1.5', '≥ 12 satellites, HDOP < 1.5'),
             true,
           ),
-          it(
-            bi('Home Point definido e confirmado', 'Home Point set and confirmed'),
-            null,
-            true,
-          ),
+          it(bi('Home Point definido e confirmado', 'Home Point set and confirmed'), null, true),
           it(
             bi(
               'Nível de bateria confirmado antes de armar',
@@ -460,29 +407,21 @@ const FASES = [
             null,
             true,
           ),
-          it(
-            bi('Sinal de telemetria e RC estáveis', 'Telemetry and RC links stable'),
-          ),
+          it(bi('Sinal de telemetria e RC estáveis', 'Telemetry and RC links stable')),
           it(
             bi('Câmara a capturar', 'Camera capturing'),
             bi('live feed confirmado', 'live feed confirmed'),
           ),
           it(bi('Meteorologia reavaliada em voo', 'Weather reassessed during flight')),
           it(bi('Espaço aéreo monitorizado', 'Airspace monitored')),
-          it(
-            bi('Anomalias registadas em tempo real', 'Anomalies logged in real time'),
-          ),
+          it(bi('Anomalias registadas em tempo real', 'Anomalies logged in real time')),
         ],
       },
       {
         titulo: bi('Aterragem', 'Landing'),
         itens: [
-          it(
-            bi('Confirmar bateria antes do retorno', 'Confirm battery before return leg'),
-          ),
-          it(
-            bi('Zona de aterragem livre e visível', 'Landing zone clear and in sight'),
-          ),
+          it(bi('Confirmar bateria antes do retorno', 'Confirm battery before return leg')),
+          it(bi('Zona de aterragem livre e visível', 'Landing zone clear and in sight')),
           it(
             bi(
               'Motores desarmados após aterragem completa',
@@ -491,21 +430,14 @@ const FASES = [
             null,
             true,
           ),
-          it(
-            bi('Hora de fim e duração registadas', 'End time and duration recorded'),
-          ),
+          it(bi('Hora de fim e duração registadas', 'End time and duration recorded')),
         ],
       },
       {
         titulo: bi('Entre voos', 'Between flights'),
         itens: [
           it(bi('Substituição de bateria — registar ID', 'Battery swap — record ID')),
-          it(
-            bi(
-              'Verificação rápida de câmara e cartão SD',
-              'Quick check of camera and SD card',
-            ),
-          ),
+          it(bi('Verificação rápida de câmara e cartão SD', 'Quick check of camera and SD card')),
           it(
             bi(
               'Painel radiométrico refotografado se a luz mudou',
@@ -517,10 +449,7 @@ const FASES = [
             bi('sem gaps', 'no gaps'),
           ),
           it(
-            bi(
-              'Inspecção visual rápida da plataforma',
-              'Quick visual inspection of the aircraft',
-            ),
+            bi('Inspecção visual rápida da plataforma', 'Quick visual inspection of the aircraft'),
           ),
         ],
       },
@@ -531,10 +460,7 @@ const FASES = [
         appliesTo: 'lidar',
         itens: [
           it(
-            bi(
-              'Base GNSS a registar antes da descolagem',
-              'GNSS base logging before takeoff',
-            ),
+            bi('Base GNSS a registar antes da descolagem', 'GNSS base logging before takeoff'),
             bi('Confirmar gravação e taxa (≥ 1 Hz)', 'Confirm recording and rate (≥ 1 Hz)'),
             true,
           ),
@@ -566,12 +492,7 @@ const FASES = [
               'Calibration manoeuvres after the lines',
             ),
           ),
-          it(
-            bi(
-              'Alinhamento estático final após aterrar',
-              'Final static alignment after landing',
-            ),
-          ),
+          it(bi('Alinhamento estático final após aterrar', 'Final static alignment after landing')),
         ],
       },
       // Grupo condicional (R2.6): só aparece com uma missão de fachada
@@ -682,10 +603,7 @@ const FASES = [
             ),
           ),
           it(
-            bi(
-              'Vento transversal ao eixo avaliado',
-              'Crosswind to the centreline assessed',
-            ),
+            bi('Vento transversal ao eixo avaliado', 'Crosswind to the centreline assessed'),
             bi(
               'Corredores longos dão exposição prolongada num só rumo',
               'Long corridors mean prolonged exposure on a single heading',
@@ -722,10 +640,7 @@ const FASES = [
             true,
           ),
           it(
-            bi(
-              'Nº de imagens verificado vs. plano',
-              'Image count checked against the plan',
-            ),
+            bi('Nº de imagens verificado vs. plano', 'Image count checked against the plan'),
             null,
             true,
           ),
@@ -761,9 +676,7 @@ const FASES = [
               'Post-flight radiometric panel photographed',
             ),
           ),
-          it(
-            bi('Cobertura confirmada sem gaps', 'Coverage confirmed with no gaps'),
-          ),
+          it(bi('Cobertura confirmada sem gaps', 'Coverage confirmed with no gaps')),
         ],
       },
       {
@@ -775,27 +688,16 @@ const FASES = [
           ),
           it(bi('Lente e sensor limpos', 'Lens and sensor cleaned')),
           it(
-            bi(
-              'Baterias a 40–60% para armazenamento',
-              'Batteries at 40–60% for storage',
-            ),
+            bi('Baterias a 40–60% para armazenamento', 'Batteries at 40–60% for storage'),
             bi(
               'LiPo degradam a 100% ou 0% prolongados',
               'LiPo cells degrade if left at 100% or 0% for long periods',
             ),
             true,
           ),
+          it(bi('Baterias em local fresco e seco', 'Batteries stored in a cool, dry place')),
           it(
-            bi(
-              'Baterias em local fresco e seco',
-              'Batteries stored in a cool, dry place',
-            ),
-          ),
-          it(
-            bi(
-              'Inchamento/aquecimento anormal reportado',
-              'Swelling or abnormal heating reported',
-            ),
+            bi('Inchamento/aquecimento anormal reportado', 'Swelling or abnormal heating reported'),
             null,
             true,
           ),
@@ -815,18 +717,10 @@ const FASES = [
           it(bi('Incidentes documentados', 'Incidents documented')),
           it(
             bi('Estrutura de pastas criada', 'Folder structure created'),
-            bi(
-              'YYYYMMDD_LOCAL_SENSOR_RAW / PROCESSED',
-              'YYYYMMDD_SITE_SENSOR_RAW / PROCESSED',
-            ),
+            bi('YYYYMMDD_LOCAL_SENSOR_RAW / PROCESSED', 'YYYYMMDD_SITE_SENSOR_RAW / PROCESSED'),
           ),
-          it(
-            bi('Dados sincronizados para servidor', 'Data synchronised to the server'),
-          ),
-          it(
-            bi('Inventário conferido', 'Inventory checked'),
-            bi('saída = chegada', 'out = back'),
-          ),
+          it(bi('Dados sincronizados para servidor', 'Data synchronised to the server')),
+          it(bi('Inventário conferido', 'Inventory checked'), bi('saída = chegada', 'out = back')),
         ],
       },
       // Grupo condicional: só aparece com uma missão de corredor activa
@@ -913,10 +807,7 @@ const UI = {
   importBlocks: bi('Importar blocos do plano', 'Import plan blocks'),
   importGcps: bi('Importar GCPs do plano', 'Import planned GCPs'),
   items: bi('itens', 'items'),
-  autosave: bi(
-    'Guardado automaticamente neste navegador.',
-    'Saved automatically in this browser.',
-  ),
+  autosave: bi('Guardado automaticamente neste navegador.', 'Saved automatically in this browser.'),
 }
 
 const ASSINATURAS = [
@@ -989,8 +880,7 @@ const CAMPOS_NOTAS = [
 let seq = 0
 const uid = () => `r${Date.now().toString(36)}${(seq++).toString(36)}`
 
-const linhaVazia = (cols) =>
-  cols.reduce((acc, c) => ({ ...acc, [c.key]: '' }), { _id: uid() })
+const linhaVazia = (cols) => cols.reduce((acc, c) => ({ ...acc, [c.key]: '' }), { _id: uid() })
 
 const chaveItem = (faseId, gi, ii) => `${faseId}.${gi}.${ii}`
 
@@ -1011,9 +901,7 @@ const slug = (s) =>
 
 function Titulo({ children, className = '' }) {
   return (
-    <h2
-      className={`text-[11px] font-semibold uppercase tracking-widest text-sky-400 ${className}`}
-    >
+    <h2 className={`text-[11px] font-semibold uppercase tracking-widest text-sky-400 ${className}`}>
       {children}
     </h2>
   )
@@ -1021,10 +909,10 @@ function Titulo({ children, className = '' }) {
 
 function Botao({ children, onClick, tom = 'neutro', disabled }) {
   const tons = {
-    neutro:
-      'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700',
+    neutro: 'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700',
     primario: 'bg-emerald-600 text-white hover:bg-emerald-500 border border-emerald-600',
-    aviso: 'bg-slate-800 text-slate-300 hover:bg-red-900/60 hover:text-red-200 border border-slate-700',
+    aviso:
+      'bg-slate-800 text-slate-300 hover:bg-red-900/60 hover:text-red-200 border border-slate-700',
   }
   return (
     <button
@@ -1041,9 +929,7 @@ function Botao({ children, onClick, tom = 'neutro', disabled }) {
 function CampoTexto({ label, value, onChange, placeholder, type = 'text' }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
-        {label}
-      </span>
+      <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">{label}</span>
       <input
         type={type}
         value={value}
@@ -1149,36 +1035,37 @@ function ColunaFase({ fase, checked, onToggle, sensorType, faceMode, corridorMod
     <section className="chk-coluna flex flex-col rounded-lg border border-slate-800 bg-slate-900 p-4">
       <div className="mb-3 flex items-center gap-2">
         <span className={`h-3 w-1 rounded-full ${acento.risca}`} />
-        <h2
-          className={`text-[11px] font-semibold uppercase tracking-widest ${acento.titulo}`}
-        >
+        <h2 className={`text-[11px] font-semibold uppercase tracking-widest ${acento.titulo}`}>
           {L(fase.titulo)}
         </h2>
       </div>
 
       <div className="flex-1 space-y-4">
         {/* filtragem sem reindexar: gi original preserva as chaves gravadas */}
-        {fase.grupos.map((grupo, gi) => groupApplies(grupo, sensorType, { face: faceMode, corridor: corridorMode }) && (
-          <div key={`${fase.id}.${gi}`} className="chk-grupo">
-            <h3 className="mb-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
-              {L(grupo.titulo)}
-            </h3>
-            <ul className="space-y-0.5">
-              {grupo.itens.map((item, ii) => {
-                const k = chaveItem(fase.id, gi, ii)
-                return (
-                  <ItemChecklist
-                    key={k}
-                    item={item}
-                    feito={!!checked[k]}
-                    acento={acento}
-                    onToggle={() => onToggle(k)}
-                  />
-                )
-              })}
-            </ul>
-          </div>
-        ))}
+        {fase.grupos.map(
+          (grupo, gi) =>
+            groupApplies(grupo, sensorType, { face: faceMode, corridor: corridorMode }) && (
+              <div key={`${fase.id}.${gi}`} className="chk-grupo">
+                <h3 className="mb-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                  {L(grupo.titulo)}
+                </h3>
+                <ul className="space-y-0.5">
+                  {grupo.itens.map((item, ii) => {
+                    const k = chaveItem(fase.id, gi, ii)
+                    return (
+                      <ItemChecklist
+                        key={k}
+                        item={item}
+                        feito={!!checked[k]}
+                        acento={acento}
+                        onToggle={() => onToggle(k)}
+                      />
+                    )
+                  })}
+                </ul>
+              </div>
+            ),
+        )}
       </div>
 
       <BarraProgresso feitos={feitos} total={total} acento={acento} />
@@ -1186,17 +1073,7 @@ function ColunaFase({ fase, checked, onToggle, sensorType, faceMode, corridorMod
   )
 }
 
-function Tabela({
-  titulo,
-  cols,
-  linhas,
-  onCell,
-  onAdd,
-  onRemove,
-  extra,
-  minWidth,
-  rotuloAdd,
-}) {
+function Tabela({ titulo, cols, linhas, onCell, onAdd, onRemove, extra, minWidth, rotuloAdd }) {
   const L = useL()
   return (
     <section className="chk-bloco rounded-lg border border-slate-800 bg-slate-900 p-4">
@@ -1257,9 +1134,7 @@ function Tabela({
 function CaixaNota({ label, value, onChange }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">
-        {label}
-      </span>
+      <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">{label}</span>
       <textarea
         rows={4}
         value={value}
@@ -1320,7 +1195,6 @@ export default function ChecklistPage({
     ...(guardado.notas && typeof guardado.notas === 'object' ? guardado.notas : {}),
   }))
 
-
   /* ------------- Gravação automática com debounce simples ------------- */
   // Sem guarda de hidratação: o estado já nasce com o que estava gravado,
   // pelo que a primeira gravação reescreve exactamente o mesmo conteúdo.
@@ -1345,9 +1219,7 @@ export default function ChecklistPage({
   const setNota = (k, v) => setNotas((n) => ({ ...n, [k]: v }))
 
   const editarLinha = (setter) => (idx, key, valor) =>
-    setter((linhas) =>
-      linhas.map((l, i) => (i === idx ? { ...l, [key]: valor } : l)),
-    )
+    setter((linhas) => linhas.map((l, i) => (i === idx ? { ...l, [key]: valor } : l)))
 
   const setCelulaVoo = editarLinha(setVoos)
   const setCelulaGcp = editarLinha(setGcps)
@@ -1434,8 +1306,7 @@ export default function ChecklistPage({
     }
   }
 
-  const semId = (linhas) =>
-    linhas.map(({ _id, ...resto }) => resto)
+  const semId = (linhas) => linhas.map(({ _id, ...resto }) => resto)
 
   const exportarJSON = () => {
     const payload = {
@@ -1472,9 +1343,7 @@ export default function ChecklistPage({
     document.body.classList.remove('print-blank')
   }
 
-  const pctGlobal = resumo.total
-    ? Math.round((resumo.feitos / resumo.total) * 100)
-    : 0
+  const pctGlobal = resumo.total ? Math.round((resumo.feitos / resumo.total) * 100) : 0
 
   return (
     <div className="chk-root min-h-full bg-slate-950 text-slate-100">
@@ -1495,9 +1364,7 @@ export default function ChecklistPage({
 
           <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-4">
             <div>
-              <h1 className="text-xl font-semibold tracking-tight text-slate-100">
-                {L(UI.title)}
-              </h1>
+              <h1 className="text-xl font-semibold tracking-tight text-slate-100">{L(UI.title)}</h1>
               <p className="mt-0.5 text-[13px] text-slate-400">{L(UI.subtitle)}</p>
             </div>
 

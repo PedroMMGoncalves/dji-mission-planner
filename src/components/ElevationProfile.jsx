@@ -261,7 +261,11 @@ function clearanceTone(v) {
     return { box: 'border-slate-600 bg-slate-800/70', text: 'text-slate-300', stroke: '#94a3b8' }
   }
   if (v >= CLEAR_OK_M) {
-    return { box: 'border-emerald-500/60 bg-emerald-500/10', text: 'text-emerald-300', stroke: '#34d399' }
+    return {
+      box: 'border-emerald-500/60 bg-emerald-500/10',
+      text: 'text-emerald-300',
+      stroke: '#34d399',
+    }
   }
   if (v >= CLEAR_WARN_M) {
     return { box: 'border-amber-500/60 bg-amber-500/10', text: 'text-amber-300', stroke: '#fbbf24' }
@@ -271,7 +275,12 @@ function clearanceTone(v) {
 
 /* ---------------- Peças de UI ---------------- */
 
-function Metric({ label, value, box = 'border-slate-700 bg-slate-800/70', text = 'text-slate-100' }) {
+function Metric({
+  label,
+  value,
+  box = 'border-slate-700 bg-slate-800/70',
+  text = 'text-slate-100',
+}) {
   return (
     <div className={`rounded border px-2.5 py-1.5 ${box}`}>
       <div className="text-[10px] uppercase tracking-widest text-slate-400">{label}</div>
@@ -287,7 +296,9 @@ function Swatch({ color, dashed = false, children }) {
         className="inline-block h-0.5 w-5 rounded-full"
         style={
           dashed
-            ? { backgroundImage: `repeating-linear-gradient(90deg, ${color} 0 3px, transparent 3px 6px)` }
+            ? {
+                backgroundImage: `repeating-linear-gradient(90deg, ${color} 0 3px, transparent 3px 6px)`,
+              }
             : { backgroundColor: color }
         }
       />
@@ -396,13 +407,18 @@ export default function ElevationProfile({ terrain, waypoints, refElev, blocks, 
               <span className="mr-1 text-[10px] uppercase tracking-widest text-slate-400">
                 {L(TXT.selection)}
               </span>
-              {[{ key: 'all', label: L(TXT.all) }, ...blockList.map((b, i) => {
-                const n = Number(b.id)
-                return {
-                  key: String(b.id),
-                  label: Number.isFinite(n) ? `B${String(n).padStart(2, '0')}` : String(b.id ?? i + 1),
-                }
-              })].map((c) => (
+              {[
+                { key: 'all', label: L(TXT.all) },
+                ...blockList.map((b, i) => {
+                  const n = Number(b.id)
+                  return {
+                    key: String(b.id),
+                    label: Number.isFinite(n)
+                      ? `B${String(n).padStart(2, '0')}`
+                      : String(b.id ?? i + 1),
+                  }
+                }),
+              ].map((c) => (
                 <button
                   key={c.key}
                   onClick={() => setSel(c.key)}
@@ -433,9 +449,7 @@ export default function ElevationProfile({ terrain, waypoints, refElev, blocks, 
                 <Metric
                   label={L(TXT.agl)}
                   value={
-                    p.hasTerrain
-                      ? `${Math.round(p.aglMin)} – ${Math.round(p.aglMax)} m`
-                      : L(TXT.na)
+                    p.hasTerrain ? `${Math.round(p.aglMin)} – ${Math.round(p.aglMax)} m` : L(TXT.na)
                   }
                 />
                 <Metric

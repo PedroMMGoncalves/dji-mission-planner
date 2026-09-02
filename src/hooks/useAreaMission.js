@@ -11,7 +11,12 @@ import { planArea } from '../mission/areaPlan.js'
 import { planBlocks } from '../mission/blocks.js'
 import { planTerrainFollow } from '../mission/terrainFollow.js'
 import { buildAreaExport } from '../mission/areaExport.js'
-import { downloadBlob, exportBlocksZip, exportSimpleKML, exportWPMLKmz } from '../utils/exporters.js'
+import {
+  downloadBlob,
+  exportBlocksZip,
+  exportSimpleKML,
+  exportWPMLKmz,
+} from '../utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from '../utils/gcp.js'
 import { DEFAULT_GCP_CONFIG } from '../mission/defaults.js'
 
@@ -60,14 +65,29 @@ export function useAreaMission({
     }
     // plano simples, ou um plano por célula com alinhamento global (src/mission/areaPlan.js)
     return planArea(ring, activeCells, opts)
-  }, [photoMode, ring, validation.valid, spacing, params.angle, params.bufferPct, interval, speed, params.crosshatch, params.includeNadir, params.overshoot, params.tieLine, activeCells])
+  }, [
+    photoMode,
+    ring,
+    validation.valid,
+    spacing,
+    params.angle,
+    params.bufferPct,
+    interval,
+    speed,
+    params.crosshatch,
+    params.includeNadir,
+    params.overshoot,
+    params.tieLine,
+    activeCells,
+  ])
 
   const planOk = plan && !plan.error ? plan : null
 
   // Divisão em blocos de voo numerados: células da grelha, ou corte da
   // serpentina por área/bateria
   const blocks = useMemo(
-    () => planBlocks(planOk, { activeCells, split, batteryMin, speed, spacingM: spacing, basePoint }),
+    () =>
+      planBlocks(planOk, { activeCells, split, batteryMin, speed, spacingM: spacing, basePoint }),
     [planOk, activeCells, split, batteryMin, speed, spacing, basePoint],
   )
 
@@ -106,7 +126,8 @@ export function useAreaMission({
     // B: com foto por waypoint, a densificação do seguimento de terreno
     // reindexaria as acções de foto — erro explícito (e exportação bloqueada)
     // em vez de uma missão parcial com alturas planas ou fotos perdidas
-    if (terrainFollow.enabled && photoMode === 'waypoint') return { error: t('cp.terrain.photoWaypoint') }
+    if (terrainFollow.enabled && photoMode === 'waypoint')
+      return { error: t('cp.terrain.photoWaypoint') }
     if (!terrainFollow.enabled || !terrainCovers || !planOk?.lines?.length) return null
     try {
       const res = planTerrainFollow(terrain.data, planOk, {
@@ -115,12 +136,23 @@ export function useAreaMission({
         agl: params.altitude,
         toleranceM: terrainFollow.tolerance,
       })
-      if (res.error === 'ref-outside-terrain') return { error: 'Referência fora do terreno carregado' }
+      if (res.error === 'ref-outside-terrain')
+        return { error: 'Referência fora do terreno carregado' }
       return res
     } catch (err) {
       return { error: err?.message ?? 'Falha no cálculo do terreno' }
     }
-  }, [photoMode, t, terrainFollow, terrainCovers, terrain.data, planOk, blocks, basePoint, params.altitude])
+  }, [
+    photoMode,
+    t,
+    terrainFollow,
+    terrainCovers,
+    terrain.data,
+    planOk,
+    blocks,
+    basePoint,
+    params.altitude,
+  ])
 
   /* --------------------------- Exportação ---------------------------- */
   const safeName = missionName.trim().replace(/[^\w-]+/g, '-') || 'missao'
@@ -128,10 +160,12 @@ export function useAreaMission({
   // B: seguir terreno + foto por waypoint é um erro explícito, não uma
   // exportação com alturas planas
   const canExportKMZ =
-    Boolean(planOk && planOk.waypoints.length >= 2) && !(terrainFollow.enabled && photoMode === 'waypoint')
+    Boolean(planOk && planOk.waypoints.length >= 2) &&
+    !(terrainFollow.enabled && photoMode === 'waypoint')
 
   const handleExportKML = useCallback(() => {
-    if (canExportKML) runExport(() => exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null))
+    if (canExportKML)
+      runExport(() => exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null))
   }, [canExportKML, runExport, ring, safeName, basePoint, gcps, planOk])
 
   const handleExportGcps = useCallback(() => {
@@ -170,9 +204,24 @@ export function useAreaMission({
     if (exportBlocks) runExport(() => exportBlocksZip(exportParams, exportBlocks))
     else runExport(() => exportWPMLKmz(exportParams))
   }, [
-    canExportKMZ, missionName, planOk, terrainResult, blocks, spacing, photoMode, sensor.type,
-    params.altitude, params.triggerMode, params.gimbalPitch, params.crosshatch, params.includeNadir,
-    params.tieLine, speed, wpml, interval, runExport,
+    canExportKMZ,
+    missionName,
+    planOk,
+    terrainResult,
+    blocks,
+    spacing,
+    photoMode,
+    sensor.type,
+    params.altitude,
+    params.triggerMode,
+    params.gimbalPitch,
+    params.crosshatch,
+    params.includeNadir,
+    params.tieLine,
+    speed,
+    wpml,
+    interval,
+    runExport,
   ])
 
   return {

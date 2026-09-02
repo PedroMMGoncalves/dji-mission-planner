@@ -57,7 +57,10 @@ export default {
     pt: '{n} passagem(ns) não pôde(puderam) ser voada(s): nessa(s) faixa(s) a curvatura do eixo é mais apertada do que a distância ao eixo, e o corredor fica SEM COBERTURA aí. A largura indicada é a pedida, não a coberta. Reduza a meia-largura, suavize a curva ou voe essa faixa à parte.',
     en: '{n} pass(es) could not be flown: there the centreline curves tighter than the pass distance, and the corridor is LEFT UNCOVERED. The width shown is the requested one, not the covered one. Reduce the half-width, ease the bend, or fly that strip separately.',
   },
-  'co.plan.widthRequested': { pt: 'Largura pedida (não coberta)', en: 'Requested width (not covered)' },
+  'co.plan.widthRequested': {
+    pt: 'Largura pedida (não coberta)',
+    en: 'Requested width (not covered)',
+  },
   'co.plan.split': {
     pt: 'Curvatura mais apertada do que o desvio: {n} passagem(ns) partida(s) em troços; a cobertura pára onde deixaria de ser geometricamente possível.',
     en: 'Curvature tighter than the offset: {n} pass(es) split into runs; coverage stops where it would no longer be geometrically possible.',
@@ -69,7 +72,10 @@ export default {
     pt: 'Sobreposição lateral demasiado alta para gerar passagens.',
     en: 'Side overlap too high to generate passes.',
   },
-  'co.err.sensor-required': { pt: 'É necessário um payload de câmara.', en: 'A camera payload is required.' },
+  'co.err.sensor-required': {
+    pt: 'É necessário um payload de câmara.',
+    en: 'A camera payload is required.',
+  },
   'co.err.invalid-footprint': { pt: 'Pegada da câmara inválida.', en: 'Invalid camera footprint.' },
   'co.err.degenerate-centreline': { pt: 'Eixo degenerado.', en: 'Degenerate centreline.' },
   'co.err.too-many-passes': {
@@ -80,7 +86,10 @@ export default {
     pt: 'Nenhuma passagem é geometricamente possível com estes parâmetros.',
     en: 'No pass is geometrically possible with these parameters.',
   },
-  'co.err.invalid-latitude': { pt: 'Latitude fora do domínio suportado.', en: 'Latitude outside the supported domain.' },
+  'co.err.invalid-latitude': {
+    pt: 'Latitude fora do domínio suportado.',
+    en: 'Latitude outside the supported domain.',
+  },
 
   /* ---- Painel de fachada (E1.1) ---- */
   'fp.baseline.title': { pt: 'Pé da Face (baseline)', en: 'Face Foot (baseline)' },
@@ -198,7 +207,10 @@ export default {
   'op.plan.time': { pt: '~{min} min', en: '~{min} min' },
   'op.plan.gimbals': { pt: 'gimbal por nível: {v}', en: 'gimbal per level: {v}' },
   'op.exportSingle': { pt: 'Exportar missão única (KMZ)', en: 'Export single mission (KMZ)' },
-  'op.exportPerLevel': { pt: 'Exportar um KMZ por nível (ZIP)', en: 'Export one KMZ per level (ZIP)' },
+  'op.exportPerLevel': {
+    pt: 'Exportar um KMZ por nível (ZIP)',
+    en: 'Export one KMZ per level (ZIP)',
+  },
   /* ---- Resumo do projecto (E3.2) ---- */
   'ps.line': {
     pt: '{plans} planos · {min} min de voo · {bat} baterias · {photos} fotos',

@@ -22,10 +22,14 @@ const toM = ([lon, lat]) => [(lon + 9.14) * mLon, (lat - lat0) * 110574]
 
 /** Eixo suave em metros: x sempre a crescer, y em passeio aleatório. */
 const eixoSuave = fc
-  .array(fc.record({ dx: fc.integer({ min: 60, max: 250 }), dy: fc.integer({ min: -40, max: 40 }) }), { minLength: 2, maxLength: 12 })
+  .array(
+    fc.record({ dx: fc.integer({ min: 60, max: 250 }), dy: fc.integer({ min: -40, max: 40 }) }),
+    { minLength: 2, maxLength: 12 },
+  )
   .map((passos) => {
     const pts = [[0, 0]]
-    for (const { dx, dy } of passos) pts.push([pts[pts.length - 1][0] + dx, pts[pts.length - 1][1] + dy])
+    for (const { dx, dy } of passos)
+      pts.push([pts[pts.length - 1][0] + dx, pts[pts.length - 1][1] + dy])
     return pts
   })
 
@@ -39,9 +43,13 @@ describe('passOffsets', () => {
         (half, spacing, across) => {
           const o = passOffsets(half, spacing, across)
           if (!Array.isArray(o)) return typeof o.count === 'number' // recusa acima da alocação
-          for (let i = 0; i < o.length; i++) expect(Math.abs(o[i] + o[o.length - 1 - i])).toBeLessThan(1e-6)
-          for (let i = 1; i < o.length; i++) expect(o[i] - o[i - 1]).toBeLessThanOrEqual(spacing + 1e-9)
-          expect(Math.max(...o) + across / 2).toBeGreaterThanOrEqual(Math.min(half, 0) + (o.length === 1 ? 0 : half) - 1e-9)
+          for (let i = 0; i < o.length; i++)
+            expect(Math.abs(o[i] + o[o.length - 1 - i])).toBeLessThan(1e-6)
+          for (let i = 1; i < o.length; i++)
+            expect(o[i] - o[i - 1]).toBeLessThanOrEqual(spacing + 1e-9)
+          expect(Math.max(...o) + across / 2).toBeGreaterThanOrEqual(
+            Math.min(half, 0) + (o.length === 1 ? 0 : half) - 1e-9,
+          )
           return true
         },
       ),
@@ -53,30 +61,45 @@ describe('passOffsets', () => {
 describe('offsetRuns', () => {
   test('todo o ponto de um troço dista |desvio| do eixo, dentro da tolerância', () => {
     fc.assert(
-      fc.property(eixoSuave, fc.integer({ min: -120, max: 120 }).filter((d) => Math.abs(d) >= 5), (axis, offset) => {
-        const runs = offsetRuns(axis, offset, 2)
-        const tol = Math.max(0.25, Math.abs(offset) * 0.01)
-        for (const run of runs) {
-          expect(run.length).toBeGreaterThanOrEqual(2)
-          for (const q of run) {
-            const d = pointPolylineDistance(q, axis)
-            expect(d).toBeGreaterThanOrEqual(Math.abs(offset) - tol - 1e-9)
-            expect(d).toBeLessThanOrEqual(Math.abs(offset) + tol + 1e-9)
+      fc.property(
+        eixoSuave,
+        fc.integer({ min: -120, max: 120 }).filter((d) => Math.abs(d) >= 5),
+        (axis, offset) => {
+          const runs = offsetRuns(axis, offset, 2)
+          const tol = Math.max(0.25, Math.abs(offset) * 0.01)
+          for (const run of runs) {
+            expect(run.length).toBeGreaterThanOrEqual(2)
+            for (const q of run) {
+              const d = pointPolylineDistance(q, axis)
+              expect(d).toBeGreaterThanOrEqual(Math.abs(offset) - tol - 1e-9)
+              expect(d).toBeLessThanOrEqual(Math.abs(offset) + tol + 1e-9)
+            }
           }
-        }
-      }),
+        },
+      ),
       { numRuns: 200 },
     )
   })
 
   test('um eixo recto dá exactamente um troço, do princípio ao fim', () => {
     fc.assert(
-      fc.property(fc.integer({ min: 100, max: 5000 }), fc.integer({ min: 5, max: 150 }), (len, offset) => {
-        const runs = offsetRuns([[0, 0], [len, 0]], offset, 2)
-        expect(runs).toHaveLength(1)
-        expect(Math.abs(runs[0][0][0])).toBeLessThan(1e-6)
-        expect(Math.abs(runs[0][runs[0].length - 1][0] - len)).toBeLessThan(1e-6)
-      }),
+      fc.property(
+        fc.integer({ min: 100, max: 5000 }),
+        fc.integer({ min: 5, max: 150 }),
+        (len, offset) => {
+          const runs = offsetRuns(
+            [
+              [0, 0],
+              [len, 0],
+            ],
+            offset,
+            2,
+          )
+          expect(runs).toHaveLength(1)
+          expect(Math.abs(runs[0][0][0])).toBeLessThan(1e-6)
+          expect(Math.abs(runs[0][runs[0].length - 1][0] - len)).toBeLessThan(1e-6)
+        },
+      ),
       { numRuns: 100 },
     )
   })
@@ -92,7 +115,12 @@ describe('generateCorridorPlan', () => {
         fc.integer({ min: 50, max: 80 }),
         (axisM, bufferM, altitude, sideOverlapPct) => {
           const plan = generateCorridorPlan(axisM.map(toLL), {
-            sensor, altitude, bufferM, sideOverlapPct, photoIntervalM: 20, speed: 8,
+            sensor,
+            altitude,
+            bufferM,
+            sideOverlapPct,
+            photoIntervalM: 20,
+            speed: 8,
           })
           if (!plan || plan.error) return true // recusa explícita é um resultado válido
           const across = computeFootprint(sensor, altitude).across
@@ -102,13 +130,18 @@ describe('generateCorridorPlan', () => {
             for (let i = 1; i < pts.length; i++) {
               for (let s = 0; s <= 10; s++) {
                 const t = s / 10
-                const q = [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t]
+                const q = [
+                  pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t,
+                  pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t,
+                ]
                 expect(pointPolylineDistance(q, axisM)).toBeLessThanOrEqual(limite)
               }
             }
           }
           expect(plan.stats.passCount).toBe(plan.stats.offsets.length)
-          expect(plan.stats.runCount).toBeGreaterThanOrEqual(plan.stats.passCount - plan.stats.droppedPasses)
+          expect(plan.stats.runCount).toBeGreaterThanOrEqual(
+            plan.stats.passCount - plan.stats.droppedPasses,
+          )
           expect(plan.stats.runCount).toBe(plan.lines.length)
         },
       ),

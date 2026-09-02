@@ -76,7 +76,8 @@ export function normalizeCorridorConfig(stored) {
   const line = Array.isArray(s.centreline)
     ? dedupePolyline(
         s.centreline.filter(
-          (p) => Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1]),
+          (p) =>
+            Array.isArray(p) && p.length >= 2 && Number.isFinite(p[0]) && Number.isFinite(p[1]),
         ),
         1e-6,
       )
@@ -126,7 +127,8 @@ export function passOffsets(halfWidthM, spacingM, footprintAcrossM) {
 /** Comprimento de uma polilinha no plano. */
 export function polylineLength(pts) {
   let total = 0
-  for (let i = 1; i < pts.length; i++) total += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])
+  for (let i = 1; i < pts.length; i++)
+    total += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])
   return total
 }
 
@@ -341,7 +343,8 @@ export function offsetRuns(axis, offset, sampleStep) {
     // um salto — e o critério de distância ao eixo não o apanha, porque avalia
     // pontos e não o interior do segmento que os une. Parte-se o troço aí,
     // seja qual for a origem do salto.
-    const saltou = current.length > 0 &&
+    const saltou =
+      current.length > 0 &&
       Math.hypot(q[0] - current[current.length - 1][0], q[1] - current[current.length - 1][1]) >
         sampleStep * 2 + 1e-6
     if (saltou) {
@@ -567,11 +570,15 @@ export function generateCorridorPlan(centreline, options) {
   let photoCount = null
   if (perWaypointPhotos) photoCount = waypoints.length
   else if (photoIntervalM > 0) {
-    photoCount = lines.reduce((n, seg) => n + Math.floor(polylineLength(seg.map(toM)) / photoIntervalM) + 1, 0)
+    photoCount = lines.reduce(
+      (n, seg) => n + Math.floor(polylineLength(seg.map(toM)) / photoIntervalM) + 1,
+      0,
+    )
   }
 
   const TURN_TIME_S = 3
-  const flightTimeS = speed > 0 ? pathLengthM / speed + Math.max(0, lines.length - 1) * TURN_TIME_S : null
+  const flightTimeS =
+    speed > 0 ? pathLengthM / speed + Math.max(0, lines.length - 1) * TURN_TIME_S : null
 
   return {
     lines,

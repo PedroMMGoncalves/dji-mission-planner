@@ -77,7 +77,14 @@ export function useOrbitMission({ sensor, missionMode, missionName, wpml, setMod
   }, [missionMode, orbitPlan, orbitConfig.poi, orbitConfig.radiusM])
 
   const orbitParams = useCallback(
-    () => orbitExportParams({ missionName, plan: orbitPlan, speed: orbitConfig.speedMS, wpml, sensorType: sensor.type }),
+    () =>
+      orbitExportParams({
+        missionName,
+        plan: orbitPlan,
+        speed: orbitConfig.speedMS,
+        wpml,
+        sensorType: sensor.type,
+      }),
     [orbitPlan, missionName, orbitConfig.speedMS, wpml, sensor.type],
   )
 

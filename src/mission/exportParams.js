@@ -48,7 +48,16 @@ export function orbitExportParams({ missionName, plan, speed, wpml, sensorType }
  * troços de uma passagem partida por uma dobra não dispara (ver
  * triggerRangesForLines).
  */
-export function corridorExportParams({ missionName, plan, photoMode, altitude, speed, wpml, photoIntervalM, sensorType }) {
+export function corridorExportParams({
+  missionName,
+  plan,
+  photoMode,
+  altitude,
+  speed,
+  wpml,
+  photoIntervalM,
+  sensorType,
+}) {
   const perWaypointPhotos = photoMode === 'waypoint'
   return {
     name: buildExportName(missionName, 'corridor', { part: `n${plan.stats.passCount}` }),
@@ -61,16 +70,29 @@ export function corridorExportParams({ missionName, plan, photoMode, altitude, s
     triggerMode: perWaypointPhotos ? 'waypoint' : 'distance',
     triggerRanges: perWaypointPhotos
       ? null
-      : triggerRangesForLines(plan.lines, plan.lines.map((l) => l.length), null, {
-          maxLinkM: Math.max(2.5 * plan.stats.spacingM, 60),
-        }),
+      : triggerRangesForLines(
+          plan.lines,
+          plan.lines.map((l) => l.length),
+          null,
+          {
+            maxLinkM: Math.max(2.5 * plan.stats.spacingM, 60),
+          },
+        ),
     gimbalPitch: -90,
     sensorType,
   }
 }
 
 /** Pontos de inspecção (R2.9): rumo e pitch por ponto, sem disparo por distância. */
-export function inspectionExportParams({ missionName, points, altitude, speed, wpml, gimbalPitch, sensorType }) {
+export function inspectionExportParams({
+  missionName,
+  points,
+  altitude,
+  speed,
+  wpml,
+  gimbalPitch,
+  sensorType,
+}) {
   const { waypoints, perWaypoint } = inspectionToWaypoints(points)
   return {
     name: buildExportName(missionName, 'inspect', { part: `n${points.length}` }),

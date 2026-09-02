@@ -166,11 +166,19 @@ export function projectBox(box, project, steps = EDGE_SAMPLES) {
  *   width: number, height: number,
  *   elevationAt: (lon: number, lat: number) => number|null}>}
  */
-export async function loadDemFromFile(file, areaBbox, { maxDim = DEFAULT_MAX_DIM, marginM = 500 } = {}) {
+export async function loadDemFromFile(
+  file,
+  areaBbox,
+  { maxDim = DEFAULT_MAX_DIM, marginM = 500 } = {},
+) {
   if (!file || typeof file.slice !== 'function') {
     throw new Error('Ficheiro de MDT inválido')
   }
-  if (!Array.isArray(areaBbox) || areaBbox.length < 4 || !areaBbox.every((v) => Number.isFinite(v))) {
+  if (
+    !Array.isArray(areaBbox) ||
+    areaBbox.length < 4 ||
+    !areaBbox.every((v) => Number.isFinite(v))
+  ) {
     throw new Error('Área de levantamento inválida para recortar o MDT')
   }
 
@@ -205,7 +213,10 @@ export async function loadDemFromFile(file, areaBbox, { maxDim = DEFAULT_MAX_DIM
   // 3.2) Georreferenciação. Só se suportam rasters "north-up" (sem rotação):
   //      é o que produzem o GDAL/QGIS e os MDT oficiais.
   const transformation = image.fileDirectory?.ModelTransformation
-  if (transformation && (Math.abs(transformation[1]) > 1e-12 || Math.abs(transformation[4]) > 1e-12)) {
+  if (
+    transformation &&
+    (Math.abs(transformation[1]) > 1e-12 || Math.abs(transformation[4]) > 1e-12)
+  ) {
     throw new Error('MDT com rotação não suportado — reexporte o raster sem rotação (north-up)')
   }
 
@@ -227,7 +238,9 @@ export async function loadDemFromFile(file, areaBbox, { maxDim = DEFAULT_MAX_DIM
 
   // Conversores lon/lat ↔ CRS do raster (identidade se o raster for em graus)
   const converter = geographic ? null : proj4(proj4.WGS84, def)
-  const toRaster = geographic ? (lon, lat) => [lon, lat] : (lon, lat) => converter.forward([lon, lat])
+  const toRaster = geographic
+    ? (lon, lat) => [lon, lat]
+    : (lon, lat) => converter.forward([lon, lat])
   const toWgs84 = geographic ? (x, y) => [x, y] : (x, y) => converter.inverse([x, y])
 
   // 3.3) Área + margem, no CRS do raster
@@ -340,8 +353,7 @@ export async function loadDemFromFile(file, areaBbox, { maxDim = DEFAULT_MAX_DIM
   const nativeResolutionM = (Math.abs(resX) * mPerUnitX + Math.abs(resY) * mPerUnitY) / 2
   const stepX = winW / gridW // píxeis nativos por píxel da grelha lida
   const stepY = winH / gridH
-  const resolutionM =
-    (Math.abs(resX) * stepX * mPerUnitX + Math.abs(resY) * stepY * mPerUnitY) / 2
+  const resolutionM = (Math.abs(resX) * stepX * mPerUnitX + Math.abs(resY) * stepY * mPerUnitY) / 2
 
   /**
    * Elevação interpolada bilinearmente na grelha lida.

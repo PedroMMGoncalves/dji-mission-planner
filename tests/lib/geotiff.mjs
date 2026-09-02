@@ -12,9 +12,23 @@
  * falha de imediato — não há como passarem despercebidas.
  */
 export const TIFF_TYPE = { ASCII: 2, SHORT: 3, LONG: 4, DOUBLE: 12 }
-export const GEO_KEY_ID = { GTModelTypeGeoKey: 1024, GeographicTypeGeoKey: 2048, ProjectedCSTypeGeoKey: 3072 }
+export const GEO_KEY_ID = {
+  GTModelTypeGeoKey: 1024,
+  GeographicTypeGeoKey: 2048,
+  ProjectedCSTypeGeoKey: 3072,
+}
 
-export function makeFloatTiff({ width, height, valueAt, originX, originY, scale, geoKeys, nodata, transform = null }) {
+export function makeFloatTiff({
+  width,
+  height,
+  valueAt,
+  originX,
+  originY,
+  scale,
+  geoKeys,
+  nodata,
+  transform = null,
+}) {
   const px = new Float32Array(width * height)
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) px[y * width + x] = valueAt(x, y)

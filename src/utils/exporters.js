@@ -88,7 +88,10 @@ export function validateExportParams(params) {
   if (isNum(params.photoIntervalM) && params.photoIntervalM < 0) {
     throw new MissionExportError('param-out-of-range', 'photoIntervalM')
   }
-  if (isNum(params.rthHeightM) && (params.rthHeightM <= 0 || params.rthHeightM > MAX_RTH_HEIGHT_M)) {
+  if (
+    isNum(params.rthHeightM) &&
+    (params.rthHeightM <= 0 || params.rthHeightM > MAX_RTH_HEIGHT_M)
+  ) {
     throw new MissionExportError('param-out-of-range', 'rthHeightM')
   }
   // As acções por waypoint escapavam a esta fronteira: um rumo ou um pitch
@@ -117,7 +120,10 @@ export function validateExportParams(params) {
         throw new MissionExportError('param-out-of-range', `perWaypoint[${i}].heading`)
       }
       if (pw.gimbalPitch != null && !isNum(pw.gimbalPitch)) {
-        throw new MissionExportError('per-waypoint-not-finite', `${i}.gimbalPitch=${pw.gimbalPitch}`)
+        throw new MissionExportError(
+          'per-waypoint-not-finite',
+          `${i}.gimbalPitch=${pw.gimbalPitch}`,
+        )
       }
       if (isNum(pw.gimbalPitch) && (pw.gimbalPitch < -120 || pw.gimbalPitch > 60)) {
         throw new MissionExportError('param-out-of-range', `perWaypoint[${i}].gimbalPitch`)
@@ -162,9 +168,16 @@ export function validateExportParams(params) {
     }
     let prevEnd = -1
     for (const r of params.triggerRanges) {
-      const ok = Array.isArray(r) && r.length === 2 && Number.isInteger(r[0]) && Number.isInteger(r[1]) &&
-        r[0] > prevEnd && r[1] >= r[0] && r[1] < waypoints.length
-      if (!ok) throw new MissionExportError('param-out-of-range', `triggerRanges=${JSON.stringify(r)}`)
+      const ok =
+        Array.isArray(r) &&
+        r.length === 2 &&
+        Number.isInteger(r[0]) &&
+        Number.isInteger(r[1]) &&
+        r[0] > prevEnd &&
+        r[1] >= r[0] &&
+        r[1] < waypoints.length
+      if (!ok)
+        throw new MissionExportError('param-out-of-range', `triggerRanges=${JSON.stringify(r)}`)
       prevEnd = r[1]
     }
   }
@@ -324,13 +337,17 @@ export function escapeXml(s) {
   return String(s)
     .replace(XML_ILLEGAL, '')
     .replace(LONE_SURROGATE, '')
-    .replace(/[<>&'"]/g, (c) => ({
-      '<': '&lt;',
-      '>': '&gt;',
-      '&': '&amp;',
-      "'": '&apos;',
-      '"': '&quot;',
-    })[c])
+    .replace(
+      /[<>&'"]/g,
+      (c) =>
+        ({
+          '<': '&lt;',
+          '>': '&gt;',
+          '&': '&amp;',
+          "'": '&apos;',
+          '"': '&quot;',
+        })[c],
+    )
 }
 
 /**
@@ -507,7 +524,13 @@ ${placemarks}
 export function buildWaylinesWPML(params) {
   validateExportParams(params)
   const {
-    waypoints, altitude, speed, wpml, photoIntervalM, triggerMode, sensorType,
+    waypoints,
+    altitude,
+    speed,
+    wpml,
+    photoIntervalM,
+    triggerMode,
+    sensorType,
     // T4.1: ações por waypoint — array paralelo a `waypoints` com entradas
     // opcionais { gimbalPitch, heading, actions: ['takePhoto', ...] }.
     // heading fixa o rumo nesse waypoint (waypointHeadingMode
@@ -666,9 +689,7 @@ ${actions.join('\n')}
       const pw = perWaypoint?.[i] ?? null
       const hasHeading = pw?.heading != null
       const pwGroup = pw ? perWaypointGroup(i, pw) : ''
-      const groupsXml = [...(globalGroupsAt.get(i) ?? []), pwGroup]
-        .filter(Boolean)
-        .join('\n')
+      const groupsXml = [...(globalGroupsAt.get(i) ?? []), pwGroup].filter(Boolean).join('\n')
       return `      <Placemark>
         <Point>
           <coordinates>${fmtCoord(lon)},${fmtCoord(lat)}</coordinates>

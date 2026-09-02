@@ -48,11 +48,23 @@ mkdirSync(OUT, { recursive: true })
 // os 19 PASS já impressos.
 const server = spawn(
   process.execPath,
-  ['node_modules/vite/bin/vite.js', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'],
+  [
+    'node_modules/vite/bin/vite.js',
+    'preview',
+    '--port',
+    String(PORT),
+    '--strictPort',
+    '--host',
+    '127.0.0.1',
+  ],
   { stdio: ['ignore', 'pipe', 'pipe'], detached: true },
 )
 const stopServer = () => {
-  try { process.kill(-server.pid, 'SIGTERM') } catch { /* já terminou */ }
+  try {
+    process.kill(-server.pid, 'SIGTERM')
+  } catch {
+    /* já terminou */
+  }
 }
 let serverLog = ''
 server.stdout.on('data', (d) => (serverLog += d))
@@ -61,7 +73,9 @@ const up = async () => {
   for (let i = 0; i < 60; i++) {
     try {
       if ((await fetch(URL)).ok) return true
-    } catch { /* ainda a arrancar */ }
+    } catch {
+      /* ainda a arrancar */
+    }
     await new Promise((r) => setTimeout(r, 500))
   }
   return false
@@ -76,7 +90,12 @@ const fx = await makeFixtures(mkdtempSync(join(tmpdir(), 'dmp-e2e-')))
 const browser = await chromium.launch({
   headless: true,
   executablePath: process.env.E2E_CHROMIUM || undefined,
-  args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox'],
+  args: [
+    '--use-gl=angle',
+    '--use-angle=swiftshader',
+    '--enable-unsafe-swiftshader',
+    '--no-sandbox',
+  ],
 })
 
 /* ---- passos de operador ------------------------------------------------ */
@@ -86,28 +105,45 @@ const CROSS = /crosshatch/i
 const NADIR = /Passagem nadir|nadir pass/i
 
 async function openMission({ area, dem = true }) {
-  const page = await browser.newPage({ viewport: { width: 1500, height: 950 }, acceptDownloads: true })
+  const page = await browser.newPage({
+    viewport: { width: 1500, height: 950 },
+    acceptDownloads: true,
+  })
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message.slice(0, 300)))
   // só a build local: mapas, relevo global e fontes externas ficam de fora
   await page.route('**/*', (route) =>
-    route.request().url().startsWith(`http://127.0.0.1:${PORT}/`) ? route.continue() : route.abort(),
+    route.request().url().startsWith(`http://127.0.0.1:${PORT}/`)
+      ? route.continue()
+      : route.abort(),
   )
   await page.goto(URL, { waitUntil: 'domcontentloaded' })
   const areaInput = page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
   await areaInput.waitFor({ state: 'attached', timeout: 20000 })
   await areaInput.setInputFiles(area)
   if (dem) {
-    await page.waitForFunction(() => {
-      const b = [...document.querySelectorAll('button')].find((b) => /Importar MDT|Import DTM/.test(b.textContent))
-      return b && !b.disabled
-    }, null, { timeout: 15000 })
+    await page.waitForFunction(
+      () => {
+        const b = [...document.querySelectorAll('button')].find((b) =>
+          /Importar MDT|Import DTM/.test(b.textContent),
+        )
+        return b && !b.disabled
+      },
+      null,
+      { timeout: 15000 },
+    )
     await page.locator('input[accept=".tif,.tiff"]').setInputFiles(fx.dem)
-    await page.waitForFunction(() => {
-      const l = [...document.querySelectorAll('label')].find((l) => /Seguir terreno|Follow terrain/.test(l.textContent))
-      const i = l?.querySelector('input')
-      return i && !i.disabled
-    }, null, { timeout: 20000 })
+    await page.waitForFunction(
+      () => {
+        const l = [...document.querySelectorAll('label')].find((l) =>
+          /Seguir terreno|Follow terrain/.test(l.textContent),
+        )
+        const i = l?.querySelector('input')
+        return i && !i.disabled
+      },
+      null,
+      { timeout: 20000 },
+    )
   }
   return { page, errors }
 }
@@ -152,13 +188,28 @@ await scenario('rectangulo-crosshatch-tf', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
   await configure(page, { cross: true, tf: true })
   const txt = await bodyText(page)
-  check('painel: waypoints com altura própria', /waypoints com altura própria|waypoints with individual heights/.test(txt))
+  check(
+    'painel: waypoints com altura própria',
+    /waypoints com altura própria|waypoints with individual heights/.test(txt),
+  )
   check('painel: fonte do terreno é o MDT local', /MDT local dem\.tif|local DTM dem\.tif/.test(txt))
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'rect-cross-tf.kmz')))
   const r = analyseRoute(routes[0].wpml, { toM, ground })
-  check('rota única, sem valores não finitos', routes.length === 1 && r.nan === 0, `${r.n} waypoints`)
-  check('folga ao solo ≥ AGL − tolerância em toda a rota', clearanceOk(r), `${r.minClearance.toFixed(1)} m (AGL ${r.agl}) ${r.minAt}`)
-  check('disparo: um grupo por grelha, ligação entre grelhas sem disparo', r.groups.length === 2 && r.linksWithoutTrigger >= 1, `${r.groups.length} grupos, ${r.linksWithoutTrigger} ligações`)
+  check(
+    'rota única, sem valores não finitos',
+    routes.length === 1 && r.nan === 0,
+    `${r.n} waypoints`,
+  )
+  check(
+    'folga ao solo ≥ AGL − tolerância em toda a rota',
+    clearanceOk(r),
+    `${r.minClearance.toFixed(1)} m (AGL ${r.agl}) ${r.minAt}`,
+  )
+  check(
+    'disparo: um grupo por grelha, ligação entre grelhas sem disparo',
+    r.groups.length === 2 && r.linksWithoutTrigger >= 1,
+    `${r.groups.length} grupos, ${r.linksWithoutTrigger} ligações`,
+  )
   await page.getByRole('button', { name: /Vista 3D|3D View/ }).click()
   await page.waitForSelector('canvas', { timeout: 15000 })
   await page.waitForTimeout(1500)
@@ -173,7 +224,11 @@ await scenario('u-terrain-follow', async () => {
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'u-tf.kmz')))
   const r = analyseRoute(routes[0].wpml, { toM, ground })
   // antes da correcção das ligações: 64,4 m para 100 m de AGL
-  check('U: ligações através do entalhe sobem sobre a colina', clearanceOk(r), `${r.minClearance.toFixed(1)} m (AGL ${r.agl}) ${r.minAt}`)
+  check(
+    'U: ligações através do entalhe sobem sobre a colina',
+    clearanceOk(r),
+    `${r.minClearance.toFixed(1)} m (AGL ${r.agl}) ${r.minAt}`,
+  )
   check('U: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
@@ -185,8 +240,16 @@ await scenario('u-crosshatch-tf', async () => {
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'u-cross-tf.kmz')))
   const r = analyseRoute(routes[0].wpml, { toM, ground })
   // antes da correcção das ligações: 17,8 m para 100 m de AGL
-  check('U + dupla grelha: folga ≥ AGL − tolerância, ligações incluídas', clearanceOk(r), `${r.minClearance.toFixed(1)} m (AGL ${r.agl}) ${r.minAt}`)
-  check('U + dupla grelha: disparo suspenso nas travessias do entalhe', r.groups.length >= 3 && r.linksWithoutTrigger >= 3, `${r.groups.length} grupos, ${r.linksWithoutTrigger} ligações`)
+  check(
+    'U + dupla grelha: folga ≥ AGL − tolerância, ligações incluídas',
+    clearanceOk(r),
+    `${r.minClearance.toFixed(1)} m (AGL ${r.agl}) ${r.minAt}`,
+  )
+  check(
+    'U + dupla grelha: disparo suspenso nas travessias do entalhe',
+    r.groups.length >= 3 && r.linksWithoutTrigger >= 3,
+    `${r.groups.length} grupos, ${r.linksWithoutTrigger} ligações`,
+  )
   check('U + dupla grelha: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
@@ -198,10 +261,21 @@ await scenario('blocos-bateria-crosshatch-nadir-tf', async () => {
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'blocos.zip')))
   const rs = routes.map((x) => analyseRoute(x.wpml, { toM, ground }))
   check('blocos: um KMZ por bloco', routes.length >= 2, `${routes.length} blocos`)
-  check('blocos: folga ao solo em todos os blocos', rs.every(clearanceOk), rs.map((r) => r.minClearance.toFixed(0)).join(','))
+  check(
+    'blocos: folga ao solo em todos os blocos',
+    rs.every(clearanceOk),
+    rs.map((r) => r.minClearance.toFixed(0)).join(','),
+  )
   // cada bloco arranca da base: o primeiro troço é uma linha, não um ponto de ligação
-  check('blocos: cada bloco começa numa linha de voo', rs.every((r) => r.firstSegM >= 100), rs.map((r) => r.firstSegM.toFixed(0)).join(','))
-  check('blocos: intervalos de disparo válidos em índices locais', rs.every((r) => r.groups.length >= 1 && r.groups.every(([s, e]) => s <= e && e < r.n)))
+  check(
+    'blocos: cada bloco começa numa linha de voo',
+    rs.every((r) => r.firstSegM >= 100),
+    rs.map((r) => r.firstSegM.toFixed(0)).join(','),
+  )
+  check(
+    'blocos: intervalos de disparo válidos em índices locais',
+    rs.every((r) => r.groups.length >= 1 && r.groups.every(([s, e]) => s <= e && e < r.n)),
+  )
   check('blocos: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
@@ -210,11 +284,22 @@ await scenario('blocos-bateria-crosshatch-nadir-tf', async () => {
 await scenario('multipoligono-aviso', async () => {
   const { page, errors } = await openMission({ area: fx.multi })
   const txt = await bodyText(page)
-  check('importação: aviso de polígonos ignorados', /2 polígono\(s\) a mais|2 extra polygon/.test(txt),
-    txt.split('\n').filter((l) => /pol[ií]gon|ignor/i.test(l)).join(' | ').slice(0, 200))
+  check(
+    'importação: aviso de polígonos ignorados',
+    /2 polígono\(s\) a mais|2 extra polygon/.test(txt),
+    txt
+      .split('\n')
+      .filter((l) => /pol[ií]gon|ignor/i.test(l))
+      .join(' | ')
+      .slice(0, 200),
+  )
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'multi.kmz')))
   const r = analyseRoute(routes[0].wpml, { toM, ground })
-  check('importação: o maior polígono é o exportado (rectângulo, um grupo de disparo)', r.n > 20 && r.groups.length === 1, `${r.n} waypoints`)
+  check(
+    'importação: o maior polígono é o exportado (rectângulo, um grupo de disparo)',
+    r.n > 20 && r.groups.length === 1,
+    `${r.n} waypoints`,
+  )
   check('importação: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
@@ -248,15 +333,25 @@ await scenario('corredor-desenhado', async () => {
   await clickMap(page, 300, 40)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
   // meia-largura de 300 m: várias passagens em vez da passagem única por omissão
-  await page.locator('label', { hasText: /Meia-largura|Half-width/ }).locator('input').fill('300')
+  await page
+    .locator('label', { hasText: /Meia-largura|Half-width/ })
+    .locator('input')
+    .fill('300')
   await page.waitForTimeout(800)
   const txt = await bodyText(page)
   check('corredor: painel mostra as passagens', /passagens|passes/.test(txt))
-  const routes = await readRoutes(await panelExport(page, /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/, join(OUT, 'corredor.kmz')))
+  const routes = await readRoutes(
+    await panelExport(page, /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/, join(OUT, 'corredor.kmz')),
+  )
   const r = analyseRoute(routes[0].wpml, plano)
-  check('corredor: rota com várias passagens, gimbal nadir e disparo por distância',
-    r.n >= 6 && r.groups.length >= 1 && /gimbalPitchRotateAngle>-90</.test(routes[0].wpml) && /multipleDistance/.test(routes[0].wpml),
-    `${r.n} waypoints, ${r.groups.length} grupos`)
+  check(
+    'corredor: rota com várias passagens, gimbal nadir e disparo por distância',
+    r.n >= 6 &&
+      r.groups.length >= 1 &&
+      /gimbalPitchRotateAngle>-90</.test(routes[0].wpml) &&
+      /multipleDistance/.test(routes[0].wpml),
+    `${r.n} waypoints, ${r.groups.length} grupos`,
+  )
   check('corredor: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
@@ -270,13 +365,22 @@ await scenario('fachada-desenhada', async () => {
   await clickMap(page, 200, 0)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
   await page.waitForTimeout(800)
-  const routes = await readRoutes(await panelExport(page, /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/, join(OUT, 'fachada.kmz')))
+  const routes = await readRoutes(
+    await panelExport(page, /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/, join(OUT, 'fachada.kmz')),
+  )
   const wpml = routes[0].wpml
-  const rumos = [...wpml.matchAll(/<wpml:waypointHeadingAngle>([-\d.]+)</g)].map((m) => Number(m[1]))
+  const rumos = [...wpml.matchAll(/<wpml:waypointHeadingAngle>([-\d.]+)</g)].map((m) =>
+    Number(m[1]),
+  )
   const r = analyseRoute(wpml, plano)
-  check('fachada: passagens empilhadas com rumo fixo em [-180, 180] e uma foto por waypoint',
-    r.n >= 4 && rumos.length === r.n && rumos.every((h) => h >= -180 && h <= 180) && (wpml.match(/takePhoto/g) ?? []).length >= r.n,
-    `${r.n} waypoints, ${rumos.length} rumos`)
+  check(
+    'fachada: passagens empilhadas com rumo fixo em [-180, 180] e uma foto por waypoint',
+    r.n >= 4 &&
+      rumos.length === r.n &&
+      rumos.every((h) => h >= -180 && h <= 180) &&
+      (wpml.match(/takePhoto/g) ?? []).length >= r.n,
+    `${r.n} waypoints, ${rumos.length} rumos`,
+  )
   check('fachada: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
@@ -288,16 +392,30 @@ await scenario('orbita-marcada', async () => {
   await page.getByRole('button', { name: /Marcar POI|Mark POI/ }).click()
   await clickMap(page, 0, 0)
   await page.waitForTimeout(800)
-  const single = await readRoutes(await panelExport(page, /Exportar missão única|Export single mission/, join(OUT, 'orbita.kmz')))
+  const single = await readRoutes(
+    await panelExport(page, /Exportar missão única|Export single mission/, join(OUT, 'orbita.kmz')),
+  )
   const r = analyseRoute(single[0].wpml, plano)
-  check('órbita: anel de waypoints em voo curvo contínuo',
-    r.n >= 8 && /ContinuityCurvature|coordinateTurn/.test(single[0].wpml), `${r.n} waypoints`)
-  const perLevel = await readRoutes(await panelExport(page, /um KMZ por nível|one KMZ per level/, join(OUT, 'orbita-niveis.zip')))
-  check('órbita: um KMZ por nível', perLevel.length >= 1 && perLevel.every((x) => analyseRoute(x.wpml, plano).n >= 8), `${perLevel.length} níveis`)
+  check(
+    'órbita: anel de waypoints em voo curvo contínuo',
+    r.n >= 8 && /ContinuityCurvature|coordinateTurn/.test(single[0].wpml),
+    `${r.n} waypoints`,
+  )
+  const perLevel = await readRoutes(
+    await panelExport(page, /um KMZ por nível|one KMZ per level/, join(OUT, 'orbita-niveis.zip')),
+  )
+  check(
+    'órbita: um KMZ por nível',
+    perLevel.length >= 1 && perLevel.every((x) => analyseRoute(x.wpml, plano).n >= 8),
+    `${perLevel.length} níveis`,
+  )
   await modo(page, /^Área$|^Area$/)
   await page.waitForTimeout(500)
   const txt = await bodyText(page)
-  check('resumo do projecto conta a área e a órbita em qualquer separador', /2 planos|2 plans/.test(txt))
+  check(
+    'resumo do projecto conta a área e a órbita em qualquer separador',
+    /2 planos|2 plans/.test(txt),
+  )
   check('órbita: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
@@ -314,17 +432,29 @@ await scenario('projecto-autosave-ficheiro', async () => {
   await page.waitForTimeout(1200) // autosave com debounce de 500 ms
   const stored = await page.evaluate(() => localStorage.getItem('dji-mission-planner:project:v1'))
   const saved = stored ? JSON.parse(stored) : null
-  check('projecto: autosave em localStorage com versão 2 e área',
-    saved?.version === 2 && saved.missionName === 'projecto-e2e' && Array.isArray(saved.ring) && saved.ring.length >= 3)
+  check(
+    'projecto: autosave em localStorage com versão 2 e área',
+    saved?.version === 2 &&
+      saved.missionName === 'projecto-e2e' &&
+      Array.isArray(saved.ring) &&
+      saved.ring.length >= 3,
+  )
 
   await page.reload({ waitUntil: 'domcontentloaded' })
-  await page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]').waitFor({ state: 'attached', timeout: 20000 })
+  await page
+    .locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
+    .waitFor({ state: 'attached', timeout: 20000 })
   await page.waitForTimeout(800)
-  check('projecto: nome e dupla grelha sobrevivem ao recarregar',
-    (await nameInput.inputValue()) === 'projecto-e2e' && (await label(page, CROSS).isChecked()))
+  check(
+    'projecto: nome e dupla grelha sobrevivem ao recarregar',
+    (await nameInput.inputValue()) === 'projecto-e2e' && (await label(page, CROSS).isChecked()),
+  )
   const afterReload = await bodyText(page)
-  check('projecto: a área volta com o plano calculado', /Exportar WPML|Export Advanced WPML/.test(afterReload) &&
-    (await page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).isEnabled()))
+  check(
+    'projecto: a área volta com o plano calculado',
+    /Exportar WPML|Export Advanced WPML/.test(afterReload) &&
+      (await page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).isEnabled()),
+  )
 
   const [dl] = await Promise.all([
     page.waitForEvent('download', { timeout: 30000 }),
@@ -335,23 +465,40 @@ await scenario('projecto-autosave-ficheiro', async () => {
   const onDisk = JSON.parse(readFileSync(file, 'utf8'))
   // o ficheiro que a aplicação escreve tem de cumprir o contrato publicado
   const ajv = new Ajv2020({ allErrors: true })
-  const valid = ajv.compile(JSON.parse(readFileSync('public/schema/project-v2.schema.json', 'utf8')))
-  check('projecto: o ficheiro guardado valida contra public/schema/project-v2.schema.json',
-    valid(onDisk) === true, (valid.errors ?? []).map((e) => `${e.instancePath} ${e.message}`).join('; '))
-  check('projecto: ficheiro guardado com o mesmo conteúdo do autosave',
-    onDisk.version === 2 && onDisk.missionName === 'projecto-e2e' && onDisk.params?.crosshatch === true &&
-      JSON.stringify(onDisk.ring) === JSON.stringify(saved.ring))
+  const valid = ajv.compile(
+    JSON.parse(readFileSync('public/schema/project-v2.schema.json', 'utf8')),
+  )
+  check(
+    'projecto: o ficheiro guardado valida contra public/schema/project-v2.schema.json',
+    valid(onDisk) === true,
+    (valid.errors ?? []).map((e) => `${e.instancePath} ${e.message}`).join('; '),
+  )
+  check(
+    'projecto: ficheiro guardado com o mesmo conteúdo do autosave',
+    onDisk.version === 2 &&
+      onDisk.missionName === 'projecto-e2e' &&
+      onDisk.params?.crosshatch === true &&
+      JSON.stringify(onDisk.ring) === JSON.stringify(saved.ring),
+  )
 
   // estado limpo, depois abrir o ficheiro: tudo tem de voltar
   await page.evaluate(() => localStorage.clear())
   await page.reload({ waitUntil: 'domcontentloaded' })
-  await page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]').waitFor({ state: 'attached', timeout: 20000 })
-  check('projecto: sem projecto gravado o nome volta ao defeito', (await nameInput.inputValue()) !== 'projecto-e2e')
+  await page
+    .locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
+    .waitFor({ state: 'attached', timeout: 20000 })
+  check(
+    'projecto: sem projecto gravado o nome volta ao defeito',
+    (await nameInput.inputValue()) !== 'projecto-e2e',
+  )
   await page.locator('input[accept=".json"]').setInputFiles(file)
   await page.waitForTimeout(800)
-  check('projecto: abrir o ficheiro repõe nome, dupla grelha e área',
-    (await nameInput.inputValue()) === 'projecto-e2e' && (await label(page, CROSS).isChecked()) &&
-      (await page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).isEnabled()))
+  check(
+    'projecto: abrir o ficheiro repõe nome, dupla grelha e área',
+    (await nameInput.inputValue()) === 'projecto-e2e' &&
+      (await label(page, CROSS).isChecked()) &&
+      (await page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).isEnabled()),
+  )
   check('projecto: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
@@ -364,12 +511,17 @@ await scenario('projecto-autosave-ficheiro', async () => {
 await scenario('preflight-bloqueia-terreno-em-falta', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   const pill = page.getByTestId('preflight-pill')
-  check('preflight: pastilha visível e sem bloqueios com o plano simples',
-    (await pill.count()) === 1 && /Pronto a exportar|Ready to export|0 bloqueios|0 blockers/.test(await pill.innerText()))
+  check(
+    'preflight: pastilha visível e sem bloqueios com o plano simples',
+    (await pill.count()) === 1 &&
+      /Pronto a exportar|Ready to export|0 bloqueios|0 blockers/.test(await pill.innerText()),
+  )
   await pill.click()
   const list = page.getByTestId('preflight-list')
-  check('preflight: a lista abre com o lembrete das alturas relativas',
-    (await list.count()) === 1 && /descolagem|take-off/.test(await list.innerText()))
+  check(
+    'preflight: a lista abre com o lembrete das alturas relativas',
+    (await list.count()) === 1 && /descolagem|take-off/.test(await list.innerText()),
+  )
 
   // projecto gravado com seguir terreno ligado; sem relevo ao recarregar
   await page.waitForTimeout(1200) // autosave com debounce de 500 ms
@@ -384,20 +536,33 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
   await page.waitForTimeout(2500) // descarga automática do relevo tenta e falha (rede cortada)
   const pill2 = page.getByTestId('preflight-pill')
   const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
-  check('preflight: seguir terreno sem relevo é um bloqueio e o KMZ fica desactivado',
-    /1 bloqueio|1 blocker/.test(await pill2.innerText()) && !(await exportBtn.isEnabled()))
+  check(
+    'preflight: seguir terreno sem relevo é um bloqueio e o KMZ fica desactivado',
+    /1 bloqueio|1 blocker/.test(await pill2.innerText()) && !(await exportBtn.isEnabled()),
+  )
   await pill2.click()
-  check('preflight: a lista explica o bloqueio',
-    /relevo|elevation/.test(await page.getByTestId('preflight-list').innerText()))
+  check(
+    'preflight: a lista explica o bloqueio',
+    /relevo|elevation/.test(await page.getByTestId('preflight-list').innerText()),
+  )
 
   // com o MDT carregado o bloqueio desaparece e a exportação volta
   await page.locator('input[accept=".tif,.tiff"]').setInputFiles(fx.dem)
-  await page.waitForFunction(() => {
-    const b = [...document.querySelectorAll('button')].find((b) => /Exportar WPML|Export Advanced WPML/.test(b.textContent))
-    return b && !b.disabled
-  }, null, { timeout: 20000 })
-  check('preflight: com o MDT carregado o bloqueio desaparece',
-    !/bloqueio|blocker/.test(await page.getByTestId('preflight-pill').innerText()) || /0 bloqueios|0 blockers/.test(await page.getByTestId('preflight-pill').innerText()))
+  await page.waitForFunction(
+    () => {
+      const b = [...document.querySelectorAll('button')].find((b) =>
+        /Exportar WPML|Export Advanced WPML/.test(b.textContent),
+      )
+      return b && !b.disabled
+    },
+    null,
+    { timeout: 20000 },
+  )
+  check(
+    'preflight: com o MDT carregado o bloqueio desaparece',
+    !/bloqueio|blocker/.test(await page.getByTestId('preflight-pill').innerText()) ||
+      /0 bloqueios|0 blockers/.test(await page.getByTestId('preflight-pill').innerText()),
+  )
   check('preflight: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }

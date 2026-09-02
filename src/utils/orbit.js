@@ -22,8 +22,7 @@ export const DEFAULT_ORBIT_CONFIG = {
 export function normalizeOrbitConfig(stored) {
   const d = { ...DEFAULT_ORBIT_CONFIG }
   if (!stored || typeof stored !== 'object') return d
-  const num = (v, lo, hi, dflt) =>
-    Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : dflt
+  const num = (v, lo, hi, dflt) => (Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : dflt)
   const poi =
     Array.isArray(stored.poi) && Number.isFinite(stored.poi[0]) && Number.isFinite(stored.poi[1])
       ? [stored.poi[0], stored.poi[1]]
@@ -117,7 +116,7 @@ export function generateOrbitPlan(poi, options) {
     for (let i = 0; i <= nPts; i++) {
       // i === nPts fecha a volta no rumo inicial
       const brg = startBearingDeg + (i % nPts) * stepDeg
-      const pos = turf.destination(poiPt, radiusM, ((brg % 360) + 540) % 360 - 180, {
+      const pos = turf.destination(poiPt, radiusM, (((brg % 360) + 540) % 360) - 180, {
         units: 'meters',
       }).geometry.coordinates
       const heading = ((Math.round(turf.bearing(pos, poi)) % 360) + 360) % 360

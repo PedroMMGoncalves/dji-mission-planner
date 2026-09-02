@@ -228,7 +228,10 @@ async function runPool(items, limit, worker) {
  * @returns {Promise<{zoom: number, bbox: number[], tileCount: number, tileSize: number,
  *   failedCount: number, elevationAt: (lon: number, lat: number) => number|null}>}
  */
-export async function loadTerrain(bbox, { zoom = 12, fetchImpl = fetch, urlTemplate = TERRARIUM_URL } = {}) {
+export async function loadTerrain(
+  bbox,
+  { zoom = 12, fetchImpl = fetch, urlTemplate = TERRARIUM_URL } = {},
+) {
   if (!Array.isArray(bbox) || bbox.length < 4 || !bbox.every((v) => Number.isFinite(v))) {
     throw new Error('bbox inválida para o modelo de terreno')
   }
@@ -448,7 +451,11 @@ function segmentLengthM(a, b) {
  * @returns {{waypoints: Array<[number, number, number]>, perLine: number[],
  *   perLink: number[], elevMin: number|null, elevMax: number|null, warnings: string[]}}
  */
-export function terrainFollowLines(terrain, lines, { agl, refElev, toleranceM = 5, stepM = 40 } = {}) {
+export function terrainFollowLines(
+  terrain,
+  lines,
+  { agl, refElev, toleranceM = 5, stepM = 40 } = {},
+) {
   const waypoints = []
   const perLine = []
   const perLink = []
@@ -520,7 +527,11 @@ export function terrainFollowLines(terrain, lines, { agl, refElev, toleranceM = 
     }
     const a = seg[0]
     const b = seg[1]
-    if (!Array.isArray(a) || !Array.isArray(b) || ![a[0], a[1], b[0], b[1]].every(Number.isFinite)) {
+    if (
+      !Array.isArray(a) ||
+      !Array.isArray(b) ||
+      ![a[0], a[1], b[0], b[1]].every(Number.isFinite)
+    ) {
       perLine.push(0)
       perLink.push(0)
       continue

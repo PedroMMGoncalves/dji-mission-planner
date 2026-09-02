@@ -51,10 +51,7 @@ const UI = {
     'Área do levantamento, faixas de voo, base e GCPs · imagem de satélite indisponível',
     'Survey area, flight lines, base and GCPs · satellite imagery unavailable',
   ),
-  mapCaptionLoading: bi(
-    'A compor a imagem de satélite…',
-    'Composing the satellite imagery…',
-  ),
+  mapCaptionLoading: bi('A compor a imagem de satélite…', 'Composing the satellite imagery…'),
   mapMissing: bi('Sem área desenhada.', 'No area drawn.'),
 
   paramsTitle: bi('Parâmetros de voo', 'Flight parameters'),
@@ -123,8 +120,14 @@ const MERCATOR_MAX_LAT = 85.05112878
 
 /** Paleta dos blocos — igual à do mapa principal (ver MapView.jsx). */
 const BLOCK_COLORS = [
-  '#22d3ee', '#a3e635', '#f472b6', '#fbbf24',
-  '#c084fc', '#34d399', '#fb923c', '#60a5fa',
+  '#22d3ee',
+  '#a3e635',
+  '#f472b6',
+  '#fbbf24',
+  '#c084fc',
+  '#34d399',
+  '#fb923c',
+  '#60a5fa',
 ]
 
 const LINE_COLOR = '#22d3ee'
@@ -265,9 +268,7 @@ function loadTiles(view, pending) {
   const jobs = []
   for (let x = tiles.x0; x <= tiles.x1; x++) {
     for (let y = tiles.y0; y <= tiles.y1; y++) {
-      jobs.push(
-        loadTile(tileUrl(z, x, y), pending).then((img) => (img ? { img, x, y } : null)),
-      )
+      jobs.push(loadTile(tileUrl(z, x, y), pending).then((img) => (img ? { img, x, y } : null)))
     }
   }
   return Promise.all(jobs).then((r) => r.filter(Boolean))
@@ -473,7 +474,10 @@ function segLengthM(seg) {
 }
 
 const blockColor = (id, idx) =>
-  BLOCK_COLORS[((Number.isFinite(id) ? id - 1 : idx) % BLOCK_COLORS.length + BLOCK_COLORS.length) % BLOCK_COLORS.length]
+  BLOCK_COLORS[
+    (((Number.isFinite(id) ? id - 1 : idx) % BLOCK_COLORS.length) + BLOCK_COLORS.length) %
+      BLOCK_COLORS.length
+  ]
 
 /**
  * Agrupa as faixas por bloco para colorir o mapa.
@@ -532,7 +536,9 @@ const blockLabel = (id, i) => `B${String(fin(id) ? id : i + 1).padStart(2, '0')}
 
 function Section({ title, right, children, className = '' }) {
   return (
-    <section className={`rep-block mb-3 rounded border border-slate-800 bg-slate-900 p-3 ${className}`}>
+    <section
+      className={`rep-block mb-3 rounded border border-slate-800 bg-slate-900 p-3 ${className}`}
+    >
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <h2 className="text-[10px] font-semibold uppercase tracking-widest text-sky-400">
           {title}
@@ -742,27 +748,19 @@ export default function MissionReport({
         {/* --------------------------- Cabeçalho --------------------------- */}
         <header className="rep-header mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-3">
           <div className="min-w-0">
-            <h1 className="text-lg font-semibold tracking-tight text-slate-100">
-              {L(UI.title)}
-            </h1>
+            <h1 className="text-lg font-semibold tracking-tight text-slate-100">{L(UI.title)}</h1>
             <p className="mt-0.5 text-[11px] text-slate-500">{L(UI.subtitle)}</p>
             <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-[11px]">
               <div className="flex gap-1.5">
-                <dt className="uppercase tracking-wider text-slate-500">
-                  {L(UI.mission)}
-                </dt>
-                <dd className="font-mono text-slate-200">
-                  {missionName || L(UI.untitled)}
-                </dd>
+                <dt className="uppercase tracking-wider text-slate-500">{L(UI.mission)}</dt>
+                <dd className="font-mono text-slate-200">{missionName || L(UI.untitled)}</dd>
               </div>
               <div className="flex gap-1.5">
                 <dt className="uppercase tracking-wider text-slate-500">{L(UI.date)}</dt>
                 <dd className="font-mono text-slate-200">{dateText}</dd>
               </div>
               <div className="flex gap-1.5">
-                <dt className="uppercase tracking-wider text-slate-500">
-                  {L(UI.platform)}
-                </dt>
+                <dt className="uppercase tracking-wider text-slate-500">{L(UI.platform)}</dt>
                 <dd className="font-mono text-slate-200">{droneLabel || DASH}</dd>
               </div>
             </dl>
@@ -814,10 +812,7 @@ export default function MissionReport({
               <StatCell label={L(UI.sArea)} value={`${fmt(stats.areaHa, 2)} ha`} />
               <StatCell label={L(UI.sLines)} value={fmtInt(stats.lineCount)} />
               <StatCell label={L(UI.sWaypoints)} value={fmtInt(stats.waypointCount)} />
-              <StatCell
-                label={L(UI.sDistance)}
-                value={`${fmtKm(stats.pathLengthM)} km`}
-              />
+              <StatCell label={L(UI.sDistance)} value={`${fmtKm(stats.pathLengthM)} km`} />
               <StatCell label={L(UI.sPhotos)} value={fmtInt(stats.photoCount)} />
               <StatCell label={L(UI.sTime)} value={`${fmtMin(stats.flightTimeS)} min`} />
             </div>
@@ -891,10 +886,7 @@ export default function MissionReport({
           <Section title={L(UI.gcpsTitle)} right={L(UI.gcpsNote)}>
             <ul className="rep-gcps grid grid-cols-2 gap-x-4 gap-y-0.5 sm:grid-cols-3">
               {validGcps.map((g, i) => (
-                <li
-                  key={g.id ?? i}
-                  className="flex items-baseline gap-1.5 font-mono text-[10px]"
-                >
+                <li key={g.id ?? i} className="flex items-baseline gap-1.5 font-mono text-[10px]">
                   <span className="shrink-0 text-amber-300">
                     {g.id ?? `GCP-${String(i + 1).padStart(2, '0')}`}
                   </span>
@@ -913,16 +905,20 @@ export default function MissionReport({
             <table className="rep-table w-full border-collapse text-left">
               <thead>
                 <tr>
-                  {[UI.inspectIdx, UI.inspectLabel, UI.inspectCoords, UI.inspectHeight, UI.inspectPhoto].map(
-                    (h) => (
-                      <th
-                        key={h.pt}
-                        className="border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-wider text-slate-400"
-                      >
-                        {L(h)}
-                      </th>
-                    ),
-                  )}
+                  {[
+                    UI.inspectIdx,
+                    UI.inspectLabel,
+                    UI.inspectCoords,
+                    UI.inspectHeight,
+                    UI.inspectPhoto,
+                  ].map((h) => (
+                    <th
+                      key={h.pt}
+                      className="border border-slate-800 bg-slate-950 px-2 py-1 font-mono text-[9px] font-semibold uppercase tracking-wider text-slate-400"
+                    >
+                      {L(h)}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>

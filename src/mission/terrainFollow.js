@@ -46,7 +46,8 @@ export function regroupTerrainBlocks(res, blocks) {
     let nadirMarkerAt = null
     if (b.nadirLineLocal != null) {
       nadirMarkerAt = 0
-      for (let k = 0; k < b.nadirLineLocal; k++) nadirMarkerAt += pontosDaLinha(startLine + k).length
+      for (let k = 0; k < b.nadirLineLocal; k++)
+        nadirMarkerAt += pontosDaLinha(startLine + k).length
       if (b.nadirLineLocal > 0) nadirMarkerAt += res.perLink?.[startLine + b.nadirLineLocal] ?? 0
     }
     return { ...b, waypoints, nadirMarkerAt, perLine, perLink }

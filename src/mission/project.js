@@ -21,23 +21,58 @@ export const MISSION_MODES = ['area', 'face', 'orbit', 'corridor']
 /** Objecto serializável com tudo o que o projecto guarda (a mesma forma do autosave). */
 export function serializeProject(state) {
   const {
-    missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode,
-    faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint,
-    disabledTiles, terrainFollow, gcpConfig,
+    missionName,
+    drone,
+    custom,
+    payloadTuning,
+    batteryByCombo,
+    inspectPoints,
+    missionMode,
+    faceConfig,
+    corridorConfig,
+    orbitConfig,
+    params,
+    split,
+    anchor,
+    ring,
+    areaOrigin,
+    basePoint,
+    disabledTiles,
+    terrainFollow,
+    gcpConfig,
   } = state
   return {
     $schema: PROJECT_SCHEMA_URL,
     version: PROJECT_VERSION,
-    missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode,
-    faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint,
+    missionName,
+    drone,
+    custom,
+    payloadTuning,
+    batteryByCombo,
+    inspectPoints,
+    missionMode,
+    faceConfig,
+    corridorConfig,
+    orbitConfig,
+    params,
+    split,
+    anchor,
+    ring,
+    areaOrigin,
+    basePoint,
     disabledTiles: [...(disabledTiles ?? [])],
-    terrainFollow, gcpConfig,
+    terrainFollow,
+    gcpConfig,
   }
 }
 
 /** Nome do ficheiro de projecto a partir do nome da missão. */
 export function projectFileName(missionName) {
-  return `${String(missionName ?? '').trim().replace(/[^\w-]+/g, '-') || 'missao'}-projeto.json`
+  return `${
+    String(missionName ?? '')
+      .trim()
+      .replace(/[^\w-]+/g, '-') || 'missao'
+  }-projeto.json`
 }
 
 /**
@@ -63,7 +98,8 @@ export function normalizeProject(p) {
     out.split = restSplit
     if (Number.isFinite(legacyBatteryMin)) out.legacyBatteryMin = legacyBatteryMin
   }
-  if (p.batteryByCombo && typeof p.batteryByCombo === 'object') out.batteryByCombo = p.batteryByCombo
+  if (p.batteryByCombo && typeof p.batteryByCombo === 'object')
+    out.batteryByCombo = p.batteryByCombo
   if (MISSION_MODES.includes(p.missionMode)) out.missionMode = p.missionMode
   if (p.faceConfig) out.faceConfig = normalizeFaceConfig(p.faceConfig)
   if (p.orbitConfig) out.orbitConfig = normalizeOrbitConfig(p.orbitConfig)

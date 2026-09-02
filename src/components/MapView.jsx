@@ -189,8 +189,12 @@ export default function MapView({
     map.on('click', (e) => {
       const s = stateRef.current
       if (
-        s.mode === 'draw' || s.mode === 'anchor' || s.mode === 'base' ||
-        s.mode === 'inspect' || s.mode === 'face' || s.mode === 'orbit' ||
+        s.mode === 'draw' ||
+        s.mode === 'anchor' ||
+        s.mode === 'base' ||
+        s.mode === 'inspect' ||
+        s.mode === 'face' ||
+        s.mode === 'orbit' ||
         s.mode === 'corridor'
       ) {
         s.onMapClick([e.latlng.lng, e.latlng.lat])
@@ -249,8 +253,12 @@ export default function MapView({
     if (el)
       el.classList.toggle(
         'cursor-crosshair',
-        mode === 'draw' || mode === 'anchor' || mode === 'base' ||
-          mode === 'inspect' || mode === 'face' || mode === 'orbit' ||
+        mode === 'draw' ||
+          mode === 'anchor' ||
+          mode === 'base' ||
+          mode === 'inspect' ||
+          mode === 'face' ||
+          mode === 'orbit' ||
           mode === 'corridor',
       )
   }, [mode])
@@ -275,7 +283,9 @@ export default function MapView({
         iconSize: [30, 30],
         iconAnchor: [15, 15],
       })
-      marker = L.marker(toLatLng(basePoint), { icon, draggable: true, zIndexOffset: 500 }).addTo(map)
+      marker = L.marker(toLatLng(basePoint), { icon, draggable: true, zIndexOffset: 500 }).addTo(
+        map,
+      )
       marker.on('dragend', () => {
         const p = marker.getLatLng()
         stateRef.current.onBaseDrag([p.lng, p.lat])
@@ -291,7 +301,8 @@ export default function MapView({
     const g = layersRef.current?.draft
     if (!g) return
     g.clearLayers()
-    if ((mode !== 'draw' && mode !== 'face' && mode !== 'corridor') || draftVertices.length === 0) return
+    if ((mode !== 'draw' && mode !== 'face' && mode !== 'corridor') || draftVertices.length === 0)
+      return
 
     if (draftVertices.length > 1) {
       L.polyline(draftVertices.map(toLatLng), {
@@ -452,8 +463,14 @@ export default function MapView({
 
     // Faixas de voo: uma cor por bloco (quando há divisão) ou ciano único
     const BLOCK_COLORS = [
-      '#22d3ee', '#a3e635', '#f472b6', '#fbbf24',
-      '#c084fc', '#34d399', '#fb923c', '#60a5fa',
+      '#22d3ee',
+      '#a3e635',
+      '#f472b6',
+      '#fbbf24',
+      '#c084fc',
+      '#34d399',
+      '#fb923c',
+      '#60a5fa',
     ]
     if (blocks && blocks.length > 1) {
       blocks.forEach((block) => {

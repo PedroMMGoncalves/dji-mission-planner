@@ -111,7 +111,9 @@ async function buildImageryCanvas([minLon, minLat, maxLon, maxLat], isCancelled)
     if (isCancelled()) return
     const wrapped = ((x % n) + n) % n
     const img = await loadImage(
-      IMAGERY_URL.replace('{z}', String(z)).replace('{y}', String(y)).replace('{x}', String(wrapped)),
+      IMAGERY_URL.replace('{z}', String(z))
+        .replace('{y}', String(y))
+        .replace('{x}', String(wrapped)),
     )
     if (isCancelled() || !img) return
     ok++
@@ -190,7 +192,9 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
   })
 
   const hasTerrain =
-    Array.isArray(terrain?.bbox) && terrain.bbox.length >= 4 && typeof terrain?.elevationAt === 'function'
+    Array.isArray(terrain?.bbox) &&
+    terrain.bbox.length >= 4 &&
+    typeof terrain?.elevationAt === 'function'
 
   // Assinatura primitiva do conteúdo: evita reconstruir a cena só porque o pai
   // recriou os arrays com a mesma informação.
@@ -268,11 +272,7 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
       if (z < zMin) zMin = z
       if (z > zMax) zMax = z
       // UV em Web Mercator, para a textura assentar alinhada com a bbox
-      uvAttr.setXY(
-        i,
-        (lon - minLon) / lonSpan,
-        nSpan > 0 ? 1 - (mercatorN(lat) - nTop) / nSpan : 0,
-      )
+      uvAttr.setXY(i, (lon - minLon) / lonSpan, nSpan > 0 ? 1 - (mercatorN(lat) - nTop) / nSpan : 0)
     }
     uvAttr.needsUpdate = true
     if (!Number.isFinite(zMin)) {
@@ -335,11 +335,7 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
     const defaultHeight = known.length
       ? known.reduce((a, b) => a + b, 0) / known.length
       : DEFAULT_REL_HEIGHT
-    const ref = Number.isFinite(refElev)
-      ? refElev
-      : wps.length
-        ? elevAt(wps[0][0], wps[0][1])
-        : 0
+    const ref = Number.isFinite(refElev) ? refElev : wps.length ? elevAt(wps[0][0], wps[0][1]) : 0
 
     const pathXY = wps.map(toLocal)
     const pathZ = wps.map((w) => ref + (Number.isFinite(w[2]) ? w[2] : defaultHeight))
@@ -352,7 +348,10 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
 
     if (wps.length >= 2) {
       pathGeo = track(new THREE.BufferGeometry())
-      pathGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(wps.length * 3), 3))
+      pathGeo.setAttribute(
+        'position',
+        new THREE.BufferAttribute(new Float32Array(wps.length * 3), 3),
+      )
       const pathMat = track(new THREE.LineBasicMaterial({ color: '#22d3ee' }))
       scene.add(new THREE.Line(pathGeo, pathMat))
       // segundo passe amarelo, ligeiramente acima, para contraste sobre o relevo
@@ -407,7 +406,9 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
       })
       ringGeo = track(new THREE.BufferGeometry())
       ringGeo.setAttribute('position', new THREE.BufferAttribute(ringPos, 3))
-      const ringMat = track(new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.85 }))
+      const ringMat = track(
+        new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.85 }),
+      )
       scene.add(new THREE.LineLoop(ringGeo, ringMat))
     }
 
@@ -415,7 +416,11 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
     // { obj, groundZ, lift }: z = groundZ × exagero + lift
     const groundObjects = []
 
-    if (Array.isArray(basePoint) && Number.isFinite(basePoint[0]) && Number.isFinite(basePoint[1])) {
+    if (
+      Array.isArray(basePoint) &&
+      Number.isFinite(basePoint[0]) &&
+      Number.isFinite(basePoint[1])
+    ) {
       const [bx, by] = toLocal(basePoint)
       const group = new THREE.Group()
       const mastGeo = track(new THREE.CylinderGeometry(unit * 0.28, unit * 0.28, unit * 3, 12))
@@ -429,7 +434,11 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
       group.add(mast, cap)
       group.position.set(bx, by, 0)
       scene.add(group)
-      groundObjects.push({ obj: group, groundZ: elevAt(basePoint[0], basePoint[1]), lift: unit * 0.4 })
+      groundObjects.push({
+        obj: group,
+        groundZ: elevAt(basePoint[0], basePoint[1]),
+        lift: unit * 0.4,
+      })
     }
 
     if (Array.isArray(gcps) && gcps.length > 0) {
@@ -461,10 +470,18 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
     /* --- câmara e controlos ---------------------------------------------- */
     const width0 = host.clientWidth || 1
     const height0 = host.clientHeight || 1
-    const camera = new THREE.PerspectiveCamera(55, width0 / height0, Math.max(1, extent / 2000), extent * 40 + 40000)
+    const camera = new THREE.PerspectiveCamera(
+      55,
+      width0 / height0,
+      Math.max(1, extent / 2000),
+      extent * 40 + 40000,
+    )
     camera.up.set(0, 0, 1) // mundo com Z para cima
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      powerPreference: 'high-performance',
+    })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     renderer.setSize(width0, height0)
     renderer.domElement.style.display = 'block'

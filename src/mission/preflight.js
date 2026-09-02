@@ -66,14 +66,20 @@ export function preflightArea(c) {
   } else {
     n = blocks ? Math.max(...blocks.map(wpCount)) : wpCount(plan)
   }
-  if (n > WPML_MAX_WAYPOINTS) out.push(item('block', 'too-many-waypoints', { n, max: WPML_MAX_WAYPOINTS }))
+  if (n > WPML_MAX_WAYPOINTS)
+    out.push(item('block', 'too-many-waypoints', { n, max: WPML_MAX_WAYPOINTS }))
   else if (n > WAYPOINT_SOFT_LIMIT) out.push(item('warn', 'waypoints-many', { n }))
 
-  if (c.aglWarn) out.push(item('warn', 'agl-cap', { cap: c.aglWarn.cap, worst: Math.round(c.aglWarn.worstAgl) }))
+  if (c.aglWarn)
+    out.push(item('warn', 'agl-cap', { cap: c.aglWarn.cap, worst: Math.round(c.aglWarn.worstAgl) }))
   if (c.triggerWarn) {
-    out.push(item('warn', 'shutter', {
-      s: c.triggerWarn.actualS.toFixed(2), min: c.triggerWarn.minS.toFixed(1), vmax: c.triggerWarn.maxSpeed.toFixed(1),
-    }))
+    out.push(
+      item('warn', 'shutter', {
+        s: c.triggerWarn.actualS.toFixed(2),
+        min: c.triggerWarn.minS.toFixed(1),
+        vmax: c.triggerWarn.maxSpeed.toFixed(1),
+      }),
+    )
   }
 
   const usable = usableBatteryMin(c.batteryMin, c.reservePct)
@@ -81,12 +87,16 @@ export function preflightArea(c) {
     if (blocks) {
       for (const b of blocks) {
         const min = ((b.timeS ?? 0) + (b.transitS ?? 0)) / 60
-        if (min > usable) out.push(item('warn', 'battery-block', { id: b.id, min: round1(min), usable: round1(usable) }))
+        if (min > usable)
+          out.push(
+            item('warn', 'battery-block', { id: b.id, min: round1(min), usable: round1(usable) }),
+          )
       }
     } else if (Number.isFinite(plan.stats?.flightTimeS)) {
       const transitS = c.baseDistance > 0 && c.speed > 0 ? (2 * c.baseDistance) / c.speed : 0
       const min = (plan.stats.flightTimeS + transitS) / 60
-      if (min > usable) out.push(item('warn', 'battery', { min: round1(min), usable: round1(usable) }))
+      if (min > usable)
+        out.push(item('warn', 'battery', { min: round1(min), usable: round1(usable) }))
     }
   }
 
@@ -105,18 +115,25 @@ export function preflightPlan(c) {
   if (!plan) return [item('block', 'no-plan')]
   if (plan.error) return [item('block', 'plan-error', { error: String(plan.error) })]
   const n = wpCount(plan)
-  if (n > WPML_MAX_WAYPOINTS) out.push(item('block', 'too-many-waypoints', { n, max: WPML_MAX_WAYPOINTS }))
+  if (n > WPML_MAX_WAYPOINTS)
+    out.push(item('block', 'too-many-waypoints', { n, max: WPML_MAX_WAYPOINTS }))
   else if (n > WAYPOINT_SOFT_LIMIT) out.push(item('warn', 'waypoints-many', { n }))
-  if (c.aglWarn) out.push(item('warn', 'agl-cap', { cap: c.aglWarn.cap, worst: Math.round(c.aglWarn.worstAgl) }))
+  if (c.aglWarn)
+    out.push(item('warn', 'agl-cap', { cap: c.aglWarn.cap, worst: Math.round(c.aglWarn.worstAgl) }))
   if (c.triggerWarn) {
-    out.push(item('warn', 'shutter', {
-      s: c.triggerWarn.actualS.toFixed(2), min: c.triggerWarn.minS.toFixed(1), vmax: c.triggerWarn.maxSpeed.toFixed(1),
-    }))
+    out.push(
+      item('warn', 'shutter', {
+        s: c.triggerWarn.actualS.toFixed(2),
+        min: c.triggerWarn.minS.toFixed(1),
+        vmax: c.triggerWarn.maxSpeed.toFixed(1),
+      }),
+    )
   }
   const usable = usableBatteryMin(c.batteryMin, c.reservePct)
   if (usable != null && Number.isFinite(plan.stats?.flightTimeS)) {
     const min = plan.stats.flightTimeS / 60
-    if (min > usable) out.push(item('warn', 'battery', { min: round1(min), usable: round1(usable) }))
+    if (min > usable)
+      out.push(item('warn', 'battery', { min: round1(min), usable: round1(usable) }))
   }
   out.push(item('info', 'heights-relative'))
   return out

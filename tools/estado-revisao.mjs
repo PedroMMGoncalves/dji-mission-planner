@@ -40,7 +40,9 @@ if (cmd === 'registar') {
   estado.areasCobertas = [...new Set([...estado.areasCobertas, ...areas])]
   estado.actualizado = process.env.STAMP ?? null
   writeFileSync(FICHEIRO, JSON.stringify(estado, null, 2) + '\n')
-  console.log(`ronda "${ronda}" registada com ${areas.length} área(s); ${estado.areasCobertas.length} cobertas ao todo`)
+  console.log(
+    `ronda "${ronda}" registada com ${areas.length} área(s); ${estado.areasCobertas.length} cobertas ao todo`,
+  )
 } else {
   let achados = { resumo: {}, achados: [] }
   if (existsSync('docs/revisao-achados.json')) {

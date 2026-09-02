@@ -18,7 +18,11 @@ export const toLL = (x, y) => [lon0 + x / mLon, lat0 + y / 110574]
 const G = (x, y, cx, cy, s) => Math.exp(-((x - cx) ** 2 + (y - cy) ** 2) / (2 * s * s))
 /** Cota do solo (m) em coordenadas locais métricas. */
 export const ground = (x, y) =>
-  150 + 0.05 * x + 90 * G(x, y, 700, 600, 220) + 120 * G(x, y, 1800, 1200, 300) + 60 * G(x, y, 1200, 300, 150)
+  150 +
+  0.05 * x +
+  90 * G(x, y, 700, 600, 220) +
+  120 * G(x, y, 1800, 1200, 300) +
+  60 * G(x, y, 1200, 300, 150)
 
 const feature = (rings, type = 'Polygon') =>
   JSON.stringify({ type: 'Feature', properties: {}, geometry: { type, coordinates: rings } })
@@ -30,10 +34,22 @@ export const rectRing = closed([toLL(200, 150), toLL(2700, 150), toLL(2700, 1950
 /** U: o rectângulo com um entalhe x 1000..1900, y 800..1950 — a colina de
  *  120 m em (1800, 1200) fica DENTRO do entalhe, por onde passam as ligações. */
 export const uRing = closed([
-  toLL(200, 150), toLL(2700, 150), toLL(2700, 1950), toLL(1900, 1950),
-  toLL(1900, 800), toLL(1000, 800), toLL(1000, 1950), toLL(200, 1950),
+  toLL(200, 150),
+  toLL(2700, 150),
+  toLL(2700, 1950),
+  toLL(1900, 1950),
+  toLL(1900, 800),
+  toLL(1000, 800),
+  toLL(1000, 1950),
+  toLL(200, 1950),
 ])
-const small = (lon, lat) => closed([[lon, lat], [lon + 0.001, lat], [lon + 0.001, lat + 0.001], [lon, lat + 0.001]])
+const small = (lon, lat) =>
+  closed([
+    [lon, lat],
+    [lon + 0.001, lat],
+    [lon + 0.001, lat + 0.001],
+    [lon, lat + 0.001],
+  ])
 
 /** Escreve os ficheiros do cenário em `dir` e devolve os caminhos. */
 export async function makeFixtures(dir) {
@@ -43,7 +59,12 @@ export async function makeFixtures(dir) {
   const width = 420
   const height = 270
   const tif = makeFloatTiff({
-    width, height, originX, originY, scale, nodata: -9999,
+    width,
+    height,
+    originX,
+    originY,
+    scale,
+    nodata: -9999,
     geoKeys: { GTModelTypeGeoKey: 2, GeographicTypeGeoKey: 4326 },
     valueAt: (px, py) => {
       const [x, y] = toM(originX + (px + 0.5) * scale, originY - (py + 0.5) * scale)
@@ -59,6 +80,9 @@ export async function makeFixtures(dir) {
   writeFileSync(paths.dem, Buffer.from(await tif.arrayBuffer()))
   writeFileSync(paths.rect, feature([rectRing]))
   writeFileSync(paths.u, feature([uRing]))
-  writeFileSync(paths.multi, feature([[rectRing], [small(-9.16, 38.69)], [small(-9.1, 38.73)]], 'MultiPolygon'))
+  writeFileSync(
+    paths.multi,
+    feature([[rectRing], [small(-9.16, 38.69)], [small(-9.1, 38.73)]], 'MultiPolygon'),
+  )
   return paths
 }
