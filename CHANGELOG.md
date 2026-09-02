@@ -26,6 +26,9 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   de área — nome com variantes, intervalos de disparo, marcador do gimbal
   nadir, blocos (`src/mission/areaExport.js`) — passam a funções puras com
   testes próprios. Comportamento inalterado (goldens e E2E verdes).
+- Segundo corte: os parâmetros de exportação da fachada, da órbita, do
+  corredor e dos pontos de inspecção (`src/mission/exportParams.js`), testados
+  a partir de planos reais contra a fronteira de validação.
 
 ## 1.0.1 — 2026-09-01
 

@@ -45,11 +45,9 @@ import {
   splitIntoBlocks,
   squareSideForBattery,
   tilePolygonWithSquares,
-  triggerRangesForLines,
   validateRing,
 } from './utils/geo.js'
 import {
-  buildExportName,
   downloadBlob,
   MissionExportError,
   exportBlocksZip,
@@ -65,7 +63,8 @@ import {
 import { fitSlopePlane, loadTerrain } from './utils/terrain.js'
 import { planTerrainFollow } from './mission/terrainFollow.js'
 import { buildAreaExport } from './mission/areaExport.js'
-import { inspectionToWaypoints, nearestNeighbourOrder, reorderList } from './utils/inspect.js'
+import { corridorExportParams, faceExportParams, inspectionExportParams, orbitExportParams } from './mission/exportParams.js'
+import { nearestNeighbourOrder, reorderList } from './utils/inspect.js'
 import {
   DEFAULT_FACE_CONFIG,
   checkFaceClearance,
@@ -811,20 +810,9 @@ function AppInner({ lang, setLang }) {
 
   const handleExportFace = useCallback(() => {
     if (!facePlan || facePlan.error) return
-    runExport(() => exportWPMLKmz({
-      name: buildExportName(missionName, 'face', {
-        part: `p1-${facePlan.stats.passCount}`,
-      }),
-      waypoints: facePlan.waypoints,
-      perWaypoint: facePlan.perWaypoint,
-      altitude: Math.round(facePlan.stats.heights[facePlan.stats.heights.length - 1]),
-      speed: faceConfig.speedMS,
-      wpml,
-      photoIntervalM: 0,
-      triggerMode: 'distance',
-      gimbalPitch: faceConfig.gimbalPitch,
-      sensorType: sensor.type,
-    }))
+    runExport(() => exportWPMLKmz(faceExportParams({
+      missionName, plan: facePlan, speed: faceConfig.speedMS, wpml, gimbalPitch: faceConfig.gimbalPitch, sensorType: sensor.type,
+    })))
   }, [facePlan, missionName, faceConfig.speedMS, wpml, faceConfig.gimbalPitch, sensor.type, runExport])
 
   /* ------------------------ Modo órbita (E1.2) ------------------------ */
@@ -892,31 +880,19 @@ function AppInner({ lang, setLang }) {
     }
   }, [missionMode, orbitPlan, orbitConfig.poi, orbitConfig.radiusM])
 
-  const orbitExportParams = useCallback(() => ({
-    name: buildExportName(missionName, 'orbit', {
-      part: `n${orbitPlan.stats.levelCount}`,
-    }),
-    waypoints: orbitPlan.waypoints,
-    perWaypoint: orbitPlan.perWaypoint,
-    turnMode: orbitPlan.turnMode,
-    altitude: Math.round(orbitPlan.stats.heights[orbitPlan.stats.heights.length - 1]),
-    speed: orbitConfig.speedMS,
-    wpml,
-    photoIntervalM: 0,
-    triggerMode: 'distance',
-    gimbalPitch: orbitPlan.perLevel[0]?.gimbalPitch ?? -45,
-    sensorType: sensor.type,
+  const orbitParams = useCallback(() => orbitExportParams({
+    missionName, plan: orbitPlan, speed: orbitConfig.speedMS, wpml, sensorType: sensor.type,
   }), [orbitPlan, missionName, orbitConfig.speedMS, wpml, sensor.type])
 
   const handleExportOrbitSingle = useCallback(() => {
     if (!orbitPlan || orbitPlan.error) return
-    runExport(() => exportWPMLKmz(orbitExportParams()))
-  }, [orbitPlan, orbitExportParams, runExport])
+    runExport(() => exportWPMLKmz(orbitParams()))
+  }, [orbitPlan, orbitParams, runExport])
 
   const handleExportOrbitPerLevel = useCallback(() => {
     if (!orbitPlan || orbitPlan.error) return
-    runExport(() => exportBlocksZip(orbitExportParams(), orbitLevelsToBlocks(orbitPlan)))
-  }, [orbitPlan, orbitExportParams, runExport])
+    runExport(() => exportBlocksZip(orbitParams(), orbitLevelsToBlocks(orbitPlan)))
+  }, [orbitPlan, orbitParams, runExport])
 
   // Sem guarda de missionMode, tal como facePlan e orbitPlan: o resumo do
   // projecto agrega os planos que EXISTEM, seja qual for o separador aberto.
@@ -952,30 +928,10 @@ function AppInner({ lang, setLang }) {
 
   const handleExportCorridor = useCallback(() => {
     if (!corridorPlan || corridorPlan.error) return
-    const perWaypointPhotos = corridorConfig.photoMode === 'waypoint'
-    runExport(() => exportWPMLKmz({
-      name: buildExportName(missionName, 'corridor', {
-        part: `n${corridorPlan.stats.passCount}`,
-      }),
-      waypoints: corridorPlan.waypoints,
-      ...(corridorPlan.perWaypoint ? { perWaypoint: corridorPlan.perWaypoint } : {}),
-      altitude: params.altitude,
-      speed: corridorSpeed,
-      wpml,
-      // No modo por waypoint cada ponto dispara a sua foto, logo não há
-      // gatilho por distância; no modo distância é o inverso.
-      photoIntervalM: perWaypointPhotos ? 0 : (interval ?? 0),
-      triggerMode: perWaypointPhotos ? 'waypoint' : 'distance',
-      // passagens partidas por uma dobra: a ligação entre os troços não
-      // dispara (ver triggerRangesForLines)
-      triggerRanges: perWaypointPhotos
-        ? null
-        : triggerRangesForLines(corridorPlan.lines, corridorPlan.lines.map((l) => l.length), null, {
-            maxLinkM: Math.max(2.5 * corridorPlan.stats.spacingM, 60),
-          }),
-      gimbalPitch: -90,
-      sensorType: sensor.type,
-    }))
+    runExport(() => exportWPMLKmz(corridorExportParams({
+      missionName, plan: corridorPlan, photoMode: corridorConfig.photoMode, altitude: params.altitude,
+      speed: corridorSpeed, wpml, photoIntervalM: interval, sensorType: sensor.type,
+    })))
   }, [corridorPlan, corridorConfig, corridorSpeed, missionName, params.altitude, wpml, interval, sensor.type, runExport])
 
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
@@ -1692,19 +1648,9 @@ function AppInner({ lang, setLang }) {
   // pitch por ponto via perWaypoint; sem disparo por distância
   const handleExportInspection = () => {
     if (inspectPoints.length === 0) return
-    const { waypoints, perWaypoint } = inspectionToWaypoints(inspectPoints)
-    runExport(() => exportWPMLKmz({
-      name: buildExportName(missionName, 'inspect', { part: `n${inspectPoints.length}` }),
-      waypoints,
-      perWaypoint,
-      altitude: params.altitude,
-      speed: speed,
-      wpml,
-      photoIntervalM: 0,
-      triggerMode: 'distance',
-      gimbalPitch: params.gimbalPitch,
-      sensorType: sensor.type,
-    }))
+    runExport(() => exportWPMLKmz(inspectionExportParams({
+      missionName, points: inspectPoints, altitude: params.altitude, speed, wpml, gimbalPitch: params.gimbalPitch, sensorType: sensor.type,
+    })))
   }
 
   /* ----------------------------- Layout ------------------------------ */
