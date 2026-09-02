@@ -8,7 +8,7 @@ authors:
   - family-names: "Gonçalves"
     given-names: "Pedro"
     affiliation: "LNEG — Laboratório Nacional de Energia e Geologia"
-version: 1.0.1
+version: 1.1.0
 doi: 10.5281/zenodo.22238440
 identifiers:
   - type: doi
@@ -17,7 +17,7 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.22238441
     description: "Version DOI — v1.0.1"
-date-released: 2026-09-01
+date-released: 2026-09-02
 license: GPL-3.0-only
 repository-code: "https://github.com/PedroMMGoncalves/dji-mission-planner"
 url: "https://pedrommgoncalves.github.io/dji-mission-planner/"

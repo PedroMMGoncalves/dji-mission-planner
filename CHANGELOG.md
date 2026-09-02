@@ -6,6 +6,17 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+(nada ainda)
+
+## 1.1.0 — 2026-09-02
+
+Primeira versão depois da 1.0.1: preflight único, esquema do ficheiro de
+projecto, datums verticais, cache do relevo, buracos e MultiPolygon na
+importação, incerteza propagada, ferramenta planeado-vs-medido, métodos e
+protocolo de validação. Sem alterações incompatíveis: o ficheiro de
+projecto continua na versão 2 (campos novos opcionais: `holes`,
+`drone.rtk`, `$schema`).
+
 ### Fiabilidade
 - Suite E2E (`npm run test:e2e`) em Chromium headless sobre a build de
   produção: importa polígono e MDT sintéticos pela interface, liga dupla

@@ -215,17 +215,17 @@ repositório inclui um `CITATION.cff` (o GitHub mostra-o em *Cite this
 repository*).
 
 > Gonçalves, P. (2026). *dji-mission-planner: browser-based drone mapping
-> mission planner for DJI Pilot 2* (v1.0.1) [Software]. Zenodo.
-> https://doi.org/10.5281/zenodo.22238441
+> mission planner for DJI Pilot 2* (v1.1.0) [Software]. Zenodo.
+> https://doi.org/10.5281/zenodo.22238440
 
 ```bibtex
 @software{goncalves_dji_mission_planner,
   author  = {Gon\c{c}alves, Pedro},
   title   = {dji-mission-planner: browser-based drone mapping mission planner for DJI Pilot 2},
   year    = {2026},
-  version = {1.0.1},
-  doi     = {10.5281/zenodo.22238441},
-  url     = {https://doi.org/10.5281/zenodo.22238441}
+  version = {1.1.0},
+  doi     = {10.5281/zenodo.22238440},
+  url     = {https://doi.org/10.5281/zenodo.22238440}
 }
 ```
 
