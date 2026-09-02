@@ -104,6 +104,8 @@ export default function ControlPanel({
   importState,
   importError,
   importWarning = null,
+  importParts = null,
+  onImportUseAll = null,
   onImportFile,
   onImportCrs,
   onImportCancel,
@@ -733,6 +735,8 @@ export default function ControlPanel({
           <div className="mt-2 rounded border border-sky-800 bg-sky-950/40 p-3">
             <p className="mb-2 text-xs leading-relaxed text-sky-200">
               <strong>{importState.filename}</strong>: {t('cp.area.crsPrompt')}
+              {importState.crsHint &&
+                ` ${t('cp.area.importCrsHint', { crs: importState.crsHint })}`}
             </p>
             <select
               className="mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
@@ -768,9 +772,18 @@ export default function ControlPanel({
           </p>
         )}
         {importWarning && (
-          <p className="mt-2 rounded border border-amber-800 bg-amber-950/40 p-2 text-xs text-amber-200">
+          <div className="mt-2 rounded border border-amber-800 bg-amber-950/40 p-2 text-xs text-amber-200">
             ⚠ {importWarning}
-          </p>
+            {importParts && onImportUseAll && (
+              <button
+                type="button"
+                onClick={onImportUseAll}
+                className="mt-1.5 block rounded border border-amber-700 px-2 py-1 text-[11px] font-medium text-amber-100 hover:bg-amber-900/60"
+              >
+                {t('cp.area.importUseAll')}
+              </button>
+            )}
+          </div>
         )}
 
         <div className="mt-2 grid grid-cols-2 gap-2">

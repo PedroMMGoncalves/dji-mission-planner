@@ -35,6 +35,7 @@ export function serializeProject(state) {
     split,
     anchor,
     ring,
+    holes,
     areaOrigin,
     basePoint,
     disabledTiles,
@@ -58,6 +59,7 @@ export function serializeProject(state) {
     split,
     anchor,
     ring,
+    holes,
     areaOrigin,
     basePoint,
     disabledTiles: [...(disabledTiles ?? [])],
@@ -110,6 +112,7 @@ export function normalizeProject(p) {
   }
   if (p.anchor) out.anchor = p.anchor
   if (Array.isArray(p.ring)) out.ring = p.ring
+  out.holes = Array.isArray(p.holes) ? p.holes.filter((h) => Array.isArray(h) && h.length >= 3) : []
   out.areaOrigin = p.areaOrigin ?? null
   out.basePoint = Array.isArray(p.basePoint) ? p.basePoint : null
   out.disabledTiles = new Set(Array.isArray(p.disabledTiles) ? p.disabledTiles : [])

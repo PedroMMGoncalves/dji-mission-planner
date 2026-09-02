@@ -17,6 +17,7 @@ export default function MapView({
   mode,
   draftVertices,
   ring,
+  holes = null,
   valid,
   kinks,
   anchorCenter,
@@ -333,7 +334,8 @@ export default function MapView({
     if (!ring) return
 
     const color = valid ? '#38bdf8' : '#ef4444'
-    L.polygon(ring.map(toLatLng), {
+    const rings = [ring.map(toLatLng), ...(holes ?? []).map((h) => h.map(toLatLng))]
+    L.polygon(rings, {
       color,
       weight: 2,
       fillColor: color,
@@ -414,7 +416,7 @@ export default function MapView({
         fill: false,
       }).addTo(g)
     })
-  }, [ring, valid, kinks, editable, gridCells, tiles, disabledTiles])
+  }, [ring, holes, valid, kinks, editable, gridCells, tiles, disabledTiles])
 
   // Marcador do ponto central (modo âncora)
   useEffect(() => {

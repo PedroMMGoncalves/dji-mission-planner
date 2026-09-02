@@ -31,6 +31,19 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   ponto de base; alturas relativas ao ponto de descolagem). Cobre os quatro
   modos; oito testes unitários e um cenário E2E (42 asserções E2E no total).
 
+### Importação de áreas
+- Buracos (anéis interiores) preservados: entram no polígono do plano, as
+  faixas partem-se à volta deles, nenhum GCP cai dentro, o KML exporta-os e
+  o mapa desenha-os; não são editáveis. Um polígono com buracos avisa.
+- MultiPolygon preservado: todas as partes são lidas com os seus buracos e
+  o aviso passa a oferecer "usar todas as partes como células" (a maior é o
+  contorno; um KMZ por parte). Antes só o maior era usado.
+- Detecção de CRS conservadora: além da magnitude, uma extensão acima de
+  2° em qualquer eixo marca as coordenadas como projectadas — um polígono
+  em metros locais (0–5000) passava por WGS84 e caía no golfo da Guiné. O
+  membro `crs` do GeoJSON é aplicado quando declara um EPSG da lista e
+  serve de pista quando declara outro.
+
 ### Terreno
 - Datum vertical declarado por fonte: o Terrarium como ortométrico EGM96
   assumido; um MDT local pelas GeoKeys verticais (EGM96, EGM2008, MSL,

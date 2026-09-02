@@ -445,14 +445,21 @@ misturam num mesmo cálculo.
 ## 13. Importação de áreas e de missões
 
 `src/utils/importArea.js`: KML (tags por nome local, `outerBoundaryIs`
-preferido), GeoJSON e Shapefile zipado (reprojectado pelo `.prj` quando
-existe). De um MultiPolygon fica o polígono de maior área (fórmula do
-cadarço) e `discardedParts` conta os outros; buracos não são lidos. Anéis
-com mais de 400 vértices são simplificados (Douglas-Peucker do Turf,
-tolerância de 1e-5 graus ≈ 1 m, dobrada até 8 vezes). Coordenadas
-projectadas detectadas por magnitude (|x| > 180 ou |y| > 90) pedem um CRS
-de `CRS_OPTIONS`; `+towgs84` de 3 ou 7 parâmetros, sem grelhas de
-transformação.
+preferido, `innerBoundaryIs` lidos como buracos), GeoJSON e Shapefile
+zipado (reprojectado pelo `.prj` quando existe). Todos os polígonos do
+ficheiro são devolvidos com os seus buracos, por ordem decrescente de área
+(fórmula do cadarço); o maior é o contorno e os buracos dele entram no
+polígono do plano (as faixas partem-se à volta deles; nenhum GCP cai
+dentro; o KML exporta-os como `innerBoundaryIs`; não são editáveis). As
+partes restantes ficam disponíveis para voar como células, com a maior
+como contorno. Anéis com mais de 400 vértices são simplificados
+(Douglas-Peucker do Turf, tolerância de 1e-5 graus ≈ 1 m, dobrada até 8
+vezes). Coordenadas projectadas detectadas por magnitude (|x| > 180 ou
+|y| > 90) **ou por extensão** (mais de 2° em qualquer eixo: um polígono em
+metros locais 0–5000 passava por WGS84) pedem um CRS de `CRS_OPTIONS`; o
+membro `crs` de um GeoJSON, quando declara um EPSG da lista, é aplicado
+sem perguntar, e quando declara outro fica como pista no pedido de CRS.
+`+towgs84` de 3 ou 7 parâmetros, sem grelhas de transformação.
 
 `src/utils/importWpml.js`: reimportação de um KMZ (desta aplicação ou do
 Pilot 2): rota pela ordem de `wpml:index`, altura por `executeHeight` →

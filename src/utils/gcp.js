@@ -71,13 +71,14 @@ export function suggestedGcpCount(areaHa) {
  *
  * @param {Array<[number,number]>} ring anel aberto [[lon,lat], ...]
  * @param {number} count nº de GCPs pretendido
- * @param {{ insetM?: number|null }} [options]
+ * @param {{ insetM?: number|null, holes?: Array<Array<[number,number]>>|null }} [options]
  * @returns {Array<{ id: string, point: [number, number] }>} ordenados por id
  */
-export function planGcps(ring, count, { insetM = null } = {}) {
+export function planGcps(ring, count, { insetM = null, holes = null } = {}) {
   if (!ring || ring.length < 3) return []
 
-  const poly = ringToPolygon(ring)
+  // com buracos, o polígono exclui-os: nenhum alvo cai dentro de um
+  const poly = ringToPolygon(ring, holes)
   const areaM2 = turf.area(poly)
   const target = Math.max(1, Math.floor(Number(count) || 0) || 1)
 
@@ -89,10 +90,16 @@ export function planGcps(ring, count, { insetM = null } = {}) {
   const clearance = inset / 2
 
   const outline = turf.lineString([...ring, ring[0]])
+  // contornos a respeitar na folga: o anel exterior e cada buraco
+  const edges = [
+    outline,
+    ...(holes ?? []).filter((h) => h?.length >= 3).map((h) => turf.lineString([...h, h[0]])),
+  ]
+  const distToEdge = (c) =>
+    Math.min(...edges.map((e) => turf.pointToLineDistance(turf.point(c), e, { units: 'meters' })))
   const isInside = (c) => turf.booleanPointInPolygon(turf.point(c), poly)
-  /** dentro do polígono E a pelo menos `m` metros do contorno */
-  const isClear = (c, m) =>
-    isInside(c) && turf.pointToLineDistance(turf.point(c), outline, { units: 'meters' }) >= m
+  /** dentro do polígono E a pelo menos `m` metros de qualquer contorno */
+  const isClear = (c, m) => isInside(c) && distToEdge(c) >= m
 
   // Alvo do deslocamento para o interior. Em polígonos côncavos o centróide
   // pode cair fora da área — nesse caso usa-se um ponto garantidamente interior.
@@ -137,8 +144,12 @@ export function planGcps(ring, count, { insetM = null } = {}) {
   }
 
   // (e) seleção greedy farthest-point. O primeiro ponto vem de
-  // turf.pointOnFeature (garantidamente dentro da área).
-  const chosen = [turf.pointOnFeature(poly).geometry.coordinates]
+  // turf.pointOnFeature (dentro do anel exterior; com buracos pode cair num,
+  // porque o Turf ignora os anéis interiores — nesse caso usa-se o primeiro
+  // candidato com folga).
+  let first = turf.pointOnFeature(poly).geometry.coordinates
+  if (!isClear(first, clearance)) first = candidates.find((c) => isClear(c, clearance)) ?? first
+  const chosen = [first]
   const pool = candidates
   // minDist[i] = distância do candidato i ao GCP escolhido mais próximo
   const minDist = pool.map((p) => turf.distance(p, chosen[0], { units: 'meters' }))

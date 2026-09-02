@@ -233,9 +233,18 @@ export default {
     pt: 'Importar área (KML · GeoJSON · SHP · KMZ WPML)',
     en: 'Import area (KML · GeoJSON · SHP · WPML KMZ)',
   },
+  'cp.area.importHoles': {
+    pt: 'O polígono tem {n} anel(is) interior(es): os buracos ficam fora do plano e não são editáveis.',
+    en: 'The polygon has {n} inner ring(s): holes are excluded from the plan and cannot be edited.',
+  },
+  'cp.area.importUseAll': { pt: 'Usar todas as partes como células', en: 'Use all parts as cells' },
+  'cp.area.importCrsHint': {
+    pt: 'O ficheiro declara {crs}, que não está na lista; escolha o CRS equivalente ou reexporte em PT-TM06.',
+    en: 'The file declares {crs}, which is not in the list; pick the equivalent CRS or re-export in PT-TM06.',
+  },
   'cp.area.importDiscarded': {
-    pt: 'O ficheiro traz {n} polígono(s) a mais: usou-se o maior e o(s) restante(s) foi(ram) ignorado(s). Se também os quiser voar, importe-os como projectos separados.',
-    en: '{n} extra polygon(s) in the file: the largest one was used and the rest were ignored. To fly them too, import them as separate projects.',
+    pt: 'O ficheiro traz {n} polígono(s) a mais: usou-se o maior. Para os voar todos, use-os como células (botão abaixo) ou importe-os como projectos separados.',
+    en: '{n} extra polygon(s) in the file: the largest one was used. To fly them all, use them as cells (button below) or import them as separate projects.',
   },
   'cp.area.importTitle': {
     pt: 'Importar área de ficheiro KML, GeoJSON ou Shapefile zipado',

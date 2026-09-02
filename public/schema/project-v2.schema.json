@@ -144,6 +144,11 @@
       "description": "Anel aberto da area (o ultimo vertice nao repete o primeiro).",
       "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/ring" }]
     },
+    "holes": {
+      "description": "Aneis interiores (buracos) da area, importados com o ficheiro; nao editaveis.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/ring" }
+    },
     "areaOrigin": { "enum": ["draw", "anchor", null] },
     "basePoint": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/lonLat" }] },
     "disabledTiles": {

@@ -22,6 +22,7 @@ import { DEFAULT_GCP_CONFIG } from '../mission/defaults.js'
 
 export function useAreaMission({
   ring,
+  holes = null,
   validation,
   activeCells,
   basePoint,
@@ -62,12 +63,14 @@ export function useAreaMission({
       overshootM: Math.max(0, params.overshoot || 0),
       tieLine: Boolean(params.tieLine),
       photoMode,
+      holes,
     }
     // plano simples, ou um plano por célula com alinhamento global (src/mission/areaPlan.js)
     return planArea(ring, activeCells, opts)
   }, [
     photoMode,
     ring,
+    holes,
     validation.valid,
     spacing,
     params.angle,
@@ -110,11 +113,11 @@ export function useAreaMission({
   const gcps = useMemo(() => {
     if (!gcpConfig.enabled || !ring || !validation.valid) return null
     try {
-      return planGcps(ring, gcpConfig.count ?? gcpAutoCount)
+      return planGcps(ring, gcpConfig.count ?? gcpAutoCount, { holes })
     } catch {
       return null
     }
-  }, [gcpConfig, ring, validation.valid, gcpAutoCount])
+  }, [gcpConfig, ring, holes, validation.valid, gcpAutoCount])
 
   const gcpInfo = useMemo(
     () => (gcps && gcps.length > 0 ? gcpStats(ring, gcps) : null),
@@ -165,8 +168,10 @@ export function useAreaMission({
 
   const handleExportKML = useCallback(() => {
     if (canExportKML)
-      runExport(() => exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null))
-  }, [canExportKML, runExport, ring, safeName, basePoint, gcps, planOk])
+      runExport(() =>
+        exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null, holes),
+      )
+  }, [canExportKML, runExport, ring, holes, safeName, basePoint, gcps, planOk])
 
   const handleExportGcps = useCallback(() => {
     if (!gcps || gcps.length === 0) return

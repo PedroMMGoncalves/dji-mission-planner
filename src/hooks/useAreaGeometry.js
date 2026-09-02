@@ -18,7 +18,7 @@ import {
 } from '../utils/geo.js'
 import {
   parseAreaFile,
-  reprojectRing,
+  reprojectParts,
   simplifyRingIfNeeded,
   CRS_OPTIONS,
 } from '../utils/importArea.js'
@@ -51,6 +51,8 @@ export function useAreaGeometry({
   t,
 }) {
   const [ring, setRing] = useState(null) // anel aberto [[lon,lat], ...]
+  const [holes, setHoles] = useState([]) // anéis interiores importados (buracos), não editáveis
+  const [importParts, setImportParts] = useState(null) // partes a mais de um MultiPolygon, para usar como células
   const [areaOrigin, setAreaOrigin] = useState(null) // 'draw' | 'anchor' | null
   const [anchor, setAnchor] = useState(() => ({ ...DEFAULT_ANCHOR }))
   const [gridCells, setGridCells] = useState(null) // anéis das células da grelha
@@ -102,9 +104,11 @@ export function useAreaGeometry({
           rows,
         )
         setRing(grid.outline)
+        setHoles([])
         setGridCells(grid.cells)
       } else {
         setRing(rectangleFromAnchor(anchor.center, anchor.length, anchor.width, anchor.orientation))
+        setHoles([])
         setGridCells(null)
       }
       setAreaOrigin('anchor')
@@ -113,8 +117,8 @@ export function useAreaGeometry({
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const validation = useMemo(
-    () => (ring ? validateRing(ring) : { valid: false, kinks: [] }),
-    [ring],
+    () => (ring ? validateRing(ring, holes) : { valid: false, kinks: [] }),
+    [ring, holes],
   )
 
   const ringBbox = useMemo(() => {
@@ -153,9 +157,10 @@ export function useAreaGeometry({
         passes,
       })
     }
-    return { cells: tilePolygonWithSquares(ring, side, split.tileOrientation), side }
+    return { cells: tilePolygonWithSquares(ring, side, split.tileOrientation, holes), side }
   }, [
     ring,
+    holes,
     validation.valid,
     gridCells,
     split.mode,
@@ -267,6 +272,8 @@ export function useAreaGeometry({
     setMode('draw')
     setDraftVertices([])
     setRing(null)
+    setHoles([])
+    setImportParts(null)
     setAreaOrigin(null)
     setGridCells(null)
     setAnchor((a) => ({ ...a, center: null }))
@@ -277,6 +284,8 @@ export function useAreaGeometry({
       setMode('anchor')
       setDraftVertices([])
       setRing(null)
+      setHoles([])
+      setImportParts(null)
       setAreaOrigin(null)
       setAnchor((a) => ({
         ...a,
@@ -293,6 +302,8 @@ export function useAreaGeometry({
     setMode('idle')
     setDraftVertices([])
     setRing(null)
+    setHoles([])
+    setImportParts(null)
     setAreaOrigin(null)
     setGridCells(null)
     setAnchor((a) => ({ ...a, center: null }))
@@ -312,6 +323,8 @@ export function useAreaGeometry({
       if (clean.length >= 3) {
         pushHistory()
         setRing(clean)
+        setHoles([])
+        setImportParts(null)
         setAreaOrigin('draw')
         setMode('idle')
         return []
@@ -372,7 +385,7 @@ export function useAreaGeometry({
 
   /* ------------------------ Importação de áreas ----------------------- */
   const applyImportedRing = useCallback(
-    (rawRing) => {
+    (rawRing, rawHoles = [], parts = null) => {
       pushHistory()
       const clean = simplifyRingIfNeeded(rawRing)
       setMode('idle')
@@ -380,6 +393,9 @@ export function useAreaGeometry({
       setGridCells(null)
       setAnchor((a) => ({ ...a, center: null }))
       setRing(clean)
+      setHoles((rawHoles ?? []).map(simplifyRingIfNeeded))
+      // partes a mais ficam guardadas para o operador as usar como células
+      setImportParts(parts && parts.length > 1 ? parts : null)
       setAreaOrigin('draw')
       setImportState(null)
       setImportError(null)
@@ -387,6 +403,15 @@ export function useAreaGeometry({
     },
     [pushHistory, setMode, setDraftVertices],
   )
+
+  /** Todas as partes do ficheiro importado como células (a maior é o contorno). */
+  const useAllImportedParts = useCallback(() => {
+    if (!importParts) return
+    pushHistory()
+    setGridCells(importParts.map((p) => simplifyRingIfNeeded(p.ring)))
+    setImportParts(null)
+    setImportWarning(null)
+  }, [importParts, pushHistory])
 
   const handleImportFile = useCallback(
     async (file) => {
@@ -405,17 +430,20 @@ export function useAreaGeometry({
         const result = await parseAreaFile(file)
         if (result.needsCrs) {
           setImportState({
-            ring: result.ring,
+            parts: result.parts,
             filename: file.name,
             discardedParts: result.discardedParts,
+            crsHint: result.crsHint ?? null,
           })
         } else {
-          applyImportedRing(result.ring)
+          applyImportedRing(result.ring, result.holes, result.parts)
           // O import escolhe o maior polígono de um MultiPolygon e deitava os
           // outros fora em silêncio — o operador ficava a planear uma parte
           // da área convencido de que tinha a área toda.
           if (result.discardedParts > 0) {
             setImportWarning(t('cp.area.importDiscarded', { n: result.discardedParts }))
+          } else if (result.holes?.length > 0) {
+            setImportWarning(t('cp.area.importHoles', { n: result.holes.length }))
           }
         }
       } catch (err) {
@@ -432,7 +460,8 @@ export function useAreaGeometry({
       const crs = CRS_OPTIONS.find((c) => c.code === code)
       if (!crs) return
       try {
-        applyImportedRing(reprojectRing(importState.ring, crs.def))
+        const parts = reprojectParts(importState.parts, crs.def)
+        applyImportedRing(parts[0].ring, parts[0].holes, parts)
         if (importState.discardedParts > 0) {
           setImportWarning(t('cp.area.importDiscarded', { n: importState.discardedParts }))
         }
@@ -456,12 +485,16 @@ export function useAreaGeometry({
     if (n.split) setSplit((prev) => ({ ...prev, ...n.split }))
     if (n.anchor) setAnchor((prev) => ({ ...prev, ...n.anchor }))
     if (n.ring) setRing(n.ring)
+    setHoles(Array.isArray(n.holes) ? n.holes : [])
     setAreaOrigin(n.areaOrigin)
     setDisabledTiles(n.disabledTiles)
   }, [])
 
   return {
     ring,
+    holes,
+    importParts,
+    useAllImportedParts,
     areaOrigin,
     anchor,
     setAnchorParam,

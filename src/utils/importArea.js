@@ -14,6 +14,8 @@ import { findAll, findFirst, parseXml, textOf } from './xml.js'
  */
 
 const MAX_VERTICES = 400
+/** extensão máxima plausível de uma área em graus (mais do que isto e projectada) */
+const MAX_SPAN_DEG = 2
 
 /** CRS comuns em Portugal para GeoJSON/dados projetados sem .prj. */
 export const CRS_OPTIONS = [
@@ -65,30 +67,36 @@ function dropClosingVertex(ring) {
   return ring
 }
 
-/** Recolhe todos os anéis exteriores de polígonos de um GeoJSON qualquer. */
-function collectOuterRings(geojson, out = []) {
+/**
+ * Recolhe todos os polígonos de um GeoJSON qualquer, cada um com o anel
+ * exterior e os anéis interiores (buracos), tal como estão no ficheiro.
+ */
+function collectPolygons(geojson, out = []) {
   if (!geojson) return out
   if (Array.isArray(geojson)) {
-    geojson.forEach((g) => collectOuterRings(g, out))
+    geojson.forEach((g) => collectPolygons(g, out))
     return out
+  }
+  const push = (coords) => {
+    if (coords?.[0]?.length >= 4) {
+      out.push({ ring: coords[0], holes: coords.slice(1).filter((h) => h?.length >= 4) })
+    }
   }
   switch (geojson.type) {
     case 'FeatureCollection':
-      geojson.features?.forEach((f) => collectOuterRings(f, out))
+      geojson.features?.forEach((f) => collectPolygons(f, out))
       break
     case 'Feature':
-      collectOuterRings(geojson.geometry, out)
+      collectPolygons(geojson.geometry, out)
       break
     case 'Polygon':
-      if (geojson.coordinates?.[0]?.length >= 4) out.push(geojson.coordinates[0])
+      push(geojson.coordinates)
       break
     case 'MultiPolygon':
-      geojson.coordinates?.forEach((p) => {
-        if (p?.[0]?.length >= 4) out.push(p[0])
-      })
+      geojson.coordinates?.forEach(push)
       break
     case 'GeometryCollection':
-      geojson.geometries?.forEach((g) => collectOuterRings(g, out))
+      geojson.geometries?.forEach((g) => collectPolygons(g, out))
       break
     default:
       break
@@ -96,22 +104,61 @@ function collectOuterRings(geojson, out = []) {
   return out
 }
 
-function largestRing(rings) {
-  if (rings.length === 0) return null
-  let best = rings[0]
-  let bestArea = planarArea(rings[0])
-  for (const r of rings.slice(1)) {
-    const a = planarArea(r)
-    if (a > bestArea) {
-      best = r
-      bestArea = a
-    }
-  }
-  return dropClosingVertex(best.map((c) => [c[0], c[1]]))
+const cleanRing = (r) => dropClosingVertex(r.map((c) => [c[0], c[1]]))
+
+/** Polígonos em bruto → partes limpas ({ring, holes}), por ordem decrescente de área. */
+function toParts(polys) {
+  return polys
+    .map((p) => ({
+      ring: cleanRing(p.ring),
+      holes: (p.holes ?? []).map(cleanRing).filter((h) => h.length >= 3),
+    }))
+    .filter((p) => p.ring.length >= 3)
+    .sort((a, b) => planarArea(b.ring) - planarArea(a.ring))
 }
 
-function looksProjected(ring) {
-  return ring.some(([x, y]) => Math.abs(x) > 180 || Math.abs(y) > 90)
+/**
+ * Coordenadas projectadas? Duas pistas, qualquer uma basta: valores fora
+ * de [-180, 180] x [-90, 90], ou uma extensão acima de 2 graus em qualquer
+ * eixo — nenhum levantamento mede 220 km, mas um polígono em metros locais
+ * (0..5000) cabia no teste de magnitude e caía no golfo da Guiné como se
+ * fosse WGS84.
+ */
+export function looksProjected(ring) {
+  if (!Array.isArray(ring) || ring.length === 0) return false
+  if (ring.some(([x, y]) => Math.abs(x) > 180 || Math.abs(y) > 90)) return true
+  let minX = Infinity
+  let maxX = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
+  for (const [x, y] of ring) {
+    if (x < minX) minX = x
+    if (x > maxX) maxX = x
+    if (y < minY) minY = y
+    if (y > maxY) maxY = y
+  }
+  return maxX - minX > MAX_SPAN_DEG || maxY - minY > MAX_SPAN_DEG
+}
+
+/**
+ * Membro `crs` (GeoJSON 2008) → código EPSG, ou null. A RFC 7946 aboliu o
+ * membro, mas o QGIS e outros continuam a escreve-lo, e é a única pista
+ * fiável sobre dados projectados.
+ */
+export function crsCodeFromGeojson(geojson) {
+  const name = geojson?.crs?.properties?.name
+  if (typeof name !== 'string') return null
+  if (/CRS84/i.test(name)) return 4326
+  const m = name.match(/EPSG:{1,2}(\d+)/i)
+  return m ? Number(m[1]) : null
+}
+
+/** Partes de um ficheiro projectado → WGS84 com a definição dada. */
+export function reprojectParts(parts, projDef) {
+  return parts.map((p) => ({
+    ring: reprojectRing(p.ring, projDef),
+    holes: p.holes.map((h) => reprojectRing(h, projDef)),
+  }))
 }
 
 /** Reprojeta um anel de um CRS (proj string) para WGS84. */
@@ -145,51 +192,58 @@ export function simplifyRingIfNeeded(ring) {
  */
 function parseKml(text) {
   const doc = parseXml(text, 'KML inválido')
-  const rings = []
-  for (const poly of findAll(doc.documentElement, 'Polygon')) {
-    const outer = findFirst(poly, 'outerBoundaryIs')
-    const coords = textOf(findFirst(outer ?? poly, 'coordinates'))
-    if (!coords) continue
+  const polys = []
+  const ringOf = (node) => {
+    const coords = textOf(node ? findFirst(node, 'coordinates') : null)
+    if (!coords) return null
     const ring = coords
       .split(/\s+/)
       .map((triple) => triple.split(',').map(Number))
       .filter((c) => c.length >= 2 && Number.isFinite(c[0]) && Number.isFinite(c[1]))
       .map((c) => [c[0], c[1]])
-    if (ring.length >= 4) rings.push(ring)
+    return ring.length >= 4 ? ring : null
   }
-  return rings
+  for (const poly of findAll(doc.documentElement, 'Polygon')) {
+    const outer = findFirst(poly, 'outerBoundaryIs')
+    const ring = ringOf(outer ?? poly)
+    if (!ring) continue
+    const holes = findAll(poly, 'innerBoundaryIs').map(ringOf).filter(Boolean)
+    polys.push({ ring, holes })
+  }
+  return polys
 }
 
 /**
- * Lê um ficheiro de área. Devolve:
- *  { ring }                     → pronto a usar (WGS84)
- *  discardedParts               → polígonos a mais no ficheiro, ignorados:
- *                                 usa-se o maior e quem chama avisa o operador
- *  { ring, needsCrs: true }     → coordenadas projetadas; escolher CRS e
- *                                 chamar reprojectRing(ring, def)
+ * Lê um ficheiro de área. Devolve sempre `parts` (todos os polígonos do
+ * ficheiro, cada um com anel exterior e buracos, por ordem decrescente de
+ * área) e o maior deles como `ring` + `holes`:
+ *  { ring, holes, parts }         → pronto a usar (WGS84)
+ *  discardedParts                 → polígonos a mais no ficheiro: usa-se o
+ *                                   maior; quem chama avisa e pode usar todos
+ *                                   como células (parts)
+ *  { ..., needsCrs: true }        → coordenadas projectadas sem CRS conhecido;
+ *                                   escolher CRS e chamar reprojectParts
+ *  crsCode                        → CRS lido do ficheiro e já aplicado
  * Lança Error com mensagem legível em caso de falha.
+ * @returns {Promise<any>}
  */
 export async function parseAreaFile(file) {
   const name = file.name.toLowerCase()
+  const finish = (parts, what, extra = {}) => {
+    if (parts.length === 0) throw new Error(`Nenhum polígono encontrado no ${what}`)
+    const [main] = parts
+    return { ring: main.ring, holes: main.holes, parts, discardedParts: parts.length - 1, ...extra }
+  }
 
   if (name.endsWith('.zip')) {
     const buffer = await file.arrayBuffer()
     const geojson = await shp(buffer) // reprojeta via .prj quando presente
-    const rings = collectOuterRings(geojson)
-    const ring = largestRing(rings)
-    if (!ring || ring.length < 3) throw new Error('Nenhum polígono encontrado no shapefile')
-    return {
-      ring,
-      discardedParts: rings.length - 1,
-      ...(looksProjected(ring) ? { needsCrs: true } : {}),
-    }
+    const parts = toParts(collectPolygons(geojson))
+    return finish(parts, 'shapefile', looksProjected(parts[0]?.ring) ? { needsCrs: true } : {})
   }
 
   if (name.endsWith('.kml')) {
-    const rings = parseKml(await file.text())
-    const ring = largestRing(rings)
-    if (!ring || ring.length < 3) throw new Error('Nenhum polígono encontrado no KML')
-    return { ring, discardedParts: rings.length - 1 }
+    return finish(toParts(parseKml(await file.text())), 'KML')
   }
 
   if (name.endsWith('.geojson') || name.endsWith('.json')) {
@@ -199,14 +253,17 @@ export async function parseAreaFile(file) {
     } catch {
       throw new Error('GeoJSON inválido')
     }
-    const rings = collectOuterRings(geojson)
-    const ring = largestRing(rings)
-    if (!ring || ring.length < 3) throw new Error('Nenhum polígono encontrado no GeoJSON')
-    return {
-      ring,
-      discardedParts: rings.length - 1,
-      ...(looksProjected(ring) ? { needsCrs: true } : {}),
+    let parts = toParts(collectPolygons(geojson))
+    if (parts.length === 0) throw new Error('Nenhum polígono encontrado no GeoJSON')
+    // CRS declarado no ficheiro: aplica-se se for conhecido; WGS84 nao muda nada
+    const code = crsCodeFromGeojson(geojson)
+    if (code && code !== 4326) {
+      const option = CRS_OPTIONS.find((o) => o.code === `EPSG:${code}`)
+      if (option)
+        return finish(reprojectParts(parts, option.def), 'GeoJSON', { crsCode: option.code })
+      return finish(parts, 'GeoJSON', { needsCrs: true, crsHint: `EPSG:${code}` })
     }
+    return finish(parts, 'GeoJSON', looksProjected(parts[0].ring) ? { needsCrs: true } : {})
   }
 
   throw new Error('Formato não suportado — use .kml, .geojson/.json ou .zip (shapefile)')

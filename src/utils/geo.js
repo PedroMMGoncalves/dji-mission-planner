@@ -48,8 +48,10 @@ const MIN_SEGMENT_M = 1 // segmentos mais curtos que isto são descartados
 const TURN_TIME_S = 3 // custo médio de cada inversão de sentido (a calibrar, ver acima)
 
 /** Fecha um anel aberto e devolve um Feature<Polygon> do Turf. */
-export function ringToPolygon(ring) {
-  return turf.polygon([[...ring, ring[0]]])
+export function ringToPolygon(ring, holes = null) {
+  const rings = [[...ring, ring[0]]]
+  for (const h of holes ?? []) if (Array.isArray(h) && h.length >= 3) rings.push([...h, h[0]])
+  return turf.polygon(rings)
 }
 
 /**
@@ -150,10 +152,10 @@ export function photoInterval(footprintAlong, frontOverlapPct) {
  * Validação topológica com turf.kinks: deteta auto-interseções.
  * Devolve { valid, kinks: [[lon,lat], ...] }.
  */
-export function validateRing(ring) {
+export function validateRing(ring, holes = null) {
   if (!ring || ring.length < 3) return { valid: false, kinks: [] }
   try {
-    const kinks = turf.kinks(ringToPolygon(ring))
+    const kinks = turf.kinks(ringToPolygon(ring, holes))
     return {
       valid: kinks.features.length === 0,
       kinks: kinks.features.map((f) => f.geometry.coordinates),
@@ -280,9 +282,9 @@ export function squareSideForBattery({
  *
  * Devolve [anéis] das células candidatas, ou { error: 'too-many-cells' }.
  */
-export function tilePolygonWithSquares(ring, sizeM, orientationDeg) {
+export function tilePolygonWithSquares(ring, sizeM, orientationDeg, holes = null) {
   if (!ring || ring.length < 3 || !(sizeM >= 10)) return null
-  const poly = ringToPolygon(ring)
+  const poly = ringToPolygon(ring, holes)
   const pivot = turf.centroid(poly).geometry.coordinates
   const rotated = turf.transformRotate(poly, -orientationDeg, { pivot })
 
@@ -514,13 +516,18 @@ export function generateFlightLines(ring, options) {
     overshootM = 0,
     tieLine = false,
     photoMode = 'distance',
+    holes = null,
   } = options
   if (!ring || ring.length < 3 || !(spacingM > 0.05)) return null
   // B: foto por waypoint só com intervalo válido; caso contrário o modo é o
   // de distância (sem densificação, sem acções por waypoint)
   const perWaypointPhotos = photoMode === 'waypoint' && photoIntervalM > 0
 
-  const basePoly = ringToPolygon(ring)
+  // Buracos (anéis interiores importados): entram no polígono, pelo que a
+  // intersecção das linhas de varrimento e o teste do ponto médio os
+  // excluem por construção — as faixas partem-se à volta deles e a ligação
+  // atravessa-os como trânsito.
+  const basePoly = ringToPolygon(ring, holes)
 
   // 1) Buffer exterior (Polygon ou MultiPolygon, consoante o turf)
   let area = /** @type {any} */ (basePoly)
@@ -864,7 +871,7 @@ export function normalizeTriggerMode(value) {
 export function composeCellPlans(
   ring,
   perCell,
-  { photoIntervalM = 0, overshootM = 0, photoMode = 'distance' } = {},
+  { photoIntervalM = 0, overshootM = 0, photoMode = 'distance', holes = null } = {},
 ) {
   const failed = perCell.find((p) => p?.error)
   if (failed) return failed
@@ -873,7 +880,7 @@ export function composeCellPlans(
   if (perCell.length === 0) return null
   const sum = (f) => perCell.reduce((acc, p) => acc + (f(p.stats) ?? 0), 0)
   return {
-    area: ringToPolygon(ring),
+    area: ringToPolygon(ring, holes),
     lines: perCell.flatMap((p) => p.lines),
     waypoints: perCell.flatMap((p) => p.waypoints),
     ...concatPerWaypoint(perCell),

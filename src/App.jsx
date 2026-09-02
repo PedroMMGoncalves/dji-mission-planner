@@ -359,6 +359,9 @@ function AppInner({ lang, setLang }) {
   }, [])
   const {
     ring,
+    holes,
+    importParts,
+    useAllImportedParts,
     areaOrigin,
     anchor,
     setAnchorParam,
@@ -440,6 +443,7 @@ function AppInner({ lang, setLang }) {
     handleExportKMZ,
   } = useAreaMission({
     ring,
+    holes,
     validation,
     activeCells,
     basePoint,
@@ -760,6 +764,7 @@ function AppInner({ lang, setLang }) {
       split,
       anchor,
       ring,
+      holes,
       areaOrigin,
       basePoint,
       disabledTiles,
@@ -781,6 +786,7 @@ function AppInner({ lang, setLang }) {
       split,
       anchor,
       ring,
+      holes,
       areaOrigin,
       basePoint,
       disabledTiles,
@@ -1092,6 +1098,8 @@ function AppInner({ lang, setLang }) {
                 importState={importState}
                 importError={importError}
                 importWarning={importWarning}
+                importParts={importParts}
+                onImportUseAll={useAllImportedParts}
                 onImportFile={handleImportFile}
                 onImportCrs={handleImportCrs}
                 onImportCancel={cancelImport}
@@ -1143,6 +1151,7 @@ function AppInner({ lang, setLang }) {
             mode={mode}
             draftVertices={draftVertices}
             ring={ring}
+            holes={holes}
             valid={validation.valid}
             kinks={validation.kinks}
             anchorCenter={anchor.center}

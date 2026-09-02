@@ -304,6 +304,15 @@ await scenario('multipoligono-aviso', async () => {
     r.n > 20 && r.groups.length === 1,
     `${r.n} waypoints`,
   )
+  // todas as partes como células: um KMZ por parte
+  await page.getByRole('button', { name: /Usar todas as partes|Use all parts/ }).click()
+  await page.waitForTimeout(800)
+  const cells = await readRoutes(await exportKmz(page, join(OUT, 'multi-celulas.zip')))
+  check(
+    'importação: todas as partes como células exportam um KMZ por parte',
+    cells.length === 3,
+    `${cells.length} rotas`,
+  )
   check('importação: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }

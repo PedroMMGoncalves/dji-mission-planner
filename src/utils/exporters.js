@@ -221,15 +221,35 @@ export function downloadBlob(blob, filename) {
 /* KML simples (polígono 2D)                                          */
 /* ------------------------------------------------------------------ */
 
-export function buildSimpleKML(ring, name, basePoint = null, gcps = null, lines = null) {
+export function buildSimpleKML(
+  ring,
+  name,
+  basePoint = null,
+  gcps = null,
+  lines = null,
+  holes = null,
+) {
   if (!Array.isArray(ring) || ring.length < 3) throw new MissionExportError('ring-too-short')
   ring.forEach(checkWaypoint)
   if (basePoint) checkWaypoint(basePoint, -1)
   gcps?.forEach((g, i) => checkWaypoint(g.point, i))
   lines?.forEach((seg) => seg.forEach(checkWaypoint))
-  const coords = [...ring, ring[0]]
-    .map(([lon, lat]) => `${fmtCoord(lon)},${fmtCoord(lat)},0`)
-    .join(' ')
+  const ringCoords = (r) =>
+    [...r, r[0]].map(([lon, lat]) => `${fmtCoord(lon)},${fmtCoord(lat)},0`).join(' ')
+  const coords = ringCoords(ring)
+  // anéis interiores (buracos) importados com a área
+  const innerRings = (holes ?? [])
+    .filter((h) => Array.isArray(h) && h.length >= 3)
+    .map((h) => {
+      h.forEach(checkWaypoint)
+      return `
+        <innerBoundaryIs>
+          <LinearRing>
+            <coordinates>${ringCoords(h)}</coordinates>
+          </LinearRing>
+        </innerBoundaryIs>`
+    })
+    .join('')
 
   const basePlacemark = basePoint
     ? `
@@ -271,7 +291,7 @@ export function buildSimpleKML(ring, name, basePoint = null, gcps = null, lines 
           <LinearRing>
             <coordinates>${coords}</coordinates>
           </LinearRing>
-        </outerBoundaryIs>
+        </outerBoundaryIs>${innerRings}
       </Polygon>
     </Placemark>${basePlacemark}${gcpPlacemarks}${linesFolder(lines)}
   </Document>
@@ -305,8 +325,15 @@ function linesFolder(lines) {
     </Folder>`
 }
 
-export function exportSimpleKML(ring, name, basePoint = null, gcps = null, lines = null) {
-  const kml = buildSimpleKML(ring, name, basePoint, gcps, lines)
+export function exportSimpleKML(
+  ring,
+  name,
+  basePoint = null,
+  gcps = null,
+  lines = null,
+  holes = null,
+) {
+  const kml = buildSimpleKML(ring, name, basePoint, gcps, lines, holes)
   downloadBlob(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }), `${name}.kml`)
 }
 
