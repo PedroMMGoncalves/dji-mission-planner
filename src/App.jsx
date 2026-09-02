@@ -57,9 +57,10 @@ import {
 import { fitSlopePlane, loadTerrain } from './utils/terrain.js'
 import { planTerrainFollow } from './mission/terrainFollow.js'
 import { buildAreaExport } from './mission/areaExport.js'
-import { faceExportParams, inspectionExportParams, orbitExportParams } from './mission/exportParams.js'
+import { faceExportParams, inspectionExportParams } from './mission/exportParams.js'
 import { planBlocks } from './mission/blocks.js'
 import { useCorridorMission } from './hooks/useCorridorMission.js'
+import { useOrbitMission } from './hooks/useOrbitMission.js'
 import { planArea } from './mission/areaPlan.js'
 import { PROJECT_STORAGE_KEY, normalizeProject, projectFileName, serializeProject } from './mission/project.js'
 import { nearestNeighbourOrder, reorderList } from './utils/inspect.js'
@@ -71,11 +72,6 @@ import {
 import { headingTicks } from './utils/preview.js'
 import {
 } from './utils/corridor.js'
-import {
-  DEFAULT_ORBIT_CONFIG,
-  generateOrbitPlan,
-  orbitLevelsToBlocks,
-} from './utils/orbit.js'
 import { loadDemFromFile } from './utils/demFile.js'
 import { parseWpmlKmz } from './utils/importWpml.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
@@ -151,7 +147,6 @@ function AppInner({ lang, setLang }) {
   // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
   const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit' | 'corridor'
   const [faceConfig, setFaceConfig] = useState(() => ({ ...DEFAULT_FACE_CONFIG }))
-  const [orbitConfig, setOrbitConfig] = useState(() => ({ ...DEFAULT_ORBIT_CONFIG }))
   // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
   const [inspectPoints, setInspectPoints] = useState([])
   const inspectSeqRef = useRef(1)
@@ -416,6 +411,12 @@ function AppInner({ lang, setLang }) {
     missionName, wpml, setMode, setDraftVertices, runExport, avisoObturador,
   })
 
+  /* ------------------------ Modo órbita (E1.2) ------------------------ */
+  const {
+    orbitConfig, setOrbitConfig, setOrbitParam, startOrbitPoi, clearOrbitPoi, handleOrbitPoiDrag,
+    orbitPlan, gsdAtRadius, setRadiusFromGsd, orbitPreview, handleExportOrbitSingle, handleExportOrbitPerLevel,
+  } = useOrbitMission({ sensor, missionMode, missionName, wpml, setMode, runExport })
+
   const validation = useMemo(
     () => (ring ? validateRing(ring) : { valid: false, kinks: [] }),
     [ring],
@@ -630,7 +631,7 @@ function AppInner({ lang, setLang }) {
         ])
       }
     },
-    [mode, params.altitude],
+    [mode, params.altitude, setOrbitConfig],
   )
 
   /* ----------------------- Modo fachada (E1.1) ------------------------ */
@@ -721,92 +722,6 @@ function AppInner({ lang, setLang }) {
     })))
   }, [facePlan, missionName, faceConfig.speedMS, wpml, faceConfig.gimbalPitch, sensor.type, runExport])
 
-  /* ------------------------ Modo órbita (E1.2) ------------------------ */
-  const setOrbitParam = useCallback((key, value) => {
-    setOrbitConfig((c) => ({ ...c, [key]: value }))
-  }, [])
-
-  const startOrbitPoi = useCallback(() => {
-    setMode((m) => (m === 'orbit' ? 'idle' : 'orbit'))
-  }, [])
-
-  const clearOrbitPoi = useCallback(() => {
-    setOrbitConfig((c) => ({ ...c, poi: null }))
-    setMode('idle')
-  }, [])
-
-  const handleOrbitPoiDrag = useCallback((lonlat) => {
-    setOrbitConfig((c) => ({ ...c, poi: lonlat }))
-  }, [])
-
-  const orbitPlan = useMemo(() => {
-    if (!orbitConfig.poi) return null
-    return generateOrbitPlan(orbitConfig.poi, {
-      sensor: sensor.type === 'camera' ? sensor : null,
-      radiusM: orbitConfig.radiusM,
-      levels: {
-        count: orbitConfig.levelCount,
-        startM: orbitConfig.levelStartM,
-        stepM: orbitConfig.levelStepM,
-      },
-      horizontalOverlapPct: orbitConfig.horizontalOverlapPct,
-      poiHeightM: orbitConfig.poiHeightM,
-      clockwise: orbitConfig.clockwise,
-      speed: orbitConfig.speedMS,
-    })
-  }, [orbitConfig, sensor])
-
-  const gsdAtRadius = useMemo(
-    () => (sensor.type === 'camera' ? computeGSD(sensor, orbitConfig.radiusM) : null),
-    [sensor, orbitConfig.radiusM],
-  )
-
-  const setRadiusFromGsd = useCallback(
-    (gsdTarget) => {
-      if (sensor.type !== 'camera' || !sensor.imageWidth || !(gsdTarget > 0)) return
-      const r = (gsdTarget * sensor.focalLength * sensor.imageWidth) / (sensor.sensorWidth * 100)
-      setOrbitConfig((c) => ({ ...c, radiusM: Math.max(5, Math.min(500, Math.round(r))) }))
-    },
-    [sensor],
-  )
-
-  const orbitPreview = useMemo(() => {
-    if (missionMode !== 'orbit') return null
-    const ok = orbitPlan && !orbitPlan.error ? orbitPlan : null
-    const per = ok ? ok.stats.pointsPerOrbit + 1 : 0
-    return {
-      poi: orbitConfig.poi,
-      ring: ok ? ok.waypoints.slice(0, per) : null,
-      ticks: ok
-        ? headingTicks(ok.waypoints, ok.perWaypoint, {
-            lengthM: Math.min(12, orbitConfig.radiusM * 0.25),
-            limit: per,
-          })
-        : null,
-    }
-  }, [missionMode, orbitPlan, orbitConfig.poi, orbitConfig.radiusM])
-
-  const orbitParams = useCallback(() => orbitExportParams({
-    missionName, plan: orbitPlan, speed: orbitConfig.speedMS, wpml, sensorType: sensor.type,
-  }), [orbitPlan, missionName, orbitConfig.speedMS, wpml, sensor.type])
-
-  const handleExportOrbitSingle = useCallback(() => {
-    if (!orbitPlan || orbitPlan.error) return
-    runExport(() => exportWPMLKmz(orbitParams()))
-  }, [orbitPlan, orbitParams, runExport])
-
-  const handleExportOrbitPerLevel = useCallback(() => {
-    if (!orbitPlan || orbitPlan.error) return
-    runExport(() => exportBlocksZip(orbitParams(), orbitLevelsToBlocks(orbitPlan)))
-  }, [orbitPlan, orbitParams, runExport])
-
-  // Sem guarda de missionMode, tal como facePlan e orbitPlan: o resumo do
-  // projecto agrega os planos que EXISTEM, seja qual for o separador aberto.
-  // Com a guarda, trocar do corredor para a área fazia o resumo perder um
-  // plano, o seu tempo e as suas baterias — 46 min e 4 baterias passavam a
-  // 20 min e 2 num projecto com área, fachada e corredor, e é daí que sai o
-  // pack que vai para o campo. A pré-visualização, a vista 3D e o painel
-  // continuam a depender do modo, como deve ser.
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const startInspect = useCallback(() => {
     setMode((m) => (m === 'inspect' ? 'idle' : 'inspect'))
@@ -1256,7 +1171,7 @@ function AppInner({ lang, setLang }) {
     if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
     if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
     return true
-  }, [setCorridorConfig])
+  }, [setCorridorConfig, setOrbitConfig])
 
   // hidratar uma vez no arranque
   // Hidratação única no arranque: applyProject reconstitui uma dezena de
