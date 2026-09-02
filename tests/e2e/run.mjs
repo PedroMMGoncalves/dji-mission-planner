@@ -14,7 +14,7 @@
  * vez do que o Playwright instala), E2E_OUT (pasta das capturas em falha).
  */
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { chromium } from 'playwright'
@@ -298,6 +298,55 @@ await scenario('orbita-marcada', async () => {
   const txt = await bodyText(page)
   check('resumo do projecto conta a área e a órbita em qualquer separador', /2 planos|2 plans/.test(txt))
   check('órbita: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Projecto: gravação automática, recarregar a página, guardar em ficheiro
+// e abrir — a ligação entre o estado e o ficheiro de projecto que nenhuma
+// suite em Node exercita de ponta a ponta.
+await scenario('projecto-autosave-ficheiro', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  const nameInput = page.getByPlaceholder(/nome-da-missao|mission-name/)
+  await nameInput.fill('projecto-e2e')
+  await label(page, CROSS).check()
+  await page.waitForTimeout(1200) // autosave com debounce de 500 ms
+  const stored = await page.evaluate(() => localStorage.getItem('dji-mission-planner:project:v1'))
+  const saved = stored ? JSON.parse(stored) : null
+  check('projecto: autosave em localStorage com versão 2 e área',
+    saved?.version === 2 && saved.missionName === 'projecto-e2e' && Array.isArray(saved.ring) && saved.ring.length >= 3)
+
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]').waitFor({ state: 'attached', timeout: 20000 })
+  await page.waitForTimeout(800)
+  check('projecto: nome e dupla grelha sobrevivem ao recarregar',
+    (await nameInput.inputValue()) === 'projecto-e2e' && (await label(page, CROSS).isChecked()))
+  const afterReload = await bodyText(page)
+  check('projecto: a área volta com o plano calculado', /Exportar WPML|Export Advanced WPML/.test(afterReload) &&
+    (await page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).isEnabled()))
+
+  const [dl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Guardar projecto|Save project/ }).click(),
+  ])
+  const file = join(OUT, 'projecto-e2e.json')
+  await dl.saveAs(file)
+  const onDisk = JSON.parse(readFileSync(file, 'utf8'))
+  check('projecto: ficheiro guardado com o mesmo conteúdo do autosave',
+    onDisk.version === 2 && onDisk.missionName === 'projecto-e2e' && onDisk.params?.crosshatch === true &&
+      JSON.stringify(onDisk.ring) === JSON.stringify(saved.ring))
+
+  // estado limpo, depois abrir o ficheiro: tudo tem de voltar
+  await page.evaluate(() => localStorage.clear())
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]').waitFor({ state: 'attached', timeout: 20000 })
+  check('projecto: sem projecto gravado o nome volta ao defeito', (await nameInput.inputValue()) !== 'projecto-e2e')
+  await page.locator('input[accept=".json"]').setInputFiles(file)
+  await page.waitForTimeout(800)
+  check('projecto: abrir o ficheiro repõe nome, dupla grelha e área',
+    (await nameInput.inputValue()) === 'projecto-e2e' && (await label(page, CROSS).isChecked()) &&
+      (await page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).isEnabled()))
+  check('projecto: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

@@ -40,8 +40,12 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   importação de ficheiros) e `useAreaMission` (plano, blocos, GCPs, alturas
   do terrain follow, exportações) — estado, planos, pré-visualizações,
   desenho no mapa e exportação de cada modo, fora do `App.jsx`, que passou
-  de 2219 para 1079 linhas e ficou como raiz de composição (hardware,
-  parâmetros de voo, projecto, resumo e layout).
+  de 2219 para 1023 linhas e ficou como raiz de composição (hardware,
+  parâmetros de voo, resumo e layout). A persistência do projecto (autosave
+  com debounce, hidratação no arranque, guardar e abrir ficheiro) está em
+  `useProject`; o App só distribui o projecto normalizado pelo estado.
+- Cenário E2E do projecto: autosave em localStorage, recarregar a página,
+  guardar em ficheiro e abrir com o estado limpo (35 asserções E2E no total).
 - Verificação de tipos sem TypeScript no código: `npm run typecheck` corre
   `tsc --checkJs` sobre os tipos JSDoc de `src/utils/`, `src/mission/`,
   `src/data/` e `src/hooks/` (sem emitir ficheiros) e faz parte do CI. Os

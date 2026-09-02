@@ -34,7 +34,7 @@ import {
   photoInterval,
   resolveSensor,
 } from './utils/geo.js'
-import { downloadBlob, MissionExportError } from './utils/exporters.js'
+import { MissionExportError } from './utils/exporters.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission } from './hooks/useCorridorMission.js'
@@ -42,7 +42,7 @@ import { useOrbitMission } from './hooks/useOrbitMission.js'
 import { useFaceMission } from './hooks/useFaceMission.js'
 import { useInspection } from './hooks/useInspection.js'
 import { useTerrain } from './hooks/useTerrain.js'
-import { PROJECT_STORAGE_KEY, normalizeProject, projectFileName, serializeProject } from './mission/project.js'
+import { useProject } from './hooks/useProject.js'
 import {
   FlagGB,
   FlagPT,
@@ -138,7 +138,6 @@ function AppInner({ lang, setLang }) {
   const [show3d, setShow3d] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
-  const hydratedRef = useRef(false)
 
   const aircraftRef = useRef(null)
   const setParam = useCallback((key, value) => {
@@ -504,11 +503,10 @@ function AppInner({ lang, setLang }) {
 
   /* --------------- Persistência do projeto (localStorage) -------------- */
 
-  const applyProject = useCallback((p) => {
-    // leitura e migracao (v1/v2) em src/mission/project.js; aqui so se
-    // distribui o resultado pelo estado
-    const n = normalizeProject(p)
-    if (!n) return false
+  // leitura e migração (v1/v2) em src/mission/project.js e mecânica de
+  // gravação/ficheiro em hooks/useProject.js; aqui só se distribui o
+  // projecto normalizado pelo estado, porque é o App que tem os setters
+  const applyNormalized = useCallback((n) => {
     if (n.missionName != null) setMissionName(n.missionName)
     if (n.drone) setDrone(n.drone)
     if (n.custom) setCustom((c) => ({ ...c, ...n.custom }))
@@ -539,32 +537,10 @@ function AppInner({ lang, setLang }) {
     setBasePoint(n.basePoint)
     if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
     if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
-    return true
   }, [
     setCorridorConfig, setOrbitConfig, setFaceConfig, setInspectPoints, inspectSeqRef, setTerrainFollow,
     applyProjectGeometry, setGcpConfig,
   ])
-
-  // hidratar uma vez no arranque
-  // Hidratação única no arranque: applyProject reconstitui uma dezena de
-  // átomos de estado a partir do projecto gravado, e passá-los todos a
-  // inicializadores preguiçosos de useState não é um acerto local. Custa um
-  // render extra, uma só vez.
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(PROJECT_STORAGE_KEY)
-      if (raw) {
-        const p = JSON.parse(raw)
-        if (applyProject(p) && p.ring) setFitKey((k) => k + 1)
-      }
-    } catch {
-      /* projeto corrompido: ignora */
-    }
-    hydratedRef.current = true
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // tudo o que o projecto guarda, num só objecto (autosave e ficheiro)
   const projectState = useMemo(
@@ -576,42 +552,10 @@ function AppInner({ lang, setLang }) {
     [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig],
   )
 
-  // gravação automática (debounce 500 ms)
-  useEffect(() => {
-    if (!hydratedRef.current) return
-    const t = setTimeout(() => {
-      try {
-        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(serializeProject(projectState)))
-      } catch {
-        /* armazenamento indisponível */
-      }
-    }, 500)
-    return () => clearTimeout(t)
-  }, [projectState])
-
-  const exportProject = useCallback(() => {
-    downloadBlob(
-      new Blob([JSON.stringify(serializeProject(projectState), null, 2)], { type: 'application/json' }),
-      projectFileName(missionName),
-    )
-  }, [projectState, missionName])
-
-  const importProject = useCallback(
-    async (file) => {
-      if (!file) return
-      try {
-        const p = JSON.parse(await file.text())
-        if (!applyProject(p)) {
-          setImportError('Ficheiro de projeto inválido')
-          return
-        }
-        if (p.ring) setFitKey((k) => k + 1)
-      } catch {
-        setImportError('Ficheiro de projeto inválido')
-      }
-    },
-    [applyProject, setImportError, setFitKey],
-  )
+  const fitToArea = useCallback(() => setFitKey((k) => k + 1), [setFitKey])
+  const { exportProject, importProject } = useProject({
+    state: projectState, missionName, applyNormalized, onLoaded: fitToArea, setImportError,
+  })
 
   const startBase = useCallback(() => {
     setMode((m) => (m === 'base' ? 'idle' : 'base'))
