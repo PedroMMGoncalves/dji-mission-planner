@@ -7,7 +7,12 @@
  * curta do que a área desenhada. Lógica pura que vivia num useMemo do App.
  */
 import * as turf from '@turf/turf'
-import { composeCellPlans, computeAlignment, generateFlightPlan, ringToPolygon } from '../utils/geo.js'
+import {
+  composeCellPlans,
+  computeAlignment,
+  generateFlightPlan,
+  ringToPolygon,
+} from '../utils/geo.js'
 
 export function planArea(ring, activeCells, opts) {
   if (!ring) return null

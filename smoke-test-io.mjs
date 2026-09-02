@@ -871,6 +871,108 @@ function bboxFrom(x0, y0, x1, y1) {
   )
 }
 
+{
+  // Cache de tiles (tileCache.js) com uma CacheStorage falsa, e datum vertical
+  const { withTileCache, clearTileCache, isOffline } = await import('./src/utils/tileCache.js')
+  const stores = new Map()
+  const storage = {
+    open: async (name) => {
+      if (!stores.has(name)) stores.set(name, new Map())
+      const m = stores.get(name)
+      return { match: async (u) => m.get(u), put: async (u, r) => m.set(u, r) }
+    },
+    delete: async (name) => stores.delete(name),
+  }
+  const resp = (ok) => ({
+    ok,
+    status: ok ? 200 : 500,
+    clone() {
+      return { ...this }
+    },
+  })
+  let calls = 0
+  const cached = withTileCache(
+    async () => {
+      calls += 1
+      return resp(true)
+    },
+    { cacheStorage: storage, cacheName: 't' },
+  )
+  await cached.fetch('u/1')
+  await cached.fetch('u/1')
+  check(
+    'cache de tiles: segunda leitura vem da cache',
+    calls === 1 && cached.stats.hits === 1 && cached.stats.stored === 1,
+  )
+  let bad = 0
+  const failing = withTileCache(
+    async () => {
+      bad += 1
+      return resp(false)
+    },
+    { cacheStorage: storage, cacheName: 't' },
+  )
+  await failing.fetch('u/2')
+  await failing.fetch('u/2')
+  check('cache de tiles: respostas com erro nao entram', bad === 2 && failing.stats.stored === 0)
+  const broken = withTileCache(async () => resp(true), {
+    cacheStorage: {
+      open: async () => {
+        throw new Error('quota')
+      },
+    },
+    cacheName: 't',
+  })
+  check(
+    'cache de tiles: cache avariada cai no fetch simples',
+    (await broken.fetch('u/3')).ok === true,
+  )
+  const plain = withTileCache(async () => resp(true), { cacheStorage: null })
+  check(
+    'cache de tiles: sem Cache API o fetch simples serve',
+    (await plain.fetch('u/4')).ok === true && plain.enabled === (typeof caches !== 'undefined'),
+  )
+  check(
+    'cache de tiles: limpar',
+    (await clearTileCache(storage, 't')) === true &&
+      stores.has('t') === false &&
+      (await clearTileCache(
+        {
+          delete: async () => {
+            throw new Error('x')
+          },
+        },
+        't',
+      )) === false,
+  )
+  check('cache de tiles: isOffline sem navigator e null', isOffline() === null)
+
+  const { describeVerticalDatum, needsUnitConversion } =
+    await import('./src/utils/verticalDatum.js')
+  const egm = describeVerticalDatum({ VerticalCSTypeGeoKey: 5773, VerticalUnitsGeoKey: 9002 })
+  check(
+    'datum: EGM96 em pes',
+    egm.model === 'EGM96' && Math.abs(egm.unitFactor - 0.3048) < 1e-9 && needsUnitConversion(egm),
+  )
+  check(
+    'datum: codigo vertical desconhecido assume ortometrico',
+    describeVerticalDatum({ VerticalCSTypeGeoKey: 5555 }).assumed === true,
+  )
+  check(
+    'datum: VerticalDatumGeoKey so',
+    describeVerticalDatum({ VerticalDatumGeoKey: 5171 }).kind === 'orthometric',
+  )
+  check(
+    'datum: geografico 3D e elipsoidal',
+    describeVerticalDatum({ GeographicTypeGeoKey: 4937 }).kind === 'ellipsoidal',
+  )
+  check(
+    'datum: unidade desconhecida fica etiquetada',
+    describeVerticalDatum({ VerticalUnitsGeoKey: 9999 }).unitLabel.includes('9999'),
+  )
+  check('datum: sem chaves e desconhecido', describeVerticalDatum(undefined).kind === 'unknown')
+}
+
 console.log(
   failures === 0 ? '\nTODOS OS TESTES DE E/S PASSARAM' : `\n${failures} TESTES DE E/S FALHARAM`,
 )

@@ -226,7 +226,7 @@ async function runPool(items, limit, worker) {
  * tiles, considera-se que o modelo não é utilizável e lança-se um erro.
  *
  * @param {[number, number, number, number]} bbox [minLon, minLat, maxLon, maxLat]
- * @param {{ zoom?: number, fetchImpl?: typeof fetch, urlTemplate?: string }} [options]
+ * @param {{ zoom?: number, fetchImpl?: typeof fetch, urlTemplate?: string, cacheStorage?: any }} [opts]
  * @returns {Promise<{zoom: number, bbox: number[], tileCount: number, tileSize: number,
  *   failedCount: number, cachedCount: number, cacheEnabled: boolean, verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}>}
  */
@@ -454,7 +454,7 @@ function segmentLengthM(a, b) {
  *
  * @param {{verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}} terrain
  * @param {Array<Array<[number, number]>>} lines segmentos [[lonA,latA],[lonB,latB]]
- * @param {{agl?: number, refElev?: number, toleranceM?: number, stepM?: number}} [options]
+ * @param {{agl?: number, refElev?: number, toleranceM?: number, stepM?: number}} [opts]
  * @returns {{waypoints: Array<[number, number, number]>, perLine: number[],
  *   perLink: number[], elevMin: number|null, elevMax: number|null, warnings: string[]}}
  */
