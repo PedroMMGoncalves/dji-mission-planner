@@ -57,19 +57,13 @@ import {
 import { fitSlopePlane, loadTerrain } from './utils/terrain.js'
 import { planTerrainFollow } from './mission/terrainFollow.js'
 import { buildAreaExport } from './mission/areaExport.js'
-import { faceExportParams, inspectionExportParams } from './mission/exportParams.js'
 import { planBlocks } from './mission/blocks.js'
 import { useCorridorMission } from './hooks/useCorridorMission.js'
 import { useOrbitMission } from './hooks/useOrbitMission.js'
+import { useFaceMission } from './hooks/useFaceMission.js'
+import { useInspection } from './hooks/useInspection.js'
 import { planArea } from './mission/areaPlan.js'
 import { PROJECT_STORAGE_KEY, normalizeProject, projectFileName, serializeProject } from './mission/project.js'
-import { nearestNeighbourOrder, reorderList } from './utils/inspect.js'
-import {
-  DEFAULT_FACE_CONFIG,
-  checkFaceClearance,
-  generateFacePlan,
-} from './utils/faceMode.js'
-import { headingTicks } from './utils/preview.js'
 import {
 } from './utils/corridor.js'
 import { loadDemFromFile } from './utils/demFile.js'
@@ -146,10 +140,7 @@ function AppInner({ lang, setLang }) {
   const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect' | 'face'
   // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
   const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit' | 'corridor'
-  const [faceConfig, setFaceConfig] = useState(() => ({ ...DEFAULT_FACE_CONFIG }))
   // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
-  const [inspectPoints, setInspectPoints] = useState([])
-  const inspectSeqRef = useRef(1)
   const [draftVertices, setDraftVertices] = useState([])
   const [ring, setRing] = useState(null) // anel aberto [[lon,lat], ...]
   const [areaOrigin, setAreaOrigin] = useState(null) // 'draw' | 'anchor' | null
@@ -417,6 +408,22 @@ function AppInner({ lang, setLang }) {
     orbitPlan, gsdAtRadius, setRadiusFromGsd, orbitPreview, handleExportOrbitSingle, handleExportOrbitPerLevel,
   } = useOrbitMission({ sensor, missionMode, missionName, wpml, setMode, runExport })
 
+  /* ----------------------- Modo fachada (E1.1) ------------------------ */
+  const {
+    faceConfig, setFaceConfig, setFaceParam, startFaceDraw, handleFinishFace, clearFaceBaseline,
+    facePlan, dsmLoaded, faceClearance, facePreview, handleExportFace,
+  } = useFaceMission({ sensor, terrain, missionMode, missionName, wpml, setMode, setDraftVertices, runExport })
+
+  /* --------------------- Pontos de inspeção (R2.9) -------------------- */
+  const {
+    inspectPoints, setInspectPoints, inspectSeqRef, startInspect, addInspectPoint, updateInspectPoint,
+    removeInspectPoint, moveInspectPoint, reorderInspectPoints, suggestInspectOrder, handleInspectDrag,
+    handleExportInspection,
+  } = useInspection({
+    basePoint, altitude: params.altitude, speed, gimbalPitch: params.gimbalPitch, sensorType: sensor.type,
+    missionName, wpml, setMode, runExport,
+  })
+
   const validation = useMemo(
     () => (ring ? validateRing(ring) : { valid: false, kinks: [] }),
     [ring],
@@ -616,22 +623,10 @@ function AppInner({ lang, setLang }) {
         setOrbitConfig((c) => ({ ...c, poi: lonlat }))
         setMode('idle')
       } else if (mode === 'inspect') {
-        const n = inspectSeqRef.current++
-        setInspectPoints((pts) => [
-          ...pts,
-          {
-            id: n,
-            label: `P${String(n).padStart(2, '0')}`,
-            point: lonlat,
-            heightM: params.altitude,
-            heading: null, // null = segue a rota (followWayline)
-            gimbalPitch: null, // null = mantém o pitch em vigor
-            photo: true,
-          },
-        ])
+        addInspectPoint(lonlat)
       }
     },
-    [mode, params.altitude, setOrbitConfig],
+    [mode, addInspectPoint, setOrbitConfig],
   )
 
   /* ----------------------- Modo fachada (E1.1) ------------------------ */
@@ -641,123 +636,7 @@ function AppInner({ lang, setLang }) {
     setDraftVertices([])
   }, [])
 
-  const setFaceParam = useCallback((key, value) => {
-    setFaceConfig((c) => ({ ...c, [key]: value }))
-  }, [])
-
-  const startFaceDraw = useCallback(() => {
-    setMode((m) => (m === 'face' ? 'idle' : 'face'))
-    setDraftVertices([])
-  }, [])
-
-  const handleFinishFace = useCallback(() => {
-    setDraftVertices((draft) => {
-      const EPS = 1e-6
-      const clean = draft.filter(
-        (v, i) =>
-          i === 0 ||
-          Math.abs(v[0] - draft[i - 1][0]) > EPS ||
-          Math.abs(v[1] - draft[i - 1][1]) > EPS,
-      )
-      if (clean.length >= 2) {
-        setFaceConfig((c) => ({ ...c, baseline: clean }))
-        setMode('idle')
-        return []
-      }
-      return draft
-    })
-  }, [])
-
-  /* ---------------------- Modo corredor (E5.1) ----------------------- */
-  const clearFaceBaseline = useCallback(() => {
-    setFaceConfig((c) => ({ ...c, baseline: null }))
-    setDraftVertices([])
-    setMode('idle')
-  }, [])
-
-  const facePlan = useMemo(() => {
-    if (!faceConfig.baseline || sensor.type !== 'camera') return null
-    return generateFacePlan(faceConfig.baseline, {
-      sensor,
-      faceHeightM: faceConfig.heightM,
-      standoffM: faceConfig.standoffM,
-      side: faceConfig.side,
-      verticalOverlapPct: faceConfig.verticalOverlapPct,
-      horizontalOverlapPct: faceConfig.horizontalOverlapPct,
-      gimbalPitch: faceConfig.gimbalPitch,
-      // P1: a velocidade é um parâmetro explícito da fachada — o tempo
-      // estimado usa exactamente o valor que a exportação escreve
-      speed: faceConfig.speedMS,
-    })
-  }, [faceConfig, sensor])
-
-  // folga só contra DSM LOCAL; com Terrarium fica "standoff não verificado"
-  const dsmLoaded = terrain.status === 'ready' && terrain.data?.source === 'file'
-  const faceClearance = useMemo(() => {
-    if (!facePlan || facePlan.error || !dsmLoaded) return null
-    return checkFaceClearance(facePlan, terrain.data.elevationAt, {
-      minClearanceM: faceConfig.minClearanceM,
-    })
-  }, [facePlan, dsmLoaded, terrain.data, faceConfig.minClearanceM])
-
-  const facePreview = useMemo(() => {
-    if (missionMode !== 'face') return null
-    const ok = facePlan && !facePlan.error ? facePlan : null
-    return {
-      baseline: faceConfig.baseline,
-      offsetLine: ok?.offsetLine ?? null,
-      ticks: ok
-        ? headingTicks(ok.waypoints, ok.perWaypoint, {
-            lengthM: Math.min(12, faceConfig.standoffM * 0.4),
-            limit: ok.stats.pointsPerPass,
-          })
-        : null,
-    }
-  }, [missionMode, facePlan, faceConfig.baseline, faceConfig.standoffM])
-
-  const handleExportFace = useCallback(() => {
-    if (!facePlan || facePlan.error) return
-    runExport(() => exportWPMLKmz(faceExportParams({
-      missionName, plan: facePlan, speed: faceConfig.speedMS, wpml, gimbalPitch: faceConfig.gimbalPitch, sensorType: sensor.type,
-    })))
-  }, [facePlan, missionName, faceConfig.speedMS, wpml, faceConfig.gimbalPitch, sensor.type, runExport])
-
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
-  const startInspect = useCallback(() => {
-    setMode((m) => (m === 'inspect' ? 'idle' : 'inspect'))
-  }, [])
-
-  const updateInspectPoint = useCallback((id, patch) => {
-    setInspectPoints((pts) => pts.map((p) => (p.id === id ? { ...p, ...patch } : p)))
-  }, [])
-
-  const removeInspectPoint = useCallback((id) => {
-    setInspectPoints((pts) => pts.filter((p) => p.id !== id))
-  }, [])
-
-  const moveInspectPoint = useCallback((id, dir) => {
-    setInspectPoints((pts) => {
-      const i = pts.findIndex((p) => p.id === id)
-      const j = i + dir
-      if (i < 0 || j < 0 || j >= pts.length) return pts
-      const next = pts.slice()
-      ;[next[i], next[j]] = [next[j], next[i]]
-      return next
-    })
-  }, [])
-
-  const reorderInspectPoints = useCallback((from, to) => {
-    setInspectPoints((pts) => reorderList(pts, from, to))
-  }, [])
-
-  const suggestInspectOrder = useCallback(() => {
-    setInspectPoints((pts) => nearestNeighbourOrder(pts, basePoint ?? null))
-  }, [basePoint])
-
-  const handleInspectDrag = useCallback((id, lonlat) => {
-    setInspectPoints((pts) => pts.map((p) => (p.id === id ? { ...p, point: lonlat } : p)))
-  }, [])
-
   const handleFinishDraw = useCallback(() => {
     setDraftVertices((draft) => {
       // remove vértices quase-duplicados consecutivos (ex.: 2.º clique do
@@ -1171,7 +1050,7 @@ function AppInner({ lang, setLang }) {
     if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
     if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
     return true
-  }, [setCorridorConfig, setOrbitConfig])
+  }, [setCorridorConfig, setOrbitConfig, setFaceConfig, setInspectPoints, inspectSeqRef])
 
   // hidratar uma vez no arranque
   // Hidratação única no arranque: applyProject reconstitui uma dezena de
@@ -1387,12 +1266,6 @@ function AppInner({ lang, setLang }) {
 
   // Missão de inspeção (R2.9): KMZ próprio com os pontos avulsos, rumo e
   // pitch por ponto via perWaypoint; sem disparo por distância
-  const handleExportInspection = () => {
-    if (inspectPoints.length === 0) return
-    runExport(() => exportWPMLKmz(inspectionExportParams({
-      missionName, points: inspectPoints, altitude: params.altitude, speed, wpml, gimbalPitch: params.gimbalPitch, sensorType: sensor.type,
-    })))
-  }
 
   /* ----------------------------- Layout ------------------------------ */
   if (view === 'checklist') {
