@@ -110,7 +110,7 @@ O espaçamento entre faixas vem da pegada transversal no solo, `altitude × larg
 
 ## Estado da validação
 
-**Exportação verificada contra a especificação WPML e testes automáticos; validação em voo real prevista para setembro de 2026.** Duas suites correm em cada push no CI (`npm test`): a `smoke-test.mjs` cobre a matemática de planeamento e a estrutura dos ficheiros exportados, e a `smoke-test-io.mjs` cobre a fronteira dos ficheiros — os leitores de KML/GeoJSON, WPML e GeoTIFF, incluindo entradas malformadas, com uma ida e volta que exporta uma missão e a volta a importar. Ao todo, 400+ asserções; o que elas não cobrem está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release — a passagem da versão corrente está ainda por fazer. Os enums WPML nunca foram testados num comando real — ver as notas abaixo.
+**Exportação verificada contra a especificação WPML e testes automáticos; validação em voo real prevista para setembro de 2026.** Duas suites correm em cada push no CI (`npm test`): a `smoke-test.mjs` cobre a matemática de planeamento e a estrutura dos ficheiros exportados, e a `smoke-test-io.mjs` cobre a fronteira dos ficheiros — os leitores de KML/GeoJSON, WPML e GeoTIFF, incluindo entradas malformadas, com uma ida e volta que exporta uma missão e a volta a importar. Uma terceira camada, `npm run test:e2e`, conduz a build de produção em Chromium headless como um operador faria — importa um polígono e um MDT sintético, liga dupla grelha, terrain follow e blocos por bateria, exporta o KMZ — e mede o ficheiro exportado: folga ao solo ao longo de toda a rota, grupos de disparo, um KMZ por bloco. Ao todo, 640+ asserções; o que elas não cobrem está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release — a passagem da versão corrente está ainda por fazer. Os enums WPML nunca foram testados num comando real — ver as notas abaixo.
 
 **Estado dos perfis:** as ópticas do **M4T são provisórias** (valores da classe M3E, assinalados no código) até chegarem dados EXIF reais — não confie na pegada/GSD do M4T para dimensionar missões. Os restantes perfis (M3E, P1, Mapper+) usam valores publicados.
 
@@ -163,6 +163,7 @@ npm run dev                # servidor local
 npm run lint               # ESLint (inclui as regras react-hooks)
 npm run test               # as duas suites (correm também no CI antes de cada deploy)
 npm run test:update-golden # regenerar tests/golden/ após alteração intencional
+npm run test:e2e           # E2E no browser sobre a build de produção (precisa de npm run build; Chromium via Playwright)
 npm run build              # build de produção em dist/
 npm run size               # orçamento do pacote (exige build)
 ```

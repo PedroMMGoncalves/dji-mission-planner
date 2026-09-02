@@ -51,3 +51,30 @@ jobs:
       # é o sinal para actualizar; informativo, não bloqueia.
       - name: Audit (all dependencies, informational)
         run: npm audit --audit-level=moderate || true
+
+  # E2E sobre a build de produção: importa polígono e MDT sintéticos pela
+  # interface, liga modos, exporta o KMZ e mede o ficheiro (folga ao solo em
+  # toda a rota, grupos de disparo, blocos). É a única rede que apanha
+  # defeitos na ligação entre painel, estado e exportação.
+  e2e:
+    name: E2E (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: checks
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm run test:e2e
+      - name: Capturas e ficheiros exportados (em falha)
+        if: failure()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: e2e-out
+          path: tests/e2e/out
+          if-no-files-found: ignore

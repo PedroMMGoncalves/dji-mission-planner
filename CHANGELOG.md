@@ -4,6 +4,17 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); versões
 [SemVer](https://semver.org/lang/pt-BR/). A etiqueta git `vX.Y.Z` é a
 versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
+## Por publicar
+
+### Fiabilidade
+- Suite E2E (`npm run test:e2e`) em Chromium headless sobre a build de
+  produção: importa polígono e MDT sintéticos pela interface, liga dupla
+  grelha, terrain follow e blocos por bateria, exporta e mede o KMZ (folga ao
+  solo em toda a rota, grupos de disparo, um KMZ por bloco, aviso de
+  polígonos ignorados). Corre no CI a seguir às verificações.
+- Escritor de GeoTIFF sintético partilhado entre o teste de E/S e o E2E
+  (`tests/lib/geotiff.mjs`).
+
 ## 1.0.1 — 2026-09-01
 
 Sem alterações funcionais. Primeira versão arquivada no Zenodo.

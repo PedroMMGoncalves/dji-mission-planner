@@ -110,7 +110,7 @@ Line spacing comes from the across-track ground footprint, `altitude × sensor_w
 
 ## Validation status
 
-**Export verified against the WPML specification and automated tests; real-flight validation planned for September 2026.** Two suites run in CI on every push (`npm test`): `smoke-test.mjs` covers the planning math and the structure of the exported files, and `smoke-test-io.mjs` covers the file boundary — the KML/GeoJSON, WPML and GeoTIFF readers, including malformed input, with a round-trip that exports a mission and imports it back. Together, 400+ assertions; what they cannot cover is in the manual protocol [docs/QA_MANUAL.md](docs/QA_MANUAL.md), run once per release — the run for the current version is still pending. The WPML enums have never been tested on a real controller — see the notes below.
+**Export verified against the WPML specification and automated tests; real-flight validation planned for September 2026.** Two suites run in CI on every push (`npm test`): `smoke-test.mjs` covers the planning math and the structure of the exported files, and `smoke-test-io.mjs` covers the file boundary — the KML/GeoJSON, WPML and GeoTIFF readers, including malformed input, with a round-trip that exports a mission and imports it back. A third layer, `npm run test:e2e`, drives the production build in headless Chromium the way an operator would — imports a polygon and a synthetic DEM, toggles crosshatch, terrain follow and battery blocks, exports the KMZ — and measures the exported file: ground clearance along the whole route, trigger groups, one KMZ per block. Together, 640+ assertions; what they cannot cover is in the manual protocol [docs/QA_MANUAL.md](docs/QA_MANUAL.md), run once per release — the run for the current version is still pending. The WPML enums have never been tested on a real controller — see the notes below.
 
 **Profile status:** the **M4T optics are placeholders** (M3E-class values, flagged in the code) until real EXIF data lands — do not trust the M4T footprint/GSD for mission sizing. The remaining profiles (M3E, P1, Mapper+) use published values.
 
@@ -164,6 +164,7 @@ npm run dev                # local dev server
 npm run lint               # ESLint (react-hooks rules included)
 npm run test               # both suites (also run in CI before every deploy)
 npm run test:update-golden # regenerate tests/golden/ after an intended export change
+npm run test:e2e           # browser E2E on the production build (needs npm run build; Chromium via Playwright)
 npm run build              # production build in dist/
 npm run size               # bundle budget check (needs a build first)
 ```

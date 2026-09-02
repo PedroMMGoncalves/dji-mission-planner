@@ -3,3 +3,6 @@ dist
 *.local
 *.local.md
 .DS_Store
+
+# capturas e ficheiros do E2E
+tests/e2e/out/
