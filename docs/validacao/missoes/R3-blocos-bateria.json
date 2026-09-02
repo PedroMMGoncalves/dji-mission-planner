@@ -1,0 +1,50 @@
+{
+  "$schema": "https://pedrommgoncalves.github.io/dji-mission-planner/schema/project-v2.schema.json",
+  "version": 2,
+  "basePoint": [
+    -7.9004595,
+    38.5496383
+  ],
+  "terrainFollow": {
+    "enabled": false,
+    "tolerance": 5
+  },
+  "missionName": "R3-blocos-bateria",
+  "drone": {
+    "aircraftId": "M3E",
+    "payloadId": "M3E_WIDE",
+    "rtk": false
+  },
+  "params": {
+    "altitude": 60,
+    "speed": 6,
+    "frontOverlap": 80,
+    "sideOverlap": 70,
+    "angle": 45,
+    "gimbalPitch": -90,
+    "triggerMode": "distance"
+  },
+  "ring": [
+    [
+      -7.9,
+      38.55
+    ],
+    [
+      -7.8896622,
+      38.55
+    ],
+    [
+      -7.8896622,
+      38.5563306
+    ],
+    [
+      -7.9,
+      38.5563306
+    ]
+  ],
+  "split": {
+    "mode": "battery",
+    "reservePct": 30,
+    "maxSide": 500
+  }
+}

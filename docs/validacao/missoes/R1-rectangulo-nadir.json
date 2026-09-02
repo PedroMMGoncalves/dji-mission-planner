@@ -1,0 +1,45 @@
+{
+  "$schema": "https://pedrommgoncalves.github.io/dji-mission-planner/schema/project-v2.schema.json",
+  "version": 2,
+  "basePoint": [
+    -7.9004595,
+    38.5496383
+  ],
+  "terrainFollow": {
+    "enabled": false,
+    "tolerance": 5
+  },
+  "missionName": "R1-rectangulo-nadir",
+  "drone": {
+    "aircraftId": "M3E",
+    "payloadId": "M3E_WIDE",
+    "rtk": false
+  },
+  "params": {
+    "altitude": 80,
+    "speed": 8,
+    "frontOverlap": 80,
+    "sideOverlap": 70,
+    "angle": 90,
+    "gimbalPitch": -90,
+    "triggerMode": "distance"
+  },
+  "ring": [
+    [
+      -7.9,
+      38.55
+    ],
+    [
+      -7.8954054,
+      38.55
+    ],
+    [
+      -7.8954054,
+      38.5522609
+    ],
+    [
+      -7.9,
+      38.5522609
+    ]
+  ]
+}

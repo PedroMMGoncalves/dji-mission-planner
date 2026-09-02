@@ -1,0 +1,63 @@
+{
+  "$schema": "https://pedrommgoncalves.github.io/dji-mission-planner/schema/project-v2.schema.json",
+  "version": 2,
+  "basePoint": [
+    -7.9004595,
+    38.5496383
+  ],
+  "terrainFollow": {
+    "enabled": true,
+    "tolerance": 5
+  },
+  "missionName": "R2-U-terreno-dupla-grelha",
+  "drone": {
+    "aircraftId": "M3E",
+    "payloadId": "M3E_WIDE",
+    "rtk": false
+  },
+  "params": {
+    "altitude": 100,
+    "speed": 8,
+    "frontOverlap": 80,
+    "sideOverlap": 75,
+    "angle": 0,
+    "gimbalPitch": -60,
+    "crosshatch": true,
+    "includeNadir": true,
+    "triggerMode": "distance"
+  },
+  "ring": [
+    [
+      -7.9,
+      38.55
+    ],
+    [
+      -7.8931082,
+      38.55
+    ],
+    [
+      -7.8931082,
+      38.5545219
+    ],
+    [
+      -7.8954054,
+      38.5545219
+    ],
+    [
+      -7.8954054,
+      38.5513566
+    ],
+    [
+      -7.8977027,
+      38.5513566
+    ],
+    [
+      -7.8977027,
+      38.5545219
+    ],
+    [
+      -7.9,
+      38.5545219
+    ]
+  ]
+}

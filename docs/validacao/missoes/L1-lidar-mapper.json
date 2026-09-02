@@ -1,0 +1,45 @@
+{
+  "$schema": "https://pedrommgoncalves.github.io/dji-mission-planner/schema/project-v2.schema.json",
+  "version": 2,
+  "basePoint": [
+    -7.9004595,
+    38.5496383
+  ],
+  "terrainFollow": {
+    "enabled": false,
+    "tolerance": 5
+  },
+  "missionName": "L1-lidar-mapper",
+  "drone": {
+    "aircraftId": "M300RTK",
+    "payloadId": "MAPPER_PLUS",
+    "rtk": true
+  },
+  "params": {
+    "altitude": 80,
+    "speed": 5,
+    "sideOverlap": 50,
+    "angle": 90,
+    "gimbalPitch": -90,
+    "tieLine": true,
+    "triggerMode": "distance"
+  },
+  "ring": [
+    [
+      -7.9,
+      38.55
+    ],
+    [
+      -7.8942568,
+      38.55
+    ],
+    [
+      -7.8942568,
+      38.5527131
+    ],
+    [
+      -7.9,
+      38.5527131
+    ]
+  ]
+}

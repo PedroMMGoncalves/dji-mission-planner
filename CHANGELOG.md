@@ -79,6 +79,15 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   referências. Dezassete secções, uma por módulo do motor.
 
 ### Validação de campo
+- Protocolo de validação (`docs/VALIDACAO.md`): quatro missões de
+  referência com ficheiro de projecto e previsão do planeador
+  (`docs/validacao/missoes/`, `tools/missoes-referencia.mjs`),
+  procedimento por missão, critérios de aceitação por grandeza
+  (`tools/lib/criterios.mjs`), matriz de compatibilidade Pilot 2 /
+  firmware e round-trip semântico. `tools/relatorio-validacao.mjs` avalia
+  os resultados e escreve o relatório; `tools/ensaio-seco.mjs` prova a
+  cadeia com voos sintéticos (`docs/validacao/ensaio-seco.md`). Os
+  resultados reais ficam para Setembro.
 - Ferramenta planeado-vs-medido (`tools/planeado-vs-medido.mjs`): a partir
   do ficheiro de projecto e das fotos (EXIF/XMP ou CSV do exiftool), da
   nuvem LAS (com o CRS do ficheiro) e do registo de voo, mede altura AGL,
