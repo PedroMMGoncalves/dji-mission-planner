@@ -406,7 +406,7 @@ export async function loadDemFromFile(file, areaBbox, { maxDim = DEFAULT_MAX_DIM
 
   return {
     source: 'file',
-    label: file.name || 'MDT',
+    label: /** @type {File} */ (file).name || 'MDT',
     crsCode,
     bbox,
     resolutionM,

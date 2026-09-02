@@ -15,6 +15,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json",
     "test": "npm run test:smoke && npm run test:unit",
     "test:update-golden": "UPDATE_GOLDEN=1 node smoke-test.mjs",
     "size": "node scripts/check-bundle-size.mjs",
@@ -49,6 +50,7 @@
     "playwright": "^1.62.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
+    "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
   }

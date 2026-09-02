@@ -162,7 +162,7 @@ export function planGcps(ring, count, { insetM = null } = {}) {
   }
 
   // ids por ordem de seleção (o array já está ordenado por id)
-  return chosen.map((point, i) => ({ id: gcpId(i + 1), point }))
+  return chosen.map((point, i) => ({ id: gcpId(i + 1), point: /** @type {[number, number]} */ (point) }))
 }
 
 /**

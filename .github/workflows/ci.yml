@@ -34,6 +34,10 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # JSDoc + tsc --checkJs sobre o motor e os hooks (sem emitir nada)
+      - name: Typecheck
+        run: npm run typecheck
+
       # Suites historicas sob c8, com limiares que so podem subir
       - name: Test suite (with coverage thresholds)
         run: npm run test:coverage

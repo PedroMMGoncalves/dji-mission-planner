@@ -512,8 +512,8 @@ export function generateFlightLines(ring, options) {
 
   const basePoly = ringToPolygon(ring)
 
-  // 1) Buffer exterior
-  let area = basePoly
+  // 1) Buffer exterior (Polygon ou MultiPolygon, consoante o turf)
+  let area = /** @type {any} */ (basePoly)
   if (bufferPct > 0) {
     const dist = bufferDistanceMeters(basePoly, bufferPct)
     const buffered = turf.buffer(basePoly, dist, { units: 'meters' })
@@ -890,7 +890,8 @@ export function generateFlightPlan(ring, options, generate = generateFlightLines
   if (!p2) return { error: 'crosshatch-failed' }
   if (p2.error) return p2
 
-  const parts = [p1, p2]
+  // a partir daqui todos os sub-planos sao validos (sem `error`)
+  const parts = /** @type {any[]} */ ([p1, p2])
   if (options.includeNadir) {
     const p3 = generate(ring, { ...options, tieLine: false })
     if (!p3) return { error: 'nadir-failed' }
@@ -910,12 +911,12 @@ export function generateFlightPlan(ring, options, generate = generateFlightLines
   const sum = (f) => parts.reduce((acc, p) => acc + (f(p.stats) ?? 0), 0)
   const nadir = parts.length === 3
   return {
-    area: p1.area,
+    area: parts[0].area,
     lines: parts.flatMap((p) => p.lines),
     waypoints: parts.flatMap((p) => p.waypoints),
     ...concatPerWaypoint(parts),
-    nadirStartLine: nadir ? p1.stats.lineCount + p2.stats.lineCount : null,
-    nadirStartWaypoint: nadir ? p1.stats.waypointCount + p2.stats.waypointCount : null,
+    nadirStartLine: nadir ? parts[0].stats.lineCount + parts[1].stats.lineCount : null,
+    nadirStartWaypoint: nadir ? parts[0].stats.waypointCount + parts[1].stats.waypointCount : null,
     stats: {
       lineCount: sum((s) => s.lineCount),
       waypointCount: sum((s) => s.waypointCount),
@@ -928,8 +929,8 @@ export function generateFlightPlan(ring, options, generate = generateFlightLines
       flightTimeS: parts.every((p) => p.stats.flightTimeS != null)
         ? sum((s) => s.flightTimeS) + linkM / v
         : null,
-      areaHa: p1.stats.areaHa,
-      bufferedAreaHa: p1.stats.bufferedAreaHa,
+      areaHa: parts[0].stats.areaHa,
+      bufferedAreaHa: parts[0].stats.bufferedAreaHa,
     },
   }
 }
@@ -952,7 +953,12 @@ export function generateFlightPlan(ring, options, generate = generateFlightLines
  * `perLine` waypoints por linha (2 por omissão); `perLink` pontos de
  * ligação no início de cada linha (0 por omissão).
  */
-export function triggerRangesForLines(lines, perLine, perLink, { maxLinkM } = {}) {
+export function triggerRangesForLines(
+  lines,
+  perLine,
+  perLink,
+  { maxLinkM } = /** @type {{maxLinkM?: number}} */ ({}),
+) {
   const ranges = []
   if (!Array.isArray(lines)) return ranges
   const limit = Number.isFinite(maxLinkM) && maxLinkM > 0 ? maxLinkM : Infinity
@@ -999,7 +1005,10 @@ export function nadirLineLocalPerBlock(blockLineCounts, nadirStartLine) {
  * (missões separadas não partilham a bateria a meio), com o tempo útil
  * = bateria × (1 − reserva). Devolve null sem planos válidos.
  */
-export function aggregatePlans(statsList, { batteryMin, reservePct = 30 } = {}) {
+export function aggregatePlans(
+  statsList,
+  { batteryMin, reservePct = 30 } = /** @type {{batteryMin?: number, reservePct?: number}} */ ({}),
+) {
   const valid = (statsList ?? []).filter((s) => s && Number.isFinite(s.flightTimeS))
   if (valid.length === 0) return null
   const usefulS = batteryMin > 0 ? batteryMin * 60 * (1 - reservePct / 100) : null

@@ -6,9 +6,10 @@
 import { nadirLineLocalPerBlock, splitIntoBlocks } from '../utils/geo.js'
 
 /**
- * @param plan plano de área válido (generateFlightPlan / composeCellPlans)
- * @param opts { activeCells, split: {mode, maxAreaHa, reservePct}, batteryMin, speed, spacingM, basePoint }
- * @returns lista de blocos ou null (sem divisão)
+ * @param {any} plan plano de área válido (generateFlightPlan / composeCellPlans)
+ * @param {{activeCells?: any[]|null, split: {mode: string, maxAreaHa?: number, reservePct?: number},
+ *   batteryMin?: number, speed?: number, spacingM?: number, basePoint?: number[]|null}} opts
+ * @returns {Array<object>|null} lista de blocos ou null (sem divisão)
  */
 export function planBlocks(plan, { activeCells = null, split, batteryMin, speed, spacingM, basePoint = null }) {
   if (!plan) return null

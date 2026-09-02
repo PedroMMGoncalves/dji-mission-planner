@@ -161,6 +161,7 @@ Os parâmetros de viragem seguem o modo em vez de serem fixos: as grelhas de ár
 npm install
 npm run dev                # servidor local
 npm run lint               # ESLint (inclui as regras react-hooks)
+npm run typecheck          # tsc --checkJs sobre os tipos JSDoc de src/utils, src/mission, src/hooks (sem emitir)
 npm run test               # as duas suites (correm também no CI antes de cada deploy)
 npm run test:unit          # só os testes por propriedades (Vitest + fast-check, tests/unit/)
 npm run test:coverage      # suites sob c8 com limiares de cobertura em src/utils/

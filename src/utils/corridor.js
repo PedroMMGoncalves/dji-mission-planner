@@ -50,6 +50,10 @@ export const MAX_PASSES = 200
 const MAX_OFFSET_ALLOC = 100000
 const MAX_SAMPLES = 20000 // trava contra passos de amostragem minúsculos
 
+/** @typedef {[number, number]} Pt2 */
+/** Polilinha amostrada; `truncated` marca o corte pela trava de amostragem. @typedef {Pt2[] & { truncated?: boolean }} MarkedPolyline */
+/** Troços de uma passagem; `truncated` sobe de resamplePolyline. @typedef {Pt2[][] & { truncated?: boolean }} MarkedRuns */
+
 export const DEFAULT_CORRIDOR_CONFIG = {
   centreline: null, // polilinha [[lon, lat], ...] = eixo do corredor
   bufferM: 60, // meia-largura coberta de cada lado do eixo
@@ -152,12 +156,14 @@ export function dedupePolyline(pts, eps = 1e-9) {
  * Reamostra uma polilinha a passos ≤ `spacing` MANTENDO todos os vértices
  * originais, para o percurso passar exactamente por cada dobra do eixo e não
  * cortar curvas.
+ * @returns {MarkedPolyline}
  */
 export function resamplePolyline(pts, spacing) {
   if (!Array.isArray(pts) || pts.length === 0) return []
   const step = Math.max(Number(spacing) || 0, 0.25)
   const clean = dedupePolyline(pts)
   if (clean.length === 1) return clean
+  /** @type {MarkedPolyline} */
   const out = [clean[0]]
   for (let i = 1; i < clean.length; i++) {
     const a = clean[i - 1]
@@ -297,6 +303,7 @@ export function offsetPolylineMiter(rawAxis, offset) {
  * que o desvio, a linha desviada dobra-se e os pontos da dobra ficam mais
  * perto do eixo do que |offset| — são descartados, e a passagem parte-se em
  * troços contíguos em vez de ganhar um laço que o drone voaria.
+ * @returns {MarkedRuns}
  */
 export function offsetRuns(axis, offset, sampleStep) {
   if (Math.abs(offset) < 1e-9) return [axis.slice()]
@@ -313,6 +320,7 @@ export function offsetRuns(axis, offset, sampleStep) {
   // vazio e marcado: quem lê a marca recusa o plano; quem não a lê vê pelo
   // menos uma passagem PERDIDA, que é um aviso vermelho e não silêncio.
   if (dense.truncated) {
+    /** @type {MarkedRuns} */
     const none = []
     none.truncated = true
     return none

@@ -38,6 +38,11 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   `useFaceMission`, `useInspection` e `useTerrain` — estado, planos,
   pré-visualizações, desenho no mapa e exportação de cada modo, fora do
   `App.jsx`, que passou de 2219 para 1609 linhas.
+- Verificação de tipos sem TypeScript no código: `npm run typecheck` corre
+  `tsc --checkJs` sobre os tipos JSDoc de `src/utils/`, `src/mission/`,
+  `src/data/` e `src/hooks/` (sem emitir ficheiros) e faz parte do CI. Os
+  tipos das polilinhas marcadas do corredor, dos blocos e das opções de
+  agregação ficaram explicitos.
 - E2E com o corredor, a fachada e a órbita desenhados no mapa por cliques,
   como o operador faz.
 

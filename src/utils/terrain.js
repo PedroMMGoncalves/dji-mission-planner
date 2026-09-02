@@ -444,7 +444,7 @@ function segmentLengthM(a, b) {
  *
  * @param {{elevationAt: (lon: number, lat: number) => number|null}} terrain
  * @param {Array<Array<[number, number]>>} lines segmentos [[lonA,latA],[lonB,latB]]
- * @param {{agl: number, refElev: number, toleranceM?: number, stepM?: number}} options
+ * @param {{agl?: number, refElev?: number, toleranceM?: number, stepM?: number}} [options]
  * @returns {{waypoints: Array<[number, number, number]>, perLine: number[],
  *   perLink: number[], elevMin: number|null, elevMax: number|null, warnings: string[]}}
  */

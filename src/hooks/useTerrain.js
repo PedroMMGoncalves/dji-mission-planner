@@ -18,7 +18,12 @@ export function useTerrain({ ring, ringBbox, ringValid }) {
     setTerrain({ status: 'loading', data: null, error: null })
     try {
       const m = 0.01 // ~1 km de margem para incluir a base
-      const bbox = [ringBbox[0] - m, ringBbox[1] - m, ringBbox[2] + m, ringBbox[3] + m]
+      const bbox = /** @type {[number, number, number, number]} */ ([
+        ringBbox[0] - m,
+        ringBbox[1] - m,
+        ringBbox[2] + m,
+        ringBbox[3] + m,
+      ])
       const data = await loadTerrain(bbox)
       setTerrain({ status: 'ready', data, error: null })
     } catch (err) {

@@ -162,6 +162,7 @@ Turn parameters follow the turn mode rather than being fixed: area and face grid
 npm install
 npm run dev                # local dev server
 npm run lint               # ESLint (react-hooks rules included)
+npm run typecheck          # tsc --checkJs over JSDoc types in src/utils, src/mission, src/hooks (no emit)
 npm run test               # smoke suites + property-based unit tests (also run in CI before every deploy)
 npm run test:unit          # property-based tests only (Vitest + fast-check, tests/unit/)
 npm run test:coverage      # smoke suites under c8 with coverage thresholds on src/utils/

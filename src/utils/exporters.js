@@ -715,6 +715,7 @@ ${placemarks}
  *       ├── template.kml
  *       └── waylines.wpml
  */
+/** @param {'blob'|'arraybuffer'} [type] formato do JSZip */
 async function buildKmz(params, type = 'blob') {
   const zip = new JSZip()
   const wpmz = zip.folder('wpmz')
