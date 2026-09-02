@@ -57,8 +57,9 @@ import {
 import { fitSlopePlane, loadTerrain } from './utils/terrain.js'
 import { planTerrainFollow } from './mission/terrainFollow.js'
 import { buildAreaExport } from './mission/areaExport.js'
-import { corridorExportParams, faceExportParams, inspectionExportParams, orbitExportParams } from './mission/exportParams.js'
+import { faceExportParams, inspectionExportParams, orbitExportParams } from './mission/exportParams.js'
 import { planBlocks } from './mission/blocks.js'
+import { useCorridorMission } from './hooks/useCorridorMission.js'
 import { planArea } from './mission/areaPlan.js'
 import { PROJECT_STORAGE_KEY, normalizeProject, projectFileName, serializeProject } from './mission/project.js'
 import { nearestNeighbourOrder, reorderList } from './utils/inspect.js'
@@ -69,9 +70,6 @@ import {
 } from './utils/faceMode.js'
 import { headingTicks } from './utils/preview.js'
 import {
-  DEFAULT_CORRIDOR_CONFIG,
-  corridorBufferRing,
-  generateCorridorPlan,
 } from './utils/corridor.js'
 import {
   DEFAULT_ORBIT_CONFIG,
@@ -152,7 +150,6 @@ function AppInner({ lang, setLang }) {
   const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect' | 'face'
   // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
   const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit' | 'corridor'
-  const [corridorConfig, setCorridorConfig] = useState(DEFAULT_CORRIDOR_CONFIG)
   const [faceConfig, setFaceConfig] = useState(() => ({ ...DEFAULT_FACE_CONFIG }))
   const [orbitConfig, setOrbitConfig] = useState(() => ({ ...DEFAULT_ORBIT_CONFIG }))
   // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
@@ -296,10 +293,6 @@ function AppInner({ lang, setLang }) {
   // limitar, o WPML saia com autoFlightSpeed acima do que a aeronave faz e o
   // tempo estimado ficava optimista — e e desse tempo que sai o numero de
   // baterias que o operador leva para o campo.
-  const corridorSpeed = Math.min(
-    speedRange.max,
-    Math.max(speedRange.min, corridorConfig.speedMS),
-  )
 
   // rótulo composto para o relatório/checklist: a aeronave, e o payload
   // quando a aeronave tem mais do que um montável
@@ -402,27 +395,26 @@ function AppInner({ lang, setLang }) {
   )
 
   // intervalo entre fotos abaixo do que o obturador consegue?
-  const avisoObturador = (v) => {
-    if (interval == null || !(v > 0)) return null
-    const minS = payload.minTriggerS ?? 0.7
-    const actualS = interval / v
-    if (actualS >= minS) return null
-    return { actualS, minS, maxSpeed: interval / minS }
-  }
-  const triggerWarn = useMemo(
-    () => avisoObturador(speed),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [interval, speed, payload],
+  const avisoObturador = useCallback(
+    (v) => {
+      if (interval == null || !(v > 0)) return null
+      const minS = payload.minTriggerS ?? 0.7
+      const actualS = interval / v
+      if (actualS >= minS) return null
+      return { actualS, minS, maxSpeed: interval / minS }
+    },
+    [interval, payload],
   )
-  // O mesmo aviso para o corredor, que tem a sua propria velocidade. Era
-  // calculado so com a velocidade da area e so entregue ao ControlPanel, que
-  // em modo corredor nem sequer e renderizado: o operador via 2460 fotos
-  // anunciadas quando o obturador so consegue ~1995, sem uma palavra.
-  const corridorTriggerWarn = useMemo(
-    () => avisoObturador(corridorSpeed),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [interval, corridorSpeed, payload],
-  )
+  const triggerWarn = useMemo(() => avisoObturador(speed), [avisoObturador, speed])
+  /* ------------------------- Modo corredor ---------------------------- */
+  const {
+    corridorConfig, setCorridorConfig, setCorridorParam, corridorSpeed, corridorTriggerWarn,
+    corridorPlan, corridorPreview, startCorridorDraw, handleFinishCorridor, clearCorridorAxis,
+    handleExportCorridor,
+  } = useCorridorMission({
+    sensor, speedRange, altitude: params.altitude, sideOverlap: params.sideOverlap, interval, missionMode,
+    missionName, wpml, setMode, setDraftVertices, runExport, avisoObturador,
+  })
 
   const validation = useMemo(
     () => (ring ? validateRing(ring) : { valid: false, kinks: [] }),
@@ -676,39 +668,6 @@ function AppInner({ lang, setLang }) {
   }, [])
 
   /* ---------------------- Modo corredor (E5.1) ----------------------- */
-  const setCorridorParam = useCallback((key, value) => {
-    setCorridorConfig((c) => ({ ...c, [key]: value }))
-  }, [])
-
-  const startCorridorDraw = useCallback(() => {
-    setMode((m) => (m === 'corridor' ? 'idle' : 'corridor'))
-    setDraftVertices([])
-  }, [])
-
-  const handleFinishCorridor = useCallback(() => {
-    setDraftVertices((draft) => {
-      const EPS = 1e-6
-      const clean = draft.filter(
-        (v, i) =>
-          i === 0 ||
-          Math.abs(v[0] - draft[i - 1][0]) > EPS ||
-          Math.abs(v[1] - draft[i - 1][1]) > EPS,
-      )
-      if (clean.length >= 2) {
-        setCorridorConfig((c) => ({ ...c, centreline: clean }))
-        setMode('idle')
-        return []
-      }
-      return draft
-    })
-  }, [])
-
-  const clearCorridorAxis = useCallback(() => {
-    setCorridorConfig((c) => ({ ...c, centreline: null }))
-    setDraftVertices([])
-    setMode('idle')
-  }, [])
-
   const clearFaceBaseline = useCallback(() => {
     setFaceConfig((c) => ({ ...c, baseline: null }))
     setDraftVertices([])
@@ -848,39 +807,6 @@ function AppInner({ lang, setLang }) {
   // 20 min e 2 num projecto com área, fachada e corredor, e é daí que sai o
   // pack que vai para o campo. A pré-visualização, a vista 3D e o painel
   // continuam a depender do modo, como deve ser.
-  const corridorPlan = useMemo(() => {
-    if (!corridorConfig.centreline) return null
-    return generateCorridorPlan(corridorConfig.centreline, {
-      sensor,
-      altitude: params.altitude,
-      bufferM: corridorConfig.bufferM,
-      sideOverlapPct: params.sideOverlap,
-      photoIntervalM: interval ?? 0,
-      speed: corridorSpeed,
-      photoMode: corridorConfig.photoMode,
-      simplifyM: corridorConfig.simplifyM,
-    })
-  }, [corridorConfig, corridorSpeed, sensor, params.altitude, params.sideOverlap, interval])
-
-  const corridorPreview = useMemo(() => {
-    if (missionMode !== 'corridor') return null
-    const axis = corridorConfig.centreline
-    if (!axis || axis.length < 2) return null
-    return {
-      centreline: axis,
-      buffer: corridorBufferRing(axis, corridorConfig.bufferM),
-      passes: corridorPlan && !corridorPlan.error ? corridorPlan.lines : null,
-    }
-  }, [missionMode, corridorConfig.centreline, corridorConfig.bufferM, corridorPlan])
-
-  const handleExportCorridor = useCallback(() => {
-    if (!corridorPlan || corridorPlan.error) return
-    runExport(() => exportWPMLKmz(corridorExportParams({
-      missionName, plan: corridorPlan, photoMode: corridorConfig.photoMode, altitude: params.altitude,
-      speed: corridorSpeed, wpml, photoIntervalM: interval, sensorType: sensor.type,
-    })))
-  }, [corridorPlan, corridorConfig, corridorSpeed, missionName, params.altitude, wpml, interval, sensor.type, runExport])
-
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const startInspect = useCallback(() => {
     setMode((m) => (m === 'inspect' ? 'idle' : 'inspect'))
@@ -1330,7 +1256,7 @@ function AppInner({ lang, setLang }) {
     if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
     if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
     return true
-  }, [])
+  }, [setCorridorConfig])
 
   // hidratar uma vez no arranque
   // Hidratação única no arranque: applyProject reconstitui uma dezena de
