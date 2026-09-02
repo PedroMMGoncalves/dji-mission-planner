@@ -1312,6 +1312,16 @@ export default function ControlPanel({
               })
             : t('cp.terrain.sourceHint')}
         </p>
+        {terrain.status === 'ready' &&
+          terrain.data?.cacheEnabled &&
+          terrain.data.cachedCount > 0 && (
+            <p className="mt-1 text-[11px] text-slate-500">
+              {t('cp.terrain.cacheHint', {
+                hits: terrain.data.cachedCount,
+                total: terrain.data.tileCount,
+              })}
+            </p>
+          )}
         {terrain.status === 'ready' && terrain.data?.verticalDatum && (
           <p className="mt-1 text-[11px] text-slate-500" data-testid="terrain-datum">
             {t('cp.terrain.datum', { datum: datumLabel(terrain.data.verticalDatum, t) })}

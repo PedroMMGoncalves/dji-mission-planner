@@ -454,6 +454,10 @@ export default {
     pt: 'Fonte: Terrarium/AWS (~30 m). As alturas por waypoint são relativas ao ponto de descolagem — marque a base no local real de descolagem e valide no Pilot 2.',
     en: 'Source: Terrarium/AWS (~30 m). Waypoint heights are relative to the takeoff point — set the base at the actual takeoff location and validate in Pilot 2.',
   },
+  'cp.terrain.cacheHint': {
+    pt: '{hits} de {total} tiles vieram da cache local (as áreas já vistas carregam sem rede).',
+    en: '{hits} of {total} tiles came from the local cache (areas seen before load without network).',
+  },
   'cp.terrain.datum': {
     pt: 'Datum vertical: {datum}. As alturas exportadas são diferenças de cotas da mesma fonte, pelo que um desvio constante do datum cancela.',
     en: 'Vertical datum: {datum}. Exported heights are differences of elevations from the same source, so a constant datum offset cancels out.',

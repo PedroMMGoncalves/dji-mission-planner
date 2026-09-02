@@ -45,6 +45,10 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   serve de pista quando declara outro.
 
 ### Terreno
+- Cache persistente dos tiles de relevo (Cache API): as áreas já vistas
+  carregam sem rede, o painel indica quantos tiles vieram da cache e, sem
+  ligação, a mensagem de erro diz que só essas áreas estão disponíveis.
+  Sem Cache API ou com a quota cheia, o fetch simples serve na mesma.
 - Datum vertical declarado por fonte: o Terrarium como ortométrico EGM96
   assumido; um MDT local pelas GeoKeys verticais (EGM96, EGM2008, MSL,
   Cascais, EVRF; unidade em metros, pés ou pés US, convertida na leitura —

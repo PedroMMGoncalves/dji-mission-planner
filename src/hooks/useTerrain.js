@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fitSlopePlane, loadTerrain } from '../utils/terrain.js'
 import { loadDemFromFile } from '../utils/demFile.js'
 import { DEFAULT_TERRAIN_FOLLOW } from '../mission/defaults.js'
+import { isOffline } from '../utils/tileCache.js'
 
 export function useTerrain({ ring, ringBbox, ringValid }) {
   const [terrain, setTerrain] = useState({ status: 'idle', data: null, error: null })
@@ -28,7 +29,16 @@ export function useTerrain({ ring, ringBbox, ringValid }) {
       const data = await loadTerrain(bbox)
       setTerrain({ status: 'ready', data, error: null })
     } catch (err) {
-      setTerrain({ status: 'error', data: null, error: err?.message ?? 'Falha no terreno' })
+      // sem rede, a mensagem diz o que se passa em vez de um HTTP opaco; as
+      // areas ja descarregadas continuam a vir da cache persistente
+      const offline = isOffline()
+        ? 'Sem ligacao a Internet: so as areas ja descarregadas estao na cache. '
+        : ''
+      setTerrain({
+        status: 'error',
+        data: null,
+        error: offline + (err?.message ?? 'Falha no terreno'),
+      })
     }
   }, [ringBbox])
 

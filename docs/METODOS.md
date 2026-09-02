@@ -204,7 +204,11 @@ Módulos `src/utils/terrain.js`, `src/utils/demFile.js`,
 Relevo global: tiles Terrarium (AWS `elevation-tiles-prod`), zoom 12 por
 omissão (~30 m/píxel a latitudes médias), com 1 tile de margem em todas as
 direcções e trava de 600 tiles; falha se mais de 20 % dos tiles não
-chegarem. Descodificação por píxel:
+chegarem. Os tiles são imutáveis e ficam numa cache persistente do browser
+(Cache API, `src/utils/tileCache.js`): uma área já vista carrega sem rede
+e o painel diz quantos tiles vieram da cache; sem Cache API ou com a
+quota cheia o fetch simples serve na mesma. Sem ligação, a mensagem de
+erro diz que só as áreas já descarregadas estão disponíveis. Descodificação por píxel:
 
 ```
 elev = R · 256 + G + B / 256 − 32768   (m)

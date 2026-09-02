@@ -21,6 +21,7 @@
  */
 
 import { TERRARIUM_DATUM } from './verticalDatum.js'
+import { withTileCache } from './tileCache.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
 const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
@@ -227,12 +228,10 @@ async function runPool(items, limit, worker) {
  * @param {[number, number, number, number]} bbox [minLon, minLat, maxLon, maxLat]
  * @param {{ zoom?: number, fetchImpl?: typeof fetch, urlTemplate?: string }} [options]
  * @returns {Promise<{zoom: number, bbox: number[], tileCount: number, tileSize: number,
- *   failedCount: number, verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}>}
+ *   failedCount: number, cachedCount: number, cacheEnabled: boolean, verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}>}
  */
-export async function loadTerrain(
-  bbox,
-  { zoom = 12, fetchImpl = fetch, urlTemplate = TERRARIUM_URL } = {},
-) {
+export async function loadTerrain(bbox, opts = {}) {
+  const { zoom = 12, fetchImpl = fetch, urlTemplate = TERRARIUM_URL } = opts
   if (!Array.isArray(bbox) || bbox.length < 4 || !bbox.every((v) => Number.isFinite(v))) {
     throw new Error('bbox inválida para o modelo de terreno')
   }
@@ -247,6 +246,10 @@ export async function loadTerrain(
         : fetchImpl
       : null
   if (!doFetch) throw new Error('fetch indisponível para descarregar o terreno')
+  // cache persistente a frente da rede (tiles imutaveis); sem Cache API e
+  // o fetch simples, com as mesmas estatisticas a zero
+  const cached = withTileCache(doFetch, { cacheStorage: opts.cacheStorage ?? null })
+  const fetchTile = cached.fetch
   if (typeof createImageBitmap !== 'function') {
     throw new Error('createImageBitmap indisponível para descodificar o terreno')
   }
@@ -283,7 +286,7 @@ export async function loadTerrain(
       .replace('{x}', String(x))
       .replace('{y}', String(y))
     try {
-      const px = await fetchTilePixels(url, doFetch)
+      const px = await fetchTilePixels(url, fetchTile)
       tiles.set(`${x}/${y}`, px)
       if (px.width > 0) tileSize = px.width
     } catch {
@@ -345,6 +348,8 @@ export async function loadTerrain(
     tileCount: tiles.size,
     tileSize,
     failedCount: failed,
+    cachedCount: cached.stats.hits,
+    cacheEnabled: cached.enabled,
     verticalDatum: TERRARIUM_DATUM,
     elevationAt,
   }
