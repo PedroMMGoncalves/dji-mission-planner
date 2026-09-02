@@ -35,9 +35,13 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - Quarto corte: o plano de área com células alinhadas
   (`src/mission/areaPlan.js`).
 - Hooks por modo em `src/hooks/`: `useCorridorMission`, `useOrbitMission`,
-  `useFaceMission`, `useInspection` e `useTerrain` — estado, planos,
-  pré-visualizações, desenho no mapa e exportação de cada modo, fora do
-  `App.jsx`, que passou de 2219 para 1609 linhas.
+  `useFaceMission`, `useInspection`, `useTerrain` e, para a área,
+  `useAreaGeometry` (anel, âncora, grelha, mosaico, histórico Ctrl+Z,
+  importação de ficheiros) e `useAreaMission` (plano, blocos, GCPs, alturas
+  do terrain follow, exportações) — estado, planos, pré-visualizações,
+  desenho no mapa e exportação de cada modo, fora do `App.jsx`, que passou
+  de 2219 para 1079 linhas e ficou como raiz de composição (hardware,
+  parâmetros de voo, projecto, resumo e layout).
 - Verificação de tipos sem TypeScript no código: `npm run typecheck` corre
   `tsc --checkJs` sobre os tipos JSDoc de `src/utils/`, `src/mission/`,
   `src/data/` e `src/hooks/` (sem emitir ficheiros) e faz parte do CI. Os

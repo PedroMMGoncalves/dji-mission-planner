@@ -217,7 +217,9 @@ function pickEntry(zip, suffix) {
  *  - campos ausentes no ficheiro vêm a null
  *
  * @param {File|Blob|ArrayBuffer|Uint8Array} file ficheiro .kmz
- * @returns {Promise<object>}
+ * @returns {Promise<{ring: number[][], waypoints: number[][], altitude: number|null,
+ *   speed: number|null, name: string|null, droneEnumValue: number|null,
+ *   payloadEnumValue: number|null, waypointCount: number}>}
  * @throws {Error} mensagem legível (KMZ ilegível, sem waylines/template, …)
  */
 export async function parseWpmlKmz(file) {

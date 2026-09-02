@@ -28,46 +28,21 @@ import {
   normalizeTriggerMode,
   computeFootprint,
   computeGSD,
-  distanceToArea,
   findOptimalDirection,
-  gridFromAnchor,
   lidarPointDensity,
   lineSpacing,
-  longestEdgeBearing,
   photoInterval,
-  rectangleFromAnchor,
   resolveSensor,
-  squareSideForBattery,
-  tilePolygonWithSquares,
-  validateRing,
 } from './utils/geo.js'
-import {
-  downloadBlob,
-  MissionExportError,
-  exportBlocksZip,
-  exportSimpleKML,
-  exportWPMLKmz,
-} from './utils/exporters.js'
-import {
-  parseAreaFile,
-  reprojectRing,
-  simplifyRingIfNeeded,
-  CRS_OPTIONS,
-} from './utils/importArea.js'
-import { planTerrainFollow } from './mission/terrainFollow.js'
-import { buildAreaExport } from './mission/areaExport.js'
-import { planBlocks } from './mission/blocks.js'
+import { downloadBlob, MissionExportError } from './utils/exporters.js'
+import { useAreaGeometry } from './hooks/useAreaGeometry.js'
+import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission } from './hooks/useCorridorMission.js'
 import { useOrbitMission } from './hooks/useOrbitMission.js'
 import { useFaceMission } from './hooks/useFaceMission.js'
 import { useInspection } from './hooks/useInspection.js'
 import { useTerrain } from './hooks/useTerrain.js'
-import { planArea } from './mission/areaPlan.js'
 import { PROJECT_STORAGE_KEY, normalizeProject, projectFileName, serializeProject } from './mission/project.js'
-import {
-} from './utils/corridor.js'
-import { parseWpmlKmz } from './utils/importWpml.js'
-import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './utils/gcp.js'
 import {
   FlagGB,
   FlagPT,
@@ -141,32 +116,7 @@ function AppInner({ lang, setLang }) {
   const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit' | 'corridor'
   // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
   const [draftVertices, setDraftVertices] = useState([])
-  const [ring, setRing] = useState(null) // anel aberto [[lon,lat], ...]
-  const [areaOrigin, setAreaOrigin] = useState(null) // 'draw' | 'anchor' | null
   const [basePoint, setBasePoint] = useState(null) // base do operador [lon,lat]
-  const [anchor, setAnchor] = useState({
-    center: null,
-    length: 500,
-    width: 300,
-    orientation: 90,
-    shape: 'rect', // 'rect' | 'square'
-    cols: 1, // grelha de blocos: colunas ao longo da orientação
-    rows: 1, // grelha de blocos: linhas perpendiculares
-  })
-  const [gridCells, setGridCells] = useState(null) // anéis das células da grelha
-  const [split, setSplit] = useState({
-    mode: 'none', // 'none' | 'area' | 'battery' | 'tiles'
-    maxAreaHa: 20,
-    reservePct: 30, // regressar à base com 30% de bateria
-    maxSide: 500, // teto do lado do bloco por bateria (conforto VLOS)
-    tileSize: 250, // lado dos quadrados do mosaico (m)
-    tileOrientation: 0, // azimute da malha do mosaico
-  })
-  const [disabledTiles, setDisabledTiles] = useState(() => new Set())
-  const [importState, setImportState] = useState(null) // {ring, filename} à espera de CRS
-  const [importError, setImportError] = useState(null)
-  // aviso brando da importação (ex.: MultiPolygon com partes ignoradas)
-  const [importWarning, setImportWarning] = useState(null)
   const [exportError, setExportError] = useState(null)
 
   /**
@@ -184,17 +134,10 @@ function AppInner({ lang, setLang }) {
       if (!(err instanceof MissionExportError)) console.error(err)
     }
   }, [])
-  const [gcpConfig, setGcpConfig] = useState({ enabled: false, count: null }) // null = auto
   const [showHelp, setShowHelp] = useState(false)
   const [show3d, setShow3d] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
-  const [fitKey, setFitKey] = useState(0) // sinal para enquadrar o mapa na área
-  // Histórico de edição unificado (Ctrl+Z): geometria da área + seleção de células
-  const editHistoryRef = useRef([])
-  const ringSnapshotRef = useRef(null)
-  const tilesSnapshotRef = useRef(new Set())
-  const skipTileResetRef = useRef(false)
   const hydratedRef = useRef(false)
 
   const aircraftRef = useRef(null)
@@ -209,47 +152,6 @@ function AppInner({ lang, setLang }) {
       return { ...p, [key]: value }
     })
   }, [])
-
-  const setAnchorParam = useCallback((key, value) => {
-    setAnchor((a) => {
-      // no modo quadrado, o lado único controla comprimento e largura
-      if (a.shape === 'square' && (key === 'length' || key === 'width')) {
-        return { ...a, length: value, width: value }
-      }
-      return { ...a, [key]: value }
-    })
-  }, [])
-
-  const setSplitParam = useCallback((key, value) => {
-    setSplit((s) => ({ ...s, [key]: value }))
-  }, [])
-
-  /* ------- Modo âncora → retângulo perfeito ou grelha de células ------- */
-  // O anel é estado com várias origens — desenho no mapa, importação de
-  // ficheiro, âncora. Derivá-lo do render exigiria uma só fonte de verdade
-  // para a área, o que é uma reestruturação do componente e não um acerto
-  // local; fica registado em vez de forçado.
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    if (anchor.center && anchor.length > 0 && anchor.width > 0) {
-      const cols = Math.max(1, Math.round(anchor.cols))
-      const rows = Math.max(1, Math.round(anchor.rows))
-      if (cols * rows > 1) {
-        const grid = gridFromAnchor(
-          anchor.center, anchor.length, anchor.width, anchor.orientation, cols, rows,
-        )
-        setRing(grid.outline)
-        setGridCells(grid.cells)
-      } else {
-        setRing(
-          rectangleFromAnchor(anchor.center, anchor.length, anchor.width, anchor.orientation),
-        )
-        setGridCells(null)
-      }
-      setAreaOrigin('anchor')
-    }
-  }, [anchor])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   /* ------------------- Pipeline de cálculo (memo) -------------------- */
   const aircraft = AIRCRAFT[drone.aircraftId]
@@ -415,207 +317,46 @@ function AppInner({ lang, setLang }) {
     missionName, wpml, setMode, runExport,
   })
 
-  const validation = useMemo(
-    () => (ring ? validateRing(ring) : { valid: false, kinks: [] }),
-    [ring],
-  )
-
-  // Mosaico de quadrados: manual ('tiles') ou dimensionado pela bateria
-  // ('battery' — lado calculado a partir do tempo útil e do teto VLOS)
-  const tilesResult = useMemo(() => {
-    if (!ring || !validation.valid || gridCells) return null
-    if (split.mode !== 'tiles' && split.mode !== 'battery') return null
-    let side = split.tileSize
-    if (split.mode === 'battery') {
-      const dist = basePoint ? distanceToArea(basePoint, ring) : null
-      const transitS = dist != null ? (2 * dist) / (speed || 10) : 0
-      side = squareSideForBattery({
-        batteryMin,
-        reservePct: split.reservePct,
-        speed: speed,
-        spacingM: spacing,
-        transitS,
-        maxSideM: split.maxSide,
-        passes: params.crosshatch ? (params.includeNadir ? 3 : 2) : 1,
-      })
-    }
-    return { cells: tilePolygonWithSquares(ring, side, split.tileOrientation), side }
-  }, [
-    ring,
-    validation.valid,
-    gridCells,
-    split.mode,
-    split.tileSize,
-    split.tileOrientation,
-    batteryMin,
-    split.reservePct,
-    split.maxSide,
-    speed,
-    spacing,
-    basePoint,
-    // O lado do quadrado dimensionado por bateria depende do número de
-    // passagens (cross-hatch e passagem nadir extra multiplicam o voo por
-    // célula). Sem estas duas dependências o lado ficava preso ao valor
-    // anterior ao ligar/desligar o cross-hatch, e a célula podia exceder o
-    // que uma bateria voa.
-    params.crosshatch,
-    params.includeNadir,
-  ])
-
-  const tiles = Array.isArray(tilesResult?.cells) ? tilesResult.cells : null
-  const tilesError = tilesResult?.cells?.error ?? null
-  const tileSide = tilesResult?.side ?? null
-
-  // espelhos do estado atual, para os snapshots do histórico
-  useEffect(() => {
-    ringSnapshotRef.current = ring
-  }, [ring])
-  useEffect(() => {
-    tilesSnapshotRef.current = disabledTiles
-  }, [disabledTiles])
-
-  const pushHistory = useCallback(() => {
-    editHistoryRef.current.push({
-      ring: ringSnapshotRef.current,
-      tiles: new Set(tilesSnapshotRef.current),
-    })
-    if (editHistoryRef.current.length > 100) editHistoryRef.current.shift()
-  }, [])
-
-  const undoEdit = useCallback(() => {
-    const prev = editHistoryRef.current.pop()
-    if (!prev) return
-    skipTileResetRef.current = true
-    setRing(prev.ring)
-    setDisabledTiles(new Set(prev.tiles))
-  }, [])
-
-  // regenerar o mosaico limpa a seleção de células desativadas
-  useEffect(() => {
-    if (skipTileResetRef.current) {
-      skipTileResetRef.current = false
-      return
-    }
-    setDisabledTiles(new Set())
-  }, [ring, split.mode, tileSide, split.tileOrientation])
-
-  const toggleTile = useCallback(
-    (index) => {
-      pushHistory()
-      setDisabledTiles((prev) => {
-        const next = new Set(prev)
-        if (next.has(index)) next.delete(index)
-        else next.add(index)
-        return next
-      })
-    },
-    [pushHistory],
-  )
-
-  const restoreAllTiles = useCallback(() => {
-    pushHistory()
-    setDisabledTiles(new Set())
-  }, [pushHistory])
-
-  // Ctrl+Z desfaz a última edição (vértices, área ou células)
-  useEffect(() => {
-    const onKey = (e) => {
-      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return
-      const tag = e.target?.tagName
-      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
-      if (editHistoryRef.current.length > 0) {
-        e.preventDefault()
-        undoEdit()
+  /* ------------------ Modo área, parte 1: geometria ------------------- */
+  // Reimportar um WPML devolve nome, altitude e velocidade da missão antiga
+  const onImportedMission = useCallback(({ name, altitude, speed: s }) => {
+    if (name) setMissionName(name)
+    setParams((p) => {
+      const next = { ...p }
+      if (Number.isFinite(altitude)) next.altitude = altitude
+      if (Number.isFinite(s)) {
+        const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
+        next.speed = Math.min(r.max, Math.max(r.min, s))
       }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [undoEdit])
-
-  // Células ativas: grelha da âncora, ou mosaico sem as células removidas
-  const activeCells = useMemo(() => {
-    if (gridCells) return gridCells
-    if (tiles) {
-      const kept = tiles.filter((_, i) => !disabledTiles.has(i))
-      return kept.length > 0 ? kept : null
-    }
-    return null
-  }, [gridCells, tiles, disabledTiles])
-
-  // B: disparo por waypoint só com câmara e intervalo válido; com LiDAR ou
-  // sem óptica o plano fica no modo distância (e a opção não aparece)
-  const photoMode =
-    sensor.type === 'camera' && params.triggerMode === 'waypoint' && interval > 0
-      ? 'waypoint'
-      : 'distance'
-
-  const plan = useMemo(() => {
-    if (!ring || !validation.valid) return null
-    const opts = {
-      spacingM: spacing,
-      angleDeg: params.angle,
-      bufferPct: params.bufferPct,
-      photoIntervalM: interval ?? 0,
-      speed: speed,
-      crosshatch: params.crosshatch,
-      includeNadir: Boolean(params.crosshatch && params.includeNadir),
-      overshootM: Math.max(0, params.overshoot || 0),
-      tieLine: Boolean(params.tieLine),
-      photoMode,
-    }
-    // plano simples, ou um plano por célula com alinhamento global (src/mission/areaPlan.js)
-    return planArea(ring, activeCells, opts)
-  }, [photoMode, ring, validation.valid, spacing, params.angle, params.bufferPct, interval, speed, params.crosshatch, params.includeNadir, params.overshoot, params.tieLine, activeCells])
-
-  const planOk = plan && !plan.error ? plan : null
-
-  // Direção de referência: orientação do bloco (âncora) ou aresta mais longa
-  const refAzimuth = useMemo(() => {
-    if (!ring) return null
-    if (areaOrigin === 'anchor') return ((anchor.orientation % 180) + 180) % 180
-    return longestEdgeBearing(ring)
-  }, [ring, areaOrigin, anchor.orientation])
-
-  const baseDistance = useMemo(
-    () => (basePoint && ring ? distanceToArea(basePoint, ring) : null),
-    [basePoint, ring],
-  )
-
-  // Divisão em blocos de voo numerados: células da grelha, ou corte da
-  // serpentina por área/bateria
-  const blocks = useMemo(
-    () => planBlocks(planOk, { activeCells, split, batteryMin, speed, spacingM: spacing, basePoint }),
-    [planOk, activeCells, split, batteryMin, speed, spacing, basePoint],
-  )
-
-  // B: aviso brando — missões com milhares de waypoints importam lentamente
-  // no Pilot 2; o limite duro do WPML (65535 índices) fica longe
-  const waypointWarn = useMemo(() => {
-    if (photoMode !== 'waypoint' || !planOk) return null
-    const n = blocks?.length
-      ? Math.max(...blocks.map((b) => b.waypoints.length))
-      : planOk.waypoints.length
-    return n > 2000 ? n : null
-  }, [photoMode, planOk, blocks])
-
-  /* --------------------------- Interações ---------------------------- */
-  const ringBbox = useMemo(() => {
-    if (!ring) return null
-    let [minX, minY, maxX, maxY] = [Infinity, Infinity, -Infinity, -Infinity]
-    ring.forEach(([x, y]) => {
-      minX = Math.min(minX, x)
-      minY = Math.min(minY, y)
-      maxX = Math.max(maxX, x)
-      maxY = Math.max(maxY, y)
+      return next
     })
-    return [minX, minY, maxX, maxY]
-  }, [ring])
+  }, [])
+  const {
+    ring, areaOrigin, anchor, setAnchorParam, gridCells, split, setSplitParam, disabledTiles, validation,
+    ringBbox, tiles, tilesError, tileSide, activeCells, refAzimuth, baseDistance, undoEdit, toggleTile,
+    restoreAllTiles, startDraw, startAnchor, clearAll, handleFinishDraw, handleAreaClick, handleVertexDrag,
+    handleVertexInsert, handleVertexDelete, handleAnchorDrag, importState, importError, setImportError,
+    importWarning, handleImportFile, handleImportCrs, cancelImport, fitKey, setFitKey, applyProjectGeometry,
+  } = useAreaGeometry({
+    mode, setMode, setDraftVertices, basePoint, speed, spacing, batteryMin,
+    passes: params.crosshatch ? (params.includeNadir ? 3 : 2) : 1,
+    onImportedMission, t,
+  })
 
   /* ------------------------------ Terreno ----------------------------- */
   const {
     terrain, terrainFollow, setTerrainFollow, handleLoadTerrain, handleImportDem,
     terrainCovers, slopeHint,
   } = useTerrain({ ring, ringBbox, ringValid: validation.valid })
+
+  /* ---------- Modo área, parte 2: plano, blocos, GCPs, exportação ------ */
+  const {
+    gcpConfig, setGcpConfig, plan, planOk, blocks, waypointWarn, gcpAutoCount, gcps, gcpInfo,
+    terrainResult, canExportKML, canExportKMZ, handleExportKML, handleExportGcps, handleExportKMZ,
+  } = useAreaMission({
+    ring, validation, activeCells, basePoint, params, spacing, interval, speed, batteryMin, split, sensor,
+    wpml, missionName, terrain, terrainFollow, terrainCovers, runExport, t,
+  })
 
   /* ----------------------- Modo fachada (E1.1) ------------------------ */
   const {
@@ -625,11 +366,8 @@ function AppInner({ lang, setLang }) {
 
   const handleMapClick = useCallback(
     (lonlat) => {
-      if (mode === 'draw') {
-        setDraftVertices((d) => [...d, lonlat])
-      } else if (mode === 'anchor') {
-        setAnchor((a) => ({ ...a, center: lonlat }))
-      } else if (mode === 'base') {
+      if (handleAreaClick(lonlat)) return
+      if (mode === 'base') {
         setBasePoint(lonlat)
         setMode('idle')
       } else if (mode === 'face' || mode === 'corridor') {
@@ -641,38 +379,15 @@ function AppInner({ lang, setLang }) {
         addInspectPoint(lonlat)
       }
     },
-    [mode, addInspectPoint, setOrbitConfig],
+    [mode, handleAreaClick, addInspectPoint, setOrbitConfig],
   )
 
-  /* ----------------------- Modo fachada (E1.1) ------------------------ */
+  /* ---------------------- Interacções comuns -------------------------- */
   const changeMissionMode = useCallback((m) => {
     setMissionMode(m)
     setMode('idle')
     setDraftVertices([])
   }, [])
-
-  /* --------------------- Pontos de inspeção (R2.9) -------------------- */
-  const handleFinishDraw = useCallback(() => {
-    setDraftVertices((draft) => {
-      // remove vértices quase-duplicados consecutivos (ex.: 2.º clique do
-      // duplo-clique, com tolerância para o jitter de ~1 píxel)
-      const EPS = 1e-6
-      const clean = draft.filter(
-        (v, i) =>
-          i === 0 ||
-          Math.abs(v[0] - draft[i - 1][0]) > EPS ||
-          Math.abs(v[1] - draft[i - 1][1]) > EPS,
-      )
-      if (clean.length >= 3) {
-        pushHistory()
-        setRing(clean)
-        setAreaOrigin('draw')
-        setMode('idle')
-        return []
-      }
-      return draft
-    })
-  }, [pushHistory])
 
   // o duplo clique no mapa conclui o desenho activo (área, baseline ou eixo)
   const handleFinishAny = useCallback(() => {
@@ -708,85 +423,9 @@ function AppInner({ lang, setLang }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [mode, removeLastDraftVertex])
 
-  const handleVertexDrag = useCallback(
-    (index, lonlat) => {
-      pushHistory()
-      setRing((r) => (r ? r.map((v, i) => (i === index ? lonlat : v)) : r))
-    },
-    [pushHistory],
-  )
-
-  const handleVertexInsert = useCallback(
-    (index, lonlat) => {
-      pushHistory()
-      setRing((r) => {
-        if (!r) return r
-        const next = [...r]
-        next.splice(index, 0, lonlat)
-        return next
-      })
-      setAreaOrigin('draw') // deixou de ser um retângulo perfeito
-    },
-    [pushHistory],
-  )
-
-  const handleVertexDelete = useCallback(
-    (index) => {
-      pushHistory()
-      setRing((r) => (r && r.length > 3 ? r.filter((_, i) => i !== index) : r))
-    },
-    [pushHistory],
-  )
-
-  const handleAnchorDrag = useCallback((lonlat) => {
-    setAnchor((a) => ({ ...a, center: lonlat }))
-  }, [])
-
   const handleBaseDrag = useCallback((lonlat) => {
     setBasePoint(lonlat)
   }, [])
-
-  /* ------------------------- Terreno (DEM) --------------------------- */
-  /* ------------------------------ GCPs -------------------------------- */
-  const gcpAutoCount = useMemo(() => {
-    const areaHa = planOk?.stats?.areaHa
-    return areaHa ? suggestedGcpCount(areaHa) : 5
-  }, [planOk])
-
-  const gcps = useMemo(() => {
-    if (!gcpConfig.enabled || !ring || !validation.valid) return null
-    try {
-      return planGcps(ring, gcpConfig.count ?? gcpAutoCount)
-    } catch {
-      return null
-    }
-  }, [gcpConfig, ring, validation.valid, gcpAutoCount])
-
-  const gcpInfo = useMemo(
-    () => (gcps && gcps.length > 0 ? gcpStats(ring, gcps) : null),
-    [gcps, ring],
-  )
-
-  /* ------------- Terrain follow: alturas por waypoint ----------------- */
-  const terrainResult = useMemo(() => {
-    // B: com foto por waypoint, a densificação do seguimento de terreno
-    // reindexaria as acções de foto — erro explícito (e exportação bloqueada)
-    // em vez de uma missão parcial com alturas planas ou fotos perdidas
-    if (terrainFollow.enabled && photoMode === 'waypoint') return { error: t('cp.terrain.photoWaypoint') }
-    if (!terrainFollow.enabled || !terrainCovers || !planOk?.lines?.length) return null
-    try {
-      const res = planTerrainFollow(terrain.data, planOk, {
-        blocks,
-        refPt: basePoint ?? planOk.waypoints[0],
-        agl: params.altitude,
-        toleranceM: terrainFollow.tolerance,
-      })
-      if (res.error === 'ref-outside-terrain') return { error: 'Referência fora do terreno carregado' }
-      return res
-    } catch (err) {
-      return { error: err?.message ?? 'Falha no cálculo do terreno' }
-    }
-  }, [photoMode, t, terrainFollow, terrainCovers, terrain.data, planOk, blocks, basePoint, params.altitude])
 
   const applySlopeAngle = useCallback(() => {
     if (slopeHint) setParams((p) => ({ ...p, angle: Math.round(slopeHint.contourAzimuthDeg) }))
@@ -863,88 +502,6 @@ function AppInner({ lang, setLang }) {
     [payload, params.altitude, terrainFollow, terrainResult],
   )
 
-  /* ------------------------ Importação de áreas ----------------------- */
-  const applyImportedRing = useCallback((rawRing) => {
-    pushHistory()
-    const clean = simplifyRingIfNeeded(rawRing)
-    setMode('idle')
-    setDraftVertices([])
-    setGridCells(null)
-    setAnchor((a) => ({ ...a, center: null }))
-    setRing(clean)
-    setAreaOrigin('draw')
-    setImportState(null)
-    setImportError(null)
-    setFitKey((k) => k + 1)
-  }, [pushHistory])
-
-  const handleImportFile = useCallback(
-    async (file) => {
-      if (!file) return
-      setImportError(null)
-      setImportWarning(null)
-      try {
-        // Reimportar uma missão WPML existente: reconstrói a área a partir
-        // dos waypoints e recupera altitude/velocidade/nome
-        if (file.name.toLowerCase().endsWith('.kmz')) {
-          const res = await parseWpmlKmz(file)
-          applyImportedRing(res.ring)
-          if (res.name) setMissionName(res.name)
-          setParams((p) => {
-            const next = { ...p }
-            if (Number.isFinite(res.altitude)) next.altitude = res.altitude
-            if (Number.isFinite(res.speed)) {
-              const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
-              next.speed = Math.min(r.max, Math.max(r.min, res.speed))
-            }
-            return next
-          })
-          return
-        }
-        const result = await parseAreaFile(file)
-        if (result.needsCrs) {
-          setImportState({ ring: result.ring, filename: file.name, discardedParts: result.discardedParts })
-        } else {
-          applyImportedRing(result.ring)
-          // O import escolhe o maior polígono de um MultiPolygon e deitava os
-          // outros fora em silêncio — o operador ficava a planear uma parte
-          // da área convencido de que tinha a área toda.
-          if (result.discardedParts > 0) {
-            setImportWarning(t('cp.area.importDiscarded', { n: result.discardedParts }))
-          }
-        }
-      } catch (err) {
-        setImportError(err?.message ?? 'Falha ao ler o ficheiro')
-        setImportState(null)
-      }
-    },
-    [applyImportedRing, t],
-  )
-
-  const handleImportCrs = useCallback(
-    (code) => {
-      if (!importState) return
-      const crs = CRS_OPTIONS.find((c) => c.code === code)
-      if (!crs) return
-      try {
-        applyImportedRing(reprojectRing(importState.ring, crs.def))
-        if (importState.discardedParts > 0) {
-          setImportWarning(t('cp.area.importDiscarded', { n: importState.discardedParts }))
-        }
-      } catch {
-        setImportError('Falha na conversão de coordenadas')
-        setImportState(null)
-      }
-    },
-    [importState, applyImportedRing, t],
-  )
-
-  const cancelImport = useCallback(() => {
-    setImportState(null)
-    setImportError(null)
-    setImportWarning(null)
-  }, [])
-
   /* --------------- Persistência do projeto (localStorage) -------------- */
 
   const applyProject = useCallback((p) => {
@@ -952,7 +509,6 @@ function AppInner({ lang, setLang }) {
     // distribui o resultado pelo estado
     const n = normalizeProject(p)
     if (!n) return false
-    skipTileResetRef.current = true
     if (n.missionName != null) setMissionName(n.missionName)
     if (n.drone) setDrone(n.drone)
     if (n.custom) setCustom((c) => ({ ...c, ...n.custom }))
@@ -965,7 +521,6 @@ function AppInner({ lang, setLang }) {
         triggerMode: normalizeTriggerMode(n.params.triggerMode ?? prev.triggerMode),
       }))
     }
-    if (n.split) setSplit((prev) => ({ ...prev, ...n.split }))
     // projectos antigos guardavam uma duração de bateria única dentro de
     // split — preserva o comportamento exacto como override da combinação
     if (n.legacyBatteryMin != null && n.drone) {
@@ -980,15 +535,15 @@ function AppInner({ lang, setLang }) {
       setInspectPoints(n.inspectPoints)
       inspectSeqRef.current = n.nextInspectId
     }
-    if (n.anchor) setAnchor((prev) => ({ ...prev, ...n.anchor }))
-    if (n.ring) setRing(n.ring)
-    setAreaOrigin(n.areaOrigin)
+    applyProjectGeometry(n) // split, anchor, ring, origem e células desactivadas
     setBasePoint(n.basePoint)
-    setDisabledTiles(n.disabledTiles)
     if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
     if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
     return true
-  }, [setCorridorConfig, setOrbitConfig, setFaceConfig, setInspectPoints, inspectSeqRef, setTerrainFollow])
+  }, [
+    setCorridorConfig, setOrbitConfig, setFaceConfig, setInspectPoints, inspectSeqRef, setTerrainFollow,
+    applyProjectGeometry, setGcpConfig,
+  ])
 
   // hidratar uma vez no arranque
   // Hidratação única no arranque: applyProject reconstitui uma dezena de
@@ -1055,30 +610,8 @@ function AppInner({ lang, setLang }) {
         setImportError('Ficheiro de projeto inválido')
       }
     },
-    [applyProject],
+    [applyProject, setImportError, setFitKey],
   )
-
-  const startDraw = useCallback(() => {
-    setMode('draw')
-    setDraftVertices([])
-    setRing(null)
-    setAreaOrigin(null)
-    setGridCells(null)
-    setAnchor((a) => ({ ...a, center: null }))
-  }, [])
-
-  const startAnchor = useCallback((shape = 'rect') => {
-    setMode('anchor')
-    setDraftVertices([])
-    setRing(null)
-    setAreaOrigin(null)
-    setAnchor((a) => ({
-      ...a,
-      center: null,
-      shape,
-      width: shape === 'square' ? a.length : a.width,
-    }))
-  }, [])
 
   const startBase = useCallback(() => {
     setMode((m) => (m === 'base' ? 'idle' : 'base'))
@@ -1088,16 +621,6 @@ function AppInner({ lang, setLang }) {
     setBasePoint(null)
     setMode((m) => (m === 'base' ? 'idle' : m))
   }, [])
-
-  const clearAll = useCallback(() => {
-    pushHistory()
-    setMode('idle')
-    setDraftVertices([])
-    setRing(null)
-    setAreaOrigin(null)
-    setGridCells(null)
-    setAnchor((a) => ({ ...a, center: null }))
-  }, [pushHistory])
 
   // Catálogo de presets de missão aplicáveis ao sensor ativo, com a
   // velocidade já resolvida para a aeronave selecionada
@@ -1152,58 +675,6 @@ function AppInner({ lang, setLang }) {
     const best = findOptimalDirection(ring, spacing)
     if (best != null) setParams((p) => ({ ...p, angle: Math.round(best) }))
   }, [ring, validation.valid, spacing])
-
-  /* --------------------------- Exportação ---------------------------- */
-  const safeName = missionName.trim().replace(/[^\w-]+/g, '-') || 'missao'
-  const canExportKML = Boolean(ring && validation.valid)
-  // B: seguir terreno + foto por waypoint é um erro explícito, não uma
-  // exportação com alturas planas
-  const canExportKMZ =
-    Boolean(planOk && planOk.waypoints.length >= 2) && !(terrainFollow.enabled && photoMode === 'waypoint')
-
-  const handleExportKML = () => {
-    if (canExportKML) runExport(() => exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null))
-  }
-
-  const handleExportGcps = () => {
-    if (!gcps || gcps.length === 0) return
-    downloadBlob(
-      new Blob([buildGcpKML(gcps, `${safeName}-gcps`)], {
-        type: 'application/vnd.google-earth.kml+xml',
-      }),
-      `${safeName}-gcps.kml`,
-    )
-  }
-
-  const handleExportKMZ = () => {
-    if (!canExportKMZ) return
-    // toda a montagem (nome com variantes, waypoints do terrain follow,
-    // intervalos de disparo, blocos, marcador do gimbal nadir) é pura e
-    // testada em src/mission/areaExport.js
-    const { params: exportParams, blocks: exportBlocks } = buildAreaExport({
-      missionName,
-      plan: planOk,
-      terrainResult,
-      blocks,
-      spacingM: spacing,
-      photoMode,
-      sensorType: sensor.type,
-      altitude: params.altitude,
-      speed,
-      wpml,
-      photoIntervalM: interval,
-      triggerMode: params.triggerMode,
-      gimbalPitch: params.gimbalPitch,
-      crosshatch: params.crosshatch,
-      includeNadir: params.includeNadir,
-      tieLine: params.tieLine,
-    })
-    if (exportBlocks) runExport(() => exportBlocksZip(exportParams, exportBlocks))
-    else runExport(() => exportWPMLKmz(exportParams))
-  }
-
-  // Missão de inspeção (R2.9): KMZ próprio com os pontos avulsos, rumo e
-  // pitch por ponto via perWaypoint; sem disparo por distância
 
   /* ----------------------------- Layout ------------------------------ */
   if (view === 'checklist') {
