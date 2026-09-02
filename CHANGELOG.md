@@ -29,6 +29,10 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - Segundo corte: os parâmetros de exportação da fachada, da órbita, do
   corredor e dos pontos de inspecção (`src/mission/exportParams.js`), testados
   a partir de planos reais contra a fronteira de validação.
+- Terceiro corte: a divisão em blocos (`src/mission/blocks.js`) e o ficheiro
+  de projecto — serialização, leitura e migração v1 → v2
+  (`src/mission/project.js`) — com testes de ida e volta e de lixo.
+  `App.jsx` passou de 2219 para 1978 linhas.
 
 ## 1.0.1 — 2026-09-01
 

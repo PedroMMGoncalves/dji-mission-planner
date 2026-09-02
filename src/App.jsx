@@ -22,7 +22,6 @@ import {
   MISSION_PRESETS,
   aglCapWarning,
   batteryMinFor,
-  migrateDroneSelection,
 } from './data/drones.js'
 import {
   aggregatePlans,
@@ -35,14 +34,12 @@ import {
   findOptimalDirection,
   generateFlightPlan,
   gridFromAnchor,
-  nadirLineLocalPerBlock,
   lidarPointDensity,
   lineSpacing,
   longestEdgeBearing,
   photoInterval,
   rectangleFromAnchor,
   resolveSensor,
-  splitIntoBlocks,
   squareSideForBattery,
   tilePolygonWithSquares,
   validateRing,
@@ -64,24 +61,23 @@ import { fitSlopePlane, loadTerrain } from './utils/terrain.js'
 import { planTerrainFollow } from './mission/terrainFollow.js'
 import { buildAreaExport } from './mission/areaExport.js'
 import { corridorExportParams, faceExportParams, inspectionExportParams, orbitExportParams } from './mission/exportParams.js'
+import { planBlocks } from './mission/blocks.js'
+import { PROJECT_STORAGE_KEY, normalizeProject, projectFileName, serializeProject } from './mission/project.js'
 import { nearestNeighbourOrder, reorderList } from './utils/inspect.js'
 import {
   DEFAULT_FACE_CONFIG,
   checkFaceClearance,
   generateFacePlan,
-  normalizeFaceConfig,
 } from './utils/faceMode.js'
 import { headingTicks } from './utils/preview.js'
 import {
   DEFAULT_CORRIDOR_CONFIG,
   corridorBufferRing,
   generateCorridorPlan,
-  normalizeCorridorConfig,
 } from './utils/corridor.js'
 import {
   DEFAULT_ORBIT_CONFIG,
   generateOrbitPlan,
-  normalizeOrbitConfig,
   orbitLevelsToBlocks,
 } from './utils/orbit.js'
 import { loadDemFromFile } from './utils/demFile.js'
@@ -615,40 +611,10 @@ function AppInner({ lang, setLang }) {
 
   // Divisão em blocos de voo numerados: células da grelha, ou corte da
   // serpentina por área/bateria
-  const blocks = useMemo(() => {
-    if (!planOk) return null
-    if (activeCells && planOk.cellPlans) {
-      return planOk.cellPlans.map((p, i) => ({
-        id: i + 1,
-        lines: p.lines,
-        waypoints: p.waypoints,
-        areaHa: p.stats.areaHa,
-        lengthM: p.stats.totalLineLengthM,
-        transitS: 0,
-        timeS: p.stats.flightTimeS ?? 0,
-        // B: waypoints densificados e acções de foto da célula
-        perLine: p.perLine ?? null,
-        perWaypoint: p.perWaypoint ?? null,
-        // R2.10: cada célula tem a sua grelha nadir no fim
-        nadirLineLocal: p.nadirStartLine ?? null,
-      }))
-    }
-    // 'battery' e 'tiles' produzem células (acima); só 'area' corta a serpentina
-    if (split.mode !== 'area') return null
-    const cut = splitIntoBlocks(planOk, {
-      mode: split.mode,
-      maxAreaHa: split.maxAreaHa,
-      batteryMin,
-      reservePct: split.reservePct,
-      speed: speed,
-      spacingM: spacing,
-      basePoint,
-    })
-    if (!cut || planOk.nadirStartLine == null) return cut
-    // R2.10: em que linha local de cada bloco começa a grelha nadir
-    const locals = nadirLineLocalPerBlock(cut.map((b) => b.lines.length), planOk.nadirStartLine)
-    return cut.map((b, i) => ({ ...b, nadirLineLocal: locals[i] }))
-  }, [planOk, activeCells, split, batteryMin, speed, spacing, basePoint])
+  const blocks = useMemo(
+    () => planBlocks(planOk, { activeCells, split, batteryMin, speed, spacingM: spacing, basePoint }),
+    [planOk, activeCells, split, batteryMin, speed, spacing, basePoint],
+  )
 
   // B: aviso brando — missões com milhares de waypoints importam lentamente
   // no Pilot 2; o limite duro do WPML (65535 índices) fica longe
@@ -1341,58 +1307,47 @@ function AppInner({ lang, setLang }) {
   }, [])
 
   /* --------------- Persistência do projeto (localStorage) -------------- */
-  const PROJECT_KEY = 'dji-mission-planner:project:v1'
 
   const applyProject = useCallback((p) => {
-    // v1: droneId (perfil único, pré-T1.1) · v2: drone {aircraftId, payloadId}
-    if (!p || (p.version !== 1 && p.version !== 2)) return false
+    // leitura e migracao (v1/v2) em src/mission/project.js; aqui so se
+    // distribui o resultado pelo estado
+    const n = normalizeProject(p)
+    if (!n) return false
     skipTileResetRef.current = true
-    if (typeof p.missionName === 'string') setMissionName(p.missionName)
-    const sel = p.drone || p.droneId ? migrateDroneSelection(p.drone ?? p.droneId) : null
-    if (sel) setDrone(sel)
-    if (p.custom) setCustom((c) => ({ ...c, ...p.custom }))
-    if (p.payloadTuning && typeof p.payloadTuning === 'object') setPayloadTuning(p.payloadTuning)
-    if (p.params) {
-      // B: triggerMode desconhecido (ou ausente) carrega como distância
+    if (n.missionName != null) setMissionName(n.missionName)
+    if (n.drone) setDrone(n.drone)
+    if (n.custom) setCustom((c) => ({ ...c, ...n.custom }))
+    if (n.payloadTuning) setPayloadTuning(n.payloadTuning)
+    if (n.params) {
+      // triggerMode desconhecido (ou ausente) carrega como distância
       setParams((prev) => ({
         ...prev,
-        ...p.params,
-        triggerMode: normalizeTriggerMode(p.params.triggerMode ?? prev.triggerMode),
+        ...n.params,
+        triggerMode: normalizeTriggerMode(n.params.triggerMode ?? prev.triggerMode),
       }))
     }
-    if (p.split) {
-      // projetos antigos guardavam uma duração de bateria única dentro de
-      // split — preserva o comportamento exato como override da combinação
-      const { batteryMin: legacyBatteryMin, ...restSplit } = p.split
-      setSplit((prev) => ({ ...prev, ...restSplit }))
-      if (Number.isFinite(legacyBatteryMin) && sel) {
-        setBatteryByCombo((m) => ({
-          ...m,
-          [`${sel.aircraftId}:${sel.payloadId}`]: legacyBatteryMin,
-        }))
-      }
+    if (n.split) setSplit((prev) => ({ ...prev, ...n.split }))
+    // projectos antigos guardavam uma duração de bateria única dentro de
+    // split — preserva o comportamento exacto como override da combinação
+    if (n.legacyBatteryMin != null && n.drone) {
+      setBatteryByCombo((m) => ({ ...m, [`${n.drone.aircraftId}:${n.drone.payloadId}`]: n.legacyBatteryMin }))
     }
-    if (p.batteryByCombo && typeof p.batteryByCombo === 'object') {
-      setBatteryByCombo((m) => ({ ...m, ...p.batteryByCombo }))
+    if (n.batteryByCombo) setBatteryByCombo((m) => ({ ...m, ...n.batteryByCombo }))
+    if (n.missionMode) setMissionMode(n.missionMode)
+    if (n.faceConfig) setFaceConfig(n.faceConfig)
+    if (n.orbitConfig) setOrbitConfig(n.orbitConfig)
+    if (n.corridorConfig) setCorridorConfig(n.corridorConfig)
+    if (n.inspectPoints) {
+      setInspectPoints(n.inspectPoints)
+      inspectSeqRef.current = n.nextInspectId
     }
-    if (['area', 'face', 'orbit', 'corridor'].includes(p.missionMode)) {
-      setMissionMode(p.missionMode)
-    }
-    if (p.faceConfig) setFaceConfig(normalizeFaceConfig(p.faceConfig))
-    if (p.orbitConfig) setOrbitConfig(normalizeOrbitConfig(p.orbitConfig))
-    if (p.corridorConfig) setCorridorConfig(normalizeCorridorConfig(p.corridorConfig))
-    if (Array.isArray(p.inspectPoints)) {
-      const pts = p.inspectPoints.filter((q) => q && Array.isArray(q.point))
-      setInspectPoints(pts)
-      inspectSeqRef.current = pts.reduce((mx, q) => Math.max(mx, (q.id ?? 0) + 1), 1)
-    }
-    if (p.anchor) setAnchor((prev) => ({ ...prev, ...p.anchor }))
-    if (Array.isArray(p.ring)) setRing(p.ring)
-    setAreaOrigin(p.areaOrigin ?? null)
-    setBasePoint(Array.isArray(p.basePoint) ? p.basePoint : null)
-    setDisabledTiles(new Set(Array.isArray(p.disabledTiles) ? p.disabledTiles : []))
-    if (p.terrainFollow) setTerrainFollow((t) => ({ ...t, ...p.terrainFollow }))
-    if (p.gcpConfig) setGcpConfig((g) => ({ ...g, ...p.gcpConfig }))
+    if (n.anchor) setAnchor((prev) => ({ ...prev, ...n.anchor }))
+    if (n.ring) setRing(n.ring)
+    setAreaOrigin(n.areaOrigin)
+    setBasePoint(n.basePoint)
+    setDisabledTiles(n.disabledTiles)
+    if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
+    if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
     return true
   }, [])
 
@@ -1404,7 +1359,7 @@ function AppInner({ lang, setLang }) {
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(PROJECT_KEY)
+      const raw = localStorage.getItem(PROJECT_STORAGE_KEY)
       if (raw) {
         const p = JSON.parse(raw)
         if (applyProject(p) && p.ring) setFitKey((k) => k + 1)
@@ -1417,71 +1372,35 @@ function AppInner({ lang, setLang }) {
   }, [])
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  // tudo o que o projecto guarda, num só objecto (autosave e ficheiro)
+  const projectState = useMemo(
+    () => ({
+      missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig,
+      corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles,
+      terrainFollow, gcpConfig,
+    }),
+    [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig],
+  )
+
   // gravação automática (debounce 500 ms)
   useEffect(() => {
     if (!hydratedRef.current) return
     const t = setTimeout(() => {
       try {
-        localStorage.setItem(
-          PROJECT_KEY,
-          JSON.stringify({
-            version: 2,
-            missionName,
-            drone,
-            custom,
-            payloadTuning,
-            batteryByCombo,
-            inspectPoints,
-            missionMode,
-            faceConfig,
-            corridorConfig,
-            orbitConfig,
-            params,
-            split,
-            anchor,
-            ring,
-            areaOrigin,
-            basePoint,
-            disabledTiles: [...disabledTiles],
-            terrainFollow,
-            gcpConfig,
-          }),
-        )
+        localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(serializeProject(projectState)))
       } catch {
         /* armazenamento indisponível */
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [projectState])
 
   const exportProject = useCallback(() => {
-    const data = {
-      version: 2,
-      missionName,
-      drone,
-      custom,
-      payloadTuning,
-      batteryByCombo,
-      inspectPoints,
-      missionMode,
-      faceConfig,
-      corridorConfig,
-      orbitConfig,
-      params,
-      split,
-      anchor,
-      ring,
-      areaOrigin,
-      basePoint,
-      disabledTiles: [...disabledTiles],
-      terrainFollow,
-      gcpConfig,
-    }
     downloadBlob(
-      new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
-      `${missionName.trim().replace(/[^\w-]+/g, '-') || 'missao'}-projeto.json`,
+      new Blob([JSON.stringify(serializeProject(projectState), null, 2)], { type: 'application/json' }),
+      projectFileName(missionName),
     )
-  }, [missionName, drone, custom, payloadTuning, batteryByCombo, inspectPoints, missionMode, faceConfig, corridorConfig, orbitConfig, params, split, anchor, ring, areaOrigin, basePoint, disabledTiles, terrainFollow, gcpConfig])
+  }, [projectState, missionName])
 
   const importProject = useCallback(
     async (file) => {
