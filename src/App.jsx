@@ -25,14 +25,11 @@ import {
 } from './data/drones.js'
 import {
   aggregatePlans,
-  composeCellPlans,
   normalizeTriggerMode,
-  computeAlignment,
   computeFootprint,
   computeGSD,
   distanceToArea,
   findOptimalDirection,
-  generateFlightPlan,
   gridFromAnchor,
   lidarPointDensity,
   lineSpacing,
@@ -62,6 +59,7 @@ import { planTerrainFollow } from './mission/terrainFollow.js'
 import { buildAreaExport } from './mission/areaExport.js'
 import { corridorExportParams, faceExportParams, inspectionExportParams, orbitExportParams } from './mission/exportParams.js'
 import { planBlocks } from './mission/blocks.js'
+import { planArea } from './mission/areaPlan.js'
 import { PROJECT_STORAGE_KEY, normalizeProject, projectFileName, serializeProject } from './mission/project.js'
 import { nearestNeighbourOrder, reorderList } from './utils/inspect.js'
 import {
@@ -574,25 +572,8 @@ function AppInner({ lang, setLang }) {
       tieLine: Boolean(params.tieLine),
       photoMode,
     }
-    if (!activeCells) return generateFlightPlan(ring, opts)
-
-    // Grelha/mosaico: cada célula é planeada com os mesmos parâmetros e com
-    // alinhamento global — as faixas de células adjacentes são colineares e
-    // têm continuidade (o buffer, se ativo, cria sobreposição entre células)
-    const align = computeAlignment(ring, spacing, params.angle)
-    const align2 = params.crosshatch
-      ? computeAlignment(ring, spacing, (params.angle + 90) % 360)
-      : null
-    // A1: uma célula sem plano é um erro explícito (cell-uncovered), nunca
-    // uma missão silenciosamente mais curta do que a área desenhada
-    const perCell = activeCells.map((cell) =>
-      generateFlightPlan(cell, { ...opts, align, align2 }),
-    )
-    return composeCellPlans(ring, perCell, {
-      photoIntervalM: opts.photoIntervalM,
-      photoMode: opts.photoMode,
-      overshootM: opts.overshootM,
-    })
+    // plano simples, ou um plano por célula com alinhamento global (src/mission/areaPlan.js)
+    return planArea(ring, activeCells, opts)
   }, [photoMode, ring, validation.valid, spacing, params.angle, params.bufferPct, interval, speed, params.crosshatch, params.includeNadir, params.overshoot, params.tieLine, activeCells])
 
   const planOk = plan && !plan.error ? plan : null

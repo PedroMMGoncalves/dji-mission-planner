@@ -103,3 +103,25 @@ describe('planBlocks', () => {
     expect(planBlocks(plan, { split: { ...split, mode: 'battery' }, batteryMin: 30, speed: 8, spacingM: 40 })).toBeNull()
   })
 })
+
+describe('planArea', () => {
+  const ring = [em(0, 0), em(800, 0), em(800, 400), em(0, 400)]
+  const opts = { spacingM: 40, angleDeg: 90, bufferPct: 0, photoIntervalM: 20, speed: 8, overshootM: 0, tieLine: false, photoMode: 'distance', crosshatch: false, includeNadir: false }
+
+  test('sem células é o plano simples; com células compõe um plano por célula com faixas colineares', async () => {
+    const { planArea } = await import('../../src/mission/areaPlan.js')
+    const simples = planArea(ring, null, opts)
+    expect(simples.error).toBeUndefined()
+    expect(simples.cellPlans).toBeUndefined()
+    const cells = [[em(0, 0), em(400, 0), em(400, 400), em(0, 400)], [em(400, 0), em(800, 0), em(800, 400), em(400, 400)]]
+    const composto = planArea(ring, cells, opts)
+    expect(composto.error).toBeUndefined()
+    expect(composto.cellPlans).toHaveLength(2)
+    expect(composto.lines.length).toBe(composto.cellPlans[0].lines.length + composto.cellPlans[1].lines.length)
+    // alinhamento global: as faixas E-O das duas células partilham as latitudes
+    const lats = (p) => new Set(p.lines.map(([a]) => a[1].toFixed(7)))
+    const l0 = lats(composto.cellPlans[0])
+    expect([...lats(composto.cellPlans[1])].every((y) => l0.has(y))).toBe(true)
+    expect(planArea(null, null, opts)).toBeNull()
+  })
+})
