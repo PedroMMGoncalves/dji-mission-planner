@@ -71,6 +71,24 @@ const UI = {
   no: bi('Não', 'No'),
 
   statsTitle: bi('Estatísticas do plano', 'Plan statistics'),
+  reproTitle: bi('Reprodutibilidade e incerteza', 'Reproducibility and uncertainty'),
+  rVersion: bi('Versão da aplicação', 'Application version'),
+  rHash: bi('Impressão do projecto (SHA-256)', 'Project fingerprint (SHA-256)'),
+  rPositioning: bi('Posicionamento', 'Positioning'),
+  rAgl: bi('Altura AGL [pior, melhor]', 'AGL height [worst, best]'),
+  rGsd: bi('GSD [pior, melhor]', 'GSD [worst, best]'),
+  rOverlap: bi(
+    'Sobreposição frontal / lateral [pior, melhor]',
+    'Front / side overlap [worst, best]',
+  ),
+  rBlur: bi('Arrastamento a 1/1000 · 1/500 s', 'Motion blur at 1/1000 · 1/500 s'),
+  rDatum: bi('Datum vertical do relevo', 'Elevation vertical datum'),
+  rPreflight: bi('Preflight', 'Preflight'),
+  rPreflightOk: bi('sem bloqueios nem avisos', 'no blockers or warnings'),
+  rNote: bi(
+    'A impressão é o SHA-256 do ficheiro de projecto tal como se grava; com a mesma versão e a mesma impressão o plano regenera-se bit a bit.',
+    'The fingerprint is the SHA-256 of the project file as saved; with the same version and fingerprint the plan regenerates bit for bit.',
+  ),
   sArea: bi('Área', 'Area'),
   sLines: bi('Faixas', 'Lines'),
   sWaypoints: bi('Waypoints', 'Waypoints'),
@@ -594,6 +612,7 @@ export default function MissionReport({
   basePoint,
   gcps,
   lines,
+  reproducibility = null,
   onClose,
 }) {
   const lang = useLang()
@@ -602,6 +621,25 @@ export default function MissionReport({
   const canvasRef = useRef(null)
   const [imagery, setImagery] = useState(null) // null = a carregar · true/false
   const now = useMemo(() => new Date(), [])
+  const [projectHash, setProjectHash] = useState(null)
+  useEffect(() => {
+    // so o resultado assincrono entra no estado; sem crypto.subtle fica em branco
+    let alive = true
+    const json = reproducibility?.projectJson
+    if (!json || !globalThis.crypto?.subtle) return undefined
+    crypto.subtle
+      .digest('SHA-256', new TextEncoder().encode(json))
+      .then((buf) => {
+        if (!alive) return
+        setProjectHash(
+          [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join(''),
+        )
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [reproducibility?.projectJson])
 
   /* ------------------------- Esc fecha o relatório ------------------------- */
   useEffect(() => {
@@ -820,6 +858,106 @@ export default function MissionReport({
             <p className="text-[11px] text-slate-500">{L(UI.noStats)}</p>
           )}
         </Section>
+
+        {/* ------------------ Reprodutibilidade e incerteza ------------------ */}
+        {reproducibility && (
+          <Section
+            title={L(UI.reproTitle)}
+            right={reproducibility.version ? `v${reproducibility.version}` : undefined}
+          >
+            <table className="rep-table w-full border-collapse text-left text-[11px]">
+              <tbody>
+                <tr>
+                  <td className="pr-3 text-slate-500">{L(UI.rVersion)}</td>
+                  <td className="font-mono">{reproducibility.version ?? '—'}</td>
+                </tr>
+                <tr>
+                  <td className="pr-3 text-slate-500">{L(UI.rHash)}</td>
+                  <td className="break-all font-mono">{projectHash ?? '—'}</td>
+                </tr>
+                {reproducibility.uncertainty && (
+                  <>
+                    <tr>
+                      <td className="pr-3 text-slate-500">{L(UI.rPositioning)}</td>
+                      <td className="font-mono">
+                        {reproducibility.uncertainty.inputs.mode === 'rtk' ? 'RTK' : 'GNSS'} · ±
+                        {reproducibility.uncertainty.inputs.verticalM} m V · ±
+                        {reproducibility.uncertainty.inputs.horizontalM} m H
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="pr-3 text-slate-500">{L(UI.rAgl)}</td>
+                      <td className="font-mono">
+                        {fmt(reproducibility.uncertainty.agl[0], 1)} –{' '}
+                        {fmt(reproducibility.uncertainty.agl[1], 1)} m
+                      </td>
+                    </tr>
+                    {reproducibility.uncertainty.gsd && (
+                      <tr>
+                        <td className="pr-3 text-slate-500">{L(UI.rGsd)}</td>
+                        <td className="font-mono">
+                          {fmt(reproducibility.uncertainty.gsd[0], 2)} –{' '}
+                          {fmt(reproducibility.uncertainty.gsd[1], 2)} cm/px
+                        </td>
+                      </tr>
+                    )}
+                    {reproducibility.uncertainty.front && reproducibility.uncertainty.side && (
+                      <tr>
+                        <td className="pr-3 text-slate-500">{L(UI.rOverlap)}</td>
+                        <td className="font-mono">
+                          {fmt(reproducibility.uncertainty.front[0], 0)}–
+                          {fmt(reproducibility.uncertainty.front[1], 0)} % /{' '}
+                          {fmt(reproducibility.uncertainty.side[0], 0)}–
+                          {fmt(reproducibility.uncertainty.side[1], 0)} %
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                )}
+                {Array.isArray(reproducibility.blur) && reproducibility.blur.length === 2 && (
+                  <tr>
+                    <td className="pr-3 text-slate-500">{L(UI.rBlur)}</td>
+                    <td className="font-mono">
+                      {fmt(reproducibility.blur[0].blurCm, 1)} cm ·{' '}
+                      {fmt(reproducibility.blur[1].blurCm, 1)} cm
+                      {reproducibility.blur[1].blurPx != null
+                        ? ` (${fmt(reproducibility.blur[1].blurPx, 1)} px)`
+                        : ''}
+                    </td>
+                  </tr>
+                )}
+                {reproducibility.terrainDatum && (
+                  <tr>
+                    <td className="pr-3 text-slate-500">{L(UI.rDatum)}</td>
+                    <td className="font-mono">
+                      {reproducibility.terrainDatum.kind}
+                      {reproducibility.terrainDatum.model
+                        ? ` · ${reproducibility.terrainDatum.model}`
+                        : ''}
+                      {reproducibility.terrainDatum.assumed ? ' (assumido)' : ''}
+                    </td>
+                  </tr>
+                )}
+                <tr>
+                  <td className="pr-3 align-top text-slate-500">{L(UI.rPreflight)}</td>
+                  <td className="font-mono">
+                    {Array.isArray(reproducibility.preflight) &&
+                    reproducibility.preflight.some((i) => i.level !== 'info')
+                      ? reproducibility.preflight
+                          .filter((i) => i.level !== 'info')
+                          .map((i, k) => (
+                            <div key={k}>
+                              {i.level === 'block' ? '⛔' : '⚠'} {i.code}
+                            </div>
+                          ))
+                      : L(UI.rPreflightOk)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="mt-2 text-[10px] text-slate-500">{L(UI.rNote)}</p>
+          </Section>
+        )}
 
         {/* ----------------------------- Blocos ----------------------------- */}
         {Array.isArray(blocks) && blocks.length > 0 && (

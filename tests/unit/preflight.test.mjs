@@ -207,6 +207,26 @@ describe('preflightArea', () => {
           terrainDatum: { kind: 'ellipsoidal', model: 'WGS84' },
         }),
       ),
+      ...codes(
+        preflightArea({
+          ...base(),
+          uncertainty: {
+            belowMinimum: true,
+            front: [55, 80],
+            side: [45, 70],
+            inputs: { mode: 'gnss' },
+          },
+          blur: [
+            { exposureS: 1 / 1000, blurCm: 1, blurPx: 0.5 },
+            { exposureS: 1 / 500, blurCm: 2, blurPx: 1.4 },
+          ],
+          route: {
+            duplicates: [3],
+            longSegments: [{ at: 5, lengthM: 6000 }],
+            climb: [{ at: 7, rateMS: 9, dh: 30, lengthM: 20 }],
+          },
+        }),
+      ),
     ])
     for (const code of all) {
       const entry = preflightDict[`preflight.${code}`]
@@ -214,6 +234,6 @@ describe('preflightArea', () => {
       expect(typeof entry.pt).toBe('string')
       expect(typeof entry.en).toBe('string')
     }
-    expect(all.size).toBe(14)
+    expect(all.size).toBe(19)
   })
 })

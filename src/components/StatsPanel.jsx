@@ -35,6 +35,7 @@ export default function StatsPanel({
   stats,
   baseDistance,
   blockCount,
+  uncertainty = null,
 }) {
   const t = useT()
   return (
@@ -48,8 +49,27 @@ export default function StatsPanel({
       ) : (
         <Stat
           label={t(gimbalPitch === -90 ? 'stats.gsd' : 'stats.gsdCentre')}
-          value={gsd != null ? `${gsd.toFixed(2)} cm/px` : t('stats.gsdOblique')}
-          hint={gimbalPitch === -90 ? undefined : t('stats.gsdCentreHint')}
+          value={
+            gsd != null
+              ? uncertainty?.gsd
+                ? `${gsd.toFixed(2)} (${uncertainty.gsd[0].toFixed(2)}–${uncertainty.gsd[1].toFixed(2)}) cm/px`
+                : `${gsd.toFixed(2)} cm/px`
+              : t('stats.gsdOblique')
+          }
+          hint={
+            gimbalPitch === -90
+              ? uncertainty?.gsd
+                ? t('stats.gsdRangeHint')
+                : undefined
+              : t('stats.gsdCentreHint')
+          }
+        />
+      )}
+      {uncertainty?.front && uncertainty?.side && (
+        <Stat
+          label={t('stats.overlapRange')}
+          value={`${Math.round(uncertainty.front[0])}–${Math.round(uncertainty.front[1])} / ${Math.round(uncertainty.side[0])}–${Math.round(uncertainty.side[1])} %`}
+          hint={t('stats.overlapRangeHint')}
         />
       )}
       <Stat

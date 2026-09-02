@@ -39,6 +39,9 @@ export function usableBatteryMin(batteryMin, reservePct = 30) {
  * @param {{cap: number, worstAgl: number}|null} [c.aglWarn]
  * @param {{actualS: number, minS: number, maxSpeed: number}|null} [c.triggerWarn]
  * @param {{kind: string, model?: string}|null} [c.terrainDatum] datum vertical da fonte de relevo
+ * @param {any} [c.uncertainty] intervalos de uncertaintyIntervals (sobreposições no pior caso)
+ * @param {Array<{exposureS: number, blurCm: number, blurPx: number|null}>|null} [c.blur] arrastamento por exposição
+ * @param {{duplicates: number[], longSegments: any[], climb: any[]}|null} [c.route] routeChecks da rota exportada
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
@@ -87,6 +90,54 @@ export function preflightArea(c) {
   // do ponto de descolagem que o operador compara com o mapa nao e a mesma
   if (tfOk && c.terrainDatum?.kind === 'ellipsoidal') {
     out.push(item('warn', 'terrain-datum-ellipsoidal', { model: c.terrainDatum.model ?? '' }))
+  }
+
+  // incerteza propagada: sobreposicao no pior caso abaixo do minimo habitual
+  const u = c.uncertainty
+  if (u?.belowMinimum) {
+    out.push(
+      item('warn', 'overlap-uncertain', {
+        front: u.front ? Math.round(u.front[0]) : '-',
+        side: u.side ? Math.round(u.side[0]) : '-',
+        mode: u.inputs?.mode === 'rtk' ? 'RTK' : 'GNSS',
+      }),
+    )
+  }
+  // arrastamento por movimento acima de um pixel a 1/500 s
+  const slow = Array.isArray(c.blur)
+    ? c.blur.find((b) => Math.abs(b.exposureS - 1 / 500) < 1e-9)
+    : null
+  if (slow && slow.blurPx != null && slow.blurPx > 1) {
+    out.push(item('warn', 'blur', { px: slow.blurPx.toFixed(1), cm: slow.blurCm.toFixed(1) }))
+  }
+  // rota exportada, segmento a segmento
+  if (c.route) {
+    if (c.route.duplicates.length > 0)
+      out.push(
+        item('block', 'route-duplicate-waypoint', {
+          n: c.route.duplicates.length,
+          at: c.route.duplicates[0],
+        }),
+      )
+    if (c.route.climb.length > 0) {
+      const worst = c.route.climb.reduce((m, x) => (x.rateMS > m.rateMS ? x : m))
+      out.push(
+        item('warn', 'route-climb-rate', {
+          rate: worst.rateMS.toFixed(1),
+          at: worst.at,
+          n: c.route.climb.length,
+        }),
+      )
+    }
+    if (c.route.longSegments.length > 0) {
+      const longest = c.route.longSegments.reduce((m, x) => (x.lengthM > m.lengthM ? x : m))
+      out.push(
+        item('warn', 'route-long-segment', {
+          km: (longest.lengthM / 1000).toFixed(1),
+          at: longest.at,
+        }),
+      )
+    }
   }
 
   const usable = usableBatteryMin(c.batteryMin, c.reservePct)

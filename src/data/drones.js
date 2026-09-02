@@ -37,6 +37,17 @@ export const AIRCRAFT = {
     label: 'DJI Mavic 3 Enterprise (M3E)',
     speedRange: { min: 1, max: 15 },
     batteryMin: 45,
+    // Hovering accuracy from the DJI spec sheet (dji.com/mavic-3-enterprise/specs,
+    // checked 2026-09-02): vertical +-0.1 m (vision) / +-0.5 m (GNSS),
+    // horizontal +-0.3 m (vision) / +-0.5 m (high-precision positioning);
+    // with the RTK module 1 cm + 1 ppm (H) and 1.5 cm + 1 ppm (V). The GNSS
+    // figures used here are the conservative ones (route-following error
+    // is larger than hovering error; to be calibrated with flight logs).
+    positioning: {
+      gnss: { verticalM: 0.5, horizontalM: 1.5 },
+      rtk: { verticalM: 0.03, horizontalM: 0.02 },
+    },
+    maxClimbMS: 6, // max ascent speed, normal mode (spec sheet)
     wpml: { droneEnumValue: 77, droneSubEnumValue: 0 },
     payloads: ['M3E_WIDE'],
   },
@@ -46,6 +57,13 @@ export const AIRCRAFT = {
     label: 'DJI Matrice 4T (M4T)',
     speedRange: { min: 1, max: 15 },
     batteryMin: 49,
+    // Same positioning class as the M3E (DJI Matrice 4 series spec sheet,
+    // checked 2026-09-02); RTK module optional.
+    positioning: {
+      gnss: { verticalM: 0.5, horizontalM: 1.5 },
+      rtk: { verticalM: 0.03, horizontalM: 0.02 },
+    },
+    maxClimbMS: 6,
     wpml: { droneEnumValue: 99, droneSubEnumValue: 1 },
     payloads: ['M4T_WIDE'],
   },
@@ -55,6 +73,14 @@ export const AIRCRAFT = {
     label: 'DJI Matrice 300 RTK',
     speedRange: { min: 1, max: 17 },
     batteryMin: 55,
+    // M300 RTK spec sheet: hovering accuracy vertical +-0.1 m (vision) /
+    // +-0.5 m (GNSS), horizontal +-0.3 m (vision) / +-1.5 m (GNSS); RTK
+    // 1 cm + 1 ppm (H), 1.5 cm + 1 ppm (V). Max ascent 5 m/s (P mode).
+    positioning: {
+      gnss: { verticalM: 0.5, horizontalM: 1.5 },
+      rtk: { verticalM: 0.03, horizontalM: 0.02 },
+    },
+    maxClimbMS: 5,
     wpml: { droneEnumValue: 60, droneSubEnumValue: 0 },
     payloads: ['P1', 'MAPPER_PLUS', 'CUSTOM'],
   },
@@ -64,6 +90,11 @@ export const AIRCRAFT = {
     label: 'Custom',
     speedRange: { min: 1, max: 20 },
     batteryMin: 25,
+    positioning: {
+      gnss: { verticalM: 1, horizontalM: 2 },
+      rtk: { verticalM: 0.05, horizontalM: 0.03 },
+    },
+    maxClimbMS: 4,
     // Default enums, editable in the custom editor of the UI:
     wpml: { droneEnumValue: 60, droneSubEnumValue: 0 },
     payloads: ['CUSTOM'],
@@ -187,11 +218,23 @@ export function migrateDroneSelection(stored) {
       console.warn(
         `[drones] payload "${stored.payloadId}" not available on ${aircraft.id} — using ${aircraft.payloads[0]}`,
       )
-      return { aircraftId: aircraft.id, payloadId: aircraft.payloads[0] }
+      return { aircraftId: aircraft.id, payloadId: aircraft.payloads[0], rtk: stored.rtk === true }
     }
-    return { aircraftId: aircraft.id, payloadId: stored.payloadId }
+    return { aircraftId: aircraft.id, payloadId: stored.payloadId, rtk: stored.rtk === true }
   }
   return { ...DEFAULT_SELECTION }
+}
+
+/**
+ * Positioning error budget (metres, 1-sigma-ish envelope from the spec
+ * sheets) for the selected aircraft, with or without RTK.
+ */
+export function positioningError(aircraft, rtk = false) {
+  const p = aircraft?.positioning ?? {
+    gnss: { verticalM: 1, horizontalM: 2 },
+    rtk: { verticalM: 0.05, horizontalM: 0.03 },
+  }
+  return rtk ? { ...p.rtk, mode: 'rtk' } : { ...p.gnss, mode: 'gnss' }
 }
 
 /**

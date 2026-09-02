@@ -45,7 +45,7 @@ describe('projecto: serializar e ler', () => {
     expect(json.disabledTiles).toEqual([2, 5])
     const n = normalizeProject(json)
     expect(n.missionName).toBe('Quinta')
-    expect(n.drone).toEqual(estado.drone)
+    expect(n.drone).toEqual({ ...estado.drone, rtk: false })
     expect(n.ring).toEqual(estado.ring)
     expect(n.basePoint).toEqual(estado.basePoint)
     expect([...n.disabledTiles]).toEqual([2, 5])

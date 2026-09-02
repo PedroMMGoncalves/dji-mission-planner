@@ -38,6 +38,11 @@ export default {
 
   /* ---- Drone / Sensor ---- */
   'cp.drone.title': { pt: 'Drone / Sensor', en: 'Drone / Sensor' },
+  'cp.drone.rtk': { pt: 'Posicionamento RTK activo', en: 'RTK positioning active' },
+  'cp.drone.rtkHint': {
+    pt: 'Reduz o erro de posição de ±0,5 / ±1,5 m (GNSS) para centímetros nos intervalos de GSD e sobreposição.',
+    en: 'Narrows the position error from ±0.5 / ±1.5 m (GNSS) to centimetres in the GSD and overlap ranges.',
+  },
   'cp.drone.payload': { pt: 'Payload / Sensor', en: 'Payload / Sensor' },
   'cp.drone.lidarSpecs': {
     pt: '{desc} · FOV nominal {fov}° · tecto operacional {agl} m AGL',

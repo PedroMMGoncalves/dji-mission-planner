@@ -142,6 +142,15 @@ const BASE_DICT = {
     en: 'With an oblique gimbal the GSD uses the slant range to the frame centre (altitude ÷ sin|pitch|); the upper frame edges are worse.',
   },
   'stats.gsdOblique': { pt: 'n/a (oblíqua)', en: 'n/a (oblique)' },
+  'stats.gsdRangeHint': {
+    pt: 'Intervalo [pior, melhor] com o erro de posicionamento e o relevo dentro da área (ver Métodos §2).',
+    en: 'Range [worst, best] with positioning error and relief inside the area (see Methods §2).',
+  },
+  'stats.overlapRange': { pt: 'Sobreposição real', en: 'Actual overlap' },
+  'stats.overlapRangeHint': {
+    pt: 'Frontal / lateral no pior caso do posicionamento e do relevo; o mínimo habitual é 60 / 50 %.',
+    en: 'Front / side in the worst case of positioning and relief; the usual minimum is 60 / 50 %.',
+  },
   'stats.density': { pt: 'Densidade LiDAR', en: 'LiDAR density' },
   'stats.densityHint': {
     pt: 'PRR ÷ (velocidade × faixa), com o PRR de retorno único — conservador, multi-eco aumenta. Entre parênteses: densidade na banda de sobreposição lateral (2 passagens).',

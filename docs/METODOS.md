@@ -80,6 +80,29 @@ Aviso de obturador (`App.jsx`): `interval / v < minTriggerS` (0,7 s por
 omissão) marca o intervalo como impossível à velocidade `v` e sugere
 `vmax = interval / minTriggerS`.
 
+Incerteza propagada (`src/mission/uncertainty.js`): as grandezas acima
+são apresentadas também como intervalos [pior, melhor], por propagação de
+intervalos (sem hipótese de distribuição; todas as funções são monótonas
+no domínio). Entradas: o erro de posicionamento da aeronave (fichas DJI,
+precisão em pairagem: GNSS ±0,5 m vertical / ±1,5 m horizontal; RTK
+1–1,5 cm + 1 ppm, aqui ±0,03 / ±0,02 m; caixa "RTK activo") e o relevo
+dentro da área relativo à referência (amostrado no relevo carregado até
+400 waypoints) ou, com seguimento de terreno, a tolerância:
+
+```
+AGL  ∈ [H − subida_max − σv,  H + descida_max + σv]      (sem seguimento)
+AGL  ∈ [H − tol − σv,  H + tol + σv]                      (com seguimento)
+GSD, pegada: avaliados nos dois extremos de AGL
+frontal_pior = 1 − (interval + σh) / along(AGL_min);  melhor com (interval − σh) e AGL_max
+lateral_pior = 1 − (spacing  + σh) / across(AGL_min); idem
+```
+
+Abaixo de 60 % frontal ou 50 % lateral no pior caso o preflight avisa.
+Arrastamento por movimento: `blur = v · t_exp`, apresentado a 1/1000 s e
+1/500 s em cm e em píxeis do GSD nominal; acima de 1 px a 1/500 s o
+preflight avisa. O erro em voo é maior do que em pairagem; os valores
+ficam para calibrar com os logs (secção 16).
+
 Densidade LiDAR (pontos/m²), com a PRR de retorno único como valor
 conservador e distribuição uniforme no swath:
 
@@ -477,11 +500,16 @@ invólucro convexo (ou rectângulo com 20 m de margem quando degenerado).
 Bloqueios (desactivam o KMZ): sem plano; plano com erro; seguir terreno com
 foto por waypoint; seguir terreno ligado sem relevo a cobrir a área; erro
 do cálculo do terreno; mais de 65535 waypoints numa rota (a maior, com
-blocos). Avisos: rota acima de 2000 waypoints; tecto AGL do payload
-(`altitude + tolerância` com seguimento de terreno); obturador; tempo acima
-do útil de uma bateria (missão com trânsito de ida e volta, ou por bloco
-com `timeS + transitS`). Lembretes: sem base; alturas relativas à
-descolagem.
+blocos); waypoints consecutivos repetidos na rota exportada (segmento de
+comprimento nulo). Avisos: rota acima de 2000 waypoints; tecto AGL do
+payload (`altitude + tolerância` com seguimento de terreno); obturador;
+sobreposição no pior caso abaixo de 60/50 % (secção 2); arrastamento
+acima de 1 px a 1/500 s; MDT com alturas elipsoidais; taxa de subida
+exigida num segmento acima da velocidade de subida da aeronave
+(`Δh / (comprimento / v)`, M3E/M4T 6 m/s, M300 5 m/s); segmento acima de
+5 km; tempo acima do útil de uma bateria (missão com trânsito de ida e
+volta, ou por bloco com `timeS + transitS`). Lembretes: sem base; alturas
+relativas à descolagem.
 
 ## 15. Tabela de constantes e tolerâncias
 
@@ -515,10 +543,11 @@ descolagem.
 ## 16. O que não é modelado e calibração prevista
 
 Não modelado, em resumo: dinâmica do voo (aceleração, raio de viragem,
-subida, vento); atitude da aeronave e relevo dentro da imagem na
-sobreposição; obstáculos fora da folga da fachada; datum vertical;
-retornos múltiplos e padrão de varrimento do LiDAR; incerteza propagada
-(altitude barométrica vs RTK, deriva) nas grandezas apresentadas.
+vento); atitude da aeronave (rolamento/arfagem) na pegada; obstáculos
+fora da folga da fachada; conversão entre datums verticais (só a
+declaração); retornos múltiplos e padrão de varrimento do LiDAR; a
+distribuição estatística dos erros (a incerteza é propagada por
+intervalos, com os extremos das fichas técnicas).
 
 Calibração com logs de voo (E3.3, prevista para Setembro de 2026), com um
 ponto de inserção único no código para cada grandeza:

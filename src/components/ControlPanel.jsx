@@ -224,6 +224,19 @@ export default function ControlPanel({
           ))}
         </select>
 
+        <label
+          className="mb-2 flex items-start gap-2 text-xs text-slate-300"
+          title={t('cp.drone.rtkHint')}
+        >
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={drone.rtk === true}
+            onChange={(e) => setDrone({ ...drone, rtk: e.target.checked })}
+          />
+          <span>{t('cp.drone.rtk')}</span>
+        </label>
+
         {aircraft.payloads.length > 1 && (
           <>
             <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">

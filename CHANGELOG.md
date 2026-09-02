@@ -44,6 +44,22 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   membro `crs` do GeoJSON é aplicado quando declara um EPSG da lista e
   serve de pista quando declara outro.
 
+### Incerteza e verificações
+- Incerteza propagada (ponto 9 do plano): GSD, pegada e sobreposições
+  apresentados como intervalos [pior, melhor] a partir do erro de
+  posicionamento da aeronave (GNSS ou RTK, caixa nova no painel do drone,
+  guardada no projecto) e do relevo dentro da área (ou da tolerância do
+  seguimento). O painel de métricas mostra o GSD com o intervalo e a
+  sobreposição real no pior caso; o preflight avisa abaixo de 60/50 %.
+- Arrastamento por movimento a 1/1000 e 1/500 s, em cm e em píxeis; aviso
+  acima de 1 px a 1/500 s.
+- Verificação da rota exportada segmento a segmento: waypoints repetidos
+  bloqueiam; taxa de subida acima da aeronave e segmentos acima de 5 km
+  avisam.
+- Relatório com bloco de reprodutibilidade: versão da aplicação, SHA-256
+  do ficheiro de projecto, posicionamento e intervalos, arrastamento,
+  datum do relevo e resultado do preflight.
+
 ### Terreno
 - Cache persistente dos tiles de relevo (Cache API): as áreas já vistas
   carregam sem rede, o painel indica quantos tiles vieram da cache e, sem

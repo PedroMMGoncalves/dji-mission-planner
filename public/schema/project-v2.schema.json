@@ -17,7 +17,8 @@
       "additionalProperties": false,
       "properties": {
         "aircraftId": { "type": "string", "minLength": 1 },
-        "payloadId": { "type": "string", "minLength": 1 }
+        "payloadId": { "type": "string", "minLength": 1 },
+        "rtk": { "type": "boolean" }
       }
     },
     "custom": {

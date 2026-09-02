@@ -17,6 +17,7 @@ const ElevationProfile = lazy(() => import('./components/ElevationProfile.jsx'))
 import {
   AIRCRAFT,
   PAYLOADS,
+  positioningError,
   DEFAULT_CUSTOM_SENSOR,
   DEFAULT_SELECTION,
   MISSION_PRESETS,
@@ -45,6 +46,13 @@ import { useTerrain } from './hooks/useTerrain.js'
 import { useProject } from './hooks/useProject.js'
 import { DEFAULT_PARAMS } from './mission/defaults.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
+import {
+  motionBlur,
+  routeChecks,
+  terrainReliefRange,
+  uncertaintyIntervals,
+} from './mission/uncertainty.js'
+import { serializeProject } from './mission/project.js'
 import { PreflightList, PreflightPill } from './components/PreflightBar.jsx'
 import {
   FlagGB,
@@ -639,6 +647,61 @@ function AppInner({ lang, setLang }) {
     [payload, params.altitude, terrainFollow, terrainResult],
   )
 
+  /* ------------------------ Incerteza propagada ----------------------- */
+  // Intervalos [pior, melhor] de AGL, GSD e sobreposicoes com o erro de
+  // posicionamento (GNSS ou RTK) e o relevo dentro da area (ou a tolerancia
+  // do seguimento); arrastamento por movimento; rota exportada segmento a
+  // segmento. Tudo puro em src/mission/uncertainty.js.
+  const posError = useMemo(
+    () => positioningError(aircraft, drone.rtk === true),
+    [aircraft, drone.rtk],
+  )
+  const relief = useMemo(() => {
+    if (!planOk || terrain.status !== 'ready' || !terrain.data?.elevationAt) return null
+    return terrainReliefRange(
+      planOk.waypoints,
+      terrain.data.elevationAt,
+      basePoint ?? planOk.waypoints[0],
+    )
+  }, [planOk, terrain, basePoint])
+  const tfActive = Boolean(terrainFollow.enabled && terrainResult && !terrainResult.error)
+  const uncertainty = useMemo(
+    () =>
+      planOk && sensor.type === 'camera'
+        ? uncertaintyIntervals({
+            sensor,
+            altitude: params.altitude,
+            gimbalPitch: gsdPitch,
+            spacing,
+            interval,
+            posError,
+            relief,
+            terrainFollow: tfActive,
+            toleranceM: terrainFollow.tolerance,
+          })
+        : null,
+    [
+      planOk,
+      sensor,
+      params.altitude,
+      gsdPitch,
+      spacing,
+      interval,
+      posError,
+      relief,
+      tfActive,
+      terrainFollow.tolerance,
+    ],
+  )
+  const blur = useMemo(() => (gsd != null ? motionBlur({ speed, gsdCm: gsd }) : null), [speed, gsd])
+  const route = useMemo(() => {
+    if (!planOk) return null
+    const wps = tfActive
+      ? terrainResult.waypoints
+      : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
+    return routeChecks(wps, { speed, maxClimbMS: aircraft.maxClimbMS ?? 5 })
+  }, [planOk, tfActive, terrainResult, params.altitude, speed, aircraft.maxClimbMS])
+
   /* ----------------------------- Preflight ---------------------------- */
   // Uma só lista, calculada a partir do mesmo estado que a exportação usa
   // (src/mission/preflight.js). Os bloqueios desactivam o botão do KMZ.
@@ -659,6 +722,9 @@ function AppInner({ lang, setLang }) {
         aglWarn,
         triggerWarn,
         terrainDatum: terrain.data?.verticalDatum ?? null,
+        uncertainty,
+        blur,
+        route,
       })
     }
     const other = { batteryMin, reservePct: split.reservePct }
@@ -691,6 +757,9 @@ function AppInner({ lang, setLang }) {
     facePlan,
     orbitPlan,
     terrain.data,
+    uncertainty,
+    blur,
+    route,
   ])
   const exportBlocked = hasBlockers(preflight)
 
@@ -1181,6 +1250,7 @@ function AppInner({ lang, setLang }) {
             onFinishDraw={handleFinishAny}
           />
           <StatsPanel
+            uncertainty={uncertainty}
             gsd={gsd}
             gimbalPitch={gsdPitch}
             footprint={footprint}
@@ -1251,6 +1321,14 @@ function AppInner({ lang, setLang }) {
             basePoint={basePoint}
             gcps={gcps}
             lines={planOk.lines}
+            reproducibility={{
+              version: import.meta.env.APP_VERSION,
+              projectJson: JSON.stringify(serializeProject(projectState)),
+              uncertainty,
+              blur,
+              terrainDatum: terrain.data?.verticalDatum ?? null,
+              preflight,
+            }}
             onClose={() => setShowReport(false)}
           />
         </Suspense>

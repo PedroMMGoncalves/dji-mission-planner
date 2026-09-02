@@ -58,6 +58,26 @@ export default {
     pt: 'O MDT declara alturas elipsoidais ({model}): as alturas relativas continuam certas, mas não compare cotas deste ficheiro com fontes ortométricas.',
     en: 'The DTM declares ellipsoidal heights ({model}): relative heights are still right, but do not compare its elevations with orthometric sources.',
   },
+  'preflight.overlap-uncertain': {
+    pt: 'No pior caso do posicionamento {mode} e do relevo, a sobreposição cai para {front} % frontal / {side} % lateral, abaixo do mínimo habitual (60/50 %).',
+    en: 'In the worst case of {mode} positioning and relief, overlap drops to {front} % front / {side} % side, below the usual minimum (60/50 %).',
+  },
+  'preflight.blur': {
+    pt: 'A esta velocidade o arrastamento a 1/500 s é de {px} px ({cm} cm): fixe uma exposição mais curta ou reduza a velocidade.',
+    en: 'At this speed the motion blur at 1/500 s is {px} px ({cm} cm): use a shorter exposure or reduce speed.',
+  },
+  'preflight.route-duplicate-waypoint': {
+    pt: 'A rota tem {n} waypoint(s) repetido(s) (primeiro no índice {at}); o Pilot 2 recusa segmentos de comprimento nulo.',
+    en: 'The route has {n} duplicated waypoint(s) (first at index {at}); Pilot 2 rejects zero-length segments.',
+  },
+  'preflight.route-climb-rate': {
+    pt: 'Subida de {rate} m/s exigida no segmento {at} ({n} segmento(s) acima da aeronave): a rota vai atrasar-se ou o Pilot 2 vai suavizá-la.',
+    en: 'Climb of {rate} m/s required at segment {at} ({n} segment(s) above the aircraft): the route will lag or Pilot 2 will smooth it.',
+  },
+  'preflight.route-long-segment': {
+    pt: 'Segmento de {km} km (índice {at}): confirme que a ligação atravessa terreno seguro à altura de trânsito.',
+    en: '{km} km segment (index {at}): confirm the link crosses safe terrain at transit height.',
+  },
   'preflight.no-base': {
     pt: 'Sem ponto de base: o trânsito não conta para a bateria e o seguimento de terreno usa o primeiro waypoint como referência.',
     en: 'No base point: transit is not counted against the battery and terrain following uses the first waypoint as reference.',
