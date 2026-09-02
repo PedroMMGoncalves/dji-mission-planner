@@ -20,6 +20,13 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - Limiares de cobertura (c8) sobre `src/utils/` no CI: 92 % linhas, 90 %
   funções, 82 % ramos — só podem subir.
 
+### Manutenção
+- Primeiro corte do motor fora do `App.jsx`: o reagrupamento por blocos do
+  terrain follow (`src/mission/terrainFollow.js`) e a montagem da exportação
+  de área — nome com variantes, intervalos de disparo, marcador do gimbal
+  nadir, blocos (`src/mission/areaExport.js`) — passam a funções puras com
+  testes próprios. Comportamento inalterado (goldens e E2E verdes).
+
 ## 1.0.1 — 2026-09-01
 
 Sem alterações funcionais. Primeira versão arquivada no Zenodo.

@@ -62,7 +62,9 @@ import {
   simplifyRingIfNeeded,
   CRS_OPTIONS,
 } from './utils/importArea.js'
-import { fitSlopePlane, loadTerrain, terrainFollowLines } from './utils/terrain.js'
+import { fitSlopePlane, loadTerrain } from './utils/terrain.js'
+import { planTerrainFollow } from './mission/terrainFollow.js'
+import { buildAreaExport } from './mission/areaExport.js'
 import { inspectionToWaypoints, nearestNeighbourOrder, reorderList } from './utils/inspect.js'
 import {
   DEFAULT_FACE_CONFIG,
@@ -1200,62 +1202,15 @@ function AppInner({ lang, setLang }) {
     // em vez de uma missão parcial com alturas planas ou fotos perdidas
     if (terrainFollow.enabled && photoMode === 'waypoint') return { error: t('cp.terrain.photoWaypoint') }
     if (!terrainFollow.enabled || !terrainCovers || !planOk?.lines?.length) return null
-    const data = terrain.data
-    const refPt = basePoint ?? planOk.waypoints[0]
-    const refElev = data.elevationAt(refPt[0], refPt[1])
-    if (refElev == null) return { error: 'Referência fora do terreno carregado' }
     try {
-      const res = terrainFollowLines(data, planOk.lines, {
+      const res = planTerrainFollow(terrain.data, planOk, {
+        blocks,
+        refPt: basePoint ?? planOk.waypoints[0],
         agl: params.altitude,
-        refElev,
-        toleranceM: Math.max(1, terrainFollow.tolerance),
+        toleranceM: terrainFollow.tolerance,
       })
-      // reagrupar os waypoints densificados por bloco (ordem preservada)
-      let blocks3 = null
-      if (blocks) {
-        const porLinha = []
-        let idx = 0
-        res.perLine.forEach((n) => {
-          porLinha.push(res.waypoints.slice(idx, idx + n))
-          idx += n
-        })
-        let li = 0
-        blocks3 = blocks.map((b) => {
-          const startLine = li
-          const wps = []
-          // A ligação que antecede a primeira linha do bloco não se voa: o
-          // bloco arranca da base, não do fim do bloco anterior. Os pontos
-          // que o seguimento de terreno inseriu nessa ligação (perLink) saem.
-          const pontosDaLinha = (i) => {
-            const pts = porLinha[i] ?? []
-            return i === startLine ? pts.slice(res.perLink?.[i] ?? 0) : pts
-          }
-          const perLine3 = []
-          const perLink3 = []
-          for (let k = 0; k < b.lines.length; k++) {
-            const pts = pontosDaLinha(li)
-            wps.push(...pts)
-            perLine3.push(pts.length)
-            perLink3.push(k === 0 ? 0 : (res.perLink?.[li] ?? 0))
-            li++
-          }
-          // R2.10: com densificação, o waypoint local onde o nadir começa é a
-          // soma dos comprimentos das linhas anteriores do bloco, mais a
-          // ligação que conduz à grelha nadir — o gimbal roda no primeiro
-          // waypoint DA GRELHA, não no troço de aproximação (na primeira
-          // linha do bloco já não há ligação)
-          let nadirMarkerAt = null
-          if (b.nadirLineLocal != null) {
-            nadirMarkerAt = 0
-            for (let k = 0; k < b.nadirLineLocal; k++) {
-              nadirMarkerAt += pontosDaLinha(startLine + k).length
-            }
-            if (b.nadirLineLocal > 0) nadirMarkerAt += res.perLink?.[startLine + b.nadirLineLocal] ?? 0
-          }
-          return { ...b, waypoints: wps, nadirMarkerAt, perLine: perLine3, perLink: perLink3 }
-        })
-      }
-      return { ...res, refElev, blocks3 }
+      if (res.error === 'ref-outside-terrain') return { error: 'Referência fora do terreno carregado' }
+      return res
     } catch (err) {
       return { error: err?.message ?? 'Falha no cálculo do terreno' }
     }
@@ -1708,93 +1663,29 @@ function AppInner({ lang, setLang }) {
 
   const handleExportKMZ = () => {
     if (!canExportKMZ) return
-    const terrainOk = terrainResult && !terrainResult.error
-    // E3.1: tipo e variantes codificados no nome do ficheiro
-    const areaName = buildExportName(missionName, 'area', {
-      variant: [
-        params.crosshatch && 'crosshatch',
-        params.crosshatch && params.includeNadir && 'nadir',
-        params.tieLine && 'tie',
-        terrainOk && 'tf',
-      ],
-    })
-    const exportParams = {
-      name: areaName,
-      waypoints: terrainOk ? terrainResult.waypoints : planOk.waypoints,
+    // toda a montagem (nome com variantes, waypoints do terrain follow,
+    // intervalos de disparo, blocos, marcador do gimbal nadir) é pura e
+    // testada em src/mission/areaExport.js
+    const { params: exportParams, blocks: exportBlocks } = buildAreaExport({
+      missionName,
+      plan: planOk,
+      terrainResult,
+      blocks,
+      spacingM: spacing,
+      photoMode,
+      sensorType: sensor.type,
       altitude: params.altitude,
-      speed: speed,
+      speed,
       wpml,
-      // B: no modo foto-por-waypoint não há gatilho por distância — as fotos
-      // vão nas acções por waypoint (perWaypoint)
-      photoIntervalM: sensor.type === 'camera' && photoMode !== 'waypoint' ? interval : 0,
+      photoIntervalM: interval,
       triggerMode: params.triggerMode,
       gimbalPitch: params.gimbalPitch,
-      sensorType: sensor.type,
-    }
-    // Disparo suspenso nas ligações longas (mais de 2,5 espaçamentos): as
-    // viragens normais continuam a disparar; as travessias de concavidades,
-    // as ligações entre grelhas e entre células deixam de encher o cartão
-    // com fotos fora da área. Índices locais a cada bloco.
-    const maxLinkM = Math.max(2.5 * spacing, 60)
-    const comIntervalos = (b) => ({
-      ...b,
-      triggerRanges: triggerRangesForLines(b.lines, b.perLine ?? null, b.perLink ?? null, { maxLinkM }),
+      crosshatch: params.crosshatch,
+      includeNadir: params.includeNadir,
+      tieLine: params.tieLine,
     })
-    exportParams.triggerRanges = triggerRangesForLines(
-      planOk.lines,
-      terrainOk ? terrainResult.perLine : null,
-      terrainOk ? terrainResult.perLink : null,
-      { maxLinkM },
-    )
-    const exportBlocks = (terrainOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks)?.map(comIntervalos) ?? null
-    // B: acções de foto por waypoint do plano (null no modo distância); o
-    // marcador de gimbal nadir funde-se com a entrada existente do waypoint
-    const photoPw = photoMode === 'waypoint' ? (planOk.perWaypoint ?? null) : null
-    const withPitch = (pw, at) => {
-      const out = pw ? [...pw] : []
-      out[at] = { ...(out[at] ?? {}), gimbalPitch: -90 }
-      return out
-    }
-
-    // R2.10: com a passagem nadir extra, o gimbal roda a −90 no primeiro
-    // waypoint da grelha nadir (a missão arranca no pitch oblíquo global)
-    const nadirLine = planOk.nadirStartLine ?? planOk.cellPlans?.[0]?.nadirStartLine ?? null
-    if (nadirLine != null) {
-      if (exportBlocks && exportBlocks.length > 1) {
-        const annotated = exportBlocks.map((b) => {
-          const at = terrainOk
-            ? b.nadirMarkerAt
-            : b.nadirLineLocal != null
-              ? b.perLine
-                ? b.perLine.slice(0, b.nadirLineLocal).reduce((s, n) => s + n, 0)
-                : 2 * b.nadirLineLocal
-              : null
-          if (at == null) return b
-          return { ...b, perWaypoint: withPitch(b.perWaypoint, at) }
-        })
-        runExport(() => exportBlocksZip(exportParams, annotated))
-        return
-      }
-      let at
-      if (terrainOk) {
-        at = 0
-        for (let k = 0; k < nadirLine; k++) at += terrainResult.perLine[k] ?? 0
-        // depois da ligação que conduz à grelha nadir: o gimbal roda no
-        // primeiro waypoint da grelha, não no troço de aproximação
-        at += terrainResult.perLink?.[nadirLine] ?? 0
-      } else {
-        at = planOk.nadirStartWaypoint ?? planOk.cellPlans?.[0]?.nadirStartWaypoint ?? 2 * nadirLine
-      }
-      exportParams.perWaypoint = withPitch(photoPw, at)
-    } else if (photoPw) {
-      exportParams.perWaypoint = photoPw
-    }
-
-    if (exportBlocks && exportBlocks.length > 1) {
-      runExport(() => exportBlocksZip(exportParams, exportBlocks))
-    } else {
-      runExport(() => exportWPMLKmz(exportParams))
-    }
+    if (exportBlocks) runExport(() => exportBlocksZip(exportParams, exportBlocks))
+    else runExport(() => exportWPMLKmz(exportParams))
   }
 
   // Missão de inspeção (R2.9): KMZ próprio com os pontos avulsos, rumo e
