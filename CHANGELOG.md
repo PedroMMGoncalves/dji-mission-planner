@@ -32,6 +32,14 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   modos; oito testes unitários e um cenário E2E (42 asserções E2E no total).
 
 ### Manutenção
+- Prettier como formatador único (`npm run format`, `format:check` no CI),
+  com uma passagem única de formatação sem alteração de comportamento;
+  `CONTRIBUTING.md` com o ciclo de desenvolvimento, as camadas de teste,
+  as convenções e o processo de release.
+- A release passa a publicar, além do zip da build, o SBOM CycloneDX das
+  dependências de produção (gerado pelo npm a partir do lockfile) e uma
+  atestação de proveniência SLSA dos dois ficheiros, verificável com
+  `gh attestation verify`.
 - Primeiro corte do motor fora do `App.jsx`: o reagrupamento por blocos do
   terrain follow (`src/mission/terrainFollow.js`) e a montagem da exportação
   de área — nome com variantes, intervalos de disparo, marcador do gimbal

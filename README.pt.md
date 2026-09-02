@@ -229,6 +229,10 @@ repository*).
 }
 ```
 
+## Contribuir
+
+Ver [CONTRIBUTING.md](CONTRIBUTING.md): ciclo de desenvolvimento, o que cada camada de testes garante, convenções e processo de release. As releases levam um SBOM CycloneDX e uma atestação de proveniência SLSA (`gh attestation verify <ficheiro> --repo PedroMMGoncalves/dji-mission-planner`).
+
 ## Licença
 
 [GPL-3.0](LICENSE)

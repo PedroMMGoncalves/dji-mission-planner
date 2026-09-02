@@ -231,6 +231,10 @@ resolves to the latest release. The repository also ships a `CITATION.cff`
 }
 ```
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md): development loop, what each test layer guarantees, conventions and the release process. Releases ship a CycloneDX SBOM and a SLSA provenance attestation (`gh attestation verify <file> --repo PedroMMGoncalves/dji-mission-planner`).
+
 ## License
 
 [GPL-3.0](LICENSE)

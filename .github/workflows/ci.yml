@@ -38,6 +38,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Formatting (Prettier)
+        run: npm run format:check
+
       # Suites historicas sob c8, com limiares que so podem subir
       - name: Test suite (with coverage thresholds)
         run: npm run test:coverage
