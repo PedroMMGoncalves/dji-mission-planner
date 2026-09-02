@@ -219,6 +219,89 @@ await scenario('multipoligono-aviso', async () => {
   return { page }
 })
 
+/* ---- outros modos: desenhados no mapa, como o operador faz ------------- */
+// O mapa fica ajustado ao rectângulo importado (~1 px ≈ 2 m), por isso os
+// cliques a algumas centenas de píxeis do centro dão eixos de ~1 km.
+async function clickMap(page, dx, dy) {
+  const box = await page.locator('.leaflet-container').boundingBox()
+  await page.mouse.click(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy)
+  await page.waitForTimeout(250)
+}
+const modo = (page, re) => page.getByRole('button', { name: re, exact: true }).click()
+const panelExport = async (page, re, file) => {
+  const [dl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: re }).click(),
+  ])
+  await dl.saveAs(file)
+  return file
+}
+const plano = { toM, ground: () => 0 }
+
+await scenario('corredor-desenhado', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await modo(page, /^Corredor$|^Corridor$/)
+  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await clickMap(page, -300, 40)
+  await clickMap(page, 0, -60)
+  await clickMap(page, 300, 40)
+  await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
+  // meia-largura de 300 m: várias passagens em vez da passagem única por omissão
+  await page.locator('label', { hasText: /Meia-largura|Half-width/ }).locator('input').fill('300')
+  await page.waitForTimeout(800)
+  const txt = await bodyText(page)
+  check('corredor: painel mostra as passagens', /passagens|passes/.test(txt))
+  const routes = await readRoutes(await panelExport(page, /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/, join(OUT, 'corredor.kmz')))
+  const r = analyseRoute(routes[0].wpml, plano)
+  check('corredor: rota com várias passagens, gimbal nadir e disparo por distância',
+    r.n >= 6 && r.groups.length >= 1 && /gimbalPitchRotateAngle>-90</.test(routes[0].wpml) && /multipleDistance/.test(routes[0].wpml),
+    `${r.n} waypoints, ${r.groups.length} grupos`)
+  check('corredor: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+await scenario('fachada-desenhada', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await modo(page, /^Fachada$|^Face$/)
+  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await clickMap(page, -200, 0)
+  await clickMap(page, 200, 0)
+  await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
+  await page.waitForTimeout(800)
+  const routes = await readRoutes(await panelExport(page, /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/, join(OUT, 'fachada.kmz')))
+  const wpml = routes[0].wpml
+  const rumos = [...wpml.matchAll(/<wpml:waypointHeadingAngle>([-\d.]+)</g)].map((m) => Number(m[1]))
+  const r = analyseRoute(wpml, plano)
+  check('fachada: passagens empilhadas com rumo fixo em [-180, 180] e uma foto por waypoint',
+    r.n >= 4 && rumos.length === r.n && rumos.every((h) => h >= -180 && h <= 180) && (wpml.match(/takePhoto/g) ?? []).length >= r.n,
+    `${r.n} waypoints, ${rumos.length} rumos`)
+  check('fachada: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+await scenario('orbita-marcada', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await modo(page, /^Órbita$|^Orbit$/)
+  await page.getByRole('button', { name: /Marcar POI|Mark POI/ }).click()
+  await clickMap(page, 0, 0)
+  await page.waitForTimeout(800)
+  const single = await readRoutes(await panelExport(page, /Exportar missão única|Export single mission/, join(OUT, 'orbita.kmz')))
+  const r = analyseRoute(single[0].wpml, plano)
+  check('órbita: anel de waypoints em voo curvo contínuo',
+    r.n >= 8 && /ContinuityCurvature|coordinateTurn/.test(single[0].wpml), `${r.n} waypoints`)
+  const perLevel = await readRoutes(await panelExport(page, /um KMZ por nível|one KMZ per level/, join(OUT, 'orbita-niveis.zip')))
+  check('órbita: um KMZ por nível', perLevel.length >= 1 && perLevel.every((x) => analyseRoute(x.wpml, plano).n >= 8), `${perLevel.length} níveis`)
+  await modo(page, /^Área$|^Area$/)
+  await page.waitForTimeout(500)
+  const txt = await bodyText(page)
+  check('resumo do projecto conta a área e a órbita em qualquer separador', /2 planos|2 plans/.test(txt))
+  check('órbita: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 /* ---- fim ----------------------------------------------------------------- */
 await browser.close()
 stopServer()
