@@ -825,6 +825,52 @@ function bboxFrom(x0, y0, x1, y1) {
   )
 }
 
+{
+  // Datum e unidade verticais: pes convertem para metros; Cascais e 4979 sao declarados
+  const feet = await loadDemFromFile(
+    makeDem({
+      valueAt: () => 100,
+      geoKeys: {
+        GTModelTypeGeoKey: 1,
+        ProjectedCSTypeGeoKey: 3763,
+        VerticalCSTypeGeoKey: 5773,
+        VerticalUnitsGeoKey: 9002,
+      },
+    }),
+    bboxFrom(-30000, 20000, -29920, 19940),
+    { marginM: 0 },
+  )
+  const [lonC, latC] = toWgs(-29960, 19970)
+  check(
+    'MDT em pes: 100 ft lem-se como 30.48 m',
+    Math.abs(feet.elevationAt(lonC, latC) - 30.48) < 0.01,
+    String(feet.elevationAt(lonC, latC)),
+  )
+  check(
+    'MDT em pes: datum EGM96 declarado, unidade ft',
+    feet.verticalDatum.model === 'EGM96' && feet.verticalDatum.unitLabel === 'ft',
+  )
+  const cascais = await loadDemFromFile(
+    makeDem({
+      geoKeys: { GTModelTypeGeoKey: 1, ProjectedCSTypeGeoKey: 3763, VerticalCSTypeGeoKey: 5782 },
+    }),
+    bboxFrom(-30000, 20000, -29920, 19940),
+    { marginM: 0 },
+  )
+  check(
+    'MDT Cascais (EPSG:5782): ortometrico, nao assumido',
+    cascais.verticalDatum.kind === 'orthometric' && cascais.verticalDatum.assumed === false,
+  )
+  const plain = await loadDemFromFile(makeDem(), bboxFrom(-30000, 20000, -29920, 19940), {
+    marginM: 0,
+  })
+  check(
+    'MDT sem GeoKeys verticais: datum desconhecido (assumido), valores intactos',
+    plain.verticalDatum.kind === 'unknown' &&
+      Math.abs(plain.elevationAt(lonC, latC) - (feet.elevationAt(lonC, latC) / 0.3048) * 1 + 0) > 0,
+  )
+}
+
 console.log(
   failures === 0 ? '\nTODOS OS TESTES DE E/S PASSARAM' : `\n${failures} TESTES DE E/S FALHARAM`,
 )

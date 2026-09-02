@@ -50,6 +50,19 @@ function NumberInput({ value, onChange, min, max, step = 1, wide }) {
   )
 }
 
+/** Etiqueta do datum vertical de uma fonte de relevo (ver utils/verticalDatum.js). */
+function datumLabel(d, t) {
+  const base =
+    d.kind === 'ellipsoidal'
+      ? t('cp.terrain.datumEllip', { model: d.model })
+      : d.kind === 'orthometric'
+        ? t('cp.terrain.datumOrtho', { model: d.model })
+        : t('cp.terrain.datumUnknown')
+  const assumed = d.assumed && d.kind !== 'unknown' ? t('cp.terrain.datumAssumed') : ''
+  const unit = d.unitFactor !== 1 ? t('cp.terrain.datumUnit', { unit: d.unitLabel }) : ''
+  return `${base}${assumed}${unit}`
+}
+
 export default function ControlPanel({
   missionName,
   setMissionName,
@@ -1286,6 +1299,16 @@ export default function ControlPanel({
               })
             : t('cp.terrain.sourceHint')}
         </p>
+        {terrain.status === 'ready' && terrain.data?.verticalDatum && (
+          <p className="mt-1 text-[11px] text-slate-500" data-testid="terrain-datum">
+            {t('cp.terrain.datum', { datum: datumLabel(terrain.data.verticalDatum, t) })}
+          </p>
+        )}
+        {terrain.status === 'ready' && terrain.data?.verticalDatum?.kind === 'ellipsoidal' && (
+          <p className="mt-1.5 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+            ⚠ {t('cp.terrain.datumEllipWarn')}
+          </p>
+        )}
       </Section>
 
       {/* GCPs */}

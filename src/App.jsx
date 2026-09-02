@@ -654,6 +654,7 @@ function AppInner({ lang, setLang }) {
         reservePct: split.reservePct,
         aglWarn,
         triggerWarn,
+        terrainDatum: terrain.data?.verticalDatum ?? null,
       })
     }
     const other = { batteryMin, reservePct: split.reservePct }
@@ -685,6 +686,7 @@ function AppInner({ lang, setLang }) {
     corridorTriggerWarn,
     facePlan,
     orbitPlan,
+    terrain.data,
   ])
   const exportBlocked = hasBlockers(preflight)
 

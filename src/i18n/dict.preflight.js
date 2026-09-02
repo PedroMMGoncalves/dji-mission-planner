@@ -54,6 +54,10 @@ export default {
     pt: 'Bloco {id}: {min} min excede o útil de uma bateria ({usable} min com reserva).',
     en: 'Block {id}: {min} min exceeds one battery’s usable time ({usable} min with reserve).',
   },
+  'preflight.terrain-datum-ellipsoidal': {
+    pt: 'O MDT declara alturas elipsoidais ({model}): as alturas relativas continuam certas, mas não compare cotas deste ficheiro com fontes ortométricas.',
+    en: 'The DTM declares ellipsoidal heights ({model}): relative heights are still right, but do not compare its elevations with orthometric sources.',
+  },
   'preflight.no-base': {
     pt: 'Sem ponto de base: o trânsito não conta para a bateria e o seguimento de terreno usa o primeiro waypoint como referência.',
     en: 'No base point: transit is not counted against the battery and terrain following uses the first waypoint as reference.',

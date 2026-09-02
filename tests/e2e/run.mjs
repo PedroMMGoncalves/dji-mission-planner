@@ -186,6 +186,10 @@ const clearanceOk = (r) => r.minClearance >= r.agl - TOL_M - 1
 /* ---- cenários ---------------------------------------------------------- */
 await scenario('rectangulo-crosshatch-tf', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
+  check(
+    'terreno: datum vertical apresentado no painel (MDT sem GeoKeys verticais)',
+    /Datum vertical: não declarado|Vertical datum: not declared/.test(await bodyText(page)),
+  )
   await configure(page, { cross: true, tf: true })
   const txt = await bodyText(page)
   check(

@@ -445,6 +445,25 @@ export default {
     pt: 'Fonte: Terrarium/AWS (~30 m). As alturas por waypoint são relativas ao ponto de descolagem — marque a base no local real de descolagem e valide no Pilot 2.',
     en: 'Source: Terrarium/AWS (~30 m). Waypoint heights are relative to the takeoff point — set the base at the actual takeoff location and validate in Pilot 2.',
   },
+  'cp.terrain.datum': {
+    pt: 'Datum vertical: {datum}. As alturas exportadas são diferenças de cotas da mesma fonte, pelo que um desvio constante do datum cancela.',
+    en: 'Vertical datum: {datum}. Exported heights are differences of elevations from the same source, so a constant datum offset cancels out.',
+  },
+  'cp.terrain.datumOrtho': { pt: 'ortométrico, {model}', en: 'orthometric, {model}' },
+  'cp.terrain.datumEllip': { pt: 'ELIPSOIDAL, {model}', en: 'ELLIPSOIDAL, {model}' },
+  'cp.terrain.datumUnknown': {
+    pt: 'não declarado (assumido ortométrico)',
+    en: 'not declared (assumed orthometric)',
+  },
+  'cp.terrain.datumAssumed': { pt: ' (assumido)', en: ' (assumed)' },
+  'cp.terrain.datumUnit': {
+    pt: ', valores em {unit} convertidos para metros',
+    en: ', values in {unit} converted to metres',
+  },
+  'cp.terrain.datumEllipWarn': {
+    pt: 'O MDT declara alturas elipsoidais: não misture com fontes ortométricas (Terrarium, MDT DGT) na mesma missão; a referência das alturas relativas continua a ser este ficheiro.',
+    en: 'The DTM declares ellipsoidal heights: do not mix with orthometric sources (Terrarium, national DTMs) in the same mission; relative heights are still referenced to this file.',
+  },
   'cp.terrain.sourceHintFile': {
     pt: 'Fonte: MDT local {label} ({res} m). As alturas por waypoint são relativas ao ponto de descolagem — marque a base no local real de descolagem e valide no Pilot 2.',
     en: 'Source: local DTM {label} ({res} m). Waypoint heights are relative to the takeoff point — set the base at the actual takeoff location and validate in Pilot 2.',

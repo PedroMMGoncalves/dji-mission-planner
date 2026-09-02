@@ -20,6 +20,7 @@
  * objeto `terrain` sintético (basta um `elevationAt(lon, lat)`).
  */
 
+import { TERRARIUM_DATUM } from './verticalDatum.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
 const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
@@ -226,7 +227,7 @@ async function runPool(items, limit, worker) {
  * @param {[number, number, number, number]} bbox [minLon, minLat, maxLon, maxLat]
  * @param {{ zoom?: number, fetchImpl?: typeof fetch, urlTemplate?: string }} [options]
  * @returns {Promise<{zoom: number, bbox: number[], tileCount: number, tileSize: number,
- *   failedCount: number, elevationAt: (lon: number, lat: number) => number|null}>}
+ *   failedCount: number, verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}>}
  */
 export async function loadTerrain(
   bbox,
@@ -344,6 +345,7 @@ export async function loadTerrain(
     tileCount: tiles.size,
     tileSize,
     failedCount: failed,
+    verticalDatum: TERRARIUM_DATUM,
     elevationAt,
   }
 }
@@ -445,7 +447,7 @@ function segmentLengthM(a, b) {
  * take-off point"). Pontos sem dados de elevação herdam a última elevação
  * válida (ou `refElev`, se ainda não houver nenhuma).
  *
- * @param {{elevationAt: (lon: number, lat: number) => number|null}} terrain
+ * @param {{verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}} terrain
  * @param {Array<Array<[number, number]>>} lines segmentos [[lonA,latA],[lonB,latB]]
  * @param {{agl?: number, refElev?: number, toleranceM?: number, stepM?: number}} [options]
  * @returns {{waypoints: Array<[number, number, number]>, perLine: number[],

@@ -38,6 +38,7 @@ export function usableBatteryMin(batteryMin, reservePct = 30) {
  * @param {number} [c.reservePct]
  * @param {{cap: number, worstAgl: number}|null} [c.aglWarn]
  * @param {{actualS: number, minS: number, maxSpeed: number}|null} [c.triggerWarn]
+ * @param {{kind: string, model?: string}|null} [c.terrainDatum] datum vertical da fonte de relevo
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
@@ -80,6 +81,12 @@ export function preflightArea(c) {
         vmax: c.triggerWarn.maxSpeed.toFixed(1),
       }),
     )
+  }
+
+  // alturas elipsoidais no MDT: as diferencas continuam certas, mas a cota
+  // do ponto de descolagem que o operador compara com o mapa nao e a mesma
+  if (tfOk && c.terrainDatum?.kind === 'ellipsoidal') {
+    out.push(item('warn', 'terrain-datum-ellipsoidal', { model: c.terrainDatum.model ?? '' }))
   }
 
   const usable = usableBatteryMin(c.batteryMin, c.reservePct)

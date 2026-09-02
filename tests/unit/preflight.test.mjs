@@ -198,6 +198,15 @@ describe('preflightArea', () => {
           blocks: [{ id: 1, waypoints: [], timeS: 1e5 }],
         }),
       ),
+      ...codes(
+        preflightArea({
+          ...base(),
+          terrainFollow: { enabled: true },
+          terrainCovers: true,
+          terrainResult: { waypoints: plan.waypoints },
+          terrainDatum: { kind: 'ellipsoidal', model: 'WGS84' },
+        }),
+      ),
     ])
     for (const code of all) {
       const entry = preflightDict[`preflight.${code}`]
@@ -205,6 +214,6 @@ describe('preflightArea', () => {
       expect(typeof entry.pt).toBe('string')
       expect(typeof entry.en).toBe('string')
     }
-    expect(all.size).toBe(13)
+    expect(all.size).toBe(14)
   })
 })

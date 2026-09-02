@@ -16,6 +16,9 @@ export const GEO_KEY_ID = {
   GTModelTypeGeoKey: 1024,
   GeographicTypeGeoKey: 2048,
   ProjectedCSTypeGeoKey: 3072,
+  VerticalCSTypeGeoKey: 4096,
+  VerticalDatumGeoKey: 4098,
+  VerticalUnitsGeoKey: 4099,
 }
 
 export function makeFloatTiff({

@@ -1,6 +1,7 @@
 import { fromBlob } from 'geotiff'
 import proj4 from 'proj4'
 import { CRS_OPTIONS } from './importArea.js'
+import { describeVerticalDatum } from './verticalDatum.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
 /**
@@ -164,7 +165,7 @@ export function projectBox(box, project, steps = EDGE_SAMPLES) {
  * @returns {Promise<{source: string, label: string, crsCode: string,
  *   bbox: number[], resolutionM: number, nativeResolutionM: number,
  *   width: number, height: number,
- *   elevationAt: (lon: number, lat: number) => number|null}>}
+ *   verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}>}
  */
 export async function loadDemFromFile(
   file,
@@ -235,6 +236,10 @@ export async function loadDemFromFile(
   }
 
   const { crsCode, geographic, def } = resolveRasterCrs(image.geoKeys)
+  // datum e unidade verticais declarados (ou nao) nas GeoKeys; os valores
+  // da banda passam a metros aqui, uma unica vez
+  const verticalDatum = describeVerticalDatum(image.geoKeys)
+  const unitFactor = verticalDatum.unitFactor
 
   // Conversores lon/lat ↔ CRS do raster (identidade se o raster for em graus)
   const converter = geographic ? null : proj4(proj4.WGS84, def)
@@ -332,7 +337,7 @@ export async function loadDemFromFile(
       grid[i] = NaN
       continue
     }
-    grid[i] = v
+    grid[i] = v * unitFactor
     validCount++
   }
   if (validCount === 0) {
@@ -425,6 +430,7 @@ export async function loadDemFromFile(
     nativeResolutionM,
     width: gridW,
     height: gridH,
+    verticalDatum,
     elevationAt,
   }
 }

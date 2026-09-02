@@ -416,14 +416,22 @@ testado num comando real (ver `README`).
 
 ## 12. Datums verticais tal como estão implementados
 
-- Terrarium: elevações em metros, sem datum vertical declarado nem
-  convertido no código (a montante são, na maior parte, alturas
-  ortométricas referidas ao EGM96).
-- MDT local: só o CRS horizontal é lido; `VerticalCSTypeGeoKey`,
-  `VerticalDatumGeoKey` e `VerticalUnitsGeoKey` são ignorados; os valores da
-  banda são usados como metros no datum que o ficheiro trouxer (os MDT
-  oficiais portugueses são ortométricos). Os códigos 4979/4937 (geográficos
-  3D, alturas elipsoidais) são aceites como os 2D, sem aviso.
+Módulo `src/utils/verticalDatum.js`. Cada fonte de relevo declara o seu
+datum vertical (`verticalDatum`: tipo ortométrico / elipsoidal /
+desconhecido, modelo, código EPSG, se é assumido, unidade):
+
+- Terrarium: elevações em metros; a fonte não declara datum, assume-se
+  ortométrico EGM96 (é o que os dados de origem, na maior parte, são) e o
+  painel diz "assumido".
+- MDT local: lidas as GeoKeys `VerticalCSTypeGeoKey` (5773 EGM96, 3855
+  EGM2008, 5714 MSL, 5782 Cascais, 5730/5621 EVRF; outros códigos
+  assumidos ortométricos), `VerticalDatumGeoKey` e `VerticalUnitsGeoKey`
+  (9001 m, 9002 pés, 9003 pés US); os valores da banda passam a metros na
+  leitura. Sem GeoKeys verticais o datum fica "desconhecido (assumido
+  ortométrico)". Um GeoTIFF geográfico 3D (4979/4937) declara alturas
+  elipsoidais: o painel avisa e o preflight regista um aviso com seguir
+  terreno ligado. Não há conversão elipsoidal ↔ ortométrico (o modelo de
+  geóide não está embebido).
 - WPML: alturas relativas ao ponto de descolagem; `ellipsoidHeight` é uma
   cópia do mesmo valor relativo, não uma altura elipsoidal.
 

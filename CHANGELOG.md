@@ -31,6 +31,14 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   ponto de base; alturas relativas ao ponto de descolagem). Cobre os quatro
   modos; oito testes unitários e um cenário E2E (42 asserções E2E no total).
 
+### Terreno
+- Datum vertical declarado por fonte: o Terrarium como ortométrico EGM96
+  assumido; um MDT local pelas GeoKeys verticais (EGM96, EGM2008, MSL,
+  Cascais, EVRF; unidade em metros, pés ou pés US, convertida na leitura —
+  um MDT em pés lia-se como metros). Um GeoTIFF geográfico 3D (EPSG:4979/
+  4937) fica marcado como alturas elipsoidais, com aviso no painel e no
+  preflight. `docs/METODOS.md` §12 descreve o que cancela e o que não.
+
 ### Documentação
 - `docs/METODOS.md`: métodos do planeador — fórmulas tal como estão
   implementadas, constantes e tolerâncias, hipóteses, datums verticais tal
