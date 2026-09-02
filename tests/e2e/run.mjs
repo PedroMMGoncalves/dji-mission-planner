@@ -357,6 +357,52 @@ await scenario('projecto-autosave-ficheiro', async () => {
   return { page }
 })
 
+// Preflight: a pastilha do cabeçalho resume bloqueios e avisos da missão
+// activa e os bloqueios desactivam o botão do KMZ. Um projecto gravado com
+// seguir terreno ligado mas sem relevo (rede cortada) exportava antes um
+// KMZ com alturas planas, sem aviso.
+await scenario('preflight-bloqueia-terreno-em-falta', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  const pill = page.getByTestId('preflight-pill')
+  check('preflight: pastilha visível e sem bloqueios com o plano simples',
+    (await pill.count()) === 1 && /Pronto a exportar|Ready to export|0 bloqueios|0 blockers/.test(await pill.innerText()))
+  await pill.click()
+  const list = page.getByTestId('preflight-list')
+  check('preflight: a lista abre com o lembrete das alturas relativas',
+    (await list.count()) === 1 && /descolagem|take-off/.test(await list.innerText()))
+
+  // projecto gravado com seguir terreno ligado; sem relevo ao recarregar
+  await page.waitForTimeout(1200) // autosave com debounce de 500 ms
+  await page.evaluate(() => {
+    const raw = localStorage.getItem('dji-mission-planner:project:v1')
+    const p = JSON.parse(raw)
+    p.terrainFollow = { enabled: true, tolerance: 5 }
+    localStorage.setItem('dji-mission-planner:project:v1', JSON.stringify(p))
+  })
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByTestId('preflight-pill').waitFor({ state: 'attached', timeout: 20000 })
+  await page.waitForTimeout(2500) // descarga automática do relevo tenta e falha (rede cortada)
+  const pill2 = page.getByTestId('preflight-pill')
+  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  check('preflight: seguir terreno sem relevo é um bloqueio e o KMZ fica desactivado',
+    /1 bloqueio|1 blocker/.test(await pill2.innerText()) && !(await exportBtn.isEnabled()))
+  await pill2.click()
+  check('preflight: a lista explica o bloqueio',
+    /relevo|elevation/.test(await page.getByTestId('preflight-list').innerText()))
+
+  // com o MDT carregado o bloqueio desaparece e a exportação volta
+  await page.locator('input[accept=".tif,.tiff"]').setInputFiles(fx.dem)
+  await page.waitForFunction(() => {
+    const b = [...document.querySelectorAll('button')].find((b) => /Exportar WPML|Export Advanced WPML/.test(b.textContent))
+    return b && !b.disabled
+  }, null, { timeout: 20000 })
+  check('preflight: com o MDT carregado o bloqueio desaparece',
+    !/bloqueio|blocker/.test(await page.getByTestId('preflight-pill').innerText()) || /0 bloqueios|0 blockers/.test(await page.getByTestId('preflight-pill').innerText()))
+  check('preflight: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 /* ---- fim ----------------------------------------------------------------- */
 await browser.close()
 stopServer()

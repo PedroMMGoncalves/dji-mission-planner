@@ -44,6 +44,8 @@ import { useInspection } from './hooks/useInspection.js'
 import { useTerrain } from './hooks/useTerrain.js'
 import { useProject } from './hooks/useProject.js'
 import { DEFAULT_PARAMS } from './mission/defaults.js'
+import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
+import { PreflightList, PreflightPill } from './components/PreflightBar.jsx'
 import {
   FlagGB,
   FlagPT,
@@ -124,6 +126,7 @@ function AppInner({ lang, setLang }) {
   const [show3d, setShow3d] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
+  const [showPreflight, setShowPreflight] = useState(false)
 
   const aircraftRef = useRef(null)
   const setParam = useCallback((key, value) => {
@@ -336,7 +339,7 @@ function AppInner({ lang, setLang }) {
 
   /* ---------- Modo área, parte 2: plano, blocos, GCPs, exportação ------ */
   const {
-    gcpConfig, setGcpConfig, plan, planOk, blocks, waypointWarn, gcpAutoCount, gcps, gcpInfo,
+    gcpConfig, setGcpConfig, photoMode, plan, planOk, blocks, waypointWarn, gcpAutoCount, gcps, gcpInfo,
     terrainResult, canExportKML, canExportKMZ, handleExportKML, handleExportGcps, handleExportKMZ,
   } = useAreaMission({
     ring, validation, activeCells, basePoint, params, spacing, interval, speed, batteryMin, split, sensor,
@@ -486,6 +489,26 @@ function AppInner({ lang, setLang }) {
       }),
     [payload, params.altitude, terrainFollow, terrainResult],
   )
+
+  /* ----------------------------- Preflight ---------------------------- */
+  // Uma só lista, calculada a partir do mesmo estado que a exportação usa
+  // (src/mission/preflight.js). Os bloqueios desactivam o botão do KMZ.
+  const preflight = useMemo(() => {
+    if (missionMode === 'area') {
+      return preflightArea({
+        plan, blocks, photoMode, terrainFollow, terrainCovers, terrainResult, basePoint, baseDistance,
+        speed, batteryMin, reservePct: split.reservePct, aglWarn, triggerWarn,
+      })
+    }
+    const other = { batteryMin, reservePct: split.reservePct }
+    if (missionMode === 'corridor') return preflightPlan({ ...other, plan: corridorPlan, aglWarn, triggerWarn: corridorTriggerWarn })
+    if (missionMode === 'face') return preflightPlan({ ...other, plan: facePlan })
+    return preflightPlan({ ...other, plan: orbitPlan })
+  }, [
+    missionMode, plan, blocks, photoMode, terrainFollow, terrainCovers, terrainResult, basePoint, baseDistance,
+    speed, batteryMin, split.reservePct, aglWarn, triggerWarn, corridorPlan, corridorTriggerWarn, facePlan, orbitPlan,
+  ])
+  const exportBlocked = hasBlockers(preflight)
 
   /* --------------- Persistência do projeto (localStorage) -------------- */
 
@@ -675,9 +698,10 @@ function AppInner({ lang, setLang }) {
           >
             <IconDownload /> {t('app.exportKml')}
           </button>
+          <PreflightPill items={preflight} open={showPreflight} onToggle={() => setShowPreflight((v) => !v)} />
           <button
             onClick={handleExportKMZ}
-            disabled={!canExportKMZ}
+            disabled={!canExportKMZ || exportBlocked}
             title={t('app.exportWpmlTitle')}
             className="flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -713,6 +737,8 @@ function AppInner({ lang, setLang }) {
           </div>
         </div>
       </header>
+
+      {showPreflight && <PreflightList items={preflight} />}
 
       {exportError && (
         <div

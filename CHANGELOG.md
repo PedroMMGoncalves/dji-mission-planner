@@ -20,6 +20,17 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - Limiares de cobertura (c8) sobre `src/utils/` no CI: 92 % linhas, 90 %
   funções, 82 % ramos — só podem subir.
 
+### Preflight
+- Verificação única antes de exportar (`src/mission/preflight.js`, pastilha
+  no cabeçalho): bloqueios que desactivam o KMZ — sem plano ou plano com
+  erro, seguir terreno com foto por waypoint, seguir terreno ligado sem
+  relevo a cobrir a área (antes saía um KMZ com alturas planas, sem aviso),
+  falha do cálculo do terreno, mais de 65535 waypoints numa rota —, avisos
+  (rota acima de 2000 waypoints, tecto AGL do payload, obturador, tempo
+  acima do útil de uma bateria, por missão ou por bloco) e lembretes (sem
+  ponto de base; alturas relativas ao ponto de descolagem). Cobre os quatro
+  modos; oito testes unitários e um cenário E2E (42 asserções E2E no total).
+
 ### Manutenção
 - Primeiro corte do motor fora do `App.jsx`: o reagrupamento por blocos do
   terrain follow (`src/mission/terrainFollow.js`) e a montagem da exportação
