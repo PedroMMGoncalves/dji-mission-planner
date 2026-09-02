@@ -231,6 +231,10 @@ resolves to the latest release. The repository also ships a `CITATION.cff`
 }
 ```
 
+## Methods
+
+[docs/METODOS.md](docs/METODOS.md) (Portuguese) is the reference for every number the app shows: the formulas as implemented (footprint, GSD, spacing and interval, flight-time and battery model, block splitting, terrain following with vertical Douglas-Peucker, trigger ranges, facade, orbit, corridor, GCPs, WPML heights and validation), the constants and tolerances in one table, the vertical datums as actually handled, what is not modelled, and the calibration planned for the September 2026 flights.
+
 ## Planned vs measured (field validation)
 
 After a real flight, `tools/planeado-vs-medido.mjs` compares what the planner predicted with what the flight produced, from the project file plus any of: the photos (a folder of JPEGs read via EXIF/XMP, or a CSV from `exiftool -csv -n`), the LiDAR cloud (`.las`, with the CRS of the file) and the flight log (Airdata-style CSV). It reports AGL height, GSD, photo interval and front overlap, strip spacing and side overlap, strip and photo counts, photos inside the area, duration, point density (overall and minimum per 10 m cell) and speed, each as planned / measured / deviation:

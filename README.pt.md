@@ -229,6 +229,10 @@ repository*).
 }
 ```
 
+## Métodos
+
+[docs/METODOS.md](docs/METODOS.md) é a referência para cada número que a aplicação mostra: as fórmulas tal como estão implementadas (pegada, GSD, espaçamento e intervalo, modelo de tempo e bateria, divisão em blocos, seguimento de terreno com Douglas-Peucker vertical, intervalos de disparo, fachada, órbita, corredor, GCPs, alturas e validação WPML), as constantes e tolerâncias numa só tabela, os datums verticais tal como são tratados, o que não é modelado e a calibração prevista para os voos de Setembro de 2026.
+
 ## Planeado vs medido (validação de campo)
 
 Depois de um voo real, `tools/planeado-vs-medido.mjs` compara o que o planeador previu com o que o voo produziu, a partir do ficheiro de projecto e de qualquer combinação de: fotos (pasta de JPEG lidos por EXIF/XMP, ou CSV do `exiftool -csv -n`), nuvem LiDAR (`.las`, com o CRS do ficheiro) e registo de voo (CSV tipo Airdata). Dá altura AGL, GSD, intervalo entre fotos e sobreposição frontal, espaçamento e sobreposição lateral, contagem de faixas e fotos, fotos dentro da área, duração, densidade de pontos (global e mínima por célula de 10 m) e velocidade, cada uma como planeado / medido / desvio:

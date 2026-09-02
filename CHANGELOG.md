@@ -31,6 +31,12 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   ponto de base; alturas relativas ao ponto de descolagem). Cobre os quatro
   modos; oito testes unitários e um cenário E2E (42 asserções E2E no total).
 
+### Documentação
+- `docs/METODOS.md`: métodos do planeador — fórmulas tal como estão
+  implementadas, constantes e tolerâncias, hipóteses, datums verticais tal
+  como são tratados, o que não é modelado, calibração prevista e
+  referências. Dezassete secções, uma por módulo do motor.
+
 ### Validação de campo
 - Ferramenta planeado-vs-medido (`tools/planeado-vs-medido.mjs`): a partir
   do ficheiro de projecto e das fotos (EXIF/XMP ou CSV do exiftool), da
