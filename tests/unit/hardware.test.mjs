@@ -14,18 +14,23 @@ describe('M4T: grande-angular', () => {
   const p = PAYLOADS.M4T_WIDE
   it('ja nao usa os valores provisorios da classe M3E', () => {
     expect(p.sensorWidth).not.toBe(PAYLOADS.M3E_WIDE.sensorWidth)
-    expect(p.imageWidth).toBe(8064)
-    expect(p.imageHeight).toBe(6048)
+    expect(p.imageSource).toBe('WideCamera')
   })
   it('tem a razao de aspecto 4:3 e um FOV diagonal proximo dos 82 graus publicados', () => {
     expect(p.sensorWidth / p.sensorHeight).toBeCloseTo(4 / 3, 1)
     expect(dfovDeg(p)).toBeGreaterThan(80)
     expect(dfovDeg(p)).toBeLessThan(86)
   })
-  it('equivale a 24 mm em full frame e da 1,8 cm/px a 100 m', () => {
+  it('tem a focal e o tamanho de imagem do EXIF (6,72 mm, 4032x3024, 24 mm eq.)', () => {
+    expect(p.focalLength).toBe(6.72)
+    expect(p.imageWidth).toBe(4032)
+    expect(p.imageHeight).toBe(3024)
     const crop = 43.27 / Math.hypot(p.sensorWidth, p.sensorHeight)
     expect(p.focalLength * crop).toBeCloseTo(24, 0)
-    expect(gsdAt100(p)).toBeCloseTo(1.8, 1)
+  })
+  it('da 3,6 cm/px a 100 m em 12 MP e metade em 48 MP', () => {
+    expect(gsdAt100(p)).toBeCloseTo(3.6, 1)
+    expect(gsdAt100({ ...p, imageWidth: 8064 })).toBeCloseTo(1.8, 1)
   })
 })
 
@@ -37,8 +42,11 @@ describe('M4T: termica', () => {
     expect((p.sensorWidth / p.imageWidth) * 1000).toBeCloseTo(12, 1)
     expect((p.sensorHeight / p.imageHeight) * 1000).toBeCloseTo(12, 1)
   })
-  it('tem DFOV de 45 graus e da cerca de 10 cm/px a 100 m', () => {
-    expect(dfovDeg(p)).toBeCloseTo(45, 0)
+  it('tem a focal do EXIF (12 mm, 52 mm eq.), DFOV de 45 graus e cerca de 10 cm/px a 100 m', () => {
+    expect(p.focalLength).toBe(12)
+    expect(p.imageSource).toBe('InfraredCamera')
+    expect(dfovDeg(p)).toBeGreaterThan(44)
+    expect(dfovDeg(p)).toBeLessThan(46)
     expect(gsdAt100(p)).toBeGreaterThan(9.5)
     expect(gsdAt100(p)).toBeLessThan(10.5)
   })
@@ -46,7 +54,7 @@ describe('M4T: termica', () => {
     const ir = computeFootprint(resolveSensor(p, {}), 100)
     const rgb = computeFootprint(resolveSensor(PAYLOADS.M4T_WIDE, {}), 100)
     expect(ir.across).toBeLessThan(rgb.across / 2)
-    expect(ir.across).toBeCloseTo(64.5, 0)
+    expect(ir.across).toBeCloseTo(64, 0)
   })
   it('partilha o gimbal (enum WPML) com a grande-angular', () => {
     expect(p.wpml.payloadEnumValue).toBe(PAYLOADS.M4T_WIDE.wpml.payloadEnumValue)

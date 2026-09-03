@@ -8,11 +8,12 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ### Alterado
 
-- Perfil **M4T** com as ópticas reais da ficha técnica da série Matrice 4: grande-angular 1/1.3" 48 MP (9,7 × 7,3 mm, focal real 6,7 mm, 8064 × 6048) em vez dos valores provisórios da classe M3E. A pegada e o GSD do M4T passam a ser fiáveis (≈1,8 cm/px a 100 m).
+- Perfil **M4T** com as ópticas reais, confirmadas contra o EXIF de fotografias originais da aeronave: grande-angular 1/1.3" (9,7 × 7,3 mm, focal real 6,72 mm, 4032 × 3024 no modo 12 MP que a aeronave escreve por omissão) em vez dos valores provisórios da classe M3E. A pegada e o GSD do M4T passam a ser fiáveis (≈3,6 cm/px a 100 m; metade em 48 MP, via sensor custom com 8064 px).
 
 ### Adicionado
 
-- Payload **térmico do M4T** (`M4T_THERMAL`): VOx 640 × 512, 12 µm (7,68 × 6,14 mm), focal 11,9 mm a partir do DFOV de 45°, GSD calculado sobre o detector físico (≈10 cm/px a 100 m) e não sobre o R-JPEG 1280 × 1024 de super-resolução. O M4T passa a mostrar o selector de payload; projectos antigos continuam a carregar com a grande-angular.
+- Payload **térmico do M4T** (`M4T_THERMAL`): VOx 640 × 512, 12 µm (7,68 × 6,14 mm), focal 12 mm (EXIF; 52 mm eq., DFOV 44,5°), GSD calculado sobre o detector físico (≈10 cm/px a 100 m) e não sobre o R-JPEG 1280 × 1024 de super-resolução. O M4T passa a mostrar o selector de payload; projectos antigos continuam a carregar com a grande-angular.
+- Ferramenta planeado-vs-medido: nas aeronaves que escrevem um ficheiro por lente (M4T: `_V` e `_T` com as mesmas coordenadas e instante), fica só com a câmara do payload planeado, pelo `ImageSource` do XMP, e indica quantas fotos da outra pôs de parte. O CSV do exiftool passa a incluir `-ImageSource`.
 
 ## 1.1.0 — 2026-09-02
 

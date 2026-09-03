@@ -55,11 +55,17 @@ tempo permitir, R1 também com RTK activo.
 ```bash
 exiftool -csv -n -GPSLatitude -GPSLongitude -GPSAltitude -RelativeAltitude \
   -DateTimeOriginal -SubSecTimeOriginal -FocalLength -ImageWidth \
-  -GimbalPitchDegree fotos/*.JPG > R1-fotos.csv
+  -GimbalPitchDegree -ImageSource fotos/*.JPG > R1-fotos.csv
 node tools/planeado-vs-medido.mjs --projecto R1-projeto.json --fotos R1-fotos.csv \
   --log R1-voo.csv --json R1-rel.json --md R1-rel.md
 # LiDAR: acrescentar --las nuvem.las --crs EPSG:3763
 ```
+
+No M4T cada disparo escreve dois ficheiros com as mesmas coordenadas e o
+mesmo instante (`_V` grande-angular, `_T` térmica); a ferramenta usa o
+`ImageSource` do XMP para ficar só com a câmara do payload planeado e
+indica quantas fotos da outra pôs de parte. Sem esse campo as fotos
+ficariam duplicadas e o intervalo medido sairia a metade.
 
 6. Avaliar e juntar ao relatório:
 

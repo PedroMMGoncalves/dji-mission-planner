@@ -10,14 +10,16 @@
  *
  * CSV das fotos: exiftool -csv -n -GPSLatitude -GPSLongitude -GPSAltitude \
  *   -RelativeAltitude -DateTimeOriginal -SubSecTimeOriginal -FocalLength \
- *   -ImageWidth -GimbalPitchDegree pasta/*.JPG > fotos.csv
+ *   -ImageWidth -GimbalPitchDegree -ImageSource pasta/*.JPG > fotos.csv
+ * (-ImageSource separa as camaras nas aeronaves que escrevem um ficheiro
+ * por lente, como o M4T: _V grande-angular, _T termica.)
  * O LAS tem de estar em metros; --crs aceita um codigo de CRS_OPTIONS
  * (EPSG:3763, EPSG:25829, EPSG:32629, ...) ou uma definicao proj4.
  */
 import { readFile, stat, writeFile } from 'node:fs/promises'
 import proj4 from 'proj4'
 import { CRS_OPTIONS } from '../src/utils/importArea.js'
-import { measurePhotos, parsePhotoCsv, readPhotosFromDir } from './lib/fotos.mjs'
+import { measurePhotos, parsePhotoCsv, readPhotosFromDir, selectPhotoSource } from './lib/fotos.mjs'
 import { lasDensity } from './lib/las.mjs'
 import { measureFlightLog, parseFlightLog } from './lib/voo.mjs'
 import { compare, predictFromProject, renderMarkdown } from './lib/planeado.mjs'
@@ -47,11 +49,16 @@ const sources = [`projecto ${a.projecto}`]
 let photos = null
 if (a.fotos) {
   const s = await stat(a.fotos)
-  const rows = s.isDirectory()
+  const all = s.isDirectory()
     ? await readPhotosFromDir(a.fotos)
     : parsePhotoCsv(await readFile(a.fotos, 'utf8'))
-  photos = measurePhotos(rows, { sensor: pred.sensor, ring: pred.ring })
-  sources.push(`${rows.length} fotos de ${a.fotos}`)
+  const sel = selectPhotoSource(all, pred.imageSource)
+  photos = measurePhotos(sel.rows, { sensor: pred.sensor, ring: pred.ring })
+  sources.push(
+    sel.dropped
+      ? `${sel.rows.length} fotos ${sel.kept} de ${a.fotos} (${sel.dropped} de outra camara ignoradas: ${sel.sources.filter((x) => x !== sel.kept).join(', ')})`
+      : `${all.length} fotos de ${a.fotos}`,
+  )
 }
 let las = null
 if (a.las) {

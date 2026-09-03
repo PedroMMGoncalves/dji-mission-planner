@@ -68,6 +68,7 @@ export function predictFromProject(json) {
     drone,
     aircraftLabel: aircraft.label,
     payloadLabel: payload.label,
+    imageSource: payload.imageSource ?? null,
     sensor,
     params,
     speed,

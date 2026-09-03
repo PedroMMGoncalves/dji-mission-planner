@@ -58,7 +58,34 @@ export function normalizePhoto(row) {
     focalMm: num(pick(row, 'FocalLength', 'focal')),
     imageWidth: num(pick(row, 'ImageWidth', 'ExifImageWidth', 'width')),
     gimbalPitch: num(pick(row, 'GimbalPitchDegree', 'GimbalPitch', 'pitch')),
+    // XMP drone-dji:ImageSource (WideCamera, InfraredCamera, ZoomCamera...);
+    // null when the file does not say
+    source: pick(row, 'ImageSource', 'source') ?? null,
   }
+}
+
+/**
+ * Aeronaves com varias camaras (M4T) escrevem um ficheiro por lente com as
+ * mesmas coordenadas e o mesmo instante; medidos juntos, duplicam as fotos
+ * e reduzem o intervalo a metade. Quando ha mais do que uma origem, fica so
+ * a preferida (o `imageSource` do payload planeado) ou, sem preferencia, a
+ * mais numerosa. Devolve as fotos retidas, as origens vistas e quantas
+ * foram postas de parte.
+ */
+export function selectPhotoSource(rows, preferred = null) {
+  const bySource = new Map()
+  for (const r of rows) {
+    const k = r.source ?? ''
+    bySource.set(k, (bySource.get(k) ?? 0) + 1)
+  }
+  const sources = [...bySource.keys()].filter((k) => k !== '')
+  if (sources.length <= 1) return { rows, sources, kept: sources[0] ?? null, dropped: 0 }
+  const kept =
+    preferred && bySource.has(preferred)
+      ? preferred
+      : sources.reduce((a, b) => (bySource.get(b) > bySource.get(a) ? b : a))
+  const out = rows.filter((r) => (r.source ?? '') === kept)
+  return { rows: out, sources, kept, dropped: rows.length - out.length }
 }
 
 /** CSV do exiftool (`exiftool -csv -n ...`) → registos com coordenadas. */
@@ -120,6 +147,7 @@ export async function readPhotosFromDir(dir) {
         FocalLength: tags.FocalLength,
         ExifImageWidth: tags.ExifImageWidth ?? tags.ImageWidth,
         GimbalPitchDegree: tags.GimbalPitchDegree ?? tags['drone-dji:GimbalPitchDegree'],
+        ImageSource: tags.ImageSource ?? tags['drone-dji:ImageSource'],
       }),
     )
   }

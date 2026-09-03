@@ -26,6 +26,10 @@
  *  - lidar geometry: fov (deg, nominal), effectiveFov (deg, working cut),
  *                    maxPrr (pts/s) — used from T1.2 on
  *  - minTriggerS:  minimum interval between camera triggers (s)
+ *  - imageSource:  optional DJI XMP `ImageSource` value written in the EXIF of
+ *                  this camera's photos (WideCamera, InfraredCamera, ...); the
+ *                  planned-vs-measured tool uses it to keep only this camera's
+ *                  files when the aircraft writes one file per lens
  *  - maxAglM:      optional operational AGL ceiling (warning, T1.3)
  *  - wpml:         { payloadEnumValue, payloadSubEnumValue,
  *                    payloadPositionIndex } (confirm against DJI WPML docs
@@ -120,39 +124,44 @@ export const PAYLOADS = {
   },
 
   M4T_WIDE: {
-    // DJI Matrice 4 series spec sheet (dji.com/matrice-4-series/specs, checked
-    // 2026-09-03): wide camera 1/1.3" CMOS, 48 MP effective, FOV 82 deg,
-    // 24 mm equivalent, f/1.7, photo 8064x6048 (48 MP) or 4032x3024 (12 MP).
-    // Sensor size from the pixel pitch: 8064 x 1.2 um = 9.7 mm by
-    // 6048 x 1.2 um = 7.3 mm (diagonal 12.1 mm, crop factor 3.57). Real focal
-    // 6.7 mm is the value DJI writes in the EXIF of the 1/1.3" 24 mm-eq
-    // cameras (24 / 3.57 = 6.7); it gives a diagonal FOV of 84 deg, the
-    // published 82 deg being the dewarped image. GSD at 100 m: 1.8 cm/px.
-    // T0.1: confirm FocalLength / image size against the EXIF of an original
-    // JPG from the aircraft (a screen copy loses the EXIF).
+    // Confirmed against the EXIF of an original photo from the aircraft
+    // (DJI_20260729123329_0001_V.JPG, firmware 10.00.21.17, 2026-07-29):
+    // FocalLength 6.72 mm, FocalLengthIn35mmFormat 24, f/1.7, image
+    // 4032x3024, XMP ImageSource "WideCamera". Spec sheet (dji.com/
+    // matrice-4-series/specs): 1/1.3" CMOS, 48 MP effective, FOV 82 deg,
+    // photo 8064x6048 (48 MP) or 4032x3024 (12 MP). Sensor size from the
+    // pixel pitch: 4032 x 2.4 um = 9.7 mm by 3024 x 2.4 um = 7.3 mm
+    // (diagonal 12.1 mm, crop factor 3.57); the 6.72 mm focal gives a
+    // diagonal FOV of 84 deg, the published 82 deg being the dewarped image.
+    // Image size is the 12 MP mode the aircraft actually wrote — the mode
+    // Pilot 2 uses unless 48 MP is selected; GSD at 100 m: 3.6 cm/px
+    // (1.8 cm/px in 48 MP mode, set the custom sensor to 8064 px for that).
     id: 'M4T_WIDE',
     label: 'Wide RGB',
-    desc: 'Wide RGB — CMOS 1/1.3" 48 MP',
+    desc: 'Wide RGB — CMOS 1/1.3" (12 MP)',
     payloadLabel: 'W24',
     type: 'camera',
+    imageSource: 'WideCamera',
     sensorWidth: 9.7,
     sensorHeight: 7.3,
-    focalLength: 6.7,
-    imageWidth: 8064,
-    imageHeight: 6048,
+    focalLength: 6.72,
+    imageWidth: 4032,
+    imageHeight: 3024,
     minTriggerS: 0.7,
     wpml: { payloadEnumValue: 89, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
   },
 
   M4T_THERMAL: {
-    // Same spec sheet: uncooled VOx microbolometer, 640x512, pixel pitch
-    // 12 um, DFOV 45 deg, 53 mm equivalent, f/1.0. Sensor size from the
-    // pitch: 640 x 12 um = 7.68 mm by 512 x 12 um = 6.14 mm (diagonal
-    // 9.83 mm). Real focal from the DFOV: (9.83 / 2) / tan(22.5 deg) =
-    // 11.9 mm (the 53 mm equivalent gives 12.0 mm). GSD at 100 m: 10 cm/px.
-    // The R-JPEG the aircraft writes is 1280x1024 (super-resolution mode,
-    // as in the sample thermal image); the image size here is the physical
-    // detector, so the GSD is the one the microbolometer actually resolves.
+    // Confirmed against the EXIF of the paired R-JPEG
+    // (DJI_20260729123329_0001_T.JPG, same flight): FocalLength 12 mm,
+    // FocalLengthIn35mmFormat 52, f/1.0, image 1280x1024, XPKeywords
+    // "irsr;rjpeg" (infrared super-resolution), XMP ImageSource
+    // "InfraredCamera". Spec sheet: uncooled VOx microbolometer, 640x512,
+    // pixel pitch 12 um, DFOV 45 deg. Sensor size from the pitch: 640 x
+    // 12 um = 7.68 mm by 512 x 12 um = 6.14 mm (diagonal 9.83 mm; with the
+    // 12 mm focal the DFOV is 44.5 deg). The image size here is the
+    // physical detector, so the GSD (10 cm/px at 100 m) is the one the
+    // microbolometer actually resolves, not the upscaled 1280x1024 file.
     // Same gimbal and WPML payload enum as the wide camera; which lens takes
     // the photo is chosen in Pilot 2 (imageFormat), not in this export.
     id: 'M4T_THERMAL',
@@ -160,9 +169,10 @@ export const PAYLOADS = {
     desc: 'Thermal — VOx 640×512, 12 µm, DFOV 45°',
     payloadLabel: 'IR',
     type: 'camera',
+    imageSource: 'InfraredCamera',
     sensorWidth: 7.68,
     sensorHeight: 6.14,
-    focalLength: 11.9,
+    focalLength: 12,
     imageWidth: 640,
     imageHeight: 512,
     // Interval shooting on the thermal camera is slower than on the RGB

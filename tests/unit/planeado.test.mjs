@@ -5,7 +5,12 @@
  */
 import { describe, expect, test } from 'vitest'
 import { predictFromProject, compare, renderMarkdown } from '../../tools/lib/planeado.mjs'
-import { measurePhotos, parsePhotoCsv, parseExifDate } from '../../tools/lib/fotos.mjs'
+import {
+  measurePhotos,
+  parsePhotoCsv,
+  parseExifDate,
+  selectPhotoSource,
+} from '../../tools/lib/fotos.mjs'
 import { lasDensity } from '../../tools/lib/las.mjs'
 import { measureFlightLog, parseFlightLog } from '../../tools/lib/voo.mjs'
 import { writeLas } from '../lib/las.mjs'
@@ -148,5 +153,42 @@ describe('planeado-vs-medido', () => {
     expect(log.maxDistM).toBeCloseTo(120, 0)
     const row = compare(pred, { log }).find((r) => r.key === 'logSpeed')
     expect(row.deviationPct).toBeCloseTo(0, 5)
+  })
+})
+
+describe('fotos: aeronaves com um ficheiro por lente (M4T)', () => {
+  const pair = (i) => [
+    { file: `DJI_${i}_V.JPG`, lat: 38.7, lon: -9.2 + i * 1e-4, source: 'WideCamera' },
+    { file: `DJI_${i}_T.JPG`, lat: 38.7, lon: -9.2 + i * 1e-4, source: 'InfraredCamera' },
+  ]
+  const rows = [0, 1, 2, 3].flatMap(pair)
+
+  test('fica com a camara do payload planeado e conta as postas de parte', () => {
+    const s = selectPhotoSource(rows, 'InfraredCamera')
+    expect(s.kept).toBe('InfraredCamera')
+    expect(s.rows).toHaveLength(4)
+    expect(s.dropped).toBe(4)
+    expect(s.sources.sort()).toEqual(['InfraredCamera', 'WideCamera'])
+  })
+  test('sem preferencia (ou preferencia ausente) fica com a mais numerosa', () => {
+    const extra = [...rows, { file: 'x', lat: 38.7, lon: -9.2, source: 'WideCamera' }]
+    expect(selectPhotoSource(extra, null).kept).toBe('WideCamera')
+    expect(selectPhotoSource(extra, 'ZoomCamera').kept).toBe('WideCamera')
+  })
+  test('uma so origem, ou nenhuma, passa intacta', () => {
+    const only = rows.filter((r) => r.source === 'WideCamera')
+    expect(selectPhotoSource(only, 'InfraredCamera').rows).toBe(only)
+    const none = only.map(({ source: _s, ...r }) => r)
+    expect(selectPhotoSource(none, 'WideCamera')).toEqual({
+      rows: none,
+      sources: [],
+      kept: null,
+      dropped: 0,
+    })
+  })
+  test('o CSV do exiftool traz o ImageSource para o registo normalizado', () => {
+    const csv =
+      'SourceFile,GPSLatitude,GPSLongitude,ImageSource\nDJI_1_T.JPG,38.7,-9.2,InfraredCamera\n'
+    expect(parsePhotoCsv(csv)[0].source).toBe('InfraredCamera')
   })
 })
