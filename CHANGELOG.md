@@ -6,7 +6,13 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
-(nada ainda)
+### Alterado
+
+- Perfil **M4T** com as ópticas reais da ficha técnica da série Matrice 4: grande-angular 1/1.3" 48 MP (9,7 × 7,3 mm, focal real 6,7 mm, 8064 × 6048) em vez dos valores provisórios da classe M3E. A pegada e o GSD do M4T passam a ser fiáveis (≈1,8 cm/px a 100 m).
+
+### Adicionado
+
+- Payload **térmico do M4T** (`M4T_THERMAL`): VOx 640 × 512, 12 µm (7,68 × 6,14 mm), focal 11,9 mm a partir do DFOV de 45°, GSD calculado sobre o detector físico (≈10 cm/px a 100 m) e não sobre o R-JPEG 1280 × 1024 de super-resolução. O M4T passa a mostrar o selector de payload; projectos antigos continuam a carregar com a grande-angular.
 
 ## 1.1.0 — 2026-09-02
 

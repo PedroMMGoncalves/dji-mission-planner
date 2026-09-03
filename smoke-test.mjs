@@ -124,14 +124,16 @@ for (const p of Object.values(PAYLOADS)) {
     check(`payload ${p.id}: sensorWidth 4-60 mm`, inRange(p.sensorWidth, 4, 60), p.sensorWidth)
     check(`payload ${p.id}: sensorHeight 3-45 mm`, inRange(p.sensorHeight, 3, 45), p.sensorHeight)
     check(`payload ${p.id}: focalLength 2-100 mm`, inRange(p.focalLength, 2, 100), p.focalLength)
+    // 320 px admite detectores termicos (320x256, 640x512); as camaras RGB
+    // ficam muito acima.
     check(
-      `payload ${p.id}: imageWidth 1000-20000 px`,
-      inRange(p.imageWidth, 1000, 20000),
+      `payload ${p.id}: imageWidth 320-20000 px`,
+      inRange(p.imageWidth, 320, 20000),
       p.imageWidth,
     )
     check(
-      `payload ${p.id}: imageHeight 1000-20000 px`,
-      inRange(p.imageHeight, 1000, 20000),
+      `payload ${p.id}: imageHeight 320-20000 px`,
+      inRange(p.imageHeight, 320, 20000),
       p.imageHeight,
     )
   } else if (p.type === 'lidar') {

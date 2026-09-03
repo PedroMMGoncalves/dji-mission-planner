@@ -65,7 +65,9 @@ export const AIRCRAFT = {
     },
     maxClimbMS: 6,
     wpml: { droneEnumValue: 99, droneSubEnumValue: 1 },
-    payloads: ['M4T_WIDE'],
+    // Wide RGB and the thermal camera share the same gimbal (payload enum 89);
+    // the medium tele and tele cameras are not modelled (not used for mapping).
+    payloads: ['M4T_WIDE', 'M4T_THERMAL'],
   },
 
   M300RTK: {
@@ -118,21 +120,54 @@ export const PAYLOADS = {
   },
 
   M4T_WIDE: {
-    // T0.1 STILL OPEN: the optics below are M3E-class placeholders. The real
-    // M4T wide camera is a 1/1.3" 48 MP unit (DJI: FOV 82 deg, 8064x6048,
-    // 24 mm equivalent) — values will be replaced from the EXIF of a real
-    // photo. Until then footprint/GSD for M4T are NOT to be trusted.
+    // DJI Matrice 4 series spec sheet (dji.com/matrice-4-series/specs, checked
+    // 2026-09-03): wide camera 1/1.3" CMOS, 48 MP effective, FOV 82 deg,
+    // 24 mm equivalent, f/1.7, photo 8064x6048 (48 MP) or 4032x3024 (12 MP).
+    // Sensor size from the pixel pitch: 8064 x 1.2 um = 9.7 mm by
+    // 6048 x 1.2 um = 7.3 mm (diagonal 12.1 mm, crop factor 3.57). Real focal
+    // 6.7 mm is the value DJI writes in the EXIF of the 1/1.3" 24 mm-eq
+    // cameras (24 / 3.57 = 6.7); it gives a diagonal FOV of 84 deg, the
+    // published 82 deg being the dewarped image. GSD at 100 m: 1.8 cm/px.
+    // T0.1: confirm FocalLength / image size against the EXIF of an original
+    // JPG from the aircraft (a screen copy loses the EXIF).
     id: 'M4T_WIDE',
     label: 'Wide RGB',
-    desc: 'Wide RGB — CMOS 4/3"',
-    payloadLabel: 'XT24',
+    desc: 'Wide RGB — CMOS 1/1.3" 48 MP',
+    payloadLabel: 'W24',
     type: 'camera',
-    sensorWidth: 17.3,
-    sensorHeight: 13.0,
-    focalLength: 12.2,
-    imageWidth: 5280,
-    imageHeight: 3956,
+    sensorWidth: 9.7,
+    sensorHeight: 7.3,
+    focalLength: 6.7,
+    imageWidth: 8064,
+    imageHeight: 6048,
     minTriggerS: 0.7,
+    wpml: { payloadEnumValue: 89, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+  },
+
+  M4T_THERMAL: {
+    // Same spec sheet: uncooled VOx microbolometer, 640x512, pixel pitch
+    // 12 um, DFOV 45 deg, 53 mm equivalent, f/1.0. Sensor size from the
+    // pitch: 640 x 12 um = 7.68 mm by 512 x 12 um = 6.14 mm (diagonal
+    // 9.83 mm). Real focal from the DFOV: (9.83 / 2) / tan(22.5 deg) =
+    // 11.9 mm (the 53 mm equivalent gives 12.0 mm). GSD at 100 m: 10 cm/px.
+    // The R-JPEG the aircraft writes is 1280x1024 (super-resolution mode,
+    // as in the sample thermal image); the image size here is the physical
+    // detector, so the GSD is the one the microbolometer actually resolves.
+    // Same gimbal and WPML payload enum as the wide camera; which lens takes
+    // the photo is chosen in Pilot 2 (imageFormat), not in this export.
+    id: 'M4T_THERMAL',
+    label: 'Thermal IR',
+    desc: 'Thermal — VOx 640×512, 12 µm, DFOV 45°',
+    payloadLabel: 'IR',
+    type: 'camera',
+    sensorWidth: 7.68,
+    sensorHeight: 6.14,
+    focalLength: 11.9,
+    imageWidth: 640,
+    imageHeight: 512,
+    // Interval shooting on the thermal camera is slower than on the RGB
+    // ones; 2 s is a conservative figure until measured in the field.
+    minTriggerS: 2,
     wpml: { payloadEnumValue: 89, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
   },
 
