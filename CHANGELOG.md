@@ -6,6 +6,33 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Corrigido
+
+- **Comprimento da rota com seguimento de terreno**: o motor somava só a
+  projecção horizontal, enquanto o `wpml:distance` do Pilot 2 é o
+  comprimento 3D. Em terreno acidentado a rota saía curta até 1,8 %, e o
+  erro era sempre optimista — menos rota, menos tempo, menos baterias. A
+  geometria exportada não muda.
+- **Custo de viragem** proporcional à velocidade (`v/1,7`, travar e voltar
+  a acelerar) em vez dos 3 s fixos, que só estavam certos perto dos 5 m/s.
+  Ajustado ao `wpml:duration` de 72 missões nadir reais do Pilot 2: erro
+  RMS de 1,9 % contra 5,2 %. Alinha-nos com a **previsão** do Pilot 2, não
+  com voo medido.
+- `TURN_TIME_S` deixa de existir em duplicado (havia uma cópia local em
+  `corridor.js`) e a contagem de inversões fica em n−1 nos dois motores: a
+  área contava n.
+- **Enums WPML do M300**, corrigidos pelo que o comando real escreve:
+  payloads PSDK de terceiros passam de `65534` a `65535`, e a Zenmuse P1 de
+  `50/0` a `50/1`.
+- **Ensaio a seco** deixa de esgotar a memória: a perna LiDAR gerava 67
+  milhões de pontos sintéticos (~1,3 GB de LAS) sobre a área inteira de L1.
+  Passa a correr sobre uma cópia com a área reduzida, com a mesma densidade
+  prevista e um limite explícito de 4 milhões de pontos. O registo de voo
+  sintético passa a incluir as paragens nos topos de faixa que o modelo de
+  tempo cobra.
+- `.gitattributes` com `text=auto eol=lf`: um clone em Windows com
+  `core.autocrlf=true` punha quase todo o repositório fora do Prettier.
+
 ### Alterado
 
 - Perfil **M4T** com as ópticas reais, confirmadas contra o EXIF de fotografias originais da aeronave: grande-angular 1/1.3" (9,7 × 7,3 mm, focal real 6,72 mm, 4032 × 3024 no modo 12 MP que a aeronave escreve por omissão) em vez dos valores provisórios da classe M3E. A pegada e o GSD do M4T passam a ser fiáveis (≈3,6 cm/px a 100 m; metade em 48 MP, via sensor custom com 8064 px).

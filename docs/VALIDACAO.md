@@ -107,7 +107,47 @@ intervalo, sem fotos nas ligações longas (R2); cada bloco arranca da base
 | Aeronave | Payload | Pilot 2 | Firmware | KMZ aceite | Enums (drone/payload) | Alturas relativas | Grupos de disparo | Blocos | Observações |
 |---|---|---|---|---|---|---|---|---|---|
 | M3E | Wide RGB | | | | 77/66 | | | | |
-| M300 RTK | Mapper+ | | | | 60/65534 | | | | |
+| M300 RTK | Mapper+ | | | | 60/65535 | | | | |
+| M300 RTK | P1 | | | | 60/50/1 | | | | |
+
+### 5.1 O que os ficheiros do comando já provam
+
+Levantamento de 81 KMZ WPML exportados pelo DJI Pilot 2 num M300 RTK
+entre 2023-07 e 2026-07 (arquivo do LNEG). São ficheiros **escritos pelo
+comando**, não importados a partir desta aplicação: provam o que o
+Pilot 2 escreve, não o que aceita. A coluna «KMZ aceite» da matriz acima
+continua por preencher e só um voo a fecha.
+
+| Campo | Pilot 2 real (81 KMZ) | O que exportamos | |
+|---|---|---|---|
+| `droneEnumValue` | 60/0 (×81) | 60/0 | igual |
+| `payloadEnumValue` PSDK | 65535/0 (×66) | 65535/0 | corrigido a partir daqui |
+| `payloadEnumValue` P1 | 50/1 (×15) | 50/1 | corrigido a partir daqui |
+| `waypointHeadingMode` | followWayline (6447/6447) | followWayline | igual |
+| `heightMode` | relativeToStartPoint (EGM96) | relativeToStartPoint | subconjunto |
+| `templateType` | mapping2d (×81) | waypoint | por desenho |
+| `xmlns:wpml` | 1.0.3 (×81) | 1.0.2 | difere, ver §11 dos métodos |
+| `finishAction` | goHome (×80), noAction (×1) | — | não escrito |
+
+Duas verificações independentes do motor saíram do mesmo corpus, e estão
+aplicadas no código:
+
+- **Geodesia**: somando a rota de cada missão com a mesma função do motor
+  e comparando com o `wpml:distance` do ficheiro, o desvio mediano é
+  0,00 % em rotas de 859 m a 36,9 km e de 12 a 372 waypoints.
+- **Comprimento 3D e custo de viragem**: ver §16 dos métodos. O
+  desvio residual só aparecia nas missões com modelo de terreno
+  embarcado, e era a componente vertical que faltava somar.
+
+Nove missões do corpus são oblíquas (`smartObliqueEnable`), com 13 a
+110 s por faixa de sobrecusto de rotação de gimbal. **Não é o mesmo
+regime das nossas missões oblíquas**: o Pilot 2 roda o gimbal a cada
+ponto de disparo, enquanto a nossa exportação fixa o gimbal uma vez no
+waypoint 0 (mais um marcador quando a dupla grelha leva passagem nadir).
+Por isso não há aviso de preflight para gimbal oblíquo — seria um falso
+alarme; fica registado em §16 dos métodos como limite conhecido, e
+importar uma missão de oblíqua inteligente do comando dará sempre um
+tempo muito abaixo do real.
 
 ## 6. Round-trip semântico
 
