@@ -1,5 +1,5 @@
 import * as turf from '@turf/turf'
-import { computeFootprint, lineSpacing } from './geo.js'
+import { computeFootprint, lineSpacing, routeLengthM, turnCostS } from './geo.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
 /**
@@ -560,10 +560,7 @@ export function generateCorridorPlan(centreline, options) {
     if (perLine) perLine.push(waypoints.length - start)
   }
 
-  let pathLengthM = 0
-  for (let i = 1; i < waypoints.length; i++) {
-    pathLengthM += turf.distance(waypoints[i - 1], waypoints[i], { units: 'meters' })
-  }
+  const pathLengthM = routeLengthM(waypoints)
   let coveredM = 0
   for (const seg of lines) coveredM += polylineLength(seg.map(toM))
 
@@ -576,9 +573,8 @@ export function generateCorridorPlan(centreline, options) {
     )
   }
 
-  const TURN_TIME_S = 3
   const flightTimeS =
-    speed > 0 ? pathLengthM / speed + Math.max(0, lines.length - 1) * TURN_TIME_S : null
+    speed > 0 ? pathLengthM / speed + Math.max(0, lines.length - 1) * turnCostS(speed) : null
 
   return {
     lines,

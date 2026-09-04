@@ -22,7 +22,10 @@ import {
   resolveSensor,
   splitIntoBlocks,
   squareSideForBattery,
+  routeLengthM,
+  routeStats,
   tilePolygonWithSquares,
+  turnCostS,
   validateRing,
 } from './src/utils/geo.js'
 import {
@@ -950,14 +953,15 @@ if (plan90 && !plan90.error) {
 
 /* 8c-bis. Fits-check exclui a ligacao entre faixas (T0.5) */
 {
-  // Two 250 m lines with a 100 m hop between them; battery budget 60 s.
-  // Each line's own cost is 250/10 + 3 = 28 s, so both fit (56 <= 60 s).
-  // The old fits-check also charged the 10 s connection and split them
-  // into 2 blocks even though the second line opens no such connection.
+  // Two 240 m lines with a 100 m hop between them; battery budget 60 s.
+  // Each line's own cost is 240/10 + 10/1.7 = 29.9 s, so both fit
+  // (59.8 <= 60 s). The old fits-check also charged the 10 s connection and
+  // split them into 2 blocks even though the second line opens no such
+  // connection.
   const twoLines = {
     lines: [
-      [toLL(0, 0), toLL(250, 0)],
-      [toLL(350, 0), toLL(600, 0)],
+      [toLL(0, 0), toLL(240, 0)],
+      [toLL(340, 0), toLL(580, 0)],
     ],
   }
   const bb = splitIntoBlocks(twoLines, {
@@ -979,6 +983,42 @@ if (plan90 && !plan90.error) {
     'excesso limitado a uma ligacao (~10 s)',
     bb?.[0].timeS > 60 && bb?.[0].timeS <= 70.5,
     bb?.[0].timeS?.toFixed(1),
+  )
+}
+
+/* 8c-ter. Rota 3D e custo de viragem (T0.5-bis) */
+{
+  const p = (x, y, z) => (z == null ? toLL(x, y) : [...toLL(x, y), z])
+  check(
+    'rota sem alturas mede a horizontal',
+    Math.abs(routeLengthM([p(0, 0), p(300, 0)]) - 300) < 1,
+  )
+  check(
+    'rota com alturas mede a 3D (3-4-5)',
+    Math.abs(routeLengthM([p(0, 0, 0), p(300, 0, 400)]) - 500) < 2,
+    routeLengthM([p(0, 0, 0), p(300, 0, 400)]).toFixed(1),
+  )
+  check(
+    'alturas iguais nao alteram o comprimento',
+    Math.abs(routeLengthM([p(0, 0, 80), p(300, 0, 80)]) - routeLengthM([p(0, 0), p(300, 0)])) <
+      1e-9,
+  )
+  check('rota de um ponto mede zero', routeLengthM([p(0, 0)]) === 0 && routeLengthM([]) === 0)
+  check(
+    'custo de viragem proporcional a velocidade',
+    Math.abs(turnCostS(15) - 1.5 * turnCostS(10)) < 1e-9 && turnCostS(0) === 0,
+    turnCostS(10).toFixed(2),
+  )
+  const rs = routeStats([p(0, 0), p(400, 0)], { speed: 10, turns: 2 })
+  check(
+    'routeStats: percurso mais duas viragens',
+    Math.abs(rs.flightTimeS - (rs.pathLengthM / 10 + 2 * turnCostS(10))) < 1e-9,
+    rs.flightTimeS.toFixed(1),
+  )
+  check(
+    'routeStats sem velocidade: sem tempo, com comprimento',
+    routeStats([p(0, 0), p(400, 0)], { speed: 0 }).flightTimeS === null &&
+      routeStats([p(0, 0), p(400, 0)], { speed: 0 }).pathLengthM > 399,
   )
 }
 

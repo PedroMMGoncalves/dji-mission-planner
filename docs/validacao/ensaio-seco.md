@@ -20,8 +20,8 @@ Gerado em 2026-09-04 por tools/relatorio-validacao.mjs.
 | Faixas | 8 | 8 | 0.0 % | +-0 | ok |
 | Fotos | 192 | 192 | 0.0 % | +-5 % | ok |
 | Fotos dentro da area | 192 | 184 | -4.2 % | - | n/a |
-| Duracao (primeira a ultima foto) | 453 s | 428 s | -5.6 % | +-15 % | ok |
-| Duracao do voo (registo) | 453 s | 448 s | -1.2 % | +-15 % | ok |
+| Duracao (primeira a ultima foto) | 462 s | 428 s | -7.4 % | +-15 % | ok |
+| Duracao do voo (registo) | 462 s | 462 s | -0.1 % | +-15 % | ok |
 | Velocidade media em movimento | 8 m/s | 8 m/s | 0.0 % | +-10 % | ok |
 | Altura maxima acima da descolagem | 80 m | 80 m | 0.0 % | +-3 | ok |
 | Distancia maxima a base | - | 523 m | - | - | n/a |
@@ -35,7 +35,7 @@ Gerado em 2026-09-04 por tools/relatorio-validacao.mjs.
 |---|---:|---:|---:|---:|:---:|
 | Densidade de pontos (retorno unico) | 425 pts/m2 | 425 pts/m2 | -0.0 % | +-20 % | ok |
 | Densidade minima por celula | 425 pts/m2 | 424 pts/m2 | -0.2 % | +-30 % | ok |
-| Duracao do voo (registo) | 44.79 s | 44 s | -1.8 % | +-15 % | ok |
+| Duracao do voo (registo) | 41.73 s | 41 s | -1.8 % | +-15 % | ok |
 | Velocidade media em movimento | 5 m/s | 5 m/s | 0.0 % | +-10 % | ok |
 | Altura maxima acima da descolagem | 80 m | 80 m | 0.0 % | +-0.5 | ok |
 | Distancia maxima a base | - | 139 m | - | - | n/a |

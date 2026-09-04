@@ -23,8 +23,9 @@ const MIN_SEGMENT_M = 1 // segmentos mais curtos que isto são descartados
  * 1. TEMPO DE VIRAGEM medido (s/inversão): mediana de
  *    (tempo entre o fim de uma faixa e o início da seguinte) − (distância
  *    da ligação ÷ velocidade), sobre missões de grelha reais.
- *    → substitui TURN_TIME_S abaixo (afecta tempo estimado, blocos por
- *      bateria e squareSideForBattery).
+ *    → substitui TURN_ACCEL_MS2 abaixo (afecta tempo estimado, blocos por
+ *      bateria e squareSideForBattery). PRÉ-CALIBRADO contra o DJI Pilot 2,
+ *      não contra voo medido: ver a nota de turnCostS.
  *
  * 2. AUTONOMIA REAL por combinação aeronave+payload (min): tempo de motor
  *    ligado até à reserva de regresso, por combinação (M300+P1, M300+
@@ -45,7 +46,61 @@ const MIN_SEGMENT_M = 1 // segmentos mais curtos que isto são descartados
  * Registar no commit de calibração: datas dos voos, combinação, nº de
  * faixas analisadas e os três valores com dispersão.
  */
-const TURN_TIME_S = 3 // custo médio de cada inversão de sentido (a calibrar, ver acima)
+/*
+ * CUSTO DE VIRAGEM. Uma inversão de sentido no topo de uma faixa custa o
+ * tempo de travar até zero e voltar à velocidade de cruzeiro, e portanto
+ * cresce com a velocidade — não é a constante de 3 s que aqui esteve até
+ * agora, certa apenas perto dos 5 m/s e optimista acima disso.
+ *
+ * O valor da aceleração vem de 72 missões nadir reais exportadas pelo DJI
+ * Pilot 2 (M300 RTK, ~1344 faixas, 2023-2026): ajustando
+ * `duração = L₃D/v + n·(v/a)` ao `wpml:duration` que o Pilot 2 escreve,
+ * a = 1,71 m/s², com erro RMS de 1,9 % contra 5,2 % do modelo constante.
+ * O ajuste é estável (a entre 1,61 e 1,75 m/s²) em 20 variantes do critério
+ * que conta as faixas.
+ *
+ * ATENÇÃO: isto alinha-nos com a PREVISÃO do Pilot 2, não com voo medido —
+ * o `wpml:duration` é o modelo da DJI, não um cronómetro. Continua a valer
+ * a calibração 1 acima, com logs reais.
+ */
+export const TURN_ACCEL_MS2 = 1.7
+
+/** Custo de uma inversão de sentido (s) à velocidade `speed` (m/s). */
+export function turnCostS(speed) {
+  return speed > 0 ? speed / TURN_ACCEL_MS2 : 0
+}
+
+/**
+ * Comprimento de uma rota (m). Os waypoints são `[lon, lat]` ou
+ * `[lon, lat, alturaRelativa]`; quando as alturas existem (seguimento de
+ * terreno) o comprimento é o 3D, que é o que o Pilot 2 escreve em
+ * `wpml:distance`. Só com a horizontal a rota sai curta até ~2 % em terreno
+ * acidentado, e o erro é sempre optimista: subestima tempo e baterias.
+ */
+export function routeLengthM(waypoints) {
+  let total = 0
+  for (let i = 1; i < waypoints.length; i++) {
+    const a = waypoints[i - 1]
+    const b = waypoints[i]
+    const d = turf.distance([a[0], a[1]], [b[0], b[1]], { units: 'meters' })
+    const dz = Number.isFinite(a[2]) && Number.isFinite(b[2]) ? b[2] - a[2] : 0
+    total += dz === 0 ? d : Math.hypot(d, dz)
+  }
+  return total
+}
+
+/**
+ * Comprimento e tempo de uma rota, com `turns` inversões de sentido. Uma
+ * serpentina de n faixas tem n−1 inversões (a primeira faixa não tem
+ * viragem antes).
+ */
+export function routeStats(waypoints, { speed, turns = 0 }) {
+  const pathLengthM = routeLengthM(waypoints)
+  return {
+    pathLengthM,
+    flightTimeS: speed > 0 ? pathLengthM / speed + Math.max(0, turns) * turnCostS(speed) : null,
+  }
+}
 
 /** Fecha um anel aberto e devolve um Feature<Polygon> do Turf. */
 export function ringToPolygon(ring, holes = null) {
@@ -240,7 +295,7 @@ const MAX_TILES = 400 // trava contra mosaicos com células minúsculas
  * Modelo de tempo para um quadrado de lado L com espaçamento s e velocidade v:
  *   nº de faixas   n ≈ L/s + 1
  *   distância      ≈ n·L (faixas) + (n−1)·s (ligações) ≈ L²/s + L + …
- *   tempo          ≈ (L²/s + 2L)/v + n·TURN_TIME_S
+ *   tempo          ≈ (L²/s + 2L)/v + n·turnCostS(v)
  * Igualando ao tempo útil T = bateria × (1 − reserva) − trânsito e resolvendo
  * o polinómio quadrático em L:  (1/(s·v))·L² + (1/v + 2/v + T_turn/s)·L … → L.
  * O resultado é limitado por `maxSideM` (ex.: 500 m para conforto VLOS) e
@@ -261,9 +316,10 @@ export function squareSideForBattery({
     60,
     (batteryMin * 60 * (1 - reservePct / 100) - transitS) / Math.max(1, passes),
   )
+  const turnS = turnCostS(v)
   const a = 1 / (s * v)
-  const b = 2 / v + TURN_TIME_S / s
-  const c = TURN_TIME_S - T
+  const b = 2 / v + turnS / s
+  const c = turnS - T
   const L = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a)
   const capped = Math.min(L, Math.max(100, maxSideM))
   return Math.max(50, Math.floor(capped / 10) * 10)
@@ -783,12 +839,10 @@ export function generateFlightLines(ring, options) {
   // B: no modo foto-por-waypoint, fotos = marcadores takePhoto
   if (perWaypoint) photoCount = perWaypoint.reduce((n) => n + 1, 0)
 
-  let pathLengthM = 0
-  for (let i = 1; i < waypoints.length; i++) {
-    pathLengthM += turf.distance(waypoints[i - 1], waypoints[i], { units: 'meters' })
-  }
-
-  const flightTimeS = speed > 0 ? pathLengthM / speed + lines.length * TURN_TIME_S : null
+  const { pathLengthM, flightTimeS } = routeStats(waypoints, {
+    speed,
+    turns: lines.length - 1,
+  })
 
   return {
     area,
@@ -1128,7 +1182,7 @@ export function splitIntoBlocks(plan, options) {
     // extra hop (~spacing/v) is covered by the battery reserve. cur.cost does
     // accumulate flown connections, so the budget overshoot is bounded by one
     // connection per block.
-    const lineCost = mode === 'area' ? lenM * spacingM : lenM / v + TURN_TIME_S
+    const lineCost = mode === 'area' ? lenM * spacingM : lenM / v + turnCostS(v)
 
     if (!cur) openBlock(seg[0], li)
     const fits =
@@ -1143,7 +1197,7 @@ export function splitIntoBlocks(plan, options) {
     cur.cost +=
       mode === 'area'
         ? lenM * spacingM
-        : lenM / v + TURN_TIME_S + (cur.lines.length > 1 ? connM / v : 0)
+        : lenM / v + turnCostS(v) + (cur.lines.length > 1 ? connM / v : 0)
     cur.areaM2 += lenM * spacingM
     cur.lengthM += lenM
     prevEnd = seg[1]
@@ -1172,10 +1226,7 @@ export function splitIntoBlocks(plan, options) {
     } else {
       b.lines.forEach((seg) => waypoints.push(seg[0], seg[1]))
     }
-    let pathM = 0
-    for (let k = 1; k < waypoints.length; k++) {
-      pathM += turf.distance(waypoints[k - 1], waypoints[k], { units: 'meters' })
-    }
+    const pathM = routeLengthM(waypoints)
     return {
       id: i + 1,
       lines: b.lines,
@@ -1183,7 +1234,7 @@ export function splitIntoBlocks(plan, options) {
       areaHa: b.areaM2 / 10000,
       lengthM: b.lengthM,
       transitS: b.transitS,
-      timeS: pathM / v + b.lines.length * TURN_TIME_S + b.transitS,
+      timeS: pathM / v + Math.max(0, b.lines.length - 1) * turnCostS(v) + b.transitS,
       ...extra,
     }
   })

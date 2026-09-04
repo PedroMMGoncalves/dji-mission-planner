@@ -518,7 +518,7 @@ relativas à descolagem.
 | Metros por grau de latitude / longitude | 110574 / 111320·cos(lat) | units.js |
 | Faixas máximas por plano | 2500 | geo.js |
 | Troço mínimo de faixa | 1 m | geo.js |
-| Tempo por viragem | 3 s (a calibrar) | geo.js, corridor.js |
+| Aceleração de viragem | 1,7 m/s² → custo `v/1,7` por inversão | geo.js |
 | Células máximas do mosaico | 400 | geo.js |
 | Lado mínimo do mosaico | 10 m | geo.js |
 | Lado por bateria: tecto / piso / arredondamento | 500 m (≥100) / 50 m / 10 m | geo.js |
@@ -542,8 +542,13 @@ relativas à descolagem.
 
 ## 16. O que não é modelado e calibração prevista
 
-Não modelado, em resumo: dinâmica do voo (aceleração, raio de viragem,
-vento); atitude da aeronave (rolamento/arfagem) na pegada; obstáculos
+Não modelado, em resumo: dinâmica do voo (raio de viragem, vento — a
+aceleração entra apenas no custo de viragem); rotações de gimbal, que nas
+missões oblíquas do Pilot 2 custam entre 13 e 110 s por faixa, uma ordem
+de grandeza acima de uma inversão de sentido, pelo que o tempo de uma
+missão oblíqua pode ser o dobro do previsto; o comprimento 3D por bloco,
+que continua horizontal quando a missão é dividida com seguimento de
+terreno; atitude da aeronave (rolamento/arfagem) na pegada; obstáculos
 fora da folga da fachada; conversão entre datums verticais (só a
 declaração); retornos múltiplos e padrão de varrimento do LiDAR; a
 distribuição estatística dos erros (a incerteza é propagada por
@@ -554,12 +559,22 @@ ponto de inserção único no código para cada grandeza:
 
 1. tempo de viragem medido = mediana de (tempo entre o fim de uma faixa e
    o início da seguinte − distância da ligação / v), a substituir
-   `TURN_TIME_S`;
+   `TURN_ACCEL_MS2`. **Pré-calibrado**, não calibrado: o valor de
+   1,7 m/s² vem do ajuste de `L₃D/v + n·(v/a)` ao `wpml:duration` de 72
+   missões nadir reais exportadas pelo DJI Pilot 2 (M300 RTK, ~1344
+   faixas, 2023–2026), com erro RMS de 1,9 % contra 5,2 % do modelo de
+   3 s constantes, e estável (a entre 1,61 e 1,75 m/s²) em 20 variantes
+   do critério que conta as faixas. Isso alinha-nos com a **previsão** do
+   Pilot 2, não com voo medido: o `wpml:duration` é o modelo da DJI, não
+   um cronómetro;
 2. autonomia real por combinação aeronave + payload, pela interface
    (`batteryByCombo`) ou corrigindo `batteryMin` no catálogo;
 3. velocidade efectiva em faixa = distância voada em faixa / tempo em
    faixa; se o rácio for estável e < 1, entra como factor multiplicativo
-   nos dois modelos de tempo.
+   nos dois modelos de tempo. Ajustado sobre as mesmas 72 missões do
+   Pilot 2 o factor dá 1,02 — indistinguível de 1 e do lado errado para
+   ser uma penalização —, pelo que **fica em 1,0** enquanto não houver
+   voo medido que mostre o contrário.
 
 A ferramenta `tools/planeado-vs-medido.mjs` (ver `README`) mede a partir
 das fotos, da nuvem LAS e do registo de voo as grandezas destas secções e

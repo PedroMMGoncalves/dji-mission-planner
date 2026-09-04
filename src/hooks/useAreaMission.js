@@ -17,6 +17,7 @@ import {
   exportSimpleKML,
   exportWPMLKmz,
 } from '../utils/exporters.js'
+import { routeStats } from '../utils/geo.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from '../utils/gcp.js'
 import { DEFAULT_GCP_CONFIG } from '../mission/defaults.js'
 
@@ -157,6 +158,22 @@ export function useAreaMission({
     params.altitude,
   ])
 
+  // Com seguimento de terreno os waypoints levam altura e a rota real e a
+  // 3D — e e essa que o Pilot 2 escreve em `wpml:distance`. Sem esta
+  // correccao o comprimento sai curto ate ~2 % em terreno acidentado, e o
+  // erro e sempre optimista: menos rota, menos tempo, menos baterias. A
+  // geometria nao muda; so as estatisticas mostradas e usadas no preflight.
+  const planRoute = useMemo(() => {
+    const wps = terrainResult && !terrainResult.error ? terrainResult.waypoints : null
+    if (!planOk || !wps?.length) return plan
+    const { pathLengthM, flightTimeS } = routeStats(wps, {
+      speed,
+      turns: planOk.lines.length - 1,
+    })
+    return { ...planOk, stats: { ...planOk.stats, pathLengthM, flightTimeS, path3D: true } }
+  }, [plan, planOk, terrainResult, speed])
+  const planRouteOk = planRoute && !planRoute.error ? planRoute : null
+
   /* --------------------------- Exportação ---------------------------- */
   const safeName = missionName.trim().replace(/[^\w-]+/g, '-') || 'missao'
   const canExportKML = Boolean(ring && validation.valid)
@@ -233,8 +250,8 @@ export function useAreaMission({
     gcpConfig,
     setGcpConfig,
     photoMode,
-    plan,
-    planOk,
+    plan: planRoute,
+    planOk: planRouteOk,
     blocks,
     waypointWarn,
     gcpAutoCount,
