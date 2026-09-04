@@ -1,0 +1,18 @@
+# Normalizacao de fim de linha: o repositorio guarda LF e o checkout usa LF
+# em qualquer sistema. Sem isto, um clone em Windows com core.autocrlf=true
+# escreve CRLF e o `npm run format:check` falha em quase todos os ficheiros.
+* text=auto eol=lf
+
+# Binarios: nunca converter.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.kmz binary
+*.las binary
+*.laz binary
+*.tif binary
+*.tiff binary
