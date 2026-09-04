@@ -437,8 +437,14 @@ isolados são retirados dos textos. Blocos: um KMZ por bloco
 disparo locais ao bloco.
 
 Enums de aeronave e payload (`src/data/drones.js`) vêm da documentação
-DJI (`dji-sdk/Cloud-API-Doc`); `payloadEnumValue 65534` é o "PSDK Payload
-Device" documentado para payloads de terceiros. Nenhum enum foi ainda
+DJI (`dji-sdk/Cloud-API-Doc`), excepto os dois do M300 que 81 KMZ reais
+exportados pelo Pilot 2 (M300 RTK, 2023–2026) contradizem: os payloads
+PSDK de terceiros aparecem sempre como `65535/0`, e não como o `65534`
+("PSDK Payload Device") da tabela, e o P1 como `50/1` e não `50/0`. Esses
+ficheiros declaram ainda o namespace `wpmz/1.0.3`, enquanto a exportação
+escreve `1.0.2` — observação registada, sem alteração, por não haver
+evidência de que o cabeçalho 1.0.3 seja aceite com os elementos que
+escrevemos, nem de que o 1.0.2 seja recusado. Nenhum enum foi ainda
 testado num comando real (ver `README`).
 
 ## 12. Datums verticais tal como estão implementados

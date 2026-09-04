@@ -182,6 +182,8 @@ export const PAYLOADS = {
   },
 
   P1: {
+    // payloadSubEnumValue 1: 15 real KMZ exported by Pilot 2 with the P1 on
+    // an M300 all write 50/1, not the 50/0 shipped before.
     id: 'P1',
     label: 'Zenmuse P1',
     desc: 'Zenmuse P1 — Full Frame 35 mm',
@@ -193,15 +195,18 @@ export const PAYLOADS = {
     imageWidth: 8192,
     imageHeight: 5460,
     minTriggerS: 0.7,
-    wpml: { payloadEnumValue: 50, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+    wpml: { payloadEnumValue: 50, payloadSubEnumValue: 1, payloadPositionIndex: 0 },
   },
 
   MAPPER_PLUS: {
     // YellowScan Mapper+ (Livox AVIA) on the M300 Skyport mount.
     // Source: yellowscan.com/products/mapper-plus (checked 2026-08-18):
     // FOV 70.4 deg nominal, 240 kHz PRR (single return), 100 m max AGL.
-    // payloadEnumValue 65534 = "PSDK Payload Device", the documented enum
-    // for third-party payloads (DJI WPML common-element table).
+    // payloadEnumValue 65535: the DJI WPML common-element table documents
+    // 65534 as "PSDK Payload Device", but 66 real KMZ exported by Pilot 2
+    // on this very aircraft (M300 RTK, 2023-2026, third-party payloads on
+    // the Skyport mount) all write 65535/0. Observed device behaviour wins
+    // over the table; still to be confirmed by importing one of our KMZ.
     id: 'MAPPER_PLUS',
     label: 'YellowScan Mapper+',
     desc: 'YellowScan Mapper+ — LiDAR Livox AVIA',
@@ -211,7 +216,7 @@ export const PAYLOADS = {
     effectiveFov: null, // working cut set in the UI; null = fly the nominal
     maxPrr: 240000, // pts/s, single-return figure (T2.1 density estimator)
     maxAglM: 100, // operational ceiling (T1.3 warning)
-    wpml: { payloadEnumValue: 65534, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+    wpml: { payloadEnumValue: 65535, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
   },
 
   CUSTOM: {

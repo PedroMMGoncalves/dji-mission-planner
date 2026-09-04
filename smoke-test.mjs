@@ -310,8 +310,8 @@ check(
     cut.across.toFixed(2),
   )
   check(
-    'Mapper+ enum PSDK 65534 e teto 100 m',
-    mp.wpml.payloadEnumValue === 65534 && mp.maxAglM === 100 && mp.maxPrr === 240000,
+    'Mapper+ enum PSDK 65535 e teto 100 m',
+    mp.wpml.payloadEnumValue === 65535 && mp.maxAglM === 100 && mp.maxPrr === 240000,
   )
   check(
     'par M300+Mapper+ migra intacto',
@@ -1760,8 +1760,8 @@ const wlMapper = buildWaylinesWPML({
   wpml: { droneEnumValue: 60, droneSubEnumValue: 0, ...PAYLOADS.MAPPER_PLUS.wpml },
 })
 check(
-  'waylines Mapper+: payloadEnumValue 65534',
-  wlMapper.includes('<wpml:payloadEnumValue>65534</wpml:payloadEnumValue>') &&
+  'waylines Mapper+: payloadEnumValue 65535',
+  wlMapper.includes('<wpml:payloadEnumValue>65535</wpml:payloadEnumValue>') &&
     wlMapper.includes('<wpml:droneEnumValue>60</wpml:droneEnumValue>'),
 )
 check(
@@ -3746,7 +3746,7 @@ check(
       waypoints: plan.waypoints,
       altitude: 100,
       speed: 8,
-      wpml: { droneEnumValue: 60, payloadEnumValue: 65534 },
+      wpml: { droneEnumValue: 60, payloadEnumValue: 65535 },
       photoIntervalM: 0,
       triggerMode: 'distance',
       sensorType: 'lidar',
