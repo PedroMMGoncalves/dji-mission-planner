@@ -1,8 +1,8 @@
 # Ensaio a seco da cadeia de validacao (dados sinteticos)
 
-Gerado em 2026-09-02 por tools/relatorio-validacao.mjs.
+Gerado em 2026-09-04 por tools/relatorio-validacao.mjs.
 
-> DADOS SINTETICOS gerados por tools/ensaio-seco.mjs a partir do proprio plano: prova que a medicao, a avaliacao e o relatorio funcionam, nao que a aeronave voa como previsto. Os resultados reais entram em docs/validacao/RELATORIO.md com os voos de Setembro de 2026.
+> DADOS SINTETICOS gerados por tools/ensaio-seco.mjs a partir do proprio plano: prova que a medicao, a avaliacao e o relatorio funcionam, nao que a aeronave voa como previsto. A perna LiDAR (L1e) e L1 com a area reduzida, para a nuvem sintetica caber em memoria; a densidade prevista e a mesma. Os resultados reais entram em docs/validacao/RELATORIO.md com os voos de Setembro de 2026.
 
 ## R1: R1-rectangulo-nadir
 
@@ -21,12 +21,12 @@ Gerado em 2026-09-02 por tools/relatorio-validacao.mjs.
 | Fotos | 192 | 192 | 0.0 % | +-5 % | ok |
 | Fotos dentro da area | 192 | 184 | -4.2 % | - | n/a |
 | Duracao (primeira a ultima foto) | 453 s | 428 s | -5.6 % | +-15 % | ok |
-| Duracao do voo (registo) | 453 s | 427 s | -5.8 % | +-15 % | ok |
+| Duracao do voo (registo) | 453 s | 448 s | -1.2 % | +-15 % | ok |
 | Velocidade media em movimento | 8 m/s | 8 m/s | 0.0 % | +-10 % | ok |
 | Altura maxima acima da descolagem | 80 m | 80 m | 0.0 % | +-3 | ok |
 | Distancia maxima a base | - | 523 m | - | - | n/a |
 
-## L1: L1-lidar-mapper
+## L1e: L1-lidar-mapper
 
 - Hardware: DJI Matrice 300 RTK + YellowScan Mapper+ (RTK)
 - Veredicto: **PASSA** (5 grandezas avaliadas, 0 fora de tolerancia)
@@ -35,16 +35,16 @@ Gerado em 2026-09-02 por tools/relatorio-validacao.mjs.
 |---|---:|---:|---:|---:|:---:|
 | Densidade de pontos (retorno unico) | 425 pts/m2 | 425 pts/m2 | -0.0 % | +-20 % | ok |
 | Densidade minima por celula | 425 pts/m2 | 424 pts/m2 | -0.2 % | +-30 % | ok |
-| Duracao do voo (registo) | 787 s | 764 s | -2.9 % | +-15 % | ok |
+| Duracao do voo (registo) | 44.79 s | 44 s | -1.8 % | +-15 % | ok |
 | Velocidade media em movimento | 5 m/s | 5 m/s | 0.0 % | +-10 % | ok |
 | Altura maxima acima da descolagem | 80 m | 80 m | 0.0 % | +-0.5 | ok |
-| Distancia maxima a base | - | 633 m | - | - | n/a |
+| Distancia maxima a base | - | 139 m | - | - | n/a |
 
 ## Veredicto global
 
 | Missao | Hardware | Avaliadas | Falhas | Veredicto |
 |---|---|---:|---:|:---:|
 | R1 | DJI Mavic 3 Enterprise (M3E) + Wide RGB | 12 | 0 | passa |
-| L1 | DJI Matrice 300 RTK + YellowScan Mapper+ (RTK) | 5 | 0 | passa |
+| L1e | DJI Matrice 300 RTK + YellowScan Mapper+ (RTK) | 5 | 0 | passa |
 
 **Todas as missoes dentro dos criterios.**
