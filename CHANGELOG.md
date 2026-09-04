@@ -6,6 +6,10 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+(nada ainda)
+
+## 1.2.0 — 2026-09-04
+
 ### Corrigido
 
 - **Comprimento da rota com seguimento de terreno**: o motor somava só a
