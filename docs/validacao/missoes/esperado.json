@@ -10,7 +10,13 @@
     "flightTimeS": 462,
     "pathLengthM": 3435,
     "densityPerM2": null,
-    "planError": null
+    "planError": null,
+    "tfWaypointCount": null,
+    "tfRelMinM": null,
+    "tfRelMaxM": null,
+    "tfClearanceMinM": null,
+    "tfCorridorRiseMaxM": null,
+    "tfCappedCount": null
   },
   "R2-U-terreno-dupla-grelha": {
     "hardware": "DJI Mavic 3 Enterprise (M3E) + Wide RGB",
@@ -23,7 +29,13 @@
     "flightTimeS": 3348,
     "pathLengthM": 24673,
     "densityPerM2": null,
-    "planError": null
+    "planError": null,
+    "tfWaypointCount": 196,
+    "tfRelMinM": 99,
+    "tfRelMaxM": 222.5,
+    "tfClearanceMinM": 89.6,
+    "tfCorridorRiseMaxM": 30.4,
+    "tfCappedCount": 48
   },
   "R3-blocos-bateria": {
     "hardware": "DJI Mavic 3 Enterprise (M3E) + Wide RGB",
@@ -36,7 +48,13 @@
     "flightTimeS": 4552,
     "pathLengthM": 26378,
     "densityPerM2": null,
-    "planError": null
+    "planError": null,
+    "tfWaypointCount": null,
+    "tfRelMinM": null,
+    "tfRelMaxM": null,
+    "tfClearanceMinM": null,
+    "tfCorridorRiseMaxM": null,
+    "tfCappedCount": null
   },
   "L1-lidar-mapper": {
     "hardware": "DJI Matrice 300 RTK + YellowScan Mapper+ (RTK)",
@@ -49,6 +67,12 @@
     "flightTimeS": 784,
     "pathLengthM": 3830,
     "densityPerM2": 425,
-    "planError": null
+    "planError": null,
+    "tfWaypointCount": null,
+    "tfRelMinM": null,
+    "tfRelMaxM": null,
+    "tfClearanceMinM": null,
+    "tfCorridorRiseMaxM": null,
+    "tfCappedCount": null
   }
 }

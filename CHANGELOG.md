@@ -6,6 +6,31 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Corrigido (protocolo de validação)
+
+- **As missões de referência voltam a provar o que dizem provar.** A secção 2
+  do `docs/VALIDACAO.md` afirma que «o diff do `esperado.json` é a prova de
+  qualquer mudança no motor». Não era: a R2 declarava `terrainFollow` e não
+  trazia modelo de terreno nenhum, por isso o seguimento nunca corria e os
+  onze campos do instantâneo saíam todos do plano em planta. Uma alteração
+  às alturas exportadas — como a do corredor de segurança, nesta mesma
+  versão — passava-lhe ao lado sem mover um dígito.
+
+  As missões passam a ter um relevo sintético determinista (rampa,
+  cordilheira estreita e ondulação), e o instantâneo ganha seis campos do
+  seguimento de terreno: número de waypoints, altura relativa mínima e
+  máxima, folga mínima, subida máxima vista no corredor e pontos travados
+  pelo tecto. Na R2 o tecto trava em 48 pontos, o que põe o caminho do
+  recorte aos 120 m dentro da prova.
+
+- **O instantâneo deixa de poder ficar para trás em silêncio.** Nada obrigava
+  a correr `tools/missoes-referencia.mjs` depois de mexer no motor, e um
+  instantâneo desactualizado é pior do que nenhum: passa a afirmar que o
+  motor não mudou quando mudou. A suite passa a regenerá-lo em memória e a
+  compará-lo com o ficheiro em disco, e falha com o diff à vista quando os
+  dois divergem. O gerador foi separado em funções puras (`esperadoDe`,
+  `esperadoDeTodas`) e só escreve ficheiros quando corrido como script.
+
 ### Alterado
 
 - **Seguimento de terreno passa a olhar para os lados da faixa.** O perfil era
