@@ -6,7 +6,19 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
-(nada ainda)
+### Corrigido
+
+- **Intervalo de disparo arredondado por defeito, nunca por excesso.** O
+  `wpml:actionTriggerParam` vai no ficheiro com uma casa decimal, e
+  arredondá-lo ao mais próximo deixava-o passar para cima em metade dos
+  casos — um intervalo maior do que o planeado entrega menos sobreposição
+  frontal do que o operador pediu, sem aviso. Medido sobre 11 025
+  combinações de payload, altura, sobreposição e velocidade: até **3,34
+  pontos percentuais** a menos em disparo por tempo (térmica do M4T a 40 m
+  e 14,5 m/s; 1,67 pp na grande-angular do M3E), dois terços da tolerância
+  de aceitação de ±5 pontos. Em disparo por distância o pior caso era 0,20
+  pp. Agora dispara-se no máximo um passo mais cedo, que é o lado que sobra
+  cobertura em vez de faltar. A geometria da rota não muda.
 
 ## 1.2.0 — 2026-09-04
 

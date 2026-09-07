@@ -153,3 +153,86 @@ describe('validateExportParams', () => {
     )
   })
 })
+
+/**
+ * O intervalo de disparo escrito no ficheiro tem uma casa decimal. Se esse
+ * arredondamento for para cima, o drone dispara mais espaçado do que o
+ * plano previa e a sobreposição frontal entregue fica ABAIXO da pedida, sem
+ * que nada avise. A garantia que este bloco exige é unilateral: o intervalo
+ * no ficheiro nunca é maior do que o intervalo pedido.
+ */
+describe('intervalo de disparo: nunca entrega menos sobreposicao do que a pedida', () => {
+  const rota = [
+    [-7.9, 38.55],
+    [-7.895, 38.55],
+  ]
+  // le o parametro do proprio grupo de disparo periodico, nao de outro grupo
+  const disparo = (xml) => {
+    const m = xml.match(
+      /<wpml:actionTriggerType>(multipleTiming|multipleDistance)<\/wpml:actionTriggerType>\s*<wpml:actionTriggerParam>([^<]+)</,
+    )
+    return m ? { tipo: m[1], param: Number(m[2]) } : null
+  }
+
+  test('o intervalo efectivo nunca excede o pedido, nos dois modos', () => {
+    fc.assert(
+      fc.property(
+        fc.double({ min: 0.5, max: 200, noNaN: true }), // intervalo pedido (m)
+        fc.double({ min: 1, max: 20, noNaN: true }), // velocidade (m/s)
+        fc.constantFrom('distance', 'time'),
+        (photoIntervalM, speed, triggerMode) => {
+          const xml = buildWaylinesWPML({
+            waypoints: rota,
+            altitude: 100,
+            speed,
+            wpml,
+            photoIntervalM,
+            triggerMode,
+            sensorType: 'camera',
+          })
+          const d = disparo(xml)
+          expect(d).not.toBeNull()
+          const efectivoM = d.tipo === 'multipleTiming' ? d.param * speed : d.param
+          // tolerância só para o piso de 0,1 do próprio formato
+          expect(efectivoM).toBeLessThanOrEqual(Math.max(photoIntervalM, 0.1 * speed) + 1e-9)
+        },
+      ),
+      { numRuns: 300 },
+    )
+  })
+
+  test('o caso medido que motivou a guarda: 17,26 m a 13,7 m/s', () => {
+    const xml = buildWaylinesWPML({
+      waypoints: rota,
+      altitude: 100,
+      speed: 13.7,
+      wpml,
+      photoIntervalM: 17.26,
+      triggerMode: 'time',
+      sensorType: 'camera',
+    })
+    // 17,26/13,7 = 1,2599 s: ao mais proximo dava 1,3 s (17,81 m, mais do
+    // que o pedido); por defeito da 1,2 s (16,44 m, que sobrepoe a mais)
+    expect(disparo(xml)).toEqual({ tipo: 'multipleTiming', param: 1.2 })
+  })
+
+  test('valores ja certos nao perdem um passo por virgula flutuante', () => {
+    for (const [photoIntervalM, esperado] of [
+      [0.3, 0.3],
+      [20, 20],
+      [25, 25],
+      [1.7, 1.7],
+    ]) {
+      const xml = buildWaylinesWPML({
+        waypoints: rota,
+        altitude: 100,
+        speed: 10,
+        wpml,
+        photoIntervalM,
+        triggerMode: 'distance',
+        sensorType: 'camera',
+      })
+      expect(disparo(xml).param).toBe(esperado)
+    }
+  })
+})

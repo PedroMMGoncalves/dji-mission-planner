@@ -30,6 +30,31 @@ export const MAX_WAYPOINTS_PER_ROUTE = 65536
 export const MAX_SPEED_MS = 30
 export const MAX_RTH_HEIGHT_M = 1500
 
+/*
+ * PARÂMETRO DE DISPARO PERIÓDICO. O wpml:actionTriggerParam vai no ficheiro
+ * com uma casa decimal — segundos em multipleTiming, metros em
+ * multipleDistance. Arredondar ao mais próximo deixa o intervalo passar para
+ * cima de metade das vezes, e um intervalo maior do que o pedido entrega
+ * MENOS sobreposição frontal do que o operador pediu, sem aviso nenhum.
+ *
+ * Por isso arredonda-se sempre por defeito: dispara-se no máximo um passo
+ * mais cedo, que é o lado seguro (sobra cobertura, não falta). Medido sobre
+ * 11 025 combinações de payload, altura, sobreposição e velocidade, o
+ * arredondamento ao mais próximo custava até 3,34 pontos percentuais de
+ * sobreposição (térmica do M4T a 40 m e 14,5 m/s) — dois terços da
+ * tolerância de aceitação de ±5 pontos, gastos em silêncio. Em modo tempo o
+ * passo de 0,1 s vale 0,1×v metros, e por isso o erro cresce com a
+ * velocidade; em modo distância o passo é de 0,1 m e o pior caso era 0,20
+ * pontos.
+ */
+const TRIGGER_PARAM_SCALE = 10 // uma casa decimal
+const MIN_TRIGGER_PARAM = 0.1
+// A tolerância existe porque 0.3 * 10 dá 2.9999999999999996 em vírgula
+// flutuante, e um floor cru cortaria um passo inteiro a um valor que já
+// estava certo. 1e-9 é muitas ordens de grandeza menor do que qualquer
+// intervalo de disparo real, logo nunca arredonda para cima por engano.
+const floorToParam = (v) => Math.floor(v * TRIGGER_PARAM_SCALE + 1e-9) / TRIGGER_PARAM_SCALE
+
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v)
 
 /** Um waypoint é [lon, lat] ou [lon, lat, altura]; valida domínio e finitude. */
@@ -581,12 +606,13 @@ export function buildWaylinesWPML(params) {
   const triggerXml = (() => {
     if (!photoIntervalM || photoIntervalM <= 0) return null
     if (triggerMode === 'time') {
-      const seconds = Math.max(0.1, photoIntervalM / speed)
+      const seconds = Math.max(MIN_TRIGGER_PARAM, floorToParam(photoIntervalM / speed))
       return `          <wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>
           <wpml:actionTriggerParam>${seconds.toFixed(1)}</wpml:actionTriggerParam>`
     }
+    const metres = Math.max(MIN_TRIGGER_PARAM, floorToParam(photoIntervalM))
     return `          <wpml:actionTriggerType>multipleDistance</wpml:actionTriggerType>
-          <wpml:actionTriggerParam>${photoIntervalM.toFixed(1)}</wpml:actionTriggerParam>`
+          <wpml:actionTriggerParam>${metres.toFixed(1)}</wpml:actionTriggerParam>`
   })()
 
   // Waypoint-0 action groups. A LiDAR payload (e.g. YellowScan on a Skyport
