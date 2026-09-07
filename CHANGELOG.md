@@ -6,6 +6,32 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Alterado
+
+- **Seguimento de terreno passa a olhar para os lados da faixa.** O perfil era
+  construído só com o relevo debaixo do eixo; numa encosta atravessada, o que
+  ameaça a aeronave está ao lado e mais alto, e o eixo não o vê. Passa a
+  amostrar-se um corredor de **±30 m** e a usar-se o ponto mais alto para
+  calcular a altura de cada waypoint. Medido nos modelos de terreno que os
+  próprios KMZ do DJI Pilot 2 trazem (ASTER GDEM V3, ~23 m), em 40 missões
+  reais: a 30 m do eixo existe terreno que o eixo não vê, com mediana de 1 a
+  11 m e máximos de 8 a 68 m conforme a missão. No pior caso encontrado
+  (FB09, planeada a 120 m) havia terreno **70 m mais alto a 50 m do eixo** — a
+  folga real nesse ponto era de 50 m, não os 120 m do plano.
+
+  A subida está limitada ao tecto de **120 m acima do solo** da categoria
+  aberta (Regulamento (UE) 2019/947, UAS.OPEN.010). Onde manter a folga pedida
+  exigiria passar disso, a rota fica no tecto, a folga desce abaixo da pedida
+  e sai aviso a dizer quanto e em quantos pontos — subir mais seria ilegal.
+  `corridorM: 0` reproduz o comportamento anterior.
+
+  Isto muda as alturas exportadas das missões com seguimento de terreno em
+  terreno de encosta. Em terreno plano, e onde a encosta corre ao longo da
+  faixa em vez de a atravessar, nada muda. Os ficheiros de referência não
+  mexeram, e o `esperado.json` também não: o instantâneo das missões de
+  referência guarda a previsão do plano em planta, não as alturas do
+  seguimento de terreno — ou seja, não cobre esta classe de alteração.
+
 ### Corrigido
 
 - **Intervalo de disparo arredondado por defeito, nunca por excesso.** O

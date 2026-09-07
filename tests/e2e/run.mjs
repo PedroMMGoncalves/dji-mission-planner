@@ -25,6 +25,7 @@ import { analyseRoute, readRoutes } from './kmz.mjs'
 const PORT = Number(process.env.E2E_PORT ?? 4173)
 const URL = `http://127.0.0.1:${PORT}/dji-mission-planner/`
 const OUT = resolve(process.env.E2E_OUT ?? 'tests/e2e/out')
+const AGL_M = 100 // altura AGL por omissao da interface, usada nos cenarios
 const TOL_M = 5 // tolerância vertical por omissão do terrain follow
 
 let fails = 0
@@ -198,7 +199,7 @@ await scenario('rectangulo-crosshatch-tf', async () => {
   )
   check('painel: fonte do terreno é o MDT local', /MDT local dem\.tif|local DTM dem\.tif/.test(txt))
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'rect-cross-tf.kmz')))
-  const r = analyseRoute(routes[0].wpml, { toM, ground })
+  const r = analyseRoute(routes[0].wpml, { toM, ground, aglNominalM: AGL_M })
   check(
     'rota única, sem valores não finitos',
     routes.length === 1 && r.nan === 0,
@@ -226,7 +227,7 @@ await scenario('u-terrain-follow', async () => {
   const { page, errors } = await openMission({ area: fx.u })
   await configure(page, { tf: true })
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'u-tf.kmz')))
-  const r = analyseRoute(routes[0].wpml, { toM, ground })
+  const r = analyseRoute(routes[0].wpml, { toM, ground, aglNominalM: AGL_M })
   // antes da correcção das ligações: 64,4 m para 100 m de AGL
   check(
     'U: ligações através do entalhe sobem sobre a colina',
@@ -242,7 +243,7 @@ await scenario('u-crosshatch-tf', async () => {
   const { page, errors } = await openMission({ area: fx.u })
   await configure(page, { cross: true, tf: true })
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'u-cross-tf.kmz')))
-  const r = analyseRoute(routes[0].wpml, { toM, ground })
+  const r = analyseRoute(routes[0].wpml, { toM, ground, aglNominalM: AGL_M })
   // antes da correcção das ligações: 17,8 m para 100 m de AGL
   check(
     'U + dupla grelha: folga ≥ AGL − tolerância, ligações incluídas',
@@ -263,7 +264,7 @@ await scenario('blocos-bateria-crosshatch-nadir-tf', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
   await configure(page, { cross: true, nadir: true, tf: true, split: 'Bateria' })
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'blocos.zip')))
-  const rs = routes.map((x) => analyseRoute(x.wpml, { toM, ground }))
+  const rs = routes.map((x) => analyseRoute(x.wpml, { toM, ground, aglNominalM: AGL_M }))
   check('blocos: um KMZ por bloco', routes.length >= 2, `${routes.length} blocos`)
   check(
     'blocos: folga ao solo em todos os blocos',
@@ -298,7 +299,7 @@ await scenario('multipoligono-aviso', async () => {
       .slice(0, 200),
   )
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'multi.kmz')))
-  const r = analyseRoute(routes[0].wpml, { toM, ground })
+  const r = analyseRoute(routes[0].wpml, { toM, ground, aglNominalM: AGL_M })
   check(
     'importação: o maior polígono é o exportado (rectângulo, um grupo de disparo)',
     r.n > 20 && r.groups.length === 1,

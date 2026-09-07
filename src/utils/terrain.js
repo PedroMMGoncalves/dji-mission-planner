@@ -34,6 +34,32 @@ const MIN_SAFE_REL_M = 20 // altura relativa mínima confortável (aviso)
 const MAX_PROFILE_POINTS = 20000 // trava contra `stepM` minúsculos
 const MIN_STEP_M = 1 // passo mínimo de densificação
 
+/*
+ * CORREDOR DE SEGURANÇA DO SEGUIMENTO DE TERRENO.
+ *
+ * O perfil era construído só com o relevo DEBAIXO do eixo da faixa. Numa
+ * encosta isso mede a coisa errada: o que ameaça a aeronave não é o chão
+ * que ela sobrevoa, é o que está ao lado e mais alto. Medido nos modelos de
+ * terreno que os próprios KMZ do Pilot 2 trazem (ASTER GDEM V3, ~23 m), em
+ * 40 missões reais: a 30 m do eixo existe terreno que o eixo não vê, com
+ * mediana de 1 a 11 m e máximos de 8 a 68 m conforme a missão. No pior
+ * caso (FB09, planeado a 120 m) havia terreno 70 m mais alto a 50 m do
+ * eixo — a folga real nesse ponto era de 50 m, não os 120 m do plano.
+ *
+ * Passa a amostrar-se uma faixa de ±CORRIDOR_HALF_WIDTH_M em torno do eixo
+ * e a usar-se o ponto MAIS ALTO para calcular a altura. A largura não é
+ * inocente: mais larga sobe mais a rota e estraga o GSD, mais estreita
+ * deixa risco de fora.
+ *
+ * TECTO. Subir para manter a folga esbarra no limite legal da categoria
+ * aberta — 120 m acima do solo (Regulamento (UE) 2019/947, UAS.OPEN.010).
+ * Quando a folga pedida exigiria passar disso, a altura é limitada ao tecto
+ * e a folga fica menor do que a pedida; quem voa tem de saber, por isso sai
+ * aviso. Subir mais não é opção: seria ilegal.
+ */
+const CORRIDOR_HALF_WIDTH_M = 30
+const AGL_CAP_M = 120
+
 /** Latitude limite do Web Mercator (a projeção diverge nos polos). */
 const MERCATOR_MAX_LAT = 85.05112878
 
@@ -452,23 +478,52 @@ function segmentLengthM(a, b) {
  * take-off point"). Pontos sem dados de elevação herdam a última elevação
  * válida (ou `refElev`, se ainda não houver nenhuma).
  *
+ * A altura de cada ponto conta com o relevo de um corredor de
+ * ±`corridorM` em torno do eixo, não só com o do eixo: usa-se o ponto mais
+ * alto do corredor (ver CORRIDOR_HALF_WIDTH_M acima). A subida é limitada a
+ * `aglCapM` acima do solo; onde o tecto trava, a folga fica menor do que a
+ * pedida e isso vem em `clearanceMinM` e num aviso.
+ *
  * @param {{verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}} terrain
  * @param {Array<Array<[number, number]>>} lines segmentos [[lonA,latA],[lonB,latB]]
- * @param {{agl?: number, refElev?: number, toleranceM?: number, stepM?: number}} [opts]
+ * @param {{agl?: number, refElev?: number, toleranceM?: number, stepM?: number,
+ *   corridorM?: number, aglCapM?: number}} [opts] `corridorM` 0 desliga o
+ *   corredor e reproduz o comportamento anterior (só o eixo)
  * @returns {{waypoints: Array<[number, number, number]>, perLine: number[],
- *   perLink: number[], elevMin: number|null, elevMax: number|null, warnings: string[]}}
+ *   perLink: number[], elevMin: number|null, elevMax: number|null,
+ *   corridorM: number, corridorRiseMaxM: number, clearanceMinM: number|null,
+ *   cappedCount: number, warnings: string[]}}
  */
 export function terrainFollowLines(
   terrain,
   lines,
-  { agl, refElev, toleranceM = 5, stepM = 40 } = {},
+  {
+    agl,
+    refElev,
+    toleranceM = 5,
+    stepM = 40,
+    corridorM = CORRIDOR_HALF_WIDTH_M,
+    aglCapM = AGL_CAP_M,
+  } = {},
 ) {
   const waypoints = []
   const perLine = []
   const perLink = []
   const warnings = []
 
-  const empty = { waypoints, perLine, perLink, elevMin: null, elevMax: null, warnings }
+  const half = Number.isFinite(corridorM) && corridorM > 0 ? corridorM : 0
+  const empty = {
+    waypoints,
+    perLine,
+    perLink,
+    elevMin: null,
+    elevMax: null,
+    corridorM: half,
+    corridorRiseMaxM: 0,
+    clearanceMinM: null,
+    cappedCount: 0,
+    warnings,
+  }
   if (!Array.isArray(lines) || lines.length === 0) return empty
 
   const sampler = typeof terrain?.elevationAt === 'function' ? terrain.elevationAt : null
@@ -476,6 +531,10 @@ export function terrainFollowLines(
   const height = Number.isFinite(agl) ? agl : 0
   const tol = Number.isFinite(toleranceM) && toleranceM > 0 ? toleranceM : 0
   const step = Number.isFinite(stepM) && stepM > 0 ? Math.max(MIN_STEP_M, stepM) : 40
+  // margem de subida que o tecto ainda consente sobre a altura pedida
+  const riseAllowed = Number.isFinite(aglCapM) ? Math.max(0, aglCapM - height) : Infinity
+  // deslocamentos laterais amostrados de cada lado do eixo
+  const offsets = half > 0 ? [half / 2, half] : []
 
   let elevMin = Infinity
   let elevMax = -Infinity
@@ -483,6 +542,9 @@ export function terrainFollowLines(
   let noDataCount = 0
   let sampleCount = 0
   let lastValid = null
+  let corridorRiseMaxM = 0
+  let clearanceMinM = Infinity
+  let cappedCount = 0
 
   // Perfil de um troço recto a→b: densifica, amostra o relevo, simplifica e
   // devolve os waypoints retidos [lon, lat, alturaRel], extremos incluídos.
@@ -492,6 +554,16 @@ export function terrainFollowLines(
     let nSteps = lenM > 0 ? Math.max(1, Math.ceil(lenM / step)) : 0
     if (nSteps + 1 > MAX_PROFILE_POINTS) nSteps = MAX_PROFILE_POINTS - 1
 
+    // Versor perpendicular ao troço, em graus por metro deslocado, para
+    // amostrar o corredor de cada lado do eixo.
+    const midLat = (a[1] + b[1]) / 2
+    const mPerLon = metersPerDegLon(midLat)
+    const dxM = (b[0] - a[0]) * mPerLon
+    const dyM = (b[1] - a[1]) * M_PER_DEG_LAT
+    const norm = Math.hypot(dxM, dyM)
+    const perpLon = norm > 0 ? -dyM / norm / mPerLon : 0
+    const perpLat = norm > 0 ? dxM / norm / M_PER_DEG_LAT : 0
+
     const profile = []
     const coords = []
     for (let i = 0; i <= nSteps; i++) {
@@ -499,7 +571,7 @@ export function terrainFollowLines(
       const lon = a[0] + (b[0] - a[0]) * t
       const lat = a[1] + (b[1] - a[1]) * t
 
-      // 2) Amostragem do terreno
+      // 2) Amostragem do terreno no eixo
       let elev = sampler ? sampler(lon, lat) : null
       sampleCount++
       if (Number.isFinite(elev)) {
@@ -511,8 +583,32 @@ export function terrainFollowLines(
         elev = lastValid !== null ? lastValid : ref
       }
 
+      // 2b) O corredor: o ponto mais alto de cada lado manda na altura. As
+      //     amostras sem dados são ignoradas — não contam como buraco no
+      //     terreno, porque o eixo já garante um valor para este ponto.
+      let top = elev
+      if (sampler && norm > 0) {
+        for (const off of offsets) {
+          for (const side of [-1, 1]) {
+            const e = sampler(lon + perpLon * off * side, lat + perpLat * off * side)
+            if (Number.isFinite(e) && e > top) top = e
+          }
+        }
+      }
+      const rise = top - elev
+      if (rise > corridorRiseMaxM) corridorRiseMaxM = rise
+      // 2c) Tecto legal: a subida que compensa o corredor não pode levar a
+      //     rota acima de `aglCapM` sobre o solo. Onde trava, a folga real
+      //     fica abaixo da pedida.
+      const applied = Math.min(rise, riseAllowed)
+      if (applied < rise) cappedCount++
+      const clearance = height + applied - rise
+      if (clearance < clearanceMinM) clearanceMinM = clearance
+
       coords.push([lon, lat])
-      profile.push({ distM: t * lenM, value: elev })
+      // `value` já traz a subida do corredor, para a fórmula da altura
+      // relativa lá em baixo continuar a ser `agl + (value − refElev)`.
+      profile.push({ distM: t * lenM, value: elev + applied })
     }
 
     // 3) Simplificação + 4) waypoints
@@ -583,6 +679,11 @@ export function terrainFollowLines(
       `Sem dados de terreno em ${noDataCount} de ${sampleCount} pontos amostrados — nessas zonas foi usada a última elevação válida.`,
     )
   }
+  if (cappedCount > 0 && Number.isFinite(clearanceMinM)) {
+    warnings.push(
+      `Terreno até ${corridorRiseMaxM.toFixed(0)} m mais alto dentro de ${half} m do eixo: para manter ${height} m de folga a rota teria de passar o tecto de ${aglCapM} m acima do solo. Ficou limitada ao tecto e a folga desce a ${clearanceMinM.toFixed(0)} m em ${cappedCount} de ${sampleCount} pontos — baixe a altura, rode as faixas ou parta a área.`,
+    )
+  }
 
   return {
     waypoints,
@@ -590,6 +691,10 @@ export function terrainFollowLines(
     perLink,
     elevMin: Number.isFinite(elevMin) ? elevMin : null,
     elevMax: Number.isFinite(elevMax) ? elevMax : null,
+    corridorM: half,
+    corridorRiseMaxM,
+    clearanceMinM: Number.isFinite(clearanceMinM) ? clearanceMinM : null,
+    cappedCount,
     warnings,
   }
 }

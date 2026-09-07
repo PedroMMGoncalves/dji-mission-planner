@@ -1585,6 +1585,73 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
   }
 }
 
+/* 8j3. Corredor de seguranca do terrain follow
+ *
+ * O perfil so via o chao debaixo do eixo. Numa encosta atravessada, o que
+ * ameaca a aeronave esta ao LADO e mais alto, e o eixo nao o ve. Aqui a
+ * faixa corre Este-Oeste e a encosta sobe para Norte, de propria: o eixo
+ * mede sempre a mesma cota, so o corredor apanha a subida. */
+{
+  const mLonTF = 111320 * Math.cos((center[1] * Math.PI) / 180)
+  const at = (x, y) => [center[0] + x / mLonTF, center[1] + y / M_PER_DEG_LAT]
+  // encosta que sobe 0.5 m por metro para Norte; o eixo E-O nao a ve
+  const encosta = {
+    elevationAt: (lon, lat) => 200 + (lat - center[1]) * M_PER_DEG_LAT * 0.5,
+  }
+  const faixaEO = [[at(-250, 0), at(250, 0)]]
+  const opts = { agl: 100, refElev: 200, toleranceM: 1, stepM: 40 }
+
+  const semCorredor = terrainFollowLines(encosta, faixaEO, { ...opts, corridorM: 0 })
+  const comCorredor = terrainFollowLines(encosta, faixaEO, { ...opts, corridorM: 30 })
+  const alturasSem = semCorredor.waypoints.map((w) => w[2])
+  const alturasCom = comCorredor.waypoints.map((w) => w[2])
+
+  check(
+    'corredor 0: reproduz o comportamento anterior (so o eixo)',
+    alturasSem.every((h) => Math.abs(h - 100) < 0.05) && semCorredor.corridorRiseMaxM === 0,
+    `${Math.min(...alturasSem).toFixed(1)}..${Math.max(...alturasSem).toFixed(1)} m`,
+  )
+  // 30 m a Norte a 0.5 m/m = 15 m acima do eixo
+  check(
+    'corredor 30 m: a rota sobe o que o terreno ao lado exige',
+    Math.min(...alturasCom) > 114 && Math.max(...alturasCom) < 116,
+    `${Math.min(...alturasCom).toFixed(1)}..${Math.max(...alturasCom).toFixed(1)} m`,
+  )
+  check(
+    'corredor: a folga pedida mantem-se quando o tecto nao trava',
+    Math.abs(comCorredor.clearanceMinM - 100) < 0.05 && comCorredor.cappedCount === 0,
+    `folga ${comCorredor.clearanceMinM?.toFixed(1)} m`,
+  )
+  check(
+    'corredor: regista a subida maxima encontrada ao lado',
+    Math.abs(comCorredor.corridorRiseMaxM - 15) < 0.5,
+    `${comCorredor.corridorRiseMaxM.toFixed(1)} m`,
+  )
+
+  // tecto: pedir 110 m numa encosta que exige +36 m nao cabe nos 120 m
+  const forte = {
+    elevationAt: (lon, lat) => 200 + (lat - center[1]) * M_PER_DEG_LAT * 1.2,
+  }
+  const travado = terrainFollowLines(forte, faixaEO, { ...opts, agl: 110, corridorM: 30 })
+  check(
+    'tecto: a subida e limitada a 120 m acima do solo',
+    travado.cappedCount > 0 && travado.clearanceMinM < 110,
+    `folga ${travado.clearanceMinM?.toFixed(1)} m em ${travado.cappedCount} pontos`,
+  )
+  check(
+    'tecto: a altura relativa nunca passa o tecto sobre o eixo',
+    travado.waypoints.every(([, lat, h]) => {
+      const solo = 200 + (lat - center[1]) * M_PER_DEG_LAT * 1.2
+      return h - (solo - 200) <= 120 + 0.05
+    }),
+  )
+  check(
+    'tecto: sai aviso a dizer que a folga ficou menor do que a pedida',
+    travado.warnings.some((w) => w.includes('tecto') && w.includes('folga')),
+    travado.warnings.length ? 'com aviso' : 'sem aviso',
+  )
+}
+
 /* 8j2. Plano medio da encosta (T4.5) */
 {
   // rampa que sobe 0.2 m/m para Este: inclinacao atan(0.2) = 11.31 graus,

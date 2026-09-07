@@ -30,7 +30,15 @@ export async function readRoutes(file) {
  * solo do primeiro (é o que o WPML relativeToStartPoint significa quando a
  * base não está marcada), pelo que o AGL pedido é a altura do primeiro.
  */
-export function analyseRoute(wpml, { toM, ground }) {
+/**
+ * `aglNominalM` é a altura AGL pedida na interface. Não se infere da altura
+ * do primeiro waypoint: com o corredor de segurança do terrain follow, a
+ * altura relativa de um waypoint é a AGL pedida MAIS a subida que o terreno
+ * ao lado da faixa exigiu, e o primeiro waypoint pode já vir subido. Sem
+ * este parâmetro a folga mínima passava a ser comparada com um valor
+ * inflacionado e o critério ficava mais apertado do que o pretendido.
+ */
+export function analyseRoute(wpml, { toM, ground, aglNominalM = null }) {
   const wps = wpml
     .split('<Placemark>')
     .slice(1)
@@ -40,7 +48,7 @@ export function analyseRoute(wpml, { toM, ground }) {
       return [...toM(Number(c[1]), Number(c[2])), Number(h[1])]
     })
   const ref = ground(wps[0][0], wps[0][1])
-  const agl = wps[0][2]
+  const agl = Number.isFinite(aglNominalM) ? aglNominalM : wps[0][2]
   const groups = [
     ...wpml.matchAll(
       /<wpml:actionGroupStartIndex>(\d+)<\/wpml:actionGroupStartIndex>\s*<wpml:actionGroupEndIndex>(\d+)<\/wpml:actionGroupEndIndex>\s*<wpml:actionGroupMode>parallel/g,
