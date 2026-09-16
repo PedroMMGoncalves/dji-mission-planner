@@ -720,6 +720,7 @@ function AppInner({ lang, setLang }) {
         plan,
         blocks,
         photoMode,
+        waypointStops: params.waypointStops,
         terrainFollow,
         terrainCovers,
         terrainResult,
@@ -743,6 +744,8 @@ function AppInner({ lang, setLang }) {
         plan: corridorPlan,
         aglWarn,
         triggerWarn: corridorTriggerWarn,
+        photoMode: corridorConfig.photoMode,
+        waypointStops: corridorConfig.waypointStops,
       })
     if (missionMode === 'face') return preflightPlan({ ...other, plan: facePlan })
     return preflightPlan({ ...other, plan: orbitPlan })
@@ -751,6 +754,9 @@ function AppInner({ lang, setLang }) {
     plan,
     blocks,
     photoMode,
+    params.waypointStops,
+    corridorConfig.photoMode,
+    corridorConfig.waypointStops,
     terrainFollow,
     terrainCovers,
     terrainResult,

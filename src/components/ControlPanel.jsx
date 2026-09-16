@@ -541,6 +541,25 @@ export default function ControlPanel({
             {t('cp.flight.triggerWaypointHint')}
           </p>
         )}
+        {/* só há pontos intermédios com foto por waypoint ou seguimento de terreno */}
+        {((payload.type === 'camera' && params.triggerMode === 'waypoint') ||
+          terrainFollow.enabled) && (
+          <>
+            <Field label={t('cp.flight.stops')}>
+              <select
+                className="w-28 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+                value={params.waypointStops === 'all' ? 'all' : 'corners'}
+                onChange={(e) => setParam('waypointStops', e.target.value)}
+              >
+                <option value="corners">{t('cp.flight.stopsCorners')}</option>
+                <option value="all">{t('cp.flight.stopsAll')}</option>
+              </select>
+            </Field>
+            <p className="-mt-1 mb-2 text-[11px] leading-relaxed text-slate-400">
+              {t('cp.flight.stopsHint')}
+            </p>
+          </>
+        )}
         {waypointWarn != null && (
           <p className="mb-2 rounded border border-amber-800 bg-amber-950/40 p-2 text-xs text-amber-200">
             ⚠ {t('cp.flight.waypointWarn', { n: waypointWarn })}

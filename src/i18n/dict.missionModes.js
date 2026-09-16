@@ -40,6 +40,13 @@ export default {
     pt: 'Por distância: o disparo é feito a cada X metros ao longo da rota. Por waypoint: cada posição de fotografia é um waypoint com acção própria.',
     en: 'By distance: the camera triggers every X metres along the route. Per waypoint: each photo position is a waypoint with its own action.',
   },
+  'co.params.stops': { pt: 'Paragem nos waypoints', en: 'Stop at waypoints' },
+  'co.params.stopsCorners': { pt: 'Só nos cantos', en: 'Corners only' },
+  'co.params.stopsAll': { pt: 'Em todos', en: 'At every waypoint' },
+  'co.params.stopsHint': {
+    pt: 'Só nos cantos: pára no fim de cada troço e passa sem parar pelas fotos e pelas dobras das passagens. Em todos: pára em cada waypoint, e o tempo previsto conta as paragens.',
+    en: 'Corners only: stops at the end of each run and flies through photo points and pass bends. At every waypoint: stops at each one, and the estimated time counts the stops.',
+  },
   'co.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
   'co.plan.length': { pt: 'Comprimento do eixo', en: 'Centreline length' },
   'co.plan.passes': { pt: '{n} passagens ({r} troços)', en: '{n} passes ({r} runs)' },

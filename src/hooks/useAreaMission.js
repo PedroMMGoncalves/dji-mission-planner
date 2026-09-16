@@ -17,7 +17,7 @@ import {
   exportSimpleKML,
   exportWPMLKmz,
 } from '../utils/exporters.js'
-import { routeStats } from '../utils/geo.js'
+import { stripRouteStats } from '../utils/geo.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from '../utils/gcp.js'
 import { DEFAULT_GCP_CONFIG } from '../mission/defaults.js'
 
@@ -65,6 +65,7 @@ export function useAreaMission({
       tieLine: Boolean(params.tieLine),
       photoMode,
       holes,
+      waypointStops: params.waypointStops,
     }
     // plano simples, ou um plano por célula com alinhamento global (src/mission/areaPlan.js)
     return planArea(ring, activeCells, opts)
@@ -82,6 +83,7 @@ export function useAreaMission({
     params.includeNadir,
     params.overshoot,
     params.tieLine,
+    params.waypointStops,
     activeCells,
   ])
 
@@ -91,8 +93,16 @@ export function useAreaMission({
   // serpentina por área/bateria
   const blocks = useMemo(
     () =>
-      planBlocks(planOk, { activeCells, split, batteryMin, speed, spacingM: spacing, basePoint }),
-    [planOk, activeCells, split, batteryMin, speed, spacing, basePoint],
+      planBlocks(planOk, {
+        activeCells,
+        split,
+        batteryMin,
+        speed,
+        spacingM: spacing,
+        basePoint,
+        waypointStops: params.waypointStops,
+      }),
+    [planOk, activeCells, split, batteryMin, speed, spacing, basePoint, params.waypointStops],
   )
 
   // B: aviso brando — missões com milhares de waypoints importam lentamente
@@ -166,12 +176,15 @@ export function useAreaMission({
   const planRoute = useMemo(() => {
     const wps = terrainResult && !terrainResult.error ? terrainResult.waypoints : null
     if (!planOk || !wps?.length) return plan
-    const { pathLengthM, flightTimeS } = routeStats(wps, {
+    // com 'all' conta também as paragens nos vértices do terreno
+    const { pathLengthM, flightTimeS } = stripRouteStats(wps, {
       speed,
-      turns: planOk.lines.length - 1,
+      lineCount: planOk.lines.length,
+      perLine: terrainResult.perLine,
+      waypointStops: params.waypointStops,
     })
     return { ...planOk, stats: { ...planOk.stats, pathLengthM, flightTimeS, path3D: true } }
-  }, [plan, planOk, terrainResult, speed])
+  }, [plan, planOk, terrainResult, speed, params.waypointStops])
   const planRouteOk = planRoute && !planRoute.error ? planRoute : null
 
   /* --------------------------- Exportação ---------------------------- */
@@ -222,6 +235,7 @@ export function useAreaMission({
       crosshatch: params.crosshatch,
       includeNadir: params.includeNadir,
       tieLine: params.tieLine,
+      waypointStops: params.waypointStops,
     })
     if (exportBlocks) runExport(() => exportBlocksZip(exportParams, exportBlocks))
     else runExport(() => exportWPMLKmz(exportParams))
@@ -240,6 +254,7 @@ export function useAreaMission({
     params.crosshatch,
     params.includeNadir,
     params.tieLine,
+    params.waypointStops,
     speed,
     wpml,
     interval,

@@ -239,6 +239,47 @@ await scenario('u-terrain-follow', async () => {
   return { page }
 })
 
+/* Paragem nos waypoints: com seguimento de terreno as faixas levam vértices
+   a meio. Por omissão passam sem parar e só os cantos param; «Em todos»
+   repõe a paragem em cada ponto. */
+const PASS_MODE = 'toPointAndPassWithContinuityCurvature'
+const STOP_MODE = 'toPointAndStopWithDiscontinuityCurvature'
+const turnModes = (wpml) => [...wpml.matchAll(/<wpml:waypointTurnMode>([^<]+)</g)].map((m) => m[1])
+await scenario('paragens-waypoints', async () => {
+  const { page, errors } = await openMission({ area: fx.u })
+  const stops = page
+    .locator('label', { hasText: /Paragem nos waypoints|Stop at waypoints/ })
+    .locator('select')
+  check('paragens: controlo escondido sem pontos intermédios', (await stops.count()) === 0)
+  await configure(page, { tf: true })
+  check(
+    'paragens: com seguimento de terreno aparece, só nos cantos por omissão',
+    (await stops.count()) === 1 && (await stops.inputValue()) === 'corners',
+  )
+  const cantos = turnModes(
+    (await readRoutes(await exportKmz(page, join(OUT, 'u-tf-cantos.kmz'))))[0].wpml,
+  )
+  const nPass = cantos.filter((m) => m === PASS_MODE).length
+  check(
+    'paragens: vértices do terreno passam, extremos param',
+    nPass > 0 && cantos[0] === STOP_MODE && cantos.at(-1) === STOP_MODE,
+    `${nPass} de ${cantos.length} passam`,
+  )
+  await stops.selectOption('all')
+  await page.waitForTimeout(800)
+  const todos = turnModes(
+    (await readRoutes(await exportKmz(page, join(OUT, 'u-tf-todos.kmz'))))[0].wpml,
+  )
+  check(
+    'paragens: «Em todos» pára em cada waypoint',
+    todos.length === cantos.length && todos.every((m) => m === STOP_MODE),
+    `${todos.length} waypoints`,
+  )
+  check('paragens: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 await scenario('u-crosshatch-tf', async () => {
   const { page, errors } = await openMission({ area: fx.u })
   await configure(page, { cross: true, tf: true })

@@ -9,6 +9,7 @@ import {
   computeGSD,
   lidarPointDensity,
   lineSpacing,
+  normalizeWaypointStops,
   photoInterval,
   resolveSensor,
 } from '../../src/utils/geo.js'
@@ -57,6 +58,7 @@ export function predictFromProject(json) {
         overshootM: Math.max(0, params.overshoot || 0),
         tieLine: Boolean(params.tieLine),
         photoMode,
+        waypointStops: normalizeWaypointStops(params.waypointStops),
       })
     : null
   const density =

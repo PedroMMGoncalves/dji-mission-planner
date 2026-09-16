@@ -83,6 +83,7 @@ export function useCorridorMission({
       speed: corridorSpeed,
       photoMode: corridorConfig.photoMode,
       simplifyM: corridorConfig.simplifyM,
+      waypointStops: corridorConfig.waypointStops,
     })
   }, [corridorConfig, corridorSpeed, sensor, altitude, sideOverlap, interval])
 
@@ -110,12 +111,14 @@ export function useCorridorMission({
           wpml,
           photoIntervalM: interval,
           sensorType: sensor.type,
+          waypointStops: corridorConfig.waypointStops,
         }),
       ),
     )
   }, [
     corridorPlan,
     corridorConfig.photoMode,
+    corridorConfig.waypointStops,
     corridorSpeed,
     missionName,
     altitude,

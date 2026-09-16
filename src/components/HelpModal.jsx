@@ -184,7 +184,8 @@ function InstrucoesPt() {
           <strong>Disparo por waypoint</strong> — em «Disparo por: Waypoint», cada passagem é
           densificada em waypoints a passos iguais ≤ intervalo e cada um leva uma acção de foto (sem
           gatilho por distância); o overshoot não fotografa e o modo não é compatível com «Seguir
-          terreno». O tempo de paragem em cada waypoint não entra na estimativa.
+          terreno». Em «Paragem nos waypoints» escolhe-se parar só nos cantos das faixas (por
+          omissão) ou em cada ponto.
         </Li>
         <Li>
           O projecto grava-se automaticamente no browser; use «Guardar/Abrir projecto» para arquivar
@@ -356,7 +357,8 @@ function InstrucoesEn() {
           <strong>Per-waypoint trigger</strong> — with “Trigger by: Waypoint”, each pass is
           densified into waypoints at equal steps ≤ interval and every one carries a take-photo
           action (no distance trigger); the overshoot takes no photos and the mode is not compatible
-          with “Follow terrain”. The stop time at each waypoint is not part of the estimate.
+          with “Follow terrain”. “Stop at waypoints” chooses between stopping only at strip corners
+          (default) or at every point.
         </Li>
         <Li>
           The project auto-saves in the browser; use “Save/Open project” to archive it as a file.

@@ -171,8 +171,15 @@ export default {
   'cp.flight.triggerTime': { pt: 'Tempo', en: 'Time' },
   'cp.flight.triggerWaypoint': { pt: 'Waypoint', en: 'Waypoint' },
   'cp.flight.triggerWaypointHint': {
-    pt: 'Uma foto por waypoint: cada passagem é densificada a passos iguais ≤ intervalo, cada ponto leva uma acção de foto e o overshoot não dispara. Não há gatilho por distância; o tempo de paragem em cada waypoint não entra no tempo de voo estimado. Incompatível com «Seguir terreno».',
-    en: 'One photo per waypoint: each pass is densified at equal steps ≤ interval, every point carries a take-photo action and the overshoot does not trigger. There is no distance trigger; the stop time at each waypoint is not included in the estimated flight time. Incompatible with "Follow terrain".',
+    pt: 'Uma foto por waypoint: cada passagem é densificada a passos iguais ≤ intervalo, cada ponto leva uma acção de foto e o overshoot não dispara. Não há gatilho por distância; a paragem em cada ponto escolhe-se em «Paragem nos waypoints». Incompatível com «Seguir terreno».',
+    en: 'One photo per waypoint: each pass is densified at equal steps ≤ interval, every point carries a take-photo action and the overshoot does not trigger. There is no distance trigger; stopping at each point is set in "Stop at waypoints". Incompatible with "Follow terrain".',
+  },
+  'cp.flight.stops': { pt: 'Paragem nos waypoints', en: 'Stop at waypoints' },
+  'cp.flight.stopsCorners': { pt: 'Só nos cantos', en: 'Corners only' },
+  'cp.flight.stopsAll': { pt: 'Em todos', en: 'At every waypoint' },
+  'cp.flight.stopsHint': {
+    pt: 'Só nos cantos: a aeronave pára no fim de cada faixa e passa sem parar pelas fotos e pelos vértices do terreno. Em todos: pára em cada waypoint (pouca luz, exposições longas), e o tempo previsto conta as paragens.',
+    en: 'Corners only: the aircraft stops at the end of each strip and flies through photo points and terrain vertices. At every waypoint: it stops at each one (low light, long exposures), and the estimated time counts the stops.',
   },
   'cp.flight.waypointWarn': {
     pt: '{n} waypoints num só bloco — acima de 2000 a importação no Pilot 2 fica lenta; aumente o intervalo ou divida em blocos.',

@@ -187,6 +187,28 @@ export default function CorridorPanel({
             <p className="mt-2 text-xs text-slate-500">{t('co.params.photoHint')}</p>
           </>
         )}
+
+        {/* as dobras das passagens existem também com LiDAR */}
+        <div className="mb-2 mt-3 text-sm text-slate-300">{t('co.params.stops')}</div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {[
+            ['corners', 'co.params.stopsCorners'],
+            ['all', 'co.params.stopsAll'],
+          ].map(([id, key]) => (
+            <button
+              key={id}
+              onClick={() => setCorridorParam('waypointStops', id)}
+              className={`rounded px-2 py-1.5 text-xs font-semibold transition-colors ${
+                (corridorConfig.waypointStops === 'all' ? 'all' : 'corners') === id
+                  ? 'bg-sky-500 text-slate-950'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {t(key)}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-xs text-slate-500">{t('co.params.stopsHint')}</p>
       </Section>
 
       <Section title={t('co.plan.title')}>
