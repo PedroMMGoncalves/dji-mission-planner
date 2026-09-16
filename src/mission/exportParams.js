@@ -22,6 +22,7 @@ export function faceExportParams({ missionName, plan, speed, wpml, gimbalPitch, 
     triggerMode: 'distance',
     gimbalPitch,
     sensorType,
+    durationS: plan.stats.flightTimeS,
   }
 }
 
@@ -39,6 +40,7 @@ export function orbitExportParams({ missionName, plan, speed, wpml, sensorType }
     triggerMode: 'distance',
     gimbalPitch: plan.perLevel[0]?.gimbalPitch ?? -45,
     sensorType,
+    durationS: plan.stats.flightTimeS,
   }
 }
 
@@ -80,6 +82,7 @@ export function corridorExportParams({
         ),
     gimbalPitch: -90,
     sensorType,
+    durationS: plan.stats.flightTimeS,
   }
 }
 

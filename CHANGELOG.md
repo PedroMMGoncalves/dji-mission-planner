@@ -6,6 +6,28 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Corrigido (exportação)
+
+- **O comando passa a saber o comprimento e a duração da rota.** No primeiro
+  voo real (M3E, Setembro de 2026) o Pilot 2 mostrou a rota a 100 % e
+  «00:00» em falta com a missão na foto 114 de 139. O Pilot 2 tira o
+  progresso e o tempo em falta de `wpml:distance` e `wpml:duration`, no
+  `Folder` do `waylines.wpml`, e a exportação não escrevia nenhum dos dois.
+  Os 81 KMZ escritos pelo comando trazem-nos entre `waylineId` e
+  `autoFlightSpeed`, e o `template.kml` nunca; é aí que passam a sair.
+
+  A distância é o comprimento 3D da rota, a mesma função que já reproduzia o
+  `wpml:distance` do comando com desvio mediano de 0,00 %. A duração é a que
+  o painel mostra para cada modo: na área, a rota com o custo das inversões,
+  sobre os waypoints 3D quando há seguimento de terreno; na fachada, no
+  corredor e na órbita, a do respectivo plano. Na divisão em blocos cada
+  bloco leva a sua, sem o trânsito até à base, que o Pilot 2 não conta na
+  rota. Onde não há previsão (pontos de inspecção, níveis de órbita
+  exportados um a um) sai distância / velocidade, que fica por baixo mas
+  nunca é zero. Uma `durationS` não finita ou negativa é recusada na
+  fronteira. Os sete ficheiros de referência ganham as duas linhas e nada
+  mais.
+
 ### Corrigido (protocolo de validação)
 
 - **As missões de referência voltam a provar o que dizem provar.** A secção 2

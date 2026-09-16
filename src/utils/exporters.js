@@ -1,4 +1,5 @@
 import JSZip from 'jszip'
+import { routeLengthM } from './geo.js'
 
 /**
  * Módulos de exportação:
@@ -56,6 +57,8 @@ const MIN_TRIGGER_PARAM = 0.1
 const floorToParam = (v) => Math.floor(v * TRIGGER_PARAM_SCALE + 1e-9) / TRIGGER_PARAM_SCALE
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v)
+/** Distância (m) ou duração (s) com duas casas, sem zeros à direita. */
+const fmtStat = (v) => String(Number(v.toFixed(2)))
 
 /** Um waypoint é [lon, lat] ou [lon, lat, altura]; valida domínio e finitude. */
 function checkWaypoint(wp, i) {
@@ -101,7 +104,13 @@ export function validateExportParams(params) {
   if (!wpml || !isNum(wpml.droneEnumValue) || !isNum(wpml.payloadEnumValue)) {
     throw new MissionExportError('wpml-enums-missing')
   }
-  for (const key of ['photoIntervalM', 'gimbalPitch', 'rthHeightM', 'turnDampingDistM']) {
+  for (const key of [
+    'photoIntervalM',
+    'gimbalPitch',
+    'rthHeightM',
+    'turnDampingDistM',
+    'durationS',
+  ]) {
     const v = params[key]
     if (v !== undefined && v !== null && !isNum(v)) {
       throw new MissionExportError('param-not-finite', key)
@@ -112,6 +121,9 @@ export function validateExportParams(params) {
   // ponto de descolagem.
   if (isNum(params.photoIntervalM) && params.photoIntervalM < 0) {
     throw new MissionExportError('param-out-of-range', 'photoIntervalM')
+  }
+  if (isNum(params.durationS) && params.durationS < 0) {
+    throw new MissionExportError('param-out-of-range', 'durationS')
   }
   if (
     isNum(params.rthHeightM) &&
@@ -599,6 +611,9 @@ export function buildWaylinesWPML(params) {
     // Intervalos [inicio, fim] de waypoints com disparo activo; null = a
     // rota inteira. Ver triggerRangesForLines em geo.js.
     triggerRanges = null,
+    // Duração prevista da rota (s), a mesma que o painel mostra. Sem ela,
+    // distância / velocidade: por baixo, mas nunca zero.
+    durationS = null,
   } = params
   const turn = turnParams(turnMode, turnDampingDistM)
   const gimbalPitch = params.gimbalPitch ?? -90
@@ -766,6 +781,13 @@ ${actions.join('\n')}
     })
     .join('\n')
 
+  // O Pilot 2 tira destes dois campos o progresso da rota e o tempo em
+  // falta. Sem eles, o primeiro voo real (M3E, 2026-09) mostrou 100 % e
+  // 00:00 com a missão na foto 114 de 139. Os 81 KMZ escritos pelo comando
+  // trazem-nos aqui, entre waylineId e autoFlightSpeed, e o template.kml
+  // nunca (docs/VALIDACAO.md, 5.1). A distância é a 3D, como a do comando.
+  const distanceM = routeLengthM(waypoints)
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
 <Document>
@@ -774,6 +796,8 @@ ${missionConfigXml(params)}
     <wpml:templateId>0</wpml:templateId>
     <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
     <wpml:waylineId>0</wpml:waylineId>
+    <wpml:distance>${fmtStat(distanceM)}</wpml:distance>
+    <wpml:duration>${fmtStat(durationS ?? distanceM / speed)}</wpml:duration>
     <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
 ${placemarks}
   </Folder>
@@ -808,6 +832,26 @@ export async function exportWPMLKmz(params) {
 }
 
 /**
+ * Parâmetros de um bloco: os da missão, com o que é local ao bloco trocado
+ * pelo do bloco.
+ */
+export function blockExportParams(params, block) {
+  return {
+    ...params,
+    name: `${params.name}_b${String(block.id).padStart(2, '0')}`,
+    waypoints: block.waypoints,
+    // um perWaypoint global indexaria mal as fatias — cada bloco traz o
+    // seu (ex.: marcador de gimbal nadir do R2.10), ou nenhum
+    perWaypoint: block.perWaypoint ?? null,
+    // idem para os intervalos de disparo: indices locais ao bloco
+    triggerRanges: block.triggerRanges ?? null,
+    // e para a duração: a da missão inteira daria a cada bloco um tempo em
+    // falta várias vezes o real; sem a do bloco, distância / velocidade
+    durationS: block.durationS ?? null,
+  }
+}
+
+/**
  * Exporta um ZIP com um KMZ WPML por bloco de voo, numerados pela ordem de
  * voo: missao-b01.kmz, missao-b02.kmz, … Cada KMZ é uma missão completa e
  * independente para o DJI Pilot 2 (uma bateria por bloco).
@@ -815,21 +859,8 @@ export async function exportWPMLKmz(params) {
 export async function exportBlocksZip(params, blocks) {
   const master = new JSZip()
   for (const block of blocks) {
-    const nn = String(block.id).padStart(2, '0')
-    const kmz = await buildKmz(
-      {
-        ...params,
-        name: `${params.name}_b${nn}`,
-        waypoints: block.waypoints,
-        // um perWaypoint global indexaria mal as fatias — cada bloco traz o
-        // seu (ex.: marcador de gimbal nadir do R2.10), ou nenhum
-        perWaypoint: block.perWaypoint ?? null,
-        // idem para os intervalos de disparo: indices locais ao bloco
-        triggerRanges: block.triggerRanges ?? null,
-      },
-      'arraybuffer',
-    )
-    master.file(`${params.name}_b${nn}.kmz`, kmz)
+    const p = blockExportParams(params, block)
+    master.file(`${p.name}.kmz`, await buildKmz(p, 'arraybuffer'))
   }
   const blob = await master.generateAsync({ type: 'blob' })
   downloadBlob(blob, `${params.name}_blocos.zip`)

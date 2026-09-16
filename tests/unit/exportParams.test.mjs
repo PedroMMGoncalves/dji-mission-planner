@@ -44,6 +44,7 @@ describe('faceExportParams', () => {
     expect(p.altitude).toBe(Math.round(plan.stats.heights.at(-1)))
     expect(p.photoIntervalM).toBe(0)
     expect(p.perWaypoint).toBe(plan.perWaypoint)
+    expect(p.durationS).toBe(plan.stats.flightTimeS)
     expect(validateExportParams(p)).toBe(p)
   })
 })
@@ -63,6 +64,7 @@ describe('orbitExportParams', () => {
     expect(p.name).toBe('Quinta-do-Lago_orbit_n2')
     expect(p.turnMode).toBe(plan.turnMode)
     expect(p.gimbalPitch).toBe(plan.perLevel[0].gimbalPitch)
+    expect(p.durationS).toBe(plan.stats.flightTimeS)
     expect(validateExportParams(p)).toBe(p)
   })
 })
@@ -98,6 +100,7 @@ describe('corridorExportParams', () => {
     expect(p.perWaypoint).toBeUndefined()
     expect(p.triggerRanges.length).toBeGreaterThanOrEqual(1)
     expect(p.triggerRanges.at(-1)[1]).toBe(plan.waypoints.length - 1)
+    expect(p.durationS).toBe(plan.stats.flightTimeS)
     expect(validateExportParams(p)).toBe(p)
   })
 

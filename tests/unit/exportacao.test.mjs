@@ -7,12 +7,18 @@ import fc from 'fast-check'
 import { XMLValidator } from 'fast-xml-parser'
 import { describe, expect, test } from 'vitest'
 import {
+  blockExportParams,
   buildTemplateKML,
   buildWaylinesWPML,
   validateExportParams,
 } from '../../src/utils/exporters.js'
+import { routeLengthM } from '../../src/utils/geo.js'
 
 const JUNK = /(^|>)\s*(NaN|undefined|Infinity|null)\s*(<|$)/
+const campoNum = (xml, tag) => {
+  const m = xml.match(new RegExp(`<wpml:${tag}>([^<]*)</wpml:${tag}>`))
+  return m ? Number(m[1]) : null
+}
 const wpml = {
   droneEnumValue: 77,
   droneSubEnumValue: 0,
@@ -65,6 +71,10 @@ describe('buildWaylinesWPML', () => {
             expect(h).toBeGreaterThanOrEqual(-180)
             expect(h).toBeLessThanOrEqual(180)
           }
+          const dist = campoNum(xml, 'distance')
+          const dur = campoNum(xml, 'duration')
+          expect(Number.isFinite(dist) && dist >= 0).toBe(true)
+          expect(Number.isFinite(dur) && dur >= 0).toBe(true)
           const tpl = buildTemplateKML({ ...p, wpml })
           expect(XMLValidator.validate(tpl)).toBe(true)
           expect(JUNK.test(tpl)).toBe(false)
@@ -234,5 +244,108 @@ describe('intervalo de disparo: nunca entrega menos sobreposicao do que a pedida
       })
       expect(disparo(xml).param).toBe(esperado)
     }
+  })
+})
+
+/*
+ * Primeiro voo real (M3E, 2026-09): o comando mostrou 100 % e 00:00 em falta
+ * com a missao na foto 114 de 139. O Pilot 2 tira o progresso e o tempo em
+ * falta de wpml:distance e wpml:duration, no Folder do waylines.wpml, entre
+ * waylineId e autoFlightSpeed — e onde os 81 KMZ escritos pelo comando os
+ * trazem (docs/VALIDACAO.md, 5.1). A exportacao nao escrevia nenhum dos dois.
+ */
+describe('distancia e duracao da rota no waylines.wpml', () => {
+  const base = {
+    name: 'd',
+    waypoints: [
+      [-8.166, 37.8675, 60],
+      [-8.164, 37.8675, 60],
+      [-8.164, 37.8677, 70],
+      [-8.166, 37.8677, 70],
+    ],
+    altitude: 60,
+    speed: 8,
+    wpml,
+    photoIntervalM: 0,
+    triggerMode: 'distance',
+    sensorType: 'camera',
+  }
+
+  test('escritas no Folder, entre waylineId e autoFlightSpeed', () => {
+    const xml = buildWaylinesWPML(base)
+    expect(xml).toMatch(
+      /<wpml:waylineId>0<\/wpml:waylineId>\s*<wpml:distance>[^<]+<\/wpml:distance>\s*<wpml:duration>[^<]+<\/wpml:duration>\s*<wpml:autoFlightSpeed>/,
+    )
+  })
+
+  test('distance e o comprimento 3D da rota, o mesmo que o Pilot 2 escreve', () => {
+    const xml = buildWaylinesWPML(base)
+    expect(campoNum(xml, 'distance')).toBeCloseTo(routeLengthM(base.waypoints), 1)
+  })
+
+  test('duration e a prevista pelo plano; sem ela, distancia / velocidade', () => {
+    expect(campoNum(buildWaylinesWPML({ ...base, durationS: 123.4 }), 'duration')).toBe(123.4)
+    expect(campoNum(buildWaylinesWPML(base), 'duration')).toBeCloseTo(
+      routeLengthM(base.waypoints) / base.speed,
+      1,
+    )
+  })
+
+  test('nunca zero numa rota com comprimento — era o que dava 100 % a meio', () => {
+    const xml = buildWaylinesWPML(base)
+    expect(campoNum(xml, 'distance')).toBeGreaterThan(0)
+    expect(campoNum(xml, 'duration')).toBeGreaterThan(0)
+  })
+
+  test('o template.kml nao as leva, como nos ficheiros do comando', () => {
+    const tpl = buildTemplateKML(base)
+    expect(tpl).not.toMatch(/wpml:distance|wpml:duration/)
+  })
+
+  test('durationS nao finita ou negativa e recusada na fronteira', () => {
+    for (const durationS of [NaN, Infinity, -1, '10']) {
+      expect(() => validateExportParams({ ...base, durationS })).toThrow()
+    }
+    expect(() => validateExportParams({ ...base, durationS: 0 })).not.toThrow()
+    expect(() => validateExportParams({ ...base, durationS: null })).not.toThrow()
+  })
+})
+
+describe('blockExportParams', () => {
+  const params = {
+    name: 'm',
+    waypoints: [
+      [0, 0],
+      [0.01, 0],
+      [0.01, 0.001],
+      [0, 0.001],
+    ],
+    perWaypoint: [{ actions: ['takePhoto'] }],
+    triggerRanges: [[0, 3]],
+    durationS: 999,
+    altitude: 100,
+    speed: 10,
+    wpml,
+  }
+
+  test('cada bloco leva o seu nome, waypoints, accoes, intervalos e duracao', () => {
+    const b = { id: 3, waypoints: params.waypoints.slice(0, 2), durationS: 42 }
+    const p = blockExportParams(params, b)
+    expect(p.name).toBe('m_b03')
+    expect(p.waypoints).toBe(b.waypoints)
+    expect(p.perWaypoint).toBeNull()
+    expect(p.triggerRanges).toBeNull()
+    expect(p.durationS).toBe(42)
+  })
+
+  test('a duracao da missao inteira nunca passa para um bloco', () => {
+    // sem a do bloco, o exportador cai em distancia / velocidade do bloco
+    const b = { id: 1, waypoints: params.waypoints.slice(0, 2) }
+    const p = blockExportParams(params, b)
+    expect(p.durationS).toBeNull()
+    expect(campoNum(buildWaylinesWPML(p), 'duration')).toBeCloseTo(
+      routeLengthM(b.waypoints) / params.speed,
+      1,
+    )
   })
 })

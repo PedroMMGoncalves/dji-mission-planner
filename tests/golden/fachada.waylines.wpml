@@ -23,6 +23,8 @@
     <wpml:templateId>0</wpml:templateId>
     <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
     <wpml:waylineId>0</wpml:waylineId>
+    <wpml:distance>350.52</wpml:distance>
+    <wpml:duration>116.84</wpml:duration>
     <wpml:autoFlightSpeed>3</wpml:autoFlightSpeed>
       <Placemark>
         <Point>

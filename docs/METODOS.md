@@ -424,6 +424,11 @@ tecto = máximo entre a altitude nominal e todas as alturas dos waypoints
 (uma missão num planalto 250 m acima da descolagem tem waypoints a ~350 m).
 `takeOffSecurityHeight` 30 m por omissão. `finishAction`, `exitOnRCLost`
 e `executeRCLostAction` fora das listas caem no primeiro valor permitido.
+O `Folder` do `waylines.wpml` leva `distance` (m) e `duration` (s), de onde
+o Pilot 2 tira o progresso e o tempo em falta da rota: a distância é o
+comprimento 3D (`routeLengthM`), a duração é a previsão do plano
+(`durationS`) ou, sem ela, distância / velocidade. Por bloco, a do bloco,
+sem trânsito.
 
 Validação na fronteira (`validateExportParams`), que lança
 `MissionExportError` em vez de escrever o ficheiro: waypoints presentes e

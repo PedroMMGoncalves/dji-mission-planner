@@ -7,6 +7,7 @@
 import { describe, expect, test } from 'vitest'
 import { planTerrainFollow, regroupTerrainBlocks } from '../../src/mission/terrainFollow.js'
 import { buildAreaExport, nadirMarkerIndex, withNadirPitch } from '../../src/mission/areaExport.js'
+import { routeStats } from '../../src/utils/geo.js'
 
 const lat0 = 38.7
 const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
@@ -176,6 +177,61 @@ describe('buildAreaExport', () => {
     expect(params.photoIntervalM).toBe(0)
     expect(params.name).toBe('quinta_area')
     expect(params.perWaypoint).toBeUndefined()
+  })
+})
+
+/*
+ * Duracao que o comando mostra (wpml:duration): a mesma previsao do painel —
+ * serpentina com n linhas tem n-1 inversoes —, por bloco quando ha blocos e
+ * sobre a rota 3D quando ha seguimento de terreno. Sem transito: o Pilot 2
+ * conta a rota, nao a ida e volta a base.
+ */
+describe('buildAreaExport: duracao prevista', () => {
+  const lines = [
+    [em(0, 0), em(500, 0)],
+    [em(500, 40), em(0, 40)],
+    [em(0, 80), em(500, 80)],
+  ]
+  const base = {
+    missionName: 'q',
+    plan: { lines, waypoints: lines.flat() },
+    spacingM: 40,
+    sensorType: 'camera',
+    altitude: 100,
+    speed: 8,
+    wpml,
+    photoIntervalM: 20,
+    triggerMode: 'distance',
+    gimbalPitch: -90,
+  }
+  const prevista = (wps, n) => routeStats(wps, { speed: 8, turns: n - 1 }).flightTimeS
+
+  test('rota plana: a do plano quando a traz, senao a mesma formula', () => {
+    expect(buildAreaExport(base).params.durationS).toBeCloseTo(prevista(lines.flat(), 3), 6)
+    const comStats = { ...base.plan, stats: { flightTimeS: 321 } }
+    expect(buildAreaExport({ ...base, plan: comStats }).params.durationS).toBe(321)
+  })
+
+  test('com seguimento de terreno: sobre os waypoints 3D, nao sobre o plano em planta', () => {
+    const terrainResult = {
+      waypoints: lines.flat().map(([lo, la], i) => [lo, la, 100 + 30 * (i % 2)]),
+      perLine: [2, 2, 2],
+      perLink: [0, 0, 0],
+      blocks3: null,
+    }
+    const plan = { ...base.plan, stats: { flightTimeS: 1 } }
+    const { params } = buildAreaExport({ ...base, plan, terrainResult })
+    expect(params.durationS).toBeCloseTo(prevista(terrainResult.waypoints, 3), 6)
+  })
+
+  test('varios blocos: cada um com a sua, sem transito', () => {
+    const blocks = [
+      { id: 1, lines: lines.slice(0, 2), waypoints: lines.slice(0, 2).flat(), transitS: 90 },
+      { id: 2, lines: lines.slice(2), waypoints: lines[2], transitS: 90 },
+    ]
+    const { blocks: out } = buildAreaExport({ ...base, blocks })
+    expect(out[0].durationS).toBeCloseTo(prevista(blocks[0].waypoints, 2), 6)
+    expect(out[1].durationS).toBeCloseTo(prevista(blocks[1].waypoints, 1), 6)
   })
 })
 

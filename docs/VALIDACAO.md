@@ -106,7 +106,7 @@ intervalo, sem fotos nas ligações longas (R2); cada bloco arranca da base
 
 | Aeronave | Payload | Pilot 2 | Firmware | KMZ aceite | Enums (drone/payload) | Alturas relativas | Grupos de disparo | Blocos | Observações |
 |---|---|---|---|---|---|---|---|---|---|
-| M3E | Wide RGB | | | | 77/66 | | | | |
+| M3E | Wide RGB | 9.2.0.26 | 02.01.0322 | sim (2026-09) | 77/66 | | foto por waypoint dispara, mas pára em cada ponto | | 1.º voo: sem `distance`/`duration` no waylines, o comando mostrou 100 % e 00:00 a meio (corrigido) |
 | M300 RTK | Mapper+ | | | | 60/65535 | | | | |
 | M300 RTK | P1 | | | | 60/50/1 | | | | |
 
@@ -128,6 +128,7 @@ continua por preencher e só um voo a fecha.
 | `templateType` | mapping2d (×81) | waypoint | por desenho |
 | `xmlns:wpml` | 1.0.3 (×81) | 1.0.2 | difere, ver §11 dos métodos |
 | `finishAction` | goHome (×80), noAction (×1) | — | não escrito |
+| `distance` / `duration` (waylines) | escritos (×81) | escritos | corrigido a partir daqui |
 
 Duas verificações independentes do motor saíram do mesmo corpus, e estão
 aplicadas no código:

@@ -3035,6 +3035,9 @@ check(
         photoIntervalM: 20,
         triggerMode: 'distance',
         sensorType: 'camera',
+        // duracao do plano (com o custo das inversoes); os outros cenarios
+        // ficam com a de recurso, distancia / velocidade
+        durationS: areaPlan.stats.flightTimeS,
       },
     ],
     [
