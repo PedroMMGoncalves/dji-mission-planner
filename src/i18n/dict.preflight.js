@@ -22,6 +22,10 @@ export default {
     pt: 'Seguir terreno e foto por waypoint não podem coexistir: escolha disparo por distância ou desligue o terreno.',
     en: 'Follow terrain and photo-per-waypoint cannot coexist: choose distance triggering or turn terrain off.',
   },
+  'preflight.photo-pass-unverified': {
+    pt: 'Foto por waypoint sem paragem: ainda não foi confirmado em voo que o Pilot 2 dispara ao passar pelo ponto. Confira o número de fotos no primeiro voo, ou escolha «Paragem nos waypoints: Em todos».',
+    en: 'Photo per waypoint without stopping: it is not yet confirmed in flight that Pilot 2 fires while passing the point. Check the photo count on the first flight, or choose "Stop at waypoints: At every waypoint".',
+  },
   'preflight.terrain-not-loaded': {
     pt: 'Seguir terreno está ligado mas não há relevo a cobrir a área; sem ele o KMZ sairia com alturas planas.',
     en: 'Follow terrain is on but no elevation data covers the area; without it the KMZ would carry flat heights.',

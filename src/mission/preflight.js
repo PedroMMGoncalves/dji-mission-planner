@@ -16,6 +16,16 @@ const item = (level, code, params = {}) => ({ level, code, params })
 const wpCount = (x) => (Array.isArray(x?.waypoints) ? x.waypoints.length : 0)
 const round1 = (v) => Math.round(v * 10) / 10
 
+/**
+ * Foto por waypoint sem paragem: nenhum voo provou ainda que o Pilot 2
+ * dispara a acção de foto ao passar pelo ponto sem parar. Aviso até um voo
+ * o confirmar (docs/VALIDACAO.md, matriz de compatibilidade).
+ */
+const photoPassUnverified = (c) =>
+  c.photoMode === 'waypoint' && c.waypointStops !== 'all'
+    ? [item('warn', 'photo-pass-unverified')]
+    : []
+
 /** Minutos úteis de uma bateria, descontada a reserva; null sem bateria. */
 export function usableBatteryMin(batteryMin, reservePct = 30) {
   if (!(batteryMin > 0)) return null
@@ -28,6 +38,7 @@ export function usableBatteryMin(batteryMin, reservePct = 30) {
  * @param {any} c.plan plano (pode ter `error`) ou null
  * @param {any[]|null} [c.blocks] blocos de voo, quando a missão está dividida
  * @param {'distance'|'waypoint'} [c.photoMode]
+ * @param {'corners'|'all'} [c.waypointStops] paragem nos waypoints (omissão: só nos cantos)
  * @param {{enabled: boolean, tolerance: number}} [c.terrainFollow]
  * @param {boolean} [c.terrainCovers] o relevo carregado cobre a área
  * @param {any} [c.terrainResult] resultado do terrain follow ({error} ou waypoints)
@@ -60,6 +71,8 @@ export function preflightArea(c) {
   } else if (tf && c.terrainResult?.error) {
     out.push(item('block', 'terrain-error', { msg: String(c.terrainResult.error) }))
   }
+  // com seguimento de terreno a foto por waypoint já está bloqueada acima
+  if (!tf) out.push(...photoPassUnverified(c))
 
   // waypoints por rota exportada: a missão inteira ou o maior bloco
   const blocks = Array.isArray(c.blocks) && c.blocks.length > 0 ? c.blocks : null
@@ -165,7 +178,8 @@ export function preflightArea(c) {
 
 /**
  * Preflight dos outros modos (fachada, órbita, corredor): plano válido,
- * limite de waypoints, bateria e a mesma nota sobre as alturas.
+ * limite de waypoints, bateria e a mesma nota sobre as alturas. O corredor
+ * passa ainda `photoMode` e `waypointStops`, para o aviso da foto sem paragem.
  */
 export function preflightPlan(c) {
   const out = []
@@ -193,6 +207,7 @@ export function preflightPlan(c) {
     if (min > usable)
       out.push(item('warn', 'battery', { min: round1(min), usable: round1(usable) }))
   }
+  out.push(...photoPassUnverified(c))
   out.push(item('info', 'heights-relative'))
   return out
 }

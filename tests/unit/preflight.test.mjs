@@ -145,6 +145,25 @@ describe('preflightArea', () => {
     expect(preflightCounts(items)).toEqual({ block: 0, warn: 2, info: 2 })
   })
 
+  test('foto por waypoint sem paragem: aviso ate um voo o confirmar', () => {
+    const aviso = 'photo-pass-unverified'
+    const wp = { ...base(), photoMode: 'waypoint' }
+    expect(codes(preflightArea(wp))).toContain(aviso)
+    expect(codes(preflightArea({ ...wp, waypointStops: 'corners' }))).toContain(aviso)
+    expect(codes(preflightArea({ ...wp, waypointStops: 'all' }))).not.toContain(aviso)
+    expect(codes(preflightArea(base()))).not.toContain(aviso)
+    // com seguimento de terreno a combinacao ja esta bloqueada; nao se repete
+    const tf = { ...wp, terrainFollow: { enabled: true } }
+    expect(codes(preflightArea(tf))).not.toContain(aviso)
+    // corredor
+    expect(codes(preflightPlan({ plan, photoMode: 'waypoint' }))).toContain(aviso)
+    const todos = { plan, photoMode: 'waypoint', waypointStops: 'all' }
+    expect(codes(preflightPlan(todos))).not.toContain(aviso)
+    expect(codes(preflightPlan({ plan }))).not.toContain(aviso)
+    const msg = preflightDict[`preflight.${aviso}`]
+    expect(msg?.pt && msg?.en).toBeTruthy()
+  })
+
   test('preflightPlan (outros modos): mesmas regras sem terreno nem base', () => {
     expect(codes(preflightPlan({ plan: null }))).toEqual(['no-plan'])
     expect(codes(preflightPlan({ plan: { error: 'x' } }))).toEqual(['plan-error'])
