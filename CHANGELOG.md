@@ -28,6 +28,31 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   fronteira. Os sete ficheiros de referência ganham as duas linhas e nada
   mais.
 
+### Alterado (paragem nos waypoints)
+
+- **As grelhas deixam de parar em cada foto e em cada vértice do terreno.**
+  O modo de viragem que a exportação escrevia em todos os waypoints das
+  grelhas (`toPointAndStopWithDiscontinuityCurvature`) pára no ponto, como a
+  DJI documenta, e no primeiro voo real o M3E parava em cada foto da foto por
+  waypoint. O mesmo acontecia, sem aviso, em cada vértice do seguimento de
+  terreno e em cada dobra do corredor, mesmo com disparo por distância.
+
+  Novo parâmetro **«Paragem nos waypoints»** na área e no corredor:
+  **Só nos cantos** (por omissão) pára no fim de cada faixa e passa sem
+  parar pelos pontos intermédios; **Em todos** repõe a paragem em cada
+  ponto, para pouca luz ou exposições longas. Nos pontos de passagem sai o
+  modo que o Pilot 2 chama «Turns before waypoint. Flies through»
+  (`toPointAndPassWithContinuityCurvature` com `useStraightLine` 1), com
+  amortecimento de 1 m, reduzido para caber nos troços curtos; abaixo de
+  0,2 m o ponto pára. Projectos anteriores abrem em «Só nos cantos».
+
+  Com «Em todos», o tempo previsto, a duração enviada ao comando, o corte
+  da serpentina e o lado dos quadrados por bateria contam cada paragem como
+  meia inversão — um valor **deduzido** da calibração das inversões, a
+  trocar pelo medido no registo de voo. Um aviso de preflight lembra que
+  ainda nenhum voo provou que o Pilot 2 dispara a foto ao passar pelo ponto
+  sem parar.
+
 ### Corrigido (protocolo de validação)
 
 - **As missões de referência voltam a provar o que dizem provar.** A secção 2

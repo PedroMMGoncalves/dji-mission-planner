@@ -304,6 +304,16 @@ Modo foto por waypoint: cada faixa é densificada a passos iguais
 ≤ `interval` (`n = ceil(len/interval)`, extremos incluídos) e cada ponto
 leva `takePhoto`; com prolongamento os extremos estendidos não disparam.
 
+Paragem nos waypoints (`waypointStops`): **cantos** são o primeiro e o
+último waypoint de cada faixa (com prolongamento, as pontas prolongadas);
+**intermédios** são os outros — fotos do núcleo, vértices do seguimento de
+terreno e os pontos que este insere nas ligações. Com `corners` (omissão)
+só os cantos param; com `all` param todos, e o tempo soma
+`stopCostS = n · turnCostS(v) / 2` pelas `n` paragens intermédias
+(`stripRouteStats`). Uma inversão são duas paragens, daí a metade; é um
+valor deduzido, não medido (secção 16). O corredor usa a mesma regra por
+troço de passagem, com as dobras como intermédios.
+
 ## 7. Fachada
 
 Módulo `src/utils/faceMode.js`. Linha de base = pé da face; passagens
@@ -429,6 +439,15 @@ o Pilot 2 tira o progresso e o tempo em falta da rota: a distância é o
 comprimento 3D (`routeLengthM`), a duração é a previsão do plano
 (`durationS`) ou, sem ela, distância / velocidade. Por bloco, a do bloco,
 sem trânsito.
+Pontos de passagem (`passThrough`, lista paralela aos waypoints): no
+`waylines.wpml`, `waypointTurnMode` =
+`toPointAndPassWithContinuityCurvature`, `useStraightLine` = 1 e
+`waypointTurnDampingDist` = `min(1 m, 0,45 × troço adjacente mais curto)`
+(3D), que cumpre a regra da DJI de cada troço ser maior do que a soma das
+curvas das suas pontas; abaixo de 0,2 m, e sempre no primeiro e no último
+waypoint, o ponto fica com o modo da missão. No `template.kml` esses
+pontos levam `useGlobalTurnParam` = 0 e `waypointTurnParam` próprio. Sem a
+lista, o XML é o de sempre.
 
 Validação na fronteira (`validateExportParams`), que lança
 `MissionExportError` em vez de escrever o ficheiro: waypoints presentes e
@@ -519,8 +538,9 @@ acima de 1 px a 1/500 s; MDT com alturas elipsoidais; taxa de subida
 exigida num segmento acima da velocidade de subida da aeronave
 (`Δh / (comprimento / v)`, M3E/M4T 6 m/s, M300 5 m/s); segmento acima de
 5 km; tempo acima do útil de uma bateria (missão com trânsito de ida e
-volta, ou por bloco com `timeS + transitS`). Lembretes: sem base; alturas
-relativas à descolagem.
+volta, ou por bloco com `timeS + transitS`); foto por waypoint sem paragem
+(«Só nos cantos»), por validar em voo (área e corredor). Lembretes: sem
+base; alturas relativas à descolagem.
 
 ## 15. Tabela de constantes e tolerâncias
 
@@ -559,7 +579,10 @@ missões oblíquas do Pilot 2 custam entre 13 e 110 s por faixa, uma ordem
 de grandeza acima de uma inversão de sentido, pelo que o tempo de uma
 missão oblíqua pode ser o dobro do previsto; o comprimento 3D por bloco,
 que continua horizontal quando a missão é dividida com seguimento de
-terreno; atitude da aeronave (rolamento/arfagem) na pegada; obstáculos
+terreno; as paragens nos vértices do terreno no lado dos quadrados por
+bateria, que é calculado antes de o perfil existir (o tempo de cada bloco
+já as conta, e o preflight avisa); atitude da aeronave (rolamento/arfagem)
+na pegada; obstáculos
 fora da folga da fachada; conversão entre datums verticais (só a
 declaração); retornos múltiplos e padrão de varrimento do LiDAR; a
 distribuição estatística dos erros (a incerteza é propagada por
@@ -580,7 +603,12 @@ ponto de inserção único no código para cada grandeza:
    um cronómetro;
 2. autonomia real por combinação aeronave + payload, pela interface
    (`batteryByCombo`) ou corrigindo `batteryMin` no catálogo;
-3. velocidade efectiva em faixa = distância voada em faixa / tempo em
+3. custo de uma paragem intermédia (`stopCostS`, com «Em todos»):
+   **deduzido**, metade de uma inversão, porque uma inversão são duas
+   paragens. Medir no registo de um voo com paragem em cada foto (o
+   primeiro voo do M3E, 139 fotos, é um) como mediana do tempo parado mais
+   o de travar e acelerar em cada ponto;
+4. velocidade efectiva em faixa = distância voada em faixa / tempo em
    faixa; se o rácio for estável e < 1, entra como factor multiplicativo
    nos dois modelos de tempo. Ajustado sobre as mesmas 72 missões do
    Pilot 2 o factor dá 1,02 — indistinguível de 1 e do lado errado para

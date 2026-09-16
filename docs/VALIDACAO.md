@@ -100,7 +100,10 @@ quando existem as duas.
 Além da tabela, por inspecção do KMZ e do voo: folga ao solo ao longo de
 toda a rota ≥ AGL − tolerância − 3 m (R2); um grupo de disparo por
 intervalo, sem fotos nas ligações longas (R2); cada bloco arranca da base
-(R3); RTH acima do tecto da rota (todas).
+(R3); RTH acima do tecto da rota (todas). Com foto por waypoint e
+«Paragem nos waypoints: Só nos cantos», o número de fotos tem de ser igual
+ao de pontos de foto do plano, e o drone só pára nos cantos das faixas:
+é essa verificação que retira o aviso de preflight da foto sem paragem.
 
 ## 5. Matriz de compatibilidade (a preencher)
 

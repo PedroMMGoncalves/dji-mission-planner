@@ -155,7 +155,7 @@ The WPML enums shipped are `M3E = 77/66`, `M4T = 99/1/89`, `M300 RTK + P1 = 60/5
 
 Mission-level safety fields are written from the WPML enumerations and validated on export, so an out-of-range value can never reach the file: `finishAction` (`goHome` / `noAction` / `autoLand` / `gotoFirstWaypoint`), `exitOnRCLost` (`executeLostAction` / `goContinue`) and `executeRCLostAction` (`goBack` / `landing` / `hover`). They default to return-to-home; the exporter accepts overrides (`finishAction`, `exitOnRCLost`, `executeRCLostAction`, `rthHeightM`) but the panel does not expose them yet. `globalRTHHeight` defaults to the higher of 100 m and the mission ceiling plus 20 m, so the return leg never descends into the survey area — **check it against the terrain and obstacles on your site before flying.**
 
-Turn parameters follow the turn mode rather than being fixed: area and face grids fly straight legs with a stop at each waypoint (`useStraightLine` 1), while orbits use continuous curvature with `useStraightLine` 0, which is what the specification requires for a genuine curved path.
+Turn parameters follow the turn mode rather than being fixed: face and inspection missions fly straight legs with a stop at each waypoint (`useStraightLine` 1), while orbits use continuous curvature with `useStraightLine` 0, which is what the specification requires for a genuine curved path. Area and corridor grids stop only at strip corners by default and fly through photo points, terrain vertices and pass bends (Pilot 2's "Turns before waypoint. Flies through": continuous curvature with `useStraightLine` 1 and a small turn damping); **Stop at waypoints: At every waypoint** restores a stop at each point.
 
 ## Development
 
