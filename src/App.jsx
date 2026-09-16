@@ -27,6 +27,7 @@ import {
 import {
   aggregatePlans,
   normalizeTriggerMode,
+  normalizeWaypointStops,
   computeFootprint,
   computeGSD,
   findOptimalDirection,
@@ -788,6 +789,8 @@ function AppInner({ lang, setLang }) {
           ...prev,
           ...n.params,
           triggerMode: normalizeTriggerMode(n.params.triggerMode ?? prev.triggerMode),
+          // projectos anteriores ao parâmetro abrem com paragem só nos cantos
+          waypointStops: normalizeWaypointStops(n.params.waypointStops),
         }))
       }
       // projectos antigos guardavam uma duração de bateria única dentro de

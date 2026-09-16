@@ -10,7 +10,7 @@ import {
 } from '../../src/mission/project.js'
 import { planBlocks } from '../../src/mission/blocks.js'
 import { generateFlightPlan } from '../../src/utils/geo.js'
-import { DEFAULT_CORRIDOR_CONFIG } from '../../src/utils/corridor.js'
+import { DEFAULT_CORRIDOR_CONFIG, normalizeCorridorConfig } from '../../src/utils/corridor.js'
 
 const lat0 = 38.7
 const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
@@ -90,6 +90,14 @@ describe('projecto: serializar e ler', () => {
     expect(n.basePoint).toBeNull()
     expect(n.disabledTiles.size).toBe(0)
     expect(n.areaOrigin).toBeNull()
+  })
+
+  test('paragem nos waypoints: omissao nos cantos, corredor antigo abre nos cantos', () => {
+    expect(DEFAULT_CORRIDOR_CONFIG.waypointStops).toBe('corners')
+    const n = normalizeProject({ version: 2, corridorConfig: { centreline: null, bufferM: 50 } })
+    expect(n.corridorConfig.waypointStops).toBe('corners')
+    expect(normalizeCorridorConfig({ waypointStops: 'all' }).waypointStops).toBe('all')
+    expect(normalizeCorridorConfig({ waypointStops: 'x' }).waypointStops).toBe('corners')
   })
 
   test('nome do ficheiro', () => {

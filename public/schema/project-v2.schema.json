@@ -75,6 +75,7 @@
         "bufferM": { "type": "number", "exclusiveMinimum": 0 },
         "speedMS": { "type": "number", "exclusiveMinimum": 0 },
         "photoMode": { "$ref": "#/$defs/photoMode" },
+        "waypointStops": { "$ref": "#/$defs/waypointStops" },
         "simplifyM": { "type": "number", "minimum": 0 }
       }
     },
@@ -105,6 +106,7 @@
         "angle": { "type": "number", "minimum": 0, "maximum": 360 },
         "bufferPct": { "type": "number", "minimum": -50, "maximum": 100 },
         "triggerMode": { "$ref": "#/$defs/photoMode" },
+        "waypointStops": { "$ref": "#/$defs/waypointStops" },
         "spacingMode": { "enum": ["auto", "manual"] },
         "manualSpacing": { "type": "number", "exclusiveMinimum": 0 },
         "crosshatch": { "type": "boolean" },
@@ -189,6 +191,7 @@
     "ring": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/lonLat" } },
     "pct": { "type": "number", "minimum": 0, "maximum": 100 },
     "photoMode": { "enum": ["distance", "waypoint"] },
+    "waypointStops": { "enum": ["corners", "all"] },
     "inspectPoint": {
       "type": "object",
       "required": ["id", "point"],

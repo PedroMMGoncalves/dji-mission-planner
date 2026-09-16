@@ -20,6 +20,7 @@ export const DEFAULT_PARAMS = {
   gimbalPitch: -90, // inclinação da câmara: -90 nadir · -60/-45 oblíqua
   overshoot: 0, // prolongamento de cada faixa nos dois extremos (m) — T2.2
   tieLine: false, // fiada de amarração perpendicular no fim — T2.3
+  waypointStops: 'corners', // 'corners' | 'all': paragem só nos cantos das faixas, ou em todos os waypoints
 }
 
 /** Divisão da missão em blocos. */

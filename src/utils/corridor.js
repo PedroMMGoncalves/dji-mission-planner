@@ -1,5 +1,11 @@
 import * as turf from '@turf/turf'
-import { computeFootprint, lineSpacing, routeLengthM, stripRouteStats } from './geo.js'
+import {
+  computeFootprint,
+  lineSpacing,
+  normalizeWaypointStops,
+  routeLengthM,
+  stripRouteStats,
+} from './geo.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
 /**
@@ -60,6 +66,7 @@ export const DEFAULT_CORRIDOR_CONFIG = {
   speedMS: 8,
   photoMode: 'distance', // 'distance' | 'waypoint'
   simplifyM: 1, // tolerância de simplificação das passagens (modo distância)
+  waypointStops: 'corners', // 'corners' | 'all': paragem só nas pontas dos troços, ou em todos
 }
 
 /** Normaliza uma configuração guardada num projecto (campos em falta, lixo). */
@@ -88,6 +95,7 @@ export function normalizeCorridorConfig(stored) {
     speedMS: num(s.speedMS, d.speedMS, 0.5, 25),
     photoMode: s.photoMode === 'waypoint' ? 'waypoint' : 'distance',
     simplifyM: num(s.simplifyM, d.simplifyM, 0, 25),
+    waypointStops: normalizeWaypointStops(s.waypointStops),
   }
 }
 

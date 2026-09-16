@@ -63,6 +63,21 @@ describe('esquema JSON do ficheiro de projecto', () => {
     expect(validate(roundTrip(defaults())), errors()).toBe(true)
   })
 
+  test('paragem nos waypoints: os dois valores validam, o resto e recusado', () => {
+    for (const waypointStops of ['corners', 'all']) {
+      const st = defaults()
+      st.params = { ...st.params, waypointStops }
+      st.corridorConfig = { ...st.corridorConfig, waypointStops }
+      expect(validate(roundTrip(st)), `${waypointStops}: ${errors()}`).toBe(true)
+    }
+    const mau = defaults()
+    mau.params = { ...mau.params, waypointStops: 'nunca' }
+    expect(validate(roundTrip(mau))).toBe(false)
+    const mau2 = defaults()
+    mau2.corridorConfig = { ...mau2.corridorConfig, waypointStops: 'nunca' }
+    expect(validate(roundTrip(mau2))).toBe(false)
+  })
+
   test('cada preset de missao aplicado aos parametros valida', () => {
     for (const p of MISSION_PRESETS) {
       const st = defaults()
