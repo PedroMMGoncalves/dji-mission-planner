@@ -150,6 +150,15 @@ describe('planBlocks', () => {
     expect(locals.slice(primeiro + 1).every((v) => v === 0)).toBe(true)
   })
 
+  test('faixas: a política de paragem chega ao corte da serpentina', () => {
+    const plan = generateFlightPlan(ring, { ...opts, photoMode: 'waypoint' })
+    const args = { split, batteryMin: 30, speed: 8, spacingM: 40 }
+    const cantos = planBlocks(plan, args)
+    const todos = planBlocks(plan, { ...args, waypointStops: 'all' })
+    const soma = (b) => b.reduce((s, x) => s + x.timeS, 0)
+    expect(soma(todos)).toBeGreaterThan(soma(cantos))
+  })
+
   test('sem divisão ou em modo bateria/mosaico sem células: null', () => {
     const plan = generateFlightPlan(ring, opts)
     expect(planBlocks(null, { split, batteryMin: 30, speed: 8, spacingM: 40 })).toBeNull()

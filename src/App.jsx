@@ -416,6 +416,14 @@ function AppInner({ lang, setLang }) {
     spacing,
     batteryMin,
     passes: params.crosshatch ? (params.includeNadir ? 3 : 2) : 1,
+    // foto por waypoint com paragem em todos: uma paragem a cada intervalo
+    stopEveryM:
+      params.waypointStops === 'all' &&
+      sensor.type === 'camera' &&
+      params.triggerMode === 'waypoint' &&
+      interval > 0
+        ? interval
+        : 0,
     onImportedMission,
     t,
   })

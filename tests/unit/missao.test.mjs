@@ -7,7 +7,7 @@
 import { describe, expect, test } from 'vitest'
 import { planTerrainFollow, regroupTerrainBlocks } from '../../src/mission/terrainFollow.js'
 import { buildAreaExport, nadirMarkerIndex, withNadirPitch } from '../../src/mission/areaExport.js'
-import { routeStats } from '../../src/utils/geo.js'
+import { passThroughFor, routeStats, stripRouteStats } from '../../src/utils/geo.js'
 
 const lat0 = 38.7
 const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
@@ -232,6 +232,86 @@ describe('buildAreaExport: duracao prevista', () => {
     const { blocks: out } = buildAreaExport({ ...base, blocks })
     expect(out[0].durationS).toBeCloseTo(prevista(blocks[0].waypoints, 2), 6)
     expect(out[1].durationS).toBeCloseTo(prevista(blocks[1].waypoints, 1), 6)
+  })
+})
+
+describe('buildAreaExport: paragem nos waypoints', () => {
+  const lines = [
+    [em(0, 0), em(500, 0)],
+    [em(500, 40), em(0, 40)],
+  ]
+  const base = {
+    missionName: 'q',
+    spacingM: 40,
+    sensorType: 'camera',
+    altitude: 100,
+    speed: 8,
+    wpml,
+    photoIntervalM: 20,
+    triggerMode: 'distance',
+    gimbalPitch: -90,
+  }
+  const plano = { lines, waypoints: lines.flat() }
+
+  test('distancia sem terreno: so cantos, sem lista', () => {
+    expect(buildAreaExport({ ...base, plan: plano }).params.passThrough).toBeNull()
+  })
+
+  test('foto por waypoint: passam as fotos do meio; em todos, nenhuma', () => {
+    const perLine = [4, 4]
+    const waypoints = [
+      em(0, 0),
+      em(160, 0),
+      em(330, 0),
+      em(500, 0),
+      em(500, 40),
+      em(330, 40),
+      em(160, 40),
+      em(0, 40),
+    ]
+    const perWaypoint = waypoints.map(() => ({ actions: ['takePhoto'] }))
+    const plan = { lines, waypoints, perLine, perWaypoint }
+    const c = buildAreaExport({ ...base, photoMode: 'waypoint', plan })
+    expect(c.params.passThrough).toEqual(passThroughFor(perLine))
+    const t = buildAreaExport({ ...base, photoMode: 'waypoint', plan, waypointStops: 'all' })
+    expect(t.params.passThrough).toBeNull()
+    const r = stripRouteStats(waypoints, { speed: 8, lineCount: 2, perLine, waypointStops: 'all' })
+    expect(t.params.durationS).toBeCloseTo(r.flightTimeS, 6)
+    expect(t.params.durationS).toBeGreaterThan(c.params.durationS)
+  })
+
+  test('terreno: ligacoes passam; cada bloco com a sua lista', () => {
+    const terrainResult = {
+      waypoints: Array.from({ length: 7 }, (_, i) => [...em(i * 50, 0), 100 + i]),
+      perLine: [3, 4],
+      perLink: [0, 1],
+      blocks3: null,
+    }
+    const { params } = buildAreaExport({ ...base, plan: plano, terrainResult })
+    expect(params.passThrough).toEqual(passThroughFor([3, 4], [0, 1]))
+    const blocks3 = [
+      {
+        id: 1,
+        lines: [lines[0]],
+        waypoints: terrainResult.waypoints.slice(0, 3),
+        perLine: [3],
+        perLink: [0],
+      },
+      {
+        id: 2,
+        lines: [lines[1]],
+        waypoints: terrainResult.waypoints.slice(4),
+        perLine: [3],
+        perLink: [0],
+      },
+    ]
+    const out = buildAreaExport({
+      ...base,
+      plan: plano,
+      terrainResult: { ...terrainResult, blocks3 },
+    }).blocks
+    expect(out[0].passThrough).toEqual([false, true, false])
+    expect(out[1].passThrough).toEqual([false, true, false])
   })
 })
 

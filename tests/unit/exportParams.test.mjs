@@ -14,7 +14,7 @@ import { validateExportParams } from '../../src/utils/exporters.js'
 import { generateFacePlan } from '../../src/utils/faceMode.js'
 import { generateOrbitPlan } from '../../src/utils/orbit.js'
 import { generateCorridorPlan } from '../../src/utils/corridor.js'
-import { resolveSensor } from '../../src/utils/geo.js'
+import { passThroughFor, resolveSensor } from '../../src/utils/geo.js'
 import { DEFAULT_CUSTOM_SENSOR, PAYLOADS } from '../../src/data/drones.js'
 
 const sensor = resolveSensor(PAYLOADS.M3E_WIDE, DEFAULT_CUSTOM_SENSOR)
@@ -101,6 +101,8 @@ describe('corridorExportParams', () => {
     expect(p.triggerRanges.length).toBeGreaterThanOrEqual(1)
     expect(p.triggerRanges.at(-1)[1]).toBe(plan.waypoints.length - 1)
     expect(p.durationS).toBe(plan.stats.flightTimeS)
+    // as dobras das passagens passam; as pontas dos troços param
+    expect(p.passThrough).toEqual(passThroughFor(plan.lines.map((l) => l.length)))
     expect(validateExportParams(p)).toBe(p)
   })
 
@@ -118,7 +120,19 @@ describe('corridorExportParams', () => {
     expect(p.triggerMode).toBe('waypoint')
     expect(p.triggerRanges).toBeNull()
     expect(p.perWaypoint).toBe(plan.perWaypoint)
+    expect(p.passThrough).toEqual(passThroughFor(plan.perLine))
+    expect(p.passThrough.some(Boolean)).toBe(true)
     expect(validateExportParams(p)).toBe(p)
+    const todos = corridorExportParams({
+      ...comum,
+      plan,
+      photoMode: 'waypoint',
+      altitude: 100,
+      speed: 8,
+      photoIntervalM: 20,
+      waypointStops: 'all',
+    })
+    expect(todos.passThrough).toBeNull()
   })
 })
 

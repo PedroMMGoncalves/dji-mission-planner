@@ -6,7 +6,7 @@
  * porque junta terrain follow, blocos e grelha nadir.
  */
 import { buildExportName } from '../utils/exporters.js'
-import { triggerRangesForLines } from '../utils/geo.js'
+import { passThroughFor, triggerRangesForLines } from '../utils/geo.js'
 import { inspectionToWaypoints } from '../utils/inspect.js'
 
 /** Fachada: uma foto por waypoint, rumo fixo; a altitude global é a passagem mais alta. */
@@ -59,6 +59,7 @@ export function corridorExportParams({
   wpml,
   photoIntervalM,
   sensorType,
+  waypointStops = 'corners',
 }) {
   const perWaypointPhotos = photoMode === 'waypoint'
   return {
@@ -83,6 +84,12 @@ export function corridorExportParams({
     gimbalPitch: -90,
     sensorType,
     durationS: plan.stats.flightTimeS,
+    // fotos e dobras das passagens sem paragem; as pontas dos troços param
+    passThrough: passThroughFor(
+      plan.perLine ?? plan.lines.map((l) => l.length),
+      null,
+      waypointStops,
+    ),
   }
 }
 

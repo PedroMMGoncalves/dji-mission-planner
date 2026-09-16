@@ -5,7 +5,7 @@
  * testada sem browser — vivia no handler de exportação do App.jsx.
  */
 import { buildExportName } from '../utils/exporters.js'
-import { routeStats, triggerRangesForLines } from '../utils/geo.js'
+import { passThroughFor, stripRouteStats, triggerRangesForLines } from '../utils/geo.js'
 
 /** Copia `pw` com o gimbal a −90° no waypoint `at` (fundindo a entrada existente). */
 export function withNadirPitch(pw, at) {
@@ -50,13 +50,26 @@ export function buildAreaExport({
   crosshatch = false,
   includeNadir = false,
   tieLine = false,
+  // 'corners' | 'all': paragem só nos cantos das faixas, ou em todos
+  waypointStops = 'corners',
 }) {
   const terrainOk = Boolean(terrainResult && !terrainResult.error)
+  // waypoints por faixa: os do plano (densificado) ou 2 por faixa
+  const groups = (lines, perLine) => perLine ?? lines.map(() => 2)
   // Duração que o comando mostra: a previsão do painel (n linhas, n−1
-  // inversões), sobre a rota 3D quando há seguimento de terreno, e sem o
-  // trânsito até à base, que o Pilot 2 não conta na rota.
-  const durationFor = (wps, lineCount) =>
-    routeStats(wps, { speed, turns: lineCount - 1 }).flightTimeS
+  // inversões, e as paragens intermédias com 'all'), sobre a rota 3D quando
+  // há seguimento de terreno, e sem o trânsito até à base, que o Pilot 2 não
+  // conta na rota.
+  const durationFor = (wps, lines, perLine) =>
+    stripRouteStats(wps, {
+      speed,
+      lineCount: lines.length,
+      perLine: groups(lines, perLine),
+      waypointStops,
+    }).flightTimeS
+  const routeWps = terrainOk ? terrainResult.waypoints : plan.waypoints
+  const routePerLine = terrainOk ? terrainResult.perLine : (plan.perLine ?? null)
+  const routePerLink = terrainOk ? (terrainResult.perLink ?? null) : null
   // E3.1: tipo e variantes codificados no nome do ficheiro
   const name = buildExportName(missionName, 'area', {
     variant: [
@@ -68,7 +81,7 @@ export function buildAreaExport({
   })
   const params = {
     name,
-    waypoints: terrainOk ? terrainResult.waypoints : plan.waypoints,
+    waypoints: routeWps,
     altitude,
     speed,
     wpml,
@@ -81,7 +94,9 @@ export function buildAreaExport({
     durationS:
       !terrainOk && Number.isFinite(plan.stats?.flightTimeS)
         ? plan.stats.flightTimeS
-        : durationFor(terrainOk ? terrainResult.waypoints : plan.waypoints, plan.lines.length),
+        : durationFor(routeWps, plan.lines, routePerLine),
+    // pontos intermédios sem paragem (null = todos param, como sempre)
+    passThrough: passThroughFor(groups(plan.lines, routePerLine), routePerLink, waypointStops),
   }
 
   // Disparo suspenso nas ligações longas (mais de 2,5 espaçamentos): as
@@ -102,7 +117,12 @@ export function buildAreaExport({
       triggerRanges: triggerRangesForLines(b.lines, b.perLine ?? null, b.perLink ?? null, {
         maxLinkM,
       }),
-      durationS: durationFor(b.waypoints, b.lines.length),
+      durationS: durationFor(b.waypoints, b.lines, b.perLine ?? null),
+      passThrough: passThroughFor(
+        groups(b.lines, b.perLine ?? null),
+        b.perLink ?? null,
+        waypointStops,
+      ),
     })) ?? null
   const multiBlock = Boolean(exportBlocks && exportBlocks.length > 1)
 

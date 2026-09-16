@@ -79,6 +79,22 @@ describe('routeStats', () => {
 })
 
 describe('lado por bateria', () => {
+  it('com paragem em cada foto o lado encolhe, e o quadrado continua a caber', () => {
+    const base = { batteryMin: 12, reservePct: 30, spacingM: 40, speed: 8, maxSideM: 2000 }
+    const sem = squareSideForBattery(base)
+    expect(squareSideForBattery({ ...base, stopEveryM: 0 })).toBe(sem)
+    const com = squareSideForBattery({ ...base, stopEveryM: 20 })
+    expect(com).toBeLessThan(sem)
+    // o mesmo modelo do dimensionamento, com as paragens: cabe no tempo util
+    const L = com
+    const s = 40
+    const v = 8
+    const turn = turnCostS(v)
+    const paragens = (L * L * stopCostS(1, v)) / (s * 20)
+    const t = (L * L) / (s * v) + L * (2 / v + turn / s) + turn + paragens
+    expect(t).toBeLessThanOrEqual(12 * 60 * 0.7)
+  })
+
   it('encolhe quando a viragem fica mais cara, ou seja com mais velocidade', () => {
     // bateria curta para o resultado nao bater no tecto de 500 m
     const base = { batteryMin: 8, reservePct: 30, spacingM: 50 }

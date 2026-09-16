@@ -339,6 +339,9 @@ export function squareSideForBattery({
   transitS = 0,
   maxSideM = 500,
   passes = 1, // 2 = dupla grelha (crosshatch): o bloco é voado nas duas direções
+  // Paragem a cada `stopEveryM` metros ao longo da faixa (foto por waypoint
+  // com paragem em todos); 0 = só nos cantos
+  stopEveryM = 0,
 }) {
   const v = speed > 0 ? speed : 10
   const s = Math.max(1, spacingM)
@@ -347,7 +350,8 @@ export function squareSideForBattery({
     (batteryMin * 60 * (1 - reservePct / 100) - transitS) / Math.max(1, passes),
   )
   const turnS = turnCostS(v)
-  const a = 1 / (s * v)
+  // L/s faixas de L/e paragens cada: L²·custo/(s·e), que entra no termo em L²
+  const a = 1 / (s * v) + (stopEveryM > 0 ? stopCostS(1, v) / (s * stopEveryM) : 0)
   const b = 2 / v + turnS / s
   const c = turnS - T
   const L = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a)

@@ -8,12 +8,21 @@ import { nadirLineLocalPerBlock, splitIntoBlocks } from '../utils/geo.js'
 /**
  * @param {any} plan plano de área válido (generateFlightPlan / composeCellPlans)
  * @param {{activeCells?: any[]|null, split: {mode: string, maxAreaHa?: number, reservePct?: number},
- *   batteryMin?: number, speed?: number, spacingM?: number, basePoint?: number[]|null}} opts
+ *   batteryMin?: number, speed?: number, spacingM?: number, basePoint?: number[]|null,
+ *   waypointStops?: string}} opts
  * @returns {Array<object>|null} lista de blocos ou null (sem divisão)
  */
 export function planBlocks(
   plan,
-  { activeCells = null, split, batteryMin, speed, spacingM, basePoint = null },
+  {
+    activeCells = null,
+    split,
+    batteryMin,
+    speed,
+    spacingM,
+    basePoint = null,
+    waypointStops = 'corners',
+  },
 ) {
   if (!plan) return null
   if (activeCells && plan.cellPlans) {
@@ -42,6 +51,7 @@ export function planBlocks(
     speed,
     spacingM,
     basePoint,
+    waypointStops,
   })
   if (!cut || plan.nadirStartLine == null) return cut
   // em que linha local de cada bloco começa a grelha nadir

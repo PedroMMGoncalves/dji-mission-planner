@@ -35,6 +35,7 @@ import { DEFAULT_ANCHOR, DEFAULT_SPLIT } from '../mission/defaults.js'
  * @param {number} args.spacing espaçamento entre linhas (m)
  * @param {number} args.batteryMin duração de bateria efectiva (min)
  * @param {number} args.passes número de passagens (1, 2 ou 3 com nadir extra)
+ * @param {number} [args.stopEveryM] paragem a cada X m ao longo da faixa (0 = só nos cantos)
  * @param {Function} args.onImportedMission reimportação de um WPML: recebe {name, altitude, speed}
  * @param {Function} args.t tradução
  */
@@ -47,6 +48,7 @@ export function useAreaGeometry({
   spacing,
   batteryMin,
   passes,
+  stopEveryM = 0,
   onImportedMission,
   t,
 }) {
@@ -155,6 +157,8 @@ export function useAreaGeometry({
         // ao ligar/desligar o cross-hatch, e a célula podia exceder o que uma
         // bateria voa.
         passes,
+        // com paragem em cada foto, cada faixa custa mais e o lado encolhe
+        stopEveryM,
       })
     }
     return { cells: tilePolygonWithSquares(ring, side, split.tileOrientation, holes), side }
@@ -173,6 +177,7 @@ export function useAreaGeometry({
     spacing,
     basePoint,
     passes,
+    stopEveryM,
   ])
 
   const tiles = Array.isArray(tilesResult?.cells) ? tilesResult.cells : null
