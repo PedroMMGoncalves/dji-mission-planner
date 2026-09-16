@@ -170,6 +170,20 @@ export function validateExportParams(params) {
       }
     })
   }
+  // Pontos de passagem: lista paralela aos waypoints (buracos = paragem)
+  if (params.passThrough != null) {
+    if (!Array.isArray(params.passThrough)) {
+      throw new MissionExportError('param-not-finite', 'passThrough')
+    }
+    if (params.passThrough.length > waypoints.length) {
+      throw new MissionExportError('param-out-of-range', 'passThrough')
+    }
+    params.passThrough.forEach((v, i) => {
+      if (v != null && typeof v !== 'boolean') {
+        throw new MissionExportError('param-out-of-range', `passThrough[${i}]`)
+      }
+    })
+  }
   // Divida da fronteira que a auditoria registou: estes campos chegavam ao
   // ficheiro em cru. Nenhum e hoje alimentado por um campo da interface, mas
   // `turnMode: 'a & b'` e `payloadPositionIndex: '<mau>'` produzem XML MAL
@@ -509,6 +523,31 @@ function missionConfigXml({ wpml, speed, altitude, ...opts }) {
  * template.kml — "molde" da missão, com a configuração global e os waypoints.
  * O DJI Pilot 2 usa este ficheiro para reconstruir/editar a missão.
  */
+/*
+ * PONTOS DE PASSAGEM. O modo das grelhas pára em cada waypoint; nos pontos
+ * intermédios (fotos, vértices do terreno, dobras do corredor) a paragem não
+ * foi pedida — no primeiro voo real o M3E parava em cada foto. Aí escreve-se
+ * o modo que o Pilot 2 chama «Turns before waypoint. Flies through»
+ * (common-element.md: curvatura contínua com useStraightLine a 1, e
+ * amortecimento obrigatório). O amortecimento é o menor que serve, e nunca
+ * mais de 0,45 do troço adjacente mais curto, para cada troço ser maior do
+ * que a soma das curvas das suas pontas, como a DJI exige; abaixo de
+ * PASS_MIN_DAMPING_M o ponto fica com paragem.
+ */
+export const PASS_DAMPING_M = 1
+export const PASS_MIN_DAMPING_M = 0.2
+const PASS_TURN_MODE = 'toPointAndPassWithContinuityCurvature'
+
+/** Viragem do waypoint i quando passa sem parar; null = a da missão. */
+function passTurnAt(waypoints, passThrough, i) {
+  if (!passThrough?.[i] || i === 0 || i === waypoints.length - 1) return null
+  const prev = routeLengthM([waypoints[i - 1], waypoints[i]])
+  const next = routeLengthM([waypoints[i], waypoints[i + 1]])
+  const damping = Math.min(PASS_DAMPING_M, 0.45 * Math.min(prev, next))
+  if (!(damping >= PASS_MIN_DAMPING_M)) return null
+  return { mode: PASS_TURN_MODE, damping: Number(damping.toFixed(2)) }
+}
+
 export function buildTemplateKML(params) {
   validateExportParams(params)
   const { name, waypoints, altitude, speed } = params
@@ -519,8 +558,16 @@ export function buildTemplateKML(params) {
   const now = params.createTimeMs ?? Date.now()
 
   const placemarks = waypoints
-    .map(
-      ([lon, lat, h], i) => `      <Placemark>
+    .map(([lon, lat, h], i) => {
+      const pass = passTurnAt(waypoints, params.passThrough, i)
+      const passXml = pass
+        ? `
+        <wpml:waypointTurnParam>
+          <wpml:waypointTurnMode>${pass.mode}</wpml:waypointTurnMode>
+          <wpml:waypointTurnDampingDist>${pass.damping}</wpml:waypointTurnDampingDist>
+        </wpml:waypointTurnParam>`
+        : ''
+      return `      <Placemark>
         <Point>
           <coordinates>${fmtCoord(lon)},${fmtCoord(lat)}</coordinates>
         </Point>
@@ -530,10 +577,10 @@ export function buildTemplateKML(params) {
         <wpml:useGlobalHeight>${h != null ? 0 : 1}</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
-        <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
-        <wpml:useStraightLine>${turn.straightLine}</wpml:useStraightLine>
-      </Placemark>`,
-    )
+        <wpml:useGlobalTurnParam>${pass ? 0 : 1}</wpml:useGlobalTurnParam>${passXml}
+        <wpml:useStraightLine>${pass ? 1 : turn.straightLine}</wpml:useStraightLine>
+      </Placemark>`
+    })
     .join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -614,6 +661,8 @@ export function buildWaylinesWPML(params) {
     // Duração prevista da rota (s), a mesma que o painel mostra. Sem ela,
     // distância / velocidade: por baixo, mas nunca zero.
     durationS = null,
+    // Waypoints que passam sem parar (lista paralela); null = todos param
+    passThrough = null,
   } = params
   const turn = turnParams(turnMode, turnDampingDistM)
   const gimbalPitch = params.gimbalPitch ?? -90
@@ -755,6 +804,7 @@ ${actions.join('\n')}
   const placemarks = waypoints
     .map(([lon, lat, h], i) => {
       const pw = perWaypoint?.[i] ?? null
+      const pass = passTurnAt(waypoints, passThrough, i)
       const hasHeading = pw?.heading != null
       const pwGroup = pw ? perWaypointGroup(i, pw) : ''
       const groupsXml = [...(globalGroupsAt.get(i) ?? []), pwGroup].filter(Boolean).join('\n')
@@ -773,10 +823,10 @@ ${actions.join('\n')}
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
         </wpml:waypointHeadingParam>
         <wpml:waypointTurnParam>
-          <wpml:waypointTurnMode>${turnMode}</wpml:waypointTurnMode>
-          <wpml:waypointTurnDampingDist>${turn.damping}</wpml:waypointTurnDampingDist>
+          <wpml:waypointTurnMode>${pass ? pass.mode : turnMode}</wpml:waypointTurnMode>
+          <wpml:waypointTurnDampingDist>${pass ? pass.damping : turn.damping}</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>
-        <wpml:useStraightLine>${turn.straightLine}</wpml:useStraightLine>${groupsXml ? '\n' + groupsXml : ''}
+        <wpml:useStraightLine>${pass ? 1 : turn.straightLine}</wpml:useStraightLine>${groupsXml ? '\n' + groupsXml : ''}
       </Placemark>`
     })
     .join('\n')
@@ -848,6 +898,8 @@ export function blockExportParams(params, block) {
     // e para a duração: a da missão inteira daria a cada bloco um tempo em
     // falta várias vezes o real; sem a do bloco, distância / velocidade
     durationS: block.durationS ?? null,
+    // idem para os pontos de passagem
+    passThrough: block.passThrough ?? null,
   }
 }
 

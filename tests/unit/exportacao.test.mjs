@@ -7,12 +7,14 @@ import fc from 'fast-check'
 import { XMLValidator } from 'fast-xml-parser'
 import { describe, expect, test } from 'vitest'
 import {
+  PASS_DAMPING_M,
+  PASS_MIN_DAMPING_M,
   blockExportParams,
   buildTemplateKML,
   buildWaylinesWPML,
   validateExportParams,
 } from '../../src/utils/exporters.js'
-import { routeLengthM } from '../../src/utils/geo.js'
+import { passThroughFor, routeLengthM } from '../../src/utils/geo.js'
 
 const JUNK = /(^|>)\s*(NaN|undefined|Infinity|null)\s*(<|$)/
 const campoNum = (xml, tag) => {
@@ -59,7 +61,15 @@ describe('buildWaylinesWPML', () => {
     fc.assert(
       fc.property(
         params.chain((p) =>
-          perWaypointFor(p.waypoints.length).map((pw) => ({ ...p, perWaypoint: pw })),
+          fc
+            .tuple(
+              perWaypointFor(p.waypoints.length),
+              fc.array(fc.boolean(), {
+                minLength: p.waypoints.length,
+                maxLength: p.waypoints.length,
+              }),
+            )
+            .map(([pw, pass]) => ({ ...p, perWaypoint: pw, passThrough: pass })),
         ),
         (p) => {
           const xml = buildWaylinesWPML({ ...p, wpml })
@@ -347,5 +357,108 @@ describe('blockExportParams', () => {
       routeLengthM(b.waypoints) / params.speed,
       1,
     )
+  })
+})
+
+/*
+ * Pontos de passagem: o modo das grelhas para em cada waypoint, e no 1.o voo
+ * real (M3E) o drone parava em cada foto. Nos pontos intermedios passa a
+ * sair o modo que o Pilot 2 chama «Turns before waypoint. Flies through».
+ */
+describe('passThrough: pontos sem paragem', () => {
+  const lat = 38.7
+  const mL = 111320 * Math.cos((lat * Math.PI) / 180)
+  const p = (x, y, z) => [-9.14 + x / mL, lat + y / 110574, z]
+  // faixa de 5 pontos a 20 m, ligacao, faixa de 3 pontos
+  const wps = [
+    p(0, 0, 60),
+    p(20, 0, 60),
+    p(40, 0, 62),
+    p(60, 0, 60),
+    p(80, 0, 60),
+    p(80, 30, 60),
+    p(40, 30, 60),
+    p(0, 30, 60),
+  ]
+  const base = {
+    name: 'p',
+    waypoints: wps,
+    altitude: 60,
+    speed: 8,
+    wpml,
+    photoIntervalM: 0,
+    triggerMode: 'distance',
+    sensorType: 'camera',
+  }
+  const pass = passThroughFor([5, 3])
+  const STOP = 'toPointAndStopWithDiscontinuityCurvature'
+  const PASS = 'toPointAndPassWithContinuityCurvature'
+  const modos = (xml) => [...xml.matchAll(/<wpml:waypointTurnMode>([^<]+)</g)].map((m) => m[1])
+  const bloco = (xml, i) => xml.split('<Placemark>')[i + 1]
+  const amortecimento = (b) => Number(b.match(/<wpml:waypointTurnDampingDist>([^<]+)</)[1])
+
+  test('sem passThrough o XML e o de sempre', () => {
+    expect(buildWaylinesWPML({ ...base, passThrough: null })).toBe(buildWaylinesWPML(base))
+    expect(buildTemplateKML({ ...base, passThrough: null })).toBe(buildTemplateKML(base))
+  })
+
+  test('intermedios passam, cantos param', () => {
+    const m = modos(buildWaylinesWPML({ ...base, passThrough: pass }))
+    expect(m).toEqual([STOP, PASS, PASS, PASS, STOP, STOP, PASS, STOP])
+  })
+
+  test('linha recta e amortecimento dentro dos limites da DJI', () => {
+    const b = bloco(buildWaylinesWPML({ ...base, passThrough: pass }), 2)
+    expect(b).toMatch(/<wpml:useStraightLine>1</)
+    const d = amortecimento(b)
+    expect(d).toBeGreaterThanOrEqual(PASS_MIN_DAMPING_M)
+    expect(d).toBeLessThanOrEqual(PASS_DAMPING_M)
+    expect(d).toBeLessThanOrEqual(0.45 * 20)
+  })
+
+  test('troco curto: o amortecimento encolhe; demasiado curto, o ponto para', () => {
+    const curto = [p(0, 0), p(1, 0), p(2, 0), p(2.3, 0), p(10, 0)]
+    const xml = buildWaylinesWPML({
+      ...base,
+      waypoints: curto,
+      passThrough: [false, true, true, true, false],
+    })
+    const m = modos(xml)
+    expect(m[1]).toBe(PASS)
+    expect(amortecimento(bloco(xml, 1))).toBeCloseTo(0.45, 2)
+    expect(m[2]).toBe(STOP) // 0,45 x 0,3 m < 0,2 m
+    expect(m[3]).toBe(STOP)
+  })
+
+  test('extremos da rota nunca passam', () => {
+    const m = modos(buildWaylinesWPML({ ...base, passThrough: wps.map(() => true) }))
+    expect(m[0]).toBe(STOP)
+    expect(m.at(-1)).toBe(STOP)
+  })
+
+  test('template coerente: parametros proprios so nos pontos de passagem', () => {
+    const tpl = buildTemplateKML({ ...base, passThrough: pass })
+    expect(XMLValidator.validate(tpl)).toBe(true)
+    const globais = [...tpl.matchAll(/<wpml:useGlobalTurnParam>(\d)</g)].map((x) => x[1])
+    expect(globais).toEqual(['1', '0', '0', '0', '1', '1', '0', '1'])
+    expect((tpl.match(/<wpml:waypointTurnParam>/g) ?? []).length).toBe(4)
+    expect(tpl).toMatch(new RegExp(`<wpml:globalWaypointTurnMode>${STOP}<`))
+    const straight = [...tpl.matchAll(/<wpml:useStraightLine>(\d)</g)].map((x) => x[1])
+    expect(straight).toEqual(['1', '1', '1', '1', '1', '1', '1', '1'])
+  })
+
+  test('passThrough invalido e recusado', () => {
+    for (const passThrough of ['sim', [1, 0], wps.map(() => true).concat(true)]) {
+      expect(() => validateExportParams({ ...base, passThrough })).toThrow()
+    }
+    // eslint-disable-next-line no-sparse-arrays
+    expect(() => validateExportParams({ ...base, passThrough: [false, , true] })).not.toThrow()
+  })
+
+  test('blockExportParams fatia passThrough pelo bloco', () => {
+    const b = { id: 1, waypoints: wps.slice(0, 5), passThrough: pass.slice(0, 5) }
+    const todo = { ...base, passThrough: pass }
+    expect(blockExportParams(todo, b).passThrough).toEqual(pass.slice(0, 5))
+    expect(blockExportParams(todo, { id: 2, waypoints: wps }).passThrough).toBeNull()
   })
 })

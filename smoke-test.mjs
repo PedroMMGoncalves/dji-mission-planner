@@ -17,6 +17,7 @@ import {
   nadirLineLocalPerBlock,
   normalizeTriggerMode,
   passPoints,
+  passThroughFor,
   photoInterval,
   rectangleFromAnchor,
   resolveSensor,
@@ -3055,6 +3056,22 @@ check(
       },
     ],
     [
+      // paragem so nos cantos: as fotos do meio de cada faixa passam
+      'area-waypoint-cantos',
+      {
+        name: 'ref_area_wp_cantos',
+        waypoints: areaWp.waypoints,
+        perWaypoint: areaWp.perWaypoint,
+        passThrough: passThroughFor(areaWp.perLine, null, 'corners'),
+        altitude: 100,
+        speed: 10,
+        wpml: enums,
+        photoIntervalM: 0,
+        triggerMode: 'waypoint',
+        sensorType: 'camera',
+      },
+    ],
+    [
       'area-lidar',
       {
         name: 'ref_lidar',
@@ -3430,6 +3447,7 @@ check(
       'area-lidar',
       'area-terreno',
       'area-waypoint-overshoot',
+      'area-waypoint-cantos',
       'corredor',
       'fachada',
       'orbita',

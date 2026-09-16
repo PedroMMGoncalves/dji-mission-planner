@@ -102,6 +102,36 @@ export function routeStats(waypoints, { speed, turns = 0 }) {
   }
 }
 
+/**
+ * Custo de `count` paragens intermédias (s). Uma inversão são duas paragens
+ * (fim da faixa, fim da ligação), pelo que cada uma custa metade de
+ * turnCostS. DEDUZIDO da calibração das inversões, não medido: trocar pelo
+ * valor do registo de voo quando o houver (METODOS §16).
+ */
+export function stopCostS(count, speed) {
+  return count > 0 ? (count * turnCostS(speed)) / 2 : 0
+}
+
+/** Paragens que não são cantos: tudo menos o primeiro e o último de cada grupo. */
+export function intermediateStops(perLine) {
+  return perLine.reduce((s, n) => s + Math.max(0, n - 2), 0)
+}
+
+/**
+ * Comprimento e tempo de uma rota de faixas: deslocamento, n−1 inversões e,
+ * com `waypointStops` 'all', as paragens nos pontos intermédios. Sem
+ * `perLine`, duas por faixa. Em 'corners' é exactamente routeStats.
+ */
+export function stripRouteStats(
+  waypoints,
+  { speed, lineCount, perLine = null, waypointStops = 'corners' },
+) {
+  const base = routeStats(waypoints, { speed, turns: lineCount - 1 })
+  if (waypointStops !== 'all' || base.flightTimeS == null) return base
+  const n = intermediateStops(perLine ?? Array(lineCount).fill(2))
+  return { ...base, flightTimeS: base.flightTimeS + stopCostS(n, speed) }
+}
+
 /** Fecha um anel aberto e devolve um Feature<Polygon> do Turf. */
 export function ringToPolygon(ring, holes = null) {
   const rings = [[...ring, ring[0]]]
@@ -913,6 +943,39 @@ export const TRIGGER_MODES = ['distance', 'time', 'waypoint']
 /** B: projectos antigos ou valores inválidos carregam em disparo por distância */
 export function normalizeTriggerMode(value) {
   return TRIGGER_MODES.includes(value) ? value : 'distance'
+}
+
+/** Paragem nos waypoints: só nos cantos das faixas, ou em todos. */
+export const WAYPOINT_STOPS = ['corners', 'all']
+
+/** Projectos antigos e valores inválidos carregam com paragem só nos cantos. */
+export function normalizeWaypointStops(value) {
+  return value === 'all' ? 'all' : 'corners'
+}
+
+/**
+ * Pontos de passagem (sem paragem) de uma rota de faixas: todos menos os
+ * cantos — primeiro e último waypoint de cada faixa. `perLine[i]` é o
+ * número de waypoints do grupo da faixa i; com seguimento de terreno os
+ * primeiros `perLink[i]` são pontos da ligação que conduz a ela, e o início
+ * da faixa vem a seguir. Devolve null com 'all' ou sem pontos intermédios —
+ * e a exportação fica então igual à de sempre.
+ */
+export function passThroughFor(perLine, perLink = null, policy = 'corners') {
+  if (policy !== 'corners' || !Array.isArray(perLine)) return null
+  const out = []
+  let offset = 0
+  let any = false
+  perLine.forEach((n, i) => {
+    const start = offset + (perLink?.[i] ?? 0)
+    const end = offset + n - 1
+    for (let k = offset; k <= end; k++) {
+      out[k] = k !== start && k !== end
+      if (out[k]) any = true
+    }
+    offset += n
+  })
+  return any ? out : null
 }
 
 /**
