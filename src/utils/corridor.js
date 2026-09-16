@@ -1,5 +1,5 @@
 import * as turf from '@turf/turf'
-import { computeFootprint, lineSpacing, routeLengthM, turnCostS } from './geo.js'
+import { computeFootprint, lineSpacing, routeLengthM, stripRouteStats } from './geo.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
 /**
@@ -463,6 +463,8 @@ export function generateCorridorPlan(centreline, options) {
     speed = 8,
     photoMode = 'distance',
     simplifyM = 1,
+    // 'corners' | 'all': paragem só nas pontas dos troços, ou em todos
+    waypointStops = 'corners',
   } = options ?? {}
 
   if (!Array.isArray(centreline) || centreline.length < 2) return null
@@ -573,8 +575,12 @@ export function generateCorridorPlan(centreline, options) {
     )
   }
 
-  const flightTimeS =
-    speed > 0 ? pathLengthM / speed + Math.max(0, lines.length - 1) * turnCostS(speed) : null
+  const { flightTimeS } = stripRouteStats(waypoints, {
+    speed,
+    lineCount: lines.length,
+    perLine: perLine ?? lines.map((l) => l.length),
+    waypointStops,
+  })
 
   return {
     lines,

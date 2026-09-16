@@ -3,11 +3,18 @@
 import { describe, it, expect } from 'vitest'
 import {
   TURN_ACCEL_MS2,
+  generateFlightLines,
+  resolveSensor,
   routeLengthM,
   routeStats,
+  splitIntoBlocks,
   squareSideForBattery,
+  stopCostS,
+  stripRouteStats,
   turnCostS,
 } from '../../src/utils/geo.js'
+import { generateCorridorPlan } from '../../src/utils/corridor.js'
+import { DEFAULT_CUSTOM_SENSOR, PAYLOADS } from '../../src/data/drones.js'
 
 const lat0 = 38.7
 const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
@@ -82,5 +89,74 @@ describe('lado por bateria', () => {
     // e continua limitado pelo tecto de conforto VLOS
     expect(rapido).toBeLessThan(500)
     expect(squareSideForBattery({ ...base, batteryMin: 120, speed: 15 })).toBe(500)
+  })
+})
+
+// Paragem nos waypoints: com 'all' o tempo conta as paragens intermedias;
+// com 'corners' (omissao) fica exactamente o de antes.
+describe('paragens no tempo previsto', () => {
+  const ring = [em(0, 0), em(300, 0), em(300, 200), em(0, 200)]
+  const opts = { spacingM: 40, angleDeg: 90, bufferPct: 0, photoIntervalM: 20, speed: 8 }
+  const wp = { ...opts, photoMode: 'waypoint' }
+  const split = { mode: 'battery', batteryMin: 3, reservePct: 30, speed: 8, spacingM: 40 }
+
+  it("distancia: 'all' nao muda nada, so ha cantos", () => {
+    const a = generateFlightLines(ring, opts)
+    const b = generateFlightLines(ring, { ...opts, waypointStops: 'all' })
+    expect(b.stats.flightTimeS).toBe(a.stats.flightTimeS)
+  })
+
+  it("foto por waypoint: 'all' soma uma paragem por foto intermedia", () => {
+    const a = generateFlightLines(ring, wp)
+    const b = generateFlightLines(ring, { ...wp, waypointStops: 'all' })
+    const n = a.waypoints.length - 2 * a.lines.length
+    expect(n).toBeGreaterThan(0)
+    expect(b.stats.flightTimeS - a.stats.flightTimeS).toBeCloseTo(stopCostS(n, 8), 6)
+  })
+
+  it('blocos por bateria contam as paragens e cortam mais cedo', () => {
+    const plan = generateFlightLines(ring, wp)
+    const c = splitIntoBlocks(plan, split)
+    const t = splitIntoBlocks(plan, { ...split, waypointStops: 'all' })
+    expect(t.length).toBeGreaterThan(c.length)
+    for (const b of t) {
+      const r = stripRouteStats(b.waypoints, {
+        speed: 8,
+        lineCount: b.lines.length,
+        perLine: b.perLine,
+        waypointStops: 'all',
+      })
+      expect(b.timeS).toBeCloseTo(r.flightTimeS + b.transitS, 6)
+    }
+  })
+
+  it("'corners' deixa os blocos exactamente como estavam", () => {
+    const plan = generateFlightLines(ring, wp)
+    expect(splitIntoBlocks(plan, { ...split, waypointStops: 'corners' })).toEqual(
+      splitIntoBlocks(plan, split),
+    )
+  })
+
+  it("corredor: 'all' soma as fotos intermedias", () => {
+    const sensor = resolveSensor(PAYLOADS.M3E_WIDE, DEFAULT_CUSTOM_SENSOR)
+    const axis = [
+      [-9.14, 38.7],
+      [-9.13, 38.7],
+      [-9.125, 38.7035],
+    ]
+    const o = {
+      sensor,
+      altitude: 100,
+      bufferM: 150,
+      sideOverlapPct: 70,
+      photoIntervalM: 20,
+      speed: 8,
+      photoMode: 'waypoint',
+    }
+    const a = generateCorridorPlan(axis, o)
+    const b = generateCorridorPlan(axis, { ...o, waypointStops: 'all' })
+    const n = a.waypoints.length - 2 * a.lines.length
+    expect(n).toBeGreaterThan(0)
+    expect(b.stats.flightTimeS - a.stats.flightTimeS).toBeCloseTo(stopCostS(n, 8), 6)
   })
 })

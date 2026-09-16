@@ -603,6 +603,9 @@ export function generateFlightLines(ring, options) {
     tieLine = false,
     photoMode = 'distance',
     holes = null,
+    // 'corners' | 'all': paragem só nos cantos das faixas, ou em todos os
+    // waypoints (só muda o tempo; os pontos de passagem são da exportação)
+    waypointStops = 'corners',
   } = options
   if (!ring || ring.length < 3 || !(spacingM > 0.05)) return null
   // B: foto por waypoint só com intervalo válido; caso contrário o modo é o
@@ -869,9 +872,11 @@ export function generateFlightLines(ring, options) {
   // B: no modo foto-por-waypoint, fotos = marcadores takePhoto
   if (perWaypoint) photoCount = perWaypoint.reduce((n) => n + 1, 0)
 
-  const { pathLengthM, flightTimeS } = routeStats(waypoints, {
+  const { pathLengthM, flightTimeS } = stripRouteStats(waypoints, {
     speed,
-    turns: lines.length - 1,
+    lineCount: lines.length,
+    perLine,
+    waypointStops,
   })
 
   return {
@@ -1205,7 +1210,16 @@ export function aggregatePlans(
  * Devolve [{ id, lines, waypoints, timeS, transitS, areaHa, lengthM }, ...]
  */
 export function splitIntoBlocks(plan, options) {
-  const { mode, maxAreaHa, batteryMin, reservePct, speed, spacingM, basePoint } = options
+  const {
+    mode,
+    maxAreaHa,
+    batteryMin,
+    reservePct,
+    speed,
+    spacingM,
+    basePoint,
+    waypointStops = 'corners',
+  } = options
   if (!plan || !plan.lines || plan.lines.length === 0 || mode === 'none') return null
 
   const v = speed > 0 ? speed : 10
@@ -1218,6 +1232,10 @@ export function splitIntoBlocks(plan, options) {
     if (mode !== 'battery' || !basePoint) return 0
     return (2 * turf.distance(basePoint, firstPoint, { units: 'meters' })) / v
   }
+
+  // paragens nos pontos intermédios da faixa li (só com 'all')
+  const stopsS = (li) =>
+    waypointStops === 'all' ? stopCostS(Math.max(0, (plan.perLine?.[li] ?? 2) - 2), v) : 0
 
   const blocks = []
   let cur = null
@@ -1245,7 +1263,7 @@ export function splitIntoBlocks(plan, options) {
     // extra hop (~spacing/v) is covered by the battery reserve. cur.cost does
     // accumulate flown connections, so the budget overshoot is bounded by one
     // connection per block.
-    const lineCost = mode === 'area' ? lenM * spacingM : lenM / v + turnCostS(v)
+    const lineCost = mode === 'area' ? lenM * spacingM : lenM / v + turnCostS(v) + stopsS(li)
 
     if (!cur) openBlock(seg[0], li)
     const fits =
@@ -1260,7 +1278,7 @@ export function splitIntoBlocks(plan, options) {
     cur.cost +=
       mode === 'area'
         ? lenM * spacingM
-        : lenM / v + turnCostS(v) + (cur.lines.length > 1 ? connM / v : 0)
+        : lenM / v + turnCostS(v) + stopsS(li) + (cur.lines.length > 1 ? connM / v : 0)
     cur.areaM2 += lenM * spacingM
     cur.lengthM += lenM
     prevEnd = seg[1]
@@ -1289,7 +1307,12 @@ export function splitIntoBlocks(plan, options) {
     } else {
       b.lines.forEach((seg) => waypoints.push(seg[0], seg[1]))
     }
-    const pathM = routeLengthM(waypoints)
+    const { flightTimeS } = stripRouteStats(waypoints, {
+      speed: v,
+      lineCount: b.lines.length,
+      perLine: extra.perLine ?? null,
+      waypointStops,
+    })
     return {
       id: i + 1,
       lines: b.lines,
@@ -1297,7 +1320,7 @@ export function splitIntoBlocks(plan, options) {
       areaHa: b.areaM2 / 10000,
       lengthM: b.lengthM,
       transitS: b.transitS,
-      timeS: pathM / v + Math.max(0, b.lines.length - 1) * turnCostS(v) + b.transitS,
+      timeS: flightTimeS + b.transitS,
       ...extra,
     }
   })
