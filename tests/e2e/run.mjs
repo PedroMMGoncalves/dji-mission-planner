@@ -677,6 +677,19 @@ await scenario('area-mover-inteira', async () => {
     `${lado(antes).toFixed(1)} vs ${lado(depois).toFixed(1)} m`,
   )
   check('mover: o anel mantem os vertices', antes.length === depois.length)
+
+  // Ctrl+Z desfaz o movimento inteiro: a area volta ao sitio de partida
+  await page.keyboard.press('Control+z')
+  await page.waitForTimeout(600)
+  const desfeito = kmlRing(
+    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'mover-desfeito.kml')),
+  )
+  const c = centro(desfeito)
+  check(
+    'mover: Ctrl+Z repoe a area onde estava',
+    Math.abs(c[0] - a[0]) < 1e-9 && Math.abs(c[1] - a[1]) < 1e-9,
+    `${c[0].toFixed(6)},${c[1].toFixed(6)}`,
+  )
   check('mover: sem erros de pagina', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }

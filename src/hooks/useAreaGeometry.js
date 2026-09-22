@@ -70,6 +70,9 @@ export function useAreaGeometry({
   // Histórico de edição unificado (Ctrl+Z): geometria da área + seleção de células
   const editHistoryRef = useRef([])
   const ringSnapshotRef = useRef(null)
+  const holesSnapshotRef = useRef([])
+  const cellsSnapshotRef = useRef(null)
+  const anchorCenterSnapshotRef = useRef(null)
   const tilesSnapshotRef = useRef(new Set())
   const skipTileResetRef = useRef(false)
 
@@ -186,16 +189,38 @@ export function useAreaGeometry({
   const tileSide = tilesResult?.side ?? null
 
   // espelhos do estado atual, para os snapshots do histórico
+  // Os instantaneos vivem em refs actualizados por efeito: pushHistory e
+  // chamado ANTES do setState da edicao, pelo que apanha o estado anterior
+  // sem ter de o receber por argumento, e mantem-se estavel (sem deps).
   useEffect(() => {
     ringSnapshotRef.current = ring
   }, [ring])
   useEffect(() => {
+    holesSnapshotRef.current = holes
+  }, [holes])
+  useEffect(() => {
+    cellsSnapshotRef.current = gridCells
+  }, [gridCells])
+  useEffect(() => {
+    anchorCenterSnapshotRef.current = anchor.center
+  }, [anchor.center])
+  useEffect(() => {
     tilesSnapshotRef.current = disabledTiles
   }, [disabledTiles])
 
+  /**
+   * Um passo do historico e a AREA INTEIRA e nao so o anel: mover a area
+   * desloca tambem os buracos, as celulas e a ancora, e repor so o anel
+   * deixava-os desalinhados. Uma area com origem na ancora e reposta pela
+   * ancora — o efeito acima regenera rectangulo, celulas e buracos —, as
+   * outras pela geometria guardada.
+   */
   const pushHistory = useCallback(() => {
     editHistoryRef.current.push({
       ring: ringSnapshotRef.current,
+      holes: holesSnapshotRef.current,
+      gridCells: cellsSnapshotRef.current,
+      anchorCenter: anchorCenterSnapshotRef.current,
       tiles: new Set(tilesSnapshotRef.current),
     })
     if (editHistoryRef.current.length > 100) editHistoryRef.current.shift()
@@ -205,7 +230,16 @@ export function useAreaGeometry({
     const prev = editHistoryRef.current.pop()
     if (!prev) return
     skipTileResetRef.current = true
-    setRing(prev.ring)
+    if (prev.anchorCenter) {
+      // a ancora regenera o anel: nao o repor aqui, senao o anel muda duas
+      // vezes e a segunda limpa a seleccao de celulas
+      setAnchor((a) => ({ ...a, center: prev.anchorCenter }))
+    } else {
+      setAnchor((a) => (a.center ? { ...a, center: null } : a))
+      setRing(prev.ring)
+      setHoles(prev.holes ?? [])
+      setGridCells(prev.gridCells ?? null)
+    }
     setDisabledTiles(new Set(prev.tiles))
   }, [])
 

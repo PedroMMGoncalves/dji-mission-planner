@@ -134,8 +134,10 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   bateria ligada a edição de vértices está desligada de propósito — que é
   justamente quando faz falta arrastar o conjunto todo para o lado. Agora há
   sempre pega no modo de área: arrasta anel, buracos e células, preserva a
-  forma e mantém a selecção de células desactivadas, e o Ctrl+Z desfaz o
-  movimento.
+  forma e mantém a selecção de células desactivadas. O Ctrl+Z desfaz o
+  movimento inteiro — o histórico passa a guardar a área toda (anel,
+  buracos, células e âncora) e não só o anel, que era o que repunha antes e
+  deixaria buracos e células desalinhados depois de um movimento.
 - **Visualizador 3D com buracos no relevo.** Os vértices sem dado de elevação
   herdavam a última cota válida, que na ordem de varrimento da malha é o
   vizinho da esquerda: saíam bandas horizontais e degraus artificiais, e um
