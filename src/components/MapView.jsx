@@ -37,12 +37,13 @@ export default function MapView({
   onOrbitPoiDrag,
   fitKey,
   editable,
+  areaMovable = false,
   onMapClick,
   onVertexDrag,
   onVertexInsert,
   onVertexDelete,
   onDraftVertexRemove,
-  onAnchorDrag,
+  onAreaMove,
   onBaseDrag,
   onFinishDraw,
 }) {
@@ -67,7 +68,7 @@ export default function MapView({
       onVertexInsert,
       onVertexDelete,
       onDraftVertexRemove,
-      onAnchorDrag,
+      onAreaMove,
       onBaseDrag,
       onTileToggle,
       onInspectDrag,
@@ -225,6 +226,7 @@ export default function MapView({
   // os estados ligado/desligado preservam-se porque as camadas são as mesmas)
   const t = useT()
   const lang = useLang()
+  const moveHint = t('map.moveArea')
   useEffect(() => {
     const map = mapRef.current
     const refs = layersRef.current
@@ -418,23 +420,35 @@ export default function MapView({
     })
   }, [ring, holes, valid, kinks, editable, gridCells, tiles, disabledTiles])
 
-  // Marcador do ponto central (modo âncora)
+  // Pega central: move a ÁREA INTEIRA (anel, buracos e células). Existe
+  // sempre que há área — não só no modo âncora, como antes, e deliberadamente
+  // também quando `editable` é falso: a edição de vértices está desligada nos
+  // modos de mosaico e de blocos por bateria, mas é justamente aí que faz
+  // falta arrastar o conjunto todo para o lado. Reporta o deslocamento, não o
+  // destino, para a origem da área (âncora, ou anel desenhado/importado)
+  // decidir o que fazer com ele.
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    let marker = null
-    if (anchorCenter) {
-      const icon = L.divIcon({ className: 'anchor-handle', iconSize: [16, 16] })
-      marker = L.marker(toLatLng(anchorCenter), { icon, draggable: true }).addTo(map)
-      marker.on('dragend', () => {
-        const p = marker.getLatLng()
-        stateRef.current.onAnchorDrag([p.lng, p.lat])
-      })
-    }
-    return () => {
-      if (marker) marker.remove()
-    }
-  }, [anchorCenter])
+    // só no modo de área: nos outros modos a pega ficaria no meio do mapa a
+    // apanhar os cliques que marcam o corredor, a fachada ou a órbita
+    if (!areaMovable) return
+    const at = anchorCenter
+      ? toLatLng(anchorCenter)
+      : ring && ring.length >= 3
+        ? L.latLngBounds(ring.map(toLatLng)).getCenter()
+        : null
+    if (!at) return
+    const icon = L.divIcon({ className: 'anchor-handle', iconSize: [16, 16] })
+    const marker = L.marker(at, { icon, draggable: true, zIndexOffset: 400 }).addTo(map)
+    marker.bindTooltip(moveHint, { direction: 'top', offset: [0, -10] })
+    const origin = L.latLng(at)
+    marker.on('dragend', () => {
+      const p = marker.getLatLng()
+      stateRef.current.onAreaMove([p.lng - origin.lng, p.lat - origin.lat])
+    })
+    return () => marker.remove()
+  }, [anchorCenter, ring, areaMovable, moveHint])
 
   // Plano de voo: área com buffer, linhas, ligações e waypoints
   useEffect(() => {

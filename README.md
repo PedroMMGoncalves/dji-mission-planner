@@ -43,7 +43,7 @@ This tool is the **mission planning engine only**. Airspace authorisation, UAS-z
 4. **Area**: draw a polygon, generate a centre-point rectangle/square, or import KML / GeoJSON / zipped Shapefile / WPML KMZ. The **Optimal** direction shortcut finds the orientation with the fewest lines inside the real polygon.
 5. **Split into blocks** when the area exceeds one battery: strips by area, battery-sized squares (VLOS-capped) or a manual mosaic with clickable cells.
 6. **Terrain**: the global DEM loads automatically; enable *terrain follow* for per-waypoint heights, or import a DGT LiDAR GeoTIFF (50 cm / 2 m). Check the **3D view** and the **elevation profile** — the 3D view also renders face passes and orbit rings.
-7. **Export**: simple KML or WPML (KMZ) — one KMZ per block (ZIP) with blocks active, one KMZ per level for orbits. Print the **mission report** and take the **field checklist**.
+7. **Export**: the area KML or the WPML mission (KMZ) — one KMZ per block (ZIP) with blocks active, one KMZ per level for orbits. Print the **mission report** and take the **field checklist**.
 
 ---
 
@@ -138,7 +138,7 @@ Editing gestures: click adds vertices (Backspace or clicking a vertex removes, d
 
 | Export | Content | Use |
 | --- | --- | --- |
-| Simple KML | Area polygon, home point, GCPs, flight lines | Drawing the mission in Pilot 2; QGIS |
+| Area KML | The survey polygon alone (with its holes) | Defining the area in DJI Pilot 2 and setting the mission up there |
 | WPML (KMZ) — Area | `template.kml` + `waylines.wpml`, per-waypoint heights with terrain follow, distance/time/per-waypoint trigger (suspended on links longer than 2.5 line spacings: one action group per contiguous run), `_area[-variants]_bNN` | Direct import in DJI Pilot 2; one KMZ per block (ZIP) |
 | WPML (KMZ) — Corridor | Passes along a centreline, nadir gimbal, distance or per-waypoint trigger, `_corridor_nN` | Roads, pipelines, watercourses, power lines |
 | WPML (KMZ) — Face | Fixed heading and one photo per waypoint, `_face_p1-N` | Faces, slopes, structures |

@@ -26,6 +26,7 @@ import {
   routeLengthM,
   routeStats,
   tilePolygonWithSquares,
+  translateRing,
   turnCostS,
   validateRing,
 } from './src/utils/geo.js'
@@ -39,7 +40,7 @@ import {
   RC_LOST_ACTIONS,
   RC_LOST_MODES,
   buildExportName,
-  buildSimpleKML,
+  buildAreaKML,
   buildTemplateKML,
   buildWaylinesWPML,
   escapeXml,
@@ -47,6 +48,7 @@ import {
   validateExportParams,
 } from './src/utils/exporters.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from './src/utils/gcp.js'
+import { fillTerrainGaps } from './src/utils/terrainGrid.js'
 import {
   decodeTerrarium,
   despikeElevations,
@@ -1744,14 +1746,133 @@ const planTiny = generateFlightLines(rectNS, {
 })
 check('espaçamento minúsculo → erro controlado', planTiny?.error === 'too-many-lines')
 
+/* 9-ter. Mover a area inteira (anel, buracos e celulas) */
+{
+  const moved = translateRing(rectNS, 0.001, -0.002)
+  check('mover: mesmo numero de vertices', moved.length === rectNS.length)
+  check(
+    'mover: todos os vertices deslocados do mesmo valor',
+    moved.every(
+      (p, i) =>
+        Math.abs(p[0] - rectNS[i][0] - 0.001) < 1e-12 &&
+        Math.abs(p[1] - rectNS[i][1] + 0.002) < 1e-12,
+    ),
+  )
+  const d0 = turf.distance(rectNS[0], rectNS[1], { units: 'meters' })
+  const d1 = turf.distance(moved[0], moved[1], { units: 'meters' })
+  check('mover: a forma nao muda', Math.abs(d0 - d1) < 0.5, `${d0.toFixed(1)} vs ${d1.toFixed(1)}`)
+  check(
+    'mover: deslocamento nulo devolve o mesmo anel',
+    translateRing(rectNS, 0, 0).every((p, i) => p[0] === rectNS[i][0] && p[1] === rectNS[i][1]),
+  )
+  check('mover: entrada invalida passa intacta', translateRing(null, 1, 1) === null)
+  // o mosaico acompanha o anel, pelo que os indices das celulas continuam a valer
+  const tilesA = tilePolygonWithSquares(rectNS, 150, 0)
+  const tilesB = tilePolygonWithSquares(moved, 150, 0)
+  check(
+    'mover: o mosaico mantem o numero de celulas',
+    Array.isArray(tilesA) && Array.isArray(tilesB) && tilesA.length === tilesB.length,
+    `${tilesA?.length} vs ${tilesB?.length}`,
+  )
+}
+
+/* 9-bis. Grelha do 3D: buracos preenchidos pelos vizinhos (nao pelo mar) */
+{
+  const row = 5
+  const z = new Float32Array(row * row)
+  const hasZ = new Uint8Array(row * row)
+  // rampa constante por linha: 100, 110, 120, 130, 140
+  for (let iy = 0; iy < row; iy++)
+    for (let ix = 0; ix < row; ix++) {
+      z[iy * row + ix] = 100 + iy * 10
+      hasZ[iy * row + ix] = 1
+    }
+  // abre um buraco no centro e um canto inteiro
+  const hole = 2 * row + 2
+  z[hole] = 0
+  hasZ[hole] = 0
+  z[0] = 0
+  hasZ[0] = 0
+  fillTerrainGaps(z, hasZ, row, -999)
+  check(
+    '3D: buraco interior fica na cota dos vizinhos',
+    Math.abs(z[hole] - 120) < 1e-3,
+    z[hole].toFixed(1),
+  )
+  check('3D: buraco no canto nao fica a zero', z[0] > 99 && z[0] < 111, z[0].toFixed(1))
+  check(
+    '3D: sem buracos nao mexe nos dados',
+    (() => {
+      const zz = new Float32Array([1, 2, 3, 4])
+      fillTerrainGaps(zz, new Uint8Array([1, 1, 1, 1]), 2, -1)
+      return zz[0] === 1 && zz[3] === 4
+    })(),
+  )
+  check(
+    '3D: sem nenhum dado valido usa a cota de recurso',
+    (() => {
+      const zz = new Float32Array(4)
+      fillTerrainGaps(zz, new Uint8Array([0, 0, 0, 0]), 2, 250)
+      return zz[0] === 250 && zz[3] === 250
+    })(),
+  )
+}
+
 /* 10. Exportadores (strings XML) */
-const kml = buildSimpleKML(rectNS, 'teste')
+const kml = buildAreaKML(rectNS, 'teste')
 check('KML tem Polygon', kml.includes('<Polygon>') && kml.includes('<coordinates>'))
 const kmlCoords = kml
   .match(/<coordinates>([^<]*)<\/coordinates>/)[1]
   .trim()
   .split(/\s+/)
 check('KML fecha o anel', kmlCoords.length === 5 && kmlCoords[0] === kmlCoords[4])
+
+// O ficheiro que vai para o Pilot 2 tem de ser minimo: um Placemark, um
+// Polygon, assente no solo. Varios Placemarts (base, GCPs, faixas) fazem o
+// parser do comando recusar a importacao.
+const countOf = (hay, needle) => hay.split(needle).length - 1
+check(
+  'KML do Pilot 2: um so Placemark',
+  countOf(kml, '<Placemark>') === 1,
+  countOf(kml, '<Placemark>'),
+)
+check(
+  'KML do Pilot 2: um so Polygon, sem LineString nem Point',
+  countOf(kml, '<Polygon>') === 1 && !kml.includes('<LineString>') && !kml.includes('<Point>'),
+)
+check(
+  'KML do Pilot 2: sem pastas nem estilos',
+  !kml.includes('<Folder>') && !kml.includes('<Style') && !kml.includes('<styleUrl>'),
+)
+check(
+  'KML do Pilot 2: poligono assente no solo',
+  kml.includes('<altitudeMode>clampToGround</altitudeMode>') &&
+    kml.includes('<tessellate>1</tessellate>'),
+)
+{
+  const buraco = rectangleFromAnchor(center, 80, 60, 90)
+  const holed = buildAreaKML(rectNS, 'teste', { holes: [buraco] })
+  check(
+    'KML do Pilot 2: buracos entram como innerBoundaryIs',
+    countOf(holed, '<innerBoundaryIs>') === 1 && countOf(holed, '<Placemark>') === 1,
+  )
+  const anotado = buildAreaKML(rectNS, 'teste', {
+    basePoint: [-9.14, 38.7],
+    gcps: [{ id: 'G1', point: [-9.141, 38.701] }],
+    lines: [
+      [
+        [-9.14, 38.7],
+        [-9.13, 38.7],
+      ],
+    ],
+  })
+  check(
+    'KML anotado (SIG) mantem base, GCPs e faixas',
+    countOf(anotado, '<Placemark>') === 4 &&
+      anotado.includes('<Folder>') &&
+      anotado.includes('<styleUrl>'),
+  )
+}
 
 const wpmlParams = {
   name: 'teste',
@@ -3177,7 +3298,10 @@ check(
     )
     check(`XML: ${label} sem valores nao-finitos`, !JUNK.test(tplX) && !JUNK.test(wlX))
   }
-  const kmlDoc = buildSimpleKML(rectNS, 'Área & "teste" <x>', [-9.14, 38.7], null, areaPlan.lines)
+  const kmlDoc = buildAreaKML(rectNS, 'Área & "teste" <x>', {
+    basePoint: [-9.14, 38.7],
+    lines: areaPlan.lines,
+  })
   check('XML: KML simples analisa com nome hostil', xmlWellFormed(kmlDoc) === null)
 
   /* 11b. Entrada invalida tem de falhar na fronteira, nunca ser escrita. */
@@ -3241,7 +3365,7 @@ check(
 
   /* 11c. Caracteres proibidos pelo XML 1.0 nao podem chegar ao ficheiro. */
   const ctl = String.fromCharCode(0x01, 0x07, 0x1b, 0x7f)
-  const dirty = buildSimpleKML(rectNS, `missao${ctl}x`)
+  const dirty = buildAreaKML(rectNS, `missao${ctl}x`)
   check(
     'escapeXml remove controlos ilegais em XML 1.0',
     !new RegExp(`[${ctl}]`).test(dirty) && xmlWellFormed(dirty) === null,
@@ -3267,7 +3391,7 @@ check(
   )
   check(
     'documento com substituto isolado sai limpo',
-    !/[\uD800-\uDFFF]/.test(buildSimpleKML(rectNS, `missao${hi}x`)),
+    !/[\uD800-\uDFFF]/.test(buildAreaKML(rectNS, `missao${hi}x`)),
   )
 
   /* 11d. Fuzz determinista: planos validos aleatorios, XML sempre analisavel.

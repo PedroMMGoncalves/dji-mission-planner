@@ -132,6 +132,16 @@ export function stripRouteStats(
   return { ...base, flightTimeS: base.flightTimeS + stopCostS(n, speed) }
 }
 
+/**
+ * Translada um anel (ou lista de anéis) por um deslocamento em graus.
+ * Usado para mover a área inteira — anel, buracos e células da grelha —
+ * sem tocar na forma.
+ */
+export function translateRing(ring, dLon, dLat) {
+  if (!Array.isArray(ring)) return ring
+  return ring.map(([lon, lat]) => [lon + dLon, lat + dLat])
+}
+
 /** Fecha um anel aberto e devolve um Feature<Polygon> do Turf. */
 export function ringToPolygon(ring, holes = null) {
   const rings = [[...ring, ring[0]]]

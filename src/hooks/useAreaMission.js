@@ -11,12 +11,7 @@ import { planArea } from '../mission/areaPlan.js'
 import { planBlocks } from '../mission/blocks.js'
 import { planTerrainFollow } from '../mission/terrainFollow.js'
 import { buildAreaExport } from '../mission/areaExport.js'
-import {
-  downloadBlob,
-  exportBlocksZip,
-  exportSimpleKML,
-  exportWPMLKmz,
-} from '../utils/exporters.js'
+import { downloadBlob, exportBlocksZip, exportAreaKML, exportWPMLKmz } from '../utils/exporters.js'
 import { stripRouteStats } from '../utils/geo.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from '../utils/gcp.js'
 import { DEFAULT_GCP_CONFIG } from '../mission/defaults.js'
@@ -198,10 +193,11 @@ export function useAreaMission({
 
   const handleExportKML = useCallback(() => {
     if (canExportKML)
-      runExport(() =>
-        exportSimpleKML(ring, safeName, basePoint, gcps, planOk?.lines ?? null, holes),
-      )
-  }, [canExportKML, runExport, ring, holes, safeName, basePoint, gcps, planOk])
+      // Area-only: e o ficheiro que o Pilot 2 aceita para definir a area, e
+      // e esse o caso de uso. O ponto de base, os GCPs e as faixas ficam de
+      // fora de proposito (os GCPs tem exportacao propria).
+      runExport(() => exportAreaKML(ring, safeName, { holes }))
+  }, [canExportKML, runExport, ring, holes, safeName])
 
   const handleExportGcps = useCallback(() => {
     if (!gcps || gcps.length === 0) return

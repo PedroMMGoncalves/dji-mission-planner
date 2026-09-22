@@ -116,10 +116,14 @@ const BASE_DICT = {
     pt: 'Checklist de campo UAV (pré-campo, durante, pós-campo) + relatório de missão',
     en: 'UAV field checklist (pre-field, in-field, post-field) + mission report',
   },
-  'app.exportKml': { pt: 'Exportar KML Simples', en: 'Export Simple KML' },
+  'app.exportKml': { pt: 'Exportar KML da área', en: 'Export area KML' },
+  'map.moveArea': {
+    pt: 'Arrastar para mover a área inteira',
+    en: 'Drag to move the whole area',
+  },
   'app.exportKmlTitle': {
-    pt: 'Polígono 2D da área (KML padrão)',
-    en: '2D polygon of the area (standard KML)',
+    pt: 'Só o polígono da área, para definir o levantamento no DJI Pilot 2',
+    en: 'The area polygon only, to set the survey up in DJI Pilot 2',
   },
   'app.exportWpml': { pt: 'Exportar WPML Avançado (KMZ)', en: 'Export Advanced WPML (KMZ)' },
   'app.exportWpmlTitle': {

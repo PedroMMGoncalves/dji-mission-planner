@@ -272,14 +272,28 @@ export function downloadBlob(blob, filename) {
 /* KML simples (polígono 2D)                                          */
 /* ------------------------------------------------------------------ */
 
-export function buildSimpleKML(
-  ring,
-  name,
-  basePoint = null,
-  gcps = null,
-  lines = null,
-  holes = null,
-) {
+/**
+ * KML da ÁREA de levantamento.
+ *
+ * Por omissão sai o ficheiro mínimo que o DJI Pilot 2 aceita para definir
+ * uma área: um só `Document`, um só `Placemark`, um só `Polygon` fechado e
+ * assente no solo. É esse o caso de uso — exportar a área e fazer todas as
+ * configurações no comando.
+ *
+ * O parser de KML do Pilot 2 é estrito: um ficheiro com vários Placemarks
+ * (ponto de base, GCPs, uma pasta com uma LineString por faixa) é recusado
+ * ou importado em branco. Por isso os extras são explícitos e opcionais, e
+ * só servem para inspecção em SIG (QGIS, Google Earth) — nunca para levar
+ * ao comando.
+ *
+ * @param {number[][]} ring anel exterior [lon, lat]
+ * @param {string} name nome do documento e do placemark
+ * @param {{holes?: number[][][]|null, basePoint?: number[]|null,
+ *   gcps?: Array<{id: any, point: number[]}>|null,
+ *   lines?: number[][][]|null}} [opts] extras para SIG; vazio = ficheiro do Pilot 2
+ */
+export function buildAreaKML(ring, name, opts = {}) {
+  const { holes = null, basePoint = null, gcps = null, lines = null } = opts
   if (!Array.isArray(ring) || ring.length < 3) throw new MissionExportError('ring-too-short')
   ring.forEach(checkWaypoint)
   if (basePoint) checkWaypoint(basePoint, -1)
@@ -326,31 +340,43 @@ export function buildSimpleKML(
         .join('')
     : ''
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>${escapeXml(name)}</name>
+  // O estilo só entra com os extras: no ficheiro do Pilot 2 tudo o que não
+  // seja o polígono é ruído que o parser pode não atravessar.
+  const extras = `${basePlacemark}${gcpPlacemarks}${linesFolder(lines)}`
+  const style = extras
+    ? `
     <Style id="surveyArea">
       <LineStyle><color>ffd8bd38</color><width>2</width></LineStyle>
       <PolyStyle><color>4dd8bd38</color></PolyStyle>
-    </Style>
+    </Style>`
+    : ''
+  const styleUrl = extras
+    ? `
+      <styleUrl>#surveyArea</styleUrl>`
+    : ''
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${escapeXml(name)}</name>${style}
     <Placemark>
-      <name>${escapeXml(name)} — área de levantamento</name>
-      <styleUrl>#surveyArea</styleUrl>
+      <name>${escapeXml(name)}</name>${styleUrl}
       <Polygon>
+        <tessellate>1</tessellate>
+        <altitudeMode>clampToGround</altitudeMode>
         <outerBoundaryIs>
           <LinearRing>
             <coordinates>${coords}</coordinates>
           </LinearRing>
         </outerBoundaryIs>${innerRings}
       </Polygon>
-    </Placemark>${basePlacemark}${gcpPlacemarks}${linesFolder(lines)}
+    </Placemark>${extras}
   </Document>
 </kml>
 `
 }
 
-/** Pasta opcional com as faixas de voo (útil no QGIS; desligável no visualizador). */
+/** Pasta opcional com as faixas de voo (útil no QGIS; nunca no Pilot 2). */
 function linesFolder(lines) {
   if (!lines?.length) return ''
   const placemarks = lines
@@ -376,15 +402,8 @@ function linesFolder(lines) {
     </Folder>`
 }
 
-export function exportSimpleKML(
-  ring,
-  name,
-  basePoint = null,
-  gcps = null,
-  lines = null,
-  holes = null,
-) {
-  const kml = buildSimpleKML(ring, name, basePoint, gcps, lines, holes)
+export function exportAreaKML(ring, name, opts = {}) {
+  const kml = buildAreaKML(ring, name, opts)
   downloadBlob(new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }), `${name}.kml`)
 }
 

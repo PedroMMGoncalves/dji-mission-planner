@@ -471,6 +471,18 @@ evidência de que o cabeçalho 1.0.3 seja aceite com os elementos que
 escrevemos, nem de que o 1.0.2 seja recusado. Nenhum enum foi ainda
 testado num comando real (ver `README`).
 
+### 11.1 KML da área
+
+O KML que a aplicação exporta tem um só `Document`, um só `Placemark` e um
+só `Polygon`, fechado, com `tessellate` e `altitudeMode clampToGround`, mais
+os `innerBoundaryIs` dos buracos. Não leva estilos, pastas, ponto de base
+nem GCPs: o parser de KML do DJI Pilot 2 é estrito e um ficheiro com várias
+geometrias é recusado ou importado em branco. O caso de uso é exportar a
+área e fazer o resto das configurações no comando.
+
+O construtor (`buildAreaKML`) aceita extras — base, GCPs e uma pasta com as
+faixas — que servem para inspecção em SIG e nunca para levar ao comando.
+
 ## 12. Datums verticais tal como estão implementados
 
 Módulo `src/utils/verticalDatum.js`. Cada fonte de relevo declara o seu
@@ -569,6 +581,7 @@ base; alturas relativas à descolagem.
 | GCPs: n / recuo / separação | [5, 25] / max(15 m, 3 %·√A) / 10 m | gcp.js |
 | WPML: waypoints / velocidade / RTH | 65536 / 30 m/s / 1500 m | exporters.js |
 | Preflight: waypoints (bloqueio / aviso) | 65535 / 2000 | preflight.js |
+| 3D: malha do terreno / passagens de preenchimento | 200×200 / até 201 | Map3D.jsx, terrainGrid.js |
 | Importação: vértices antes de simplificar | 400 | importArea.js |
 
 ## 16. O que não é modelado e calibração prevista

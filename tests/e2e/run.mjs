@@ -623,6 +623,65 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
   return { page }
 })
 
+/* ---- mover a area inteira ------------------------------------------------ */
+// A pega central so existia quando a area vinha da ancora: numa area
+// importada, ou com a divisao em mosaico/bateria ligada (onde a edicao de
+// vertices esta desligada de proposito), nao havia forma de reposicionar o
+// conjunto todo. E justamente ai que faz falta.
+const kmlRing = (file) => {
+  const m = readFileSync(file, 'utf8').match(/<coordinates>([^<]*)<\/coordinates>/)
+  return m[1]
+    .trim()
+    .split(/\s+/)
+    .map((c) => c.split(',').map(Number))
+}
+const centro = (r) => [
+  r.reduce((s, p) => s + p[0], 0) / r.length,
+  r.reduce((s, p) => s + p[1], 0) / r.length,
+]
+
+await scenario('area-mover-inteira', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  // mosaico: `editable` fica falso, que era a condicao que escondia a pega
+  await configure(page, { split: 'Mosaico' })
+  const pega = page.locator('.anchor-handle')
+  check('mover: ha pega central numa area importada com mosaico', (await pega.count()) === 1)
+
+  const antes = kmlRing(
+    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'mover-antes.kml')),
+  )
+  const box = await pega.boundingBox()
+  const x = box.x + box.width / 2
+  const y = box.y + box.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + 140, y + 70, { steps: 12 })
+  await page.mouse.up()
+  await page.waitForTimeout(600)
+
+  const depois = kmlRing(
+    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'mover-depois.kml')),
+  )
+  const a = centro(antes)
+  const b = centro(depois)
+  check('mover: a area foi para leste', b[0] > a[0], `${a[0].toFixed(5)} -> ${b[0].toFixed(5)}`)
+  check('mover: a area foi para sul', b[1] < a[1], `${a[1].toFixed(5)} -> ${b[1].toFixed(5)}`)
+  const lado = (r) => {
+    const p0 = toM(r[0][0], r[0][1])
+    const p1 = toM(r[1][0], r[1][1])
+    return Math.hypot(p1[0] - p0[0], p1[1] - p0[1])
+  }
+  check(
+    'mover: a forma nao muda',
+    Math.abs(lado(antes) - lado(depois)) < 1,
+    `${lado(antes).toFixed(1)} vs ${lado(depois).toFixed(1)} m`,
+  )
+  check('mover: o anel mantem os vertices', antes.length === depois.length)
+  check('mover: sem erros de pagina', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 /* ---- fim ----------------------------------------------------------------- */
 await browser.close()
 stopServer()

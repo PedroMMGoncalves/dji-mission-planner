@@ -14,6 +14,7 @@ import {
   rectangleFromAnchor,
   squareSideForBattery,
   tilePolygonWithSquares,
+  translateRing,
   validateRing,
 } from '../utils/geo.js'
 import {
@@ -384,9 +385,38 @@ export function useAreaGeometry({
     [pushHistory],
   )
 
-  const handleAnchorDrag = useCallback((lonlat) => {
-    setAnchor((a) => ({ ...a, center: lonlat }))
-  }, [])
+  /**
+   * Move a AREA INTEIRA — anel, buracos e celulas da grelha — por um
+   * deslocamento em graus. E a unica forma de reposicionar globalmente uma
+   * area desenhada a mao ou importada de ficheiro: antes so existia pega
+   * quando a area vinha da ancora, pelo que a capacidade parecia aparecer e
+   * desaparecer.
+   *
+   * Com a area vinda da ancora desloca-se a ancora, que regenera o
+   * rectangulo ou a grelha; nos restantes casos translada-se a geometria.
+   * A seleccao de celulas desactivadas mantem-se: o mosaico e calculado a
+   * partir do anel, acompanha-o na translacao e os indices continuam a
+   * valer.
+   */
+  const handleAreaMove = useCallback(
+    ([dLon, dLat]) => {
+      if (!Number.isFinite(dLon) || !Number.isFinite(dLat)) return
+      if (dLon === 0 && dLat === 0) return
+      if (anchor.center) {
+        pushHistory()
+        setAnchor((a) => ({ ...a, center: [a.center[0] + dLon, a.center[1] + dLat] }))
+        return
+      }
+      if (!ring?.length) return
+      const shift = (r) => translateRing(r, dLon, dLat)
+      pushHistory()
+      skipTileResetRef.current = true
+      setRing(shift(ring))
+      setHoles((hs) => (hs?.length ? hs.map(shift) : hs))
+      setGridCells((cells) => (cells?.length ? cells.map(shift) : cells))
+    },
+    [anchor.center, ring, pushHistory],
+  )
 
   /* ------------------------ Importação de áreas ----------------------- */
   const applyImportedRing = useCallback(
@@ -526,7 +556,7 @@ export function useAreaGeometry({
     handleVertexDrag,
     handleVertexInsert,
     handleVertexDelete,
-    handleAnchorDrag,
+    handleAreaMove,
     importState,
     importError,
     setImportError,

@@ -118,6 +118,37 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   pp. Agora dispara-se no máximo um passo mais cedo, que é o lado que sobra
   cobertura em vez de faltar. A geometria da rota não muda.
 
+### Corrigido (KML da área, mover a área, 3D)
+
+- **KML da área recusado pelo DJI Pilot 2.** O ficheiro dito «simples» levava,
+  além do polígono, o ponto de base, um `Placemark` por GCP e uma pasta com uma
+  `LineString` por faixa — dezenas a centenas de geometrias. O parser do
+  Pilot 2 quer um polígono e mais nada. Passa a sair o ficheiro mínimo: um
+  `Document`, um `Placemark`, um `Polygon` fechado, `clampToGround`, sem
+  estilos nem pastas. É esse o caso de uso — exportar a área e fazer as
+  configurações no comando. Os GCPs continuam a ter exportação própria, e o
+  KML anotado para SIG continua disponível no construtor.
+- **Mover a área inteira** deixou de depender da origem da área. A pega
+  central só existia quando a área vinha da âncora; numa área desenhada à mão
+  ou importada de ficheiro não havia nenhuma, e com a divisão em mosaico ou por
+  bateria ligada a edição de vértices está desligada de propósito — que é
+  justamente quando faz falta arrastar o conjunto todo para o lado. Agora há
+  sempre pega no modo de área: arrasta anel, buracos e células, preserva a
+  forma e mantém a selecção de células desactivadas, e o Ctrl+Z desfaz o
+  movimento.
+- **Visualizador 3D com buracos no relevo.** Os vértices sem dado de elevação
+  herdavam a última cota válida, que na ordem de varrimento da malha é o
+  vizinho da esquerda: saíam bandas horizontais e degraus artificiais, e um
+  buraco na primeira linha punha o terreno a começar no nível do mar. Passam a
+  ser preenchidos por difusão a partir dos vizinhos válidos. O Terrarium
+  tolera até 20 % de tiles em falta e um MDT local pode não cobrir a bbox
+  toda, pelo que isto aparecia e desaparecia consoante a área.
+- **Contorno, base e GCPs no 3D** liam a elevação directamente da fonte e
+  caíam em 0 m onde não houvesse dados — o contorno mergulhava centenas de
+  metros abaixo do relevo e o alvo da câmara ia para o nível do mar. Passam a
+  ler, por interpolação bilinear, a mesma grelha que é desenhada: o que se vê
+  assenta exactamente na malha.
+
 ## 1.2.0 — 2026-09-04
 
 ### Corrigido

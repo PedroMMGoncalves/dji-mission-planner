@@ -397,7 +397,7 @@ function AppInner({ lang, setLang }) {
     handleVertexDrag,
     handleVertexInsert,
     handleVertexDelete,
-    handleAnchorDrag,
+    handleAreaMove,
     importState,
     importError,
     setImportError,
@@ -1257,12 +1257,13 @@ function AppInner({ lang, setLang }) {
             onOrbitPoiDrag={handleOrbitPoiDrag}
             fitKey={fitKey}
             editable={!gridCells && split.mode !== 'tiles' && split.mode !== 'battery'}
+            areaMovable={missionMode === 'area'}
             onMapClick={handleMapClick}
             onVertexDrag={handleVertexDrag}
             onVertexInsert={handleVertexInsert}
             onVertexDelete={handleVertexDelete}
             onDraftVertexRemove={removeDraftVertex}
-            onAnchorDrag={handleAnchorDrag}
+            onAreaMove={handleAreaMove}
             onBaseDrag={handleBaseDrag}
             onFinishDraw={handleFinishAny}
           />

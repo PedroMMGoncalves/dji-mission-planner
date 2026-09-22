@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { useT } from '../i18n.jsx'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
+import { fillTerrainGaps } from '../utils/terrainGrid.js'
 
 /**
  * VISUALIZADOR 3D DA MISSÃO
@@ -233,10 +234,6 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
     const lat0 = (minLat + maxLat) / 2
     const mLon = metersPerDegLon(lat0) || 1
     const toLocal = (p) => [(p[0] - lon0) * mLon, (p[1] - lat0) * M_PER_DEG_LAT]
-    const elevAt = (lon, lat) => {
-      const e = terrain.elevationAt(lon, lat)
-      return Number.isFinite(e) ? e : 0
-    }
 
     const disposables = new Set()
     const track = (r) => {
@@ -255,30 +252,64 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
     const uvAttr = terrainGeo.attributes.uv
     const vertexCount = posAttr.count
     const terrainZ = new Float32Array(vertexCount) // cotas SEM exagero
+    const hasZ = new Uint8Array(vertexCount)
 
     const nTop = mercatorN(maxLat)
     const nSpan = mercatorN(minLat) - nTop
     const lonSpan = maxLon - minLon || 1
-    let lastValid = 0
-    let zMin = Infinity
-    let zMax = -Infinity
+    let sum = 0
+    let nKnown = 0
     for (let i = 0; i < vertexCount; i++) {
       const lon = lon0 + posAttr.getX(i) / mLon
       const lat = lat0 + posAttr.getY(i) / M_PER_DEG_LAT
       const raw = terrain.elevationAt(lon, lat)
-      const z = Number.isFinite(raw) ? raw : lastValid // null → última válida (ou 0)
-      lastValid = z
-      terrainZ[i] = z
-      if (z < zMin) zMin = z
-      if (z > zMax) zMax = z
+      if (Number.isFinite(raw)) {
+        terrainZ[i] = raw
+        hasZ[i] = 1
+        sum += raw
+        nKnown++
+      }
       // UV em Web Mercator, para a textura assentar alinhada com a bbox
       uvAttr.setXY(i, (lon - minLon) / lonSpan, nSpan > 0 ? 1 - (mercatorN(lat) - nTop) / nSpan : 0)
     }
     uvAttr.needsUpdate = true
+    fillTerrainGaps(terrainZ, hasZ, SEGMENTS + 1, nKnown > 0 ? sum / nKnown : 0)
+
+    let zMin = Infinity
+    let zMax = -Infinity
+    for (let i = 0; i < vertexCount; i++) {
+      if (terrainZ[i] < zMin) zMin = terrainZ[i]
+      if (terrainZ[i] > zMax) zMax = terrainZ[i]
+    }
     if (!Number.isFinite(zMin)) {
       zMin = 0
       zMax = 1
     }
+
+    /*
+     * Tudo o que "assenta no chão" (contorno da área, base, GCPs, alvo da
+     * câmara) lê a MESMA grelha que é desenhada, por interpolação bilinear.
+     * Antes usava `terrain.elevationAt` directamente e caía em 0 m onde não
+     * houvesse dados — o contorno mergulhava centenas de metros abaixo do
+     * relevo, e o alvo da câmara ia para o nível do mar.
+     */
+    const cellX = widthM / SEGMENTS
+    const cellY = heightM / SEGMENTS
+    const gridAt = (x, y) => {
+      const fx = Math.min(SEGMENTS, Math.max(0, (x + widthM / 2) / cellX))
+      const fy = Math.min(SEGMENTS, Math.max(0, (heightM / 2 - y) / cellY))
+      const ix = Math.min(SEGMENTS - 1, Math.floor(fx))
+      const iy = Math.min(SEGMENTS - 1, Math.floor(fy))
+      const tx = fx - ix
+      const ty = fy - iy
+      const row = SEGMENTS + 1
+      const a = terrainZ[iy * row + ix]
+      const b = terrainZ[iy * row + ix + 1]
+      const c = terrainZ[(iy + 1) * row + ix]
+      const d = terrainZ[(iy + 1) * row + ix + 1]
+      return (a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty
+    }
+    const elevAt = (lon, lat) => gridAt((lon - lon0) * mLon, (lat - lat0) * M_PER_DEG_LAT)
 
     // Sombreado hipsométrico (também é o plano B se a imagem de satélite falhar)
     const colors = new Float32Array(vertexCount * 3)
