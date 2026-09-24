@@ -382,7 +382,11 @@ como nos outros modos. Vídeo não é suportado, por decisão (Setembro de
 2026): a câmara não fotografa enquanto grava, pelo que «vídeo + foto» só
 seria possível anel a anel (`startRecord`/`stopRecord` nuns anéis,
 `takePhoto` noutros), com os dois produtos a alturas diferentes; a
-gravação de vídeo fica para outro sistema.
+gravação de vídeo fica para outro sistema. Os anéis a altura constante
+são deliberados: dão controlo granular por nível (altura, pitch e
+sobreposição iguais em todas as fotografias do anel), o que serve a
+fotogrametria. Uma espiral contínua, em que a altura sobe a cada ponto,
+fica anotada como candidata para um futuro modo de vídeo.
 
 ## 9. Corredor
 
