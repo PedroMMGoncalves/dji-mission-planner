@@ -48,6 +48,7 @@ import { useProject } from './hooks/useProject.js'
 import { DEFAULT_PARAMS } from './mission/defaults.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
 import { routeClearance } from './mission/clearance.js'
+import { gimbalRangeViolation } from './mission/gimbal.js'
 import {
   motionBlur,
   routeChecks,
@@ -227,7 +228,14 @@ function AppInner({ lang, setLang }) {
   // payload sempre, e o da aeronave apenas quando a aeronave é CUSTOM
   // (num M300 com payload custom o droneEnumValue continua a ser o do M300)
   const wpml = useMemo(() => {
-    const merged = { ...aircraft.wpml, ...payload.wpml }
+    const merged = {
+      ...aircraft.wpml,
+      ...payload.wpml,
+      // limites do gimbal e lente do payload: a exportacao recorta o pitch ao
+      // intervalo e o template nomeia a lente nos payloads multi-lente
+      gimbalPitchRange: payload.gimbalPitch ?? null,
+      imageFormat: payload.imageFormat ?? null,
+    }
     if (payload.type === 'custom') {
       merged.payloadEnumValue = custom.payloadEnumValue
       if (aircraft.id === 'CUSTOM') merged.droneEnumValue = custom.droneEnumValue
@@ -653,6 +661,22 @@ function AppInner({ lang, setLang }) {
     return routeClearance(view3d.waypoints, { elevationAt, refElev: view3d.refElev })
   }, [terrain, view3d])
 
+  // Inclinacao do gimbal pedida fora do que o payload alcanca (a exportacao
+  // recorta; aqui avisa-se do valor pedido), no modo activo e nos pontos de
+  // inspeccao que tenham pitch proprio
+  const gimbal = useMemo(() => {
+    const pitches =
+      missionMode === 'face'
+        ? [faceConfig.gimbalPitch]
+        : missionMode === 'orbit'
+          ? (orbitPlan?.perLevel ?? []).map((l) => l.gimbalPitch)
+          : missionMode === 'corridor'
+            ? [-90]
+            : [params.gimbalPitch]
+    for (const p of inspectPoints ?? []) if (p?.gimbalPitch != null) pitches.push(p.gimbalPitch)
+    return gimbalRangeViolation(pitches, payload.gimbalPitch ?? null)
+  }, [missionMode, faceConfig.gimbalPitch, orbitPlan, params.gimbalPitch, inspectPoints, payload])
+
   // Teto operacional AGL do payload (T1.3), ex.: LiDAR limitado a 100 m
   const aglWarn = useMemo(
     () =>
@@ -747,9 +771,10 @@ function AppInner({ lang, setLang }) {
         route,
         clearance,
         reference,
+        gimbal,
       })
     }
-    const other = { batteryMin, reservePct: split.reservePct, clearance, route }
+    const other = { batteryMin, reservePct: split.reservePct, clearance, route, gimbal }
     if (missionMode === 'corridor')
       return preflightPlan({
         ...other,
@@ -786,6 +811,7 @@ function AppInner({ lang, setLang }) {
     terrain.data,
     clearance,
     reference,
+    gimbal,
     uncertainty,
     blur,
     route,

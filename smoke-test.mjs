@@ -1818,6 +1818,72 @@ check('espaçamento minúsculo → erro controlado', planTiny?.error === 'too-ma
   )
 }
 
+/* 9-quater. Conformidade WPML: transicao, gimbal, lente, altura de descolagem */
+{
+  const base = {
+    name: 'conf',
+    waypoints: [
+      [-9.14, 38.7, 60],
+      [-9.139, 38.7, 60],
+      [-9.138, 38.7, 60],
+    ],
+    altitude: 60,
+    speed: 17,
+    wpml: { droneEnumValue: 60, payloadEnumValue: 50, gimbalPitchRange: { min: -120, max: 30 } },
+    photoIntervalM: 20,
+    triggerMode: 'distance',
+    sensorType: 'camera',
+    gimbalPitch: 45,
+    perWaypoint: [null, { gimbalPitch: -130, actions: ['takePhoto'] }, null],
+  }
+  const wl = buildWaylinesWPML(base)
+  check(
+    'WPML: globalTransitionalSpeed limitada a 15 m/s, autoFlightSpeed mantem a pedida',
+    wl.includes('<wpml:globalTransitionalSpeed>15</wpml:globalTransitionalSpeed>') &&
+      wl.includes('<wpml:autoFlightSpeed>17</wpml:autoFlightSpeed>'),
+  )
+  const pitches = [...wl.matchAll(/<wpml:gimbalPitchRotateAngle>([^<]+)</g)].map((m) =>
+    Number(m[1]),
+  )
+  check(
+    'WPML: pitch do gimbal recortado ao intervalo do payload (45 -> 30, -130 -> -120)',
+    pitches.length === 2 && pitches[0] === 30 && pitches[1] === -120,
+    pitches.join(','),
+  )
+  const tplIr = buildTemplateKML({ ...base, wpml: { ...base.wpml, imageFormat: 'ir' } })
+  check(
+    'WPML: payloadParam com imageFormat so quando o payload nomeia a lente',
+    /<wpml:payloadParam>[\s\S]*<wpml:imageFormat>ir<\/wpml:imageFormat>[\s\S]*<\/wpml:payloadParam>/.test(
+      tplIr,
+    ) && !buildTemplateKML(base).includes('<wpml:payloadParam>'),
+  )
+  check(
+    'WPML: imageFormat com caracteres estranhos e ignorado, nao interpolado',
+    !buildTemplateKML({ ...base, wpml: { ...base.wpml, imageFormat: 'ir<x>' } }).includes(
+      'payloadParam',
+    ),
+  )
+  let erro = null
+  try {
+    buildWaylinesWPML({ ...base, takeOffSecurityHeightM: 1 })
+  } catch (e) {
+    erro = e
+  }
+  check(
+    'WPML: takeOffSecurityHeight abaixo de 1,2 m e recusado na fronteira',
+    erro?.code === 'param-out-of-range',
+  )
+  check(
+    'WPML: takeOffSecurityHeight de 1,2 m e 1500 m aceites',
+    buildWaylinesWPML({ ...base, takeOffSecurityHeightM: 1.2 }).includes(
+      '<wpml:takeOffSecurityHeight>1.2<',
+    ) &&
+      buildWaylinesWPML({ ...base, takeOffSecurityHeightM: 1500 }).includes(
+        '<wpml:takeOffSecurityHeight>1500<',
+      ),
+  )
+}
+
 /* 10. Exportadores (strings XML) */
 const kml = buildAreaKML(rectNS, 'teste')
 check('KML tem Polygon', kml.includes('<Polygon>') && kml.includes('<coordinates>'))

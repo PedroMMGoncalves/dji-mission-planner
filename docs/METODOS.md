@@ -494,6 +494,41 @@ geometrias é recusado ou importado em branco. O caso de uso é exportar a
 O construtor (`buildAreaKML`) aceita extras — base, GCPs e uma pasta com as
 faixas — que servem para inspecção em SIG e nunca para levar ao comando.
 
+### 11.2 Conformidade com a especificação WPML
+
+Auditada em 2026-09-24 contra `dji-sdk/Cloud-API-Doc` (template.kml,
+waylines.wpml, common-element), campo a campo. Corrigido nesta auditoria:
+
+- `globalTransitionalSpeed` tem intervalo [0, 15] m/s: passa a sair
+  limitada a 15, e o M300 RTK deixa de oferecer 17 m/s (os 81 KMZ do comando
+  nunca passam de 15).
+- `gimbalPitchRotateAngle` tem intervalo por gimbal (M3E/M3T [−90, 35];
+  P1 [−120, 30] pela ficha técnica; M4 série [−90, 35] pela ficha técnica, a
+  confirmar): a fachada aceitava até +45°. Cada payload declara o intervalo
+  (`src/data/drones.js`), a exportação recorta o pitch e o preflight avisa
+  do valor pedido.
+- `payloadParam.imageFormat` nomeia a lente nos payloads multi-lente: sem
+  ele um levantamento térmico no M4T dispararia a grande-angular, que o
+  Pilot 2 assume por omissão. O par do M4T passa a escrever `wide` / `ir`.
+- `takeOffSecurityHeight` tem intervalo [1,2, 1500] m no comando; a
+  fronteira aceitava (0, 200].
+
+Verificado e conforme: enums de `finishAction`, `exitOnRCLost`,
+`executeRCLostAction`, `flyToWaylineMode`, `waypointTurnMode`,
+`waypointHeadingMode`; `waypointHeadingAngle` em [−180, 180];
+`waypointTurnDampingDist` > 0 só onde é obrigatório e nunca acima de 0,45
+do troço adjacente; `useStraightLine` coerente com o modo; `actionTriggerParam`
+> 0; `coordinateMode` WGS84 e `heightMode` relativeToStartPoint;
+`positioningType` é opcional e não afecta a execução.
+
+Documentado como obrigatório e omitido, tolerado no primeiro voo real do
+M3E: `fileSuffix` da acção `takePhoto`; `payloadParam` nos payloads de uma
+só lente. Fica registado, não alterado, porque o ficheiro que voou é o que
+está validado. Sem uso: `coordinateTurn` global (amortecimento fixo sem
+verificação do troço) não é alcançável pela interface. A especificação não
+fixa uma distância mínima entre waypoints; os 0,5 m do preflight são o
+mínimo do SDK da DJI.
+
 ## 12. Datums verticais tal como estão implementados
 
 Módulo `src/utils/verticalDatum.js`. Cada fonte de relevo declara o seu
@@ -555,7 +590,7 @@ foto por waypoint; seguir terreno ligado sem relevo a cobrir a área; erro
 do cálculo do terreno; mais de 65535 waypoints numa rota (a maior, com
 blocos); waypoints consecutivos a menos de 0,5 m em 3D na rota exportada (o mínimo
 que a DJI aceita), em todos os modos — as verificações de rota corriam só
-na área. Avisos: rota acima de 2000 waypoints; tecto AGL do
+na área; é o mínimo do SDK da DJI, a especificação WPML não fixa um. Avisos: rota acima de 2000 waypoints; tecto AGL do
 payload (`altitude + tolerância` com seguimento de terreno); obturador;
 sobreposição no pior caso abaixo de 60/50 % (secção 2); arrastamento
 acima de 1 px a 1/500 s; MDT com alturas elipsoidais; taxa de subida

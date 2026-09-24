@@ -82,6 +82,10 @@ function noBaseItems(c) {
  */
 function routeItems(c) {
   const out = []
+  if (c.gimbal)
+    out.push(
+      item('warn', 'gimbal-range', { worst: c.gimbal.worst, min: c.gimbal.min, max: c.gimbal.max }),
+    )
   if (c.route) {
     if (c.route.duplicates.length > 0)
       out.push(
@@ -142,6 +146,7 @@ export function usableBatteryMin(batteryMin, reservePct = 30) {
  * @param {{duplicates: number[], longSegments: any[], climb: any[]}|null} [c.route] routeChecks da rota exportada
  * @param {{minM: number}|null} [c.clearance] pior folga ao solo da rota exportável (routeClearance)
  * @param {{elev: number|null, source: string|null, baseOutside: boolean, reliefM: number|null}|null} [c.reference] cota de referência (referenceElevation)
+ * @param {{worst: number, min: number, max: number}|null} [c.gimbal] inclinação pedida fora do intervalo do payload (gimbalRangeViolation)
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {

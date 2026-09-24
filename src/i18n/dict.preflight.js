@@ -71,8 +71,8 @@ export default {
     en: 'At this speed the motion blur at 1/500 s is {px} px ({cm} cm): use a shorter exposure or reduce speed.',
   },
   'preflight.route-duplicate-waypoint': {
-    pt: 'A rota tem {n} par(es) de waypoints consecutivos a menos de 0,5 m (primeiro no índice {at}); a DJI exige pelo menos 0,5 m entre waypoints.',
-    en: 'The route has {n} pair(s) of consecutive waypoints closer than 0.5 m (first at index {at}); DJI requires at least 0.5 m between waypoints.',
+    pt: 'A rota tem {n} par(es) de waypoints consecutivos a menos de 0,5 m (primeiro no índice {at}), o mínimo do SDK da DJI entre waypoints.',
+    en: 'The route has {n} pair(s) of consecutive waypoints closer than 0.5 m (first at index {at}), the DJI SDK minimum between waypoints.',
   },
   'preflight.route-climb-rate': {
     pt: 'Subida de {rate} m/s exigida no segmento {at} ({n} segmento(s) acima da aeronave): a rota vai atrasar-se ou o Pilot 2 vai suavizá-la.',
@@ -105,6 +105,10 @@ export default {
   'preflight.clearance-low': {
     pt: 'Folga mínima ao solo de {m} m, abaixo de 15 m. Suba a altitude ou ligue seguir terreno.',
     en: 'Minimum ground clearance of {m} m, below 15 m. Raise the altitude or turn follow terrain on.',
+  },
+  'preflight.gimbal-range': {
+    pt: 'Inclinação do gimbal de {worst}° pedida fora do que o payload alcança ({min}° a {max}°): o KMZ sai recortado ao limite. Ajuste a inclinação.',
+    en: 'Gimbal pitch of {worst}° requested outside what the payload reaches ({min}° to {max}°): the KMZ is clamped to the limit. Adjust the pitch.',
   },
   'preflight.no-base': {
     pt: 'Sem ponto de base: o trânsito não conta para a bateria e o seguimento de terreno usa o primeiro waypoint como referência.',

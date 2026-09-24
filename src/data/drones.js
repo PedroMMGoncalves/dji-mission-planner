@@ -26,6 +26,11 @@
  *  - lidar geometry: fov (deg, nominal), effectiveFov (deg, working cut),
  *                    maxPrr (pts/s) — used from T1.2 on
  *  - minTriggerS:  minimum interval between camera triggers (s)
+ *  - gimbalPitch:  { min, max } pitch the gimbal can reach (deg); the export
+ *                  clamps to it and the preflight warns (WPML common-element
+ *                  table for the M3E class; spec sheets for the others)
+ *  - imageFormat:  optional WPML `imageFormat` (wide | ir | ...) written in
+ *                  the template's payloadParam, for multi-lens payloads
  *  - imageSource:  optional DJI XMP `ImageSource` value written in the EXIF of
  *                  this camera's photos (WideCamera, InfraredCamera, ...); the
  *                  planned-vs-measured tool uses it to keep only this camera's
@@ -77,7 +82,9 @@ export const AIRCRAFT = {
   M300RTK: {
     id: 'M300RTK',
     label: 'DJI Matrice 300 RTK',
-    speedRange: { min: 1, max: 17 },
+    // 15, not 17: the 81 KMZ written by Pilot 2 on an M300 RTK never exceed
+    // 15 m/s, and the WPML transitional speed is bounded to 15 by the spec.
+    speedRange: { min: 1, max: 15 },
     batteryMin: 55,
     // M300 RTK spec sheet: hovering accuracy vertical +-0.1 m (vision) /
     // +-0.5 m (GNSS), horizontal +-0.3 m (vision) / +-1.5 m (GNSS); RTK
@@ -120,6 +127,8 @@ export const PAYLOADS = {
     imageWidth: 5280,
     imageHeight: 3956,
     minTriggerS: 0.7,
+    // WPML common-element, gimbalPitchRotateAngle: M3E/M3T [-90, 35]
+    gimbalPitch: { min: -90, max: 35 },
     wpml: { payloadEnumValue: 66, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
   },
 
@@ -142,6 +151,10 @@ export const PAYLOADS = {
     payloadLabel: 'W24',
     type: 'camera',
     imageSource: 'WideCamera',
+    // Matrice 4 series spec sheet: gimbal tilt -90 to +35 deg (confirm in flight)
+    gimbalPitch: { min: -90, max: 35 },
+    // multi-lens payload: the template's payloadParam names the lens
+    imageFormat: 'wide',
     sensorWidth: 9.7,
     sensorHeight: 7.3,
     focalLength: 6.72,
@@ -170,6 +183,9 @@ export const PAYLOADS = {
     payloadLabel: 'IR',
     type: 'camera',
     imageSource: 'InfraredCamera',
+    gimbalPitch: { min: -90, max: 35 },
+    // without this the thermal mission would shoot the wide lens (Pilot 2 default)
+    imageFormat: 'ir',
     sensorWidth: 7.68,
     sensorHeight: 6.14,
     focalLength: 12,
@@ -195,6 +211,8 @@ export const PAYLOADS = {
     imageWidth: 8192,
     imageHeight: 5460,
     minTriggerS: 0.7,
+    // Zenmuse P1 spec sheet: pitch -120 to +30 deg
+    gimbalPitch: { min: -120, max: 30 },
     wpml: { payloadEnumValue: 50, payloadSubEnumValue: 1, payloadPositionIndex: 0 },
   },
 
@@ -226,6 +244,8 @@ export const PAYLOADS = {
     payloadLabel: '—',
     type: 'custom',
     minTriggerS: 0.7,
+    // conservative envelope for an unknown gimbal
+    gimbalPitch: { min: -90, max: 30 },
     // Default enums, editable in the custom editor of the UI:
     wpml: { payloadEnumValue: 50, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
   },

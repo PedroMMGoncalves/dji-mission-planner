@@ -118,6 +118,22 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   pp. Agora dispara-se no máximo um passo mais cedo, que é o lado que sobra
   cobertura em vez de faltar. A geometria da rota não muda.
 
+### Corrigido (auditoria contra a especificação WPML)
+
+- **Velocidade de transição limitada a 15 m/s**, o intervalo que a
+  especificação dá a `globalTransitionalSpeed`; o M300 RTK deixa de oferecer
+  17 m/s (os 81 KMZ escritos pelo comando nunca passam de 15).
+- **Inclinação do gimbal por payload.** A fachada aceitava até +45° quando o
+  gimbal do M3E chega a +35°; cada payload declara agora o intervalo, a
+  exportação recorta o valor e o preflight avisa do pedido fora do intervalo.
+- **Lente do M4T no ficheiro.** O template passa a levar `payloadParam` com
+  `imageFormat` (`wide` / `ir`) para o par grande-angular / térmica do M4T;
+  sem ele o levantamento térmico dispararia a grande-angular, que o Pilot 2
+  assume por omissão. Os outros payloads ficam como no ficheiro que voou.
+- Fronteira da altura de segurança de descolagem alinhada com o comando
+  ([1,2, 1500] m). A auditoria completa, com o que está conforme e o que é
+  omitido e tolerado, está em `docs/METODOS.md` §11.2.
+
 ### Corrigido (verificações de rota em todos os modos)
 
 - **As verificações de rota corriam só na área.** Órbita, fachada, corredor
@@ -125,8 +141,8 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   demasiado próximos, taxa de subida ou troços longos — e foi na órbita que
   apareceu o troço inexecutável. Passam a correr sobre a geometria que sai
   no KMZ do modo activo, a mesma que o perfil e o 3D mostram.
-- **Limiar de proximidade a 0,5 m em 3D**, o mínimo que a DJI aceita entre
-  waypoints consecutivos; antes só se apanhavam pontos coincidentes a 5 cm.
+- **Limiar de proximidade a 0,5 m em 3D**, o mínimo do SDK da DJI entre
+  waypoints consecutivos (a especificação WPML não fixa um); antes só se apanhavam pontos coincidentes a 5 cm.
   O E2E mede-o em todas as rotas exportadas.
 
 ### Corrigido (órbita: parava no fim do primeiro anel)

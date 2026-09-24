@@ -1,5 +1,6 @@
 import JSZip from 'jszip'
 import { routeLengthM } from './geo.js'
+import { clampGimbalPitch } from '../mission/gimbal.js'
 
 /**
  * Módulos de exportação:
@@ -29,6 +30,11 @@ export const MAX_WAYPOINTS_PER_ROUTE = 65536
 // Limiares de sanidade, não limites de modelo: apanham unidades trocadas e
 // campos em bruto antes de chegarem ao ficheiro.
 export const MAX_SPEED_MS = 30
+/** WPML: globalTransitionalSpeed vai de 0 a 15 m/s (waylines.wpml, tabela missionConfig). */
+export const MAX_TRANSITIONAL_SPEED_MS = 15
+/** WPML: takeOffSecurityHeight no comando vai de 1,2 a 1500 m. */
+export const MIN_TAKEOFF_SECURITY_HEIGHT_M = 1.2
+export const MAX_TAKEOFF_SECURITY_HEIGHT_M = 1500
 export const MAX_RTH_HEIGHT_M = 1500
 
 /*
@@ -197,7 +203,10 @@ export function validateExportParams(params) {
     if (!isNum(params.takeOffSecurityHeightM)) {
       throw new MissionExportError('param-not-finite', 'takeOffSecurityHeightM')
     }
-    if (params.takeOffSecurityHeightM <= 0 || params.takeOffSecurityHeightM > 200) {
+    if (
+      params.takeOffSecurityHeightM < MIN_TAKEOFF_SECURITY_HEIGHT_M ||
+      params.takeOffSecurityHeightM > MAX_TAKEOFF_SECURITY_HEIGHT_M
+    ) {
       throw new MissionExportError('param-out-of-range', 'takeOffSecurityHeightM')
     }
   }
@@ -495,6 +504,23 @@ export function turnParams(turnMode, dampingDistM = 0) {
   return { straightLine, damping }
 }
 
+/**
+ * payloadParam do template: só quando o payload nomeia a lente (`imageFormat`
+ * wide | ir | ...), o que importa nos payloads multi-lente — sem ele um
+ * levantamento térmico no M4T disparava a grande-angular, que é o que o
+ * Pilot 2 assume por omissão. Nos restantes payloads fica omitido, como no
+ * ficheiro que voou no M3E.
+ */
+function payloadParamXml(wpml) {
+  const fmt = wpml?.imageFormat
+  if (typeof fmt !== 'string' || !/^[a-z_,]+$/.test(fmt)) return ''
+  return `
+    <wpml:payloadParam>
+      <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>
+      <wpml:imageFormat>${fmt}</wpml:imageFormat>
+    </wpml:payloadParam>`
+}
+
 function missionConfigXml({ wpml, speed, altitude, ...opts }) {
   const finishAction = pick(opts.finishAction, FINISH_ACTIONS)
   const exitOnRCLost = pick(opts.exitOnRCLost, RC_LOST_MODES)
@@ -525,7 +551,7 @@ function missionConfigXml({ wpml, speed, altitude, ...opts }) {
     <wpml:executeRCLostAction>${rcLostAction}</wpml:executeRCLostAction>
     <wpml:takeOffSecurityHeight>${takeOffSecurityHeight}</wpml:takeOffSecurityHeight>
     <wpml:globalRTHHeight>${rthHeight}</wpml:globalRTHHeight>
-    <wpml:globalTransitionalSpeed>${speed}</wpml:globalTransitionalSpeed>
+    <wpml:globalTransitionalSpeed>${Math.min(speed, MAX_TRANSITIONAL_SPEED_MS)}</wpml:globalTransitionalSpeed>
     <wpml:droneInfo>
       <wpml:droneEnumValue>${wpml.droneEnumValue}</wpml:droneEnumValue>
       <wpml:droneSubEnumValue>${wpml.droneSubEnumValue ?? 0}</wpml:droneSubEnumValue>
@@ -616,7 +642,7 @@ ${missionConfigXml(params)}
     <wpml:waylineCoordinateSysParam>
       <wpml:coordinateMode>WGS84</wpml:coordinateMode>
       <wpml:heightMode>relativeToStartPoint</wpml:heightMode>
-    </wpml:waylineCoordinateSysParam>
+    </wpml:waylineCoordinateSysParam>${payloadParamXml(params.wpml)}
     <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
     <wpml:globalHeight>${altitude}</wpml:globalHeight>
     <wpml:caliFlightEnable>0</wpml:caliFlightEnable>
@@ -684,7 +710,10 @@ export function buildWaylinesWPML(params) {
     passThrough = null,
   } = params
   const turn = turnParams(turnMode, turnDampingDistM)
-  const gimbalPitch = params.gimbalPitch ?? -90
+  // fora do intervalo do gimbal o comando recusa: recorta-se ao escrever (o
+  // preflight ja avisou do valor pedido)
+  const pitchOf = (p) => clampGimbalPitch(p, wpml.gimbalPitchRange)
+  const gimbalPitch = pitchOf(params.gimbalPitch ?? -90)
 
   const triggerXml = (() => {
     if (!photoIntervalM || photoIntervalM <= 0) return null
@@ -783,7 +812,7 @@ ${triggerXml}
               <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
               <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
               <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>${pw.gimbalPitch}</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalPitchRotateAngle>${pitchOf(pw.gimbalPitch)}</wpml:gimbalPitchRotateAngle>
               <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
               <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
               <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
