@@ -377,6 +377,13 @@ ao centro do alvo, `√(R² + Δh²)`, é maior). Não modelado: colisão com a
 estrutura, sobreposição vertical entre níveis (passo dado pelo operador),
 oclusões.
 
+Captura: só fotografia, `gimbalRotate` + `takePhoto` em cada waypoint,
+como nos outros modos. Vídeo não é suportado, por decisão (Setembro de
+2026): a câmara não fotografa enquanto grava, pelo que «vídeo + foto» só
+seria possível anel a anel (`startRecord`/`stopRecord` nuns anéis,
+`takePhoto` noutros), com os dois produtos a alturas diferentes; a
+gravação de vídeo fica para outro sistema.
+
 ## 9. Corredor
 
 Módulo `src/utils/corridor.js`. Referencial métrico local com origem no
