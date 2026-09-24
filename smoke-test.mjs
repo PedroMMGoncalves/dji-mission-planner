@@ -1829,12 +1829,13 @@ check('espaçamento minúsculo → erro controlado', planTiny?.error === 'too-ma
     ],
     altitude: 60,
     speed: 17,
-    wpml: { droneEnumValue: 60, payloadEnumValue: 50, gimbalPitchRange: { min: -120, max: 30 } },
+    // intervalo do M3E; os valores pedidos ficam dentro da fronteira [-120, 60]
+    wpml: { droneEnumValue: 60, payloadEnumValue: 50, gimbalPitchRange: { min: -90, max: 35 } },
     photoIntervalM: 20,
     triggerMode: 'distance',
     sensorType: 'camera',
     gimbalPitch: 45,
-    perWaypoint: [null, { gimbalPitch: -130, actions: ['takePhoto'] }, null],
+    perWaypoint: [null, { gimbalPitch: -115, actions: ['takePhoto'] }, null],
   }
   const wl = buildWaylinesWPML(base)
   check(
@@ -1846,8 +1847,8 @@ check('espaçamento minúsculo → erro controlado', planTiny?.error === 'too-ma
     Number(m[1]),
   )
   check(
-    'WPML: pitch do gimbal recortado ao intervalo do payload (45 -> 30, -130 -> -120)',
-    pitches.length === 2 && pitches[0] === 30 && pitches[1] === -120,
+    'WPML: pitch do gimbal recortado ao intervalo do payload (45 -> 35, -115 -> -90)',
+    pitches.length === 2 && pitches[0] === 35 && pitches[1] === -90,
     pitches.join(','),
   )
   const tplIr = buildTemplateKML({ ...base, wpml: { ...base.wpml, imageFormat: 'ir' } })
