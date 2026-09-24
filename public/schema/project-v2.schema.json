@@ -51,7 +51,7 @@
       "additionalProperties": { "type": "number", "exclusiveMinimum": 0 }
     },
     "inspectPoints": { "type": "array", "items": { "$ref": "#/$defs/inspectPoint" } },
-    "missionMode": { "enum": ["area", "face", "orbit", "corridor"] },
+    "missionMode": { "enum": ["area", "face", "orbit", "corridor", "circular"] },
     "faceConfig": {
       "type": "object",
       "additionalProperties": false,
@@ -77,6 +77,17 @@
         "photoMode": { "$ref": "#/$defs/photoMode" },
         "waypointStops": { "$ref": "#/$defs/waypointStops" },
         "simplifyM": { "type": "number", "minimum": 0 }
+      }
+    },
+    "circularConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "radiusM": { "type": "number", "exclusiveMinimum": 0 },
+        "overlapPct": { "$ref": "#/$defs/pct" },
+        "gimbalPitch": { "type": "number", "minimum": -90, "maximum": -20 },
+        "speedMS": { "type": "number", "exclusiveMinimum": 0 },
+        "angleDeg": { "oneOf": [{ "type": "null" }, { "type": "number", "minimum": 0, "maximum": 180 }] }
       }
     },
     "orbitConfig": {

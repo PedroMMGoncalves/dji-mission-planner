@@ -53,6 +53,41 @@ export function orbitExportParams({ missionName, plan, speed, wpml, sensorType }
 }
 
 /**
+ * Circular: voo curvo contínuo, rumo ao centro e uma foto em cada ponto do
+ * círculo; pitch fixo. `waypoints` são os do plano ou os do seguimento de
+ * terreno (mesmos índices); com terreno o nome leva `tf`.
+ */
+export function circularExportParams({
+  missionName,
+  plan,
+  waypoints = null,
+  terrainOk = false,
+  altitude,
+  speed,
+  wpml,
+  sensorType,
+  durationS = null,
+}) {
+  return {
+    name: buildExportName(missionName, 'circular', {
+      variant: terrainOk ? 'tf' : null,
+      part: `n${plan.stats.circleCount}`,
+    }),
+    waypoints: waypoints ?? plan.waypoints,
+    perWaypoint: plan.perWaypoint,
+    turnMode: plan.turnMode,
+    altitude: Math.round(altitude),
+    speed,
+    wpml,
+    photoIntervalM: 0,
+    triggerMode: 'distance',
+    gimbalPitch: plan.stats.gimbalPitch,
+    sensorType,
+    durationS: durationS ?? plan.stats.flightTimeS,
+  }
+}
+
+/**
  * Corredor: nadir. No modo por waypoint cada ponto dispara a sua foto e não
  * há gatilho por distância; no modo distância é o inverso, e a ligação entre
  * troços de uma passagem partida por uma dobra não dispara (ver

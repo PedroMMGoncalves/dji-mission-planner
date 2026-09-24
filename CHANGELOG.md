@@ -6,6 +6,31 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Adicionado (modo circular, circlegrammetry)
+
+- **Quinto tipo de missão: Circular.** A área do modo Área coberta por uma
+  grelha de círculos sobrepostos, cada um voado com a câmara inclinada
+  (−45° por omissão) e o rumo ao seu centro, uma foto em cada ponto, em
+  voo curvo contínuo. É a geometria de Bilodeau, Esau, MacDonald e Farooque
+  (ISPRS Open J. Photogramm. Remote Sens. 18, 2025), tal como o UgCS a
+  planeia: a sobreposição entre círculos dá o passo entre centros
+  `2R(1−p)`, a grelha `⌈L/s⌉ × ⌈W/s⌉` é centrada na caixa da área alinhada
+  com a aresta mais longa e sai da fronteira, as fiadas alternam o sentido
+  de rotação e voam-se em serpentina, e cada círculo entra e sai pelo
+  ponto virado ao anterior, pelo que a ligação na fiada mede um passo.
+  Verificado contra o campo do artigo (93 × 131 m, raio 30 m): 20 círculos
+  a 50 % e 9 a 25 %, extensão fora da área de 25 e 28 m.
+- Herda da área o relevo, a cota de referência e o seguimento de terreno,
+  aplicado ponto a ponto (sem densificação, para as acções de foto não
+  mudarem de índice); blocos por bateria com círculos inteiros; mover a
+  área inteira funciona também neste modo. O painel mostra o número de
+  círculos, a extensão fora da área, o tempo lado a lado com a grelha do
+  separador Área, e sugere a maior sobreposição que mantém o número de
+  círculos (a regra do artigo: o tempo sobe em degraus, e no topo do
+  degrau os círculos saem menos da área). KMZ `_circular_nN` (`-tf` com
+  relevo), único ou um por bloco. Guardado no projecto (`circularConfig`,
+  esquema v2). Métodos: METODOS §9A.
+
 ### Adicionado (órbita em vídeo)
 
 - **A órbita passa a ter um parâmetro de captura: Fotografia ou Vídeo.**

@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import MapView from './components/MapView.jsx'
 import ControlPanel from './components/ControlPanel.jsx'
 import CorridorPanel from './components/CorridorPanel.jsx'
+import CircularPanel from './components/CircularPanel.jsx'
 import MissionModeSelector from './components/MissionModeSelector.jsx'
 import FacePanel from './components/FacePanel.jsx'
 import OrbitPanel from './components/OrbitPanel.jsx'
@@ -40,6 +41,7 @@ import { MissionExportError } from './utils/exporters.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission } from './hooks/useCorridorMission.js'
+import { useCircularMission } from './hooks/useCircularMission.js'
 import { useOrbitMission } from './hooks/useOrbitMission.js'
 import { useFaceMission } from './hooks/useFaceMission.js'
 import { useInspection } from './hooks/useInspection.js'
@@ -490,6 +492,44 @@ function AppInner({ lang, setLang }) {
     t,
   })
 
+  /* --------------- Modo circular (circlegrammetry) -------------------- */
+  // Sobre o mesmo poligono da area: herda o relevo, a cota de referencia e
+  // o seguimento de terreno; a geometria e os blocos sao proprios.
+  const {
+    circularConfig,
+    setCircularConfig,
+    setCircularParam,
+    circularSpeed,
+    circularTriggerWarn,
+    circularPlan,
+    circularAdvice,
+    circularReference,
+    circularBlocks,
+    circularUsableMin,
+    circularPreview,
+    handleExportCircularSingle,
+    handleExportCircularBlocks,
+  } = useCircularMission({
+    ring,
+    holes,
+    validation,
+    sensor,
+    altitude: params.altitude,
+    frontOverlap: params.frontOverlap,
+    speedRange,
+    missionName,
+    wpml,
+    terrain,
+    terrainFollow,
+    terrainCovers,
+    basePoint,
+    batteryMin,
+    reservePct: split.reservePct,
+    missionMode,
+    runExport,
+    avisoObturador,
+  })
+
   /* ----------------------- Modo fachada (E1.1) ------------------------ */
   const {
     faceConfig,
@@ -597,10 +637,11 @@ function AppInner({ lang, setLang }) {
           // com corredor mostrava menos planos, menos tempo e menos baterias
           // do que tem, e e daqui que sai o pack que vai para o campo.
           corridorPlan && !corridorPlan.error ? corridorPlan.stats : null,
+          circularPlan && !circularPlan.error ? circularPlan.stats : null,
         ],
         { batteryMin, reservePct: split.reservePct },
       ),
-    [planOk, facePlan, orbitPlan, corridorPlan, batteryMin, split.reservePct],
+    [planOk, facePlan, orbitPlan, corridorPlan, circularPlan, batteryMin, split.reservePct],
   )
 
   // E1.4: a vista 3D cobre o modo activo — grelha (com terrain follow),
@@ -619,6 +660,16 @@ function AppInner({ lang, setLang }) {
     // Sem este ramo o modo corredor caía no plano de ÁREA: com um polígono
     // desenhado antes, a vista 3D e o perfil mostravam a grelha da área
     // enquanto o painel do corredor estava aberto — a missão errada.
+    // Circular: alturas por ponto (planas ou do terreno) sobre a cota de
+    // referencia da area, a mesma cadeia do modo area
+    if (missionMode === 'circular') {
+      if (!circularPlan || circularPlan.error) return null
+      return {
+        waypoints: circularPlan.waypoints,
+        refElev: circularReference?.elev ?? null,
+        refSource: circularReference?.source ?? null,
+      }
+    }
     if (missionMode === 'corridor') {
       if (!corridorPlan || corridorPlan.error) return null
       const head = corridorConfig.centreline?.[0]
@@ -646,6 +697,8 @@ function AppInner({ lang, setLang }) {
     orbitConfig.poi,
     corridorPlan,
     corridorConfig.centreline,
+    circularPlan,
+    circularReference,
     planOk,
     terrainResult,
     terrain,
@@ -672,10 +725,20 @@ function AppInner({ lang, setLang }) {
           ? (orbitPlan?.perWaypoint ?? []).map((w) => w.gimbalPitch)
           : missionMode === 'corridor'
             ? [-90]
-            : [params.gimbalPitch]
+            : missionMode === 'circular'
+              ? [circularConfig.gimbalPitch]
+              : [params.gimbalPitch]
     for (const p of inspectPoints ?? []) if (p?.gimbalPitch != null) pitches.push(p.gimbalPitch)
     return gimbalRangeViolation(pitches, payload.gimbalPitch ?? null)
-  }, [missionMode, faceConfig.gimbalPitch, orbitPlan, params.gimbalPitch, inspectPoints, payload])
+  }, [
+    missionMode,
+    faceConfig.gimbalPitch,
+    orbitPlan,
+    circularConfig.gimbalPitch,
+    params.gimbalPitch,
+    inspectPoints,
+    payload,
+  ])
 
   // Teto operacional AGL do payload (T1.3), ex.: LiDAR limitado a 100 m
   const aglWarn = useMemo(
@@ -741,9 +804,14 @@ function AppInner({ lang, setLang }) {
   // verificacao de rota, e foi na orbita que apareceu o troco inexecutavel.
   const route = useMemo(() => {
     if (!view3d?.waypoints?.length) return null
-    const v = missionMode === 'orbit' ? orbitConfig.speedMS : speed
+    const v =
+      missionMode === 'orbit'
+        ? orbitConfig.speedMS
+        : missionMode === 'circular'
+          ? circularSpeed
+          : speed
     return routeChecks(view3d.waypoints, { speed: v, maxClimbMS: aircraft.maxClimbMS ?? 5 })
-  }, [view3d, missionMode, orbitConfig.speedMS, speed, aircraft.maxClimbMS])
+  }, [view3d, missionMode, orbitConfig.speedMS, circularSpeed, speed, aircraft.maxClimbMS])
 
   /* ----------------------------- Preflight ---------------------------- */
   // Uma só lista, calculada a partir do mesmo estado que a exportação usa
@@ -784,6 +852,17 @@ function AppInner({ lang, setLang }) {
         photoMode: corridorConfig.photoMode,
         waypointStops: corridorConfig.waypointStops,
       })
+    if (missionMode === 'circular')
+      return preflightPlan({
+        ...other,
+        plan: circularPlan,
+        aglWarn,
+        triggerWarn: circularTriggerWarn,
+        reference: circularReference,
+        basePoint,
+        baseDistance,
+        speed: circularSpeed,
+      })
     if (missionMode === 'face') return preflightPlan({ ...other, plan: facePlan })
     return preflightPlan({ ...other, plan: orbitPlan })
   }, [
@@ -806,6 +885,10 @@ function AppInner({ lang, setLang }) {
     triggerWarn,
     corridorPlan,
     corridorTriggerWarn,
+    circularPlan,
+    circularTriggerWarn,
+    circularReference,
+    circularSpeed,
     facePlan,
     orbitPlan,
     terrain.data,
@@ -852,6 +935,7 @@ function AppInner({ lang, setLang }) {
       if (n.faceConfig) setFaceConfig(n.faceConfig)
       if (n.orbitConfig) setOrbitConfig(n.orbitConfig)
       if (n.corridorConfig) setCorridorConfig(n.corridorConfig)
+      if (n.circularConfig) setCircularConfig(n.circularConfig)
       if (n.inspectPoints) {
         setInspectPoints(n.inspectPoints)
         inspectSeqRef.current = n.nextInspectId
@@ -863,6 +947,7 @@ function AppInner({ lang, setLang }) {
     },
     [
       setCorridorConfig,
+      setCircularConfig,
       setOrbitConfig,
       setFaceConfig,
       setInspectPoints,
@@ -886,6 +971,7 @@ function AppInner({ lang, setLang }) {
       faceConfig,
       corridorConfig,
       orbitConfig,
+      circularConfig,
       params,
       split,
       anchor,
@@ -908,6 +994,7 @@ function AppInner({ lang, setLang }) {
       faceConfig,
       corridorConfig,
       orbitConfig,
+      circularConfig,
       params,
       split,
       anchor,
@@ -1180,6 +1267,37 @@ function AppInner({ lang, setLang }) {
                 onExport={handleExportCorridor}
               />
             )}
+            {missionMode === 'circular' && (
+              <CircularPanel
+                circularConfig={
+                  circularConfig.speedMS === circularSpeed
+                    ? circularConfig
+                    : { ...circularConfig, speedMS: circularSpeed }
+                }
+                setCircularParam={setCircularParam}
+                circularPlan={circularPlan}
+                advice={circularAdvice}
+                blocks={circularBlocks}
+                usableMin={circularUsableMin}
+                triggerWarn={circularTriggerWarn}
+                altitude={params.altitude}
+                frontOverlap={params.frontOverlap}
+                areaStats={planOk?.stats ?? null}
+                areaKind={params.crosshatch ? 'crosshatch' : 'serpentine'}
+                terrainFollow={terrainFollow}
+                setTerrainFollow={setTerrainFollow}
+                terrainReady={Boolean(terrainCovers)}
+                mode={mode}
+                draftCount={draftVertices.length}
+                hasRing={Boolean(ring)}
+                onStartDraw={startDraw}
+                onUndoVertex={removeLastDraftVertex}
+                onFinishDraw={handleFinishDraw}
+                onClear={clearAll}
+                onExportSingle={handleExportCircularSingle}
+                onExportBlocks={handleExportCircularBlocks}
+              />
+            )}
             {missionMode === 'area' && (
               <ControlPanel
                 missionName={missionName}
@@ -1294,10 +1412,11 @@ function AppInner({ lang, setLang }) {
             facePreview={facePreview}
             corridorPreview={corridorPreview}
             orbitPreview={orbitPreview}
+            circularPreview={circularPreview}
             onOrbitPoiDrag={handleOrbitPoiDrag}
             fitKey={fitKey}
             editable={!gridCells && split.mode !== 'tiles' && split.mode !== 'battery'}
-            areaMovable={missionMode === 'area'}
+            areaMovable={missionMode === 'area' || missionMode === 'circular'}
             onMapClick={handleMapClick}
             onVertexDrag={handleVertexDrag}
             onVertexInsert={handleVertexInsert}
@@ -1317,7 +1436,13 @@ function AppInner({ lang, setLang }) {
             interval={interval}
             triggerMode={params.triggerMode}
             speed={speed}
-            stats={planOk?.stats ?? null}
+            stats={
+              missionMode === 'circular'
+                ? circularPlan && !circularPlan.error
+                  ? circularPlan.stats
+                  : null
+                : (planOk?.stats ?? null)
+            }
             baseDistance={baseDistance}
             blockCount={blocks?.length ?? null}
           />

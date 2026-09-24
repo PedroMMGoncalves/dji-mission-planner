@@ -96,6 +96,13 @@ describe('projecto: serializar e ler', () => {
     expect(DEFAULT_CORRIDOR_CONFIG.waypointStops).toBe('corners')
     const n = normalizeProject({ version: 2, corridorConfig: { centreline: null, bufferM: 50 } })
     expect(n.corridorConfig.waypointStops).toBe('corners')
+    const c = normalizeProject({
+      version: 2,
+      missionMode: 'circular',
+      circularConfig: { radiusM: 45, overlapPct: 40 },
+    })
+    expect(c.missionMode).toBe('circular')
+    expect(c.circularConfig).toMatchObject({ radiusM: 45, overlapPct: 40, gimbalPitch: -45 })
     expect(normalizeCorridorConfig({ waypointStops: 'all' }).waypointStops).toBe('all')
     expect(normalizeCorridorConfig({ waypointStops: 'x' }).waypointStops).toBe('corners')
   })

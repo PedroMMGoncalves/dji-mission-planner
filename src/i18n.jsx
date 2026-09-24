@@ -166,6 +166,7 @@ const BASE_DICT = {
   'stats.interval': { pt: 'Intervalo disparo', en: 'Trigger interval' },
   'stats.area': { pt: 'Área', en: 'Area' },
   'stats.lines': { pt: 'Nº de faixas', en: 'No. of lines' },
+  'stats.circles': { pt: 'Nº de círculos', en: 'No. of circles' },
   'stats.waypoints': { pt: 'Waypoints', en: 'Waypoints' },
   'stats.totalDist': { pt: 'Distância total', en: 'Total distance' },
   'stats.photos': { pt: 'Nº de fotos', en: 'No. of photos' },

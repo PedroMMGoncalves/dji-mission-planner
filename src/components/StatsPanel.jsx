@@ -94,7 +94,10 @@ export default function StatsPanel({
         }
       />
       <Stat label={t('stats.area')} value={stats ? `${stats.areaHa.toFixed(2)} ha` : '—'} />
-      <Stat label={t('stats.lines')} value={stats ? stats.lineCount : '—'} />
+      <Stat
+        label={t(stats?.circleCount != null ? 'stats.circles' : 'stats.lines')}
+        value={stats ? (stats.circleCount ?? stats.lineCount) : '—'}
+      />
       <Stat label={t('stats.waypoints')} value={stats ? stats.waypointCount : '—'} />
       <Stat label={t('stats.totalDist')} value={stats ? fmtDist(stats.pathLengthM) : '—'} />
       <Stat

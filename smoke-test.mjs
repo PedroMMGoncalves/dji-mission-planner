@@ -89,6 +89,14 @@ import {
   normalizeOrbitConfig,
   orbitLevelsToBlocks,
 } from './src/utils/orbit.js'
+import {
+  applyCircularTerrain,
+  circularBlocks,
+  circularGrid,
+  generateCircularPlan,
+  normalizeCircularConfig,
+  overlapAdvice,
+} from './src/utils/circular.js'
 import { inspectionToWaypoints, nearestNeighbourOrder, reorderList } from './src/utils/inspect.js'
 import {
   AIRCRAFT,
@@ -2829,6 +2837,173 @@ check(
     cnt(/toPointAndPassWithContinuityCurvature/g) === vid.stats.waypointCount &&
       cnt(/smoothTransition/g) === vid.stats.waypointCount &&
       cnt(/<wpml:actionActuatorFunc>gimbalRotate</g) === vid.stats.waypointCount + 1,
+  )
+}
+
+/* 9c4. Modo circular (circlegrammetry): grelha de circulos sobre a area,
+   numeros do estudo de Bilodeau et al. (2025): 93 x 131 m, raio 30 m */
+{
+  const field = rectangleFromAnchor(center, 131, 93, 0)
+  const g50 = circularGrid(field, { radiusM: 30, overlapPct: 50 })
+  const g25 = circularGrid(field, { radiusM: 30, overlapPct: 25 })
+  check(
+    'circular: 50 % -> 5 x 4 = 20 circulos a 30 m, 25 % -> 3 x 3 = 9 a 45 m',
+    g50.count === 20 && g50.stepM === 30 && g25.count === 9 && g25.stepM === 45,
+    `${g50.cols}x${g50.rows}, ${g25.cols}x${g25.rows}`,
+  )
+  check(
+    'circular: serpentina por fiadas com rotacao alternada',
+    g50.centres.slice(0, 5).every((c, i) => c.col === i && c.clockwise) &&
+      g50.centres.slice(5, 10).every((c, i) => c.col === 4 - i && !c.clockwise),
+  )
+  check(
+    'circular: erros controlados (area, raio, demasiados circulos)',
+    circularGrid(null, { radiusM: 30, overlapPct: 50 }).error === 'invalid-area' &&
+      circularGrid(field, { radiusM: 0, overlapPct: 50 }).error === 'invalid-radius' &&
+      circularGrid(rectangleFromAnchor(center, 3000, 3000, 0), { radiusM: 30, overlapPct: 50 })
+        .error === 'too-many-circles',
+  )
+  const adv = overlapAdvice(field, { radiusM: 30, overlapPct: 50 })
+  check(
+    'circular: conselho de sobreposicao mantem o numero de circulos no intervalo',
+    adv.count === 20 &&
+      adv.minPct <= 50 &&
+      adv.maxPct >= 50 &&
+      circularGrid(field, { radiusM: 30, overlapPct: adv.maxPct }).count === 20 &&
+      circularGrid(field, { radiusM: 30, overlapPct: adv.maxPct + 1 }).count > 20 &&
+      overlapAdvice(null, { radiusM: 30, overlapPct: 50 }) === null,
+    `${adv.minPct}-${adv.maxPct} %`,
+  )
+  const circ = generateCircularPlan(field, {
+    sensor,
+    radiusM: 30,
+    overlapPct: 50,
+    altitude: 60,
+    gimbalPitch: -45,
+    frontOverlapPct: 80,
+    speed: 8,
+  })
+  const cs = circ.stats
+  const dm = (a, b) => turf.distance(a, b, { units: 'meters' })
+  check(
+    'circular: 20 circulos x (n + 1) pontos, n fotos por circulo, fecho sem foto',
+    cs.circleCount === 20 &&
+      cs.waypointCount === 20 * (cs.pointsPerCircle + 1) &&
+      cs.photoCount === 20 * cs.pointsPerCircle &&
+      circ.circles.every(
+        (c) =>
+          circ.perWaypoint[c.start + c.count - 1].actions.length === 0 &&
+          circ.perWaypoint[c.start].actions[0] === 'takePhoto',
+      ),
+    `${cs.pointsPerCircle} pontos/circulo`,
+  )
+  check(
+    'circular: raio exacto, rumo ao centro e gimbal fixo em todos os pontos',
+    circ.circles.every((c) => {
+      for (let i = c.start; i < c.start + c.count; i++) {
+        const w = circ.waypoints[i]
+        const brg = ((Math.round(turf.bearing(w, c.centre)) % 360) + 360) % 360
+        if (Math.abs(dm(w, c.centre) - 30) > 0.05) return false
+        if (circ.perWaypoint[i].heading !== brg || circ.perWaypoint[i].gimbalPitch !== -45)
+          return false
+      }
+      return true
+    }),
+  )
+  check(
+    'circular: ligacao entre circulos da fiada mede um passo; nenhum par consecutivo < 0,5 m',
+    [1, 2, 3, 4].every((k) => {
+      const prev = circ.circles[k - 1]
+      return (
+        Math.abs(
+          dm(circ.waypoints[prev.start + prev.count - 1], circ.waypoints[circ.circles[k].start]) -
+            30,
+        ) < 0.5
+      )
+    }) && circ.waypoints.every((w, i) => i === 0 || dm(circ.waypoints[i - 1], w) > 0.5),
+  )
+  check(
+    'circular: extensao fora da area e area em ha como no artigo',
+    Math.abs(cs.extensionAlongM - 25) < 1 &&
+      Math.abs(cs.extensionAcrossM - 28) < 1 &&
+      Math.abs(cs.areaHa - 1.22) < 0.02 &&
+      cs.gsdCm > 0,
+    `${cs.extensionAlongM.toFixed(1)} / ${cs.extensionAcrossM.toFixed(1)} m, ${cs.areaHa.toFixed(2)} ha`,
+  )
+  check(
+    'circular: sem camara 24 pontos por circulo; erros de altura/raio/area',
+    generateCircularPlan(field, { radiusM: 30, overlapPct: 50, altitude: 60 }).stats
+      .pointsPerCircle === 24 &&
+      generateCircularPlan(field, { radiusM: 30, overlapPct: 50, altitude: 0 }).error ===
+        'invalid-altitude' &&
+      generateCircularPlan(field, { radiusM: 0, overlapPct: 50, altitude: 60 }).error ===
+        'invalid-radius' &&
+      generateCircularPlan(null, { radiusM: 30, overlapPct: 50, altitude: 60 }).error ===
+        'invalid-area' &&
+      generateCircularPlan(field, { radiusM: 5, overlapPct: 80, altitude: 60 }).error ===
+        'too-many-circles',
+  )
+  const rampa = (lon, lat) => 100 + (lat - center[1]) * 1e4
+  const tf = applyCircularTerrain(circ, { elevationAt: rampa, refElev: 100, agl: 60, speed: 8 })
+  check(
+    'circular: terreno por ponto = AGL + (cota - referencia), sem mudar indices',
+    tf.waypoints.length === circ.waypoints.length &&
+      tf.missing === 0 &&
+      tf.waypoints.every(
+        (w, i) =>
+          w[0] === circ.waypoints[i][0] && Math.abs(w[2] - (60 + rampa(w[0], w[1]) - 100)) < 0.06,
+      ) &&
+      tf.pathLengthM > cs.pathLengthM &&
+      applyCircularTerrain(circ, { elevationAt: () => NaN, refElev: 100, agl: 60, speed: 8 })
+        .missing === circ.waypoints.length &&
+      applyCircularTerrain(circ, { elevationAt: rampa, refElev: NaN, agl: 60, speed: 8 }) === null,
+  )
+  const bl = circularBlocks(circ, tf.waypoints, { usableS: 240, speed: 8 })
+  check(
+    'circular: blocos por circulos inteiros cobrem todos os pontos e circulos',
+    bl.length > 1 &&
+      bl.reduce((s2, b) => s2 + b.waypoints.length, 0) === circ.waypoints.length &&
+      bl.flatMap((b) => b.circles).join() === circ.circles.map((c) => c.index).join() &&
+      bl.every((b) => b.perWaypoint.length === b.waypoints.length && b.durationS > 0) &&
+      circularBlocks(circ, null, { usableS: null, speed: 8 }).length === 1 &&
+      circularBlocks(null, null, { usableS: 100, speed: 8 }).length === 0,
+    `${bl.length} blocos`,
+  )
+  const wlCirc = buildWaylinesWPML({
+    name: 'circular',
+    waypoints: circ.waypoints,
+    altitude: 60,
+    speed: 8,
+    wpml: wpmlParams.wpml,
+    photoIntervalM: 0,
+    triggerMode: 'distance',
+    sensorType: 'camera',
+    perWaypoint: circ.perWaypoint,
+    turnMode: circ.turnMode,
+    gimbalPitch: -45,
+  })
+  check(
+    'circular: WPML com uma foto por ponto de circulo, rumo por ponto e voo curvo continuo',
+    (wlCirc.match(/<wpml:actionActuatorFunc>takePhoto</g) || []).length === cs.photoCount &&
+      (wlCirc.match(/smoothTransition/g) || []).length === cs.waypointCount &&
+      (wlCirc.match(/toPointAndPassWithContinuityCurvature/g) || []).length === cs.waypointCount &&
+      !/multipleDistance/.test(wlCirc),
+  )
+  const nc = normalizeCircularConfig({
+    radiusM: 9999,
+    overlapPct: -5,
+    gimbalPitch: 10,
+    angleDeg: 270,
+  })
+  check(
+    'circularConfig: limites e lixo -> defaults',
+    nc.radiusM === 500 &&
+      nc.overlapPct === 0 &&
+      nc.gimbalPitch === -20 &&
+      nc.speedMS === 8 &&
+      nc.angleDeg === 90 &&
+      normalizeCircularConfig(null).radiusM === 30 &&
+      normalizeCircularConfig({}).angleDeg === null,
   )
 }
 

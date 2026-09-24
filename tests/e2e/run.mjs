@@ -429,6 +429,72 @@ await scenario('corredor-desenhado', async () => {
   return { page }
 })
 
+await scenario('circular-sobre-a-area', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await modo(page, /^Circular$|^Circular$/)
+  await page.waitForTimeout(500)
+  // o rectângulo de 2,5 x 1,8 km com o raio de 30 m dava milhares de
+  // círculos: o painel explica e o KMZ fica desactivado
+  let txt = await bodyText(page)
+  check(
+    'circular: demasiados círculos com o raio por omissão é um erro explicado',
+    /Demasiados círculos|Too many circles/.test(txt) &&
+      (await page
+        .getByRole('button', { name: /Exportar missão única|Export single mission/ })
+        .isDisabled()),
+  )
+  const setField = async (re, value) => {
+    const input = page.locator('label', { hasText: re }).locator('input')
+    await input.fill(String(value))
+    await input.press('Tab')
+  }
+  await setField(/^Raio|^Radius/, 150)
+  await setField(/Sobreposição entre círculos|Circle overlap/, 25)
+  await page.waitForTimeout(800)
+  txt = await bodyText(page)
+  const m = /(\d+) círculos × (\d+) pontos|(\d+) circles × (\d+) points/.exec(txt)
+  check('circular: painel mostra círculos e pontos por círculo', Boolean(m), m?.[0])
+  check(
+    'circular: o conselho de sobreposição aparece com o número de círculos',
+    (await page.getByTestId('circular-advice').count()) === 1,
+  )
+  const [dl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Exportar missão única|Export single mission/ }).click(),
+  ])
+  await dl.saveAs(join(OUT, 'circular.kmz'))
+  const routes = await readRoutes(join(OUT, 'circular.kmz'))
+  const wpml = routes[0].wpml
+  const r = analyseRoute(wpml, plano)
+  executavel(r)
+  const circles = Number(m?.[1] ?? m?.[3])
+  const pts = Number(m?.[2] ?? m?.[4])
+  const fotos = (wpml.match(/<wpml:actionActuatorFunc>takePhoto</g) || []).length
+  const rumos = (wpml.match(/<wpml:waypointHeadingAngle>/g) || []).length
+  check(
+    'circular: KMZ com (n + 1) pontos por círculo, uma foto por ponto, rumo em todos, voo curvo contínuo',
+    r.n === circles * (pts + 1) &&
+      fotos === circles * pts &&
+      rumos === r.n &&
+      /toPointAndPassWithContinuityCurvature/.test(wpml) &&
+      /gimbalPitchRotateAngle>-45</.test(wpml),
+    `${r.n} waypoints, ${fotos} fotos, ${circles} círculos`,
+  )
+  check(
+    'circular: nome do ficheiro com o tipo e o número de círculos',
+    new RegExp(`_circular_n${circles}\\.kmz$`).test(dl.suggestedFilename()),
+    dl.suggestedFilename(),
+  )
+  // a área continua a ser a do separador Área
+  await modo(page, /^Área$|^Area$/)
+  await page.waitForTimeout(400)
+  txt = await bodyText(page)
+  check('resumo do projecto conta a área e a missão circular', /2 planos|2 plans/.test(txt))
+  check('circular: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 await scenario('fachada-desenhada', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Fachada$|^Face$/)

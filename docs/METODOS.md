@@ -442,6 +442,69 @@ com os intervalos de disparo quebrados nas ligações longas. Sem rumo por
 waypoint (segue a rota), gimbal −90°, altura única (sem seguimento de
 terreno neste modo). Tempo `L/v + 3 s · (troços − 1)`.
 
+## 9A. Circular («circlegrammetry»)
+
+Módulo `src/utils/circular.js`. A área do modo Área coberta por uma grelha
+de círculos sobrepostos, cada um voado com a câmara oblíqua apontada ao
+seu centro: a geometria de Bilodeau, Esau, MacDonald e Farooque (2025),
+tal como o UgCS 5.5 a planeia, verificada contra o campo do artigo.
+
+Parâmetros: raio `R` (30 m por omissão, o recomendado pelo UgCS e usado
+no estudo), sobreposição entre círculos `p` (50 % por omissão), pitch do
+gimbal fixo (−45° por omissão; o UgCS aceita 45 a 70), velocidade própria
+e rumo das fiadas (por omissão a aresta mais longa). A altura e a
+sobreposição frontal são as do separador Área.
+
+```
+s     = 2R · (1 − p)                              passo entre centros
+N     = ⌈L / s⌉ × ⌈W / s⌉                         fórmula (2) do artigo
+u_i   = u_mid − (cols − 1)·s/2 + i·s               grelha centrada na caixa
+ext   = (cols − 1)·s/2 + R − L/2                   extensão fora da área
+```
+
+`L` e `W` são os lados da caixa da área no referencial local alinhado
+com o rumo das fiadas (metros por grau do elipsóide WGS84, série
+clássica). A grelha é centrada na caixa e sai da fronteira, como no
+UgCS; a extensão de cada lado é a que o artigo mede na fig. 7. Fiadas
+em serpentina; o sentido de rotação alterna por fiada (horário numa,
+anti-horário na seguinte). Cada círculo entra pelo ponto virado ao
+círculo anterior (o primeiro pelo lado oposto ao segundo), dá a volta
+completa e sai pelo mesmo ponto, que se repete sem fotografia; a ligação
+entre círculos da mesma fiada mede assim exactamente `s`. Rumo ao centro
+em cada ponto, pitch fixo, `takePhoto` em cada ponto, `turnMode`
+`toPointAndPassWithContinuityCurvature` (`useStraightLine` 0), como a
+órbita.
+
+Fotos por círculo: a pegada transversal à distância do eixo óptico
+(`altura / sin|pitch|`) vezes `(1 − sobreposição frontal)` dá a corda;
+`nPts = clamp(⌈2πR / corda⌉, 12, 120)`; sem câmara, 24. No campo do
+artigo (P1 a 60 m, 80 %) dá 12 pontos por círculo; o UgCS usou cerca de
+20 (399 waypoints em 20 círculos), o que corresponde a ~86 % ao longo do
+círculo. Tempo: `L₃D/v + 2·(N − 1)·v/1,7`, uma inversão à saída e outra
+à entrada de cada ligação; estimativa por calibrar em voo. GSD no eixo
+óptico (`computeGSD` com o pitch).
+
+Seguimento de terreno por ponto: `h = AGL + (cota − referência)`, com a
+cota de referência da área (§5: base com relevo, senão a mínima da
+área); sem densificação, para as acções de foto não mudarem de índice;
+pontos fora do relevo mantêm a AGL e são contados. Blocos por círculos
+inteiros: o bloco fecha quando o círculo seguinte não cabe no tempo útil
+da bateria.
+
+Conselho de sobreposição (`overlapAdvice`): o número de colunas mantém-se
+enquanto `p ≤ 1 − L / (2R · cols)`, e o de linhas enquanto
+`p ≤ 1 − W / (2R · rows)`; o painel mostra o intervalo `[min, max]` de
+sobreposições com o mesmo `N` e sugere o máximo, porque no topo do degrau
+os círculos saem menos da área (secção 4.2 do artigo).
+
+Verificação contra o artigo (93 × 131 m, R = 30 m): 50 % → 5 × 4 = 20
+círculos a 30 m de passo, 25 % → 3 × 3 = 9 a 45 m; extensão de 25 m e
+28 m (o artigo mede 28 e 24 m a 50 %, e 28 e 9 m a 25 %, com a
+orientação da fiada trocada em relação à nossa). Não modelado: a
+«cintura» de passagens de baixa inclinação que o artigo sugere para a
+copa baixa; imagens nadir (o modo é só oblíquo, e o ortomosaico não está
+avaliado); calibração do tempo em voo.
+
 ## 10. Pontos de inspecção e GCPs
 
 Inspecção (`src/utils/inspect.js`): ordem manual com sugestão gulosa de
@@ -659,6 +722,7 @@ base em terreno plano; alturas relativas à descolagem.
 | Fachada: standoff / altura / folga / piso | 25 m / 30 m / 15 m / 5 m | faceMode.js |
 | Órbita: pontos por volta / pitch | [8, 120] / [−90, +20] | orbit.js |
 | Corredor: passagens / amostras / troço mínimo / arco | 200 / 20000 / 5 m / 5° | corridor.js |
+| Circular: círculos / pontos por círculo / pitch | 400 / [12, 120] / [−90, −20] | circular.js |
 | Corredor: banda de validade | ±max(0,25 m, 1 %) | corridor.js |
 | GCPs: n / recuo / separação | [5, 25] / max(15 m, 3 %·√A) / 10 m | gcp.js |
 | WPML: waypoints / velocidade / RTH | 65536 / 30 m/s / 1500 m | exporters.js |
@@ -726,6 +790,10 @@ das fotos, da nuvem LAS e do registo de voo as grandezas destas secções e
 - Sanz-Ablanedo, E. et al. (2018). Accuracy of Unmanned Aerial Vehicle
   (UAV) and SfM Photogrammetry Survey as a Function of the Number and
   Location of Ground Control Points Used. *Remote Sensing*, 10(10), 1606.
+- Bilodeau, M. F., Esau, T. J., MacDonald, M. T., Farooque, A. A. (2025).
+  Circlegrammetry for drone imaging: Evaluating a novel technique for
+  mission planning and 3D mapping. *ISPRS Open Journal of Photogrammetry
+  and Remote Sensing*, 18, 100111.
 - DJI, `dji-sdk/Cloud-API-Doc`: `template-kml.md`, `waylines-wpml.md`,
   `common-element.md` (WPML 1.0.2).
 - Mapzen/AWS Terrarium: `elevation-tiles-prod`, codificação RGB.

@@ -10,13 +10,14 @@ import { migrateDroneSelection } from '../data/drones.js'
 import { normalizeFaceConfig } from '../utils/faceMode.js'
 import { normalizeOrbitConfig } from '../utils/orbit.js'
 import { normalizeCorridorConfig } from '../utils/corridor.js'
+import { normalizeCircularConfig } from '../utils/circular.js'
 
 export const PROJECT_VERSION = 2
 /** Esquema JSON (draft 2020-12) do ficheiro v2, servido com a aplicação: public/schema/. */
 export const PROJECT_SCHEMA_URL =
   'https://pedrommgoncalves.github.io/dji-mission-planner/schema/project-v2.schema.json'
 export const PROJECT_STORAGE_KEY = 'dji-mission-planner:project:v1'
-export const MISSION_MODES = ['area', 'face', 'orbit', 'corridor']
+export const MISSION_MODES = ['area', 'face', 'orbit', 'corridor', 'circular']
 
 /** Objecto serializável com tudo o que o projecto guarda (a mesma forma do autosave). */
 export function serializeProject(state) {
@@ -31,6 +32,7 @@ export function serializeProject(state) {
     faceConfig,
     corridorConfig,
     orbitConfig,
+    circularConfig,
     params,
     split,
     anchor,
@@ -55,6 +57,7 @@ export function serializeProject(state) {
     faceConfig,
     corridorConfig,
     orbitConfig,
+    circularConfig,
     params,
     split,
     anchor,
@@ -106,6 +109,7 @@ export function normalizeProject(p) {
   if (p.faceConfig) out.faceConfig = normalizeFaceConfig(p.faceConfig)
   if (p.orbitConfig) out.orbitConfig = normalizeOrbitConfig(p.orbitConfig)
   if (p.corridorConfig) out.corridorConfig = normalizeCorridorConfig(p.corridorConfig)
+  if (p.circularConfig) out.circularConfig = normalizeCircularConfig(p.circularConfig)
   if (Array.isArray(p.inspectPoints)) {
     out.inspectPoints = p.inspectPoints.filter((q) => q && Array.isArray(q.point))
     out.nextInspectId = out.inspectPoints.reduce((mx, q) => Math.max(mx, (q.id ?? 0) + 1), 1)

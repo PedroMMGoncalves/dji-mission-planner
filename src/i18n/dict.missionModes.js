@@ -7,6 +7,7 @@ export default {
   'mode.face': { pt: 'Fachada', en: 'Face' },
   'mode.orbit': { pt: 'Órbita', en: 'Orbit' },
   'mode.corridor': { pt: 'Corredor', en: 'Corridor' },
+  'mode.circular': { pt: 'Circular', en: 'Circular' },
 
   /* ---- Painel de corredor (E5.1) ---- */
   'co.axis.title': { pt: 'Eixo do Corredor', en: 'Corridor Centreline' },
@@ -251,5 +252,99 @@ export default {
   'op.exportHintVideo': {
     pt: 'Voo curvo contínuo, rumo ao POI, gimbal a reapontar ao centro em cada ponto; grava do primeiro ao último ponto. Um só KMZ: a gravação não se fatia por nível. Alturas relativas ao ponto de descolagem.',
     en: 'Continuous curved flight, heading at the POI, gimbal re-aimed at the centre at every point; records from the first to the last point. A single KMZ: the recording is not split per level. Heights relative to the takeoff point.',
+  },
+
+  /* ---- Painel circular (circlegrammetry) ---- */
+  'ci.area.title': { pt: 'Área a Cobrir', en: 'Area to Cover' },
+  'ci.area.draw': { pt: 'Desenhar', en: 'Draw' },
+  'ci.area.finish': { pt: 'Concluir', en: 'Finish' },
+  'ci.area.undo': { pt: 'Anular ponto', en: 'Undo point' },
+  'ci.area.clear': { pt: 'Limpar', en: 'Clear' },
+  'ci.area.hint': {
+    pt: '{n} vértice(s). Clique no mapa para desenhar o polígono; duplo clique ou Concluir para fechar.',
+    en: '{n} vertex(es). Click the map to draw the polygon; double-click or Finish to close it.',
+  },
+  'ci.area.none': {
+    pt: 'Desenhe a área no mapa, ou importe-a no separador Área: o polígono é o mesmo.',
+    en: 'Draw the area on the map, or import it in the Area tab: the polygon is shared.',
+  },
+  'ci.area.shared': {
+    pt: 'A área é a mesma do separador Área (mover, editar vértices e importar funcionam lá).',
+    en: 'Same polygon as the Area tab (move, vertex editing and import live there).',
+  },
+  'ci.params.title': { pt: 'Círculos', en: 'Circles' },
+  'ci.params.radius': { pt: 'Raio', en: 'Radius' },
+  'ci.params.overlap': { pt: 'Sobreposição entre círculos', en: 'Circle overlap' },
+  'ci.params.overlapHint': {
+    pt: 'Passo entre centros = 2R × (1 − sobreposição). O tempo sobe em degraus, um por círculo a mais; dentro de um degrau, mais sobreposição é menos voo fora da área.',
+    en: 'Centre spacing = 2R × (1 − overlap). Time rises in steps, one per extra circle; within a step, more overlap means less flying outside the area.',
+  },
+  'ci.params.pitch': { pt: 'Inclinação do gimbal', en: 'Gimbal pitch' },
+  'ci.params.pitchHint': {
+    pt: 'Fixa em todos os pontos, com o rumo ao centro do círculo. −45° é o valor do estudo de referência; o eixo óptico toca o chão a {d} m do drone.',
+    en: 'Fixed at every point, heading at the circle centre. −45° is the reference study value; the optical axis meets the ground {d} m from the drone.',
+  },
+  'ci.params.speed': { pt: 'Velocidade', en: 'Speed' },
+  'ci.params.angle': { pt: 'Rumo das fiadas', en: 'Row heading' },
+  'ci.params.angleAuto': { pt: 'Aresta mais longa', en: 'Longest edge' },
+  'ci.params.altitudeNote': {
+    pt: 'Altura e sobreposição frontal (fotos ao longo do círculo) são as do separador Área: {h} m, {f} %.',
+    en: 'Height and front overlap (photos along the circle) come from the Area tab: {h} m, {f} %.',
+  },
+  'ci.advice': {
+    pt: 'Com {p} %: {cols} × {rows} = {n} círculos. O mesmo número mantém-se de {min} % a {max} %; no topo do intervalo os círculos saem menos da área.',
+    en: 'At {p} %: {cols} × {rows} = {n} circles. The same count holds from {min} % to {max} %; at the top of the range the circles overshoot the area less.',
+  },
+  'ci.adviceApply': { pt: 'Usar {max} %', en: 'Use {max} %' },
+  'ci.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
+  'ci.plan.circles': { pt: '{n} círculos × {pts} pontos', en: '{n} circles × {pts} points' },
+  'ci.plan.photos': { pt: '{n} fotos (1 por ponto)', en: '{n} photos (1 per point)' },
+  'ci.plan.extension': {
+    pt: 'sai da área {a} m ao longo, {b} m de través',
+    en: 'overshoots the area by {a} m along, {b} m across',
+  },
+  'ci.plan.gsd': { pt: 'GSD {v} cm/px no eixo óptico', en: 'GSD {v} cm/px on the optical axis' },
+  'ci.plan.path': { pt: 'percurso {km} km', en: 'path {km} km' },
+  'ci.plan.time': { pt: '~{min} min', en: '~{min} min' },
+  'ci.plan.terrain': {
+    pt: 'seguimento de terreno por ponto ({n} pontos fora do relevo mantêm a AGL)',
+    en: 'per-point terrain following ({n} points outside the DEM keep the AGL)',
+  },
+  'ci.plan.vsArea': {
+    pt: 'grelha do separador Área ({kind}): ~{min} min',
+    en: 'Area-tab grid ({kind}): ~{min} min',
+  },
+  'ci.plan.kindSerpentine': { pt: 'serpentina', en: 'serpentine' },
+  'ci.plan.kindCrosshatch': { pt: 'dupla grelha', en: 'double grid' },
+  'ci.plan.blocks': {
+    pt: '{n} blocos por bateria ({min} min úteis)',
+    en: '{n} blocks per battery ({min} usable min)',
+  },
+  'ci.terrain.follow': {
+    pt: 'Seguir terreno (altura por ponto)',
+    en: 'Follow terrain (per-point height)',
+  },
+  'ci.terrain.hint': {
+    pt: 'Cada ponto sobe ou desce com o relevo debaixo dele, em relação à cota de referência (base com relevo, senão a mínima da área). Precisa de relevo carregado que cubra a área.',
+    en: 'Each point rises or drops with the terrain beneath it, relative to the reference elevation (base with terrain, otherwise the area minimum). Needs loaded terrain covering the area.',
+  },
+  'ci.exportSingle': { pt: 'Exportar missão única (KMZ)', en: 'Export single mission (KMZ)' },
+  'ci.exportBlocks': {
+    pt: 'Exportar um KMZ por bloco (ZIP)',
+    en: 'Export one KMZ per block (ZIP)',
+  },
+  'ci.exportHint': {
+    pt: 'Voo curvo contínuo, rumo ao centro do círculo, gimbal fixo e uma foto em cada ponto; cada círculo entra e sai pelo ponto virado ao anterior. Alturas relativas ao ponto de descolagem.',
+    en: 'Continuous curved flight, heading at the circle centre, fixed gimbal and one photo per point; each circle enters and exits at the point facing the previous one. Heights relative to the takeoff point.',
+  },
+  'ci.err.invalid-area': { pt: 'Polígono inválido.', en: 'Invalid polygon.' },
+  'ci.err.invalid-radius': { pt: 'O raio tem de ser positivo.', en: 'Radius must be positive.' },
+  'ci.err.invalid-altitude': {
+    pt: 'A altura tem de ser positiva.',
+    en: 'Height must be positive.',
+  },
+  'ci.err.too-many-circles': {
+    pt: 'Demasiados círculos ({n}, máximo {max}): aumente o raio ou baixe a sobreposição.',
+    en: 'Too many circles ({n}, maximum {max}): increase the radius or lower the overlap.',
   },
 }

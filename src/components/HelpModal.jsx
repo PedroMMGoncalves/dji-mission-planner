@@ -68,6 +68,12 @@ function InstrucoesPt() {
           gravar). Exporta em voo curvo contínuo, missão única ou um KMZ por nível (ZIP).
         </Li>
         <Li>
+          <strong>Circular</strong> — grelha de círculos sobrepostos sobre a mesma área do modo
+          Área, câmara inclinada e apontada ao centro de cada círculo, uma foto por ponto
+          (circlegrammetry). Raio e sobreposição entre círculos dão o número de círculos; o painel
+          sugere a maior sobreposição que não acrescenta um círculo.
+        </Li>
+        <Li>
           <strong>Corredor</strong> — para infraestruturas lineares (estradas, condutas, linhas de
           água, linhas eléctricas). Clique «Desenhar» e marque o <em>eixo</em> no mapa; conclua com
           duplo clique. Defina a <strong>meia-largura</strong> (distância coberta de cada lado do
@@ -241,6 +247,12 @@ function InstrucoesEn() {
           levels and step. Capture as photo (rings, one photo per waypoint) or video (a continuous
           recording spiral). Exports in continuous curved flight, single mission or one KMZ per
           level (ZIP).
+        </Li>
+        <Li>
+          <strong>Circular</strong> — a grid of overlapping circles over the same polygon as the
+          Area mode, camera tilted and aimed at each circle centre, one photo per point
+          (circlegrammetry). Radius and circle overlap set the circle count; the panel suggests the
+          largest overlap that does not add a circle.
         </Li>
         <Li>
           <strong>Corridor</strong> — for linear infrastructure (roads, pipelines, watercourses,

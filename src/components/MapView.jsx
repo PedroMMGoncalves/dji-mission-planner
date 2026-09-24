@@ -34,6 +34,7 @@ export default function MapView({
   facePreview,
   corridorPreview,
   orbitPreview,
+  circularPreview,
   onOrbitPoiDrag,
   fitKey,
   editable,
@@ -185,6 +186,7 @@ export default function MapView({
       face: L.layerGroup().addTo(map),
       corridor: L.layerGroup().addTo(map),
       orbit: L.layerGroup().addTo(map),
+      circular: L.layerGroup().addTo(map),
       canvas: L.canvas({ padding: 0.3 }),
     }
 
@@ -655,6 +657,37 @@ export default function MapView({
       })
     }
   }, [orbitPreview])
+
+  // Pré-visualização do modo circular: os círculos da grelha e a rota que
+  // os liga, pela ordem de voo
+  useEffect(() => {
+    const g = layersRef.current?.circular
+    if (!g) return
+    g.clearLayers()
+    if (!circularPreview) return
+    const renderer = layersRef.current?.canvas
+    circularPreview.circles?.forEach((c) => {
+      L.circle(toLatLng(c.centre), {
+        radius: circularPreview.radiusM,
+        color: c.clockwise ? '#38bdf8' : '#a78bfa',
+        weight: 1,
+        opacity: 0.7,
+        fill: false,
+        dashArray: '4 4',
+        interactive: false,
+        renderer,
+      }).addTo(g)
+    })
+    if (circularPreview.path?.length >= 2) {
+      L.polyline(circularPreview.path.map(toLatLng), {
+        color: '#fde047',
+        weight: 1.5,
+        opacity: 0.9,
+        interactive: false,
+        renderer,
+      }).addTo(g)
+    }
+  }, [circularPreview])
 
   // Pontos de inspeção (R2.9): marcadores numerados e arrastáveis
   useEffect(() => {

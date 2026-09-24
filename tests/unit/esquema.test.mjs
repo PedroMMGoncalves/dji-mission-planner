@@ -21,6 +21,7 @@ import {
 import { DEFAULT_CUSTOM_SENSOR, DEFAULT_SELECTION, MISSION_PRESETS } from '../../src/data/drones.js'
 import { DEFAULT_CORRIDOR_CONFIG } from '../../src/utils/corridor.js'
 import { DEFAULT_ORBIT_CONFIG } from '../../src/utils/orbit.js'
+import { DEFAULT_CIRCULAR_CONFIG } from '../../src/utils/circular.js'
 import { DEFAULT_FACE_CONFIG } from '../../src/utils/faceMode.js'
 
 const schema = JSON.parse(
@@ -42,6 +43,7 @@ const defaults = () => ({
   faceConfig: { ...DEFAULT_FACE_CONFIG },
   corridorConfig: { ...DEFAULT_CORRIDOR_CONFIG },
   orbitConfig: { ...DEFAULT_ORBIT_CONFIG },
+  circularConfig: { ...DEFAULT_CIRCULAR_CONFIG },
   params: { ...DEFAULT_PARAMS },
   split: { ...DEFAULT_SPLIT },
   anchor: { ...DEFAULT_ANCHOR },
@@ -139,6 +141,7 @@ describe('esquema JSON do ficheiro de projecto', () => {
       ],
     }
     st.orbitConfig = { ...st.orbitConfig, poi: [-9.135, 38.705] }
+    st.circularConfig = { ...st.circularConfig, radiusM: 40, overlapPct: 35, angleDeg: 30 }
     st.terrainFollow = { enabled: true, tolerance: 3 }
     st.gcpConfig = { enabled: true, count: 7 }
     const json = roundTrip(st)
@@ -165,6 +168,10 @@ describe('esquema JSON do ficheiro de projecto', () => {
     expect(validate({ ...ok, params: { ...ok.params, altitude: 0 } })).toBe(false)
     expect(validate({ ...ok, basePoint: [200, 0] })).toBe(false)
     expect(validate({ ...ok, missionMode: 'zz' })).toBe(false)
+    expect(validate({ ...ok, missionMode: 'circular' })).toBe(true)
+    expect(validate({ ...ok, circularConfig: { ...ok.circularConfig, gimbalPitch: 10 } })).toBe(
+      false,
+    )
     expect(validate({ ...ok, extra: 1 })).toBe(false)
     expect(validate({ ...ok, inspectPoints: [{ id: 1 }] })).toBe(false)
     expect(validate({ ...ok, split: { ...ok.split, batteryMin: 25 } })).toBe(false) // so v1
