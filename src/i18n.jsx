@@ -118,8 +118,8 @@ const BASE_DICT = {
   },
   'app.exportKml': { pt: 'Exportar KML da área', en: 'Export area KML' },
   'map.moveArea': {
-    pt: 'Arrastar para mover a área inteira',
-    en: 'Drag to move the whole area',
+    pt: 'Arrastar para mover a área inteira (a base fica no sítio)',
+    en: 'Drag to move the whole area (the home point stays)',
   },
   'app.exportKmlTitle': {
     pt: 'Só o polígono da área, para definir o levantamento no DJI Pilot 2',

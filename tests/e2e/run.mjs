@@ -339,6 +339,10 @@ await scenario('multipoligono-aviso', async () => {
       .join(' | ')
       .slice(0, 200),
   )
+  // o relevo do fixture sobe mais de 80 m dentro do poligono maior: sem
+  // seguir terreno a rota entraria no relevo e o preflight bloqueia a
+  // exportacao (de proposito); a missao exportada tem de ser viavel
+  await configure(page, { tf: true })
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'multi.kmz')))
   const r = analyseRoute(routes[0].wpml, { toM, ground, aglNominalM: AGL_M })
   check(
@@ -619,6 +623,52 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
       /0 bloqueios|0 blockers/.test(await page.getByTestId('preflight-pill').innerText()),
   )
   check('preflight: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+/* ---- colisao com o relevo ---------------------------------------------- */
+// Com o MDT carregado e seguir terreno desligado, uma altitude relativa que
+// nao chega ao topo do relevo e um bloqueio, nao um numero vermelho num
+// painel: foi assim que um perfil com o voo a -86 m do solo chegou ao campo.
+await scenario('preflight-bloqueia-colisao-com-relevo', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  const alt = page
+    .locator('label', { hasText: /Altitude/ })
+    .locator('input')
+    .first()
+  await alt.fill('30')
+  await alt.press('Tab')
+  await page.waitForTimeout(900)
+  const pill = page.getByTestId('preflight-pill')
+  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  check(
+    'colisao: a 30 m sem seguir terreno o preflight bloqueia e o KMZ fica desactivado',
+    /bloqueio|blocker/.test(await pill.innerText()) && !(await exportBtn.isEnabled()),
+    await pill.innerText(),
+  )
+  await pill.click()
+  check(
+    'colisao: a lista diz que a rota entra no relevo',
+    /entra no relevo|into the terrain/.test(await page.getByTestId('preflight-list').innerText()),
+  )
+  // seguir terreno resolve: a rota passa a acompanhar o relevo
+  await label(page, TF).check()
+  await page.waitForFunction(
+    () => {
+      const b = [...document.querySelectorAll('button')].find((b) =>
+        /Exportar WPML|Export Advanced WPML/.test(b.textContent),
+      )
+      return b && !b.disabled
+    },
+    null,
+    { timeout: 20000 },
+  )
+  check(
+    'colisao: com seguir terreno o bloqueio desaparece',
+    !/entra no relevo|into the terrain/.test(await page.getByTestId('preflight-list').innerText()),
+  )
+  check('colisao: sem erros de pagina', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

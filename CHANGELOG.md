@@ -118,6 +118,32 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   pp. Agora dispara-se no máximo um passo mais cedo, que é o lado que sobra
   cobertura em vez de faltar. A geometria da rota não muda.
 
+### Corrigido (base longe da área: perfil debaixo da terra e blocos de 80 m)
+
+- **Cota de referência nunca é 0.** Sem seguir terreno, a cota da descolagem
+  vinha da elevação no ponto de base; com a base fora do relevo carregado —
+  esquecida de outro projecto, ou deixada para trás ao mover a área — caía
+  silenciosamente em 0 m, e o perfil de elevação e o 3D desenhavam o voo a
+  80 m absolutos debaixo de um terreno a 100–160 m, com a folga a −86 m e
+  nada a avisar. A cadeia passa a ser base → primeiro waypoint → nenhuma
+  (`src/mission/reference.js`), e o preflight avisa quando a base não tem
+  relevo. O perfil, o 3D e o preflight lêem a mesma geometria e a mesma cota.
+- **Rota que entra no relevo é um bloqueio.** A pior folga ao solo da rota
+  exportável é calculada sobre o relevo carregado (`src/mission/clearance.js`,
+  amostragem a 40 m como o seguimento de terreno) e entra no preflight: abaixo
+  de 0 m bloqueia a exportação («a rota entra no relevo: N m abaixo do solo»),
+  abaixo de 15 m avisa. Vale para todos os modos. Antes só o perfil o
+  mostrava, a vermelho, para quem o abrisse.
+- **Base longe da área** avisa acima de 2 km e bloqueia quando só o trânsito de
+  ida e volta excede o tempo útil de uma bateria, com a distância e os minutos
+  na mensagem.
+- **Blocos por bateria com base inalcançável.** O trânsito entrava no
+  orçamento do bloco; com a base a dezenas de km o orçamento caía no mínimo
+  de 60 s e saíam 239 quadrados de 80 m — ridículos e sem explicação. Um
+  trânsito que não cabe numa bateria deixa de encolher os blocos: dimensionam-se
+  sem ele e o preflight bloqueia com a razão.
+- A pega de mover a área passa a dizer que a base fica no sítio.
+
 ### Corrigido (KML da área, mover a área, 3D)
 
 - **KML da área recusado pelo DJI Pilot 2.** O ficheiro dito «simples» levava,

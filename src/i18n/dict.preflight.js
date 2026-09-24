@@ -82,6 +82,26 @@ export default {
     pt: 'Segmento de {km} km (índice {at}): confirme que a ligação atravessa terreno seguro à altura de trânsito.',
     en: '{km} km segment (index {at}): confirm the link crosses safe terrain at transit height.',
   },
+  'preflight.base-far': {
+    pt: 'Base a {km} km da área: o trânsito conta na bateria e o regresso tem de o cobrir. Confirme que é o ponto real de descolagem.',
+    en: 'Home point {km} km from the area: the transit counts against the battery and the return has to cover it. Confirm it is the real take-off point.',
+  },
+  'preflight.base-unreachable': {
+    pt: 'Base a {km} km da área: só o trânsito de ida e volta leva {min} min, acima dos {usable} min úteis de uma bateria. Mova a base para junto da área.',
+    en: 'Home point {km} km from the area: the round trip alone takes {min} min, above the {usable} usable minutes of one battery. Move the home point next to the area.',
+  },
+  'preflight.base-no-terrain': {
+    pt: 'A base está fora do relevo carregado: a cota de referência do perfil, do 3D e da folga ao solo é a do primeiro waypoint, não a da descolagem.',
+    en: 'The home point is outside the loaded elevation data: the reference elevation for the profile, the 3D view and the ground clearance is the first waypoint, not the take-off.',
+  },
+  'preflight.terrain-collision': {
+    pt: 'A rota entra no relevo: {m} m abaixo do solo no pior ponto. Suba a altitude ou ligue seguir terreno.',
+    en: 'The route goes into the terrain: {m} m below ground at the worst point. Raise the altitude or turn follow terrain on.',
+  },
+  'preflight.clearance-low': {
+    pt: 'Folga mínima ao solo de {m} m, abaixo de 15 m. Suba a altitude ou ligue seguir terreno.',
+    en: 'Minimum ground clearance of {m} m, below 15 m. Raise the altitude or turn follow terrain on.',
+  },
   'preflight.no-base': {
     pt: 'Sem ponto de base: o trânsito não conta para a bateria e o seguimento de terreno usa o primeiro waypoint como referência.',
     en: 'No base point: transit is not counted against the battery and terrain following uses the first waypoint as reference.',

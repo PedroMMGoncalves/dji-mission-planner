@@ -256,3 +256,41 @@ describe('preflightArea', () => {
     expect(all.size).toBe(19)
   })
 })
+
+describe('base longe, base sem relevo e folga ao solo', () => {
+  test('base a mais de 2 km avisa; com transito acima da bateria bloqueia', () => {
+    const longe = preflightArea({ ...base(), baseDistance: 3000 })
+    expect(codes(longe)).toContain('base-far')
+    expect(hasBlockers(longe)).toBe(false)
+    // 30 min x 70 % = 21 min uteis; 2 x 12 km a 8 m/s = 50 min so de transito
+    const inalcancavel = preflightArea({ ...base(), baseDistance: 12000 })
+    expect(codes(inalcancavel)).toContain('base-unreachable')
+    expect(codes(inalcancavel)).not.toContain('base-far')
+    expect(hasBlockers(inalcancavel)).toBe(true)
+    const perto = preflightArea({ ...base(), baseDistance: 500 })
+    expect(codes(perto)).not.toContain('base-far')
+  })
+  test('base fora do relevo carregado avisa que a referencia e o primeiro waypoint', () => {
+    expect(codes(preflightArea({ ...base(), refSource: 'waypoint-fallback' }))).toContain(
+      'base-no-terrain',
+    )
+    expect(codes(preflightArea({ ...base(), refSource: 'base' }))).not.toContain('base-no-terrain')
+  })
+  test('rota que entra no relevo bloqueia; folga curta avisa; folga larga nada', () => {
+    const colide = preflightArea({ ...base(), clearance: { minM: -12.4 } })
+    expect(codes(colide)).toContain('terrain-collision')
+    expect(hasBlockers(colide)).toBe(true)
+    expect(colide.find((i) => i.code === 'terrain-collision').params.m).toBe(12.4)
+    const curta = preflightArea({ ...base(), clearance: { minM: 9 } })
+    expect(codes(curta)).toContain('clearance-low')
+    expect(hasBlockers(curta)).toBe(false)
+    const larga = preflightArea({ ...base(), clearance: { minM: 40 } })
+    expect(codes(larga)).not.toContain('clearance-low')
+    expect(codes(larga)).not.toContain('terrain-collision')
+    expect(codes(preflightArea({ ...base(), clearance: null }))).not.toContain('clearance-low')
+  })
+  test('os outros modos tambem bloqueiam a colisao com o relevo', () => {
+    const items = preflightPlan({ plan, batteryMin: 30, reservePct: 30, clearance: { minM: -1 } })
+    expect(codes(items)).toContain('terrain-collision')
+  })
+})

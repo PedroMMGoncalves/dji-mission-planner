@@ -147,7 +147,14 @@ export function useAreaGeometry({
     let side = split.tileSize
     if (split.mode === 'battery') {
       const dist = basePoint ? distanceToArea(basePoint, ring) : null
-      const transitS = dist != null ? (2 * dist) / (speed || 10) : 0
+      let transitS = dist != null ? (2 * dist) / (speed || 10) : 0
+      // Uma base a dezenas de km (esquecida de outro projecto, ou a area
+      // movida sem ela) tem um transito maior do que a bateria: sem isto o
+      // orcamento caia no minimo de 60 s e saiam 239 blocos de 80 m. Blocos
+      // dimensionados para uma base inalcancavel nao querem dizer nada;
+      // dimensionam-se sem transito e o preflight bloqueia com a razao.
+      const usableS = batteryMin > 0 ? batteryMin * 60 * (1 - split.reservePct / 100) : null
+      if (usableS != null && transitS >= usableS) transitS = 0
       side = squareSideForBattery({
         batteryMin,
         reservePct: split.reservePct,

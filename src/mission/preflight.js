@@ -11,6 +11,10 @@
 export const WPML_MAX_WAYPOINTS = 65535
 /** Acima disto o Pilot 2 importa lentamente (aviso brando). */
 export const WAYPOINT_SOFT_LIMIT = 2000
+/** Base a mais do que isto da área: o trânsito passa a contar a sério (aviso). */
+export const BASE_FAR_M = 2000
+/** Folga ao solo abaixo disto avisa; abaixo de zero bloqueia (a rota entra no relevo). */
+export const CLEARANCE_WARN_M = 15
 
 const item = (level, code, params = {}) => ({ level, code, params })
 const wpCount = (x) => (Array.isArray(x?.waypoints) ? x.waypoints.length : 0)
@@ -25,6 +29,32 @@ const photoPassUnverified = (c) =>
   c.photoMode === 'waypoint' && c.waypointStops !== 'all'
     ? [item('warn', 'photo-pass-unverified')]
     : []
+
+/**
+ * Base e solo: o que uma base longe da área ou fora do relevo, e uma rota
+ * que entra no terreno, têm a dizer antes de exportar. Os dois sintomas
+ * vistos no campo — perfil com o voo debaixo da terra e blocos de 80 m —
+ * tinham a mesma causa (base a dezenas de km, fora do MDT) e nenhum aviso.
+ */
+function groundItems(c, usable) {
+  const out = []
+  if (c.basePoint && c.baseDistance > BASE_FAR_M) {
+    const km = (c.baseDistance / 1000).toFixed(1)
+    const transitMin = c.speed > 0 ? (2 * c.baseDistance) / c.speed / 60 : null
+    if (usable != null && transitMin != null && transitMin >= usable)
+      out.push(
+        item('block', 'base-unreachable', { km, min: round1(transitMin), usable: round1(usable) }),
+      )
+    else out.push(item('warn', 'base-far', { km }))
+  }
+  if (c.refSource === 'waypoint-fallback') out.push(item('warn', 'base-no-terrain'))
+  const minM = c.clearance?.minM
+  if (Number.isFinite(minM)) {
+    if (minM < 0) out.push(item('block', 'terrain-collision', { m: round1(-minM) }))
+    else if (minM < CLEARANCE_WARN_M) out.push(item('warn', 'clearance-low', { m: round1(minM) }))
+  }
+  return out
+}
 
 /** Minutos úteis de uma bateria, descontada a reserva; null sem bateria. */
 export function usableBatteryMin(batteryMin, reservePct = 30) {
@@ -53,6 +83,8 @@ export function usableBatteryMin(batteryMin, reservePct = 30) {
  * @param {any} [c.uncertainty] intervalos de uncertaintyIntervals (sobreposições no pior caso)
  * @param {Array<{exposureS: number, blurCm: number, blurPx: number|null}>|null} [c.blur] arrastamento por exposição
  * @param {{duplicates: number[], longSegments: any[], climb: any[]}|null} [c.route] routeChecks da rota exportada
+ * @param {{minM: number}|null} [c.clearance] pior folga ao solo da rota exportável (routeClearance)
+ * @param {string|null} [c.refSource] origem da cota de referência (referenceElevation)
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
@@ -171,6 +203,7 @@ export function preflightArea(c) {
     }
   }
 
+  out.push(...groundItems(c, usable))
   if (!c.basePoint) out.push(item('info', 'no-base'))
   out.push(item('info', 'heights-relative'))
   return out
@@ -208,6 +241,7 @@ export function preflightPlan(c) {
       out.push(item('warn', 'battery', { min: round1(min), usable: round1(usable) }))
   }
   out.push(...photoPassUnverified(c))
+  out.push(...groundItems(c, usable))
   out.push(item('info', 'heights-relative'))
   return out
 }

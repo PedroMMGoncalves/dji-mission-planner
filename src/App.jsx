@@ -47,6 +47,8 @@ import { useTerrain } from './hooks/useTerrain.js'
 import { useProject } from './hooks/useProject.js'
 import { DEFAULT_PARAMS } from './mission/defaults.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
+import { referenceElevation } from './mission/reference.js'
+import { routeClearance } from './mission/clearance.js'
 import {
   motionBlur,
   routeChecks,
@@ -619,16 +621,16 @@ function AppInner({ lang, setLang }) {
       }
     }
     if (!planOk) return null
-    const wps =
-      terrainResult && !terrainResult.error
-        ? terrainResult.waypoints
-        : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
-    const ref =
-      terrainResult && !terrainResult.error
-        ? terrainResult.refElev
-        : (elevAt?.((basePoint ?? planOk.waypoints[0])[0], (basePoint ?? planOk.waypoints[0])[1]) ??
-          0)
-    return { waypoints: wps, refElev: ref }
+    const tfOk = terrainResult && !terrainResult.error
+    const wps = tfOk
+      ? terrainResult.waypoints
+      : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
+    // Cota de referencia: base → primeiro waypoint → nenhuma. Antes caia em 0
+    // com a base fora do relevo e o perfil punha o voo debaixo da terra.
+    const refInfo = tfOk
+      ? { elev: terrainResult.refElev, source: 'base' }
+      : referenceElevation({ elevationAt: elevAt, basePoint, waypoints: planOk.waypoints })
+    return { waypoints: wps, refElev: refInfo.elev, refSource: refInfo.source }
   }, [
     missionMode,
     facePlan,
@@ -643,6 +645,14 @@ function AppInner({ lang, setLang }) {
     basePoint,
     params.altitude,
   ])
+
+  // Pior folga ao solo da rota que sairia no KMZ, sobre o relevo carregado.
+  // E daqui que o preflight bloqueia uma rota que entra no terreno.
+  const clearance = useMemo(() => {
+    const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
+    if (!elevationAt || !view3d?.waypoints?.length || !Number.isFinite(view3d.refElev)) return null
+    return routeClearance(view3d.waypoints, { elevationAt, refElev: view3d.refElev })
+  }, [terrain, view3d])
 
   // Teto operacional AGL do payload (T1.3), ex.: LiDAR limitado a 100 m
   const aglWarn = useMemo(
@@ -735,9 +745,11 @@ function AppInner({ lang, setLang }) {
         uncertainty,
         blur,
         route,
+        clearance,
+        refSource: view3d?.refSource ?? null,
       })
     }
-    const other = { batteryMin, reservePct: split.reservePct }
+    const other = { batteryMin, reservePct: split.reservePct, clearance }
     if (missionMode === 'corridor')
       return preflightPlan({
         ...other,
@@ -772,6 +784,8 @@ function AppInner({ lang, setLang }) {
     facePlan,
     orbitPlan,
     terrain.data,
+    clearance,
+    view3d,
     uncertainty,
     blur,
     route,
@@ -1286,23 +1300,12 @@ function AppInner({ lang, setLang }) {
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
-      {showProfile && terrain.status === 'ready' && planOk && (
+      {showProfile && terrain.status === 'ready' && view3d && (
         <Suspense fallback={null}>
           <ElevationProfile
             terrain={terrain.data}
-            waypoints={
-              terrainResult && !terrainResult.error
-                ? terrainResult.waypoints
-                : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
-            }
-            refElev={
-              terrainResult && !terrainResult.error
-                ? terrainResult.refElev
-                : (terrain.data.elevationAt(
-                    (basePoint ?? planOk.waypoints[0])[0],
-                    (basePoint ?? planOk.waypoints[0])[1],
-                  ) ?? 0)
-            }
+            waypoints={view3d.waypoints}
+            refElev={view3d.refElev ?? 0}
             blocks={
               terrainResult && !terrainResult.error && terrainResult.blocks3
                 ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
