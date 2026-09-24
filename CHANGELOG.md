@@ -6,6 +6,10 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+(nada ainda)
+
+## 1.3.0 — 2026-09-24
+
 ### Adicionado (modo circular, circlegrammetry)
 
 - **Quinto tipo de missão: Circular.** A área do modo Área coberta por uma

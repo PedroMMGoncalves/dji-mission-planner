@@ -181,7 +181,7 @@ com screenshot e os passos.
 A app é usada em campo: numa janela a **~768 px de largura** (DevTools ou
 tablet real):
 
-- ☐ O selector de modo e os três painéis (Área/Fachada/Órbita) são usáveis
+- ☐ O selector de modo e os cinco painéis (Área/Fachada/Órbita/Corredor/Circular) são usáveis
   sem sobreposições; os campos numéricos aceitam toque; as listas fazem
   scroll dentro do painel.
 - ☐ No modo inspecção, reordenar com as **setas** (o arrastar HTML5 não

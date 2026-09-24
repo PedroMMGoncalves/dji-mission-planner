@@ -39,11 +39,11 @@ Esta ferramenta é **apenas o motor de planeamento**. A autorização de espaço
 
 1. **Abra a app** no endereço publicado (ou `npm install && npm run dev` localmente).
 2. **Escolha a aeronave e o payload** (M3E, M4T, M300 RTK com P1, YellowScan Mapper+ ou custom) e um **preset de missão** — ou defina altitude/GSD, velocidade e sobreposições à mão.
-3. **Escolha o tipo de missão** no selector do topo do painel: **Área** (grelha nadir/oblíqua), **Fachada** (serpentina vertical sobre uma face) ou **Órbita** (círculos multi-nível em torno de um alvo) ou **Circular** (grelha de círculos sobrepostos sobre a área, câmara apontada a cada centro — circlegrammetry). Os pontos de inspecção vivem como camada extra do modo Área.
+3. **Escolha o tipo de missão** no selector do topo do painel: **Área** (grelha nadir/oblíqua), **Corredor** (passagens paralelas a um eixo), **Fachada** (serpentina vertical sobre uma face), **Órbita** (círculos multi-nível em torno de um alvo) ou **Circular** (grelha de círculos sobrepostos sobre a área, câmara apontada a cada centro — circlegrammetry). Os pontos de inspecção vivem como camada extra do modo Área.
 4. **Área**: desenhe um polígono, gere um rectângulo/quadrado a partir do ponto central, ou importe KML / GeoJSON / Shapefile zipado / KMZ WPML. A direcção **Óptima** procura a orientação com menos faixas dentro do polígono real.
 5. **Divida em blocos** quando a área excede uma bateria: faixas por área, quadrados dimensionados pela bateria (com tecto VLOS) ou mosaico manual com células clicáveis.
-6. **Terreno**: o MDT global descarrega automaticamente; active o *terrain follow* para alturas por waypoint, ou importe um GeoTIFF LiDAR da DGT (50 cm / 2 m). Verifique na **vista 3D** e no **perfil de elevação** — a vista 3D também mostra as passagens de fachada e os anéis de órbita.
-7. **Exporte**: o KML da área ou a missão WPML (KMZ) — um KMZ por bloco (ZIP) com blocos activos, um KMZ por nível nas órbitas. Imprima o **relatório de missão** e leve a **checklist de campo**.
+6. **Terreno**: o MDT global descarrega automaticamente; active o *terrain follow* para alturas por waypoint, ou importe um GeoTIFF LiDAR da DGT (50 cm / 2 m). Verifique na **vista 3D** e no **perfil de elevação** — a vista 3D também mostra as passagens de fachada, os anéis de órbita e as grelhas circulares.
+7. **Exporte**: o KML da área ou a missão WPML (KMZ) — um KMZ por bloco (ZIP) com blocos activos, um KMZ por nível nas órbitas, um por bloco de bateria nas missões circulares. Imprima o **relatório de missão** e leve a **checklist de campo**.
 
 ---
 
@@ -59,10 +59,10 @@ Esta ferramenta é **apenas o motor de planeamento**. A autorização de espaço
 - **Pontos de inspecção** (`src/utils/inspect.js`): waypoints avulsos com etiqueta, rumo/pitch/foto por ponto, ordenação por arrasto ou sugestão vizinho-mais-próximo, exportação própria e tabela no relatório.
 - **Dupla grelha 3D com passagem nadir opcional**: crosshatch a −60° e, se activada, uma terceira grelha nadir no fim (o gimbal roda a −90° por acções de waypoint) — o GSD apresentado passa ao nadir, a resolução governante do orto.
 - **Blocos**: faixas por área máxima; quadrados por bateria resolvidos de um modelo de tempo de voo (duração × reserva − trânsito, tecto VLOS); mosaico manual com células clicáveis e Ctrl+Z; grelhas N×M do ponto central.
-- **Seguimento do terreno** (`src/utils/terrain.js`): tiles Terrarium (~30 m) com despiking, ou GeoTIFF LiDAR da DGT lido por janela (`src/utils/demFile.js`, ficheiros multi-GB seguros); densificação + Douglas-Peucker em alturas por waypoint; sugestões para encostas íngremes (linhas ao longo das curvas de nível, gimbal oblíquo).
-- **Exportador WPML** (`src/utils/exporters.js`): acções por waypoint (rumo fixo, gimbal, foto), disparo por waypoint nas grelhas de área (passagens densificadas a passos iguais ≤ intervalo, uma acção de foto por ponto, sem gatilho por distância), modo de viragem configurável, sem acções de câmara nos payloads LiDAR, nomes com o tipo de missão codificado (`missao_area-crosshatch-nadir_b01`, `missao_face_p1-6`, `missao_orbit_n3`).
+- **Seguimento do terreno** (`src/utils/terrain.js`): tiles Terrarium (~30 m) com despiking, ou GeoTIFF LiDAR da DGT lido por janela (`src/utils/demFile.js`, ficheiros multi-GB seguros); densificação + Douglas-Peucker em alturas por waypoint; sugestões para encostas íngremes (linhas ao longo das curvas de nível, gimbal oblíquo). A referência das alturas relativas é a base quando está sobre relevo carregado, senão a cota mínima do relevo debaixo da rota — nunca 0, nunca o primeiro waypoint — e a mesma referência alimenta o perfil, a vista 3D, a folga ao solo e a exportação; a vista 3D preenche os buracos do MDT por difusão em vez de deixar cair a superfície a zero.
+- **Exportador WPML** (`src/utils/exporters.js`): acções por waypoint (rumo fixo, gimbal, foto), disparo por waypoint nas grelhas de área (passagens densificadas a passos iguais ≤ intervalo, uma acção de foto por ponto, sem gatilho por distância), modo de viragem configurável, `startRecord`/`stopRecord` na órbita em vídeo, `wpml:distance` e `wpml:duration` para o Pilot 2 mostrar o progresso e o tempo em falta, sem acções de câmara nos payloads LiDAR, nomes com o tipo de missão codificado (`missao_area-crosshatch-nadir_b01`, `missao_face_p1-6`, `missao_orbit_n3`, `missao_circular_n20`). Auditado contra a especificação WPML: velocidade de transição limitada a 15 m/s, pitch do gimbal recortado ao intervalo do payload, lente do M4T escrita em `payloadParam`, altura de segurança de descolagem em [1,2, 1500] m.
 - **GCPs, relatório e checklist**: heurística bordo+centro para GCPs; relatório A4 com mapa; checklist de 75+ itens com grupos condicionais por payload (LiDAR) e por modo (fachada), registos de voo e GCPs, exportação JSON e impressão.
-- **Preflight**: verificação única antes de exportar — bloqueios (sem plano, seguir terreno sem relevo ou com foto por waypoint, limite de waypoints do WPML) desactivam o botão do KMZ; avisos (bateria, tecto AGL, obturador, tamanho da rota) e lembretes (alturas relativas à descolagem) listam-se a partir de uma pastilha no cabeçalho.
+- **Preflight**: verificação única antes de exportar — bloqueios (sem plano, seguir terreno sem relevo ou com foto por waypoint, rota que entra no relevo, base inalcançável com a bateria, waypoints consecutivos a menos dos 0,5 m que a DJI aceita, limite de waypoints do WPML) desactivam o botão do KMZ; avisos (bateria, tecto AGL, obturador, tamanho da rota, folga ao solo abaixo de 15 m, base a mais de 2 km, pitch do gimbal fora do intervalo do payload, taxa de subida, troços longos, sem base sobre relevo acidentado) e lembretes (alturas relativas à descolagem) listam-se a partir de uma pastilha no cabeçalho.
 - **Projectos**: gravação automática no browser + ficheiro JSON; resumo agregado (tempo, baterias, fotos) quando coexistem vários planos. **UI bilingue** (PT/EN).
 
 <!-- As capturas são feitas na passagem de QA de cada versão e repostas aqui.
@@ -88,20 +88,25 @@ flowchart TD
     B --> T
     FC["Fachada<br/>passagens verticais,<br/>folga vs DSM local"]
     OR["Órbitas<br/>níveis, rumo ao POI,<br/>gimbal trigonométrico"]
+    CI["Circular<br/>grelha de círculos sobrepostos,<br/>câmara a cada centro"]
     A --> FC
     A --> OR
+    A --> CI
+    D --> CI
     T --> O3["Vista 3D + perfil de elevação"]
     FC --> O3
     OR --> O3
+    CI --> O3
     B --> E2["WPML KMZ<br/>acções por waypoint,<br/>um KMZ por bloco/nível"]
     FC --> E2
     OR --> E2
+    CI --> E2
     E2 --> PILOT["DJI Pilot 2<br/>(validar antes de voar)"]
 
     classDef step fill:#1f6feb,stroke:#0d3b8a,color:#ffffff;
     classDef data fill:#eaf2ff,stroke:#1f6feb,color:#0b2a5b;
     classDef ext fill:#f5f5f5,stroke:#999999,color:#333333,stroke-dasharray:4 3;
-    class P,C,V,G,B,T,FC,OR step;
+    class P,C,V,G,B,T,FC,OR,CI step;
     class A,D,O3,E2 data;
     class PILOT ext;
 ```
@@ -112,7 +117,7 @@ O espaçamento entre faixas vem da pegada transversal no solo, `altitude × larg
 
 ## Estado da validação
 
-**Exportação verificada contra a especificação WPML e testes automáticos; validação em voo real prevista para setembro de 2026.** Duas suites correm em cada push no CI (`npm test`): a `smoke-test.mjs` cobre a matemática de planeamento e a estrutura dos ficheiros exportados, e a `smoke-test-io.mjs` cobre a fronteira dos ficheiros — os leitores de KML/GeoJSON, WPML e GeoTIFF, incluindo entradas malformadas, com uma ida e volta que exporta uma missão e a volta a importar. Uma terceira camada, `npm run test:e2e`, conduz a build de produção em Chromium headless como um operador faria — importa um polígono e um MDT sintético, liga dupla grelha, terrain follow e blocos por bateria, exporta o KMZ — e mede o ficheiro exportado: folga ao solo ao longo de toda a rota, grupos de disparo, um KMZ por bloco. Ao todo, 640+ asserções; o que elas não cobrem está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release — a passagem da versão corrente está ainda por fazer. Os enums WPML nunca foram testados num comando real — ver as notas abaixo.
+**Exportação verificada contra a especificação WPML, contra 81 KMZ reais escritos pelo DJI Pilot 2 e por testes automáticos; o primeiro voo real (M3E, Setembro de 2026) está feito e a calibração contra os registos de voo está pendente.** Duas suites correm em cada push no CI (`npm test`): a `smoke-test.mjs` cobre a matemática de planeamento e a estrutura dos ficheiros exportados, e a `smoke-test-io.mjs` cobre a fronteira dos ficheiros — os leitores de KML/GeoJSON, WPML e GeoTIFF, incluindo entradas malformadas, com uma ida e volta que exporta uma missão e a volta a importar. Uma terceira camada, `npm run test:e2e`, conduz a build de produção em Chromium headless como um operador faria — importa um polígono e um MDT sintético, liga dupla grelha, terrain follow e blocos por bateria, exporta o KMZ — e mede o ficheiro exportado: folga ao solo ao longo de toda a rota, grupos de disparo, um KMZ por bloco. Uma quarta camada, `npm run test:unit`, tem os testes unitários por propriedades (Vitest + fast-check). Ao todo, 1000+ asserções; o que elas não cobrem está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release — a passagem da versão corrente está ainda por fazer. O primeiro voo mostrou duas coisas que nenhum teste apanhava: o Pilot 2 tira o progresso e o tempo em falta de `wpml:distance` e `wpml:duration`, que o exportador passou a escrever, e a grelha com foto por waypoint parava em cada ponto, razão pela qual as grelhas passam agora sem parar pelas fotos por omissão. Os enums do M3E voaram num comando real; os do M300 vêm de ficheiros reais do Pilot 2; os do M4T continuam por testar — ver as notas abaixo.
 
 **Estado dos perfis:** todos os perfis de câmara (M3E, M4T grande-angular e térmica, P1) e o Mapper+ usam valores publicados nas fichas técnicas. A grande-angular do M4T (1/1.3", 24 mm eq., focal real 6,72 mm, 4032×3024 no modo 12 MP que a aeronave escreve por omissão) e a térmica (VOx 640×512, 12 µm, focal 12 mm, DFOV 45°) estão confirmadas contra o EXIF de fotografias originais da aeronave (firmware 10.00.21.17); o GSD térmico é calculado sobre o detector físico e não sobre o R-JPEG 1280×1024 de super-resolução. Para fotografias de 48 MP use o sensor custom com 8064 px (o GSD passa a metade).
 
@@ -152,11 +157,11 @@ Gestos de edição: clique acrescenta vértices (Backspace ou clique num vértic
 
 ## Notas DJI Pilot 2
 
-Os enums WPML embarcados são `M3E = 77/66`, `M4T = 99/1/89`, `M300 RTK + P1 = 60/50/1` e `M300 + Mapper+ = 60/65535`. Os dois valores de payload do M300 vieram de 81 KMZ reais exportados pelo DJI Pilot 2 num M300 RTK (2023-2026), que escrevem `65535/0` nos payloads PSDK de terceiros — e não o `65534` da documentação da DJI — e `50/1` no P1. Esses ficheiros declaram também o namespace `wpmz/1.0.3`, enquanto nós escrevemos `1.0.2`: se o Pilot 2 rejeitar uma importação, é a primeira coisa a experimentar. Os enums do M3E e do M4T seguem a documentação da DJI e **nunca foram testados num comando real** — se o Pilot 2 rejeitar uma importação, ajuste em `src/data/drones.js` (ou na UI, no perfil custom) contra a [referência WPML da Cloud API](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html). As alturas são relativas ao ponto de descolagem: nas missões com terrain follow, marque a base no local real de descolagem antes de exportar; nas fachadas, descole à cota do pé da face.
+Os enums WPML embarcados são `M3E = 77/66`, `M4T = 99/1/89`, `M300 RTK + P1 = 60/50/1` e `M300 + Mapper+ = 60/65535`. Os dois valores de payload do M300 vieram de 81 KMZ reais exportados pelo DJI Pilot 2 num M300 RTK (2023-2026), que escrevem `65535/0` nos payloads PSDK de terceiros — e não o `65534` da documentação da DJI — e `50/1` no P1. Esses ficheiros declaram também o namespace `wpmz/1.0.3`, enquanto nós escrevemos `1.0.2`: se o Pilot 2 rejeitar uma importação, é a primeira coisa a experimentar. Os enums do M3E (`77/66`) foram **confirmados em voo** em Setembro de 2026 (Pilot 2 9.2.0.26, firmware 02.01.0322); os do M4T seguem a documentação da DJI e **ainda não foram testados num comando real** — se o Pilot 2 rejeitar uma importação, ajuste em `src/data/drones.js` (ou na UI, no perfil custom) contra a [referência WPML da Cloud API](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html). As alturas são relativas ao ponto de descolagem: nas missões com terrain follow, marque a base no local real de descolagem antes de exportar (sem base, o planeador refere-se à cota mínima do relevo debaixo da rota e avisa quando o desnível passa de 10 m); nas fachadas, descole à cota do pé da face.
 
 Os campos de segurança da missão são escritos a partir das enumerações WPML e validados na exportação, pelo que um valor fora do intervalo nunca chega ao ficheiro: `finishAction` (`goHome` / `noAction` / `autoLand` / `gotoFirstWaypoint`), `exitOnRCLost` (`executeLostAction` / `goContinue`) e `executeRCLostAction` (`goBack` / `landing` / `hover`). Por omissão regressam a casa; o exportador aceita valores próprios (`finishAction`, `exitOnRCLost`, `executeRCLostAction`, `rthHeightM`), mas o painel ainda não os expõe. O `globalRTHHeight` assume o maior valor entre 100 m e o tecto da missão mais 20 m, para o regresso não descer para dentro da área — **confirme-o contra o terreno e os obstáculos do local antes de voar.**
 
-Os parâmetros de viragem seguem o modo em vez de serem fixos: as fachadas e os pontos de inspecção voam troços rectos com paragem em cada waypoint (`useStraightLine` 1), enquanto as órbitas usam curvatura contínua com `useStraightLine` 0, como a especificação exige para uma trajectória curva verdadeira. As grelhas de área e de corredor param, por omissão, só nos cantos das faixas e passam sem parar pelas fotos, pelos vértices do terreno e pelas dobras das passagens (o «Turns before waypoint. Flies through» do Pilot 2: curvatura contínua com `useStraightLine` 1 e um amortecimento pequeno); **Paragem nos waypoints: Em todos** repõe a paragem em cada ponto.
+Os parâmetros de viragem seguem o modo em vez de serem fixos: as fachadas e os pontos de inspecção voam troços rectos com paragem em cada waypoint (`useStraightLine` 1), enquanto as órbitas e as missões circulares usam curvatura contínua com `useStraightLine` 0, como a especificação exige para uma trajectória curva verdadeira. As grelhas de área e de corredor param, por omissão, só nos cantos das faixas e passam sem parar pelas fotos, pelos vértices do terreno e pelas dobras das passagens (o «Turns before waypoint. Flies through» do Pilot 2: curvatura contínua com `useStraightLine` 1 e um amortecimento pequeno); **Paragem nos waypoints: Em todos** repõe a paragem em cada ponto.
 
 ## Desenvolvimento
 
@@ -184,11 +189,12 @@ Pushes a `main` constroem e publicam automaticamente no GitHub Pages via [.githu
 
 ## Limitações e notas
 
-- Alturas em modo `relativeToStartPoint`; a referência é a base marcada (ou o 1.º waypoint). No modo fachada o afastamento só é verificado com um DSM local — os tiles globais não têm resolução à escala de uma face.
-- O dimensionamento por bateria usa um modelo de tempo (faixas, ligações, custo de viragem, trânsito) — é uma estimativa; valide contra a autonomia real da aeronave (calibração com logs prevista para setembro de 2026).
+- Alturas em modo `relativeToStartPoint`; a referência é a base marcada quando está sobre relevo carregado, senão a cota mínima do relevo debaixo da rota (nunca o 1.º waypoint). No modo fachada o afastamento só é verificado com um DSM local — os tiles globais não têm resolução à escala de uma face.
+- O dimensionamento por bateria usa um modelo de tempo (faixas, ligações, custo de viragem, trânsito) — é uma estimativa; valide contra a autonomia real da aeronave (os registos dos voos de Setembro de 2026 são a entrada da calibração, ainda por aplicar).
 - As células do mosaico voam o quadrado inteiro mesmo onde excede o polígono (desactive células a clicar).
 - O espaçamento das passagens do corredor fica cerca de 0,6% acima do pedido (constante do referencial planar face aos metros por grau reais), pelo que a sobreposição lateral efectiva fica marginalmente *abaixo* do valor definido — 69,8% para 70% pedidos. Irrelevante em sobreposições normais; a ter em conta ao planear junto a um mínimo.
 - O mapeamento de corredor é apenas nadir e ainda não suporta seguimento de terreno nem divisão em blocos por bateria — as passagens voam a uma altitude única relativa ao ponto de descolagem. A faixa desenhada no mapa é ilustrativa: mostra a largura pedida, não a efectivamente coberta, que é menor onde uma passagem teve de ser partida.
+- O modo circular e a espiral em vídeo da órbita ainda não voaram: as ligações em curva contínua entre círculos e entre anéis são o mesmo mecanismo, por confirmar na aeronave. A estimativa de tempo do modo circular cobra duas viragens por ligação e não está calibrada.
 - A colocação de GCPs é uma heurística geométrica; não modela a geometria das imagens.
 - Sem modo offline, de propósito: o planeamento é trabalho de gabinete.
 
@@ -217,7 +223,7 @@ repositório inclui um `CITATION.cff` (o GitHub mostra-o em *Cite this
 repository*).
 
 > Gonçalves, P. (2026). *dji-mission-planner: browser-based drone mapping
-> mission planner for DJI Pilot 2* (v1.2.0) [Software]. Zenodo.
+> mission planner for DJI Pilot 2* (v1.3.0) [Software]. Zenodo.
 > https://doi.org/10.5281/zenodo.22238440
 
 ```bibtex
@@ -225,7 +231,7 @@ repository*).
   author  = {Gon\c{c}alves, Pedro},
   title   = {dji-mission-planner: browser-based drone mapping mission planner for DJI Pilot 2},
   year    = {2026},
-  version = {1.2.0},
+  version = {1.3.0},
   doi     = {10.5281/zenodo.22238440},
   url     = {https://doi.org/10.5281/zenodo.22238440}
 }
@@ -233,11 +239,11 @@ repository*).
 
 ## Métodos
 
-[docs/METODOS.md](docs/METODOS.md) é a referência para cada número que a aplicação mostra: as fórmulas tal como estão implementadas (pegada, GSD, espaçamento e intervalo, modelo de tempo e bateria, divisão em blocos, seguimento de terreno com Douglas-Peucker vertical, intervalos de disparo, fachada, órbita, corredor, GCPs, alturas e validação WPML), as constantes e tolerâncias numa só tabela, os datums verticais tal como são tratados, o que não é modelado e a calibração prevista para os voos de Setembro de 2026.
+[docs/METODOS.md](docs/METODOS.md) é a referência para cada número que a aplicação mostra: as fórmulas tal como estão implementadas (pegada, GSD, espaçamento e intervalo, modelo de tempo e bateria, divisão em blocos, seguimento de terreno com Douglas-Peucker vertical, intervalos de disparo, fachada, órbita, corredor, grelha circular, GCPs, alturas e validação WPML), as constantes e tolerâncias numa só tabela, os datums verticais tal como são tratados, o que não é modelado e a calibração prevista para os voos de Setembro de 2026.
 
 ## Protocolo de validação de campo
 
-[docs/VALIDACAO.md](docs/VALIDACAO.md) fixa as missões de referência (`docs/validacao/missoes/`, com a previsão do planeador em `esperado.json`), o procedimento por missão, os critérios de aceitação (`tools/lib/criterios.mjs`), a matriz de compatibilidade Pilot 2 / firmware e o round-trip semântico. `tools/relatorio-validacao.mjs` transforma os resultados planeado‑vs‑medido no relatório de validação e falha quando uma grandeza sai da tolerância; `tools/ensaio-seco.mjs` corre a cadeia inteira com voos sintéticos. Os resultados ficam para os voos de Setembro de 2026.
+[docs/VALIDACAO.md](docs/VALIDACAO.md) fixa as missões de referência (`docs/validacao/missoes/`, com a previsão do planeador em `esperado.json`), o procedimento por missão, os critérios de aceitação (`tools/lib/criterios.mjs`), a matriz de compatibilidade Pilot 2 / firmware e o round-trip semântico. `tools/relatorio-validacao.mjs` transforma os resultados planeado‑vs‑medido no relatório de validação e falha quando uma grandeza sai da tolerância; `tools/ensaio-seco.mjs` corre a cadeia inteira com voos sintéticos. O primeiro voo (M3E, Setembro de 2026) está registado na matriz de compatibilidade; o relatório planeado-vs-medido fica para os restantes voos.
 
 ## Planeado vs medido (validação de campo)
 

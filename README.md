@@ -42,8 +42,8 @@ This tool is the **mission planning engine only**. Airspace authorisation, UAS-z
 3. **Pick the mission type** in the selector at the top of the panel: **Area** (nadir/oblique grid), **Corridor** (parallel passes along a centreline), **Face** (vertical serpentine over a wall), **Orbit** (multi-level circles around a target) or **Circular** (a grid of overlapping circles over the area, camera aimed at each centre — circlegrammetry). Inspection points live as an extra layer of the Area mode.
 4. **Area**: draw a polygon, generate a centre-point rectangle/square, or import KML / GeoJSON / zipped Shapefile / WPML KMZ. The **Optimal** direction shortcut finds the orientation with the fewest lines inside the real polygon.
 5. **Split into blocks** when the area exceeds one battery: strips by area, battery-sized squares (VLOS-capped) or a manual mosaic with clickable cells.
-6. **Terrain**: the global DEM loads automatically; enable *terrain follow* for per-waypoint heights, or import a DGT LiDAR GeoTIFF (50 cm / 2 m). Check the **3D view** and the **elevation profile** — the 3D view also renders face passes and orbit rings.
-7. **Export**: the area KML or the WPML mission (KMZ) — one KMZ per block (ZIP) with blocks active, one KMZ per level for orbits. Print the **mission report** and take the **field checklist**.
+6. **Terrain**: the global DEM loads automatically; enable *terrain follow* for per-waypoint heights, or import a DGT LiDAR GeoTIFF (50 cm / 2 m). Check the **3D view** and the **elevation profile** — the 3D view also renders face passes, orbit rings and circular grids.
+7. **Export**: the area KML or the WPML mission (KMZ) — one KMZ per block (ZIP) with blocks active, one KMZ per level for orbits, one per battery block for circular missions. Print the **mission report** and take the **field checklist**.
 
 ---
 
@@ -59,10 +59,10 @@ This tool is the **mission planning engine only**. Airspace authorisation, UAS-z
 - **Inspection points** (`src/utils/inspect.js`): individually placed waypoints with a label, per-point heading/pitch/photo, drag ordering or nearest-neighbour suggestion, their own export and a table in the mission report.
 - **3D double grid with an optional nadir pass**: crosshatch at −60° plus, when enabled, a third nadir grid flown last (the gimbal rotates to −90° through waypoint actions) — the displayed GSD switches to nadir, the governing ortho resolution.
 - **Blocks**: strips by maximum area; battery-sized squares solved from a flight-time model (duration × return reserve − transit, VLOS cap); manual mosaic with clickable cells and Ctrl+Z; centre-point N×M grids.
-- **Terrain following** (`src/utils/terrain.js`): Terrarium tiles (~30 m) with despiking, or a DGT LiDAR GeoTIFF read lazily by window (`src/utils/demFile.js`, multi-GB safe); densify + Douglas-Peucker into per-waypoint heights, on the survey lines and on the links the boustrophedon flies between them; steep-slope suggestions (lines along the contours, oblique gimbal).
-- **WPML exporter** (`src/utils/exporters.js`): per-waypoint actions (fixed heading, gimbal, photo), a per-waypoint trigger mode for area grids (passes densified at equal steps ≤ interval, one take-photo action per point, no distance trigger), configurable turn mode, no camera actions for LiDAR payloads, file names encoding the mission type (`mission_area-crosshatch-nadir_b01`, `mission_face_p1-6`, `mission_orbit_n3`).
+- **Terrain following** (`src/utils/terrain.js`): Terrarium tiles (~30 m) with despiking, or a DGT LiDAR GeoTIFF read lazily by window (`src/utils/demFile.js`, multi-GB safe); densify + Douglas-Peucker into per-waypoint heights, on the survey lines and on the links the boustrophedon flies between them; steep-slope suggestions (lines along the contours, oblique gimbal). The reference for relative heights is the home point when it lies on loaded terrain, otherwise the minimum terrain under the route — never 0 and never the first waypoint — and the same reference feeds the profile, the 3D view, the ground-clearance check and the export; the 3D view fills DEM gaps by diffusion instead of dropping the surface to zero.
+- **WPML exporter** (`src/utils/exporters.js`): per-waypoint actions (fixed heading, gimbal, photo), a per-waypoint trigger mode for area grids (passes densified at equal steps ≤ interval, one take-photo action per point, no distance trigger), configurable turn mode, `startRecord`/`stopRecord` for the video orbit, `wpml:distance` and `wpml:duration` so Pilot 2 shows progress and time remaining, no camera actions for LiDAR payloads, file names encoding the mission type (`mission_area-crosshatch-nadir_b01`, `mission_face_p1-6`, `mission_orbit_n3`, `mission_circular_n20`). Audited against the WPML specification: transitional speed capped at 15 m/s, gimbal pitch clamped to the payload's range, the M4T lens written in `payloadParam`, takeoff security height within [1.2, 1500] m.
 - **GCPs, report and checklist**: edge+centre GCP heuristic; printable A4 report with a map; a 75+ item checklist with groups conditional on the payload (LiDAR) and on the mode (face), flight and GCP logs, JSON export and printing.
-- **Preflight**: a single check before exporting — blockers (no plan, terrain following without elevation data or with photo-per-waypoint, WPML waypoint limit) disable the KMZ button; warnings (battery, AGL ceiling, shutter, route size) and reminders (heights relative to take-off) are listed from a pill in the header.
+- **Preflight**: a single check before exporting — blockers (no plan, terrain following without elevation data or with photo-per-waypoint, a route that enters the terrain, a home point the battery cannot reach, consecutive waypoints closer than the 0.5 m DJI accepts, WPML waypoint limit) disable the KMZ button; warnings (battery, AGL ceiling, shutter, route size, ground clearance under 15 m, home point more than 2 km away, gimbal pitch outside the payload's range, climb rate, long segments, no home point over rugged terrain) and reminders (heights relative to take-off) are listed from a pill in the header.
 - **Projects**: browser autosave plus save/open as JSON; an aggregate strip (time, batteries, photos) when several plans coexist. **Bilingual UI** (PT/EN).
 
 <!-- Screenshots are captured during the release QA pass and restored here.
@@ -88,20 +88,25 @@ flowchart TD
     B --> T
     FC["Face mode<br/>vertical passes,<br/>clearance vs local DSM"]
     OR["Orbits<br/>levels, heading at POI,<br/>trigonometric gimbal"]
+    CI["Circular<br/>grid of overlapping circles,<br/>camera at each centre"]
     A --> FC
     A --> OR
+    A --> CI
+    D --> CI
     T --> O3["3D view + elevation profile"]
     FC --> O3
     OR --> O3
+    CI --> O3
     B --> E2["WPML KMZ<br/>per-waypoint actions,<br/>one KMZ per block/level"]
     FC --> E2
     OR --> E2
+    CI --> E2
     E2 --> PILOT["DJI Pilot 2<br/>(validate before flying)"]
 
     classDef step fill:#1f6feb,stroke:#0d3b8a,color:#ffffff;
     classDef data fill:#eaf2ff,stroke:#1f6feb,color:#0b2a5b;
     classDef ext fill:#f5f5f5,stroke:#999999,color:#333333,stroke-dasharray:4 3;
-    class P,C,V,G,B,T,FC,OR step;
+    class P,C,V,G,B,T,FC,OR,CI step;
     class A,D,O3,E2 data;
     class PILOT ext;
 ```
@@ -112,7 +117,7 @@ Line spacing comes from the across-track ground footprint, `altitude × sensor_w
 
 ## Validation status
 
-**Export verified against the WPML specification and automated tests; real-flight validation planned for September 2026.** Two suites run in CI on every push (`npm test`): `smoke-test.mjs` covers the planning math and the structure of the exported files, and `smoke-test-io.mjs` covers the file boundary — the KML/GeoJSON, WPML and GeoTIFF readers, including malformed input, with a round-trip that exports a mission and imports it back. A third layer, `npm run test:e2e`, drives the production build in headless Chromium the way an operator would — imports a polygon and a synthetic DEM, toggles crosshatch, terrain follow and battery blocks, exports the KMZ — and measures the exported file: ground clearance along the whole route, trigger groups, one KMZ per block. Together, 640+ assertions; what they cannot cover is in the manual protocol [docs/QA_MANUAL.md](docs/QA_MANUAL.md), run once per release — the run for the current version is still pending. The WPML enums have never been tested on a real controller — see the notes below.
+**Export verified against the WPML specification, against 81 real KMZ written by DJI Pilot 2 and by automated tests; the first real flight (M3E, September 2026) has been flown and the calibration against flight logs is pending.** Two suites run in CI on every push (`npm test`): `smoke-test.mjs` covers the planning math and the structure of the exported files, and `smoke-test-io.mjs` covers the file boundary — the KML/GeoJSON, WPML and GeoTIFF readers, including malformed input, with a round-trip that exports a mission and imports it back. A third layer, `npm run test:e2e`, drives the production build in headless Chromium the way an operator would — imports a polygon and a synthetic DEM, toggles crosshatch, terrain follow and battery blocks, exports the KMZ — and measures the exported file: ground clearance along the whole route, trigger groups, one KMZ per block. A fourth layer, `npm run test:unit`, holds property-based unit tests (Vitest + fast-check). Together, 1,000+ assertions; what they cannot cover is in the manual protocol [docs/QA_MANUAL.md](docs/QA_MANUAL.md), run once per release — the run for the current version is still pending. The first flight exposed two things no test could: Pilot 2 takes the progress and the time remaining from `wpml:distance` and `wpml:duration`, which the exporter now writes, and a photo-per-waypoint grid stopped at every point, which is why grids now fly through photo points by default. The M3E enums flew on a real controller; the M300 values come from real Pilot 2 files; the M4T enums are still untested — see the notes below.
 
 **Profile status:** all camera profiles (M3E, M4T wide and thermal, P1) and the Mapper+ use published spec-sheet values. The M4T wide camera (1/1.3", 24 mm eq., 6.72 mm real focal, 4032×3024 in the 12 MP mode the aircraft writes by default) and thermal camera (640×512 VOx, 12 µm, 12 mm focal, DFOV 45°) are confirmed against the EXIF of original photos from the aircraft (firmware 10.00.21.17); the thermal GSD is computed on the physical detector, not on the 1280×1024 super-resolution R-JPEG. For 48 MP wide photos use the custom sensor with 8064 px (GSD halves).
 
@@ -153,11 +158,11 @@ Editing gestures: click adds vertices (Backspace or clicking a vertex removes, d
 
 ## DJI Pilot 2 notes
 
-The WPML enums shipped are `M3E = 77/66`, `M4T = 99/1/89`, `M300 RTK + P1 = 60/50/1` and `M300 + Mapper+ = 60/65535`. The two M300 payload values were taken from 81 real KMZ exported by DJI Pilot 2 on an M300 RTK (2023-2026), which write `65535/0` for third-party PSDK payloads — not the `65534` of DJI's documentation — and `50/1` for the P1. Those files also declare the namespace `wpmz/1.0.3` while we write `1.0.2`: if Pilot 2 rejects an import, that is the first thing to try. The M3E and M4T enums follow DJI's documentation and **have never been tested on a real controller** — if Pilot 2 rejects an import, adjust the enums in `src/data/drones.js` (or in the UI for the custom profile) against the [DJI Cloud API WPML reference](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html). Heights are relative to the takeoff point: for terrain-following missions mark the home point at the real takeoff location before exporting; for faces, take off at the face-foot elevation.
+The WPML enums shipped are `M3E = 77/66`, `M4T = 99/1/89`, `M300 RTK + P1 = 60/50/1` and `M300 + Mapper+ = 60/65535`. The two M300 payload values were taken from 81 real KMZ exported by DJI Pilot 2 on an M300 RTK (2023-2026), which write `65535/0` for third-party PSDK payloads — not the `65534` of DJI's documentation — and `50/1` for the P1. Those files also declare the namespace `wpmz/1.0.3` while we write `1.0.2`: if Pilot 2 rejects an import, that is the first thing to try. The M3E enums (`77/66`) were **confirmed in flight** in September 2026 (Pilot 2 9.2.0.26, firmware 02.01.0322); the M4T enums follow DJI's documentation and **have not been tested on a real controller yet** — if Pilot 2 rejects an import, adjust the enums in `src/data/drones.js` (or in the UI for the custom profile) against the [DJI Cloud API WPML reference](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html). Heights are relative to the takeoff point: for terrain-following missions mark the home point at the real takeoff location before exporting (without a home point the planner references the minimum terrain under the route, and warns when the relief exceeds 10 m); for faces, take off at the face-foot elevation.
 
 Mission-level safety fields are written from the WPML enumerations and validated on export, so an out-of-range value can never reach the file: `finishAction` (`goHome` / `noAction` / `autoLand` / `gotoFirstWaypoint`), `exitOnRCLost` (`executeLostAction` / `goContinue`) and `executeRCLostAction` (`goBack` / `landing` / `hover`). They default to return-to-home; the exporter accepts overrides (`finishAction`, `exitOnRCLost`, `executeRCLostAction`, `rthHeightM`) but the panel does not expose them yet. `globalRTHHeight` defaults to the higher of 100 m and the mission ceiling plus 20 m, so the return leg never descends into the survey area — **check it against the terrain and obstacles on your site before flying.**
 
-Turn parameters follow the turn mode rather than being fixed: face and inspection missions fly straight legs with a stop at each waypoint (`useStraightLine` 1), while orbits use continuous curvature with `useStraightLine` 0, which is what the specification requires for a genuine curved path. Area and corridor grids stop only at strip corners by default and fly through photo points, terrain vertices and pass bends (Pilot 2's "Turns before waypoint. Flies through": continuous curvature with `useStraightLine` 1 and a small turn damping); **Stop at waypoints: At every waypoint** restores a stop at each point.
+Turn parameters follow the turn mode rather than being fixed: face and inspection missions fly straight legs with a stop at each waypoint (`useStraightLine` 1), while orbits and circular missions use continuous curvature with `useStraightLine` 0, which is what the specification requires for a genuine curved path. Area and corridor grids stop only at strip corners by default and fly through photo points, terrain vertices and pass bends (Pilot 2's "Turns before waypoint. Flies through": continuous curvature with `useStraightLine` 1 and a small turn damping); **Stop at waypoints: At every waypoint** restores a stop at each point.
 
 ## Development
 
@@ -187,11 +192,12 @@ Pushes to `main` build and publish automatically to GitHub Pages via [.github/wo
 
 ## Limitations and notes
 
-- Heights use the WPML `relativeToStartPoint` mode; the reference is the marked home point (or the first waypoint). In face mode the standoff is only verified with a local DSM — global tiles lack resolution at face scale.
-- Battery block sizing uses a flight-time model (line length, connectors, turn cost, transit) — it is an estimate; validate against your aircraft's real endurance (log-based calibration planned for September 2026).
+- Heights use the WPML `relativeToStartPoint` mode; the reference is the marked home point when it lies on loaded terrain, otherwise the minimum terrain elevation under the route (never the first waypoint). In face mode the standoff is only verified with a local DSM — global tiles lack resolution at face scale.
+- Battery block sizing uses a flight-time model (line length, connectors, turn cost, transit) — it is an estimate; validate against your aircraft's real endurance (the September 2026 flight logs are the input for the calibration, not yet applied).
 - Mosaic/battery cells fly the full square even where it exceeds the polygon (disable unwanted cells by clicking them).
 - Corridor line spacing lands about 0.6% wider than requested (the planar-frame constant against the true metres-per-degree), so the realised side overlap is marginally *below* the figure you set — 69.8% for a requested 70%. Immaterial at normal overlaps; worth knowing if you plan close to a minimum.
 - Corridor mapping is nadir only and does not yet support terrain following or battery block splitting — the passes fly at a single altitude relative to the takeoff point. The buffered strip drawn on the map is illustrative: it shows the requested width, not the width actually covered, which is smaller wherever a pass had to be split.
+- The circular mode and the orbit video spiral have not flown yet: the continuous curved links between circles and between rings are the same mechanism, still to be confirmed on the aircraft. The circular flight-time estimate charges two turns per link and is uncalibrated.
 - GCP placement is a geometric heuristic; it does not model image geometry.
 - No offline mode by design: planning is office work.
 
@@ -219,7 +225,7 @@ resolves to the latest release. The repository also ships a `CITATION.cff`
 (GitHub shows it under *Cite this repository*).
 
 > Gonçalves, P. (2026). *dji-mission-planner: browser-based drone mapping
-> mission planner for DJI Pilot 2* (v1.2.0) [Software]. Zenodo.
+> mission planner for DJI Pilot 2* (v1.3.0) [Software]. Zenodo.
 > https://doi.org/10.5281/zenodo.22238440
 
 ```bibtex
@@ -227,7 +233,7 @@ resolves to the latest release. The repository also ships a `CITATION.cff`
   author  = {Gon\c{c}alves, Pedro},
   title   = {dji-mission-planner: browser-based drone mapping mission planner for DJI Pilot 2},
   year    = {2026},
-  version = {1.2.0},
+  version = {1.3.0},
   doi     = {10.5281/zenodo.22238440},
   url     = {https://doi.org/10.5281/zenodo.22238440}
 }
@@ -235,11 +241,11 @@ resolves to the latest release. The repository also ships a `CITATION.cff`
 
 ## Methods
 
-[docs/METODOS.md](docs/METODOS.md) (Portuguese) is the reference for every number the app shows: the formulas as implemented (footprint, GSD, spacing and interval, flight-time and battery model, block splitting, terrain following with vertical Douglas-Peucker, trigger ranges, facade, orbit, corridor, GCPs, WPML heights and validation), the constants and tolerances in one table, the vertical datums as actually handled, what is not modelled, and the calibration planned for the September 2026 flights.
+[docs/METODOS.md](docs/METODOS.md) (Portuguese) is the reference for every number the app shows: the formulas as implemented (footprint, GSD, spacing and interval, flight-time and battery model, block splitting, terrain following with vertical Douglas-Peucker, trigger ranges, facade, orbit, corridor, circular grid, GCPs, WPML heights and validation), the constants and tolerances in one table, the vertical datums as actually handled, what is not modelled, and the calibration planned for the September 2026 flights.
 
 ## Field validation protocol
 
-[docs/VALIDACAO.md](docs/VALIDACAO.md) (Portuguese) fixes the reference missions (`docs/validacao/missoes/`, with the planner's prediction in `esperado.json`), the per-mission procedure, the acceptance criteria (`tools/lib/criterios.mjs`), the Pilot 2 / firmware compatibility matrix and the semantic round-trip test. `tools/relatorio-validacao.mjs` turns the planned-vs-measured outputs into the validation report and fails when a quantity is out of tolerance; `tools/ensaio-seco.mjs` runs the whole chain on synthetic flights. Results are pending the September 2026 flights.
+[docs/VALIDACAO.md](docs/VALIDACAO.md) (Portuguese) fixes the reference missions (`docs/validacao/missoes/`, with the planner's prediction in `esperado.json`), the per-mission procedure, the acceptance criteria (`tools/lib/criterios.mjs`), the Pilot 2 / firmware compatibility matrix and the semantic round-trip test. `tools/relatorio-validacao.mjs` turns the planned-vs-measured outputs into the validation report and fails when a quantity is out of tolerance; `tools/ensaio-seco.mjs` runs the whole chain on synthetic flights. The first flight (M3E, September 2026) is logged in the compatibility matrix; the planned-vs-measured report is pending the remaining flights.
 
 ## Planned vs measured (field validation)
 
