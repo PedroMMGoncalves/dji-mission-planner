@@ -712,13 +712,14 @@ function AppInner({ lang, setLang }) {
     ],
   )
   const blur = useMemo(() => (gsd != null ? motionBlur({ speed, gsdCm: gsd }) : null), [speed, gsd])
+  // Sobre a geometria que sai no KMZ do modo activo (view3d), e nao so na
+  // area: a orbita, a fachada, o corredor e a inspeccao ficavam sem nenhuma
+  // verificacao de rota, e foi na orbita que apareceu o troco inexecutavel.
   const route = useMemo(() => {
-    if (!planOk) return null
-    const wps = tfActive
-      ? terrainResult.waypoints
-      : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
-    return routeChecks(wps, { speed, maxClimbMS: aircraft.maxClimbMS ?? 5 })
-  }, [planOk, tfActive, terrainResult, params.altitude, speed, aircraft.maxClimbMS])
+    if (!view3d?.waypoints?.length) return null
+    const v = missionMode === 'orbit' ? orbitConfig.speedMS : speed
+    return routeChecks(view3d.waypoints, { speed: v, maxClimbMS: aircraft.maxClimbMS ?? 5 })
+  }, [view3d, missionMode, orbitConfig.speedMS, speed, aircraft.maxClimbMS])
 
   /* ----------------------------- Preflight ---------------------------- */
   // Uma só lista, calculada a partir do mesmo estado que a exportação usa
@@ -748,7 +749,7 @@ function AppInner({ lang, setLang }) {
         reference,
       })
     }
-    const other = { batteryMin, reservePct: split.reservePct, clearance }
+    const other = { batteryMin, reservePct: split.reservePct, clearance, route }
     if (missionMode === 'corridor')
       return preflightPlan({
         ...other,

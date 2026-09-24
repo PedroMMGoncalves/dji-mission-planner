@@ -369,8 +369,9 @@ Rumo apontado ao POI arredondado ao grau, pitch por nível
 é helicoidal: o anel termina uma corda antes do rumo inicial e o seguinte
 começa nesse rumo um passo acima, pelo que o troço de ligação tem uma
 corda na horizontal e o passo na vertical — nunca um segmento de
-comprimento horizontal nulo, que em voo curvo com amortecimento de 1 m o
-comando não consegue executar. `turnMode = toPointAndPassWithContinuityCurvature`
+comprimento horizontal nulo: a órbita voa em curva contínua ajustada pelos
+pontos (`useStraightLine` 0, sem amortecimento) e num troço vertical a
+tangente horizontal fica indefinida — em voo a aeronave parava aí. `turnMode = toPointAndPassWithContinuityCurvature`
 (voo curvo contínuo), tempo `L/v` sem paragens, GSD a `R` (o alcance real
 ao centro do alvo, `√(R² + Δh²)`, é maior). Não modelado: colisão com a
 estrutura, sobreposição vertical entre níveis (passo dado pelo operador),
@@ -552,8 +553,9 @@ invólucro convexo (ou rectângulo com 20 m de margem quando degenerado).
 Bloqueios (desactivam o KMZ): sem plano; plano com erro; seguir terreno com
 foto por waypoint; seguir terreno ligado sem relevo a cobrir a área; erro
 do cálculo do terreno; mais de 65535 waypoints numa rota (a maior, com
-blocos); waypoints consecutivos repetidos na rota exportada (segmento de
-comprimento nulo). Avisos: rota acima de 2000 waypoints; tecto AGL do
+blocos); waypoints consecutivos a menos de 0,5 m em 3D na rota exportada (o mínimo
+que a DJI aceita), em todos os modos — as verificações de rota corriam só
+na área. Avisos: rota acima de 2000 waypoints; tecto AGL do
 payload (`altitude + tolerância` com seguimento de terreno); obturador;
 sobreposição no pior caso abaixo de 60/50 % (secção 2); arrastamento
 acima de 1 px a 1/500 s; MDT com alturas elipsoidais; taxa de subida

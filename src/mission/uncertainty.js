@@ -135,9 +135,15 @@ export function motionBlur({ speed, gsdCm, exposures = EXPOSURES_S }) {
   })
 }
 
+/** Distância mínima entre waypoints consecutivos que a DJI aceita (m, em 3D). */
+export const MIN_WAYPOINT_DIST_M = 0.5
+
 /**
- * Verificação segmento a segmento da rota exportada: waypoints repetidos,
- * troços demasiado longos e taxa de subida acima da aeronave.
+ * Verificação segmento a segmento da rota exportada: waypoints demasiado
+ * próximos (`duplicates`: a menos de MIN_WAYPOINT_DIST_M em 3D — antes só
+ * os coincidentes a 5 cm, quando a DJI exige 0,5 m entre waypoints), troços
+ * demasiado longos e taxa de subida acima da aeronave. Corre sobre a
+ * geometria que sai no KMZ, em todos os modos.
  * @param {number[][]} waypoints [lon, lat, h?]
  * @param {{speed?: number, maxClimbMS?: number, maxSegmentM?: number}} [opts]
  */
@@ -150,7 +156,7 @@ export function routeChecks(waypoints, { speed = 0, maxClimbMS = 5, maxSegmentM 
     const b = waypoints[i]
     const mLon = 111320 * Math.cos((((a[1] + b[1]) / 2) * Math.PI) / 180)
     const d = Math.hypot((b[0] - a[0]) * mLon, (b[1] - a[1]) * mLat)
-    if (d < 0.05 && Math.abs((b[2] ?? 0) - (a[2] ?? 0)) < 0.05) out.duplicates.push(i)
+    if (Math.hypot(d, (b[2] ?? 0) - (a[2] ?? 0)) < MIN_WAYPOINT_DIST_M) out.duplicates.push(i)
     if (d > maxSegmentM) out.longSegments.push({ at: i, lengthM: d })
     if (a[2] != null && b[2] != null && speed > 0 && d > 0.05) {
       const dt = d / speed

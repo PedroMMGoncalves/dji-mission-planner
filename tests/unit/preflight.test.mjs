@@ -310,6 +310,17 @@ describe('base longe, base sem relevo e folga ao solo', () => {
     expect(codes(larga)).not.toContain('terrain-collision')
     expect(codes(preflightArea({ ...base(), clearance: null }))).not.toContain('clearance-low')
   })
+  test('os outros modos tambem verificam a rota exportada', () => {
+    const route = {
+      duplicates: [3],
+      longSegments: [],
+      climb: [{ at: 5, rateMS: 9, dh: 30, lengthM: 20 }],
+    }
+    const items = preflightPlan({ plan, batteryMin: 30, reservePct: 30, route })
+    expect(codes(items)).toContain('route-duplicate-waypoint')
+    expect(codes(items)).toContain('route-climb-rate')
+    expect(hasBlockers(items)).toBe(true)
+  })
   test('os outros modos tambem bloqueiam a colisao com o relevo', () => {
     const items = preflightPlan({ plan, batteryMin: 30, reservePct: 30, clearance: { minM: -1 } })
     expect(codes(items)).toContain('terrain-collision')

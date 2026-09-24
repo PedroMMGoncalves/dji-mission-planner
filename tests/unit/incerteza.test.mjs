@@ -115,6 +115,16 @@ describe('incerteza propagada', () => {
       { speed: 8, maxClimbMS: 6 },
     )
     expect(r.duplicates).toEqual([1])
+    // a DJI exige 0,5 m entre waypoints, em 3D: 0,3 m e demasiado perto, 0,6 m nao
+    const perto = routeChecks(
+      [
+        [-9.14, 38.7, 80],
+        [-9.14, 38.7, 80.3],
+        [-9.14, 38.7, 80.9],
+      ],
+      { speed: 8 },
+    )
+    expect(perto.duplicates).toEqual([1])
     expect(r.climb).toHaveLength(1)
     expect(r.climb[0].rateMS).toBeGreaterThan(6)
     expect(r.longSegments).toHaveLength(1)

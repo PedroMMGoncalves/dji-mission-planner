@@ -116,10 +116,11 @@ export function generateOrbitPlan(poi, options) {
     // um passo acima — o troço de ligação tem uma corda na horizontal e o
     // passo na vertical, e a volta fica completa (a última corda voa-se a
     // subir). Antes cada anel fechava no rumo inicial e o seguinte começava
-    // no MESMO ponto horizontal: um segmento de comprimento horizontal nulo
-    // em voo curvo com amortecimento de 1 m, que o comando não consegue
-    // curvar e onde a aeronave parava no fim do primeiro anel. Só o último
-    // anel fecha a volta, para a missão acabar onde o anel começou.
+    // no MESMO ponto horizontal: um segmento de comprimento horizontal nulo.
+    // A órbita voa em curva contínua ajustada pelos pontos (useStraightLine
+    // 0, sem amortecimento), e num troço vertical a tangente horizontal fica
+    // indefinida: em voo a aeronave parava no fim do primeiro anel. Só o
+    // último anel fecha a volta, para a missão acabar onde o anel começou.
     const last = li === heights.length - 1
     const count = last ? nPts + 1 : nPts
     perLevel.push({ level: li + 1, heightM: h, gimbalPitch: pitch, start: waypoints.length, count })

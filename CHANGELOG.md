@@ -118,12 +118,24 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   pp. Agora dispara-se no máximo um passo mais cedo, que é o lado que sobra
   cobertura em vez de faltar. A geometria da rota não muda.
 
+### Corrigido (verificações de rota em todos os modos)
+
+- **As verificações de rota corriam só na área.** Órbita, fachada, corredor
+  e pontos de inspecção exportavam sem nenhuma verificação de waypoints
+  demasiado próximos, taxa de subida ou troços longos — e foi na órbita que
+  apareceu o troço inexecutável. Passam a correr sobre a geometria que sai
+  no KMZ do modo activo, a mesma que o perfil e o 3D mostram.
+- **Limiar de proximidade a 0,5 m em 3D**, o mínimo que a DJI aceita entre
+  waypoints consecutivos; antes só se apanhavam pontos coincidentes a 5 cm.
+  O E2E mede-o em todas as rotas exportadas.
+
 ### Corrigido (órbita: parava no fim do primeiro anel)
 
 - **Transição entre anéis da órbita.** Cada anel fechava no rumo inicial e o
   anel seguinte começava no mesmo ponto horizontal, um passo acima: um
-  segmento de comprimento horizontal **nulo**, em voo curvo contínuo com
-  amortecimento de 1 m — um troço que o comando não consegue curvar. Em voo
+  segmento de comprimento horizontal **nulo**. A órbita voa em curva
+  contínua ajustada pelos pontos (`useStraightLine` 0, sem amortecimento) e
+  num troço vertical a tangente horizontal fica indefinida. Em voo
   a aeronave completava o primeiro anel e não continuava. A transição passa
   a ser helicoidal: o anel termina uma corda antes do rumo inicial e o
   seguinte começa nesse rumo, um passo acima; a última corda de cada anel

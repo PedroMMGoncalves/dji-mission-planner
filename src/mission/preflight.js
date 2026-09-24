@@ -75,6 +75,44 @@ function noBaseItems(c) {
   return [item('info', 'no-base')]
 }
 
+/**
+ * Rota exportada, segmento a segmento (routeChecks), em todos os modos:
+ * waypoints a menos de 0,5 m (bloqueio — a DJI recusa-os), taxa de subida
+ * acima da aeronave e troços acima de 5 km (avisos).
+ */
+function routeItems(c) {
+  const out = []
+  if (c.route) {
+    if (c.route.duplicates.length > 0)
+      out.push(
+        item('block', 'route-duplicate-waypoint', {
+          n: c.route.duplicates.length,
+          at: c.route.duplicates[0],
+        }),
+      )
+    if (c.route.climb.length > 0) {
+      const worst = c.route.climb.reduce((m, x) => (x.rateMS > m.rateMS ? x : m))
+      out.push(
+        item('warn', 'route-climb-rate', {
+          rate: worst.rateMS.toFixed(1),
+          at: worst.at,
+          n: c.route.climb.length,
+        }),
+      )
+    }
+    if (c.route.longSegments.length > 0) {
+      const longest = c.route.longSegments.reduce((m, x) => (x.lengthM > m.lengthM ? x : m))
+      out.push(
+        item('warn', 'route-long-segment', {
+          km: (longest.lengthM / 1000).toFixed(1),
+          at: longest.at,
+        }),
+      )
+    }
+  }
+  return out
+}
+
 /** Minutos úteis de uma bateria, descontada a reserva; null sem bateria. */
 export function usableBatteryMin(batteryMin, reservePct = 30) {
   if (!(batteryMin > 0)) return null
@@ -174,35 +212,7 @@ export function preflightArea(c) {
   if (slow && slow.blurPx != null && slow.blurPx > 1) {
     out.push(item('warn', 'blur', { px: slow.blurPx.toFixed(1), cm: slow.blurCm.toFixed(1) }))
   }
-  // rota exportada, segmento a segmento
-  if (c.route) {
-    if (c.route.duplicates.length > 0)
-      out.push(
-        item('block', 'route-duplicate-waypoint', {
-          n: c.route.duplicates.length,
-          at: c.route.duplicates[0],
-        }),
-      )
-    if (c.route.climb.length > 0) {
-      const worst = c.route.climb.reduce((m, x) => (x.rateMS > m.rateMS ? x : m))
-      out.push(
-        item('warn', 'route-climb-rate', {
-          rate: worst.rateMS.toFixed(1),
-          at: worst.at,
-          n: c.route.climb.length,
-        }),
-      )
-    }
-    if (c.route.longSegments.length > 0) {
-      const longest = c.route.longSegments.reduce((m, x) => (x.lengthM > m.lengthM ? x : m))
-      out.push(
-        item('warn', 'route-long-segment', {
-          km: (longest.lengthM / 1000).toFixed(1),
-          at: longest.at,
-        }),
-      )
-    }
-  }
+  out.push(...routeItems(c))
 
   const usable = usableBatteryMin(c.batteryMin, c.reservePct)
   if (usable != null) {
@@ -260,6 +270,7 @@ export function preflightPlan(c) {
       out.push(item('warn', 'battery', { min: round1(min), usable: round1(usable) }))
   }
   out.push(...photoPassUnverified(c))
+  out.push(...routeItems(c))
   out.push(...groundItems(c, usable))
   out.push(item('info', 'heights-relative'))
   return out

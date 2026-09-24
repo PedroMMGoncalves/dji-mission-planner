@@ -71,8 +71,8 @@ export default {
     en: 'At this speed the motion blur at 1/500 s is {px} px ({cm} cm): use a shorter exposure or reduce speed.',
   },
   'preflight.route-duplicate-waypoint': {
-    pt: 'A rota tem {n} waypoint(s) repetido(s) (primeiro no índice {at}); o Pilot 2 recusa segmentos de comprimento nulo.',
-    en: 'The route has {n} duplicated waypoint(s) (first at index {at}); Pilot 2 rejects zero-length segments.',
+    pt: 'A rota tem {n} par(es) de waypoints consecutivos a menos de 0,5 m (primeiro no índice {at}); a DJI exige pelo menos 0,5 m entre waypoints.',
+    en: 'The route has {n} pair(s) of consecutive waypoints closer than 0.5 m (first at index {at}); DJI requires at least 0.5 m between waypoints.',
   },
   'preflight.route-climb-rate': {
     pt: 'Subida de {rate} m/s exigida no segmento {at} ({n} segmento(s) acima da aeronave): a rota vai atrasar-se ou o Pilot 2 vai suavizá-la.',

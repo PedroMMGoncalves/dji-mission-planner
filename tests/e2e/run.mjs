@@ -35,6 +35,14 @@ const check = (label, ok, detail = '') => {
   else fails += 1
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}${detail ? `  [${detail}]` : ''}`)
 }
+// Toda a rota exportada tem de ser executável pelo comando: waypoints
+// consecutivos a pelo menos 0,5 m (em 3D), o mínimo que a DJI aceita.
+const executavel = (r) =>
+  check(
+    'rota executável: waypoints consecutivos a >= 0,5 m',
+    Number.isFinite(r.minStep3DM) && r.minStep3DM >= 0.5,
+    `passo mínimo ${Number.isFinite(r.minStep3DM) ? r.minStep3DM.toFixed(2) : '?'} m`,
+  )
 
 if (!existsSync('dist/index.html')) {
   console.error('sem dist/index.html — corra npm run build primeiro')
@@ -200,6 +208,7 @@ await scenario('rectangulo-crosshatch-tf', async () => {
   check('painel: fonte do terreno é o MDT local', /MDT local dem\.tif|local DTM dem\.tif/.test(txt))
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'rect-cross-tf.kmz')))
   const r = analyseRoute(routes[0].wpml, { toM, ground, aglNominalM: AGL_M })
+  executavel(r)
   check(
     'rota única, sem valores não finitos',
     routes.length === 1 && r.nan === 0,
@@ -228,6 +237,7 @@ await scenario('u-terrain-follow', async () => {
   await configure(page, { tf: true })
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'u-tf.kmz')))
   const r = analyseRoute(routes[0].wpml, { toM, ground, aglNominalM: AGL_M })
+  executavel(r)
   // antes da correcção das ligações: 64,4 m para 100 m de AGL
   check(
     'U: ligações através do entalhe sobem sobre a colina',
@@ -285,6 +295,7 @@ await scenario('u-crosshatch-tf', async () => {
   await configure(page, { cross: true, tf: true })
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'u-cross-tf.kmz')))
   const r = analyseRoute(routes[0].wpml, { toM, ground, aglNominalM: AGL_M })
+  executavel(r)
   // antes da correcção das ligações: 17,8 m para 100 m de AGL
   check(
     'U + dupla grelha: folga ≥ AGL − tolerância, ligações incluídas',
@@ -345,6 +356,7 @@ await scenario('multipoligono-aviso', async () => {
   await configure(page, { tf: true })
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'multi.kmz')))
   const r = analyseRoute(routes[0].wpml, { toM, ground, aglNominalM: AGL_M })
+  executavel(r)
   check(
     'importação: o maior polígono é o exportado (rectângulo, um grupo de disparo)',
     r.n > 20 && r.groups.length === 1,
@@ -403,6 +415,7 @@ await scenario('corredor-desenhado', async () => {
     await panelExport(page, /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/, join(OUT, 'corredor.kmz')),
   )
   const r = analyseRoute(routes[0].wpml, plano)
+  executavel(r)
   check(
     'corredor: rota com várias passagens, gimbal nadir e disparo por distância',
     r.n >= 6 &&
@@ -432,6 +445,7 @@ await scenario('fachada-desenhada', async () => {
     Number(m[1]),
   )
   const r = analyseRoute(wpml, plano)
+  executavel(r)
   check(
     'fachada: passagens empilhadas com rumo fixo em [-180, 180] e uma foto por waypoint',
     r.n >= 4 &&
@@ -455,6 +469,7 @@ await scenario('orbita-marcada', async () => {
     await panelExport(page, /Exportar missão única|Export single mission/, join(OUT, 'orbita.kmz')),
   )
   const r = analyseRoute(single[0].wpml, plano)
+  executavel(r)
   check(
     'órbita: anel de waypoints em voo curvo contínuo',
     r.n >= 8 && /ContinuityCurvature|coordinateTurn/.test(single[0].wpml),
