@@ -59,11 +59,13 @@ export function analyseRoute(wpml, { toM, ground, aglNominalM = null }) {
   let minClearance = Infinity
   let minAt = null
   let maxJump = 0
+  let minStepM = Infinity // menor passo HORIZONTAL entre waypoints consecutivos
   let linksWithoutTrigger = 0
   for (let i = 1; i < wps.length; i++) {
     const [x0, y0, h0] = wps[i - 1]
     const [x1, y1, h1] = wps[i]
     maxJump = Math.max(maxJump, Math.hypot(x1 - x0, y1 - y0))
+    minStepM = Math.min(minStepM, Math.hypot(x1 - x0, y1 - y0))
     if (!inGroup(i)) linksWithoutTrigger += 1
     for (let s = 0; s <= 25; s++) {
       const t = s / 25
@@ -83,6 +85,7 @@ export function analyseRoute(wpml, { toM, ground, aglNominalM = null }) {
     minClearance,
     minAt,
     maxJump,
+    minStepM,
     linksWithoutTrigger,
     firstSegM,
     nan,

@@ -460,6 +460,13 @@ await scenario('orbita-marcada', async () => {
     r.n >= 8 && /ContinuityCurvature|coordinateTurn/.test(single[0].wpml),
     `${r.n} waypoints`,
   )
+  // a missão única leva todos os níveis; entre anéis nunca há um segmento
+  // de comprimento horizontal nulo (era onde a aeronave parava)
+  check(
+    'órbita: um só KMZ com todos os níveis e sem segmentos verticais',
+    r.n > 8 && r.minStepM > 1,
+    `passo mínimo ${r.minStepM.toFixed(2)} m`,
+  )
   const perLevel = await readRoutes(
     await panelExport(page, /um KMZ por nível|one KMZ per level/, join(OUT, 'orbita-niveis.zip')),
   )

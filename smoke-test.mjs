@@ -2335,9 +2335,11 @@ check(
     orb && orb.stats.pointsPerOrbit === 23,
     orb?.stats.pointsPerOrbit,
   )
+  // n por anel; so o ultimo fecha a volta (n+1)
   check(
-    'orbita: 3 niveis x (n+1) waypoints',
-    orb.stats.waypointCount === 3 * 24 && orb.perWaypoint.length === orb.stats.waypointCount,
+    'orbita: 3 niveis, n + n + (n+1) waypoints',
+    orb.stats.waypointCount === 23 + 23 + 24 && orb.perWaypoint.length === orb.stats.waypointCount,
+    orb.stats.waypointCount,
   )
   // raio: erro < 1 m em todos os pontos
   const radii = orb.waypoints.map((w) => turf.distance(center, [w[0], w[1]], { units: 'meters' }))
@@ -2361,13 +2363,47 @@ check(
       orb.perLevel[2].gimbalPitch === -31,
     orb.perLevel.map((l) => l.gimbalPitch).join(','),
   )
-  // a volta fecha no rumo inicial e a subida e vertical no mesmo ponto
-  const n1 = orb.stats.pointsPerOrbit + 1
+  // transicao helicoidal: o ultimo ponto do anel 1 esta uma corda antes do
+  // rumo inicial; o primeiro do anel 2 esta nesse rumo, um passo acima
+  const n = orb.stats.pointsPerOrbit
+  const ligacao = turf.distance(orb.waypoints[n - 1], orb.waypoints[n], { units: 'meters' })
+  // a corda real e a distancia entre pontos consecutivos do mesmo anel (n e
+  // arredondado por excesso, por isso fica um pouco abaixo da corda pedida)
+  const cordaReal = turf.distance(orb.waypoints[0], orb.waypoints[1], { units: 'meters' })
   check(
-    'orbita: volta fechada e subida vertical',
-    orb.waypoints[0][0] === orb.waypoints[n1 - 1][0] &&
-      orb.waypoints[n1 - 1][0] === orb.waypoints[n1][0] &&
-      orb.waypoints[n1][2] > orb.waypoints[n1 - 1][2],
+    'orbita: entre aneis sobe-se ao longo de uma corda, nunca na vertical',
+    Math.abs(ligacao - cordaReal) < 0.1 && orb.waypoints[n][2] - orb.waypoints[n - 1][2] === 20,
+    `${ligacao.toFixed(1)} m na horizontal, +${orb.waypoints[n][2] - orb.waypoints[n - 1][2]} m`,
+  )
+  check(
+    'orbita: o anel 2 comeca no rumo inicial e o ultimo anel fecha a volta',
+    orb.waypoints[n][0] === orb.waypoints[0][0] &&
+      orb.waypoints[n][1] === orb.waypoints[0][1] &&
+      orb.waypoints[orb.waypoints.length - 1][0] === orb.waypoints[orb.perLevel[2].start][0],
+  )
+  // nenhum par consecutivo mais perto do que o amortecimento da curva (1 m)
+  let passoMin = Infinity
+  for (let i = 1; i < orb.waypoints.length; i++)
+    passoMin = Math.min(
+      passoMin,
+      turf.distance(orb.waypoints[i - 1], orb.waypoints[i], { units: 'meters' }),
+    )
+  check(
+    'orbita: nenhum segmento com comprimento horizontal < 1 m',
+    passoMin > 1,
+    passoMin.toFixed(2),
+  )
+  check(
+    'orbita: os blocos por nivel fatiam os waypoints sem sobreposicao nem falhas',
+    (() => {
+      const b = orbitLevelsToBlocks(orb)
+      return (
+        b.length === 3 &&
+        b[0].waypoints.length === 23 &&
+        b[2].waypoints.length === 24 &&
+        b.reduce((s, x) => s + x.waypoints.length, 0) === orb.stats.waypointCount
+      )
+    })(),
   )
   // integracao com o exportador: voo curvo continuo + rumo fixo por ponto
   const wlOrb = buildWaylinesWPML({
@@ -2577,17 +2613,17 @@ check(
   check('orbitConfig: poi invalido -> null', normalizeOrbitConfig({ poi: [1] }).poi === null)
 
   const lvls = orbitLevelsToBlocks(orb)
-  const perLvl = orb.stats.pointsPerOrbit + 1
   check(
-    'orbita por nivel: 3 blocos com n+1 waypoints e perWaypoint em sincronia',
+    'orbita por nivel: 3 blocos com os waypoints de cada anel e perWaypoint em sincronia',
     lvls.length === 3 &&
       lvls.every(
         (b, i) =>
-          b.waypoints.length === perLvl &&
-          b.perWaypoint.length === perLvl &&
+          b.waypoints.length === orb.perLevel[i].count &&
+          b.perWaypoint.length === orb.perLevel[i].count &&
           b.id === i + 1 &&
-          b.waypoints[0][2] === orb.stats.heights[i],
+          b.waypoints[0][2] === orb.perLevel[i].heightM,
       ),
+    lvls.map((b) => b.waypoints.length).join('+'),
   )
   check(
     'orbita por nivel: gimbal do nivel preservado',

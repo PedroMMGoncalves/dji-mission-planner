@@ -362,11 +362,15 @@ corda = max(1 m, across(R) · (1 − hOverlap/100))    (sem câmara: 2πR/24)
 nPts  = clamp(ceil(2πR / corda), 8, 120)
 ```
 
-Posições por `turf.destination` (círculo geodésico), volta fechada no rumo
-inicial (um waypoint repetido por nível), rumo apontado ao POI
-arredondado ao grau, pitch por nível
-`clamp(−round(atan((h − poiHeight)/R)), −90, +20)`, subida vertical no
-mesmo ponto horizontal, `turnMode = toPointAndPassWithContinuityCurvature`
+Posições por `turf.destination` (círculo geodésico), `nPts` pontos por
+anel; só o último anel fecha a volta no rumo inicial (um waypoint a mais).
+Rumo apontado ao POI arredondado ao grau, pitch por nível
+`clamp(−round(atan((h − poiHeight)/R)), −90, +20)`. A transição entre anéis
+é helicoidal: o anel termina uma corda antes do rumo inicial e o seguinte
+começa nesse rumo um passo acima, pelo que o troço de ligação tem uma
+corda na horizontal e o passo na vertical — nunca um segmento de
+comprimento horizontal nulo, que em voo curvo com amortecimento de 1 m o
+comando não consegue executar. `turnMode = toPointAndPassWithContinuityCurvature`
 (voo curvo contínuo), tempo `L/v` sem paragens, GSD a `R` (o alcance real
 ao centro do alvo, `√(R² + Δh²)`, é maior). Não modelado: colisão com a
 estrutura, sobreposição vertical entre níveis (passo dado pelo operador),

@@ -118,6 +118,19 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   pp. Agora dispara-se no máximo um passo mais cedo, que é o lado que sobra
   cobertura em vez de faltar. A geometria da rota não muda.
 
+### Corrigido (órbita: parava no fim do primeiro anel)
+
+- **Transição entre anéis da órbita.** Cada anel fechava no rumo inicial e o
+  anel seguinte começava no mesmo ponto horizontal, um passo acima: um
+  segmento de comprimento horizontal **nulo**, em voo curvo contínuo com
+  amortecimento de 1 m — um troço que o comando não consegue curvar. Em voo
+  a aeronave completava o primeiro anel e não continuava. A transição passa
+  a ser helicoidal: o anel termina uma corda antes do rumo inicial e o
+  seguinte começa nesse rumo, um passo acima; a última corda de cada anel
+  voa-se a subir e só o último anel fecha a volta. O ZIP por nível continua
+  a dar um KMZ por anel. O E2E passa a garantir que a missão única não tem
+  nenhum segmento com menos de 1 m na horizontal.
+
 ### Corrigido (base longe da área: perfil debaixo da terra e blocos de 80 m)
 
 - **Cota de referência nunca é 0, e sem base é a mínima da área.** A cota

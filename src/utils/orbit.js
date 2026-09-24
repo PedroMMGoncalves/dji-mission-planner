@@ -47,11 +47,10 @@ export function normalizeOrbitConfig(stored) {
  */
 export function orbitLevelsToBlocks(plan) {
   if (!plan?.waypoints?.length || !plan.stats) return []
-  const per = plan.stats.pointsPerOrbit + 1
-  return plan.perLevel.map((lvl, i) => ({
+  return plan.perLevel.map((lvl) => ({
     id: lvl.level,
-    waypoints: plan.waypoints.slice(i * per, (i + 1) * per),
-    perWaypoint: plan.perWaypoint.slice(i * per, (i + 1) * per),
+    waypoints: plan.waypoints.slice(lvl.start, lvl.start + lvl.count),
+    perWaypoint: plan.perWaypoint.slice(lvl.start, lvl.start + lvl.count),
   }))
 }
 
@@ -112,9 +111,20 @@ export function generateOrbitPlan(poi, options) {
       -90,
       Math.min(20, -Math.round((Math.atan2(h - poiHeightM, radiusM) * 180) / Math.PI)),
     )
-    perLevel.push({ level: li + 1, heightM: h, gimbalPitch: pitch })
-    for (let i = 0; i <= nPts; i++) {
-      // i === nPts fecha a volta no rumo inicial
+    // TRANSIÇÃO ENTRE ANÉIS: helicoidal, nunca vertical. Cada anel termina
+    // uma corda ANTES do rumo inicial e o anel seguinte começa nesse rumo,
+    // um passo acima — o troço de ligação tem uma corda na horizontal e o
+    // passo na vertical, e a volta fica completa (a última corda voa-se a
+    // subir). Antes cada anel fechava no rumo inicial e o seguinte começava
+    // no MESMO ponto horizontal: um segmento de comprimento horizontal nulo
+    // em voo curvo com amortecimento de 1 m, que o comando não consegue
+    // curvar e onde a aeronave parava no fim do primeiro anel. Só o último
+    // anel fecha a volta, para a missão acabar onde o anel começou.
+    const last = li === heights.length - 1
+    const count = last ? nPts + 1 : nPts
+    perLevel.push({ level: li + 1, heightM: h, gimbalPitch: pitch, start: waypoints.length, count })
+    for (let i = 0; i < count; i++) {
+      // i === nPts (só no último anel) fecha a volta no rumo inicial
       const brg = startBearingDeg + (i % nPts) * stepDeg
       const pos = turf.destination(poiPt, radiusM, (((brg % 360) + 540) % 360) - 180, {
         units: 'meters',
@@ -148,6 +158,8 @@ export function generateOrbitPlan(poi, options) {
       heights,
       pathLengthM,
       flightTimeS: speed > 0 ? pathLengthM / speed : null,
+      // ligação entre anéis: corda na horizontal, passo na vertical
+      transitionM: heights.length > 1 ? chordM : null,
     },
   }
 }
