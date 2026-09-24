@@ -389,6 +389,9 @@ describe('passThrough: pontos sem paragem', () => {
     photoIntervalM: 0,
     triggerMode: 'distance',
     sensorType: 'camera',
+    // Sem isto, duas exportacoes consecutivas podem cair em milissegundos
+    // diferentes e o createTime/updateTime do template.kml diverge.
+    createTimeMs: 1756000000000,
   }
   const pass = passThroughFor([5, 3])
   const STOP = 'toPointAndStopWithDiscontinuityCurvature'
