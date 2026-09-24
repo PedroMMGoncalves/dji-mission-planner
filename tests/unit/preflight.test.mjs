@@ -270,11 +270,32 @@ describe('base longe, base sem relevo e folga ao solo', () => {
     const perto = preflightArea({ ...base(), baseDistance: 500 })
     expect(codes(perto)).not.toContain('base-far')
   })
-  test('base fora do relevo carregado avisa que a referencia e o primeiro waypoint', () => {
-    expect(codes(preflightArea({ ...base(), refSource: 'waypoint-fallback' }))).toContain(
-      'base-no-terrain',
+  test('base fora do relevo carregado avisa que se assumiu a minima da area', () => {
+    const fora = { elev: 91, source: 'area-min', baseOutside: true, reliefM: 75 }
+    const items = preflightArea({ ...base(), reference: fora })
+    expect(codes(items)).toContain('base-no-terrain')
+    expect(items.find((i) => i.code === 'base-no-terrain').params.elev).toBe(91)
+    const dentro = { elev: 120, source: 'base', baseOutside: false, reliefM: 75 }
+    expect(codes(preflightArea({ ...base(), reference: dentro }))).not.toContain('base-no-terrain')
+  })
+  test('sem base: lembrete em terreno plano, aviso com a cota assumida quando ha desnivel', () => {
+    const plano = { elev: 100, source: 'area-min', baseOutside: false, reliefM: 4 }
+    const semBasePlano = preflightArea({ ...base(), basePoint: null, reference: plano })
+    expect(codes(semBasePlano)).toContain('no-base')
+    expect(codes(semBasePlano)).not.toContain('no-base-relief')
+    const acidentado = { elev: 91, source: 'area-min', baseOutside: false, reliefM: 75 }
+    const semBaseRelevo = preflightArea({ ...base(), basePoint: null, reference: acidentado })
+    expect(codes(semBaseRelevo)).toContain('no-base-relief')
+    expect(codes(semBaseRelevo)).not.toContain('no-base')
+    expect(hasBlockers(semBaseRelevo)).toBe(false)
+    expect(semBaseRelevo.find((i) => i.code === 'no-base-relief').params).toEqual({
+      elev: 91,
+      relief: 75,
+    })
+    // sem relevo carregado nao ha cota assumida: fica o lembrete
+    expect(codes(preflightArea({ ...base(), basePoint: null, reference: null }))).toContain(
+      'no-base',
     )
-    expect(codes(preflightArea({ ...base(), refSource: 'base' }))).not.toContain('base-no-terrain')
   })
   test('rota que entra no relevo bloqueia; folga curta avisa; folga larga nada', () => {
     const colide = preflightArea({ ...base(), clearance: { minM: -12.4 } })

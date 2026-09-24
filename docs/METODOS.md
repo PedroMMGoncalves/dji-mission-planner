@@ -267,7 +267,13 @@ altura exportada de cada ponto é
 rel = round10( AGL + (elev(ponto) − elev(referência)) )
 ```
 
-com a referência = base marcada, ou o primeiro waypoint. Os pontos
+com a referência = base marcada com relevo, senão a cota **mínima** do
+relevo debaixo da rota (`src/mission/reference.js`), a mesma cota que o
+perfil, o 3D e a folga ao solo usam. A mínima, porque a altura real acima
+do solo é `AGL planeado + (cota real da descolagem − cota assumida)`:
+descolando em qualquer ponto da área o termo é ≥ 0 e o drone voa mais
+alto do que o planeado, nunca mais baixo; o custo é GSD quando a
+descolagem é acima da mínima, e é a base marcada que o recupera. Os pontos
 inseridos numa ligação contam para a faixa a que conduzem (`perLine`) e
 ficam registados à parte (`perLink`); um bloco descarta os da ligação que
 antecede a sua primeira faixa, porque arranca da base. Sem dados numa
@@ -551,8 +557,14 @@ exigida num segmento acima da velocidade de subida da aeronave
 (`Δh / (comprimento / v)`, M3E/M4T 6 m/s, M300 5 m/s); segmento acima de
 5 km; tempo acima do útil de uma bateria (missão com trânsito de ida e
 volta, ou por bloco com `timeS + transitS`); foto por waypoint sem paragem
-(«Só nos cantos»), por validar em voo (área e corredor). Lembretes: sem
-base; alturas relativas à descolagem.
+(«Só nos cantos»), por validar em voo (área e corredor); base a mais de
+2 km da área; base fora do relevo carregado (assumida a cota mínima da
+área); sem base numa área com mais de 10 m de desnível (cota assumida e
+desnível na mensagem); folga mínima ao solo abaixo de 15 m. Bloqueios
+acrescentados: rota que entra no relevo (folga negativa, amostrada a 40 m
+sobre o relevo carregado, em todos os modos); base a uma distância cujo
+trânsito de ida e volta excede o tempo útil de uma bateria. Lembretes: sem
+base em terreno plano; alturas relativas à descolagem.
 
 ## 15. Tabela de constantes e tolerâncias
 

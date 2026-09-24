@@ -47,7 +47,6 @@ import { useTerrain } from './hooks/useTerrain.js'
 import { useProject } from './hooks/useProject.js'
 import { DEFAULT_PARAMS } from './mission/defaults.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
-import { referenceElevation } from './mission/reference.js'
 import { routeClearance } from './mission/clearance.js'
 import {
   motionBlur,
@@ -455,6 +454,7 @@ function AppInner({ lang, setLang }) {
     gcps,
     gcpInfo,
     terrainResult,
+    reference,
     canExportKML,
     canExportKMZ,
     handleExportKML,
@@ -625,12 +625,11 @@ function AppInner({ lang, setLang }) {
     const wps = tfOk
       ? terrainResult.waypoints
       : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
-    // Cota de referencia: base → primeiro waypoint → nenhuma. Antes caia em 0
-    // com a base fora do relevo e o perfil punha o voo debaixo da terra.
-    const refInfo = tfOk
-      ? { elev: terrainResult.refElev, source: 'base' }
-      : referenceElevation({ elevationAt: elevAt, basePoint, waypoints: planOk.waypoints })
-    return { waypoints: wps, refElev: refInfo.elev, refSource: refInfo.source }
+    // Cota de referencia unica (useAreaMission): base com relevo, senao a
+    // minima do relevo debaixo da rota. Antes caia em 0 com a base fora do
+    // relevo e o perfil punha o voo debaixo da terra.
+    const refElev = tfOk ? terrainResult.refElev : (reference?.elev ?? null)
+    return { waypoints: wps, refElev, refSource: reference?.source ?? null }
   }, [
     missionMode,
     facePlan,
@@ -642,7 +641,7 @@ function AppInner({ lang, setLang }) {
     planOk,
     terrainResult,
     terrain,
-    basePoint,
+    reference,
     params.altitude,
   ])
 
@@ -746,7 +745,7 @@ function AppInner({ lang, setLang }) {
         blur,
         route,
         clearance,
-        refSource: view3d?.refSource ?? null,
+        reference,
       })
     }
     const other = { batteryMin, reservePct: split.reservePct, clearance }
@@ -785,7 +784,7 @@ function AppInner({ lang, setLang }) {
     orbitPlan,
     terrain.data,
     clearance,
-    view3d,
+    reference,
     uncertainty,
     blur,
     route,
@@ -1306,6 +1305,7 @@ function AppInner({ lang, setLang }) {
             terrain={terrain.data}
             waypoints={view3d.waypoints}
             refElev={view3d.refElev ?? 0}
+            reference={missionMode === 'area' ? reference : null}
             blocks={
               terrainResult && !terrainResult.error && terrainResult.blocks3
                 ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))

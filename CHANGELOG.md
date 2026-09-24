@@ -120,14 +120,21 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ### Corrigido (base longe da área: perfil debaixo da terra e blocos de 80 m)
 
-- **Cota de referência nunca é 0.** Sem seguir terreno, a cota da descolagem
-  vinha da elevação no ponto de base; com a base fora do relevo carregado —
-  esquecida de outro projecto, ou deixada para trás ao mover a área — caía
-  silenciosamente em 0 m, e o perfil de elevação e o 3D desenhavam o voo a
-  80 m absolutos debaixo de um terreno a 100–160 m, com a folga a −86 m e
-  nada a avisar. A cadeia passa a ser base → primeiro waypoint → nenhuma
-  (`src/mission/reference.js`), e o preflight avisa quando a base não tem
-  relevo. O perfil, o 3D e o preflight lêem a mesma geometria e a mesma cota.
+- **Cota de referência nunca é 0, e sem base é a mínima da área.** A cota
+  da descolagem vinha da elevação no ponto de base; com a base fora do relevo
+  carregado — esquecida de outro projecto, ou deixada para trás ao mover a
+  área — caía silenciosamente em 0 m, e o perfil de elevação e o 3D
+  desenhavam o voo a 80 m absolutos debaixo de um terreno a 100–160 m, com a
+  folga a −86 m e nada a avisar. Sem base, o seguimento de terreno usava o
+  primeiro waypoint, que também não é seguro: descolar num vale abaixo dele
+  punha a rota exportada mais baixa do que a folga dizia. A cadeia passa a
+  ser base com relevo → cota **mínima** do relevo debaixo da rota → nenhuma
+  (`src/mission/reference.js`), uma só para o perfil, o 3D, a folga ao solo e
+  as alturas do seguimento de terreno. A mínima é a única escolha em que
+  descolar em qualquer ponto da área põe o drone mais alto, e nunca mais
+  baixo, do que o planeado; o perfil mostra a cota assumida e a origem, e o
+  preflight avisa quando a base não tem relevo e, sem base, quando o desnível
+  da área passa de 10 m — com a cota assumida e o custo na mensagem.
 - **Rota que entra no relevo é um bloqueio.** A pior folga ao solo da rota
   exportável é calculada sobre o relevo carregado (`src/mission/clearance.js`,
   amostragem a 40 m como o seguimento de terreno) e entra no preflight: abaixo

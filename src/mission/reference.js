@@ -2,29 +2,53 @@
  * Cota de referência das alturas relativas.
  *
  * O WPML exporta alturas relativas ao ponto de descolagem; para o perfil de
- * elevação, a vista 3D e a folga ao solo é preciso saber a cota desse ponto.
- * A cadeia é: base → primeiro waypoint → nenhuma. NUNCA 0: uma base fora do
- * relevo carregado (ou longe da área, depois de a mover) dava cota 0 e o
- * perfil desenhava o voo a 80 m absolutos, debaixo de um terreno a 100 m,
- * com a folga a −86 m — e nada avisava.
+ * elevação, a vista 3D, a folga ao solo E as alturas do seguimento de
+ * terreno é preciso assumir a cota desse ponto. A cadeia é:
  *
- * `source` diz de onde veio a cota, para o preflight avisar quando a base
- * existe mas não tem relevo ('waypoint-fallback').
+ *   base marcada com relevo → cota MÍNIMA do relevo debaixo da rota → nenhuma
  *
+ * A mínima, e não a máxima nem o primeiro waypoint, porque a altura real
+ * acima do solo em cada ponto é
+ *   AGL real = AGL planeado + (cota real da descolagem − cota assumida)
+ * e, descolando em qualquer ponto da área, a cota real é ≥ mínima: o termo
+ * é ≥ 0 e o drone voa mais alto do que o planeado, nunca mais baixo. O
+ * primeiro waypoint não tem essa propriedade (descolar num vale abaixo dele
+ * punha a rota mais baixa do que a verificação de folga dizia), e 0 m —
+ * o que acontecia com a base fora do relevo — punha o voo debaixo da terra.
+ *
+ * A conservadora paga em GSD quando a descolagem é acima da mínima; é a
+ * base marcada que recupera a precisão, e o preflight lembra-o quando o
+ * desnível da área torna a diferença relevante.
+ */
+import { terrainRangeAlong } from './clearance.js'
+
+/**
  * @param {{elevationAt?: ((lon: number, lat: number) => number|null)|null,
  *   basePoint?: number[]|null, waypoints?: number[][]|null}} args
- * @returns {{elev: number|null, source: 'base'|'waypoint'|'waypoint-fallback'|null}}
+ * @returns {{elev: number|null, source: 'base'|'area-min'|null, baseOutside: boolean,
+ *   terrainMin: number|null, terrainMax: number|null, reliefM: number|null}}
  */
 export function referenceElevation({ elevationAt, basePoint, waypoints }) {
-  const at = (p) => {
-    if (!Array.isArray(p) || typeof elevationAt !== 'function') return null
-    const e = elevationAt(p[0], p[1])
-    return Number.isFinite(e) ? e : null
+  const none = {
+    elev: null,
+    source: null,
+    baseOutside: false,
+    terrainMin: null,
+    terrainMax: null,
+    reliefM: null,
   }
-  const fromBase = at(basePoint)
-  if (fromBase != null) return { elev: fromBase, source: 'base' }
-  const first = Array.isArray(waypoints) && waypoints.length ? waypoints[0] : null
-  const fromWp = at(first)
-  if (fromWp != null) return { elev: fromWp, source: basePoint ? 'waypoint-fallback' : 'waypoint' }
-  return { elev: null, source: null }
+  if (typeof elevationAt !== 'function') return none
+  const range = terrainRangeAlong(waypoints ?? [], { elevationAt })
+  const terrain = range
+    ? { terrainMin: range.minM, terrainMax: range.maxM, reliefM: range.maxM - range.minM }
+    : { terrainMin: null, terrainMax: null, reliefM: null }
+  const atBase =
+    Array.isArray(basePoint) && Number.isFinite(basePoint[0]) && Number.isFinite(basePoint[1])
+      ? elevationAt(basePoint[0], basePoint[1])
+      : null
+  if (Number.isFinite(atBase))
+    return { ...terrain, elev: atBase, source: 'base', baseOutside: false }
+  const baseOutside = Array.isArray(basePoint)
+  if (range) return { ...terrain, elev: range.minM, source: 'area-min', baseOutside }
+  return { ...none, baseOutside }
 }

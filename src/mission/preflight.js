@@ -15,6 +15,8 @@ export const WAYPOINT_SOFT_LIMIT = 2000
 export const BASE_FAR_M = 2000
 /** Folga ao solo abaixo disto avisa; abaixo de zero bloqueia (a rota entra no relevo). */
 export const CLEARANCE_WARN_M = 15
+/** Sem base, um desnível da área acima disto faz da cota assumida um aviso e não um lembrete. */
+export const NO_BASE_RELIEF_WARN_M = 10
 
 const item = (level, code, params = {}) => ({ level, code, params })
 const wpCount = (x) => (Array.isArray(x?.waypoints) ? x.waypoints.length : 0)
@@ -47,13 +49,30 @@ function groundItems(c, usable) {
       )
     else out.push(item('warn', 'base-far', { km }))
   }
-  if (c.refSource === 'waypoint-fallback') out.push(item('warn', 'base-no-terrain'))
+  if (c.reference?.baseOutside && c.reference.source === 'area-min')
+    out.push(item('warn', 'base-no-terrain', { elev: Math.round(c.reference.elev) }))
   const minM = c.clearance?.minM
   if (Number.isFinite(minM)) {
     if (minM < 0) out.push(item('block', 'terrain-collision', { m: round1(-minM) }))
     else if (minM < CLEARANCE_WARN_M) out.push(item('warn', 'clearance-low', { m: round1(minM) }))
   }
   return out
+}
+
+/**
+ * Sem base: lembrete brando em terreno plano; aviso, com a cota assumida e o
+ * desnível, quando a área tem relevo — aí a diferença entre a cota mínima
+ * assumida e a descolagem real é altura de voo a mais (GSD a menos) ou, se
+ * descolar fora e abaixo da área, folga a menos.
+ */
+function noBaseItems(c) {
+  if (c.basePoint) return []
+  const r = c.reference
+  if (r?.source === 'area-min' && Number.isFinite(r.reliefM) && r.reliefM > NO_BASE_RELIEF_WARN_M)
+    return [
+      item('warn', 'no-base-relief', { elev: Math.round(r.elev), relief: Math.round(r.reliefM) }),
+    ]
+  return [item('info', 'no-base')]
 }
 
 /** Minutos úteis de uma bateria, descontada a reserva; null sem bateria. */
@@ -84,7 +103,7 @@ export function usableBatteryMin(batteryMin, reservePct = 30) {
  * @param {Array<{exposureS: number, blurCm: number, blurPx: number|null}>|null} [c.blur] arrastamento por exposição
  * @param {{duplicates: number[], longSegments: any[], climb: any[]}|null} [c.route] routeChecks da rota exportada
  * @param {{minM: number}|null} [c.clearance] pior folga ao solo da rota exportável (routeClearance)
- * @param {string|null} [c.refSource] origem da cota de referência (referenceElevation)
+ * @param {{elev: number|null, source: string|null, baseOutside: boolean, reliefM: number|null}|null} [c.reference] cota de referência (referenceElevation)
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
@@ -204,7 +223,7 @@ export function preflightArea(c) {
   }
 
   out.push(...groundItems(c, usable))
-  if (!c.basePoint) out.push(item('info', 'no-base'))
+  out.push(...noBaseItems(c))
   out.push(item('info', 'heights-relative'))
   return out
 }

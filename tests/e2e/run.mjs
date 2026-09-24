@@ -664,9 +664,17 @@ await scenario('preflight-bloqueia-colisao-com-relevo', async () => {
     null,
     { timeout: 20000 },
   )
+  const lista = await page.getByTestId('preflight-list').innerText()
   check(
     'colisao: com seguir terreno o bloqueio desaparece',
-    !/entra no relevo|into the terrain/.test(await page.getByTestId('preflight-list').innerText()),
+    !/entra no relevo|into the terrain/.test(lista),
+  )
+  // sem base, o relevo do fixture tem dezenas de metros de desnivel: a cota
+  // assumida e a minima da area, e o preflight di-lo com o valor
+  check(
+    'colisao: sem base, o preflight diz que assumiu a cota minima da area',
+    /cota mínima \(\d+ m\)|lowest elevation \(\d+ m\)/.test(lista),
+    lista.split('\n').find((l) => /mínima|lowest/.test(l)) ?? '',
   )
   check('colisao: sem erros de pagina', errors.length === 0, errors.join(' | '))
   await page.close()

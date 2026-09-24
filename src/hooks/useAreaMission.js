@@ -13,6 +13,7 @@ import { planTerrainFollow } from '../mission/terrainFollow.js'
 import { buildAreaExport } from '../mission/areaExport.js'
 import { downloadBlob, exportBlocksZip, exportAreaKML, exportWPMLKmz } from '../utils/exporters.js'
 import { stripRouteStats } from '../utils/geo.js'
+import { referenceElevation } from '../mission/reference.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from '../utils/gcp.js'
 import { DEFAULT_GCP_CONFIG } from '../mission/defaults.js'
 
@@ -130,6 +131,16 @@ export function useAreaMission({
     [gcps, ring],
   )
 
+  /* ------------- Cota de referencia das alturas relativas ------------- */
+  // Uma so, para o perfil, o 3D, a folga ao solo e o seguimento de terreno:
+  // base com relevo, senao a minima do relevo debaixo da rota (nunca 0, nunca
+  // o primeiro waypoint - ver src/mission/reference.js).
+  const reference = useMemo(() => {
+    const elevationAt = terrain.data?.elevationAt
+    if (typeof elevationAt !== 'function' || !planOk?.waypoints?.length) return null
+    return referenceElevation({ elevationAt, basePoint, waypoints: planOk.waypoints })
+  }, [terrain.data, basePoint, planOk])
+
   /* ------------- Terrain follow: alturas por waypoint ----------------- */
   const terrainResult = useMemo(() => {
     // B: com foto por waypoint, a densificação do seguimento de terreno
@@ -141,7 +152,7 @@ export function useAreaMission({
     try {
       const res = planTerrainFollow(terrain.data, planOk, {
         blocks,
-        refPt: basePoint ?? planOk.waypoints[0],
+        refElev: reference?.elev ?? null,
         agl: params.altitude,
         toleranceM: terrainFollow.tolerance,
       })
@@ -159,7 +170,7 @@ export function useAreaMission({
     terrain.data,
     planOk,
     blocks,
-    basePoint,
+    reference,
     params.altitude,
   ])
 
@@ -269,6 +280,7 @@ export function useAreaMission({
     gcps,
     gcpInfo,
     terrainResult,
+    reference,
     canExportKML,
     canExportKMZ,
     handleExportKML,

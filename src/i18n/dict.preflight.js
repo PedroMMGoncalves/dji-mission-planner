@@ -91,8 +91,12 @@ export default {
     en: 'Home point {km} km from the area: the round trip alone takes {min} min, above the {usable} usable minutes of one battery. Move the home point next to the area.',
   },
   'preflight.base-no-terrain': {
-    pt: 'A base está fora do relevo carregado: a cota de referência do perfil, do 3D e da folga ao solo é a do primeiro waypoint, não a da descolagem.',
-    en: 'The home point is outside the loaded elevation data: the reference elevation for the profile, the 3D view and the ground clearance is the first waypoint, not the take-off.',
+    pt: 'A base está fora do relevo carregado: assumiu-se a descolagem à cota mínima da área ({elev} m) no perfil, no 3D, na folga ao solo e no seguimento de terreno. Mova a base para dentro do relevo para ter alturas exactas.',
+    en: 'The home point is outside the loaded elevation data: take-off is assumed at the lowest elevation of the area ({elev} m) for the profile, the 3D view, the ground clearance and terrain following. Move the home point inside the elevation data for exact heights.',
+  },
+  'preflight.no-base-relief': {
+    pt: 'Sem base numa área com {relief} m de desnível: assumiu-se a descolagem à cota mínima ({elev} m), o lado seguro. A descolar mais alto a rota fica mais alta do que o planeado (GSD pior); a descolar fora e abaixo da área, mais baixa. Marque a base para ter alturas exactas.',
+    en: 'No home point in an area with {relief} m of relief: take-off is assumed at the lowest elevation ({elev} m), the safe side. Taking off higher puts the route higher than planned (worse GSD); taking off outside and below the area, lower. Mark the home point for exact heights.',
   },
   'preflight.terrain-collision': {
     pt: 'A rota entra no relevo: {m} m abaixo do solo no pior ponto. Suba a altitude ou ligue seguir terreno.',

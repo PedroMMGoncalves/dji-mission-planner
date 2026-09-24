@@ -57,13 +57,21 @@ export function regroupTerrainBlocks(res, blocks) {
 /**
  * Alturas por waypoint para um plano de área.
  *
- * `refPt` é o ponto de referência das alturas (a base marcada, ou o primeiro
- * waypoint); a sua cota no terreno é o zero das alturas relativas que o WPML
- * escreve. Devolve `{ error: 'ref-outside-terrain' }` quando o terreno não
- * cobre esse ponto.
+ * A cota de referência é o zero das alturas relativas que o WPML escreve:
+ * `refElev` quando o chamador já a decidiu (referenceElevation — base, ou a
+ * mínima da área), senão a cota do terreno em `refPt`. Devolve
+ * `{ error: 'ref-outside-terrain' }` quando não há cota nenhuma.
  */
-export function planTerrainFollow(terrain, plan, { blocks = null, refPt, agl, toleranceM = 5 }) {
-  const refElev = terrain.elevationAt(refPt[0], refPt[1])
+export function planTerrainFollow(
+  terrain,
+  plan,
+  { blocks = null, refPt = null, refElev: refGiven = null, agl, toleranceM = 5 },
+) {
+  const refElev = Number.isFinite(refGiven)
+    ? refGiven
+    : refPt
+      ? terrain.elevationAt(refPt[0], refPt[1])
+      : null
   if (!Number.isFinite(refElev)) return { error: 'ref-outside-terrain' }
   const res = terrainFollowLines(terrain, plan.lines, {
     agl,

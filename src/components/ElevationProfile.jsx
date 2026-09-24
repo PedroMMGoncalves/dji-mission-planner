@@ -49,6 +49,9 @@ const TXT = {
   flight: bi('Voo', 'Flight'),
   agl: bi('Altura de voo (AGL)', 'Flight height (AGL)'),
   clearance: bi('Folga mínima', 'Minimum clearance'),
+  reference: bi('Referência (descolagem)', 'Reference (take-off)'),
+  refBase: bi('base', 'home point'),
+  refAreaMin: bi('mínima da área', 'lowest of the area'),
   length: bi('Percurso', 'Route length'),
   waypoints: bi('Waypoints', 'Waypoints'),
   axisDist: bi('Distância acumulada', 'Cumulative distance'),
@@ -309,7 +312,14 @@ function Swatch({ color, dashed = false, children }) {
 
 /* ---------------- Componente ---------------- */
 
-export default function ElevationProfile({ terrain, waypoints, refElev, blocks, onClose }) {
+export default function ElevationProfile({
+  terrain,
+  waypoints,
+  refElev,
+  reference = null,
+  blocks,
+  onClose,
+}) {
   const L = useL()
   const [sel, setSel] = useState('all')
 
@@ -462,6 +472,12 @@ export default function ElevationProfile({ terrain, waypoints, refElev, blocks, 
                       : L(TXT.na)
                   }
                 />
+                {reference?.elev != null && (
+                  <Metric
+                    label={L(TXT.reference)}
+                    value={`${Math.round(reference.elev)} m · ${L(reference.source === 'base' ? TXT.refBase : TXT.refAreaMin)}`}
+                  />
+                )}
                 <Metric label={L(TXT.length)} value={fmtDist(p.totalM, p.totalM)} />
                 <Metric label={L(TXT.waypoints)} value={p.wpCount} />
               </div>
