@@ -286,7 +286,7 @@ export default {
   },
   'ci.params.speed': { pt: 'Velocidade', en: 'Speed' },
   'ci.params.angle': { pt: 'Rumo das fiadas', en: 'Row heading' },
-  'ci.params.angleAuto': { pt: 'Aresta mais longa', en: 'Longest edge' },
+  'ci.params.angleAuto': { pt: 'auto', en: 'auto' },
   'ci.params.altitudeNote': {
     pt: 'Altura e sobreposição frontal (fotos ao longo do círculo) são as do separador Área: {h} m, {f} %.',
     en: 'Height and front overlap (photos along the circle) come from the Area tab: {h} m, {f} %.',

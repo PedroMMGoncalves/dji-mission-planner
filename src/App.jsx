@@ -1155,8 +1155,15 @@ function AppInner({ lang, setLang }) {
             onToggle={() => setShowPreflight((v) => !v)}
           />
           <button
-            onClick={handleExportKMZ}
-            disabled={!canExportKMZ || exportBlocked}
+            // no modo circular o KMZ do cabecalho e a missao circular: o
+            // preflight ao lado e o dela, e a grelha da area exporta-se no
+            // separador Area
+            onClick={missionMode === 'circular' ? handleExportCircularSingle : handleExportKMZ}
+            disabled={
+              missionMode === 'circular'
+                ? !(circularPlan && !circularPlan.error) || exportBlocked
+                : !canExportKMZ || exportBlocked
+            }
             title={t('app.exportWpmlTitle')}
             className="flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -1400,8 +1407,9 @@ function AppInner({ lang, setLang }) {
             kinks={validation.kinks}
             anchorCenter={anchor.center}
             basePoint={basePoint}
-            plan={planOk}
-            blocks={blocks}
+            // no modo circular a grelha da area ficava por cima dos circulos
+            plan={missionMode === 'circular' ? null : planOk}
+            blocks={missionMode === 'circular' ? null : blocks}
             gridCells={gridCells}
             tiles={tiles}
             disabledTiles={disabledTiles}
