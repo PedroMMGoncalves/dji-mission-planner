@@ -43,6 +43,7 @@ export function useOrbitMission({ sensor, missionMode, missionName, wpml, setMod
       poiHeightM: orbitConfig.poiHeightM,
       clockwise: orbitConfig.clockwise,
       speed: orbitConfig.speedMS,
+      capture: orbitConfig.capture,
     })
   }, [orbitConfig, sensor])
 
@@ -95,6 +96,9 @@ export function useOrbitMission({ sensor, missionMode, missionName, wpml, setMod
 
   const handleExportOrbitPerLevel = useCallback(() => {
     if (!orbitPlan || orbitPlan.error) return
+    // em video a gravacao e uma so, do primeiro ao ultimo ponto: fatiar a
+    // espiral deixava os KMZ intermedios sem startRecord/stopRecord
+    if (orbitPlan.stats.capture === 'video') return
     runExport(() => exportBlocksZip(orbitParams(), orbitLevelsToBlocks(orbitPlan)))
   }, [orbitPlan, orbitParams, runExport])
 

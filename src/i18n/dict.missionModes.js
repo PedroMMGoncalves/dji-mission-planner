@@ -189,6 +189,17 @@ export default {
     pt: 'Acima do ponto de descolagem — o gimbal de cada nível aponta a esta cota.',
     en: 'Above the takeoff point — each level’s gimbal aims at this height.',
   },
+  'op.capture.title': { pt: 'Captura', en: 'Capture' },
+  'op.capture.photo': { pt: 'Fotografia (anéis)', en: 'Photo (rings)' },
+  'op.capture.video': { pt: 'Vídeo (espiral)', en: 'Video (spiral)' },
+  'op.capture.photoHint': {
+    pt: 'Anéis a altura constante, uma foto em cada waypoint: altura, gimbal e sobreposição iguais em todo o nível, para fotogrametria.',
+    en: 'Constant-height rings, one photo at every waypoint: same height, gimbal and overlap across each level, for photogrammetry.',
+  },
+  'op.capture.videoHint': {
+    pt: 'Espiral contínua do primeiro ao último nível, uma volta por passo, a gravar do primeiro ao último ponto (startRecord/stopRecord). Sem fotografias: a câmara não fotografa enquanto grava.',
+    en: 'Continuous spiral from the first to the last level, one turn per step, recording from the first to the last point (startRecord/stopRecord). No photos: the camera cannot shoot while recording.',
+  },
   'op.geom.title': { pt: 'Geometria da Órbita', en: 'Orbit Geometry' },
   'op.geom.radius': { pt: 'Raio', en: 'Radius' },
   'op.geom.gsdTarget': { pt: 'GSD alvo à distância', en: 'Target GSD at range' },
@@ -209,6 +220,15 @@ export default {
   },
   'op.plan.rings': { pt: '{n} níveis × {pts} pontos/volta', en: '{n} levels × {pts} points/orbit' },
   'op.plan.photos': { pt: '{n} fotos (1 por waypoint)', en: '{n} photos (1 per waypoint)' },
+  'op.plan.spiral': {
+    pt: 'espiral: {turns} voltas, {h0} → {h1} m, {pts} pontos/volta',
+    en: 'spiral: {turns} turns, {h0} → {h1} m, {pts} points/turn',
+  },
+  'op.plan.video': {
+    pt: 'vídeo contínuo, ~{min} min de gravação',
+    en: 'continuous video, ~{min} min of recording',
+  },
+  'op.plan.gimbalsVideo': { pt: 'gimbal de {a}° a {b}°', en: 'gimbal from {a}° to {b}°' },
   'op.plan.gsd': { pt: 'GSD {v} cm/px no alvo', en: 'GSD {v} cm/px at the target' },
   'op.plan.path': { pt: 'percurso {km} km', en: 'path {km} km' },
   'op.plan.time': { pt: '~{min} min', en: '~{min} min' },
@@ -227,5 +247,9 @@ export default {
   'op.exportHint': {
     pt: 'Voo curvo contínuo (toPointAndPassWithContinuityCurvature), rumo ao POI e uma foto em cada waypoint. Alturas relativas ao ponto de descolagem.',
     en: 'Continuous curved flight (toPointAndPassWithContinuityCurvature), heading at the POI and one photo per waypoint. Heights relative to the takeoff point.',
+  },
+  'op.exportHintVideo': {
+    pt: 'Voo curvo contínuo, rumo ao POI, gimbal a reapontar ao centro em cada ponto; grava do primeiro ao último ponto. Um só KMZ: a gravação não se fatia por nível. Alturas relativas ao ponto de descolagem.',
+    en: 'Continuous curved flight, heading at the POI, gimbal re-aimed at the centre at every point; records from the first to the last point. A single KMZ: the recording is not split per level. Heights relative to the takeoff point.',
   },
 }

@@ -490,6 +490,38 @@ await scenario('orbita-marcada', async () => {
     perLevel.length >= 1 && perLevel.every((x) => analyseRoute(x.wpml, plano).n >= 8),
     `${perLevel.length} níveis`,
   )
+  // captura em vídeo: espiral contínua a gravar do primeiro ao último ponto
+  await page.getByRole('radio', { name: /Vídeo|Video/ }).click()
+  await page.waitForTimeout(500)
+  const [dlVideo] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Exportar missão única|Export single mission/ }).click(),
+  ])
+  await dlVideo.saveAs(join(OUT, 'orbita-video.kmz'))
+  const video = await readRoutes(join(OUT, 'orbita-video.kmz'))
+  const rv = analyseRoute(video[0].wpml, plano)
+  executavel(rv)
+  const cnt = (re) => (video[0].wpml.match(re) || []).length
+  const hs = [...video[0].wpml.matchAll(/<wpml:executeHeight>([-\d.]+)</g)].map((m) => Number(m[1]))
+  check(
+    'órbita vídeo: um startRecord, um stopRecord, nenhum takePhoto, alturas sempre a subir',
+    cnt(/<wpml:actionActuatorFunc>startRecord</g) === 1 &&
+      cnt(/<wpml:actionActuatorFunc>stopRecord</g) === 1 &&
+      cnt(/<wpml:actionActuatorFunc>takePhoto</g) === 0 &&
+      hs.length === rv.n &&
+      hs.every((h, i) => i === 0 || h > hs[i - 1]),
+    `${rv.n} pontos, ${hs[0]} → ${hs[hs.length - 1]} m`,
+  )
+  check(
+    'órbita vídeo: nome do ficheiro com a variante',
+    /_orbit-video_n\d+\.kmz$/.test(dlVideo.suggestedFilename()),
+    dlVideo.suggestedFilename(),
+  )
+  check(
+    'órbita vídeo: a exportação por nível fica desactivada',
+    await page.getByRole('button', { name: /um KMZ por nível|one KMZ per level/ }).isDisabled(),
+  )
+  await page.getByRole('radio', { name: /Fotografia|Photo/ }).click()
   await modo(page, /^Área$|^Area$/)
   await page.waitForTimeout(500)
   const txt = await bodyText(page)

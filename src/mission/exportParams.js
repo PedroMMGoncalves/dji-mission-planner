@@ -26,10 +26,18 @@ export function faceExportParams({ missionName, plan, speed, wpml, gimbalPitch, 
   }
 }
 
-/** Órbita: voo curvo contínuo (turnMode do plano), pitch do primeiro nível. */
+/**
+ * Órbita: voo curvo contínuo (turnMode do plano), pitch do primeiro nível.
+ * Em vídeo o nome leva a variante (`_orbit-video_n5`): o KMZ grava uma
+ * espiral, não tira fotografias, e convém distingui-lo à vista.
+ */
 export function orbitExportParams({ missionName, plan, speed, wpml, sensorType }) {
+  const video = plan.stats.capture === 'video'
   return {
-    name: buildExportName(missionName, 'orbit', { part: `n${plan.stats.levelCount}` }),
+    name: buildExportName(missionName, 'orbit', {
+      variant: video ? 'video' : null,
+      part: `n${plan.stats.levelCount}`,
+    }),
     waypoints: plan.waypoints,
     perWaypoint: plan.perWaypoint,
     turnMode: plan.turnMode,

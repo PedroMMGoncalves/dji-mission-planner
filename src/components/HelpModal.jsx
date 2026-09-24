@@ -64,7 +64,8 @@ function InstrucoesPt() {
         </Li>
         <Li>
           <strong>Órbita</strong> — «Marcar POI» e clicar no alvo; defina raio (ou GSD alvo), níveis
-          e passo. Exporta em voo curvo contínuo, missão única ou um KMZ por nível (ZIP).
+          e passo. Captura em fotografia (anéis, uma foto por waypoint) ou vídeo (espiral contínua a
+          gravar). Exporta em voo curvo contínuo, missão única ou um KMZ por nível (ZIP).
         </Li>
         <Li>
           <strong>Corredor</strong> — para infraestruturas lineares (estradas, condutas, linhas de
@@ -237,8 +238,9 @@ function InstrucoesEn() {
         </Li>
         <Li>
           <strong>Orbit</strong> — “Mark POI” and click the target; set radius (or target GSD),
-          levels and step. Exports in continuous curved flight, single mission or one KMZ per level
-          (ZIP).
+          levels and step. Capture as photo (rings, one photo per waypoint) or video (a continuous
+          recording spiral). Exports in continuous curved flight, single mission or one KMZ per
+          level (ZIP).
         </Li>
         <Li>
           <strong>Corridor</strong> — for linear infrastructure (roads, pipelines, watercourses,

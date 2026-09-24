@@ -2735,6 +2735,103 @@ check(
   )
 }
 
+/* 9c3. Orbita em video: espiral continua com startRecord/stopRecord */
+{
+  const vid = generateOrbitPlan(center, {
+    sensor,
+    radiusM: 100,
+    levels: [30, 50, 70],
+    horizontalOverlapPct: 80,
+    poiHeightM: 10,
+    speed: 4,
+    capture: 'video',
+  })
+  const n = vid.stats.pointsPerOrbit
+  check(
+    'orbita video: 3 niveis sao 2 voltas, 2n + 1 pontos, de 30 a 70 m a subir sempre',
+    vid.stats.turnCount === 2 &&
+      vid.stats.waypointCount === 2 * n + 1 &&
+      vid.waypoints[0][2] === 30 &&
+      vid.waypoints[vid.waypoints.length - 1][2] === 70 &&
+      vid.waypoints.every((w, i) => i === 0 || w[2] > vid.waypoints[i - 1][2]),
+    `${vid.stats.turnCount} voltas, ${vid.stats.waypointCount} pontos`,
+  )
+  check(
+    'orbita video: startRecord no primeiro ponto, stopRecord no ultimo, sem fotos',
+    vid.perWaypoint[0].actions.join() === 'startRecord' &&
+      vid.perWaypoint[vid.perWaypoint.length - 1].actions.join() === 'stopRecord' &&
+      vid.perWaypoint.slice(1, -1).every((pw) => pw.actions.length === 0) &&
+      vid.stats.photoCount === 0 &&
+      vid.stats.transitionM === null,
+  )
+  check(
+    'orbita video: gimbal reaponta ao centro em cada ponto (nunca sobe com a altura)',
+    vid.perWaypoint.every(
+      (pw, i) => i === 0 || pw.gimbalPitch <= vid.perWaypoint[i - 1].gimbalPitch,
+    ),
+  )
+  check(
+    'orbita video: um nivel e uma volta a altura constante',
+    (() => {
+      const one = generateOrbitPlan(center, { sensor, radiusM: 50, levels: [40], capture: 'video' })
+      return (
+        one.stats.turnCount === 1 &&
+        one.stats.waypointCount === one.stats.pointsPerOrbit + 1 &&
+        one.waypoints.every((w) => w[2] === 40)
+      )
+    })(),
+  )
+  check(
+    'orbita video: os blocos por volta cobrem todos os pontos',
+    orbitLevelsToBlocks(vid).reduce((s, b) => s + b.waypoints.length, 0) ===
+      vid.stats.waypointCount,
+  )
+  check(
+    'orbitConfig: capture por omissao photo, video aceite, lixo -> photo',
+    normalizeOrbitConfig(null).capture === 'photo' &&
+      normalizeOrbitConfig({ capture: 'video' }).capture === 'video' &&
+      normalizeOrbitConfig({ capture: 'x' }).capture === 'photo',
+  )
+  const wlVid = buildWaylinesWPML({
+    name: 'orbita-video',
+    waypoints: vid.waypoints,
+    altitude: 70,
+    speed: 4,
+    wpml: wpmlParams.wpml,
+    photoIntervalM: 0,
+    triggerMode: 'distance',
+    sensorType: 'camera',
+    perWaypoint: vid.perWaypoint,
+    turnMode: vid.turnMode,
+  })
+  const cnt = (re) => (wlVid.match(re) || []).length
+  check(
+    'orbita video: WPML com um startRecord, um stopRecord e nenhum takePhoto',
+    cnt(/<wpml:actionActuatorFunc>startRecord</g) === 1 &&
+      cnt(/<wpml:actionActuatorFunc>stopRecord</g) === 1 &&
+      cnt(/<wpml:actionActuatorFunc>takePhoto</g) === 0,
+  )
+  const pms = wlVid.split('<Placemark>').slice(1)
+  check(
+    'orbita video: gravacao arranca no primeiro Placemark depois do gimbal e para no ultimo',
+    pms[0].indexOf('gimbalRotate') < pms[0].indexOf('startRecord') &&
+      pms[pms.length - 1].includes('stopRecord') &&
+      pms.slice(1, -1).every((p) => !/Record/.test(p)),
+  )
+  check(
+    'orbita video: stopRecord so com payloadPositionIndex (common-element.md)',
+    /stopRecord<\/wpml:actionActuatorFunc>\s*<wpml:actionActuatorFuncParam>\s*<wpml:payloadPositionIndex>0<\/wpml:payloadPositionIndex>\s*<\/wpml:actionActuatorFuncParam>/.test(
+      wlVid,
+    ),
+  )
+  check(
+    'orbita video: voo curvo continuo com rumo e gimbal em todos os pontos',
+    cnt(/toPointAndPassWithContinuityCurvature/g) === vid.stats.waypointCount &&
+      cnt(/smoothTransition/g) === vid.stats.waypointCount &&
+      cnt(/<wpml:actionActuatorFunc>gimbalRotate</g) === vid.stats.waypointCount + 1,
+  )
+}
+
 /* 9d. Pontos de inspecao (R2.9 — parte pura) */
 {
   const P = (x, y, extra = {}) => ({

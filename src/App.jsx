@@ -669,7 +669,7 @@ function AppInner({ lang, setLang }) {
       missionMode === 'face'
         ? [faceConfig.gimbalPitch]
         : missionMode === 'orbit'
-          ? (orbitPlan?.perLevel ?? []).map((l) => l.gimbalPitch)
+          ? (orbitPlan?.perWaypoint ?? []).map((w) => w.gimbalPitch)
           : missionMode === 'corridor'
             ? [-90]
             : [params.gimbalPitch]

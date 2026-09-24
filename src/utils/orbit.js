@@ -12,7 +12,12 @@ export const DEFAULT_ORBIT_CONFIG = {
   poiHeightM: 0,
   clockwise: true,
   speedMS: 5, // velocidade de voo da órbita — parâmetro explícito (sem clamp)
+  // 'photo': anéis a altura constante, uma foto por waypoint (fotogrametria)
+  // 'video': espiral contínua, a gravar do primeiro ao último ponto
+  capture: 'photo',
 }
+
+export const ORBIT_CAPTURES = ['photo', 'video']
 
 /**
  * E1.2: normaliza uma configuração de órbita guardada num projecto —
@@ -37,6 +42,7 @@ export function normalizeOrbitConfig(stored) {
     poiHeightM: num(stored.poiHeightM, -50, 300, d.poiHeightM),
     clockwise: stored.clockwise !== false,
     speedMS: num(stored.speedMS, 1, 10, d.speedMS),
+    capture: ORBIT_CAPTURES.includes(stored.capture) ? stored.capture : d.capture,
   }
 }
 
@@ -68,6 +74,15 @@ export function orbitLevelsToBlocks(plan) {
  * Pensado para exportar com waypointTurnMode
  * toPointAndPassWithContinuityCurvature (voo curvo contínuo).
  *
+ * Com `capture: 'video'` a geometria muda: em vez de anéis a altura
+ * constante, uma ESPIRAL CONTÍNUA que sobe um passo por volta, do primeiro
+ * ao último nível (L níveis = L−1 voltas; um nível = uma volta a altura
+ * constante). A câmara não fotografa enquanto grava, por isso não há
+ * takePhoto: startRecord no primeiro ponto, stopRecord no último, e o
+ * gimbal reaponta ao centro do alvo em cada ponto à medida que sobe. Os
+ * anéis servem a fotogrametria (altura, pitch e sobreposição iguais em cada
+ * nível); a espiral serve o vídeo de inspecção.
+ *
  * Alturas relativas ao ponto de descolagem (relativeToStartPoint), como o
  * resto da app; `poiHeightM` é a cota do centro do alvo no mesmo referencial.
  */
@@ -81,6 +96,7 @@ export function generateOrbitPlan(poi, options) {
     speed = 3,
     startBearingDeg = 0,
     clockwise = true,
+    capture = 'photo',
   } = options ?? {}
 
   if (!poi || !(radiusM > 0)) return { error: 'invalid-radius' }
@@ -105,36 +121,72 @@ export function generateOrbitPlan(poi, options) {
   const waypoints = []
   const perWaypoint = []
   const perLevel = []
-  heights.forEach((h, li) => {
-    // gimbal do nível apontado ao centro do alvo (trigonometria simples)
-    const pitch = Math.max(
-      -90,
-      Math.min(20, -Math.round((Math.atan2(h - poiHeightM, radiusM) * 180) / Math.PI)),
-    )
-    // TRANSIÇÃO ENTRE ANÉIS: helicoidal, nunca vertical. Cada anel termina
-    // uma corda ANTES do rumo inicial e o anel seguinte começa nesse rumo,
-    // um passo acima — o troço de ligação tem uma corda na horizontal e o
-    // passo na vertical, e a volta fica completa (a última corda voa-se a
-    // subir). Antes cada anel fechava no rumo inicial e o seguinte começava
-    // no MESMO ponto horizontal: um segmento de comprimento horizontal nulo.
-    // A órbita voa em curva contínua ajustada pelos pontos (useStraightLine
-    // 0, sem amortecimento), e num troço vertical a tangente horizontal fica
-    // indefinida: em voo a aeronave parava no fim do primeiro anel. Só o
-    // último anel fecha a volta, para a missão acabar onde o anel começou.
-    const last = li === heights.length - 1
-    const count = last ? nPts + 1 : nPts
-    perLevel.push({ level: li + 1, heightM: h, gimbalPitch: pitch, start: waypoints.length, count })
-    for (let i = 0; i < count; i++) {
-      // i === nPts (só no último anel) fecha a volta no rumo inicial
-      const brg = startBearingDeg + (i % nPts) * stepDeg
-      const pos = turf.destination(poiPt, radiusM, (((brg % 360) + 540) % 360) - 180, {
-        units: 'meters',
-      }).geometry.coordinates
-      const heading = ((Math.round(turf.bearing(pos, poi)) % 360) + 360) % 360
+  // gimbal apontado ao centro do alvo (trigonometria simples)
+  const pitchAt = (h) =>
+    Math.max(-90, Math.min(20, -Math.round((Math.atan2(h - poiHeightM, radiusM) * 180) / Math.PI)))
+  const posAt = (i) => {
+    const brg = startBearingDeg + (i % nPts) * stepDeg
+    return turf.destination(poiPt, radiusM, (((brg % 360) + 540) % 360) - 180, {
+      units: 'meters',
+    }).geometry.coordinates
+  }
+  const headingAt = (pos) => ((Math.round(turf.bearing(pos, poi)) % 360) + 360) % 360
+  const video = capture === 'video'
+  if (video) {
+    // ESPIRAL: L−1 voltas entre o primeiro e o último nível (uma volta a
+    // altura constante com um só nível); o ponto j está a
+    // h0 + (j / nPts) · passo, e o último fecha no rumo inicial à altura do
+    // último nível. Cada volta é um "nível" para a pré-visualização e os
+    // blocos, com a altura e o pitch do seu início.
+    const turns = Math.max(1, heights.length - 1)
+    const stepM = heights.length > 1 ? heights[1] - heights[0] : 0
+    const total = turns * nPts + 1
+    for (let j = 0; j < total; j++) {
+      const h = heights[0] + (j / nPts) * stepM
+      const pos = posAt(j)
+      if (j % nPts === 0 && j < total - 1) {
+        perLevel.push({
+          level: j / nPts + 1,
+          heightM: Math.round(h * 10) / 10,
+          gimbalPitch: pitchAt(h),
+          start: j,
+          count: j / nPts === turns - 1 ? nPts + 1 : nPts,
+        })
+      }
+      const actions = j === 0 ? ['startRecord'] : j === total - 1 ? ['stopRecord'] : []
       waypoints.push([pos[0], pos[1], Math.round(h * 10) / 10])
-      perWaypoint.push({ heading, gimbalPitch: pitch, actions: ['takePhoto'] })
+      perWaypoint.push({ heading: headingAt(pos), gimbalPitch: pitchAt(h), actions })
     }
-  })
+  }
+  if (!video)
+    heights.forEach((h, li) => {
+      const pitch = pitchAt(h)
+      // TRANSIÇÃO ENTRE ANÉIS: helicoidal, nunca vertical. Cada anel termina
+      // uma corda ANTES do rumo inicial e o anel seguinte começa nesse rumo,
+      // um passo acima — o troço de ligação tem uma corda na horizontal e o
+      // passo na vertical, e a volta fica completa (a última corda voa-se a
+      // subir). Antes cada anel fechava no rumo inicial e o seguinte começava
+      // no MESMO ponto horizontal: um segmento de comprimento horizontal nulo.
+      // A órbita voa em curva contínua ajustada pelos pontos (useStraightLine
+      // 0, sem amortecimento), e num troço vertical a tangente horizontal fica
+      // indefinida: em voo a aeronave parava no fim do primeiro anel. Só o
+      // último anel fecha a volta, para a missão acabar onde o anel começou.
+      const last = li === heights.length - 1
+      const count = last ? nPts + 1 : nPts
+      perLevel.push({
+        level: li + 1,
+        heightM: h,
+        gimbalPitch: pitch,
+        start: waypoints.length,
+        count,
+      })
+      for (let i = 0; i < count; i++) {
+        // i === nPts (só no último anel) fecha a volta no rumo inicial
+        const pos = posAt(i)
+        waypoints.push([pos[0], pos[1], Math.round(h * 10) / 10])
+        perWaypoint.push({ heading: headingAt(pos), gimbalPitch: pitch, actions: ['takePhoto'] })
+      }
+    })
 
   let pathLengthM = 0
   for (let i = 1; i < waypoints.length; i++) {
@@ -149,10 +201,13 @@ export function generateOrbitPlan(poi, options) {
     perLevel,
     turnMode: 'toPointAndPassWithContinuityCurvature',
     stats: {
+      capture: video ? 'video' : 'photo',
       levelCount: heights.length,
+      // voltas voadas: uma por anel, ou as da espiral
+      turnCount: perLevel.length,
       pointsPerOrbit: nPts,
       waypointCount: waypoints.length,
-      photoCount: waypoints.length,
+      photoCount: video ? 0 : waypoints.length,
       chordM,
       radiusM,
       gsdCm: sensor?.type === 'camera' ? computeGSD(sensor, radiusM) : null,
@@ -160,7 +215,7 @@ export function generateOrbitPlan(poi, options) {
       pathLengthM,
       flightTimeS: speed > 0 ? pathLengthM / speed : null,
       // ligação entre anéis: corda na horizontal, passo na vertical
-      transitionM: heights.length > 1 ? chordM : null,
+      transitionM: !video && heights.length > 1 ? chordM : null,
     },
   }
 }

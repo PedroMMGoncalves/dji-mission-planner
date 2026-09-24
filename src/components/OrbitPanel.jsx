@@ -57,6 +57,8 @@ export default function OrbitPanel({
 }) {
   const t = useT()
   const stats = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
+  const video = orbitConfig.capture === 'video'
+  const pitches = (orbitPlan?.perWaypoint ?? []).map((w) => w.gimbalPitch)
 
   return (
     <div className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-800 bg-slate-950 lg:w-96">
@@ -96,6 +98,34 @@ export default function OrbitPanel({
           />
         </Field>
         <p className="text-[11px] leading-relaxed text-slate-500">{t('op.poi.heightHint')}</p>
+      </Section>
+
+      {/* Captura: aneis com fotografia, ou espiral em video */}
+      <Section title={t('op.capture.title')}>
+        <div
+          className="grid grid-cols-2 gap-2"
+          role="radiogroup"
+          aria-label={t('op.capture.title')}
+        >
+          {['photo', 'video'].map((c) => (
+            <button
+              key={c}
+              role="radio"
+              aria-checked={orbitConfig.capture === c}
+              onClick={() => setOrbitParam('capture', c)}
+              className={`rounded px-2 py-2 text-sm font-medium transition-colors ${
+                orbitConfig.capture === c
+                  ? 'bg-sky-500 text-slate-950'
+                  : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+              }`}
+            >
+              {t(`op.capture.${c}`)}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+          {t(video ? 'op.capture.videoHint' : 'op.capture.photoHint')}
+        </p>
       </Section>
 
       {/* Geometria */}
@@ -181,19 +211,40 @@ export default function OrbitPanel({
         )}
         {stats && (
           <div className="space-y-1 font-mono text-xs text-slate-300">
-            <p>{t('op.plan.rings', { n: stats.levelCount, pts: stats.pointsPerOrbit })}</p>
-            <p>{t('op.plan.photos', { n: stats.photoCount })}</p>
+            {video ? (
+              <p>
+                {t('op.plan.spiral', {
+                  turns: stats.turnCount,
+                  h0: stats.heights[0],
+                  h1: stats.heights[stats.heights.length - 1],
+                  pts: stats.pointsPerOrbit,
+                })}
+              </p>
+            ) : (
+              <p>{t('op.plan.rings', { n: stats.levelCount, pts: stats.pointsPerOrbit })}</p>
+            )}
+            {video ? (
+              <p>{t('op.plan.video', { min: Math.round((stats.flightTimeS ?? 0) / 60) })}</p>
+            ) : (
+              <p>{t('op.plan.photos', { n: stats.photoCount })}</p>
+            )}
             {stats.gsdCm != null && <p>{t('op.plan.gsd', { v: stats.gsdCm.toFixed(2) })}</p>}
             <p>
               {t('op.plan.path', { km: (stats.pathLengthM / 1000).toFixed(2) })} ·{' '}
               {t('op.plan.time', { min: Math.round((stats.flightTimeS ?? 0) / 60) })}
             </p>
-            {orbitPlan.perLevel && (
+            {video && pitches.length > 0 ? (
               <p className="text-slate-400">
-                {t('op.plan.gimbals', {
-                  v: orbitPlan.perLevel.map((l) => `${l.gimbalPitch}°`).join(' / '),
-                })}
+                {t('op.plan.gimbalsVideo', { a: Math.max(...pitches), b: Math.min(...pitches) })}
               </p>
+            ) : (
+              orbitPlan.perLevel && (
+                <p className="text-slate-400">
+                  {t('op.plan.gimbals', {
+                    v: orbitPlan.perLevel.map((l) => `${l.gimbalPitch}°`).join(' / '),
+                  })}
+                </p>
+              )
             )}
           </div>
         )}
@@ -207,13 +258,15 @@ export default function OrbitPanel({
           </button>
           <button
             onClick={onExportPerLevel}
-            disabled={!stats || stats.levelCount < 2}
+            disabled={!stats || stats.levelCount < 2 || video}
             className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('op.exportPerLevel')}
           </button>
         </div>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{t('op.exportHint')}</p>
+        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+          {t(video ? 'op.exportHintVideo' : 'op.exportHint')}
+        </p>
       </Section>
     </div>
   )

@@ -91,7 +91,8 @@
         "horizontalOverlapPct": { "$ref": "#/$defs/pct" },
         "poiHeightM": { "type": "number" },
         "clockwise": { "type": "boolean" },
-        "speedMS": { "type": "number", "exclusiveMinimum": 0 }
+        "speedMS": { "type": "number", "exclusiveMinimum": 0 },
+        "capture": { "type": "string", "enum": ["photo", "video"] }
       }
     },
     "params": {

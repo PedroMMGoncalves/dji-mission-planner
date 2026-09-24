@@ -6,6 +6,21 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Adicionado (órbita em vídeo)
+
+- **A órbita passa a ter um parâmetro de captura: Fotografia ou Vídeo.**
+  Em Fotografia nada muda: anéis a altura constante, uma foto em cada
+  waypoint, altura, gimbal e sobreposição iguais em todo o nível, para
+  fotogrametria. Em Vídeo a geometria é uma espiral contínua com a mesma
+  planta (raio, pontos por volta, rumo ao POI) que sobe um passo por volta
+  do primeiro ao último nível, com o gimbal a reapontar ao centro em cada
+  ponto; grava do primeiro ao último ponto (`startRecord`/`stopRecord`) e
+  não tira fotografias, porque a câmara não fotografa enquanto grava. A
+  exportação por nível fica desactivada em vídeo (a gravação é uma só) e o
+  KMZ leva a variante no nome (`_orbit-video_nN`). Guardado no projecto
+  (`orbitConfig.capture`, esquema actualizado; projectos antigos caem em
+  Fotografia). Métodos: METODOS §8.
+
 ### Corrigido (exportação)
 
 - **O comando passa a saber o comprimento e a duração da rota.** No primeiro

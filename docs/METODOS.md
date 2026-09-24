@@ -377,16 +377,34 @@ ao centro do alvo, `√(R² + Δh²)`, é maior). Não modelado: colisão com a
 estrutura, sobreposição vertical entre níveis (passo dado pelo operador),
 oclusões.
 
-Captura: só fotografia, `gimbalRotate` + `takePhoto` em cada waypoint,
-como nos outros modos. Vídeo não é suportado, por decisão (Setembro de
-2026): a câmara não fotografa enquanto grava, pelo que «vídeo + foto» só
-seria possível anel a anel (`startRecord`/`stopRecord` nuns anéis,
-`takePhoto` noutros), com os dois produtos a alturas diferentes; a
-gravação de vídeo fica para outro sistema. Os anéis a altura constante
-são deliberados: dão controlo granular por nível (altura, pitch e
-sobreposição iguais em todas as fotografias do anel), o que serve a
-fotogrametria. Uma espiral contínua, em que a altura sobe a cada ponto,
-fica anotada como candidata para um futuro modo de vídeo.
+Captura, parâmetro `capture` da configuração da órbita:
+
+- **`photo` (anéis, por omissão)**: o descrito acima. `gimbalRotate` +
+  `takePhoto` em cada waypoint; altura, pitch e sobreposição iguais em
+  todas as fotografias de um nível, o que dá controlo granular para
+  fotogrametria.
+- **`video` (espiral)**: a mesma geometria horizontal (raio, pontos por
+  volta, rumo ao POI), mas a altura sobe a cada ponto: o ponto `j` está a
+  `h₀ + (j / nPts) · passo`, uma volta por passo, do primeiro ao último
+  nível (`L` níveis = `L − 1` voltas; um nível = uma volta a altura
+  constante), e o último ponto fecha no rumo inicial à altura do último
+  nível. O gimbal reaponta ao centro do alvo em cada ponto
+  (`pitch(h)`, a descer com a altura). Acções: `startRecord` no primeiro
+  ponto (depois do `gimbalRotate`, no mesmo grupo em sequência),
+  `stopRecord` no último, nada nos intermédios; nenhum `takePhoto`,
+  porque a câmara não fotografa enquanto grava. `photoCount` é 0, não há
+  transição entre anéis, e a exportação por nível fica desactivada: a
+  gravação é uma só e fatiá-la deixava os KMZ intermédios sem
+  `startRecord`/`stopRecord`. O nome do KMZ leva a variante
+  (`_orbit-video_nN`). Parâmetros das acções conforme
+  `common-element.md`: `startRecord` com `payloadPositionIndex` e
+  `useGlobalPayloadLensIndex` 0, `stopRecord` só com
+  `payloadPositionIndex`; `fileSuffix` e `payloadLensIndex` omitidos,
+  como no `takePhoto`.
+
+«Vídeo + fotografia» no mesmo anel não é possível pela razão acima; a
+alternativa anel a anel (uns a gravar, outros a fotografar) foi posta de
+parte por deixar os dois produtos a alturas diferentes.
 
 ## 9. Corredor
 

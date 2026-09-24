@@ -823,14 +823,22 @@ ${triggerXml}
             </wpml:actionActuatorFuncParam>
           </wpml:action>`)
     }
+    // Accoes de camara conhecidas (common-element.md): takePhoto e o par
+    // startRecord/stopRecord da orbita em video. stopRecord so leva a
+    // posicao do payload; as outras levam tambem useGlobalPayloadLensIndex.
+    // Accoes desconhecidas ignoram-se, como antes.
     for (const act of pw.actions ?? []) {
-      if (act !== 'takePhoto') continue
+      if (act !== 'takePhoto' && act !== 'startRecord' && act !== 'stopRecord') continue
+      const lens =
+        act === 'stopRecord'
+          ? ''
+          : `
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>`
       actions.push(`          <wpml:action>
             <wpml:actionId>${actions.length}</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFunc>${act}</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+              <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>${lens}
             </wpml:actionActuatorFuncParam>
           </wpml:action>`)
     }
