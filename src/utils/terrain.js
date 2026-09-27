@@ -29,6 +29,8 @@ const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{
 const DEFAULT_TILE_SIZE = 256 // lado dos tiles Terrarium, em píxeis
 const MAX_CONCURRENT_FETCHES = 8 // pedidos HTTP simultâneos
 const MAX_TILES = 600 // trava de segurança contra bboxes/zooms absurdos
+/** Um tile que não chega neste tempo conta como falhado (uma ligação presa não prende o relevo). */
+export const TILE_TIMEOUT_MS = 20000
 const MAX_FAIL_RATIO = 0.2 // acima de 20% de tiles em falha, desiste
 const MIN_SAFE_REL_M = 20 // altura relativa mínima confortável (aviso)
 const MAX_PROFILE_POINTS = 20000 // trava contra `stepM` minúsculos
@@ -254,12 +256,17 @@ async function runPool(items, limit, worker) {
  * tiles, considera-se que o modelo não é utilizável e lança-se um erro.
  *
  * @param {[number, number, number, number]} bbox [minLon, minLat, maxLon, maxLat]
- * @param {{ zoom?: number, fetchImpl?: typeof fetch, urlTemplate?: string, cacheStorage?: any }} [opts]
- * @returns {Promise<{zoom: number, bbox: number[], tileCount: number, tileSize: number,
+ * @param {{ zoom?: number, fetchImpl?: typeof fetch, urlTemplate?: string, cacheStorage?: any, tileTimeoutMs?: number }} [opts]
+ * @returns {Promise<{zoom: number, bbox: number[], requestedBbox: number[], tileCount: number, tileSize: number,
  *   failedCount: number, cachedCount: number, cacheEnabled: boolean, verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}>}
  */
 export async function loadTerrain(bbox, opts = {}) {
-  const { zoom = 12, fetchImpl = fetch, urlTemplate = TERRARIUM_URL } = opts
+  const {
+    zoom = 12,
+    fetchImpl = fetch,
+    urlTemplate = TERRARIUM_URL,
+    tileTimeoutMs = TILE_TIMEOUT_MS,
+  } = opts
   if (!Array.isArray(bbox) || bbox.length < 4 || !bbox.every((v) => Number.isFinite(v))) {
     throw new Error('bbox inválida para o modelo de terreno')
   }
@@ -313,12 +320,20 @@ export async function loadTerrain(bbox, opts = {}) {
       .replace('{z}', String(z))
       .replace('{x}', String(x))
       .replace('{y}', String(y))
+    let timer
     try {
-      const px = await fetchTilePixels(url, fetchTile)
+      const px = await Promise.race([
+        fetchTilePixels(url, fetchTile),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('tile timeout')), tileTimeoutMs)
+        }),
+      ])
       tiles.set(`${x}/${y}`, px)
       if (px.width > 0) tileSize = px.width
     } catch {
-      failed++ // tile isolado em falta: a zona fica sem dados
+      failed++ // tile isolado em falta (ou preso): a zona fica sem dados
+    } finally {
+      clearTimeout(timer)
     }
   })
 
@@ -370,9 +385,15 @@ export async function loadTerrain(bbox, opts = {}) {
     return wsum > 0 ? acc / wsum : null
   }
 
+  // A caixa devolvida é a dos tiles descarregados (com o tile de margem),
+  // e não a pedida: é onde há dados, e deixa as rotas que saem do contorno
+  // (círculos, margem da área) cobertas sem nova descarga
+  const tileLon = (x) => (x / n) * 360 - 180
+  const tileLat = (y) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))) * 180) / Math.PI
   return {
     zoom: z,
-    bbox: [minLon, minLat, maxLon, maxLat],
+    bbox: [tileLon(x0), tileLat(y1 + 1), tileLon(x1 + 1), tileLat(y0)],
+    requestedBbox: [minLon, minLat, maxLon, maxLat],
     tileCount: tiles.size,
     tileSize,
     failedCount: failed,

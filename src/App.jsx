@@ -473,6 +473,12 @@ function AppInner({ lang, setLang }) {
   })
 
   /* ------------------------------ Terreno ----------------------------- */
+  // Caixa da rota exportada do separador aberto, calculada mais abaixo (a
+  // rota vem depois do relevo) e trazida para aqui no render seguinte;
+  // arredondada a ~10 m para não mudar com as alturas do terreno
+  const [routeBox, setRouteBox] = useState(
+    /** @type {{mode: string|null, box: number[]|null}} */ ({ mode: null, box: null }),
+  )
   // Todas as geometrias do projecto juntas (um só MDT para todas), ou a do
   // separador aberto quando ficam a mais de 20 km. Chave estável: uma caixa
   // nova a cada render reiniciava a espera da descarga automática.
@@ -486,15 +492,22 @@ function AppInner({ lang, setLang }) {
       ...(inspectPoints ?? []).map((p) => p.point),
     ]
     const areaBox = bboxOfPoints(areaPts)
-    const b = terrainTargetBbox({
+    let b = terrainTargetBbox({
       areaBbox: areaBox,
       corridorBbox,
       faceBbox: ok(facePlan),
       orbitBbox: ok(orbitPlan),
       missionMode,
     })
+    // e a rota do separador aberto, que sai da geometria (círculos que
+    // passam o contorno, margem da área): é ela que tem de ficar coberta
+    if (b && routeBox.mode === missionMode && routeBox.box) {
+      const r = routeBox.box
+      b = [Math.min(b[0], r[0]), Math.min(b[1], r[1]), Math.max(b[2], r[2]), Math.max(b[3], r[3])]
+    }
     return b ? b.map((v) => v.toFixed(6)).join(',') : ''
   }, [
+    routeBox,
     ring,
     validation.valid,
     gridCells,
@@ -822,6 +835,18 @@ function AppInner({ lang, setLang }) {
   // O relevo cobre a rota que sairia no KMZ do separador aberto? Sem isto
   // não há exportação: as alturas são relativas à descolagem e só o relevo
   // diz a que altura do chão se voa (o preflight diz o que falta).
+  const view3dBoxKey = useMemo(() => {
+    const b = bboxOfPoints(view3d?.waypoints)
+    return b ? b.map((v) => v.toFixed(4)).join(',') : ''
+  }, [view3d])
+  useEffect(() => {
+    const box = view3dBoxKey ? view3dBoxKey.split(',').map(Number) : null
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRouteBox((r) =>
+      r.mode === missionMode && String(r.box) === String(box) ? r : { mode: missionMode, box },
+    )
+  }, [view3dBoxKey, missionMode])
+
   const terrainRoute = useMemo(() => {
     const box = bboxOfPoints(view3d?.waypoints)
     const covered =
@@ -831,6 +856,7 @@ function AppInner({ lang, setLang }) {
       status: terrain.status,
       source: terrain.data?.source ?? null,
       error: terrain.error ?? null,
+      fromFile: Boolean(terrain.fromFile),
     }
   }, [view3d, terrain])
 
@@ -1052,7 +1078,12 @@ function AppInner({ lang, setLang }) {
   // sem relevo sobre a rota, o próprio item do preflight descarrega o global
   const terrainActions = useMemo(() => {
     const a = { label: t('cp.terrain.downloadGlobal'), onClick: handleLoadTerrain }
-    return { 'terrain-missing': a, 'terrain-download-error': a, 'terrain-file-outside': a }
+    return {
+      'terrain-missing': a,
+      'terrain-download-error': a,
+      'terrain-file-outside': a,
+      'terrain-file-error': a,
+    }
   }, [t, handleLoadTerrain])
 
   // Exportação da missão do SEPARADOR ABERTO, sempre atrás do preflight dela:

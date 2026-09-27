@@ -71,13 +71,34 @@ export async function makeFixtures(dir) {
       return ground(x, y)
     },
   })
+  // MDT largo (~13 km x 10 km, ~45 m): cobre muito mais do que o recorte
+  // da área, para o recorte voltar a sair do mesmo ficheiro quando a
+  // geometria cresce
+  const bigX = -9.21
+  const bigY = 38.77
+  const bigScale = 0.0005
+  const big = makeFloatTiff({
+    width: 300,
+    height: 180,
+    originX: bigX,
+    originY: bigY,
+    scale: bigScale,
+    nodata: -9999,
+    geoKeys: { GTModelTypeGeoKey: 2, GeographicTypeGeoKey: 4326 },
+    valueAt: (px, py) => {
+      const [x, y] = toM(bigX + (px + 0.5) * bigScale, bigY - (py + 0.5) * bigScale)
+      return ground(x, y)
+    },
+  })
   const paths = {
+    demBig: join(dir, 'grande.tif'),
     dem: join(dir, 'dem.tif'),
     rect: join(dir, 'rect.geojson'),
     u: join(dir, 'u.geojson'),
     multi: join(dir, 'multi.geojson'),
   }
   writeFileSync(paths.dem, Buffer.from(await tif.arrayBuffer()))
+  writeFileSync(paths.demBig, Buffer.from(await big.arrayBuffer()))
   writeFileSync(paths.rect, feature([rectRing]))
   writeFileSync(paths.u, feature([uRing]))
   writeFileSync(

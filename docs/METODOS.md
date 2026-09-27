@@ -244,15 +244,26 @@ verificar. Por isso:
   a cubra, sem espera; editar uma geometria já com relevo para lá dele
   espera 0,8 s, para não descarregar a cada vértice arrastado;
 - a caixa a cobrir junta todas as geometrias do projecto (a área com as
-  células das partes importadas, o corredor, a fachada e a órbita) quando
-  o maior lado não passa de 20 km, para um só MDT servir todas; acima
-  disso, a do separador aberto (`terrainTargetBbox`);
+  células das partes importadas e os pontos de inspecção, o corredor, a
+  fachada e a órbita) quando o maior lado não passa de 20 km, para um só
+  MDT servir todas; acima disso, a do separador aberto
+  (`terrainTargetBbox`). Junta-se ainda a caixa da rota do separador
+  aberto, que pode sair da geometria (círculos que passam o contorno,
+  margem da área);
+- o relevo global declara como coberta a extensão dos tiles descarregados
+  (com o tile de margem, ~7 km a zoom 12), e não só a caixa pedida; um
+  tile que não chega em 20 s conta como falhado, para uma ligação presa
+  não deixar o relevo em «a descarregar» para sempre;
 - uma descarga falhada volta a tentar sozinha aos 3, 10 e 30 s, e outra
   vez quando a ligação volta; só conta a descarga mais recente;
-- um MDT importado nunca é substituído enquanto tocar na caixa (a DGT ou
-  o último levantamento valem mais do que os ~30 m globais); um MDT de
-  outro sítio, que não lhe toca, dá lugar ao relevo global. A falha a ler
-  um ficheiro fica à vista, sem ser tapada pela descarga global;
+- um MDT importado nunca é trocado pelo global sem o operador o pedir (a
+  DGT ou o último levantamento valem mais do que os ~30 m globais). A
+  aplicação guarda o ficheiro e a sua extensão completa: quando a caixa
+  cresce (um corredor, a margem, outro separador), o relevo volta a ser
+  recortado do mesmo ficheiro; só se ele acabar antes da rota o preflight
+  bloqueia. Um MDT que não toca na caixa (de outro sítio) dá lugar ao
+  global para essa caixa, e volta quando se regressa à geometria que ele
+  cobre. A falha a ler um ficheiro fica à vista, com mensagem própria;
 - o preflight bloqueia a exportação, em todos os modos, enquanto o relevo
   carregado não cobrir a caixa da rota exportada, e diz porquê: a
   descarregar, descarga falhada (com a mensagem), MDT importado que não

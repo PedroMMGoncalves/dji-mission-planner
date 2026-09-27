@@ -43,8 +43,12 @@ export default {
     en: 'No terrain under the route: the download failed ({msg}). It retries on its own; you can also retry now or import a DTM.',
   },
   'preflight.terrain-file-outside': {
-    pt: 'O MDT importado não cobre toda a rota. Importe um MDT que a cubra, ou use o relevo global (~30 m).',
-    en: 'The imported DTM does not cover the whole route. Import a DTM that covers it, or use the global terrain (~30 m).',
+    pt: 'O MDT importado não chega a toda a rota (o ficheiro acaba antes dela). Importe um MDT que a cubra, ou use o relevo global (~30 m).',
+    en: 'The imported DTM does not reach the whole route (the file ends before it). Import a DTM that covers it, or use the global terrain (~30 m).',
+  },
+  'preflight.terrain-file-error': {
+    pt: 'Não há relevo sobre a rota: a leitura do MDT importado falhou ({msg}). Importe outro ficheiro ou use o relevo global (~30 m).',
+    en: 'No terrain under the route: reading the imported DTM failed ({msg}). Import another file or use the global terrain (~30 m).',
   },
   'preflight.terrain-missing': {
     pt: 'Não há relevo sobre a rota: sem ele não se sabe a que altura do chão se voa.',

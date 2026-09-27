@@ -163,7 +163,7 @@ export function projectBox(box, project, steps = EDGE_SAMPLES) {
  *   metros, acrescentada à área antes de recortar (dá folga ao buffer do plano
  *   e ao ponto de descolagem).
  * @returns {Promise<{source: string, label: string, crsCode: string,
- *   bbox: number[], resolutionM: number, nativeResolutionM: number,
+ *   bbox: number[], fileBbox: number[], resolutionM: number, nativeResolutionM: number,
  *   width: number, height: number,
  *   verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}>}
  */
@@ -421,11 +421,24 @@ export async function loadDemFromFile(
     return wsum > 0 ? acc / wsum : null
   }
 
+  // extensão completa do ficheiro (não só do recorte), em WGS84: diz se o
+  // mesmo ficheiro serve uma geometria nova sem o voltar a pedir ao operador
+  const fileBbox = projectBox(
+    [
+      Math.min(extent[0], extent[2]),
+      Math.min(extent[1], extent[3]),
+      Math.max(extent[0], extent[2]),
+      Math.max(extent[1], extent[3]),
+    ],
+    toWgs84,
+  )
+
   return {
     source: 'file',
     label: /** @type {File} */ (file).name || 'MDT',
     crsCode,
     bbox,
+    fileBbox,
     resolutionM,
     nativeResolutionM,
     width: gridW,

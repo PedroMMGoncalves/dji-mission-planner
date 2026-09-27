@@ -35,12 +35,19 @@ function terrainCoversBox(terrain, box) {
  * Não há missão sem relevo: as alturas são relativas à descolagem e só o
  * relevo diz a que altura do chão se voa. Cada geometria fechada (área
  * desenhada ou importada, eixo, fachada, órbita) descarrega logo o relevo
- * global que a cubra; uma falha volta a tentar sozinha, e o preflight
- * bloqueia a exportação enquanto o relevo não cobrir a rota.
+ * global que a cubra (ou recorta de novo o MDT importado, se o houver);
+ * uma falha volta a tentar sozinha, e o preflight bloqueia a exportação
+ * enquanto o relevo não cobrir a rota.
  */
 export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = null }) {
   const ringBbox = targetBbox ?? areaBbox
-  const [terrain, setTerrain] = useState({ status: 'idle', data: null, error: null })
+  const [terrain, setTerrain] = useState(
+    /** @type {{status: string, data: any, error: string|null, fromFile?: boolean}} */ ({
+      status: 'idle',
+      data: null,
+      error: null,
+    }),
+  )
   const [terrainFollow, setTerrainFollow] = useState(() => ({ ...DEFAULT_TERRAIN_FOLLOW }))
 
   // Só o pedido mais recente conta: uma descarga lenta de uma caixa antiga
@@ -48,8 +55,12 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
   const requestRef = useRef(0)
   // caixa e número de descargas automáticas já tentadas para ela
   const autoRef = useRef({ key: null, attempts: 0 })
+  // MDT importado: o ficheiro e a sua extensão completa. Enquanto tocar na
+  // caixa a cobrir, o relevo vem dele (recortado de novo quando a caixa
+  // cresce ou se volta a um separador que ele cobre), nunca do global.
+  const fileRef = useRef(/** @type {{file: any, extent: number[]|null}|null} */ (null))
 
-  const handleLoadTerrain = useCallback(async () => {
+  const downloadGlobal = useCallback(async () => {
     if (!ringBbox) return
     const req = ++requestRef.current
     setTerrain({ status: 'loading', data: null, error: null })
@@ -79,8 +90,14 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
     }
   }, [ringBbox])
 
-  // Importar um MDT GeoTIFF local (ex.: LiDAR DGT 50 cm/2 m) como fonte
-  const handleImportDem = useCallback(
+  // O botão «Descarregar relevo global» é uma escolha do operador: larga o
+  // MDT importado (a descarga automática nunca o faz)
+  const handleLoadTerrain = useCallback(() => {
+    fileRef.current = null
+    return downloadGlobal()
+  }, [downloadGlobal])
+
+  const cropFromFile = useCallback(
     async (file) => {
       if (!file || !ringBbox) return
       const req = ++requestRef.current
@@ -88,16 +105,33 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
       try {
         const data = await loadDemFromFile(file, ringBbox)
         if (req !== requestRef.current) return
+        fileRef.current = { file, extent: data.fileBbox ?? null }
         setTerrain({ status: 'ready', data, error: null })
       } catch (err) {
         if (req !== requestRef.current) return
         // o erro do ficheiro fica à vista: nada de o tapar logo com o relevo
         // global (o botão manual carrega-o; mudar a geometria também)
+        fileRef.current = null
         autoRef.current = { key: boxKey(ringBbox), attempts: Infinity }
-        setTerrain({ status: 'error', data: null, error: err?.message ?? 'Falha ao ler o MDT' })
+        setTerrain({
+          status: 'error',
+          data: null,
+          error: err?.message ?? 'Falha ao ler o MDT',
+          fromFile: true,
+        })
       }
     },
     [ringBbox],
+  )
+
+  // Importar um MDT GeoTIFF local (ex.: LiDAR DGT 50 cm/2 m) como fonte
+  const handleImportDem = useCallback(
+    (file) => {
+      if (!file) return
+      fileRef.current = { file, extent: null }
+      return cropFromFile(file)
+    },
+    [cropFromFile],
   )
 
   // A área está coberta pelo relevo carregado? Mede-se contra a caixa DA
@@ -107,23 +141,24 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
   // e a caixa a carregar (área e corredor juntos), para a descarga automática
   const targetCovers = useMemo(() => terrainCoversBox(terrain, ringBbox), [terrain, ringBbox])
 
-  // Descarga automática do relevo global sempre que a caixa a cobrir não
-  // está coberta:
-  // - geometria nova (nada do relevo carregado lhe toca): já, sem espera;
-  // - geometria editada para lá do relevo: com uma espera curta, para não
-  //   descarregar a cada vértice arrastado;
-  // - falha (ou descarga que não cobre a caixa): volta a tentar sozinha
+  // Relevo automático sempre que a caixa a cobrir não está coberta:
+  // - MDT importado que toca na caixa: recorta-se de novo do mesmo ficheiro
+  //   (uma vez por caixa; se o ficheiro não chegar, o preflight diz porquê).
+  //   A DGT ou o último levantamento valem mais do que os ~30 m globais, e
+  //   só o operador troca o ficheiro pelo global;
+  // - senão, relevo global: já, numa geometria nova (nada do relevo
+  //   carregado lhe toca); com uma espera curta numa geometria editada para
+  //   lá dele (não descarregar a cada vértice arrastado);
+  // - falha (ou resultado que não cobre a caixa): volta a tentar sozinha
   //   (3 s, 10 s, 30 s) e outra vez quando a ligação volta; o botão manual
-  //   continua lá;
-  // - MDT local importado: nunca é substituído enquanto tocar na caixa (a
-  //   DGT ou o último levantamento valem mais do que os ~25 m globais; se
-  //   não cobrir tudo, o preflight diz porquê). Um MDT de outro sítio, que
-  //   não toca na geometria, dá lugar ao relevo global.
+  //   continua lá.
   const [onlineTick, setOnlineTick] = useState(0)
   useEffect(() => {
     if (typeof window === 'undefined') return
     const onOnline = () => {
-      autoRef.current = { ...autoRef.current, attempts: 0 }
+      // a falha a ler um ficheiro não é de rede: fica à vista
+      if (autoRef.current.attempts !== Infinity)
+        autoRef.current = { ...autoRef.current, attempts: 0 }
       setOnlineTick((n) => n + 1)
     }
     window.addEventListener('online', onOnline)
@@ -133,12 +168,23 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
     if (!ringBbox) return
     if (!targetBbox && (!ring || !ringValid)) return
     if (terrain.status === 'loading') return
+    const f = fileRef.current
+    const preferFile = Boolean(f && (!f.extent || bboxIntersects(f.extent, ringBbox)))
+    if (terrain.status === 'ready' && targetCovers) {
+      if (!preferFile || terrain.data?.source === 'file') return
+    }
     const loaded = terrain.status === 'ready' ? terrain.data?.bbox : null
-    if (terrain.data?.source === 'file' && bboxIntersects(loaded, ringBbox)) return
-    if (terrain.status === 'ready' && targetCovers) return
     const key = boxKey(ringBbox)
     const tried = autoRef.current.key === key ? autoRef.current.attempts : 0
     let delay = bboxIntersects(loaded, ringBbox) ? EDIT_DEBOUNCE_MS : 0
+    if (preferFile) {
+      if (tried > 0) return
+      const timer = setTimeout(() => {
+        autoRef.current = { key, attempts: 1 }
+        cropFromFile(f.file)
+      }, delay)
+      return () => clearTimeout(timer)
+    }
     // já se descarregou para esta caixa e não ficou coberta (falha, ou um
     // resultado curto): espera crescente e um limite, nunca um ciclo
     if (tried > 0) {
@@ -147,10 +193,20 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
     }
     const timer = setTimeout(() => {
       autoRef.current = { key, attempts: tried + 1 }
-      handleLoadTerrain()
+      downloadGlobal()
     }, delay)
     return () => clearTimeout(timer)
-  }, [ring, ringValid, ringBbox, targetBbox, terrain, targetCovers, handleLoadTerrain, onlineTick])
+  }, [
+    ring,
+    ringValid,
+    ringBbox,
+    targetBbox,
+    terrain,
+    targetCovers,
+    downloadGlobal,
+    cropFromFile,
+    onlineTick,
+  ])
 
   // Sugestões para encostas íngremes (T4.5): plano médio do terreno na área
   // → linhas ao longo das curvas de nível e gimbal ≈ −(90 − inclinação).

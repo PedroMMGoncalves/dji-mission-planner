@@ -88,7 +88,12 @@ function terrainRouteItems(c) {
   if (!t || t.covered) return []
   if (t.status === 'loading') return [item('block', 'terrain-loading')]
   if (t.status === 'error')
-    return [item('block', 'terrain-download-error', { msg: String(t.error ?? '') })]
+    return [
+      item('block', t.fromFile ? 'terrain-file-error' : 'terrain-download-error', {
+        msg: String(t.error ?? ''),
+      }),
+    ]
+  // o MDT importado já foi recortado de novo para esta caixa e não chega
   if (t.status === 'ready' && t.source === 'file') return [item('block', 'terrain-file-outside')]
   return [item('block', 'terrain-missing')]
 }
@@ -166,7 +171,7 @@ export function usableBatteryMin(batteryMin, reservePct = 30) {
  * @param {{elev: number|null, source: string|null, baseOutside: boolean, reliefM: number|null}|null} [c.reference] cota de referência (referenceElevation)
  * @param {{worst: number, min: number, max: number}|null} [c.gimbal] inclinação pedida fora do intervalo do payload (gimbalRangeViolation)
  * @param {number|null} [c.aglMaxM] maior altura acima do solo da rota (nota da categoria aberta)
- * @param {{covered: boolean, status: string, source: string|null, error: string|null}|null} [c.terrainRoute] o relevo cobre a rota exportada
+ * @param {{covered: boolean, status: string, source: string|null, error: string|null, fromFile?: boolean}|null} [c.terrainRoute] o relevo cobre a rota exportada
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {

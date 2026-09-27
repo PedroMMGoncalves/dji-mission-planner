@@ -34,6 +34,20 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   por preflight nenhum e os pontos não entravam na caixa do relevo: longe
   da área, saíam sem relevo. Agora entram na caixa (com a área) e o botão
   do KMZ fica desactivado, com o motivo, enquanto o relevo não os cobrir.
+- **Revisão desta alteração (três problemas reais, corrigidos):**
+  - o relevo global declarava coberta só a caixa pedida (~1 km de margem),
+    e não a extensão dos tiles descarregados: uma grelha circular sobre um
+    triângulo de 1,8 km, ou uma área de 6 km com 30 % de margem, saem mais
+    do que isso e ficavam bloqueadas para sempre. Passa a declarar a
+    extensão dos tiles, e a rota do separador aberto entra na caixa;
+  - um MDT importado era recortado uma vez, para a caixa desse momento: um
+    corredor desenhado depois, ou a margem da área, saía do recorte e
+    ficava bloqueado, embora o ficheiro o cobrisse. Agora o recorte volta
+    a sair do mesmo ficheiro, e só o operador o troca pelo global;
+  - uma descarga presa deixava o relevo em «a descarregar» sem saída:
+    cada tile tem agora 20 s.
+  - Menores: a falha a ler um MDT tem mensagem própria e o regresso da
+    ligação já não a tapa com o global.
 - A nota do preflight sobre a categoria aberta mede-se só sobre o relevo,
   e a nota «sem base» deixa de falar em «sem relevo».
 

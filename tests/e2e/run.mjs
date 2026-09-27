@@ -427,7 +427,7 @@ await scenario('multipoligono-aviso', async () => {
   const list = page.getByTestId('preflight-list')
   check(
     'importação: o preflight explica que o MDT importado não cobre a rota',
-    /MDT importado não cobre|imported DTM does not cover/.test(await list.innerText()),
+    /MDT importado não chega|imported DTM does not reach/.test(await list.innerText()),
   )
   await list.getByRole('button', { name: DOWNLOAD_GLOBAL }).click()
   await exportReady(page)
@@ -907,6 +907,46 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
       /0 bloqueios|0 blockers/.test(await page.getByTestId('preflight-pill').innerText()),
   )
   check('preflight: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+await scenario('mdt-importado-acompanha-a-geometria', async () => {
+  // MDT importado recortado para a área; um corredor desenhado depois sai do
+  // recorte mas não do ficheiro: o relevo volta a sair do MESMO ficheiro, e
+  // não do global nem de um bloqueio
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await exportReady(page)
+  await page.locator('input[accept=".tif,.tiff"]').setInputFiles(fx.demBig)
+  await page.waitForFunction(
+    () => /MDT local grande\.tif|local DTM grande\.tif/.test(document.body.innerText),
+    null,
+    { timeout: 20000 },
+  )
+  await modo(page, /^Corredor$|^Corridor$/)
+  await page.locator('.leaflet-control-zoom-out').click()
+  await page.waitForTimeout(600)
+  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await clickMap(page, -480, 0)
+  await clickMap(page, 480, 10)
+  await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
+  // o relevo do fixture sobe centenas de metros à volta: com relevo sobre a
+  // rota, o preflight vê a colisão; sem ele, diria que não há relevo
+  await page.waitForTimeout(3000)
+  await page.getByTestId('preflight-pill').click()
+  const txt = await page.getByTestId('preflight-list').innerText()
+  check(
+    'mdt: corredor fora do recorte inicial tem relevo (o ficheiro recortado de novo)',
+    !/Não há relevo|não chega a toda a rota|No terrain under|does not reach/.test(txt) &&
+      /entra no relevo|enters the terrain/.test(txt),
+    txt.slice(0, 200),
+  )
+  await modo(page, /^Área$|^Area$/)
+  check(
+    'mdt: a fonte continua a ser o ficheiro importado, não o relevo global',
+    /MDT local grande\.tif|local DTM grande\.tif/.test(await bodyText(page)),
+  )
+  check('mdt: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })
