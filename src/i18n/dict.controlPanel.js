@@ -83,6 +83,10 @@ export default {
     en: 'Reorders by nearest neighbour starting at the base (or the 1st point)',
   },
   'cp.inspect.export': { pt: 'Exportar KMZ', en: 'Export KMZ' },
+  'cp.inspect.noTerrain': {
+    pt: 'Sem relevo sobre os pontos: a exportação fica disponível quando o relevo os cobrir (descarrega sozinho; ou importe um MDT).',
+    en: 'No terrain under the points: export becomes available once terrain covers them (it downloads on its own; or import a DTM).',
+  },
   'cp.inspect.hint': {
     pt: 'Missão própria, independente da grelha: rumo e pitch por ponto, uma foto por ponto marcado. As alturas são relativas ao ponto de descolagem.',
     en: 'A mission of its own, independent of the grid: per-point heading and pitch, one photo per marked point. Heights are relative to the takeoff point.',

@@ -30,6 +30,10 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - **MDT importado.** Continua a nunca ser substituído enquanto tocar na
   geometria; um MDT de outro sítio, que não lhe toca, dá lugar ao relevo
   global. A falha a ler um ficheiro fica à vista.
+- **Pontos de inspecção com a mesma regra.** A sua exportação não passava
+  por preflight nenhum e os pontos não entravam na caixa do relevo: longe
+  da área, saíam sem relevo. Agora entram na caixa (com a área) e o botão
+  do KMZ fica desactivado, com o motivo, enquanto o relevo não os cobrir.
 - A nota do preflight sobre a categoria aberta mede-se só sobre o relevo,
   e a nota «sem base» deixa de falar em «sem relevo».
 

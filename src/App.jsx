@@ -478,13 +478,14 @@ function AppInner({ lang, setLang }) {
   // nova a cada render reiniciava a espera da descarga automática.
   const terrainTargetKey = useMemo(() => {
     const ok = (p) => (p && !p.error ? bboxOfPoints(p.waypoints) : null)
-    // a área com as células (partes de um MultiPolygon podem ficar fora do contorno)
-    const areaBox =
-      ring && validation.valid
-        ? Array.isArray(gridCells) && gridCells.length > 0
-          ? bboxOfPoints([...ring, ...gridCells.flat()])
-          : ringBbox
-        : null
+    // a área com as células (partes de um MultiPolygon podem ficar fora do
+    // contorno) e os pontos de inspecção, missão do mesmo separador
+    const areaPts = [
+      ...(ring && validation.valid ? ring : []),
+      ...(ring && validation.valid && Array.isArray(gridCells) ? gridCells.flat() : []),
+      ...(inspectPoints ?? []).map((p) => p.point),
+    ]
+    const areaBox = bboxOfPoints(areaPts)
     const b = terrainTargetBbox({
       areaBbox: areaBox,
       corridorBbox,
@@ -493,7 +494,16 @@ function AppInner({ lang, setLang }) {
       missionMode,
     })
     return b ? b.map((v) => v.toFixed(6)).join(',') : ''
-  }, [ring, validation.valid, ringBbox, gridCells, corridorBbox, facePlan, orbitPlan, missionMode])
+  }, [
+    ring,
+    validation.valid,
+    gridCells,
+    inspectPoints,
+    corridorBbox,
+    facePlan,
+    orbitPlan,
+    missionMode,
+  ])
   const terrainTarget = useMemo(
     () => (terrainTargetKey ? terrainTargetKey.split(',').map(Number) : null),
     [terrainTargetKey],
@@ -512,6 +522,16 @@ function AppInner({ lang, setLang }) {
     ringValid: validation.valid,
     targetBbox: terrainTarget,
   })
+
+  // Pontos de inspecção: missão própria, fora do preflight da área, mas com a
+  // mesma regra, sem relevo sobre os pontos não se exporta
+  const inspectTerrainOk = useMemo(() => {
+    const box = bboxOfPoints((inspectPoints ?? []).map((p) => p.point))
+    return terrain.status === 'ready' && Boolean(box) && bboxCovers(terrain.data?.bbox, box)
+  }, [inspectPoints, terrain])
+  const exportInspection = useCallback(() => {
+    if (inspectTerrainOk) handleExportInspection()
+  }, [inspectTerrainOk, handleExportInspection])
 
   // Fachada: folga só contra DSM LOCAL; com o relevo global fica "standoff
   // não verificado"
@@ -1556,7 +1576,8 @@ function AppInner({ lang, setLang }) {
                 onInspectMove={moveInspectPoint}
                 onInspectReorder={reorderInspectPoints}
                 onInspectSuggestOrder={suggestInspectOrder}
-                onExportInspection={handleExportInspection}
+                onExportInspection={exportInspection}
+                inspectTerrainOk={inspectTerrainOk}
                 onUndoVertex={removeLastDraftVertex}
                 onStartDraw={startDraw}
                 onStartAnchor={startAnchor}

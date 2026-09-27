@@ -137,6 +137,7 @@ export default function ControlPanel({
   onInspectReorder,
   onInspectSuggestOrder,
   onExportInspection,
+  inspectTerrainOk = true,
   onUndoVertex,
   onStartDraw,
   onStartAnchor,
@@ -1569,11 +1570,17 @@ export default function ControlPanel({
               </button>
               <button
                 onClick={onExportInspection}
-                className="flex items-center justify-center gap-1.5 rounded bg-sky-600 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-sky-500"
+                disabled={!inspectTerrainOk}
+                className="flex items-center justify-center gap-1.5 rounded bg-sky-600 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <IconDownload /> {t('cp.inspect.export')}
               </button>
             </div>
+            {!inspectTerrainOk && (
+              <p className="text-[11px] leading-relaxed text-amber-300">
+                {t('cp.inspect.noTerrain')}
+              </p>
+            )}
             <p className="text-[11px] leading-relaxed text-slate-500">{t('cp.inspect.hint')}</p>
           </div>
         )}

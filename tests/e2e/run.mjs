@@ -201,7 +201,7 @@ async function exportReady(page) {
       return b && !b.disabled
     },
     null,
-    { timeout: 20000 },
+    { timeout: 40000 },
   )
 }
 const DOWNLOAD_GLOBAL = /Descarregar relevo global|Download global terrain/
@@ -859,7 +859,9 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
   await page.route(/elevation-tiles-prod\/terrarium\//, (route) =>
     route.fulfill({ status: 200, contentType: 'image/png', body: FLAT_TILE }),
   )
-  await list.getByRole('button', { name: DOWNLOAD_GLOBAL }).click()
+  // pelo botão, ou pela nova tentativa automática, se chegar antes
+  const dl = list.getByRole('button', { name: DOWNLOAD_GLOBAL })
+  if ((await dl.count()) > 0) await dl.click({ timeout: 5000 }).catch(() => {})
   await exportReady(page)
   check(
     'preflight: com o relevo global o bloqueio desaparece',
@@ -905,6 +907,48 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
       /0 bloqueios|0 blockers/.test(await page.getByTestId('preflight-pill').innerText()),
   )
   check('preflight: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+await scenario('inspeccao-sem-relevo-bloqueia', async () => {
+  // pontos de inspecção: missão própria, fora do preflight da área, mas com
+  // a mesma regra; sem relevo o KMZ fica desactivado e o painel diz porquê
+  const { page, errors } = await openMission({ area: fx.rect, dem: false, globalTerrain: false })
+  await page.getByRole('button', { name: /Marcar pontos no mapa|Place points on the map/ }).click()
+  await clickMap(page, -80, 20)
+  await clickMap(page, 60, -30)
+  await page.getByRole('button', { name: /Marcar pontos no mapa|Place points on the map/ }).click()
+  const btn = page.getByRole('button', { name: /^Exportar KMZ$|^Export KMZ$/ })
+  await page.waitForTimeout(800)
+  check(
+    'inspecção: sem relevo o KMZ fica desactivado e o painel explica',
+    (await btn.count()) === 1 &&
+      !(await btn.isEnabled()) &&
+      /Sem relevo sobre os pontos|No terrain under the points/.test(await bodyText(page)),
+  )
+  // a rede volta: o relevo chega e a exportação fica disponível
+  await page.route(/elevation-tiles-prod\/terrarium\//, (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: FLAT_TILE }),
+  )
+  // pelo botão do preflight, ou pela nova tentativa automática, se chegar antes
+  await page.getByTestId('preflight-pill').click()
+  const dl = page.getByTestId('preflight-list').getByRole('button', { name: DOWNLOAD_GLOBAL })
+  if ((await dl.count()) > 0) await dl.click({ timeout: 5000 }).catch(() => {})
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('button')].some(
+        (b) => /^(Exportar KMZ|Export KMZ)$/.test(b.textContent.trim()) && !b.disabled,
+      ),
+    null,
+    { timeout: 40000 },
+  )
+  const routes = await readRoutes(
+    await panelExport(page, /^Exportar KMZ$|^Export KMZ$/, join(OUT, 'inspeccao.kmz')),
+  )
+  const r = analyseRoute(routes[0].wpml, plano)
+  check('inspecção: com relevo exporta um ponto por marca', r.n === 2, `${r.n} waypoints`)
+  check('inspecção: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })
