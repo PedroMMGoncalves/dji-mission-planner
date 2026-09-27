@@ -147,6 +147,7 @@ export function usableBatteryMin(batteryMin, reservePct = 30) {
  * @param {{minM: number}|null} [c.clearance] pior folga ao solo da rota exportável (routeClearance)
  * @param {{elev: number|null, source: string|null, baseOutside: boolean, reliefM: number|null}|null} [c.reference] cota de referência (referenceElevation)
  * @param {{worst: number, min: number, max: number}|null} [c.gimbal] inclinação pedida fora do intervalo do payload (gimbalRangeViolation)
+ * @param {number|null} [c.aglMaxM] maior altura acima do solo da rota (nota da categoria aberta)
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
@@ -239,6 +240,7 @@ export function preflightArea(c) {
 
   out.push(...groundItems(c, usable))
   out.push(...noBaseItems(c))
+  out.push(...openCategoryItems(c))
   out.push(item('info', 'heights-relative'))
   return out
 }
@@ -291,8 +293,24 @@ export function preflightPlan(c) {
   // os modos com cota de referência própria (corredor, circular) dizem o que
   // se assume sem base, como a área
   if ('reference' in c) out.push(...noBaseItems(c))
+  out.push(...openCategoryItems(c))
   out.push(item('info', 'heights-relative'))
   return out
+}
+
+/** Máximo acima do solo na categoria aberta (Reg. (UE) 2019/947, UAS.OPEN.010). */
+export const OPEN_CATEGORY_MAX_AGL_M = 120
+
+/**
+ * Nota, e só nota, quando a rota passa os 120 m acima do solo: a altura é
+ * decisão operacional (categoria específica, autorização), a aplicação não
+ * corta nem bloqueia. `c.aglMaxM` é a maior altura acima do solo da rota
+ * exportada (sobre o relevo, ou a planeada sem relevo).
+ */
+function openCategoryItems(c) {
+  const m = c.aglMaxM
+  if (!Number.isFinite(m) || m <= OPEN_CATEGORY_MAX_AGL_M) return []
+  return [item('info', 'open-category-agl', { max: Math.round(m), cap: OPEN_CATEGORY_MAX_AGL_M })]
 }
 
 /** Um bloqueio impede a exportação. */

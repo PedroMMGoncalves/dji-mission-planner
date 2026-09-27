@@ -36,8 +36,9 @@ const em = (x, y) => [Number((lon0 + x / mLon).toFixed(7)), Number((lat0 + y / 1
  *  - rampa de 0,08 m/m para Este: subida suave em todo o lado;
  *  - cordilheira Norte-Sul estreita a 300 m do canto: os flancos sobem
  *    perto de 1 m/m, logo o corredor lateral de 30 m apanha ali cerca de
- *    29 m que o eixo da faixa nao ve, o suficiente para o tecto de 120 m
- *    travar a subida com os 100 m de AGL da R2;
+ *    29 m que o eixo da faixa nao ve, o suficiente para a rota da R2
+ *    passar os 120 m acima do solo com os 100 m de AGL pedidos (sem tecto:
+ *    a altura e decisao do operador, a folga pedida mantem-se);
  *  - ondulacao Norte-Sul de 12 m: variacao ao longo da propria faixa, que
  *    o eixo ja via antes.
  *

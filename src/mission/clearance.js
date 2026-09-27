@@ -11,13 +11,6 @@
 import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
 
 /**
- * @param {number[][]} waypoints [lon, lat, alturaRelativa]
- * @param {{elevationAt: (lon: number, lat: number) => number|null, refElev: number,
- *   stepM?: number, maxSamples?: number}} opts
- * @returns {{minM: number, at: {lon: number, lat: number, index: number}, samples: number}|null}
- *   null quando não há relevo em nenhum ponto amostrado
- */
-/**
  * Percorre a rota a passos de `stepM` (limitado a `maxSamples` no total) e
  * chama `cb(lon, lat, index, t)` em cada ponto: `index` é o waypoint de
  * chegada do segmento e `t` a fracção percorrida nele. Partilhado pela
@@ -63,6 +56,14 @@ export function terrainRangeAlong(waypoints, { elevationAt, stepM = 40, maxSampl
   return samples > 0 ? { minM, maxM, samples } : null
 }
 
+/**
+ * Folga ao solo da rota: a menor (e onde) e a maior altura acima do solo.
+ * @param {number[][]} waypoints [lon, lat, alturaRelativa]
+ * @param {{elevationAt: (lon: number, lat: number) => number|null, refElev: number,
+ *   stepM?: number, maxSamples?: number}} opts
+ * @returns {{minM: number, maxM: number, at: {lon: number, lat: number, index: number},
+ *   samples: number}|null} null quando não há relevo em nenhum ponto amostrado
+ */
 export function routeClearance(
   waypoints,
   { elevationAt, refElev, stepM = 40, maxSamples = 20000 },
@@ -71,6 +72,7 @@ export function routeClearance(
   if (typeof elevationAt !== 'function' || !Number.isFinite(refElev)) return null
   const altOf = (w) => refElev + (Number.isFinite(w[2]) ? w[2] : 0)
   let minM = Infinity
+  let maxM = -Infinity
   let at = null
   let samples = 0
   forEachRouteSample(waypoints, { stepM, maxSamples }, (lon, lat, i, t) => {
@@ -80,10 +82,12 @@ export function routeClearance(
     const za = altOf(waypoints[Math.max(0, i - 1)])
     const zb = altOf(waypoints[i])
     const agl = za + (zb - za) * t - g
+    if (agl > maxM) maxM = agl
     if (agl < minM) {
       minM = agl
       at = { lon, lat, index: i }
     }
   })
-  return at ? { minM, at, samples } : null
+  // maxM: a maior altura acima do solo da rota (nota da categoria aberta)
+  return at ? { minM, maxM, at, samples } : null
 }

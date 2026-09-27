@@ -10,7 +10,9 @@ import {
   preflightPlan,
   usableBatteryMin,
   WPML_MAX_WAYPOINTS,
+  OPEN_CATEGORY_MAX_AGL_M,
 } from '../../src/mission/preflight.js'
+import { routeClearance } from '../../src/mission/clearance.js'
 import { generateFlightPlan } from '../../src/utils/geo.js'
 import preflightDict from '../../src/i18n/dict.preflight.js'
 
@@ -324,5 +326,49 @@ describe('base longe, base sem relevo e folga ao solo', () => {
   test('os outros modos tambem bloqueiam a colisao com o relevo', () => {
     const items = preflightPlan({ plan, batteryMin: 30, reservePct: 30, clearance: { minM: -1 } })
     expect(codes(items)).toContain('terrain-collision')
+  })
+})
+
+describe('nota da categoria aberta (120 m)', () => {
+  const plano = {
+    waypoints: [
+      [0, 0, 100],
+      [0.001, 0, 100],
+    ],
+    stats: { flightTimeS: 60 },
+  }
+  const codigos = (items) => items.map((i) => `${i.level}:${i.code}`)
+
+  test('acima de 120 m acima do solo: so uma nota, nunca aviso nem bloqueio', () => {
+    for (const fn of [
+      preflightPlan,
+      (c) => preflightArea({ ...c, terrainFollow: { enabled: false } }),
+    ]) {
+      const it = fn({ plan: plano, aglMaxM: 300.4 })
+      const nota = it.find((i) => i.code === 'open-category-agl')
+      expect(nota.level).toBe('info')
+      expect(nota.params).toEqual({ max: 300, cap: OPEN_CATEGORY_MAX_AGL_M })
+      expect(codigos(it).filter((c) => c.startsWith('block:'))).toEqual([])
+    }
+  })
+
+  test('a 120 m ou menos, ou sem altura conhecida, nao ha nota', () => {
+    for (const aglMaxM of [30, 80, 120, null, undefined, NaN]) {
+      expect(codigos(preflightPlan({ plan: plano, aglMaxM }))).not.toContain(
+        'info:open-category-agl',
+      )
+    }
+  })
+
+  test('a folga ao solo devolve tambem a maior altura acima do solo', () => {
+    const plano2 = [
+      [-9.14, 38.7, 100],
+      [-9.13, 38.7, 100],
+    ]
+    // relevo a descer 50 m para leste: a rota fica a 150 m do solo no fim
+    const elevationAt = (lon) => 200 - (lon + 9.14) * 5000
+    const r = routeClearance(plano2, { elevationAt, refElev: 200 })
+    expect(r.minM).toBeCloseTo(100, 0)
+    expect(r.maxM).toBeCloseTo(150, 0)
   })
 })

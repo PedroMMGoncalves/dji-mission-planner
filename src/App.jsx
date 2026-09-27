@@ -773,6 +773,15 @@ function AppInner({ lang, setLang }) {
     return routeClearance(view3d.waypoints, { elevationAt, refElev: view3d.refElev })
   }, [terrain, view3d])
 
+  // Maior altura acima do solo da rota exportável: sobre o relevo quando o
+  // há, senão a maior altura planeada. Só para a nota da categoria aberta
+  // (120 m): a altura é decisão do operador e nada é cortado nem bloqueado.
+  const aglMaxM = useMemo(() => {
+    if (Number.isFinite(clearance?.maxM)) return clearance.maxM
+    const hs = (view3d?.waypoints ?? []).map((w) => w[2]).filter(Number.isFinite)
+    return hs.length ? Math.max(...hs) : null
+  }, [clearance, view3d])
+
   // Inclinacao do gimbal pedida fora do que o payload alcanca (a exportacao
   // recorta; aqui avisa-se do valor pedido), no modo activo e nos pontos de
   // inspeccao que tenham pitch proprio
@@ -899,9 +908,10 @@ function AppInner({ lang, setLang }) {
         clearance,
         reference,
         gimbal,
+        aglMaxM,
       })
     }
-    const other = { batteryMin, reservePct: split.reservePct, clearance, route, gimbal }
+    const other = { batteryMin, reservePct: split.reservePct, clearance, route, gimbal, aglMaxM }
     if (missionMode === 'corridor')
       return preflightPlan({
         ...other,
@@ -974,6 +984,7 @@ function AppInner({ lang, setLang }) {
     uncertainty,
     blur,
     route,
+    aglMaxM,
   ])
   const exportBlocked = hasBlockers(preflight)
 

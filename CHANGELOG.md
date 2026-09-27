@@ -6,6 +6,22 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Alterado (sem tecto de altura)
+
+- **A altura de voo é decisão do operador.** O seguimento de terreno
+  cortava por omissão aos 120 m acima do solo a subida que o relevo dos
+  lados da faixa exige. Não impedia voar mais alto, mas a 100 m a
+  protecção lateral ficava limitada a 20 m, e a 120 m ou mais
+  desligava-se por completo: tirava segurança precisamente a quem voa
+  mais alto, com autorização na categoria específica. O corte sai. Quando
+  a rota passa os 120 m acima do solo, o preflight mostra uma nota com a
+  altura máxima e o limite da categoria aberta; não é aviso nem bloqueio.
+  Nas missões de referência a R2 passa a manter os 100 m de folga pedidos
+  (antes 89,6 m, com 48 pontos travados); o instantâneo foi regenerado.
+- A nota «sem base» do preflight dizia que o seguimento de terreno usa o
+  primeiro waypoint como referência; passa a dizer a verdade: a cota
+  mínima do relevo debaixo da rota.
+
 ### Corrigido (revisão confrontada: sete problemas reais, dois menores)
 
 Cada achado de uma revisão ao código foi posto à prova por dois agentes,

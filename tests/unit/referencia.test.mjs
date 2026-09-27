@@ -55,12 +55,14 @@ describe('missoes de referencia: o seguimento de terreno entra no instantaneo', 
     expect(r2.tfClearanceMinM).toBeGreaterThan(0)
   })
 
-  test('o relevo sintetico e exigente ao ponto de o tecto travar a subida', () => {
-    // é o que faz o instantâneo cobrir o caminho do recorte aos 120 m: sem
-    // isto, a metade do código que limita a subida ficava fora da prova
+  test('sem tecto: o relevo ao lado sobe a rota acima dos 120 m e a folga pedida mantem-se', () => {
+    // a altura e decisao do operador: o motor sobe o que o relevo ao lado
+    // exige, mesmo que passe os 120 m da categoria aberta (so ha uma nota
+    // no preflight). A R2 e exigente ao ponto de o provar.
     const r2 = esperadoDe(MISSOES['R2-U-terreno-dupla-grelha'])
-    expect(r2.tfCappedCount).toBeGreaterThan(0)
-    expect(r2.tfClearanceMinM).toBeLessThan(r2.aglM)
+    expect(r2.tfCappedCount).toBe(0)
+    expect(r2.tfClearanceMinM).toBeCloseTo(r2.aglM, 1)
+    expect(r2.aglM + r2.tfCorridorRiseMaxM).toBeGreaterThan(120)
   })
 
   test('as missoes sem seguimento de terreno mantem os campos a null', () => {

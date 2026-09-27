@@ -54,8 +54,8 @@ export default {
     en: 'Follow terrain (each pass over its own ground)',
   },
   'co.terrain.hint': {
-    pt: 'Cada passagem sobe e desce com o relevo debaixo dela e dos 30 m de cada lado, com o tecto de 120 m acima do solo; as dobras ficam e acrescentam-se os pontos que a tolerância exigir. A área e o corredor partilham o relevo carregado: um só MDT da DGT, ou o vosso último levantamento, serve os dois.',
-    en: 'Each pass rises and drops with the terrain beneath it and 30 m to each side, capped at 120 m above ground; bends are kept and the points the tolerance requires are added. Area and corridor share the loaded terrain: one DGT DTM, or your latest survey, serves both.',
+    pt: 'Cada passagem sobe e desce com o relevo debaixo dela e dos 30 m de cada lado, sem tecto (a altura é decisão do operador); as dobras ficam e acrescentam-se os pontos que a tolerância exigir. A área e o corredor partilham o relevo carregado: um só MDT da DGT, ou o vosso último levantamento, serve os dois.',
+    en: 'Each pass rises and drops with the terrain beneath it and 30 m to each side, with no ceiling (the operator decides the height); bends are kept and the points the tolerance requires are added. Area and corridor share the loaded terrain: one DGT DTM, or your latest survey, serves both.',
   },
   'co.terrain.outOfCoverage': {
     pt: 'O corredor sai fora do relevo carregado: volte a descarregar ou importe um MDT que o cubra.',

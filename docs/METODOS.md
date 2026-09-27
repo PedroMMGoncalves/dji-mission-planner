@@ -224,6 +224,17 @@ VLOS, piso 100 m), arredondado para baixo à dezena, mínimo 50 m.
 Módulos `src/utils/terrain.js`, `src/utils/demFile.js`,
 `src/mission/terrainFollow.js`.
 
+Sem tecto de altura. A altura de voo é decisão operacional (30, 80, 120,
+300 m, conforme a categoria e a autorização): o seguimento de terreno sobe
+o que o relevo dos lados da faixa exige e não corta nada. Quando a rota
+passa os 120 m acima do solo, o máximo da categoria aberta (Reg. (UE)
+2019/947, UAS.OPEN.010), o preflight mostra uma nota, que não é aviso nem
+bloqueio. A maior altura acima do solo mede-se sobre o relevo com a mesma
+amostragem da folga ao solo (`routeClearance.maxM`); sem relevo, é a maior
+altura planeada. Até Setembro de 2026 a subida lateral era cortada aos
+120 m por omissão, o que tirava a protecção lateral a quem voava mais alto;
+o corte continua disponível no motor (`aglCapM`) para quem o pedir.
+
 Relevo global: tiles Terrarium (AWS `elevation-tiles-prod`), zoom 12 por
 omissão (~30 m/píxel a latitudes médias), com 1 tile de margem em todas as
 direcções e trava de 600 tiles; falha se mais de 20 % dos tiles não
@@ -444,7 +455,7 @@ waypoint (segue a rota), gimbal −90°. Tempo `L/v + 3 s · (troços − 1)`.
 Seguimento de terreno (`src/mission/corridorTerrain.js`): o motor da área
 (§5) aplicado às passagens. Cada passagem é uma polilinha com dobras;
 cada troço entre vértices consecutivos é perfilado à parte (densificação,
-corredor de ±30 m, tecto de 120 m, Douglas-Peucker com a tolerância), e
+corredor de ±30 m, Douglas-Peucker com a tolerância, sem tecto), e
 os vértices ficam todos, porque dão a forma à passagem. As ligações entre
 passagens são amostradas com as mesmas regras. Cada passagem fica assim
 sobre o seu próprio chão: numa encosta atravessada, as passagens de cima
@@ -722,7 +733,7 @@ foto por waypoint; seguir terreno ligado sem relevo a cobrir a área; erro
 do cálculo do terreno; mais de 65535 waypoints numa rota (a maior, com
 blocos); waypoints consecutivos a menos de 0,5 m em 3D na rota exportada (o mínimo
 que a DJI aceita), em todos os modos — as verificações de rota corriam só
-na área; é o mínimo do SDK da DJI, a especificação WPML não fixa um. Avisos: rota acima de 2000 waypoints; tecto AGL do
+na área; é o mínimo do SDK da DJI, a especificação WPML não fixa um. Nota (não é aviso): rota acima de 120 m do solo, o máximo da categoria aberta. Avisos: rota acima de 2000 waypoints; tecto AGL do
 payload (`altitude + tolerância` com seguimento de terreno); obturador;
 sobreposição no pior caso abaixo de 60/50 % (secção 2); arrastamento
 acima de 1 px a 1/500 s; MDT com alturas elipsoidais; taxa de subida

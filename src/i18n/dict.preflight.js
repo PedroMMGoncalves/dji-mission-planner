@@ -115,8 +115,12 @@ export default {
     en: 'Gimbal pitch of {worst}° requested outside what the payload reaches ({min}° to {max}°): the KMZ is clamped to the limit. Adjust the pitch.',
   },
   'preflight.no-base': {
-    pt: 'Sem ponto de base: o trânsito não conta para a bateria e o seguimento de terreno usa o primeiro waypoint como referência.',
-    en: 'No base point: transit is not counted against the battery and terrain following uses the first waypoint as reference.',
+    pt: 'Sem ponto de base: o trânsito não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota (sem relevo, ao ponto de descolagem).',
+    en: 'No base point: transit is not counted against the battery and heights refer to the minimum terrain elevation under the route (without terrain, to the take-off point).',
+  },
+  'preflight.open-category-agl': {
+    pt: 'A rota chega a {max} m acima do solo. O máximo na categoria aberta é {cap} m; acima disso é preciso voar na categoria específica, com autorização.',
+    en: 'The route reaches {max} m above ground. The Open category maximum is {cap} m; above that you need to fly in the Specific category, with authorisation.',
   },
   'preflight.heights-relative': {
     pt: 'As alturas do KMZ são relativas ao ponto de descolagem: descole na base ou no ponto de referência do plano.',

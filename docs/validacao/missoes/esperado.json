@@ -33,9 +33,9 @@
     "tfWaypointCount": 196,
     "tfRelMinM": 99,
     "tfRelMaxM": 222.5,
-    "tfClearanceMinM": 89.6,
+    "tfClearanceMinM": 100,
     "tfCorridorRiseMaxM": 30.4,
-    "tfCappedCount": 48
+    "tfCappedCount": 0
   },
   "R3-blocos-bateria": {
     "hardware": "DJI Mavic 3 Enterprise (M3E) + Wide RGB",

@@ -1718,27 +1718,36 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
     `${comCorredor.corridorRiseMaxM.toFixed(1)} m`,
   )
 
-  // tecto: pedir 110 m numa encosta que exige +36 m nao cabe nos 120 m
+  // sem tecto por omissao: a altura e decisao do operador. 110 m numa
+  // encosta que exige +36 m ao lado sobem ate ~146 m acima do solo do eixo,
+  // e a folga pedida mantem-se
   const forte = {
     elevationAt: (lon, lat) => 200 + (lat - center[1]) * M_PER_DEG_LAT * 1.2,
   }
-  const travado = terrainFollowLines(forte, faixaEO, { ...opts, agl: 110, corridorM: 30 })
+  const livre = terrainFollowLines(forte, faixaEO, { ...opts, agl: 110, corridorM: 30 })
+  const soloForte = (lat) => 200 + (lat - center[1]) * M_PER_DEG_LAT * 1.2
   check(
-    'tecto: a subida e limitada a 120 m acima do solo',
-    travado.cappedCount > 0 && travado.clearanceMinM < 110,
+    'sem tecto: a folga pedida mantem-se e a rota passa os 120 m sobre o eixo',
+    livre.cappedCount === 0 &&
+      Math.abs(livre.clearanceMinM - 110) < 0.05 &&
+      livre.waypoints.some(([, lat, h]) => h - (soloForte(lat) - 200) > 120),
+    `folga ${livre.clearanceMinM?.toFixed(1)} m`,
+  )
+  check('sem tecto: nenhum aviso de tecto', !livre.warnings.some((w) => w.includes('tecto')))
+  // o tecto continua disponivel a quem o pedir explicitamente
+  const travado = terrainFollowLines(forte, faixaEO, {
+    ...opts,
+    agl: 110,
+    corridorM: 30,
+    aglCapM: 120,
+  })
+  check(
+    'tecto explicito: a subida e limitada e sai aviso',
+    travado.cappedCount > 0 &&
+      travado.clearanceMinM < 110 &&
+      travado.warnings.some((w) => w.includes('tecto') && w.includes('folga')) &&
+      travado.waypoints.every(([, lat, h]) => h - (soloForte(lat) - 200) <= 120 + 0.05),
     `folga ${travado.clearanceMinM?.toFixed(1)} m em ${travado.cappedCount} pontos`,
-  )
-  check(
-    'tecto: a altura relativa nunca passa o tecto sobre o eixo',
-    travado.waypoints.every(([, lat, h]) => {
-      const solo = 200 + (lat - center[1]) * M_PER_DEG_LAT * 1.2
-      return h - (solo - 200) <= 120 + 0.05
-    }),
-  )
-  check(
-    'tecto: sai aviso a dizer que a folga ficou menor do que a pedida',
-    travado.warnings.some((w) => w.includes('tecto') && w.includes('folga')),
-    travado.warnings.length ? 'com aviso' : 'sem aviso',
   )
 }
 

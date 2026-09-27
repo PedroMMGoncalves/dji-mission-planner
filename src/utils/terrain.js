@@ -51,14 +51,16 @@ const MIN_STEP_M = 1 // passo mínimo de densificação
  * inocente: mais larga sobe mais a rota e estraga o GSD, mais estreita
  * deixa risco de fora.
  *
- * TECTO. Subir para manter a folga esbarra no limite legal da categoria
- * aberta — 120 m acima do solo (Regulamento (UE) 2019/947, UAS.OPEN.010).
- * Quando a folga pedida exigiria passar disso, a altura é limitada ao tecto
- * e a folga fica menor do que a pedida; quem voa tem de saber, por isso sai
- * aviso. Subir mais não é opção: seria ilegal.
+ * SEM TECTO. A altura de voo é uma decisão operacional: 30, 80, 120 ou 300
+ * m acima do solo, conforme a categoria em que se voa e a autorização que
+ * se tem. O motor sobe o que o relevo ao lado exige e não corta nada; a
+ * aplicação só informa, no preflight, quando a rota passa os 120 m acima
+ * do solo, o máximo da categoria aberta (Regulamento (UE) 2019/947,
+ * UAS.OPEN.010). Um tecto antes aplicado aqui por omissão cortava a
+ * protecção lateral justamente a quem voa mais alto. Continua disponível
+ * a quem o pedir explicitamente (`aglCapM`).
  */
 const CORRIDOR_HALF_WIDTH_M = 30
-const AGL_CAP_M = 120
 
 /** Latitude limite do Web Mercator (a projeção diverge nos polos). */
 const MERCATOR_MAX_LAT = 85.05112878
@@ -481,7 +483,8 @@ function segmentLengthM(a, b) {
  * A altura de cada ponto conta com o relevo de um corredor de
  * ±`corridorM` em torno do eixo, não só com o do eixo: usa-se o ponto mais
  * alto do corredor (ver CORRIDOR_HALF_WIDTH_M acima). A subida é limitada a
- * `aglCapM` acima do solo; onde o tecto trava, a folga fica menor do que a
+ * `aglCapM` acima do solo SÓ quando o chamador o dá (por omissão não há
+ * tecto: a altura é decisão do operador); onde o tecto trava, a folga fica menor do que a
  * pedida e isso vem em `clearanceMinM` e num aviso.
  *
  * Cada linha pode ser um segmento [[lonA,latA],[lonB,latB]] (as faixas da
@@ -510,7 +513,7 @@ export function terrainFollowLines(
     toleranceM = 5,
     stepM = 40,
     corridorM = CORRIDOR_HALF_WIDTH_M,
-    aglCapM = AGL_CAP_M,
+    aglCapM = null,
   } = {},
 ) {
   const waypoints = []
