@@ -103,6 +103,18 @@ describe('projecto: serializar e ler', () => {
     })
     expect(c.missionMode).toBe('circular')
     expect(c.circularConfig).toMatchObject({ radiusM: 45, overlapPct: 40, gimbalPitch: -45 })
+    // guardado no separador circular antes do marcador `enabled`: existia
+    expect(c.circularConfig.enabled).toBe(true)
+    // guardado noutro separador: nunca foi criada
+    const d = normalizeProject({ version: 2, missionMode: 'area', circularConfig: { radiusM: 45 } })
+    expect(d.circularConfig.enabled).toBe(false)
+    // marcador explicito manda
+    const e = normalizeProject({
+      version: 2,
+      missionMode: 'circular',
+      circularConfig: { enabled: false },
+    })
+    expect(e.circularConfig.enabled).toBe(false)
     expect(normalizeCorridorConfig({ waypointStops: 'all' }).waypointStops).toBe('all')
     expect(normalizeCorridorConfig({ waypointStops: 'x' }).waypointStops).toBe('corners')
   })

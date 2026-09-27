@@ -1271,7 +1271,9 @@ export default function ControlPanel({
           <input
             type="checkbox"
             checked={terrainFollow.enabled}
-            disabled={!(terrain.status === 'ready' && terrainCovers)}
+            // ligar exige relevo que cubra a área; desligar, nunca (a opção é
+            // partilhada com o corredor e o circular)
+            disabled={!terrainFollow.enabled && !(terrain.status === 'ready' && terrainCovers)}
             onChange={(e) => setTerrainFollow({ ...terrainFollow, enabled: e.target.checked })}
           />
           {t('cp.terrain.follow')}

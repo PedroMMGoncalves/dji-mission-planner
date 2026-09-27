@@ -134,15 +134,23 @@ export function generateOrbitPlan(poi, options) {
   const video = capture === 'video'
   if (video) {
     // ESPIRAL: L−1 voltas entre o primeiro e o último nível (uma volta a
-    // altura constante com um só nível); o ponto j está a
-    // h0 + (j / nPts) · passo, e o último fecha no rumo inicial à altura do
-    // último nível. Cada volta é um "nível" para a pré-visualização e os
-    // blocos, com a altura e o pitch do seu início.
+    // altura constante com um só nível). A volta t sobe do nível t ao nível
+    // t+1, interpolando ponto a ponto, e o último ponto fecha no rumo
+    // inicial à altura do último nível. Com níveis a passo constante (o que
+    // a interface gera) é uma subida uniforme; com níveis desiguais cada
+    // volta tem a sua subida, e a espiral acaba sempre no último nível.
+    // Cada volta é um "nível" para a pré-visualização e os blocos, com a
+    // altura e o pitch do seu início.
     const turns = Math.max(1, heights.length - 1)
-    const stepM = heights.length > 1 ? heights[1] - heights[0] : 0
     const total = turns * nPts + 1
+    const heightAt = (j) => {
+      if (heights.length === 1) return heights[0]
+      const t = Math.min(turns - 1, Math.floor(j / nPts))
+      const frac = (j - t * nPts) / nPts
+      return heights[t] + frac * (heights[t + 1] - heights[t])
+    }
     for (let j = 0; j < total; j++) {
-      const h = heights[0] + (j / nPts) * stepM
+      const h = heightAt(j)
       const pos = posAt(j)
       if (j % nPts === 0 && j < total - 1) {
         perLevel.push({

@@ -36,6 +36,11 @@ export const DEFAULT_CIRCULAR_CONFIG = {
   gimbalPitch: -45, // 45 graus, o valor do estudo; o UgCS aceita 45 a 70
   speedMS: 8,
   angleDeg: null, // null = fiadas alinhadas com a aresta mais longa da área
+  // A missão circular não tem geometria própria (usa o polígono da área):
+  // só existe no projecto quando o operador a escolheu, ao abrir o
+  // separador. Sem isto, qualquer área gerava uma missão circular que o
+  // resumo do projecto somava sem ninguém a ter pedido.
+  enabled: false,
 }
 
 /** Tecto de círculos por missão: acima disto o KMZ fica enorme e o plano lento. */
@@ -56,7 +61,20 @@ export function normalizeCircularConfig(stored) {
     gimbalPitch: num(stored.gimbalPitch, -90, -20, d.gimbalPitch),
     speedMS: num(stored.speedMS, 1, 15, d.speedMS),
     angleDeg: Number.isFinite(stored.angleDeg) ? ((stored.angleDeg % 180) + 180) % 180 : null,
+    enabled: stored.enabled === true,
   }
+}
+
+/**
+ * Distância entre fotos consecutivas ao longo de um círculo: a corda entre
+ * pontos, 2R·sin(π/n). É esta, a dividir pela velocidade, que o obturador
+ * tem de acompanhar, e não o intervalo das grelhas da área.
+ */
+export function circlePhotoSpacingM(stats) {
+  const r = stats?.radiusM
+  const n = stats?.pointsPerCircle
+  if (!(r > 0) || !(n > 1)) return null
+  return 2 * r * Math.sin(Math.PI / n)
 }
 
 /* --------------------------- referencial local -------------------------- */
@@ -308,22 +326,42 @@ export function generateCircularPlan(ring, opts) {
  * novos e as estatísticas de rota em 3D (comprimento e tempo).
  */
 export function applyCircularTerrain(plan, { elevationAt, refElev, agl, speed }) {
-  if (!plan?.waypoints?.length || typeof elevationAt !== 'function' || !Number.isFinite(refElev))
-    return null
+  if (!plan?.waypoints?.length || typeof elevationAt !== 'function') return null
+  // sem cota de referência não há alturas relativas: erro, nunca alturas planas
+  if (!Number.isFinite(refElev)) return { error: 'ref-outside-terrain' }
+  const elev = plan.waypoints.map(([lon, lat]) => elevationAt(lon, lat))
+  // Um ponto sem relevo (fora do MDT, ou um pixel sem dados) não pode ficar
+  // à altura plana: numa encosta ficaria abaixo do chão, e a verificação de
+  // folga não o vê. Usa a cota mais alta do seu círculo, que o põe mais
+  // alto e nunca mais baixo. Um círculo sem relevo nenhum é erro.
+  const circles = plan.circles?.length ? plan.circles : [{ start: 0, count: plan.waypoints.length }]
   let missing = 0
-  const waypoints = plan.waypoints.map(([lon, lat]) => {
-    const e = elevationAt(lon, lat)
-    if (!Number.isFinite(e)) {
-      missing += 1
-      return [lon, lat, agl]
+  let emptyCircles = 0
+  for (const c of circles) {
+    let top = -Infinity
+    for (let i = c.start; i < c.start + c.count; i++)
+      if (Number.isFinite(elev[i]) && elev[i] > top) top = elev[i]
+    if (!Number.isFinite(top)) {
+      emptyCircles += 1
+      continue
     }
-    return [lon, lat, Math.round((agl + e - refElev) * 10) / 10]
-  })
+    for (let i = c.start; i < c.start + c.count; i++)
+      if (!Number.isFinite(elev[i])) {
+        elev[i] = top
+        missing += 1
+      }
+  }
+  if (emptyCircles > 0) return { error: 'terrain-nodata', emptyCircles }
+  const waypoints = plan.waypoints.map(([lon, lat], i) => [
+    lon,
+    lat,
+    Math.round((agl + elev[i] - refElev) * 10) / 10,
+  ])
   const { pathLengthM, flightTimeS } = routeStats(waypoints, {
     speed,
     turns: 2 * ((plan.circles?.length ?? 1) - 1),
   })
-  return { waypoints, missing, pathLengthM, flightTimeS }
+  return { waypoints, missing, pathLengthM, flightTimeS, refElev }
 }
 
 /**

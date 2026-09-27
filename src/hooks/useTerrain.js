@@ -11,6 +11,13 @@ import { loadDemFromFile } from '../utils/demFile.js'
 import { DEFAULT_TERRAIN_FOLLOW } from '../mission/defaults.js'
 import { isOffline } from '../utils/tileCache.js'
 
+/** O relevo carregado cobre a caixa [oeste, sul, este, norte]? */
+function terrainCoversBox(terrain, box) {
+  if (terrain.status !== 'ready' || !box || !terrain.data?.bbox) return false
+  const [a, b, c, d] = terrain.data.bbox
+  return box[0] >= a && box[1] >= b && box[2] <= c && box[3] <= d
+}
+
 /**
  * `targetBbox`, quando dado, é a caixa a cobrir com relevo em vez da da área
  * (um projecto com corredor carrega a área e o corredor juntos: ver
@@ -63,12 +70,12 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
     [ringBbox],
   )
 
-  // a área ainda está coberta pelo terreno carregado?
-  const terrainCovers = useMemo(() => {
-    if (terrain.status !== 'ready' || !ringBbox || !terrain.data?.bbox) return false
-    const [a, b, c, d] = terrain.data.bbox
-    return ringBbox[0] >= a && ringBbox[1] >= b && ringBbox[2] <= c && ringBbox[3] <= d
-  }, [terrain, ringBbox])
+  // A área está coberta pelo relevo carregado? Mede-se contra a caixa DA
+  // ÁREA: um MDT importado para a área continua a cobri-la mesmo depois de
+  // se desenhar um corredor ao lado (a caixa conjunta só serve para carregar).
+  const terrainCovers = useMemo(() => terrainCoversBox(terrain, areaBbox), [terrain, areaBbox])
+  // e a caixa a carregar (área e corredor juntos), para a descarga automática
+  const targetCovers = useMemo(() => terrainCoversBox(terrain, ringBbox), [terrain, ringBbox])
 
   // Descarga automática do relevo global quando a área fica definida:
   // com debounce (não dispara enquanto se arrastam vértices), sem nunca
@@ -80,7 +87,7 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
     if (!targetBbox && (!ring || !ringValid)) return
     if (terrain.status === 'loading') return
     if (terrain.data?.source === 'file') return
-    if (terrain.status === 'ready' && terrainCovers) return
+    if (terrain.status === 'ready' && targetCovers) return
     const key = ringBbox.map((v) => v.toFixed(3)).join(',')
     if (terrain.status === 'error' && autoTerrainTriedRef.current === key) return
     const timer = setTimeout(() => {
@@ -88,7 +95,7 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
       handleLoadTerrain()
     }, 1500)
     return () => clearTimeout(timer)
-  }, [ring, ringValid, ringBbox, targetBbox, terrain, terrainCovers, handleLoadTerrain])
+  }, [ring, ringValid, ringBbox, targetBbox, terrain, targetCovers, handleLoadTerrain])
 
   // Sugestões para encostas íngremes (T4.5): plano médio do terreno na área
   // → linhas ao longo das curvas de nível e gimbal ≈ −(90 − inclinação).

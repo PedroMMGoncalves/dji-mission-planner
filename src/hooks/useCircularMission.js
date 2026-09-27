@@ -10,11 +10,13 @@ import {
   DEFAULT_CIRCULAR_CONFIG,
   MAX_CIRCLES,
   applyCircularTerrain,
+  circlePhotoSpacingM,
   circularBlocks,
   generateCircularPlan,
   overlapAdvice,
 } from '../utils/circular.js'
 import { circularExportParams } from '../mission/exportParams.js'
+import { bboxCovers, bboxOfPoints } from '../mission/corridorTerrain.js'
 import { referenceElevation } from '../mission/reference.js'
 import { usableBatteryMin } from '../mission/preflight.js'
 import { exportBlocksZip, exportWPMLKmz } from '../utils/exporters.js'
@@ -31,13 +33,13 @@ export function useCircularMission({
   wpml,
   terrain,
   terrainFollow,
-  terrainCovers,
   basePoint,
   batteryMin,
   reservePct,
   missionMode,
   runExport,
-  avisoObturador,
+  // (intervaloM, velocidade) → aviso do obturador ou null
+  avisoIntervalo,
 }) {
   const [circularConfig, setCircularConfig] = useState(() => ({ ...DEFAULT_CIRCULAR_CONFIG }))
 
@@ -47,15 +49,14 @@ export function useCircularMission({
 
   // a velocidade guardada limita-se à aeronave, como no corredor
   const circularSpeed = Math.min(speedRange.max, Math.max(speedRange.min, circularConfig.speedMS))
-  const circularTriggerWarn = useMemo(
-    () => avisoObturador(circularSpeed),
-    [avisoObturador, circularSpeed],
-  )
 
-  // Sem guarda de missionMode: o resumo do projecto agrega os planos que
-  // existem. A pré-visualização é que depende do separador aberto.
+  // A missão circular só existe quando foi criada (abrir o separador liga
+  // `enabled`): usa o polígono da área e, sem isto, qualquer área dava uma
+  // missão circular que o resumo do projecto somava. Criada, conta no resumo
+  // seja qual for o separador aberto, como as outras.
+  const active = circularConfig.enabled || missionMode === 'circular'
   const planFlat = useMemo(() => {
-    if (!ring || !validation?.valid) return null
+    if (!active || !ring || !validation?.valid) return null
     return generateCircularPlan(ring, {
       sensor: sensor.type === 'camera' ? sensor : null,
       radiusM: circularConfig.radiusM,
@@ -68,6 +69,7 @@ export function useCircularMission({
       holes,
     })
   }, [
+    active,
     ring,
     holes,
     validation?.valid,
@@ -79,9 +81,17 @@ export function useCircularMission({
   ])
   const planFlatOk = planFlat && !planFlat.error ? planFlat : null
 
+  // O obturador acompanha a distância entre fotos AO LONGO DO CÍRCULO (a
+  // corda entre pontos), não o intervalo das grelhas da área
+  const circularTriggerWarn = useMemo(() => {
+    if (!planFlatOk || sensor.type !== 'camera') return null
+    const spacing = circlePhotoSpacingM(planFlatOk.stats)
+    return spacing ? avisoIntervalo(spacing, circularSpeed) : null
+  }, [planFlatOk, sensor.type, avisoIntervalo, circularSpeed])
+
   const circularAdvice = useMemo(
     () =>
-      ring && validation?.valid
+      active && ring && validation?.valid
         ? overlapAdvice(ring, {
             radiusM: circularConfig.radiusM,
             overlapPct: circularConfig.overlapPct,
@@ -89,6 +99,7 @@ export function useCircularMission({
           })
         : null,
     [
+      active,
       ring,
       validation?.valid,
       circularConfig.radiusM,
@@ -96,6 +107,15 @@ export function useCircularMission({
       circularConfig.angleDeg,
     ],
   )
+
+  // O relevo cobre os CÍRCULOS, e não só a área: os círculos saem da área
+  // até um raio. Margem para os pontos exactamente no bordo.
+  const circularCovers = useMemo(() => {
+    if (terrain.status !== 'ready' || !planFlatOk) return false
+    const b = bboxOfPoints(planFlatOk.waypoints)
+    const m = 0.0005
+    return Boolean(b) && bboxCovers(terrain.data?.bbox, [b[0] - m, b[1] - m, b[2] + m, b[3] + m])
+  }, [terrain, planFlatOk])
 
   // Cota de referência única (src/mission/reference.js): base com relevo,
   // senão a mínima do relevo debaixo da rota
@@ -105,20 +125,22 @@ export function useCircularMission({
     return referenceElevation({ elevationAt, basePoint, waypoints: planFlatOk.waypoints })
   }, [terrain.data, basePoint, planFlatOk])
 
-  // Seguimento de terreno por ponto: os índices das acções não mudam
+  // Seguimento de terreno por ponto: os índices das acções não mudam. Pedido
+  // e impossível é um ERRO (o preflight bloqueia), nunca alturas planas.
   const terrainResult = useMemo(() => {
-    if (!terrainFollow?.enabled || !terrainCovers || !planFlatOk) return null
+    if (!terrainFollow?.enabled || !planFlatOk) return null
+    if (!circularCovers) return { error: 'terrain-not-loaded' }
     const elevationAt = terrain.data?.elevationAt
-    if (typeof elevationAt !== 'function' || !Number.isFinite(circularReference?.elev)) return null
+    if (typeof elevationAt !== 'function') return { error: 'terrain-not-loaded' }
     return applyCircularTerrain(planFlatOk, {
       elevationAt,
-      refElev: circularReference.elev,
+      refElev: circularReference?.elev ?? null,
       agl: altitude,
       speed: circularSpeed,
     })
   }, [
     terrainFollow,
-    terrainCovers,
+    circularCovers,
     planFlatOk,
     terrain.data,
     circularReference,
@@ -128,21 +150,22 @@ export function useCircularMission({
 
   // o plano que sai no KMZ: alturas do terreno quando há, e as estatísticas
   // da rota 3D correspondente
+  const tfOk = terrainResult && !terrainResult.error ? terrainResult : null
   const circularPlan = useMemo(() => {
     if (!planFlat) return null
-    if (!planFlatOk || !terrainResult) return planFlat
+    if (!planFlatOk || !tfOk) return planFlat
     return {
       ...planFlatOk,
-      waypoints: terrainResult.waypoints,
+      waypoints: tfOk.waypoints,
       stats: {
         ...planFlatOk.stats,
-        pathLengthM: terrainResult.pathLengthM,
-        flightTimeS: terrainResult.flightTimeS,
+        pathLengthM: tfOk.pathLengthM,
+        flightTimeS: tfOk.flightTimeS,
         path3D: true,
-        terrainMissing: terrainResult.missing,
+        terrainMissing: tfOk.missing,
       },
     }
-  }, [planFlat, planFlatOk, terrainResult])
+  }, [planFlat, planFlatOk, tfOk])
   const circularPlanOk = circularPlan && !circularPlan.error ? circularPlan : null
 
   const usableMin = usableBatteryMin(batteryMin, reservePct)
@@ -172,24 +195,34 @@ export function useCircularMission({
         missionName,
         plan: circularPlanOk,
         waypoints: circularPlanOk.waypoints,
-        terrainOk: Boolean(terrainResult),
+        terrainOk: Boolean(tfOk),
         altitude,
         speed: circularSpeed,
         wpml,
         sensorType: sensor.type,
       }),
-    [missionName, circularPlanOk, terrainResult, altitude, circularSpeed, wpml, sensor.type],
+    [missionName, circularPlanOk, tfOk, altitude, circularSpeed, wpml, sensor.type],
   )
 
+  // seguimento de terreno pedido e sem resultado: não sai nada com alturas planas
+  const tfBlocked = Boolean(terrainFollow?.enabled && !tfOk)
   const handleExportCircularSingle = useCallback(() => {
-    if (!circularPlanOk) return
+    if (!circularPlanOk || tfBlocked) return
     runExport(() => exportWPMLKmz(exportParams()))
-  }, [circularPlanOk, exportParams, runExport])
+  }, [circularPlanOk, tfBlocked, exportParams, runExport])
 
   const handleExportCircularBlocks = useCallback(() => {
-    if (!circularPlanOk || blocks.length < 2) return
+    if (!circularPlanOk || tfBlocked || blocks.length < 2) return
     runExport(() => exportBlocksZip(exportParams(), blocks))
-  }, [circularPlanOk, blocks, exportParams, runExport])
+  }, [circularPlanOk, tfBlocked, blocks, exportParams, runExport])
+
+  // abrir o separador cria a missão; retirá-la tira-a do projecto e do resumo
+  const enableCircular = useCallback(() => {
+    setCircularConfig((c) => (c.enabled ? c : { ...c, enabled: true }))
+  }, [])
+  const removeCircular = useCallback(() => {
+    setCircularConfig((c) => ({ ...c, enabled: false }))
+  }, [])
 
   return {
     circularConfig,
@@ -200,6 +233,10 @@ export function useCircularMission({
     circularPlan,
     circularAdvice,
     circularReference,
+    circularTerrain: terrainResult,
+    circularCovers,
+    enableCircular,
+    removeCircular,
     circularBlocks: blocks,
     circularUsableMin: usableMin,
     circularPreview,

@@ -294,6 +294,18 @@ function AppInner({ lang, setLang }) {
     [interval, payload],
   )
   const triggerWarn = useMemo(() => avisoObturador(speed), [avisoObturador, speed])
+  // o mesmo aviso para um intervalo que não é o da área (as fotos ao longo
+  // de um círculo no modo circular)
+  const avisoIntervalo = useCallback(
+    (intervalM, v) => {
+      if (!(intervalM > 0) || !(v > 0)) return null
+      const minS = payload.minTriggerS ?? 0.7
+      const actualS = intervalM / v
+      if (actualS >= minS) return null
+      return { actualS, minS, maxSpeed: intervalM / minS }
+    },
+    [payload],
+  )
   /* ------------------------- Modo corredor ---------------------------- */
   const {
     corridorConfig,
@@ -439,6 +451,18 @@ function AppInner({ lang, setLang }) {
   })
 
   /* ------------------------------ Terreno ----------------------------- */
+  // Com corredor, a área e o corredor juntos (um só MDT para os dois).
+  // Memorizada: uma caixa nova a cada render reiniciava a espera da descarga
+  // automática sempre que qualquer campo mudava.
+  const terrainTarget = useMemo(
+    () =>
+      terrainTargetBbox({
+        areaBbox: ring && validation.valid ? ringBbox : null,
+        corridorBbox,
+        missionMode,
+      }),
+    [ring, validation.valid, ringBbox, corridorBbox, missionMode],
+  )
   const {
     terrain,
     terrainFollow,
@@ -451,12 +475,7 @@ function AppInner({ lang, setLang }) {
     ring,
     ringBbox,
     ringValid: validation.valid,
-    // com corredor, a área e o corredor juntos (um só MDT para os dois)
-    targetBbox: terrainTargetBbox({
-      areaBbox: ring && validation.valid ? ringBbox : null,
-      corridorBbox,
-      missionMode,
-    }),
+    targetBbox: terrainTarget,
   })
 
   /* ---------- Corredor, parte 2: relevo, referência, exportação -------- */
@@ -535,6 +554,10 @@ function AppInner({ lang, setLang }) {
     circularPlan,
     circularAdvice,
     circularReference,
+    circularTerrain,
+    circularCovers,
+    enableCircular,
+    removeCircular,
     circularBlocks,
     circularUsableMin,
     circularPreview,
@@ -552,13 +575,12 @@ function AppInner({ lang, setLang }) {
     wpml,
     terrain,
     terrainFollow,
-    terrainCovers,
     basePoint,
     batteryMin,
     reservePct: split.reservePct,
     missionMode,
     runExport,
-    avisoObturador,
+    avisoIntervalo,
   })
 
   /* ----------------------- Modo fachada (E1.1) ------------------------ */
@@ -604,11 +626,16 @@ function AppInner({ lang, setLang }) {
   )
 
   /* ---------------------- Interacções comuns -------------------------- */
-  const changeMissionMode = useCallback((m) => {
-    setMissionMode(m)
-    setMode('idle')
-    setDraftVertices([])
-  }, [])
+  const changeMissionMode = useCallback(
+    (m) => {
+      setMissionMode(m)
+      setMode('idle')
+      setDraftVertices([])
+      // abrir o separador circular é escolher essa missão: passa a existir
+      if (m === 'circular') enableCircular()
+    },
+    [enableCircular],
+  )
 
   // o duplo clique no mapa conclui o desenho activo (área, baseline ou eixo)
   const handleFinishAny = useCallback(() => {
@@ -898,7 +925,8 @@ function AppInner({ lang, setLang }) {
         aglWarn,
         triggerWarn: circularTriggerWarn,
         terrainFollow,
-        terrainCovers,
+        terrainCovers: circularCovers,
+        terrainResult: circularTerrain,
         reference: circularReference,
         basePoint,
         baseDistance,
@@ -934,6 +962,8 @@ function AppInner({ lang, setLang }) {
     circularPlan,
     circularTriggerWarn,
     circularReference,
+    circularTerrain,
+    circularCovers,
     circularSpeed,
     facePlan,
     orbitPlan,
@@ -946,6 +976,29 @@ function AppInner({ lang, setLang }) {
     route,
   ])
   const exportBlocked = hasBlockers(preflight)
+
+  // Exportação da missão do SEPARADOR ABERTO, sempre atrás do preflight dela:
+  // o botão do cabeçalho e os botões de cada painel. Antes o cabeçalho
+  // exportava a área com o preflight do outro modo ao lado, e os painéis
+  // exportavam rotas que o preflight bloqueava (rota dentro do relevo,
+  // waypoints repetidos, base inalcançável).
+  const modeExport = {
+    area: handleExportKMZ,
+    face: handleExportFace,
+    orbit: handleExportOrbitSingle,
+    corridor: handleExportCorridor,
+    circular: handleExportCircularSingle,
+  }[missionMode]
+  const modePlan = {
+    face: facePlan,
+    orbit: orbitPlan,
+    corridor: corridorPlan,
+    circular: circularPlan,
+  }[missionMode]
+  const modePlanOk = missionMode === 'area' ? canExportKMZ : Boolean(modePlan && !modePlan.error)
+  const gated = (fn) => () => {
+    if (!exportBlocked) fn()
+  }
 
   /* --------------- Persistência do projeto (localStorage) -------------- */
 
@@ -1204,12 +1257,8 @@ function AppInner({ lang, setLang }) {
             // no modo circular o KMZ do cabecalho e a missao circular: o
             // preflight ao lado e o dela, e a grelha da area exporta-se no
             // separador Area
-            onClick={missionMode === 'circular' ? handleExportCircularSingle : handleExportKMZ}
-            disabled={
-              missionMode === 'circular'
-                ? !(circularPlan && !circularPlan.error) || exportBlocked
-                : !canExportKMZ || exportBlocked
-            }
+            onClick={gated(modeExport)}
+            disabled={!modePlanOk || exportBlocked}
             title={t('app.exportWpmlTitle')}
             className="flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -1282,7 +1331,8 @@ function AppInner({ lang, setLang }) {
                 onUndoVertex={removeLastDraftVertex}
                 onFinishDraw={handleFinishFace}
                 onClearBaseline={clearFaceBaseline}
-                onExport={handleExportFace}
+                onExport={gated(handleExportFace)}
+                exportBlocked={exportBlocked}
               />
             )}
             {missionMode === 'orbit' && (
@@ -1296,8 +1346,9 @@ function AppInner({ lang, setLang }) {
                 mode={mode}
                 onStartPoi={startOrbitPoi}
                 onClearPoi={clearOrbitPoi}
-                onExportSingle={handleExportOrbitSingle}
-                onExportPerLevel={handleExportOrbitPerLevel}
+                onExportSingle={gated(handleExportOrbitSingle)}
+                onExportPerLevel={gated(handleExportOrbitPerLevel)}
+                exportBlocked={exportBlocked}
               />
             )}
             {missionMode === 'corridor' && (
@@ -1317,7 +1368,8 @@ function AppInner({ lang, setLang }) {
                 onUndoAxisPoint={() => setDraftVertices((d) => d.slice(0, -1))}
                 onClearAxis={clearCorridorAxis}
                 draftCount={draftVertices.length}
-                onExport={handleExportCorridor}
+                onExport={gated(handleExportCorridor)}
+                exportBlocked={exportBlocked}
                 terrain={terrain}
                 corridorCovers={corridorCovers}
                 terrainFollow={terrainFollow}
@@ -1351,7 +1403,7 @@ function AppInner({ lang, setLang }) {
                 areaKind={params.crosshatch ? 'crosshatch' : 'serpentine'}
                 terrainFollow={terrainFollow}
                 setTerrainFollow={setTerrainFollow}
-                terrainReady={Boolean(terrainCovers)}
+                terrainReady={terrain.status === 'ready'}
                 mode={mode}
                 draftCount={draftVertices.length}
                 hasRing={Boolean(ring)}
@@ -1359,8 +1411,15 @@ function AppInner({ lang, setLang }) {
                 onUndoVertex={removeLastDraftVertex}
                 onFinishDraw={handleFinishDraw}
                 onClear={clearAll}
-                onExportSingle={handleExportCircularSingle}
-                onExportBlocks={handleExportCircularBlocks}
+                onExportSingle={gated(handleExportCircularSingle)}
+                onExportBlocks={gated(handleExportCircularBlocks)}
+                exportBlocked={exportBlocked}
+                circularTerrain={circularTerrain}
+                circularCovers={circularCovers}
+                onRemove={() => {
+                  removeCircular()
+                  changeMissionMode('area')
+                }}
               />
             )}
             {missionMode === 'area' && (

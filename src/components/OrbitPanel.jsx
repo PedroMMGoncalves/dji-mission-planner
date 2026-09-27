@@ -54,6 +54,7 @@ export default function OrbitPanel({
   onClearPoi,
   onExportSingle,
   onExportPerLevel,
+  exportBlocked = false,
 }) {
   const t = useT()
   const stats = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
@@ -251,19 +252,24 @@ export default function OrbitPanel({
         <div className="mt-3 grid grid-cols-1 gap-2">
           <button
             onClick={onExportSingle}
-            disabled={!stats}
+            disabled={!stats || exportBlocked}
             className="flex items-center justify-center gap-1.5 rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('op.exportSingle')}
           </button>
           <button
             onClick={onExportPerLevel}
-            disabled={!stats || stats.levelCount < 2 || video}
+            disabled={!stats || stats.levelCount < 2 || video || exportBlocked}
             className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('op.exportPerLevel')}
           </button>
         </div>
+        {exportBlocked && (
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-[11px] leading-relaxed text-red-300">
+            ⚠ {t('app.exportBlockedHint')}
+          </p>
+        )}
         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
           {t(video ? 'op.exportHintVideo' : 'op.exportHint')}
         </p>

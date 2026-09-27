@@ -6,6 +6,47 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Corrigido (revisão confrontada: sete problemas reais, dois menores)
+
+Cada achado de uma revisão ao código foi posto à prova por dois agentes,
+um a tentar demonstrá-lo e outro a tentar refutá-lo, com um juiz a
+decidir. Dos dez, sete confirmaram-se, dois eram menores e um não era
+problema.
+
+- **Os botões de exportação dos painéis respeitam o preflight.** Na
+  fachada, órbita, corredor e circular, o botão do painel exportava rotas
+  que o preflight bloqueava: rota a entrar no relevo, waypoints repetidos,
+  base inalcançável. Só o botão do cabeçalho estava ligado aos bloqueios,
+  e nesses modos exportava a área, com o preflight do outro modo ao lado.
+  Agora todos os botões de uma missão ficam desactivados pelos bloqueios
+  dela, com a razão no painel, e o do cabeçalho exporta a missão do
+  separador aberto.
+- **Pontos dos círculos sem relevo deixam de sair à altura plana.** Com
+  seguimento de terreno, um ponto fora do MDT ou num pixel sem dados usava
+  a AGL relativa à descolagem e, numa encosta, podia ficar abaixo do chão
+  sem a verificação de folga o ver. Passa a usar a cota mais alta do seu
+  círculo; um círculo sem relevo nenhum é bloqueio. A cobertura do relevo
+  mede-se sobre os círculos, que saem da área até um raio.
+- **Circular com seguimento de terreno sem cota de referência é
+  bloqueio**, e não uma exportação com alturas planas.
+- **Missão circular fantasma no resumo.** Qualquer área gerava uma missão
+  circular que o resumo do projecto somava, com tempo, fotos e baterias
+  várias vezes acima do real. A missão circular passa a existir só depois
+  de se abrir o separador, e pode ser retirada no painel. Projectos
+  guardados no separador circular abrem com ela; os outros, sem ela.
+- **Aviso do obturador do circular** passa a medir a distância entre fotos
+  ao longo do círculo, e não o intervalo das grelhas da área.
+- **Um MDT importado para a área continua a cobri-la** depois de se
+  desenhar um corredor ao lado: a cobertura da área volta a medir-se
+  contra a caixa da área, e a caixa conjunta serve só para carregar.
+- **«Seguir terreno» pode sempre desligar-se.** A opção é partilhada pela
+  área, corredor e circular, e ficava marcada e bloqueada no separador
+  cujo relevo não cobria a rota.
+- Menores: a caixa do relevo deixa de ser recalculada a cada render (a
+  descarga automática deixava de ser adiada enquanto se editavam campos);
+  a espiral em vídeo interpola entre níveis desiguais em vez de assumir o
+  primeiro passo (só alcançável por programação).
+
 ### Adicionado (corredor com seguimento de terreno)
 
 - **O corredor passa a seguir o terreno.** Era a limitação declarada do

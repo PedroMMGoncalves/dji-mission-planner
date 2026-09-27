@@ -43,6 +43,13 @@ function Section({ title, children }) {
   )
 }
 
+/** Mensagem de um erro do seguimento de terreno do circular. */
+function terrainErrorText(res, t) {
+  const key = `ci.terrain.err.${res.error}`
+  const msg = t(key, { n: res.emptyCircles ?? '' })
+  return msg === key ? String(res.error) : msg
+}
+
 export default function CircularPanel({
   circularConfig,
   setCircularParam,
@@ -67,6 +74,10 @@ export default function CircularPanel({
   onClear,
   onExportSingle,
   onExportBlocks,
+  exportBlocked = false,
+  circularTerrain = null,
+  circularCovers = false,
+  onRemove,
 }) {
   const t = useT()
   const drawing = mode === 'draw'
@@ -216,12 +227,23 @@ export default function CircularPanel({
           <input
             type="checkbox"
             checked={Boolean(terrainFollow?.enabled)}
-            disabled={!terrainReady}
+            // ligar exige relevo que cubra os círculos; desligar, nunca
+            disabled={!terrainFollow?.enabled && !(terrainReady && circularCovers)}
             onChange={(e) => setTerrainFollow((f) => ({ ...f, enabled: e.target.checked }))}
           />
           {t('ci.terrain.follow')}
         </label>
         <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{t('ci.terrain.hint')}</p>
+        {terrainReady && stats && !circularCovers && (
+          <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
+            ⚠ {t('ci.terrain.outOfCoverage')}
+          </p>
+        )}
+        {terrainFollow?.enabled && circularTerrain?.error && (
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
+            ⚠ {terrainErrorText(circularTerrain, t)}
+          </p>
+        )}
       </Section>
 
       {/* Plano e exportação */}
@@ -272,20 +294,34 @@ export default function CircularPanel({
         <div className="mt-3 grid grid-cols-1 gap-2">
           <button
             onClick={onExportSingle}
-            disabled={!stats}
+            disabled={!stats || exportBlocked}
             className="flex items-center justify-center gap-1.5 rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('ci.exportSingle')}
           </button>
           <button
             onClick={onExportBlocks}
-            disabled={!stats || !(blocks?.length > 1)}
+            disabled={!stats || !(blocks?.length > 1) || exportBlocked}
             className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('ci.exportBlocks')}
           </button>
         </div>
+        {exportBlocked && (
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-[11px] leading-relaxed text-red-300">
+            ⚠ {t('app.exportBlockedHint')}
+          </p>
+        )}
         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{t('ci.exportHint')}</p>
+        {onRemove && (
+          <button
+            onClick={onRemove}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-red-900/60 hover:text-red-200"
+          >
+            <IconTrash /> {t('ci.remove')}
+          </button>
+        )}
+        <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{t('ci.removeHint')}</p>
       </Section>
     </div>
   )

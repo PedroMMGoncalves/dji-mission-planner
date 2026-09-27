@@ -110,6 +110,10 @@ export function normalizeProject(p) {
   if (p.orbitConfig) out.orbitConfig = normalizeOrbitConfig(p.orbitConfig)
   if (p.corridorConfig) out.corridorConfig = normalizeCorridorConfig(p.corridorConfig)
   if (p.circularConfig) out.circularConfig = normalizeCircularConfig(p.circularConfig)
+  // projectos guardados antes do marcador `enabled`: a missão circular existia
+  // se o projecto foi guardado no separador circular
+  if (out.circularConfig && p.circularConfig.enabled === undefined && p.missionMode === 'circular')
+    out.circularConfig.enabled = true
   if (Array.isArray(p.inspectPoints)) {
     out.inspectPoints = p.inspectPoints.filter((q) => q && Array.isArray(q.point))
     out.nextInspectId = out.inspectPoints.reduce((mx, q) => Math.max(mx, (q.id ?? 0) + 1), 1)

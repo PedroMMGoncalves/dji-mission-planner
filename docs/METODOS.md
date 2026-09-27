@@ -384,11 +384,11 @@ Captura, parâmetro `capture` da configuração da órbita:
   todas as fotografias de um nível, o que dá controlo granular para
   fotogrametria.
 - **`video` (espiral)**: a mesma geometria horizontal (raio, pontos por
-  volta, rumo ao POI), mas a altura sobe a cada ponto: o ponto `j` está a
-  `h₀ + (j / nPts) · passo`, uma volta por passo, do primeiro ao último
-  nível (`L` níveis = `L − 1` voltas; um nível = uma volta a altura
-  constante), e o último ponto fecha no rumo inicial à altura do último
-  nível. O gimbal reaponta ao centro do alvo em cada ponto
+  volta, rumo ao POI), mas a altura sobe a cada ponto: a volta `t` sobe do
+  nível `t` ao nível `t+1`, interpolando ponto a ponto (`L` níveis =
+  `L − 1` voltas; um nível = uma volta a altura constante), e o último
+  ponto fecha no rumo inicial à altura do último nível. Com níveis a passo
+  constante, o que a interface gera, é `h₀ + (j / nPts) · passo`. O gimbal reaponta ao centro do alvo em cada ponto
   (`pitch(h)`, a descer com a altura). Acções: `startRecord` no primeiro
   ponto (depois do `gimbalRotate`, no mesmo grupo em sequência),
   `stopRecord` no último, nada nos intermédios; nenhum `takePhoto`,
@@ -508,10 +508,24 @@ círculo. Tempo: `L₃D/v + 2·(N − 1)·v/1,7`, uma inversão à saída e outr
 
 Seguimento de terreno por ponto: `h = AGL + (cota − referência)`, com a
 cota de referência da área (§5: base com relevo, senão a mínima da
-área); sem densificação, para as acções de foto não mudarem de índice;
-pontos fora do relevo mantêm a AGL e são contados. Blocos por círculos
-inteiros: o bloco fecha quando o círculo seguinte não cabe no tempo útil
-da bateria.
+área); sem densificação, para as acções de foto não mudarem de índice.
+Um ponto sem relevo (fora do MDT, ou um pixel sem dados) usa a cota mais
+alta do seu círculo, o que o põe mais alto e nunca mais baixo; um círculo
+sem relevo nenhum é erro, e sem cota de referência também: o preflight
+bloqueia, nunca saem alturas planas. A cobertura do relevo mede-se sobre
+os próprios círculos, que saem da área até um raio, e não sobre a área.
+Blocos por círculos inteiros: o bloco fecha quando o círculo seguinte não
+cabe no tempo útil da bateria.
+
+Obturador: a distância entre fotos ao longo do círculo é a corda
+`2R · sin(π / nPts)`; o aviso compara-a, a dividir pela velocidade, com o
+intervalo mínimo do payload (antes usava, por engano, o intervalo das
+grelhas da área).
+
+A missão circular não tem geometria própria: usa o polígono da área e só
+existe no projecto depois de se abrir o separador (`enabled`), até ser
+retirada no painel. Antes, qualquer área gerava uma missão circular que o
+resumo do projecto somava.
 
 Conselho de sobreposição (`overlapAdvice`): o número de colunas mantém-se
 enquanto `p ≤ 1 − L / (2R · cols)`, e o de linhas enquanto
@@ -699,6 +713,10 @@ invólucro convexo (ou rectângulo com 20 m de margem quando degenerado).
 ## 14. Preflight
 
 `src/mission/preflight.js`, calculado do mesmo estado que a exportação.
+É o preflight do separador aberto, e desactiva todos os botões de
+exportação dessa missão: o do cabeçalho, que exporta a missão do
+separador aberto, e os de cada painel. Antes só o do cabeçalho estava
+ligado ao preflight, e exportava a área qualquer que fosse o separador.
 Bloqueios (desactivam o KMZ): sem plano; plano com erro; seguir terreno com
 foto por waypoint; seguir terreno ligado sem relevo a cobrir a área; erro
 do cálculo do terreno; mais de 65535 waypoints numa rota (a maior, com

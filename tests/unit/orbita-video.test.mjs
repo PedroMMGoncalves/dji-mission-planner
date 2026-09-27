@@ -86,6 +86,19 @@ describe('espiral em video', () => {
     expect(one.perWaypoint.at(-1).actions).toEqual(['stopRecord'])
   })
 
+  test('niveis desiguais: cada volta sobe o seu passo e a espiral acaba no ultimo nivel', () => {
+    const d = generateOrbitPlan(poi, opts({ capture: 'video', levels: [10, 20, 50] }))
+    const m = d.stats.pointsPerOrbit
+    expect(d.stats.turnCount).toBe(2)
+    expect(d.waypoints[0][2]).toBe(10)
+    expect(d.waypoints[m][2]).toBe(20)
+    expect(d.waypoints.at(-1)[2]).toBe(50)
+    // a segunda volta sobe 30 m, a primeira 10
+    expect(d.waypoints[m + 1][2] - d.waypoints[m][2]).toBeGreaterThan(
+      d.waypoints[1][2] - d.waypoints[0][2],
+    )
+  })
+
   test('cada volta e um nivel para a pre-visualizacao e os blocos cobrem todos os pontos', () => {
     expect(video.perLevel.map((l) => l.heightM)).toEqual([10, 20, 30, 40])
     const blocks = orbitLevelsToBlocks(video)

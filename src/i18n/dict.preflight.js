@@ -1,6 +1,10 @@
 /** Preflight: mensagens dos itens de src/mission/preflight.js (chave = preflight.<code>). */
 export default {
   'preflight.title': { pt: 'Preflight', en: 'Preflight' },
+  'app.exportBlockedHint': {
+    pt: 'Exportação bloqueada pelo preflight: veja a lista na pastilha do cabeçalho.',
+    en: 'Export blocked by the preflight: see the list in the header pill.',
+  },
   'preflight.ok': { pt: 'Pronto a exportar', en: 'Ready to export' },
   'preflight.summary': {
     pt: '{b} bloqueios, {w} avisos',

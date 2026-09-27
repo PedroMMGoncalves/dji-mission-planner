@@ -10,6 +10,7 @@ import {
   DEFAULT_CIRCULAR_CONFIG,
   MAX_CIRCLES,
   applyCircularTerrain,
+  circlePhotoSpacingM,
   circularBlocks,
   circularGrid,
   generateCircularPlan,
@@ -189,15 +190,35 @@ describe('terreno, blocos e exportacao', () => {
       expect(w[2]).toBeCloseTo(60 + elevationAt(w[0], w[1]) - 100, 0)
     })
     expect(r.pathLengthM).toBeGreaterThan(plan.stats.pathLengthM)
-    const holes = applyCircularTerrain(plan, {
-      elevationAt: () => NaN,
-      refElev: 100,
-      agl: 60,
-      speed: 8,
+    // sem cota de referencia: erro, nunca alturas planas
+    expect(applyCircularTerrain(plan, { elevationAt, refElev: NaN, agl: 60, speed: 8 }).error).toBe(
+      'ref-outside-terrain',
+    )
+  })
+
+  test('pontos sem relevo usam a cota mais alta do seu circulo; circulo sem relevo e erro', () => {
+    // sem relevo num disco de 30,5 m em volta do centro do primeiro circulo:
+    // esse circulo fica sem dado nenhum, os vizinhos so em parte
+    const c0 = plan.circles[0].centre
+    const buraco = (lon, lat) => (dist([lon, lat], c0) <= 30.5 ? NaN : 100)
+    const r = applyCircularTerrain(plan, { elevationAt: buraco, refElev: 100, agl: 60, speed: 8 })
+    expect(r.error).toBe('terrain-nodata')
+    expect(r.emptyCircles).toBe(1)
+    // relevo com um so ponto em falta por circulo
+    const furos = (lon, lat) => {
+      const e = 100 + (lat - centre[1]) * 1e4
+      return Math.round(lon * 1e7) % 7 === 0 ? NaN : e
+    }
+    const f = applyCircularTerrain(plan, { elevationAt: furos, refElev: 100, agl: 60, speed: 8 })
+    expect(f.error).toBeUndefined()
+    plan.circles.forEach((c) => {
+      const hs = f.waypoints.slice(c.start, c.start + c.count).map((w) => w[2])
+      const max = Math.max(...hs)
+      for (let i = c.start; i < c.start + c.count; i++) {
+        const [lon, lat] = plan.waypoints[i]
+        if (Number.isNaN(furos(lon, lat))) expect(f.waypoints[i][2]).toBe(max)
+      }
     })
-    expect(holes.missing).toBe(plan.waypoints.length)
-    expect(holes.waypoints.every((w) => w[2] === 60)).toBe(true)
-    expect(applyCircularTerrain(plan, { elevationAt, refElev: NaN, agl: 60, speed: 8 })).toBeNull()
   })
 
   test('blocos por circulos inteiros dentro do tempo util', () => {
@@ -251,6 +272,14 @@ describe('terreno, blocos e exportacao', () => {
 })
 
 describe('configuracao guardada', () => {
+  test('espacamento das fotos ao longo do circulo: 2R sin(pi/n)', () => {
+    const p = generateCircularPlan(field, opts())
+    const d = circlePhotoSpacingM(p.stats)
+    const c = p.circles[0]
+    expect(d).toBeCloseTo(dist(p.waypoints[c.start], p.waypoints[c.start + 1]), 0)
+    expect(circlePhotoSpacingM({ radiusM: 0, pointsPerCircle: 12 })).toBeNull()
+  })
+
   test('defaults do artigo; lixo cai nos defaults; limites', () => {
     expect(DEFAULT_CIRCULAR_CONFIG).toMatchObject({
       radiusM: 30,
@@ -266,6 +295,15 @@ describe('configuracao guardada', () => {
       speedMS: 'x',
       angleDeg: 270,
     })
-    expect(n).toEqual({ radiusM: 500, overlapPct: 0, gimbalPitch: -20, speedMS: 8, angleDeg: 90 })
+    expect(n).toEqual({
+      radiusM: 500,
+      overlapPct: 0,
+      gimbalPitch: -20,
+      speedMS: 8,
+      angleDeg: 90,
+      enabled: false,
+    })
+    expect(normalizeCircularConfig({ enabled: true }).enabled).toBe(true)
+    expect(normalizeCircularConfig({ enabled: 'sim' }).enabled).toBe(false)
   })
 })

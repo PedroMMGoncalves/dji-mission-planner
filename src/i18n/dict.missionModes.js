@@ -336,8 +336,32 @@ export default {
   'ci.plan.path': { pt: 'percurso {km} km', en: 'path {km} km' },
   'ci.plan.time': { pt: '~{min} min', en: '~{min} min' },
   'ci.plan.terrain': {
-    pt: 'seguimento de terreno por ponto ({n} pontos fora do relevo mantêm a AGL)',
-    en: 'per-point terrain following ({n} points outside the DEM keep the AGL)',
+    pt: 'seguimento de terreno por ponto ({n} pontos sem relevo usam a cota mais alta do seu círculo)',
+    en: 'per-point terrain following ({n} points without terrain use the highest elevation of their circle)',
+  },
+  'ci.terrain.outOfCoverage': {
+    pt: 'Os círculos saem fora do relevo carregado (saem da área até um raio): descarregue o relevo global ou importe um MDT que os cubra.',
+    en: 'The circles extend beyond the loaded terrain (they overshoot the area by up to one radius): download the global terrain or import a DTM that covers them.',
+  },
+  'ci.terrain.err.terrain-not-loaded': {
+    pt: 'O relevo carregado não cobre os círculos.',
+    en: 'The loaded terrain does not cover the circles.',
+  },
+  'ci.terrain.err.ref-outside-terrain': {
+    pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado.',
+    en: 'No reference elevation: neither the home point nor the route lies on the loaded terrain.',
+  },
+  'ci.terrain.err.terrain-nodata': {
+    pt: '{n} círculo(s) sem nenhum dado de relevo: não há altura segura para eles.',
+    en: '{n} circle(s) without any terrain data: there is no safe height for them.',
+  },
+  'ci.remove': {
+    pt: 'Retirar a missão circular do projecto',
+    en: 'Remove the circular mission from the project',
+  },
+  'ci.removeHint': {
+    pt: 'A missão circular usa o polígono da área e passa a existir quando se abre este separador; retirada, deixa de contar no resumo do projecto.',
+    en: 'The circular mission uses the area polygon and exists once this tab is opened; removed, it no longer counts in the project summary.',
   },
   'ci.plan.vsArea': {
     pt: 'grelha do separador Área ({kind}): ~{min} min',

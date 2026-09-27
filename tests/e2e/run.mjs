@@ -490,6 +490,16 @@ await scenario('circular-sobre-a-area', async () => {
   await page.waitForTimeout(400)
   txt = await bodyText(page)
   check('resumo do projecto conta a área e a missão circular', /2 planos|2 plans/.test(txt))
+  // retirada, a missão circular deixa de contar
+  await modo(page, /^Circular$|^Circular$/)
+  await page
+    .getByRole('button', { name: /Retirar a missão circular|Remove the circular mission/ })
+    .click()
+  await page.waitForTimeout(500)
+  check(
+    'circular retirada: o resumo volta a um só plano',
+    !/\d+ planos|\d+ plans/.test(await bodyText(page)),
+  )
   check('circular: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
@@ -510,16 +520,21 @@ await scenario('corredor-segue-terreno', async () => {
     .locator('input')
     .fill('200')
   await page.waitForTimeout(800)
-  // sem seguimento de terreno: alturas planas
-  const plano0 = await readRoutes(
-    await panelExport(
-      page,
-      /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/,
-      join(OUT, 'corredor-plano.kmz'),
-    ),
-  )
-  const hs0 = [...plano0[0].wpml.matchAll(/<wpml:executeHeight>([-\d.]+)</g)].map((m) =>
-    Number(m[1]),
+  // sem seguimento de terreno o corredor plano entra nas colinas: o preflight
+  // bloqueia, e tanto o botão do painel como o do cabeçalho ficam desactivados
+  const exportPainel = page.getByRole('button', {
+    name: /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/,
+  })
+  const exportCabecalho = page.getByRole('button', {
+    name: /Exportar WPML Avançado|Export Advanced WPML/,
+  })
+  check(
+    'corredor: rota plana dentro do relevo fica bloqueada no painel e no cabeçalho',
+    (await exportPainel.isDisabled()) &&
+      (await exportCabecalho.isDisabled()) &&
+      /Exportação bloqueada pelo preflight|Export blocked by the preflight/.test(
+        await bodyText(page),
+      ),
   )
   const tf = page
     .locator('label', { hasText: /cada passagem sobre o seu chão|each pass over its own ground/ })
@@ -527,9 +542,10 @@ await scenario('corredor-segue-terreno', async () => {
   check('corredor: seguimento de terreno disponível com o MDT da área', !(await tf.isDisabled()))
   await tf.check()
   await page.waitForTimeout(800)
+  // o botão do cabeçalho exporta a missão do separador aberto: o corredor
   const [dl] = await Promise.all([
     page.waitForEvent('download', { timeout: 30000 }),
-    page.getByRole('button', { name: /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/ }).click(),
+    exportCabecalho.click(),
   ])
   await dl.saveAs(join(OUT, 'corredor-tf.kmz'))
   const routes = await readRoutes(join(OUT, 'corredor-tf.kmz'))
@@ -539,9 +555,9 @@ await scenario('corredor-segue-terreno', async () => {
     Number(m[1]),
   )
   check(
-    'corredor: sem relevo as alturas são planas; com relevo variam e há mais pontos',
-    new Set(hs0).size === 1 && new Set(hs).size > 3 && hs.length > hs0.length,
-    `${hs0.length} → ${hs.length} pontos, alturas ${Math.min(...hs)}–${Math.max(...hs)} m`,
+    'corredor: com relevo as alturas variam',
+    new Set(hs).size > 3,
+    `${hs.length} pontos, alturas ${Math.min(...hs)}–${Math.max(...hs)} m`,
   )
   check(
     'corredor: folga ao solo mantida ao longo de toda a rota',

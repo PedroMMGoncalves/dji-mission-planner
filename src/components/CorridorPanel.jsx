@@ -88,6 +88,7 @@ export default function CorridorPanel({
   onClearAxis,
   draftCount,
   onExport,
+  exportBlocked = false,
   // relevo e seguimento de terreno (partilhados com a área)
   terrain,
   corridorCovers,
@@ -298,7 +299,8 @@ export default function CorridorPanel({
           <input
             type="checkbox"
             checked={Boolean(terrainFollow?.enabled)}
-            disabled={!(terrainReady && corridorCovers)}
+            // ligar exige relevo que cubra o corredor; desligar, nunca
+            disabled={!terrainFollow?.enabled && !(terrainReady && corridorCovers)}
             onChange={(e) => setTerrainFollow({ ...terrainFollow, enabled: e.target.checked })}
           />
           {t('co.terrain.follow')}
@@ -410,9 +412,15 @@ export default function CorridorPanel({
                 ⚠ {t('co.plan.split', { n: splitPasses })}
               </p>
             )}
+            {exportBlocked && (
+              <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-[11px] leading-relaxed text-red-300">
+                ⚠ {t('app.exportBlockedHint')}
+              </p>
+            )}
             <button
               onClick={onExport}
-              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500"
+              disabled={exportBlocked}
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <IconDownload /> {t('co.plan.export')}
             </button>

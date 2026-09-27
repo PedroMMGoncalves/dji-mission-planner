@@ -3034,8 +3034,9 @@ check(
       ) &&
       tf.pathLengthM > cs.pathLengthM &&
       applyCircularTerrain(circ, { elevationAt: () => NaN, refElev: 100, agl: 60, speed: 8 })
-        .missing === circ.waypoints.length &&
-      applyCircularTerrain(circ, { elevationAt: rampa, refElev: NaN, agl: 60, speed: 8 }) === null,
+        .error === 'terrain-nodata' &&
+      applyCircularTerrain(circ, { elevationAt: rampa, refElev: NaN, agl: 60, speed: 8 }).error ===
+        'ref-outside-terrain',
   )
   const bl = circularBlocks(circ, tf.waypoints, { usableS: 240, speed: 8 })
   check(
