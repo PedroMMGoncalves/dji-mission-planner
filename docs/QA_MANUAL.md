@@ -189,6 +189,23 @@ tablet real):
 - ☐ A faixa de resumo do projecto (2+ planos) não tapa os controlos do
   mapa.
 
+## 12. Não há missão sem relevo (~1.5 min)
+
+- ☐ Desenhar uma área nova e concluir.
+  **Esperado:** o relevo começa logo a descarregar (sem esperar); a
+  pastilha do preflight mostra «A descarregar o relevo» e o KMZ fica
+  desactivado até terminar.
+- ☐ Com a rede desligada (DevTools → Offline) numa zona nunca vista,
+  desenhar uma área.
+  **Esperado:** bloqueio «a descarga falhou», com o botão **Descarregar
+  relevo global** no próprio item. Voltar a ligar a rede: o relevo chega
+  sozinho (nova tentativa) ou com o botão, e o bloqueio desaparece.
+- ☐ Importar um MDT da DGT que cubra só a área e desenhar um corredor que
+  saia dele.
+  **Esperado:** o MDT importado não é substituído; no separador Corredor o
+  preflight diz que o MDT importado não cobre a rota e oferece o relevo
+  global.
+
 ---
 
 Registo de execução:

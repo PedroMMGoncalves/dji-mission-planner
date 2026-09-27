@@ -41,7 +41,7 @@ import { MissionExportError } from './utils/exporters.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission, useCorridorRoute } from './hooks/useCorridorMission.js'
-import { terrainTargetBbox } from './mission/corridorTerrain.js'
+import { bboxCovers, bboxOfPoints, terrainTargetBbox } from './mission/corridorTerrain.js'
 import { useCircularMission } from './hooks/useCircularMission.js'
 import { useOrbitMission } from './hooks/useOrbitMission.js'
 import { useFaceMission } from './hooks/useFaceMission.js'
@@ -51,6 +51,7 @@ import { useProject } from './hooks/useProject.js'
 import { DEFAULT_PARAMS } from './mission/defaults.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
 import { routeClearance } from './mission/clearance.js'
+import { checkFaceClearance } from './utils/faceMode.js'
 import { gimbalRangeViolation } from './mission/gimbal.js'
 import {
   motionBlur,
@@ -347,6 +348,27 @@ function AppInner({ lang, setLang }) {
     handleExportOrbitPerLevel,
   } = useOrbitMission({ sensor, missionMode, missionName, wpml, setMode, runExport })
 
+  /* ----------------------- Modo fachada (E1.1) ------------------------ */
+  const {
+    faceConfig,
+    setFaceConfig,
+    setFaceParam,
+    startFaceDraw,
+    handleFinishFace,
+    clearFaceBaseline,
+    facePlan,
+    facePreview,
+    handleExportFace,
+  } = useFaceMission({
+    sensor,
+    missionMode,
+    missionName,
+    wpml,
+    setMode,
+    setDraftVertices,
+    runExport,
+  })
+
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const {
     inspectPoints,
@@ -451,17 +473,30 @@ function AppInner({ lang, setLang }) {
   })
 
   /* ------------------------------ Terreno ----------------------------- */
-  // Com corredor, a área e o corredor juntos (um só MDT para os dois).
-  // Memorizada: uma caixa nova a cada render reiniciava a espera da descarga
-  // automática sempre que qualquer campo mudava.
+  // Todas as geometrias do projecto juntas (um só MDT para todas), ou a do
+  // separador aberto quando ficam a mais de 20 km. Chave estável: uma caixa
+  // nova a cada render reiniciava a espera da descarga automática.
+  const terrainTargetKey = useMemo(() => {
+    const ok = (p) => (p && !p.error ? bboxOfPoints(p.waypoints) : null)
+    // a área com as células (partes de um MultiPolygon podem ficar fora do contorno)
+    const areaBox =
+      ring && validation.valid
+        ? Array.isArray(gridCells) && gridCells.length > 0
+          ? bboxOfPoints([...ring, ...gridCells.flat()])
+          : ringBbox
+        : null
+    const b = terrainTargetBbox({
+      areaBbox: areaBox,
+      corridorBbox,
+      faceBbox: ok(facePlan),
+      orbitBbox: ok(orbitPlan),
+      missionMode,
+    })
+    return b ? b.map((v) => v.toFixed(6)).join(',') : ''
+  }, [ring, validation.valid, ringBbox, gridCells, corridorBbox, facePlan, orbitPlan, missionMode])
   const terrainTarget = useMemo(
-    () =>
-      terrainTargetBbox({
-        areaBbox: ring && validation.valid ? ringBbox : null,
-        corridorBbox,
-        missionMode,
-      }),
-    [ring, validation.valid, ringBbox, corridorBbox, missionMode],
+    () => (terrainTargetKey ? terrainTargetKey.split(',').map(Number) : null),
+    [terrainTargetKey],
   )
   const {
     terrain,
@@ -477,6 +512,16 @@ function AppInner({ lang, setLang }) {
     ringValid: validation.valid,
     targetBbox: terrainTarget,
   })
+
+  // Fachada: folga só contra DSM LOCAL; com o relevo global fica "standoff
+  // não verificado"
+  const dsmLoaded = terrain.status === 'ready' && terrain.data?.source === 'file'
+  const faceClearance = useMemo(() => {
+    if (!facePlan || facePlan.error || !dsmLoaded) return null
+    return checkFaceClearance(facePlan, terrain.data.elevationAt, {
+      minClearanceM: faceConfig.minClearanceM,
+    })
+  }, [facePlan, dsmLoaded, terrain.data, faceConfig.minClearanceM])
 
   /* ---------- Corredor, parte 2: relevo, referência, exportação -------- */
   const {
@@ -581,30 +626,6 @@ function AppInner({ lang, setLang }) {
     missionMode,
     runExport,
     avisoIntervalo,
-  })
-
-  /* ----------------------- Modo fachada (E1.1) ------------------------ */
-  const {
-    faceConfig,
-    setFaceConfig,
-    setFaceParam,
-    startFaceDraw,
-    handleFinishFace,
-    clearFaceBaseline,
-    facePlan,
-    dsmLoaded,
-    faceClearance,
-    facePreview,
-    handleExportFace,
-  } = useFaceMission({
-    sensor,
-    terrain,
-    missionMode,
-    missionName,
-    wpml,
-    setMode,
-    setDraftVertices,
-    runExport,
   })
 
   const handleMapClick = useCallback(
@@ -773,14 +794,25 @@ function AppInner({ lang, setLang }) {
     return routeClearance(view3d.waypoints, { elevationAt, refElev: view3d.refElev })
   }, [terrain, view3d])
 
-  // Maior altura acima do solo da rota exportável: sobre o relevo quando o
-  // há, senão a maior altura planeada. Só para a nota da categoria aberta
-  // (120 m): a altura é decisão do operador e nada é cortado nem bloqueado.
-  const aglMaxM = useMemo(() => {
-    if (Number.isFinite(clearance?.maxM)) return clearance.maxM
-    const hs = (view3d?.waypoints ?? []).map((w) => w[2]).filter(Number.isFinite)
-    return hs.length ? Math.max(...hs) : null
-  }, [clearance, view3d])
+  // Maior altura acima do solo da rota exportável, sobre o relevo. Só para a
+  // nota da categoria aberta (120 m): a altura é decisão do operador e nada
+  // é cortado nem bloqueado.
+  const aglMaxM = Number.isFinite(clearance?.maxM) ? clearance.maxM : null
+
+  // O relevo cobre a rota que sairia no KMZ do separador aberto? Sem isto
+  // não há exportação: as alturas são relativas à descolagem e só o relevo
+  // diz a que altura do chão se voa (o preflight diz o que falta).
+  const terrainRoute = useMemo(() => {
+    const box = bboxOfPoints(view3d?.waypoints)
+    const covered =
+      terrain.status === 'ready' && Boolean(box) && bboxCovers(terrain.data?.bbox, box)
+    return {
+      covered,
+      status: terrain.status,
+      source: terrain.data?.source ?? null,
+      error: terrain.error ?? null,
+    }
+  }, [view3d, terrain])
 
   // Inclinacao do gimbal pedida fora do que o payload alcanca (a exportacao
   // recorta; aqui avisa-se do valor pedido), no modo activo e nos pontos de
@@ -909,9 +941,18 @@ function AppInner({ lang, setLang }) {
         reference,
         gimbal,
         aglMaxM,
+        terrainRoute,
       })
     }
-    const other = { batteryMin, reservePct: split.reservePct, clearance, route, gimbal, aglMaxM }
+    const other = {
+      batteryMin,
+      reservePct: split.reservePct,
+      clearance,
+      route,
+      gimbal,
+      aglMaxM,
+      terrainRoute,
+    }
     if (missionMode === 'corridor')
       return preflightPlan({
         ...other,
@@ -985,8 +1026,14 @@ function AppInner({ lang, setLang }) {
     blur,
     route,
     aglMaxM,
+    terrainRoute,
   ])
   const exportBlocked = hasBlockers(preflight)
+  // sem relevo sobre a rota, o próprio item do preflight descarrega o global
+  const terrainActions = useMemo(() => {
+    const a = { label: t('cp.terrain.downloadGlobal'), onClick: handleLoadTerrain }
+    return { 'terrain-missing': a, 'terrain-download-error': a, 'terrain-file-outside': a }
+  }, [t, handleLoadTerrain])
 
   // Exportação da missão do SEPARADOR ABERTO, sempre atrás do preflight dela:
   // o botão do cabeçalho e os botões de cada painel. Antes o cabeçalho
@@ -1306,7 +1353,7 @@ function AppInner({ lang, setLang }) {
         </div>
       </header>
 
-      {showPreflight && <PreflightList items={preflight} />}
+      {showPreflight && <PreflightList items={preflight} actions={terrainActions} />}
 
       {exportError && (
         <div

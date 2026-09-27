@@ -10,6 +10,15 @@ import { fitSlopePlane, loadTerrain } from '../utils/terrain.js'
 import { loadDemFromFile } from '../utils/demFile.js'
 import { DEFAULT_TERRAIN_FOLLOW } from '../mission/defaults.js'
 import { isOffline } from '../utils/tileCache.js'
+import { bboxIntersects } from '../mission/corridorTerrain.js'
+
+/** Espera antes de voltar a descarregar quando se edita uma geometria já com relevo. */
+const EDIT_DEBOUNCE_MS = 800
+/** Novas tentativas automáticas depois de uma falha na mesma caixa. */
+const RETRY_DELAYS_MS = [3000, 10000, 30000]
+
+/** Chave de uma caixa para as tentativas automáticas (~10 m). */
+const boxKey = (b) => b.map((v) => v.toFixed(4)).join(',')
 
 /** O relevo carregado cobre a caixa [oeste, sul, este, norte]? */
 function terrainCoversBox(terrain, box) {
@@ -20,16 +29,29 @@ function terrainCoversBox(terrain, box) {
 
 /**
  * `targetBbox`, quando dado, é a caixa a cobrir com relevo em vez da da área
- * (um projecto com corredor carrega a área e o corredor juntos: ver
- * terrainTargetBbox). Sem ele, tudo como antes: a caixa da área.
+ * (todas as geometrias do projecto juntas: ver terrainTargetBbox). Sem ele,
+ * a caixa da área.
+ *
+ * Não há missão sem relevo: as alturas são relativas à descolagem e só o
+ * relevo diz a que altura do chão se voa. Cada geometria fechada (área
+ * desenhada ou importada, eixo, fachada, órbita) descarrega logo o relevo
+ * global que a cubra; uma falha volta a tentar sozinha, e o preflight
+ * bloqueia a exportação enquanto o relevo não cobrir a rota.
  */
 export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = null }) {
   const ringBbox = targetBbox ?? areaBbox
   const [terrain, setTerrain] = useState({ status: 'idle', data: null, error: null })
   const [terrainFollow, setTerrainFollow] = useState(() => ({ ...DEFAULT_TERRAIN_FOLLOW }))
 
+  // Só o pedido mais recente conta: uma descarga lenta de uma caixa antiga
+  // não pode substituir o relevo da geometria actual
+  const requestRef = useRef(0)
+  // caixa e número de descargas automáticas já tentadas para ela
+  const autoRef = useRef({ key: null, attempts: 0 })
+
   const handleLoadTerrain = useCallback(async () => {
     if (!ringBbox) return
+    const req = ++requestRef.current
     setTerrain({ status: 'loading', data: null, error: null })
     try {
       const m = 0.01 // ~1 km de margem para incluir a base
@@ -40,8 +62,10 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
         ringBbox[3] + m,
       ])
       const data = await loadTerrain(bbox)
+      if (req !== requestRef.current) return
       setTerrain({ status: 'ready', data, error: null })
     } catch (err) {
+      if (req !== requestRef.current) return
       // sem rede, a mensagem diz o que se passa em vez de um HTTP opaco; as
       // areas ja descarregadas continuam a vir da cache persistente
       const offline = isOffline()
@@ -59,11 +83,17 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
   const handleImportDem = useCallback(
     async (file) => {
       if (!file || !ringBbox) return
+      const req = ++requestRef.current
       setTerrain({ status: 'loading', data: null, error: null })
       try {
         const data = await loadDemFromFile(file, ringBbox)
+        if (req !== requestRef.current) return
         setTerrain({ status: 'ready', data, error: null })
       } catch (err) {
+        if (req !== requestRef.current) return
+        // o erro do ficheiro fica à vista: nada de o tapar logo com o relevo
+        // global (o botão manual carrega-o; mudar a geometria também)
+        autoRef.current = { key: boxKey(ringBbox), attempts: Infinity }
         setTerrain({ status: 'error', data: null, error: err?.message ?? 'Falha ao ler o MDT' })
       }
     },
@@ -77,25 +107,50 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
   // e a caixa a carregar (área e corredor juntos), para a descarga automática
   const targetCovers = useMemo(() => terrainCoversBox(terrain, ringBbox), [terrain, ringBbox])
 
-  // Descarga automática do relevo global quando a área fica definida:
-  // com debounce (não dispara enquanto se arrastam vértices), sem nunca
-  // substituir um MDT local importado, e sem repetir sozinha após um erro
-  // na mesma área (o botão manual fica como recurso).
-  const autoTerrainTriedRef = useRef(null)
+  // Descarga automática do relevo global sempre que a caixa a cobrir não
+  // está coberta:
+  // - geometria nova (nada do relevo carregado lhe toca): já, sem espera;
+  // - geometria editada para lá do relevo: com uma espera curta, para não
+  //   descarregar a cada vértice arrastado;
+  // - falha (ou descarga que não cobre a caixa): volta a tentar sozinha
+  //   (3 s, 10 s, 30 s) e outra vez quando a ligação volta; o botão manual
+  //   continua lá;
+  // - MDT local importado: nunca é substituído enquanto tocar na caixa (a
+  //   DGT ou o último levantamento valem mais do que os ~25 m globais; se
+  //   não cobrir tudo, o preflight diz porquê). Um MDT de outro sítio, que
+  //   não toca na geometria, dá lugar ao relevo global.
+  const [onlineTick, setOnlineTick] = useState(0)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onOnline = () => {
+      autoRef.current = { ...autoRef.current, attempts: 0 }
+      setOnlineTick((n) => n + 1)
+    }
+    window.addEventListener('online', onOnline)
+    return () => window.removeEventListener('online', onOnline)
+  }, [])
   useEffect(() => {
     if (!ringBbox) return
     if (!targetBbox && (!ring || !ringValid)) return
     if (terrain.status === 'loading') return
-    if (terrain.data?.source === 'file') return
+    const loaded = terrain.status === 'ready' ? terrain.data?.bbox : null
+    if (terrain.data?.source === 'file' && bboxIntersects(loaded, ringBbox)) return
     if (terrain.status === 'ready' && targetCovers) return
-    const key = ringBbox.map((v) => v.toFixed(3)).join(',')
-    if (terrain.status === 'error' && autoTerrainTriedRef.current === key) return
+    const key = boxKey(ringBbox)
+    const tried = autoRef.current.key === key ? autoRef.current.attempts : 0
+    let delay = bboxIntersects(loaded, ringBbox) ? EDIT_DEBOUNCE_MS : 0
+    // já se descarregou para esta caixa e não ficou coberta (falha, ou um
+    // resultado curto): espera crescente e um limite, nunca um ciclo
+    if (tried > 0) {
+      if (tried > RETRY_DELAYS_MS.length) return
+      delay = RETRY_DELAYS_MS[tried - 1]
+    }
     const timer = setTimeout(() => {
-      autoTerrainTriedRef.current = key
+      autoRef.current = { key, attempts: tried + 1 }
       handleLoadTerrain()
-    }, 1500)
+    }, delay)
     return () => clearTimeout(timer)
-  }, [ring, ringValid, ringBbox, targetBbox, terrain, targetCovers, handleLoadTerrain])
+  }, [ring, ringValid, ringBbox, targetBbox, terrain, targetCovers, handleLoadTerrain, onlineTick])
 
   // Sugestões para encostas íngremes (T4.5): plano médio do terreno na área
   // → linhas ao longo das curvas de nível e gimbal ≈ −(90 − inclinação).

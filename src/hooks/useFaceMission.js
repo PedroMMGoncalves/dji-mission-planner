@@ -1,17 +1,17 @@
 /**
- * Modo fachada: linha de base, plano de passagens empilhadas, folga contra
- * MDT local, pré-visualização e exportação. A geometria está em
+ * Modo fachada: linha de base, plano de passagens empilhadas,
+ * pré-visualização e exportação (a folga contra o MDT local fica no App,
+ * depois do relevo, que por sua vez precisa da caixa da fachada). A geometria está em
  * utils/faceMode.js.
  */
 import { useCallback, useMemo, useState } from 'react'
-import { DEFAULT_FACE_CONFIG, checkFaceClearance, generateFacePlan } from '../utils/faceMode.js'
+import { DEFAULT_FACE_CONFIG, generateFacePlan } from '../utils/faceMode.js'
 import { headingTicks } from '../utils/preview.js'
 import { faceExportParams } from '../mission/exportParams.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
 
 export function useFaceMission({
   sensor,
-  terrain,
   missionMode,
   missionName,
   wpml,
@@ -70,15 +70,6 @@ export function useFaceMission({
     })
   }, [faceConfig, sensor])
 
-  // folga só contra DSM LOCAL; com Terrarium fica "standoff não verificado"
-  const dsmLoaded = terrain.status === 'ready' && terrain.data?.source === 'file'
-  const faceClearance = useMemo(() => {
-    if (!facePlan || facePlan.error || !dsmLoaded) return null
-    return checkFaceClearance(facePlan, terrain.data.elevationAt, {
-      minClearanceM: faceConfig.minClearanceM,
-    })
-  }, [facePlan, dsmLoaded, terrain.data, faceConfig.minClearanceM])
-
   const facePreview = useMemo(() => {
     if (missionMode !== 'face') return null
     const ok = facePlan && !facePlan.error ? facePlan : null
@@ -126,8 +117,6 @@ export function useFaceMission({
     handleFinishFace,
     clearFaceBaseline,
     facePlan,
-    dsmLoaded,
-    faceClearance,
     facePreview,
     handleExportFace,
   }

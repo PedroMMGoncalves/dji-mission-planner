@@ -230,10 +230,34 @@ o que o relevo dos lados da faixa exige e não corta nada. Quando a rota
 passa os 120 m acima do solo, o máximo da categoria aberta (Reg. (UE)
 2019/947, UAS.OPEN.010), o preflight mostra uma nota, que não é aviso nem
 bloqueio. A maior altura acima do solo mede-se sobre o relevo com a mesma
-amostragem da folga ao solo (`routeClearance.maxM`); sem relevo, é a maior
-altura planeada. Até Setembro de 2026 a subida lateral era cortada aos
+amostragem da folga ao solo (`routeClearance.maxM`). Até Setembro de 2026 a subida lateral era cortada aos
 120 m por omissão, o que tirava a protecção lateral a quem voava mais alto;
 o corte continua disponível no motor (`aglCapM`) para quem o pedir.
+
+Não há missão sem relevo. As alturas do KMZ são relativas à descolagem, e
+só o relevo diz a que altura do chão se voa; sem ele a cota de referência
+seria o próprio ponto de descolagem e a folga ao solo ficaria por
+verificar. Por isso:
+
+- cada geometria fechada (área desenhada, importada ou ancorada, eixo do
+  corredor, linha de fachada, órbita) descarrega logo o relevo global que
+  a cubra, sem espera; editar uma geometria já com relevo para lá dele
+  espera 0,8 s, para não descarregar a cada vértice arrastado;
+- a caixa a cobrir junta todas as geometrias do projecto (a área com as
+  células das partes importadas, o corredor, a fachada e a órbita) quando
+  o maior lado não passa de 20 km, para um só MDT servir todas; acima
+  disso, a do separador aberto (`terrainTargetBbox`);
+- uma descarga falhada volta a tentar sozinha aos 3, 10 e 30 s, e outra
+  vez quando a ligação volta; só conta a descarga mais recente;
+- um MDT importado nunca é substituído enquanto tocar na caixa (a DGT ou
+  o último levantamento valem mais do que os ~30 m globais); um MDT de
+  outro sítio, que não lhe toca, dá lugar ao relevo global. A falha a ler
+  um ficheiro fica à vista, sem ser tapada pela descarga global;
+- o preflight bloqueia a exportação, em todos os modos, enquanto o relevo
+  carregado não cobrir a caixa da rota exportada, e diz porquê: a
+  descarregar, descarga falhada (com a mensagem), MDT importado que não
+  cobre a rota, ou ainda nada. O próprio item traz o botão para
+  descarregar o relevo global.
 
 Relevo global: tiles Terrarium (AWS `elevation-tiles-prod`), zoom 12 por
 omissão (~30 m/píxel a latitudes médias), com 1 tile de margem em todas as
@@ -467,10 +491,9 @@ pontos acrescentados pelo relevo seguem sem foto. É a diferença para a
 área, que nesse modo recusa o seguimento de terreno. Estatísticas sobre a
 rota 3D; nome `_corridor-tf_nN`.
 
-Relevo partilhado: com corredor no projecto, a caixa a cobrir é a união
-da área e do corredor quando o maior lado não passa de 20 km, para um só
-MDT (da DGT ou o último levantamento) servir os dois; acima disso, a do
-separador aberto (`terrainTargetBbox`). A cobertura do corredor verifica-se
+Relevo partilhado: a área e o corredor entram na mesma caixa de relevo
+(secção 5), para um só MDT (da DGT ou o último levantamento) servir os
+dois. A cobertura do corredor verifica-se
 sobre a própria rota com margem para a amostragem lateral. Preflight:
 seguimento pedido sem relevo que cubra a rota é bloqueio; sem base, diz a
 cota assumida e avisa acima de 10 m de desnível, como na área.
@@ -728,7 +751,9 @@ invólucro convexo (ou rectângulo com 20 m de margem quando degenerado).
 exportação dessa missão: o do cabeçalho, que exporta a missão do
 separador aberto, e os de cada painel. Antes só o do cabeçalho estava
 ligado ao preflight, e exportava a área qualquer que fosse o separador.
-Bloqueios (desactivam o KMZ): sem plano; plano com erro; seguir terreno com
+Bloqueios (desactivam o KMZ): sem plano; plano com erro; relevo que não
+cobre a rota exportada, em todos os modos (a descarregar, descarga
+falhada, MDT importado curto, ou nenhum: secção 5); seguir terreno com
 foto por waypoint; seguir terreno ligado sem relevo a cobrir a área; erro
 do cálculo do terreno; mais de 65535 waypoints numa rota (a maior, com
 blocos); waypoints consecutivos a menos de 0,5 m em 3D na rota exportada (o mínimo

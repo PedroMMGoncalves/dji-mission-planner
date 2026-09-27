@@ -6,6 +6,33 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Alterado (não há missão sem relevo)
+
+- **O relevo passa a ser obrigatório.** As alturas do KMZ são relativas à
+  descolagem, e sem relevo a aplicação exportava na mesma, com a cota de
+  referência no próprio ponto de descolagem e a folga ao solo por
+  verificar. Agora o preflight bloqueia a exportação, em todos os modos,
+  enquanto o relevo carregado não cobrir a rota exportada, e diz porquê
+  (a descarregar, descarga falhada, MDT importado que não cobre a rota, ou
+  nenhum), com o botão para descarregar o relevo global no próprio item.
+- **Descarga imediata.** Fechar uma geometria (área desenhada, importada
+  ou ancorada, eixo do corredor, fachada, órbita) descarrega logo o relevo
+  global que a cubra; antes esperava 1,5 s. Editar uma geometria já com
+  relevo para lá dele espera 0,8 s.
+- **Novas tentativas.** Uma descarga falhada tentava uma vez e desistia até
+  se mudar a área. Agora volta a tentar aos 3, 10 e 30 s e quando a
+  ligação volta; uma descarga antiga que chegue tarde já não substitui a
+  da geometria actual.
+- **Uma caixa de relevo para todo o projecto.** A fachada, a órbita e as
+  células das partes importadas de um MultiPolygon entram na caixa a
+  cobrir, com a área e o corredor (até 20 km). Antes as partes fora do
+  contorno principal ficavam sem relevo.
+- **MDT importado.** Continua a nunca ser substituído enquanto tocar na
+  geometria; um MDT de outro sítio, que não lhe toca, dá lugar ao relevo
+  global. A falha a ler um ficheiro fica à vista.
+- A nota do preflight sobre a categoria aberta mede-se só sobre o relevo,
+  e a nota «sem base» deixa de falar em «sem relevo».
+
 ### Alterado (sem tecto de altura)
 
 - **A altura de voo é decisão do operador.** O seguimento de terreno

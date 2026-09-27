@@ -41,7 +41,11 @@ export function PreflightPill({ items, open, onToggle }) {
   )
 }
 
-export function PreflightList({ items }) {
+/**
+ * `actions`, opcional: `{ [code]: { label, onClick } }` põe um botão no item
+ * com esse código (ex.: descarregar o relevo global em qualquer modo).
+ */
+export function PreflightList({ items, actions = null }) {
   const t = useT()
   return (
     <div data-testid="preflight-list" className="border-b border-slate-800 bg-slate-950 px-4 py-2">
@@ -53,6 +57,15 @@ export function PreflightList({ items }) {
             className={`rounded border px-2 py-1 text-[12px] leading-relaxed ${LEVEL_STYLE[it.level]}`}
           >
             {LEVEL_MARK[it.level]} {t(`preflight.${it.code}`, it.params)}
+            {actions?.[it.code] && (
+              <button
+                type="button"
+                onClick={actions[it.code].onClick}
+                className="ml-2 rounded border border-current px-2 py-0.5 text-[11px] font-medium hover:bg-white/10"
+              >
+                {actions[it.code].label}
+              </button>
+            )}
           </li>
         ))}
       </ul>

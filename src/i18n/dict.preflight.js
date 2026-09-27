@@ -34,6 +34,22 @@ export default {
     pt: 'Seguir terreno está ligado mas não há relevo a cobrir a área; sem ele o KMZ sairia com alturas planas.',
     en: 'Follow terrain is on but no elevation data covers the area; without it the KMZ would carry flat heights.',
   },
+  'preflight.terrain-loading': {
+    pt: 'A descarregar o relevo da rota; a exportação fica disponível quando terminar.',
+    en: 'Downloading terrain for the route; export becomes available when it finishes.',
+  },
+  'preflight.terrain-download-error': {
+    pt: 'Não há relevo sobre a rota: a descarga falhou ({msg}). Volta a tentar sozinha; pode também tentar já ou importar um MDT.',
+    en: 'No terrain under the route: the download failed ({msg}). It retries on its own; you can also retry now or import a DTM.',
+  },
+  'preflight.terrain-file-outside': {
+    pt: 'O MDT importado não cobre toda a rota. Importe um MDT que a cubra, ou use o relevo global (~30 m).',
+    en: 'The imported DTM does not cover the whole route. Import a DTM that covers it, or use the global terrain (~30 m).',
+  },
+  'preflight.terrain-missing': {
+    pt: 'Não há relevo sobre a rota: sem ele não se sabe a que altura do chão se voa.',
+    en: 'No terrain under the route: without it the height above ground is unknown.',
+  },
   'preflight.terrain-error': {
     pt: 'Seguir terreno falhou: {msg}',
     en: 'Follow terrain failed: {msg}',
@@ -115,8 +131,8 @@ export default {
     en: 'Gimbal pitch of {worst}° requested outside what the payload reaches ({min}° to {max}°): the KMZ is clamped to the limit. Adjust the pitch.',
   },
   'preflight.no-base': {
-    pt: 'Sem ponto de base: o trânsito não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota (sem relevo, ao ponto de descolagem).',
-    en: 'No base point: transit is not counted against the battery and heights refer to the minimum terrain elevation under the route (without terrain, to the take-off point).',
+    pt: 'Sem ponto de base: o trânsito não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota.',
+    en: 'No base point: transit is not counted against the battery and heights refer to the minimum terrain elevation under the route.',
   },
   'preflight.open-category-agl': {
     pt: 'A rota chega a {max} m acima do solo. O máximo na categoria aberta é {cap} m; acima disso é preciso voar na categoria específica, com autorização.',

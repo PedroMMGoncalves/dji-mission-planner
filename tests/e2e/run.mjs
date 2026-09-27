@@ -16,6 +16,7 @@
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import zlib from 'node:zlib'
 import { join, resolve } from 'node:path'
 import { chromium } from 'playwright'
 import Ajv2020 from 'ajv/dist/2020.js'
@@ -113,19 +114,52 @@ const TF = /Seguir terreno|Follow terrain/
 const CROSS = /crosshatch/i
 const NADIR = /Passagem nadir|nadir pass/i
 
-async function openMission({ area, dem = true }) {
+/**
+ * Tile Terrarium de 256 x 256 todo à mesma cota: R*256 + G + B/256 - 32768,
+ * logo (128, 0, 0) é 0 m. PNG RGB sem filtro, feito à mão com o zlib.
+ */
+function solidTerrariumPng([r, g, b]) {
+  const W = 256
+  const row = Buffer.alloc(1 + W * 3)
+  for (let x = 0; x < W; x++) row.set([r, g, b], 1 + x * 3)
+  const raw = Buffer.concat(Array.from({ length: W }, () => row))
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4)
+    len.writeUInt32BE(data.length)
+    const td = Buffer.concat([Buffer.from(type, 'ascii'), data])
+    const crc = Buffer.alloc(4)
+    crc.writeUInt32BE(zlib.crc32(td) >>> 0)
+    return Buffer.concat([len, td, crc])
+  }
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(W, 0)
+  ihdr.writeUInt32BE(W, 4)
+  ihdr.set([8, 2, 0, 0, 0], 8)
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', zlib.deflateSync(raw)),
+    chunk('IEND', Buffer.alloc(0)),
+  ])
+}
+const FLAT_TILE = solidTerrariumPng([128, 0, 0])
+
+async function openMission({ area, dem = true, globalTerrain = true }) {
   const page = await browser.newPage({
     viewport: { width: 1500, height: 950 },
     acceptDownloads: true,
   })
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message.slice(0, 300)))
-  // só a build local: mapas, relevo global e fontes externas ficam de fora
-  await page.route('**/*', (route) =>
-    route.request().url().startsWith(`http://127.0.0.1:${PORT}/`)
-      ? route.continue()
-      : route.abort(),
-  )
+  // só a build local: mapas e fontes externas ficam de fora; o relevo global
+  // é um chão plano a 0 m servido aqui (não há exportação sem relevo)
+  await page.route('**/*', (route) => {
+    const url = route.request().url()
+    if (url.startsWith(`http://127.0.0.1:${PORT}/`)) return route.continue()
+    if (globalTerrain && /elevation-tiles-prod\/terrarium\//.test(url))
+      return route.fulfill({ status: 200, contentType: 'image/png', body: FLAT_TILE })
+    return route.abort()
+  })
   await page.goto(URL, { waitUntil: 'domcontentloaded' })
   const areaInput = page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
   await areaInput.waitFor({ state: 'attached', timeout: 20000 })
@@ -156,6 +190,21 @@ async function openMission({ area, dem = true }) {
   }
   return { page, errors }
 }
+
+/** Espera que o botão de exportação do cabeçalho fique activo (relevo carregado). */
+async function exportReady(page) {
+  await page.waitForFunction(
+    () => {
+      const b = [...document.querySelectorAll('button')].find((b) =>
+        /Exportar WPML|Export Advanced WPML/.test(b.textContent),
+      )
+      return b && !b.disabled
+    },
+    null,
+    { timeout: 20000 },
+  )
+}
+const DOWNLOAD_GLOBAL = /Descarregar relevo global|Download global terrain/
 
 async function configure(page, { cross = false, nadir = false, tf = false, split = null }) {
   if (cross) await label(page, CROSS).check()
@@ -365,6 +414,23 @@ await scenario('multipoligono-aviso', async () => {
   // todas as partes como células: um KMZ por parte
   await page.getByRole('button', { name: /Usar todas as partes|Use all parts/ }).click()
   await page.waitForTimeout(800)
+  // as outras duas partes ficam fora do MDT importado: sem relevo não há
+  // exportação, e o preflight diz porquê e oferece o relevo global
+  const pill = page.getByTestId('preflight-pill')
+  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  check(
+    'importação: partes fora do MDT importado bloqueiam a exportação',
+    /1 bloqueio|1 blocker/.test(await pill.innerText()) && !(await exportBtn.isEnabled()),
+    await pill.innerText(),
+  )
+  await pill.click()
+  const list = page.getByTestId('preflight-list')
+  check(
+    'importação: o preflight explica que o MDT importado não cobre a rota',
+    /MDT importado não cobre|imported DTM does not cover/.test(await list.innerText()),
+  )
+  await list.getByRole('button', { name: DOWNLOAD_GLOBAL }).click()
+  await exportReady(page)
   const cells = await readRoutes(await exportKmz(page, join(OUT, 'multi-celulas.zip')))
   check(
     'importação: todas as partes como células exportam um KMZ por parte',
@@ -767,21 +833,46 @@ await scenario('projecto-autosave-ficheiro', async () => {
 // seguir terreno ligado mas sem relevo (rede cortada) exportava antes um
 // KMZ com alturas planas, sem aviso.
 await scenario('preflight-bloqueia-terreno-em-falta', async () => {
-  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  // relevo global indisponível (rede cortada): a primeira descarga falha
+  const { page, errors } = await openMission({ area: fx.rect, dem: false, globalTerrain: false })
   const pill = page.getByTestId('preflight-pill')
+  await page.waitForTimeout(1500)
+  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
   check(
-    'preflight: pastilha visível e sem bloqueios com o plano simples',
+    'preflight: sem relevo sobre a rota é um bloqueio e o KMZ fica desactivado',
     (await pill.count()) === 1 &&
-      /Pronto a exportar|Ready to export|0 bloqueios|0 blockers/.test(await pill.innerText()),
+      /1 bloqueio|1 blocker/.test(await pill.innerText()) &&
+      !(await exportBtn.isEnabled()),
+    await pill.innerText(),
   )
   await pill.click()
   const list = page.getByTestId('preflight-list')
   check(
-    'preflight: a lista abre com o lembrete das alturas relativas',
-    (await list.count()) === 1 && /descolagem|take-off/.test(await list.innerText()),
+    'preflight: a lista explica a falha e oferece a descarga do relevo global',
+    /descarga falhou|download failed/.test(await list.innerText()) &&
+      (await list.getByRole('button', { name: DOWNLOAD_GLOBAL }).count()) === 1,
+    (await list.innerText()).slice(0, 200),
   )
 
-  // projecto gravado com seguir terreno ligado; sem relevo ao recarregar
+  // a rede volta: a descarga (do botão ou da nova tentativa automática)
+  // traz o relevo e a exportação fica disponível
+  await page.route(/elevation-tiles-prod\/terrarium\//, (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: FLAT_TILE }),
+  )
+  await list.getByRole('button', { name: DOWNLOAD_GLOBAL }).click()
+  await exportReady(page)
+  check(
+    'preflight: com o relevo global o bloqueio desaparece',
+    /Pronto a exportar|Ready to export|0 bloqueios|0 blockers/.test(await pill.innerText()),
+    await pill.innerText(),
+  )
+  check(
+    'preflight: a lista fica com o lembrete das alturas relativas',
+    /descolagem|take-off/.test(await page.getByTestId('preflight-list').innerText()),
+  )
+
+  // projecto gravado com seguir terreno ligado e sem relevo ao recarregar:
+  // um só bloqueio (o do relevo), não dois
   await page.waitForTimeout(1200) // autosave com debounce de 500 ms
   await page.evaluate(() => {
     const raw = localStorage.getItem('dji-mission-planner:project:v1')
@@ -789,33 +880,25 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
     p.terrainFollow = { enabled: true, tolerance: 5 }
     localStorage.setItem('dji-mission-planner:project:v1', JSON.stringify(p))
   })
+  // rede outra vez cortada e cache de tiles vazia (senão o relevo vinha da
+  // cache persistente, como no campo sem rede)
+  await page.unroute(/elevation-tiles-prod\/terrarium\//)
+  await page.evaluate(async () => {
+    for (const k of await caches.keys()) await caches.delete(k)
+  })
   await page.reload({ waitUntil: 'domcontentloaded' })
   await page.getByTestId('preflight-pill').waitFor({ state: 'attached', timeout: 20000 })
-  await page.waitForTimeout(2500) // descarga automática do relevo tenta e falha (rede cortada)
+  await page.waitForTimeout(1500)
   const pill2 = page.getByTestId('preflight-pill')
-  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
   check(
-    'preflight: seguir terreno sem relevo é um bloqueio e o KMZ fica desactivado',
+    'preflight: seguir terreno sem relevo continua a ser um só bloqueio',
     /1 bloqueio|1 blocker/.test(await pill2.innerText()) && !(await exportBtn.isEnabled()),
-  )
-  await pill2.click()
-  check(
-    'preflight: a lista explica o bloqueio',
-    /relevo|elevation/.test(await page.getByTestId('preflight-list').innerText()),
+    await pill2.innerText(),
   )
 
-  // com o MDT carregado o bloqueio desaparece e a exportação volta
+  // com o MDT importado o bloqueio desaparece e a exportação volta
   await page.locator('input[accept=".tif,.tiff"]').setInputFiles(fx.dem)
-  await page.waitForFunction(
-    () => {
-      const b = [...document.querySelectorAll('button')].find((b) =>
-        /Exportar WPML|Export Advanced WPML/.test(b.textContent),
-      )
-      return b && !b.disabled
-    },
-    null,
-    { timeout: 20000 },
-  )
+  await exportReady(page)
   check(
     'preflight: com o MDT carregado o bloqueio desaparece',
     !/bloqueio|blocker/.test(await page.getByTestId('preflight-pill').innerText()) ||

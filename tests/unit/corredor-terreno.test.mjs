@@ -11,6 +11,7 @@ import {
   bboxOfPoints,
   planCorridorTerrain,
   terrainTargetBbox,
+  bboxIntersects,
 } from '../../src/mission/corridorTerrain.js'
 import { corridorExportParams } from '../../src/mission/exportParams.js'
 import { preflightPlan } from '../../src/mission/preflight.js'
@@ -183,9 +184,28 @@ describe('caixa do relevo, cobertura e base', () => {
     expect(terrainTargetBbox({ areaBbox: null, corridorBbox: perto, missionMode: 'area' })).toEqual(
       perto,
     )
-    expect(terrainTargetBbox({ areaBbox: area, corridorBbox: null, missionMode: 'corridor' })).toBe(
+    // uma só geometria: é a caixa dela, seja qual for o separador
+    expect(
+      terrainTargetBbox({ areaBbox: area, corridorBbox: null, missionMode: 'corridor' }),
+    ).toEqual(area)
+    expect(terrainTargetBbox({ missionMode: 'area' })).toBe(null)
+    // fachada e órbita entram na mesma caixa; longe, fica a do separador aberto
+    const orbita = [-9.16, 38.705, -9.155, 38.71]
+    expect(terrainTargetBbox({ areaBbox: area, orbitBbox: orbita, missionMode: 'orbit' })).toEqual([
+      -9.16, 38.69, -9.13, 38.71,
+    ])
+    expect(terrainTargetBbox({ areaBbox: area, faceBbox: longe, missionMode: 'face' })).toEqual(
+      longe,
+    )
+    expect(terrainTargetBbox({ areaBbox: area, faceBbox: longe, missionMode: 'circular' })).toEqual(
+      area,
+    )
+    expect(terrainTargetBbox({ corridorBbox: longe, areaBbox: area, missionMode: 'orbit' })).toBe(
       null,
     )
+    expect(bboxIntersects(area, perto)).toBe(true)
+    expect(bboxIntersects(area, longe)).toBe(false)
+    expect(bboxIntersects(area, null)).toBe(false)
     expect(TERRAIN_UNION_MAX_KM).toBe(20)
   })
 

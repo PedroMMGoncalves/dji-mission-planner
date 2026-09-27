@@ -76,6 +76,24 @@ function noBaseItems(c) {
 }
 
 /**
+ * Não há missão sem relevo: as alturas são relativas à descolagem e só o
+ * relevo diz a que altura do chão se voa. `c.terrainRoute` diz se o relevo
+ * carregado cobre a rota exportada; enquanto não cobrir, um só bloqueio diz
+ * porquê (a descarregar, a descarga falhou, o MDT importado não chega lá,
+ * ou ainda nada). Sem `terrainRoute` (chamadas antigas, testes) não se
+ * verifica.
+ */
+function terrainRouteItems(c) {
+  const t = c.terrainRoute
+  if (!t || t.covered) return []
+  if (t.status === 'loading') return [item('block', 'terrain-loading')]
+  if (t.status === 'error')
+    return [item('block', 'terrain-download-error', { msg: String(t.error ?? '') })]
+  if (t.status === 'ready' && t.source === 'file') return [item('block', 'terrain-file-outside')]
+  return [item('block', 'terrain-missing')]
+}
+
+/**
  * Rota exportada, segmento a segmento (routeChecks), em todos os modos:
  * waypoints a menos de 0,5 m (bloqueio — a DJI recusa-os), taxa de subida
  * acima da aeronave e troços acima de 5 km (avisos).
@@ -148,6 +166,7 @@ export function usableBatteryMin(batteryMin, reservePct = 30) {
  * @param {{elev: number|null, source: string|null, baseOutside: boolean, reliefM: number|null}|null} [c.reference] cota de referência (referenceElevation)
  * @param {{worst: number, min: number, max: number}|null} [c.gimbal] inclinação pedida fora do intervalo do payload (gimbalRangeViolation)
  * @param {number|null} [c.aglMaxM] maior altura acima do solo da rota (nota da categoria aberta)
+ * @param {{covered: boolean, status: string, source: string|null, error: string|null}|null} [c.terrainRoute] o relevo cobre a rota exportada
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
@@ -158,8 +177,12 @@ export function preflightArea(c) {
 
   const tf = Boolean(c.terrainFollow?.enabled)
   const tfOk = tf && c.terrainResult && !c.terrainResult.error
+  const noTerrain = terrainRouteItems(c)
+  out.push(...noTerrain)
   if (tf && c.photoMode === 'waypoint') {
     out.push(item('block', 'terrain-photo-waypoint'))
+  } else if (noTerrain.length > 0) {
+    // o bloqueio do relevo em falta já diz tudo
   } else if (tf && !c.terrainCovers) {
     // sem relevo o KMZ sairia com alturas planas, sem nenhum aviso
     out.push(item('block', 'terrain-not-loaded'))
@@ -248,6 +271,7 @@ export function preflightArea(c) {
 /**
  * Preflight dos outros modos (fachada, órbita, corredor, circular): plano
  * válido, limite de waypoints, bateria e a mesma nota sobre as alturas. O
+ * `terrainRoute` bloqueia sem relevo sobre a rota, em todos os modos. O
  * corredor passa ainda `photoMode` e `waypointStops`, para o aviso da foto
  * sem paragem; o corredor e o circular passam `terrainFollow`,
  * `terrainCovers` e `terrainResult` (bloqueio sem relevo) e `reference`,
@@ -261,7 +285,9 @@ export function preflightPlan(c) {
   // Seguimento de terreno pedido (corredor, circular) sem relevo que cubra a
   // rota: o KMZ sairia com alturas planas, sem nenhum aviso. Os modos que não
   // o suportam não passam `terrainFollow`.
-  if (c.terrainFollow?.enabled) {
+  const noTerrain = terrainRouteItems(c)
+  out.push(...noTerrain)
+  if (c.terrainFollow?.enabled && noTerrain.length === 0) {
     if (!c.terrainCovers) out.push(item('block', 'terrain-not-loaded'))
     else if (c.terrainResult?.error)
       out.push(item('block', 'terrain-error', { msg: String(c.terrainResult.error) }))
@@ -305,7 +331,7 @@ export const OPEN_CATEGORY_MAX_AGL_M = 120
  * Nota, e só nota, quando a rota passa os 120 m acima do solo: a altura é
  * decisão operacional (categoria específica, autorização), a aplicação não
  * corta nem bloqueia. `c.aglMaxM` é a maior altura acima do solo da rota
- * exportada (sobre o relevo, ou a planeada sem relevo).
+ * exportada, sobre o relevo.
  */
 function openCategoryItems(c) {
   const m = c.aglMaxM

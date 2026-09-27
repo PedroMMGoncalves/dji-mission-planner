@@ -161,8 +161,10 @@ function InstrucoesPt() {
       <H>Terreno e Vista 3D</H>
       <ul className="list-none">
         <Li>
-          O relevo global (~30 m) descarrega-se automaticamente ao definir a área; com «Seguir
-          terreno», cada waypoint recebe a altura que mantém o AGL constante.
+          Não há missão sem relevo: o relevo global (~30 m) descarrega-se logo que a área, o eixo, a
+          fachada ou a órbita ficam definidos, e volta a tentar se falhar. Sem relevo sobre a rota a
+          exportação fica bloqueada. Com «Seguir terreno», cada waypoint recebe a altura que mantém
+          o AGL constante.
         </Li>
         <Li>
           Para precisão máxima, importe um <strong>MDT GeoTIFF do LiDAR da DGT</strong> (50 cm/2 m)
@@ -341,8 +343,10 @@ function InstrucoesEn() {
       <H>Terrain and 3D view</H>
       <ul className="list-none">
         <Li>
-          The global terrain (~30 m) downloads automatically once the area is defined; with “Follow
-          terrain”, each waypoint gets the height that keeps the AGL constant.
+          There is no mission without terrain: the global terrain (~30 m) downloads as soon as the
+          area, axis, face or orbit is defined, and retries if it fails. With no terrain under the
+          route, export is blocked. With “Follow terrain”, each waypoint gets the height that keeps
+          the AGL constant.
         </Li>
         <Li>
           For maximum accuracy, import a <strong>DGT LiDAR DTM GeoTIFF</strong> (50 cm/2 m) — only

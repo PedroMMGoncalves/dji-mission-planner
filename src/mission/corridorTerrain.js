@@ -92,28 +92,47 @@ function bboxSpanKm(b) {
   return Math.max(dx, dy)
 }
 
-/** Acima disto a área e o corredor não partilham o relevo: carrega-se o do separador aberto. */
+/** Acima disto as geometrias não partilham o relevo: carrega-se o do separador aberto. */
 export const TERRAIN_UNION_MAX_KM = 20
 
+/** As caixas `a` e `b` tocam-se? */
+export function bboxIntersects(a, b) {
+  if (!a || !b) return false
+  return a[0] <= b[2] && b[0] <= a[2] && a[1] <= b[3] && b[1] <= a[3]
+}
+
 /**
- * Caixa a cobrir com relevo quando o projecto tem um corredor. A área e o
- * corredor de uma mina ficam lado a lado: uma só caixa para os dois deixa um
- * único MDT da DGT (ou o último levantamento) servir ambos, sem trocar de
- * relevo ao mudar de separador. Se a união passar dos 20 km, fica a caixa do
- * modo activo. Sem corredor devolve null, e o relevo segue a área como
- * sempre.
+ * Caixa a cobrir com relevo: todas as geometrias do projecto (área, eixo do
+ * corredor, fachada, órbita) juntas. A área e o corredor de uma mina ficam
+ * lado a lado: uma só caixa deixa um único MDT da DGT (ou o último
+ * levantamento) servir todos, sem trocar de relevo ao mudar de separador.
+ * Se a união passar dos 20 km, fica a caixa do modo activo (o circular usa a
+ * da área). Sem nenhuma geometria devolve null.
  */
-export function terrainTargetBbox({ areaBbox = null, corridorBbox = null, missionMode }) {
-  if (!corridorBbox) return null
-  if (!areaBbox) return corridorBbox
+export function terrainTargetBbox({
+  areaBbox = null,
+  corridorBbox = null,
+  faceBbox = null,
+  orbitBbox = null,
+  missionMode,
+}) {
+  const boxes = [areaBbox, corridorBbox, faceBbox, orbitBbox].filter(Boolean)
+  if (boxes.length === 0) return null
   const union = [
-    Math.min(areaBbox[0], corridorBbox[0]),
-    Math.min(areaBbox[1], corridorBbox[1]),
-    Math.max(areaBbox[2], corridorBbox[2]),
-    Math.max(areaBbox[3], corridorBbox[3]),
+    Math.min(...boxes.map((b) => b[0])),
+    Math.min(...boxes.map((b) => b[1])),
+    Math.max(...boxes.map((b) => b[2])),
+    Math.max(...boxes.map((b) => b[3])),
   ]
-  if (bboxSpanKm(union) <= TERRAIN_UNION_MAX_KM) return union
-  return missionMode === 'corridor' ? corridorBbox : areaBbox
+  if (boxes.length === 1 || bboxSpanKm(union) <= TERRAIN_UNION_MAX_KM) return union
+  const active = {
+    area: areaBbox,
+    circular: areaBbox,
+    corridor: corridorBbox,
+    face: faceBbox,
+    orbit: orbitBbox,
+  }[missionMode]
+  return active ?? null
 }
 
 /** Distância (m) da base ao ponto mais próximo da rota. */

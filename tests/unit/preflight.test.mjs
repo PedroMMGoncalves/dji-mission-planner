@@ -372,3 +372,68 @@ describe('nota da categoria aberta (120 m)', () => {
     expect(r.maxM).toBeCloseTo(150, 0)
   })
 })
+
+describe('nao ha missao sem relevo', () => {
+  const tf = { enabled: true, tolerance: 5 }
+  const route = (over) => ({
+    covered: false,
+    status: 'idle',
+    source: null,
+    error: null,
+    ...over,
+  })
+
+  test('relevo a cobrir a rota: nada a dizer', () => {
+    expect(codes(preflightArea({ ...base(), terrainRoute: route({ covered: true }) }))).toEqual([
+      'heights-relative',
+    ])
+  })
+
+  test('sem relevo sobre a rota bloqueia, e diz porque', () => {
+    const one = (over) => {
+      const items = preflightArea({ ...base(), terrainRoute: route(over) })
+      expect(hasBlockers(items)).toBe(true)
+      return items.filter((i) => i.level === 'block')
+    }
+    expect(codes(one({ status: 'idle' }))).toEqual(['terrain-missing'])
+    expect(codes(one({ status: 'loading' }))).toEqual(['terrain-loading'])
+    expect(one({ status: 'error', error: 'HTTP 503' })).toEqual([
+      { level: 'block', code: 'terrain-download-error', params: { msg: 'HTTP 503' } },
+    ])
+    expect(codes(one({ status: 'ready', source: 'file' }))).toEqual(['terrain-file-outside'])
+    // relevo global que nao chega a rota (geometria acabada de mudar)
+    expect(codes(one({ status: 'ready' }))).toEqual(['terrain-missing'])
+  })
+
+  test('com seguimento de terreno, um so bloqueio e nao dois', () => {
+    const items = preflightArea({ ...base(), terrainFollow: tf, terrainRoute: route() })
+    expect(codes(items.filter((i) => i.level === 'block'))).toEqual(['terrain-missing'])
+    const other = preflightPlan({
+      plan,
+      terrainFollow: tf,
+      terrainCovers: false,
+      terrainRoute: route({ status: 'loading' }),
+    })
+    expect(codes(other.filter((i) => i.level === 'block'))).toEqual(['terrain-loading'])
+  })
+
+  test('todos os modos: fachada e orbita tambem bloqueiam sem relevo', () => {
+    const items = preflightPlan({ plan, terrainRoute: route() })
+    expect(codes(items)).toContain('terrain-missing')
+    expect(hasBlockers(preflightPlan({ plan, terrainRoute: route({ covered: true }) }))).toBe(false)
+  })
+
+  test('as mensagens novas existem em PT e EN, e sem o velho "sem relevo"', () => {
+    for (const code of [
+      'terrain-missing',
+      'terrain-loading',
+      'terrain-download-error',
+      'terrain-file-outside',
+    ]) {
+      expect(preflightDict[`preflight.${code}`]?.pt).toBeTruthy()
+      expect(preflightDict[`preflight.${code}`]?.en).toBeTruthy()
+    }
+    expect(preflightDict['preflight.no-base'].pt).not.toMatch(/sem relevo/)
+    expect(preflightDict['preflight.no-base'].en).not.toMatch(/without terrain/)
+  })
+})
