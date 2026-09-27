@@ -491,21 +491,38 @@ function AppInner({ lang, setLang }) {
       ...(ring && validation.valid && Array.isArray(gridCells) ? gridCells.flat() : []),
       ...(inspectPoints ?? []).map((p) => p.point),
     ]
-    const areaBox = bboxOfPoints(areaPts)
-    let b = terrainTargetBbox({
-      areaBbox: areaBox,
+    const boxes = {
+      areaBbox: bboxOfPoints(areaPts),
       corridorBbox,
       faceBbox: ok(facePlan),
       orbitBbox: ok(orbitPlan),
-      missionMode,
-    })
+    }
+    const active = {
+      area: 'areaBbox',
+      circular: 'areaBbox',
+      corridor: 'corridorBbox',
+      face: 'faceBbox',
+      orbit: 'orbitBbox',
+    }[missionMode]
     // e a rota do separador aberto, que sai da geometria (círculos que
     // passam o contorno, margem da área): é ela que tem de ficar coberta
-    if (b && routeBox.mode === missionMode && routeBox.box) {
+    const withRoute = (b) => {
+      if (!b || routeBox.mode !== missionMode || !routeBox.box) return b
       const r = routeBox.box
-      b = [Math.min(b[0], r[0]), Math.min(b[1], r[1]), Math.max(b[2], r[2]), Math.max(b[3], r[3])]
+      return [
+        Math.min(b[0], r[0]),
+        Math.min(b[1], r[1]),
+        Math.max(b[2], r[2]),
+        Math.max(b[3], r[3]),
+      ]
     }
-    return b ? b.map((v) => v.toFixed(6)).join(',') : ''
+    const key = (b) => (b ? b.map((v) => v.toFixed(6)).join(',') : '')
+    // todas as geometrias juntas (relevo global) | só o separador aberto
+    // (recorte do MDT importado, sem perder resolução com a união)
+    return [
+      key(withRoute(terrainTargetBbox({ ...boxes, missionMode }))),
+      key(withRoute(active ? boxes[active] : null)),
+    ].join('|')
   }, [
     routeBox,
     ring,
@@ -517,8 +534,8 @@ function AppInner({ lang, setLang }) {
     orbitPlan,
     missionMode,
   ])
-  const terrainTarget = useMemo(
-    () => (terrainTargetKey ? terrainTargetKey.split(',').map(Number) : null),
+  const [terrainTarget, terrainActive] = useMemo(
+    () => terrainTargetKey.split('|').map((k) => (k ? k.split(',').map(Number) : null)),
     [terrainTargetKey],
   )
   const {
@@ -534,6 +551,7 @@ function AppInner({ lang, setLang }) {
     ringBbox,
     ringValid: validation.valid,
     targetBbox: terrainTarget,
+    activeBbox: terrainActive,
   })
 
   // Pontos de inspecção: missão própria, fora do preflight da área, mas com a

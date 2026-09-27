@@ -48,6 +48,12 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
     cada tile tem agora 20 s.
   - Menores: a falha a ler um MDT tem mensagem própria e o regresso da
     ligação já não a tapa com o global.
+- **O MDT importado não perde resolução com a união.** A grelha lida tem
+  no máximo 2048 píxeis de lado; recortar o ficheiro para a área e um
+  corredor juntos baixava um MDT de 50 cm de ~1 m para ~3 m de grelha,
+  também sobre a área. Passa a ser recortado só para o separador aberto, e
+  de novo ao mudar de separador (o ficheiro está em memória); o relevo
+  global continua a cobrir todas as geometrias juntas.
 - A nota do preflight sobre a categoria aberta mede-se só sobre o relevo,
   e a nota «sem base» deixa de falar em «sem relevo».
 

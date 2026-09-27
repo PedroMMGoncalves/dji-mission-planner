@@ -14,6 +14,8 @@ import { bboxIntersects } from '../mission/corridorTerrain.js'
 
 /** Espera antes de voltar a descarregar quando se edita uma geometria já com relevo. */
 const EDIT_DEBOUNCE_MS = 800
+/** Espera antes de recortar de novo o MDT importado (junta mudanças seguidas). */
+const FILE_CROP_DELAY_MS = 300
 /** Novas tentativas automáticas depois de uma falha na mesma caixa. */
 const RETRY_DELAYS_MS = [3000, 10000, 30000]
 
@@ -39,8 +41,18 @@ function terrainCoversBox(terrain, box) {
  * uma falha volta a tentar sozinha, e o preflight bloqueia a exportação
  * enquanto o relevo não cobrir a rota.
  */
-export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = null }) {
+export function useTerrain({
+  ring,
+  ringBbox: areaBbox,
+  ringValid,
+  targetBbox = null,
+  activeBbox = null,
+}) {
   const ringBbox = targetBbox ?? areaBbox
+  // o MDT importado recorta-se só para o separador aberto: recortar de novo
+  // o ficheiro é barato e a união de todas as geometrias (área e um
+  // corredor ao lado) baixava a resolução da grelha (2048 píxeis de lado)
+  const fileBox = activeBbox ?? ringBbox
   const [terrain, setTerrain] = useState(
     /** @type {{status: string, data: any, error: string|null, fromFile?: boolean}} */ ({
       status: 'idle',
@@ -99,11 +111,13 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
 
   const cropFromFile = useCallback(
     async (file) => {
-      if (!file || !ringBbox) return
+      if (!file || !fileBox) return
+      // recortado para esta caixa: a descarga automática não o repete
+      autoRef.current = { key: 'file:' + boxKey(fileBox), attempts: 1 }
       const req = ++requestRef.current
       setTerrain({ status: 'loading', data: null, error: null })
       try {
-        const data = await loadDemFromFile(file, ringBbox)
+        const data = await loadDemFromFile(file, fileBox)
         if (req !== requestRef.current) return
         fileRef.current = { file, extent: data.fileBbox ?? null }
         setTerrain({ status: 'ready', data, error: null })
@@ -121,7 +135,7 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
         })
       }
     },
-    [ringBbox],
+    [fileBox, ringBbox],
   )
 
   // Importar um MDT GeoTIFF local (ex.: LiDAR DGT 50 cm/2 m) como fonte
@@ -169,22 +183,24 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
     if (!targetBbox && (!ring || !ringValid)) return
     if (terrain.status === 'loading') return
     const f = fileRef.current
-    const preferFile = Boolean(f && (!f.extent || bboxIntersects(f.extent, ringBbox)))
-    if (terrain.status === 'ready' && targetCovers) {
-      if (!preferFile || terrain.data?.source === 'file') return
+    const preferFile = Boolean(f && (!f.extent || bboxIntersects(f.extent, fileBox)))
+    if (preferFile) {
+      // MDT importado: a caixa é a do separador aberto
+      if (terrain.status === 'ready' && terrain.data?.source === 'file') {
+        if (terrainCoversBox(terrain, fileBox)) return
+      }
+      const key = 'file:' + boxKey(fileBox)
+      if (autoRef.current.key === key) return // já recortado para esta caixa
+      // uma espera curta junta as mudanças seguidas (a rota do separador
+      // chega um render depois da geometria): um só recorte
+      const timer = setTimeout(() => cropFromFile(f.file), FILE_CROP_DELAY_MS)
+      return () => clearTimeout(timer)
     }
+    if (terrain.status === 'ready' && targetCovers) return
     const loaded = terrain.status === 'ready' ? terrain.data?.bbox : null
     const key = boxKey(ringBbox)
     const tried = autoRef.current.key === key ? autoRef.current.attempts : 0
     let delay = bboxIntersects(loaded, ringBbox) ? EDIT_DEBOUNCE_MS : 0
-    if (preferFile) {
-      if (tried > 0) return
-      const timer = setTimeout(() => {
-        autoRef.current = { key, attempts: 1 }
-        cropFromFile(f.file)
-      }, delay)
-      return () => clearTimeout(timer)
-    }
     // já se descarregou para esta caixa e não ficou coberta (falha, ou um
     // resultado curto): espera crescente e um limite, nunca um ciclo
     if (tried > 0) {
@@ -200,6 +216,7 @@ export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = n
     ring,
     ringValid,
     ringBbox,
+    fileBox,
     targetBbox,
     terrain,
     targetCovers,

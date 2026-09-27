@@ -258,10 +258,14 @@ verificar. Por isso:
   vez quando a ligação volta; só conta a descarga mais recente;
 - um MDT importado nunca é trocado pelo global sem o operador o pedir (a
   DGT ou o último levantamento valem mais do que os ~30 m globais). A
-  aplicação guarda o ficheiro e a sua extensão completa: quando a caixa
-  cresce (um corredor, a margem, outro separador), o relevo volta a ser
-  recortado do mesmo ficheiro; só se ele acabar antes da rota o preflight
-  bloqueia. Um MDT que não toca na caixa (de outro sítio) dá lugar ao
+  aplicação guarda o ficheiro e a sua extensão completa, e recorta-o só
+  para o separador aberto (geometria e rota), não para a união de todas as
+  geometrias: a grelha lida tem no máximo 2048 píxeis de lado, e a união
+  de uma área com um corredor ao lado baixava a resolução (um MDT de 50 cm
+  passava de ~1 m para ~3 m de grelha). Ao mudar de separador, ou quando a
+  geometria cresce, o relevo volta a ser recortado do mesmo ficheiro (uma
+  vez por caixa, 0,3 s depois da última mudança); só se o ficheiro acabar
+  antes da rota o preflight bloqueia. Um MDT que não toca na caixa (de outro sítio) dá lugar ao
   global para essa caixa, e volta quando se regressa à geometria que ele
   cobre. A falha a ler um ficheiro fica à vista, com mensagem própria;
 - o preflight bloqueia a exportação, em todos os modos, enquanto o relevo
