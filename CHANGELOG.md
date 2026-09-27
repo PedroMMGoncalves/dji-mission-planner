@@ -6,7 +6,32 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
-(nada ainda)
+### Adicionado (corredor com seguimento de terreno)
+
+- **O corredor passa a seguir o terreno.** Era a limitação declarada do
+  modo: as passagens voavam a uma altitude única relativa à descolagem, e
+  um corredor segue precisamente o que sobe e desce encostas, como rampas
+  de acesso a cortas, coroamentos de barragens de rejeitados, condutas e
+  linhas de água. Com relevo carregado, «Seguir terreno» no painel do
+  corredor põe cada passagem sobre o seu próprio chão: o motor da área
+  (densificação, corredor de ±30 m dos lados da faixa, tecto de 120 m,
+  Douglas-Peucker com a tolerância) passa a aceitar passagens com dobras,
+  perfila cada troço entre vértices e mantém-nos todos. Numa encosta
+  atravessada as passagens de cima e de baixo ficam a alturas diferentes,
+  e não à do eixo.
+- Na **foto por waypoint** as acções são reindexadas para os vértices na
+  rota nova e os pontos acrescentados pelo relevo seguem sem foto; a área,
+  nesse modo, continua a recusar o seguimento de terreno.
+- **Um só relevo para a área e o corredor**: com corredor no projecto, o
+  relevo global e o MDT importado cobrem a união dos dois quando cabe em
+  20 km, para um só MDT da DGT, ou o último levantamento, servir ambos.
+- A referência das alturas do corredor passa a ser a da área (base com
+  relevo, senão a mínima debaixo da rota), também sem seguimento de
+  terreno; antes era a cota no início do eixo. O painel ganha a secção
+  «Relevo e Base» (descarregar, importar MDT, marcar base, perfil), o
+  preflight bloqueia o seguimento pedido sem relevo que cubra a rota e diz
+  a cota assumida sem base, e o KMZ leva `-tf` no nome. O perfil e o 3D
+  mostram a referência do modo aberto.
 
 ## 1.3.0 — 2026-09-24
 

@@ -103,12 +103,22 @@ export function corridorExportParams({
   photoIntervalM,
   sensorType,
   waypointStops = 'corners',
+  // resultado de planCorridorTerrain; null = alturas planas, como sempre
+  terrainResult = null,
 }) {
   const perWaypointPhotos = photoMode === 'waypoint'
+  const tf = terrainResult && !terrainResult.error ? terrainResult : null
+  // pontos por passagem (com os da ligação que a antecede) e ligações
+  const perLine = tf ? tf.perLine : (plan.perLine ?? plan.lines.map((l) => l.length))
+  const perLink = tf ? tf.perLink : null
+  const perWaypoint = tf ? tf.perWaypoint : plan.perWaypoint
   return {
-    name: buildExportName(missionName, 'corridor', { part: `n${plan.stats.passCount}` }),
-    waypoints: plan.waypoints,
-    ...(plan.perWaypoint ? { perWaypoint: plan.perWaypoint } : {}),
+    name: buildExportName(missionName, 'corridor', {
+      variant: tf ? 'tf' : null,
+      part: `n${plan.stats.passCount}`,
+    }),
+    waypoints: tf ? tf.waypoints : plan.waypoints,
+    ...(perWaypoint ? { perWaypoint } : {}),
     altitude,
     speed,
     wpml,
@@ -116,23 +126,14 @@ export function corridorExportParams({
     triggerMode: perWaypointPhotos ? 'waypoint' : 'distance',
     triggerRanges: perWaypointPhotos
       ? null
-      : triggerRangesForLines(
-          plan.lines,
-          plan.lines.map((l) => l.length),
-          null,
-          {
-            maxLinkM: Math.max(2.5 * plan.stats.spacingM, 60),
-          },
-        ),
+      : triggerRangesForLines(plan.lines, perLine, perLink, {
+          maxLinkM: Math.max(2.5 * plan.stats.spacingM, 60),
+        }),
     gimbalPitch: -90,
     sensorType,
-    durationS: plan.stats.flightTimeS,
+    durationS: tf ? tf.flightTimeS : plan.stats.flightTimeS,
     // fotos e dobras das passagens sem paragem; as pontas dos troços param
-    passThrough: passThroughFor(
-      plan.perLine ?? plan.lines.map((l) => l.length),
-      null,
-      waypointStops,
-    ),
+    passThrough: passThroughFor(perLine, perLink, waypointStops),
   }
 }
 

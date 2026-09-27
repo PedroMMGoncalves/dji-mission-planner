@@ -40,7 +40,8 @@ import {
 import { MissionExportError } from './utils/exporters.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
-import { useCorridorMission } from './hooks/useCorridorMission.js'
+import { useCorridorMission, useCorridorRoute } from './hooks/useCorridorMission.js'
+import { terrainTargetBbox } from './mission/corridorTerrain.js'
 import { useCircularMission } from './hooks/useCircularMission.js'
 import { useOrbitMission } from './hooks/useOrbitMission.js'
 import { useFaceMission } from './hooks/useFaceMission.js'
@@ -300,12 +301,12 @@ function AppInner({ lang, setLang }) {
     setCorridorParam,
     corridorSpeed,
     corridorTriggerWarn,
-    corridorPlan,
+    corridorPlan: corridorPlanFlat,
+    corridorBbox,
     corridorPreview,
     startCorridorDraw,
     handleFinishCorridor,
     clearCorridorAxis,
-    handleExportCorridor,
   } = useCorridorMission({
     sensor,
     speedRange,
@@ -313,11 +314,8 @@ function AppInner({ lang, setLang }) {
     sideOverlap: params.sideOverlap,
     interval,
     missionMode,
-    missionName,
-    wpml,
     setMode,
     setDraftVertices,
-    runExport,
     avisoObturador,
   })
 
@@ -449,7 +447,40 @@ function AppInner({ lang, setLang }) {
     handleImportDem,
     terrainCovers,
     slopeHint,
-  } = useTerrain({ ring, ringBbox, ringValid: validation.valid })
+  } = useTerrain({
+    ring,
+    ringBbox,
+    ringValid: validation.valid,
+    // com corredor, a área e o corredor juntos (um só MDT para os dois)
+    targetBbox: terrainTargetBbox({
+      areaBbox: ring && validation.valid ? ringBbox : null,
+      corridorBbox,
+      missionMode,
+    }),
+  })
+
+  /* ---------- Corredor, parte 2: relevo, referência, exportação -------- */
+  const {
+    corridorRoute: corridorPlan,
+    corridorTerrain,
+    corridorReference,
+    corridorCovers,
+    corridorBaseDistance,
+    handleExportCorridor,
+  } = useCorridorRoute({
+    corridorPlan: corridorPlanFlat,
+    corridorConfig,
+    corridorSpeed,
+    terrain,
+    terrainFollow,
+    basePoint,
+    altitude: params.altitude,
+    interval,
+    missionName,
+    wpml,
+    sensorType: sensor.type,
+    runExport,
+  })
 
   /* ---------- Modo área, parte 2: plano, blocos, GCPs, exportação ------ */
   const {
@@ -670,13 +701,14 @@ function AppInner({ lang, setLang }) {
         refSource: circularReference?.source ?? null,
       }
     }
+    // Corredor: a mesma cadeia de referência da área (base com relevo, senão
+    // a mínima debaixo da rota); antes era a cota do início do eixo
     if (missionMode === 'corridor') {
       if (!corridorPlan || corridorPlan.error) return null
-      const head = corridorConfig.centreline?.[0]
-      const ground = head ? elevAt?.(head[0], head[1]) : null
       return {
         waypoints: corridorPlan.waypoints.map(([lon, lat, h]) => [lon, lat, h ?? params.altitude]),
-        refElev: Number.isFinite(ground) ? ground : 0,
+        refElev: corridorReference?.elev ?? null,
+        refSource: corridorReference?.source ?? null,
       }
     }
     if (!planOk) return null
@@ -696,7 +728,7 @@ function AppInner({ lang, setLang }) {
     orbitPlan,
     orbitConfig.poi,
     corridorPlan,
-    corridorConfig.centreline,
+    corridorReference,
     circularPlan,
     circularReference,
     planOk,
@@ -851,6 +883,13 @@ function AppInner({ lang, setLang }) {
         triggerWarn: corridorTriggerWarn,
         photoMode: corridorConfig.photoMode,
         waypointStops: corridorConfig.waypointStops,
+        terrainFollow,
+        terrainCovers: corridorCovers,
+        terrainResult: corridorTerrain,
+        reference: corridorReference,
+        basePoint,
+        baseDistance: corridorBaseDistance,
+        speed: corridorSpeed,
       })
     if (missionMode === 'circular')
       return preflightPlan({
@@ -858,6 +897,8 @@ function AppInner({ lang, setLang }) {
         plan: circularPlan,
         aglWarn,
         triggerWarn: circularTriggerWarn,
+        terrainFollow,
+        terrainCovers,
         reference: circularReference,
         basePoint,
         baseDistance,
@@ -885,6 +926,11 @@ function AppInner({ lang, setLang }) {
     triggerWarn,
     corridorPlan,
     corridorTriggerWarn,
+    corridorTerrain,
+    corridorReference,
+    corridorCovers,
+    corridorBaseDistance,
+    corridorSpeed,
     circularPlan,
     circularTriggerWarn,
     circularReference,
@@ -1272,6 +1318,18 @@ function AppInner({ lang, setLang }) {
                 onClearAxis={clearCorridorAxis}
                 draftCount={draftVertices.length}
                 onExport={handleExportCorridor}
+                terrain={terrain}
+                corridorCovers={corridorCovers}
+                terrainFollow={terrainFollow}
+                setTerrainFollow={setTerrainFollow}
+                corridorTerrain={corridorTerrain}
+                corridorReference={corridorReference}
+                hasBase={Boolean(basePoint)}
+                onStartBase={startBase}
+                onRemoveBase={removeBase}
+                onLoadTerrain={handleLoadTerrain}
+                onImportDem={handleImportDem}
+                onShowProfile={() => setShowProfile(true)}
               />
             )}
             {missionMode === 'circular' && (
@@ -1465,14 +1523,25 @@ function AppInner({ lang, setLang }) {
             terrain={terrain.data}
             waypoints={view3d.waypoints}
             refElev={view3d.refElev ?? 0}
-            reference={missionMode === 'area' ? reference : null}
+            reference={
+              missionMode === 'area'
+                ? reference
+                : missionMode === 'corridor'
+                  ? corridorReference
+                  : missionMode === 'circular'
+                    ? circularReference
+                    : null
+            }
             blocks={
-              terrainResult && !terrainResult.error && terrainResult.blocks3
-                ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
-                : (blocks?.map((b) => ({
-                    id: b.id,
-                    waypoints: b.waypoints.map(([lon, lat]) => [lon, lat, params.altitude]),
-                  })) ?? null)
+              // os blocos são da área; nos outros modos não se desenham
+              missionMode !== 'area'
+                ? null
+                : terrainResult && !terrainResult.error && terrainResult.blocks3
+                  ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
+                  : (blocks?.map((b) => ({
+                      id: b.id,
+                      waypoints: b.waypoints.map(([lon, lat]) => [lon, lat, params.altitude]),
+                    })) ?? null)
             }
             onClose={() => setShowProfile(false)}
           />
@@ -1525,7 +1594,13 @@ function AppInner({ lang, setLang }) {
         >
           <Map3D
             terrain={terrain.data}
-            ring={missionMode === 'area' ? ring : null}
+            ring={
+              missionMode === 'area' || missionMode === 'circular'
+                ? ring
+                : missionMode === 'corridor'
+                  ? (corridorPreview?.buffer ?? null)
+                  : null
+            }
             waypoints={view3d.waypoints}
             refElev={view3d.refElev}
             basePoint={basePoint}

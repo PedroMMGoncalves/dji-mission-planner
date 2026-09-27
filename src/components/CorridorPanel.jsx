@@ -1,5 +1,13 @@
 import { useT } from '../i18n.jsx'
-import { IconDownload, IconTrash } from './Icons.jsx'
+import { useRef } from 'react'
+import {
+  IconChart,
+  IconDownload,
+  IconFolder,
+  IconHelipad,
+  IconMountain,
+  IconTrash,
+} from './Icons.jsx'
 
 /**
  * E5.1: painel do modo corredor (cobertura de infraestruturas lineares a
@@ -53,6 +61,13 @@ function Row({ label, value }) {
 
 const fmt = (n, d = 0) => (Number.isFinite(n) ? n.toFixed(d) : '—')
 
+/** Mensagem de um erro do seguimento de terreno; o texto cru quando não há tradução. */
+function terrainErrorText(code, t) {
+  const key = `co.terrain.err.${code}`
+  const msg = t(key)
+  return msg === key ? String(code) : msg
+}
+
 function duration(seconds) {
   if (!Number.isFinite(seconds)) return '—'
   const m = Math.floor(seconds / 60)
@@ -73,8 +88,24 @@ export default function CorridorPanel({
   onClearAxis,
   draftCount,
   onExport,
+  // relevo e seguimento de terreno (partilhados com a área)
+  terrain,
+  corridorCovers,
+  terrainFollow,
+  setTerrainFollow,
+  corridorTerrain,
+  corridorReference,
+  hasBase,
+  onStartBase,
+  onRemoveBase,
+  onLoadTerrain,
+  onImportDem,
+  onShowProfile,
 }) {
   const t = useT()
+  const demFileRef = useRef(null)
+  const terrainReady = terrain?.status === 'ready'
+  const tfOk = corridorTerrain && !corridorTerrain.error ? corridorTerrain : null
   const drawing = mode === 'corridor'
   // O corredor com LiDAR é um caso de uso real (linhas eléctricas, condutas):
   // o espaçamento sai da largura de varrimento do feixe e a missão não leva
@@ -209,6 +240,137 @@ export default function CorridorPanel({
           ))}
         </div>
         <p className="mt-2 text-xs text-slate-500">{t('co.params.stopsHint')}</p>
+      </Section>
+
+      {/* Relevo: seguimento de terreno por passagem */}
+      <Section title={t('co.terrain.title')}>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={onLoadTerrain}
+            disabled={!axis || terrain?.status === 'loading'}
+            className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <IconMountain />{' '}
+            {terrain?.status === 'loading'
+              ? t('cp.terrain.loading')
+              : t('cp.terrain.downloadGlobal')}
+          </button>
+          <button
+            onClick={() => demFileRef.current?.click()}
+            disabled={!axis || terrain?.status === 'loading'}
+            title={t('cp.terrain.importDemTitle')}
+            className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <IconFolder /> {t('cp.terrain.importDem')}
+          </button>
+          <input
+            ref={demFileRef}
+            type="file"
+            accept=".tif,.tiff"
+            className="hidden"
+            onChange={(e) => {
+              onImportDem(e.target.files?.[0])
+              e.target.value = ''
+            }}
+          />
+        </div>
+        {terrainReady && terrain.data?.source === 'file' && (
+          <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">
+            {t('cp.terrain.localDem')} <strong>{terrain.data.label}</strong>{' '}
+            {t('cp.terrain.demGrid', {
+              crs: terrain.data.crsCode,
+              res: terrain.data.resolutionM?.toFixed(1),
+            })}
+          </p>
+        )}
+        {terrain?.status === 'error' && (
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
+            ⚠ {terrain.error}
+          </p>
+        )}
+        {terrainReady && axis && !corridorCovers && (
+          <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
+            ⚠ {t('co.terrain.outOfCoverage')}
+          </p>
+        )}
+
+        <label className="mt-2 flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            checked={Boolean(terrainFollow?.enabled)}
+            disabled={!(terrainReady && corridorCovers)}
+            onChange={(e) => setTerrainFollow({ ...terrainFollow, enabled: e.target.checked })}
+          />
+          {t('co.terrain.follow')}
+        </label>
+        {terrainFollow?.enabled && (
+          <Field label={t('cp.terrain.tolerance')} suffix="m">
+            <NumberInput
+              value={terrainFollow.tolerance}
+              min={1}
+              max={20}
+              onChange={(v) => setTerrainFollow({ ...terrainFollow, tolerance: v })}
+            />
+          </Field>
+        )}
+        <p className="text-xs text-slate-500">{t('co.terrain.hint')}</p>
+
+        {tfOk && (
+          <div className="mt-2 rounded border border-slate-800 bg-slate-900/60 p-2 text-[11px] leading-relaxed text-slate-400">
+            {t('cp.terrain.result', {
+              min: Math.round(tfOk.elevMin),
+              max: Math.round(tfOk.elevMax),
+              n: tfOk.waypoints.length,
+              ref: Math.round(tfOk.refElev),
+            })}
+            {tfOk.warnings?.map((w, i) => (
+              <p key={i} className="mt-1 text-amber-300">
+                ⚠ {w}
+              </p>
+            ))}
+          </div>
+        )}
+        {terrainFollow?.enabled && corridorTerrain?.error && (
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
+            ⚠ {terrainErrorText(corridorTerrain.error, t)}
+          </p>
+        )}
+
+        {/* Base: a referência das alturas relativas */}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            onClick={onStartBase}
+            className={`flex items-center justify-center gap-1.5 rounded px-2 py-2 text-xs font-medium transition-colors ${
+              mode === 'base'
+                ? 'bg-amber-500 text-slate-950'
+                : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+            }`}
+          >
+            <IconHelipad /> {t('cp.area.markBase')}
+          </button>
+          <button
+            onClick={onRemoveBase}
+            disabled={!hasBase}
+            className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <IconTrash /> {t('cp.area.removeBase')}
+          </button>
+        </div>
+        {mode === 'base' && <p className="mt-2 text-xs text-slate-400">{t('cp.area.baseHint')}</p>}
+        {corridorReference && Number.isFinite(corridorReference.elev) && (
+          <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+            {t(corridorReference.source === 'base' ? 'co.terrain.refBase' : 'co.terrain.refMin', {
+              elev: Math.round(corridorReference.elev),
+            })}
+          </p>
+        )}
+        <button
+          onClick={onShowProfile}
+          disabled={!(terrainReady && corridorCovers && stats)}
+          className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <IconChart /> {t('cp.terrain.profile')}
+        </button>
       </Section>
 
       <Section title={t('co.plan.title')}>

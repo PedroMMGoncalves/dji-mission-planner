@@ -439,8 +439,30 @@ passagem** (a interior é mais curta do que a exterior; projectar do eixo
 daria sobreposição a mais dentro e a menos fora); no modo distância, o
 traçado é simplificado por Douglas-Peucker (1 m) e o disparo é do drone,
 com os intervalos de disparo quebrados nas ligações longas. Sem rumo por
-waypoint (segue a rota), gimbal −90°, altura única (sem seguimento de
-terreno neste modo). Tempo `L/v + 3 s · (troços − 1)`.
+waypoint (segue a rota), gimbal −90°. Tempo `L/v + 3 s · (troços − 1)`.
+
+Seguimento de terreno (`src/mission/corridorTerrain.js`): o motor da área
+(§5) aplicado às passagens. Cada passagem é uma polilinha com dobras;
+cada troço entre vértices consecutivos é perfilado à parte (densificação,
+corredor de ±30 m, tecto de 120 m, Douglas-Peucker com a tolerância), e
+os vértices ficam todos, porque dão a forma à passagem. As ligações entre
+passagens são amostradas com as mesmas regras. Cada passagem fica assim
+sobre o seu próprio chão: numa encosta atravessada, as passagens de cima
+e de baixo têm alturas diferentes, e não a do eixo. A referência é a da
+área (base com relevo, senão a mínima debaixo da rota). Na foto por
+waypoint os vértices são as posições de foto: o motor devolve o índice de
+cada vértice na rota nova (`vertexIndex`) e as acções são reindexadas; os
+pontos acrescentados pelo relevo seguem sem foto. É a diferença para a
+área, que nesse modo recusa o seguimento de terreno. Estatísticas sobre a
+rota 3D; nome `_corridor-tf_nN`.
+
+Relevo partilhado: com corredor no projecto, a caixa a cobrir é a união
+da área e do corredor quando o maior lado não passa de 20 km, para um só
+MDT (da DGT ou o último levantamento) servir os dois; acima disso, a do
+separador aberto (`terrainTargetBbox`). A cobertura do corredor verifica-se
+sobre a própria rota com margem para a amostragem lateral. Preflight:
+seguimento pedido sem relevo que cubra a rota é bloqueio; sem base, diz a
+cota assumida e avisa acima de 10 m de desnível, como na área.
 
 ## 9A. Circular («circlegrammetry»)
 

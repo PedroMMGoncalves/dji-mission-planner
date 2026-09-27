@@ -244,15 +244,26 @@ export function preflightArea(c) {
 }
 
 /**
- * Preflight dos outros modos (fachada, órbita, corredor): plano válido,
- * limite de waypoints, bateria e a mesma nota sobre as alturas. O corredor
- * passa ainda `photoMode` e `waypointStops`, para o aviso da foto sem paragem.
+ * Preflight dos outros modos (fachada, órbita, corredor, circular): plano
+ * válido, limite de waypoints, bateria e a mesma nota sobre as alturas. O
+ * corredor passa ainda `photoMode` e `waypointStops`, para o aviso da foto
+ * sem paragem; o corredor e o circular passam `terrainFollow`,
+ * `terrainCovers` e `terrainResult` (bloqueio sem relevo) e `reference`,
+ * `basePoint` e `baseDistance` (verificações da base e da cota assumida).
  */
 export function preflightPlan(c) {
   const out = []
   const plan = c.plan ?? null
   if (!plan) return [item('block', 'no-plan')]
   if (plan.error) return [item('block', 'plan-error', { error: String(plan.error) })]
+  // Seguimento de terreno pedido (corredor, circular) sem relevo que cubra a
+  // rota: o KMZ sairia com alturas planas, sem nenhum aviso. Os modos que não
+  // o suportam não passam `terrainFollow`.
+  if (c.terrainFollow?.enabled) {
+    if (!c.terrainCovers) out.push(item('block', 'terrain-not-loaded'))
+    else if (c.terrainResult?.error)
+      out.push(item('block', 'terrain-error', { msg: String(c.terrainResult.error) }))
+  }
   const n = wpCount(plan)
   if (n > WPML_MAX_WAYPOINTS)
     out.push(item('block', 'too-many-waypoints', { n, max: WPML_MAX_WAYPOINTS }))
@@ -277,6 +288,9 @@ export function preflightPlan(c) {
   out.push(...photoPassUnverified(c))
   out.push(...routeItems(c))
   out.push(...groundItems(c, usable))
+  // os modos com cota de referência própria (corredor, circular) dizem o que
+  // se assume sem base, como a área
+  if ('reference' in c) out.push(...noBaseItems(c))
   out.push(item('info', 'heights-relative'))
   return out
 }

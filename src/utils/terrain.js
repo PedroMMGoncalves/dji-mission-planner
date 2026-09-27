@@ -484,13 +484,20 @@ function segmentLengthM(a, b) {
  * `aglCapM` acima do solo; onde o tecto trava, a folga fica menor do que a
  * pedida e isso vem em `clearanceMinM` e num aviso.
  *
+ * Cada linha pode ser um segmento [[lonA,latA],[lonB,latB]] (as faixas da
+ * área) ou uma polilinha com dobras (as passagens do corredor): cada troço
+ * entre vértices consecutivos é perfilado à parte e os vértices ficam todos,
+ * porque são eles que dão a forma à passagem. `vertexIndex[i][j]` diz em
+ * que índice de `waypoints` ficou o vértice j da linha i, para quem tem
+ * acções presas aos vértices (a foto por waypoint do corredor) as reindexar.
+ *
  * @param {{verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}} terrain
- * @param {Array<Array<[number, number]>>} lines segmentos [[lonA,latA],[lonB,latB]]
+ * @param {Array<Array<[number, number]>>} lines segmentos ou polilinhas [[lon,lat], ...]
  * @param {{agl?: number, refElev?: number, toleranceM?: number, stepM?: number,
  *   corridorM?: number, aglCapM?: number}} [opts] `corridorM` 0 desliga o
  *   corredor e reproduz o comportamento anterior (só o eixo)
  * @returns {{waypoints: Array<[number, number, number]>, perLine: number[],
- *   perLink: number[], elevMin: number|null, elevMax: number|null,
+ *   perLink: number[], vertexIndex: number[][], elevMin: number|null, elevMax: number|null,
  *   corridorM: number, corridorRiseMaxM: number, clearanceMinM: number|null,
  *   cappedCount: number, warnings: string[]}}
  */
@@ -509,6 +516,7 @@ export function terrainFollowLines(
   const waypoints = []
   const perLine = []
   const perLink = []
+  const vertexIndex = []
   const warnings = []
 
   const half = Number.isFinite(corridorM) && corridorM > 0 ? corridorM : 0
@@ -516,6 +524,7 @@ export function terrainFollowLines(
     waypoints,
     perLine,
     perLink,
+    vertexIndex,
     elevMin: null,
     elevMax: null,
     corridorM: half,
@@ -621,24 +630,18 @@ export function terrainFollowLines(
     return out
   }
 
+  const validPt = (p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1])
   let prevEnd = null
   for (const seg of lines) {
-    if (!Array.isArray(seg) || seg.length < 2) {
+    // uma linha com um vértice inválido não se voa (como antes, quando só
+    // havia segmentos de dois pontos)
+    if (!Array.isArray(seg) || seg.length < 2 || !seg.every(validPt)) {
       perLine.push(0)
       perLink.push(0)
+      vertexIndex.push([])
       continue
     }
     const a = seg[0]
-    const b = seg[1]
-    if (
-      !Array.isArray(a) ||
-      !Array.isArray(b) ||
-      ![a[0], a[1], b[0], b[1]].every(Number.isFinite)
-    ) {
-      perLine.push(0)
-      perLink.push(0)
-      continue
-    }
 
     // 0) A LIGAÇÃO desde o fim da linha anterior. A serpentina voa do fim de
     //    uma linha ao início da seguinte em linha recta, com a altura
@@ -661,11 +664,20 @@ export function terrainFollowLines(
       linkCount = link.length
     }
 
-    const kept = profileWaypoints(a, b)
-    waypoints.push(...kept)
-    perLine.push(linkCount + kept.length)
+    // troço a troço; o vértice partilhado por dois troços entra uma só vez
+    const idx = [waypoints.length]
+    let keptCount = 0
+    for (let j = 0; j + 1 < seg.length; j++) {
+      const part = profileWaypoints(seg[j], seg[j + 1])
+      const add = j === 0 ? part : part.slice(1)
+      waypoints.push(...add)
+      keptCount += add.length
+      idx.push(waypoints.length - 1)
+    }
+    vertexIndex.push(idx)
+    perLine.push(linkCount + keptCount)
     perLink.push(linkCount)
-    prevEnd = b
+    prevEnd = seg[seg.length - 1]
   }
 
   // Avisos operacionais
@@ -689,6 +701,7 @@ export function terrainFollowLines(
     waypoints,
     perLine,
     perLink,
+    vertexIndex,
     elevMin: Number.isFinite(elevMin) ? elevMin : null,
     elevMax: Number.isFinite(elevMax) ? elevMax : null,
     corridorM: half,

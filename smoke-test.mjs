@@ -1596,6 +1596,85 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
   }
 }
 
+/* 8j2b. Terrain follow sobre polilinhas (passagens do corredor): cada troco
+   entre vertices e perfilado, os vertices ficam todos e vertexIndex diz onde */
+{
+  const mL = 111320 * Math.cos((center[1] * Math.PI) / 180)
+  const P = (x, y) => [center[0] + x / mL, center[1] + y / 110574]
+  // rampa E-O de 0,2 m/m e uma colina de 60 m a meio da passagem com dobra
+  const relevo = {
+    elevationAt: (lon, lat) => {
+      const x = (lon - center[0]) * mL
+      const y = (lat - center[1]) * 110574
+      return 200 + 0.2 * x + 60 * Math.exp(-((x - 300) ** 2 + (y - 40) ** 2) / (2 * 60 * 60))
+    },
+  }
+  const dobrada = [P(0, 0), P(300, 40), P(600, 0)]
+  const outra = [P(600, 60), P(0, 60)]
+  const tf = terrainFollowLines(relevo, [dobrada, outra], {
+    agl: 80,
+    refElev: 200,
+    toleranceM: 3,
+    stepM: 20,
+    corridorM: 0,
+  })
+  const vi = tf.vertexIndex
+  check(
+    'polilinha: todos os vertices ficam, pela ordem, com o indice em vertexIndex',
+    vi.length === 2 &&
+      vi[0].length === 3 &&
+      vi[1].length === 2 &&
+      vi[0].every(
+        (k, j) => tf.waypoints[k][0] === dobrada[j][0] && tf.waypoints[k][1] === dobrada[j][1],
+      ) &&
+      vi[1].every(
+        (k, j) => tf.waypoints[k][0] === outra[j][0] && tf.waypoints[k][1] === outra[j][1],
+      ) &&
+      vi[0][0] < vi[0][1] &&
+      vi[0][1] < vi[0][2],
+    JSON.stringify(vi),
+  )
+  check(
+    'polilinha: o vertice da dobra entra uma so vez e a colina acrescenta pontos',
+    tf.waypoints.filter((w) => w[0] === dobrada[1][0] && w[1] === dobrada[1][1]).length === 1 &&
+      tf.perLine[0] > 3,
+    `${tf.perLine[0]} pontos na passagem dobrada`,
+  )
+  check(
+    'polilinha: altura relativa = AGL + (cota - referencia) em cada vertice',
+    [...vi[0], ...vi[1]].every((k) => {
+      const w = tf.waypoints[k]
+      return Math.abs(w[2] - (80 + relevo.elevationAt(w[0], w[1]) - 200)) < 0.06
+    }),
+  )
+  check(
+    'polilinha: perLine soma os waypoints e a ligacao conta para a passagem seguinte',
+    tf.perLine.reduce((a, b) => a + b, 0) === tf.waypoints.length &&
+      tf.perLink[0] === 0 &&
+      tf.perLink[1] >= 0,
+  )
+  // um segmento de dois pontos da o mesmo que antes (vertexIndex = extremos)
+  const seg = terrainFollowLines(relevo, [[P(0, 0), P(600, 0)]], {
+    agl: 80,
+    refElev: 200,
+    toleranceM: 3,
+    stepM: 20,
+    corridorM: 0,
+  })
+  check(
+    'segmento de dois pontos: vertexIndex nos extremos',
+    seg.vertexIndex[0][0] === 0 && seg.vertexIndex[0][1] === seg.waypoints.length - 1,
+  )
+  const mau = terrainFollowLines(relevo, [[P(0, 0), [NaN, 1], P(600, 0)], dobrada], {
+    agl: 80,
+    refElev: 200,
+  })
+  check(
+    'polilinha com vertice invalido nao se voa, a seguinte sim',
+    mau.perLine[0] === 0 && mau.vertexIndex[0].length === 0 && mau.vertexIndex[1].length === 3,
+  )
+}
+
 /* 8j3. Corredor de seguranca do terrain follow
  *
  * O perfil so via o chao debaixo do eixo. Numa encosta atravessada, o que

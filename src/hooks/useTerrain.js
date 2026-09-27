@@ -11,7 +11,13 @@ import { loadDemFromFile } from '../utils/demFile.js'
 import { DEFAULT_TERRAIN_FOLLOW } from '../mission/defaults.js'
 import { isOffline } from '../utils/tileCache.js'
 
-export function useTerrain({ ring, ringBbox, ringValid }) {
+/**
+ * `targetBbox`, quando dado, é a caixa a cobrir com relevo em vez da da área
+ * (um projecto com corredor carrega a área e o corredor juntos: ver
+ * terrainTargetBbox). Sem ele, tudo como antes: a caixa da área.
+ */
+export function useTerrain({ ring, ringBbox: areaBbox, ringValid, targetBbox = null }) {
+  const ringBbox = targetBbox ?? areaBbox
   const [terrain, setTerrain] = useState({ status: 'idle', data: null, error: null })
   const [terrainFollow, setTerrainFollow] = useState(() => ({ ...DEFAULT_TERRAIN_FOLLOW }))
 
@@ -70,7 +76,8 @@ export function useTerrain({ ring, ringBbox, ringValid }) {
   // na mesma área (o botão manual fica como recurso).
   const autoTerrainTriedRef = useRef(null)
   useEffect(() => {
-    if (!ring || !ringValid || !ringBbox) return
+    if (!ringBbox) return
+    if (!targetBbox && (!ring || !ringValid)) return
     if (terrain.status === 'loading') return
     if (terrain.data?.source === 'file') return
     if (terrain.status === 'ready' && terrainCovers) return
@@ -81,7 +88,7 @@ export function useTerrain({ ring, ringBbox, ringValid }) {
       handleLoadTerrain()
     }, 1500)
     return () => clearTimeout(timer)
-  }, [ring, ringValid, ringBbox, terrain, terrainCovers, handleLoadTerrain])
+  }, [ring, ringValid, ringBbox, targetBbox, terrain, terrainCovers, handleLoadTerrain])
 
   // Sugestões para encostas íngremes (T4.5): plano médio do terreno na área
   // → linhas ao longo das curvas de nível e gimbal ≈ −(90 − inclinação).

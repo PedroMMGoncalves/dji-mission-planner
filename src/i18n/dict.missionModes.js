@@ -48,6 +48,35 @@ export default {
     pt: 'Só nos cantos: pára no fim de cada troço e passa sem parar pelas fotos e pelas dobras das passagens. Em todos: pára em cada waypoint, e o tempo previsto conta as paragens.',
     en: 'Corners only: stops at the end of each run and flies through photo points and pass bends. At every waypoint: stops at each one, and the estimated time counts the stops.',
   },
+  'co.terrain.title': { pt: 'Relevo e Base', en: 'Terrain and Home Point' },
+  'co.terrain.follow': {
+    pt: 'Seguir terreno (cada passagem sobre o seu chão)',
+    en: 'Follow terrain (each pass over its own ground)',
+  },
+  'co.terrain.hint': {
+    pt: 'Cada passagem sobe e desce com o relevo debaixo dela e dos 30 m de cada lado, com o tecto de 120 m acima do solo; as dobras ficam e acrescentam-se os pontos que a tolerância exigir. A área e o corredor partilham o relevo carregado: um só MDT da DGT, ou o vosso último levantamento, serve os dois.',
+    en: 'Each pass rises and drops with the terrain beneath it and 30 m to each side, capped at 120 m above ground; bends are kept and the points the tolerance requires are added. Area and corridor share the loaded terrain: one DGT DTM, or your latest survey, serves both.',
+  },
+  'co.terrain.outOfCoverage': {
+    pt: 'O corredor sai fora do relevo carregado: volte a descarregar ou importe um MDT que o cubra.',
+    en: 'The corridor extends beyond the loaded terrain: download it again or import a DTM that covers it.',
+  },
+  'co.terrain.refBase': {
+    pt: 'Alturas relativas à base marcada, à cota {elev} m.',
+    en: 'Heights relative to the marked home point, at {elev} m.',
+  },
+  'co.terrain.refMin': {
+    pt: 'Sem base sobre o relevo: alturas relativas à cota mínima debaixo da rota, {elev} m. Descolar mais acima põe o drone mais alto, nunca mais baixo.',
+    en: 'No home point on the terrain: heights relative to the minimum elevation under the route, {elev} m. Taking off higher puts the aircraft higher, never lower.',
+  },
+  'co.terrain.err.terrain-not-loaded': {
+    pt: 'O relevo carregado não cobre o corredor.',
+    en: 'The loaded terrain does not cover the corridor.',
+  },
+  'co.terrain.err.ref-outside-terrain': {
+    pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado.',
+    en: 'No reference elevation: neither the home point nor the route lies on the loaded terrain.',
+  },
   'co.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
   'co.plan.length': { pt: 'Comprimento do eixo', en: 'Centreline length' },
   'co.plan.passes': { pt: '{n} passagens ({r} troços)', en: '{n} passes ({r} runs)' },

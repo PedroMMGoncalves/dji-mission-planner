@@ -495,6 +495,69 @@ await scenario('circular-sobre-a-area', async () => {
   return { page }
 })
 
+await scenario('corredor-segue-terreno', async () => {
+  // o MDT sintetico importado pela area serve tambem o corredor desenhado
+  // dentro dela: um so relevo para os dois
+  const { page, errors } = await openMission({ area: fx.rect, dem: true })
+  await modo(page, /^Corredor$|^Corridor$/)
+  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await clickMap(page, -300, 40)
+  await clickMap(page, 0, -60)
+  await clickMap(page, 300, 40)
+  await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
+  await page
+    .locator('label', { hasText: /Meia-largura|Half-width/ })
+    .locator('input')
+    .fill('200')
+  await page.waitForTimeout(800)
+  // sem seguimento de terreno: alturas planas
+  const plano0 = await readRoutes(
+    await panelExport(
+      page,
+      /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/,
+      join(OUT, 'corredor-plano.kmz'),
+    ),
+  )
+  const hs0 = [...plano0[0].wpml.matchAll(/<wpml:executeHeight>([-\d.]+)</g)].map((m) =>
+    Number(m[1]),
+  )
+  const tf = page
+    .locator('label', { hasText: /cada passagem sobre o seu chão|each pass over its own ground/ })
+    .locator('input')
+  check('corredor: seguimento de terreno disponível com o MDT da área', !(await tf.isDisabled()))
+  await tf.check()
+  await page.waitForTimeout(800)
+  const [dl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/ }).click(),
+  ])
+  await dl.saveAs(join(OUT, 'corredor-tf.kmz'))
+  const routes = await readRoutes(join(OUT, 'corredor-tf.kmz'))
+  const r = analyseRoute(routes[0].wpml, { toM, ground, aglNominalM: AGL_M })
+  executavel(r)
+  const hs = [...routes[0].wpml.matchAll(/<wpml:executeHeight>([-\d.]+)</g)].map((m) =>
+    Number(m[1]),
+  )
+  check(
+    'corredor: sem relevo as alturas são planas; com relevo variam e há mais pontos',
+    new Set(hs0).size === 1 && new Set(hs).size > 3 && hs.length > hs0.length,
+    `${hs0.length} → ${hs.length} pontos, alturas ${Math.min(...hs)}–${Math.max(...hs)} m`,
+  )
+  check(
+    'corredor: folga ao solo mantida ao longo de toda a rota',
+    clearanceOk(r),
+    `${r.minClearance.toFixed(1)} m (AGL ${r.agl}) ${r.minAt}`,
+  )
+  check(
+    'corredor: nome do ficheiro com -tf',
+    /_corridor-tf_n\d+\.kmz$/.test(dl.suggestedFilename()),
+    dl.suggestedFilename(),
+  )
+  check('corredor com relevo: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 await scenario('fachada-desenhada', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Fachada$|^Face$/)

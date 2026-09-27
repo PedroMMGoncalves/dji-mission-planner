@@ -79,8 +79,9 @@ function InstrucoesPt() {
           duplo clique. Defina a <strong>meia-largura</strong> (distância coberta de cada lado do
           eixo — a largura total é o dobro) e o número de passagens paralelas sai daí, da altitude e
           da sobreposição lateral. Escolha o disparo por distância ou por waypoint. É{' '}
-          <strong>apenas nadir</strong>: não suporta seguimento de terreno nem divisão por bateria,
-          e as passagens voam a uma altitude única relativa ao ponto de descolagem.
+          <strong>apenas nadir</strong> e não divide por bateria. Com relevo carregado, «Seguir
+          terreno» põe cada passagem sobre o seu próprio chão; a área e o corredor partilham o mesmo
+          MDT.
         </Li>
       </ul>
 
@@ -260,8 +261,8 @@ function InstrucoesEn() {
           double click. Set the <strong>half-width</strong> (distance covered on each side of the
           centreline — the total width is twice that) and the number of parallel passes follows from
           it, the altitude and the side overlap. Choose distance or per-waypoint triggering. It is{' '}
-          <strong>nadir only</strong>: no terrain following and no battery splitting, and the passes
-          fly at a single altitude relative to the take-off point.
+          <strong>nadir only</strong> and does not split by battery. With terrain loaded, “Follow
+          terrain” puts each pass over its own ground; the area and the corridor share one DTM.
         </Li>
       </ul>
 
