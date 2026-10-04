@@ -4,6 +4,9 @@
 
 > Planeador de missões de mapeamento por drone, no browser: áreas de levantamento, grelhas fotogramétricas/LiDAR com seguimento do terreno, fachadas, órbitas e pontos de inspecção, divisão em blocos à medida da bateria e exportação KML e DJI WPML (KMZ) para o DJI Pilot 2.
 
+> [!WARNING]
+> **Aviso.** Software fornecido tal como está, sem garantia (GPL-3.0). O piloto remoto é o único responsável pela operação; verifique cada missão no DJI Pilot 2 antes de voar. Alguns modos ainda não foram validados em voo: ver a [matriz de compatibilidade](docs/VALIDACAO.md#5-matriz-de-compatibilidade-a-preencher). A aplicação mostra o aviso completo na primeira abertura.
+
 [![React](https://img.shields.io/badge/React-18-20232a.svg?logo=react&logoColor=61dafb)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-5-646cff.svg?logo=vite&logoColor=ffd62e)](https://vitejs.dev)
 [![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900.svg?logo=leaflet&logoColor=white)](https://leafletjs.com)

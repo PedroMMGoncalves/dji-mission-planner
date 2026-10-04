@@ -10,6 +10,10 @@ import ProjectSummary from './components/ProjectSummary.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import ChecklistPage from './components/ChecklistPage.jsx'
 import HelpModal from './components/HelpModal.jsx'
+import DisclaimerModal, {
+  acceptDisclaimer,
+  disclaimerAccepted,
+} from './components/DisclaimerModal.jsx'
 
 // carregados sob demanda
 const Map3D = lazy(() => import('./components/Map3D.jsx'))
@@ -136,6 +140,13 @@ function AppInner({ lang, setLang }) {
     }
   }, [])
   const [showHelp, setShowHelp] = useState(false)
+  // aviso antes de usar: uma vez por aparelho (e de novo quando o texto
+  // muda); reaberto da ajuda, só para reler
+  const [disclaimer, setDisclaimer] = useState(() => (disclaimerAccepted() ? null : 'first'))
+  const closeDisclaimer = useCallback(() => {
+    acceptDisclaimer()
+    setDisclaimer(null)
+  }, [])
   const [show3d, setShow3d] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
@@ -1702,7 +1713,23 @@ function AppInner({ lang, setLang }) {
         </main>
       </div>
 
-      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {showHelp && (
+        <HelpModal
+          onClose={() => setShowHelp(false)}
+          onShowDisclaimer={() => {
+            setShowHelp(false)
+            setDisclaimer('review')
+          }}
+        />
+      )}
+      {disclaimer && (
+        <DisclaimerModal
+          lang={lang}
+          setLang={setLang}
+          onAccept={closeDisclaimer}
+          dismissable={disclaimer === 'review'}
+        />
+      )}
 
       {showProfile && terrain.status === 'ready' && view3d && (
         <Suspense fallback={null}>

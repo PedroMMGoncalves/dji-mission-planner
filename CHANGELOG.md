@@ -6,6 +6,18 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Acrescentado (aviso antes de usar)
+
+- **Aviso na primeira abertura.** Uma janela com cinco pontos: sem
+  garantia (GPL-3.0, os autores não respondem por danos na medida máxima
+  permitida pela lei), a responsabilidade é do piloto remoto, verificar
+  cada missão no DJI Pilot 2 antes de descolar, limitações do relevo e o
+  que ainda não foi validado em voo, com ligação para a matriz de
+  compatibilidade. Em PT e EN, com a escolha de língua no próprio aviso.
+  Aparece uma vez por aparelho e volta quando o texto muda; só fecha no
+  botão «Li e compreendo». Relê-se a partir da ajuda («Acerca»). Secção
+  curta de aviso no topo dos dois README.
+
 ### Alterado (não há missão sem relevo)
 
 - **O relevo passa a ser obrigatório.** As alturas do KMZ são relativas à

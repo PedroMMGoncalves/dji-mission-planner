@@ -387,7 +387,7 @@ function InstrucoesEn() {
   )
 }
 
-function AcercaPt() {
+function AcercaPt({ onShowDisclaimer }) {
   return (
     <>
       <H>DJI Mission Planner</H>
@@ -415,11 +415,20 @@ function AcercaPt() {
         vista). O piloto é sempre responsável pela operação. Verifique zonas de restrição e
         autorizações necessárias antes de voar.
       </p>
+      {onShowDisclaimer && (
+        <button
+          type="button"
+          onClick={onShowDisclaimer}
+          className="mt-2 text-sky-400 underline hover:text-sky-300"
+        >
+          Ler o aviso completo
+        </button>
+      )}
     </>
   )
 }
 
-function AcercaEn() {
+function AcercaEn({ onShowDisclaimer }) {
   return (
     <>
       <H>DJI Mission Planner</H>
@@ -449,11 +458,20 @@ function AcercaEn() {
         pilot is always responsible for the operation. Check restriction zones and required
         authorisations before flying.
       </p>
+      {onShowDisclaimer && (
+        <button
+          type="button"
+          onClick={onShowDisclaimer}
+          className="mt-2 text-sky-400 underline hover:text-sky-300"
+        >
+          Read the full disclaimer
+        </button>
+      )}
     </>
   )
 }
 
-export default function HelpModal({ onClose }) {
+export default function HelpModal({ onClose, onShowDisclaimer = null }) {
   const [tab, setTab] = useState('instrucoes')
   const t = useT()
   const lang = useLang()
@@ -513,9 +531,9 @@ export default function HelpModal({ onClose }) {
               <InstrucoesPt />
             )
           ) : lang === 'en' ? (
-            <AcercaEn />
+            <AcercaEn onShowDisclaimer={onShowDisclaimer} />
           ) : (
-            <AcercaPt />
+            <AcercaPt onShowDisclaimer={onShowDisclaimer} />
           )}
         </div>
       </div>

@@ -144,11 +144,14 @@ function solidTerrariumPng([r, g, b]) {
 }
 const FLAT_TILE = solidTerrariumPng([128, 0, 0])
 
-async function openMission({ area, dem = true, globalTerrain = true }) {
+async function openMission({ area = null, dem = true, globalTerrain = true, disclaimer = true }) {
   const page = await browser.newPage({
     viewport: { width: 1500, height: 950 },
     acceptDownloads: true,
   })
+  // aviso antes de usar já aceite neste "aparelho" (o cenário do aviso testa-o)
+  if (disclaimer)
+    await page.addInitScript(() => localStorage.setItem('dji-mission-planner:disclaimer', '1'))
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message.slice(0, 300)))
   // só a build local: mapas e fontes externas ficam de fora; o relevo global
@@ -161,6 +164,7 @@ async function openMission({ area, dem = true, globalTerrain = true }) {
     return route.abort()
   })
   await page.goto(URL, { waitUntil: 'domcontentloaded' })
+  if (!area) return { page, errors }
   const areaInput = page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
   await areaInput.waitFor({ state: 'attached', timeout: 20000 })
   await areaInput.setInputFiles(area)
@@ -947,6 +951,46 @@ await scenario('mdt-importado-acompanha-a-geometria', async () => {
     /MDT local grande\.tif|local DTM grande\.tif/.test(await bodyText(page)),
   )
   check('mdt: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+await scenario('aviso-antes-de-usar', async () => {
+  const { page, errors } = await openMission({ disclaimer: false })
+  const dlg = page.getByTestId('disclaimer')
+  await dlg.waitFor({ state: 'visible', timeout: 20000 })
+  check(
+    'aviso: aparece na primeira abertura, com o texto e a matriz',
+    /Aviso antes de usar/.test(await dlg.innerText()) &&
+      /piloto remoto é o único responsável/.test(await dlg.innerText()) &&
+      (await dlg.getByRole('link', { name: /matriz de compatibilidade/ }).count()) === 1,
+  )
+  // só fecha no botão: nem Escape nem um clique fora
+  await page.keyboard.press('Escape')
+  await page.mouse.click(5, 5)
+  await page.waitForTimeout(300)
+  check('aviso: Escape e clique fora não o fecham', await dlg.isVisible())
+  await dlg.getByRole('button', { name: 'en', exact: true }).click()
+  check(
+    'aviso: muda de língua no próprio aviso',
+    /Before you use this app/.test(await dlg.innerText()) &&
+      /remote pilot is solely responsible/.test(await dlg.innerText()),
+  )
+  await dlg.getByRole('button', { name: 'I understand' }).click()
+  check('aviso: o botão fecha-o', !(await dlg.isVisible()))
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByTitle(/Instruções e informação|Instructions and app information/).waitFor()
+  await page.waitForTimeout(500)
+  check('aviso: aceite, não volta a aparecer neste aparelho', (await dlg.count()) === 0)
+  // reaberto da ajuda, para reler; aí fecha com Escape
+  await page.getByTitle(/Instruções e informação|Instructions and app information/).click()
+  await page.getByRole('button', { name: /^(Acerca|About)$/ }).click()
+  await page.getByRole('button', { name: /Ler o aviso completo|Read the full disclaimer/ }).click()
+  await dlg.waitFor({ state: 'visible', timeout: 5000 })
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
+  check('aviso: reaberto da ajuda e fechado com Escape', (await dlg.count()) === 0)
+  check('aviso: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

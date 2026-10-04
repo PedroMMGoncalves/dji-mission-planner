@@ -4,6 +4,9 @@ English | **[Português](README.pt.md)**
 
 > Browser-based drone mapping mission planner: survey areas, photogrammetric/LiDAR flight grids with terrain following, corridors along linear features, facades, orbits and inspection points, battery-sized block splitting, and KML / DJI WPML (KMZ) export for DJI Pilot 2.
 
+> [!WARNING]
+> **Disclaimer.** Software provided as is, without warranty (GPL-3.0). The remote pilot is solely responsible for the operation; check every mission in DJI Pilot 2 before flying. Some modes have not yet been flight-tested: see the [compatibility matrix](docs/VALIDACAO.md#5-matriz-de-compatibilidade-a-preencher). The app shows the full disclaimer the first time it is opened.
+
 [![React](https://img.shields.io/badge/React-18-20232a.svg?logo=react&logoColor=61dafb)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-5-646cff.svg?logo=vite&logoColor=ffd62e)](https://vitejs.dev)
 [![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900.svg?logo=leaflet&logoColor=white)](https://leafletjs.com)
