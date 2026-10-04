@@ -17,6 +17,9 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   Aparece uma vez por aparelho e volta quando o texto muda; só fecha no
   botão «Li e compreendo». Relê-se a partir da ajuda («Acerca»). Secção
   curta de aviso no topo dos dois README.
+- O ponto 2 do aviso passa a incluir o seguro de responsabilidade civil,
+  quando exigido, entre as obrigações do piloto. Versão do aviso 2: volta
+  a aparecer uma vez a quem já tinha aceite a anterior.
 
 ### Alterado (não há missão sem relevo)
 

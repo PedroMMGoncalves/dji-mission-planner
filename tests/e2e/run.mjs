@@ -151,7 +151,7 @@ async function openMission({ area = null, dem = true, globalTerrain = true, disc
   })
   // aviso antes de usar já aceite neste "aparelho" (o cenário do aviso testa-o)
   if (disclaimer)
-    await page.addInitScript(() => localStorage.setItem('dji-mission-planner:disclaimer', '1'))
+    await page.addInitScript(() => localStorage.setItem('dji-mission-planner:disclaimer', '2'))
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message.slice(0, 300)))
   // só a build local: mapas e fontes externas ficam de fora; o relevo global
@@ -963,6 +963,7 @@ await scenario('aviso-antes-de-usar', async () => {
     'aviso: aparece na primeira abertura, com o texto e a matriz',
     /Aviso antes de usar/.test(await dlg.innerText()) &&
       /piloto remoto é o único responsável/.test(await dlg.innerText()) &&
+      /seguro de responsabilidade civil quando exigido/.test(await dlg.innerText()) &&
       (await dlg.getByRole('link', { name: /matriz de compatibilidade/ }).count()) === 1,
   )
   // só fecha no botão: nem Escape nem um clique fora

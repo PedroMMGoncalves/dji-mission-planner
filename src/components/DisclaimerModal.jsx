@@ -7,7 +7,7 @@ import { useEffect } from 'react'
 import { LANGS } from '../i18n.jsx'
 
 /** Sobe quando o texto muda: o aviso volta a aparecer a toda a gente. */
-export const DISCLAIMER_VERSION = '1'
+export const DISCLAIMER_VERSION = '2'
 export const DISCLAIMER_KEY = 'dji-mission-planner:disclaimer'
 
 const MATRIX_URL =
@@ -65,8 +65,8 @@ function TextoPt() {
         </Item>
         <Item title="A responsabilidade é do piloto.">
           O piloto remoto é o único responsável pela operação: regras UAS (Reg. (UE) 2019/947),
-          zonas geográficas, autorizações, condições meteorológicas e segurança de pessoas e bens no
-          local.
+          zonas geográficas, autorizações, seguro de responsabilidade civil quando exigido,
+          condições meteorológicas e segurança de pessoas e bens no local.
         </Item>
         <Item title="Verifique antes de descolar.">
           Reveja cada missão no DJI Pilot 2 antes do voo: rota, alturas, velocidade e acções da
@@ -108,8 +108,8 @@ function TextoEn() {
         </Item>
         <Item title="The pilot is responsible.">
           The remote pilot is solely responsible for the operation: UAS rules (Regulation (EU)
-          2019/947), geographical zones, authorisations, weather, and the safety of people and
-          property on site.
+          2019/947), geographical zones, authorisations, third-party liability insurance where
+          required, weather, and the safety of people and property on site.
         </Item>
         <Item title="Check before take-off.">
           Review every mission in DJI Pilot 2 before flying: route, heights, speed and camera
