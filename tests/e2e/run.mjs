@@ -1956,6 +1956,13 @@ await scenario('juntar-a-esta-base', async () => {
     const back = (await baseRows(page)).map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ')
     check('juntar: um Ctrl+Z repõe as bases e os voos', back === layout0, back)
   }
+  // vista 3D com bases: cada voo na cor da sua base, sem erros
+  await page.getByRole('button', { name: /Vista 3D|3D View/ }).click()
+  await page.waitForSelector('canvas', { timeout: 15000 })
+  await page.waitForTimeout(2500)
+  await page.screenshot({ path: join(OUT, 'juntar-3d.png') })
+  check('juntar: a vista 3D com bases abre sem erros', errors.length === 0, errors.join(' | '))
+  await page.keyboard.press('Escape')
   check('juntar: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }

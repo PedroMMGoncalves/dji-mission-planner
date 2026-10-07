@@ -9,8 +9,12 @@ import { fillTerrainGaps } from '../utils/terrainGrid.js'
  * VISUALIZADOR 3D DA MISSÃO
  * -------------------------
  * Sobreposição a ecrã inteiro com o relevo da área (DEM já carregado), o
- * traçado de voo em altitude real, o contorno da área, a base do operador e
- * os alvos GCP.
+ * traçado de voo em altitude real, o contorno da área, as bases do operador
+ * e os alvos GCP. Com bases e blocos, cada voo vem na cor da sua base (como
+ * no mapa): o traçado, o contorno do bloco drapejado no relevo, a área do
+ * bloco pintada na imagem de satélite e o rótulo do voo; cada base com o
+ * rótulo e o círculo da zona de descolagem. Os saltos de um voo para o
+ * seguinte (`breaks`) não se desenham.
  *
  * Convenções (iguais a utils/geo.js):
  *  - coordenadas [lon, lat] em WGS84, distâncias em metros;
@@ -126,6 +130,37 @@ async function buildImageryCanvas([minLon, minLat, maxLon, maxLat], isCancelled)
   return canvas
 }
 
+/**
+ * Pinta a área de cada bloco, na cor da sua base e translúcida, sobre a
+ * imagem de satélite (o canvas está em píxeis Web Mercator da bbox): a
+ * textura assenta no relevo, e a cor com ela.
+ */
+function paintBlocks(canvas, blocks, [minLon, minLat, maxLon, maxLat]) {
+  const ctx = canvas.getContext('2d')
+  if (!ctx || !blocks?.length) return
+  const nTop = mercatorN(maxLat)
+  const nSpan = mercatorN(minLat) - nTop || 1
+  const lonSpan = maxLon - minLon || 1
+  const px = (p) => [
+    ((p[0] - minLon) / lonSpan) * canvas.width,
+    ((mercatorN(p[1]) - nTop) / nSpan) * canvas.height,
+  ]
+  ctx.save()
+  for (const b of blocks) {
+    ctx.beginPath()
+    b.ring.forEach((p, i) => {
+      const [x, y] = px(p)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
+    })
+    ctx.closePath()
+    ctx.globalAlpha = 0.28
+    ctx.fillStyle = b.color || '#22d3ee'
+    ctx.fill()
+  }
+  ctx.restore()
+}
+
 /** Rampa hipsométrica verde → castanho → branco (t em [0,1]). */
 const HYPSO_LOW = new THREE.Color('#2f6b3d')
 const HYPSO_MID = new THREE.Color('#8a6636')
@@ -137,7 +172,7 @@ function hypsoColor(t, out) {
 }
 
 /** Etiqueta de texto simples (canvas → Sprite). */
-function makeLabelSprite(text, worldHeight) {
+function makeLabelSprite(text, worldHeight, color = '#facc15') {
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
@@ -149,7 +184,7 @@ function makeLabelSprite(text, worldHeight) {
   ctx.font = font
   ctx.fillStyle = 'rgba(2, 6, 23, 0.72)'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  ctx.fillStyle = '#facc15'
+  ctx.fillStyle = color
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, canvas.width / 2, canvas.height / 2)
@@ -176,6 +211,10 @@ export default function Map3D({
   waypoints,
   refElev,
   basePoints = null,
+  breaks = null,
+  pieceColors = null,
+  blocks3d = null,
+  bases3d = null,
   gcps,
   onClose,
 }) {
@@ -195,7 +234,18 @@ export default function Map3D({
   // acção do utilizador, sempre depois de o efeito ter corrido, pelo que
   // continuam a ler a versão mais recente.
   useEffect(() => {
-    propsRef.current = { terrain, ring, waypoints, refElev, basePoints, gcps }
+    propsRef.current = {
+      terrain,
+      ring,
+      waypoints,
+      refElev,
+      basePoints,
+      breaks,
+      pieceColors,
+      blocks3d,
+      bases3d,
+      gcps,
+    }
     onCloseRef.current = onClose
     exagRef.current = exag
   })
@@ -213,6 +263,12 @@ export default function Map3D({
     waypoints?.length ?? 0,
     Number.isFinite(refElev) ? Math.round(refElev) : 'x',
     (basePoints ?? []).map((p) => p.join(',')).join(';') || '-',
+    (breaks ?? []).join(','),
+    (pieceColors ?? []).join(','),
+    (blocks3d ?? []).map((b) => `${b.label}:${b.color}:${b.ring?.length ?? 0}`).join(';'),
+    (bases3d ?? [])
+      .map((b) => `${b.label}:${b.color}:${b.point?.join(',')}:${Math.round(b.radiusM ?? 0)}`)
+      .join(';'),
     gcps?.length ?? 0,
   ].join('|')
 
@@ -228,7 +284,18 @@ export default function Map3D({
   // Construção da cena (uma vez por conjunto de dados)
   useEffect(() => {
     const host = hostRef.current
-    const { terrain, ring, waypoints, refElev, basePoints, gcps } = propsRef.current
+    const {
+      terrain,
+      ring,
+      waypoints,
+      refElev,
+      basePoints,
+      breaks,
+      pieceColors,
+      blocks3d,
+      bases3d,
+      gcps,
+    } = propsRef.current
     if (!host || !Array.isArray(terrain?.bbox) || typeof terrain.elevationAt !== 'function') return
 
     setImagery('loading')
@@ -385,28 +452,68 @@ export default function Map3D({
     let endMarker = null
     const dummy = new THREE.Object3D()
 
+    // os índices onde começa um voo novo (só valem com todos os waypoints válidos)
+    const allValid = Array.isArray(waypoints) && wps.length === waypoints.length
+    const breakSet = new Set(allValid && Array.isArray(breaks) ? breaks : [])
+    const colored = allValid && Array.isArray(pieceColors) && pieceColors.length > 0
     if (wps.length >= 2) {
       pathGeo = track(new THREE.BufferGeometry())
       pathGeo.setAttribute(
         'position',
         new THREE.BufferAttribute(new Float32Array(wps.length * 3), 3),
       )
-      const pathMat = track(new THREE.LineBasicMaterial({ color: '#22d3ee' }))
-      scene.add(new THREE.Line(pathGeo, pathMat))
-      // segundo passe amarelo, ligeiramente acima, para contraste sobre o relevo
-      const glowMat = track(
-        new THREE.LineBasicMaterial({ color: '#fbbf24', transparent: true, opacity: 0.55 }),
+      // segmentos i-1 → i, menos os saltos entre voos (não se voam)
+      const index = []
+      for (let i = 1; i < wps.length; i++) if (!breakSet.has(i)) index.push(i - 1, i)
+      pathGeo.setIndex(index)
+      if (colored) {
+        // cor de cada waypoint: a do voo (troço) a que pertence
+        const col = new Float32Array(wps.length * 3)
+        const c = new THREE.Color()
+        let piece = 0
+        for (let i = 0; i < wps.length; i++) {
+          if (i > 0 && breakSet.has(i)) piece++
+          c.set(pieceColors[piece] || '#22d3ee')
+          col[i * 3] = c.r
+          col[i * 3 + 1] = c.g
+          col[i * 3 + 2] = c.b
+        }
+        pathGeo.setAttribute('color', new THREE.BufferAttribute(col, 3))
+      }
+      const pathMat = track(
+        colored
+          ? new THREE.LineBasicMaterial({ vertexColors: true })
+          : new THREE.LineBasicMaterial({ color: '#22d3ee' }),
       )
-      const glow = new THREE.Line(pathGeo, glowMat)
+      scene.add(new THREE.LineSegments(pathGeo, pathMat))
+      // segundo passe ligeiramente acima, para contraste sobre o relevo
+      // (amarelo; com as cores dos voos, branco ténue para não as misturar)
+      const glowMat = track(
+        new THREE.LineBasicMaterial({
+          color: colored ? '#ffffff' : '#fbbf24',
+          transparent: true,
+          opacity: colored ? 0.25 : 0.55,
+        }),
+      )
+      const glow = new THREE.LineSegments(pathGeo, glowMat)
       glow.position.z = unit * 0.25
       scene.add(glow)
     }
 
     if (wps.length > 0 && wps.length <= MAX_WP_SPHERES) {
       const wpGeo = track(new THREE.SphereGeometry(unit * 0.45, 8, 6))
-      const wpMat = track(new THREE.MeshLambertMaterial({ color: '#22d3ee' }))
+      // com as cores dos voos, o material fica branco e cada esfera leva a sua
+      const wpMat = track(new THREE.MeshLambertMaterial({ color: colored ? '#ffffff' : '#22d3ee' }))
       wpInstances = new THREE.InstancedMesh(wpGeo, wpMat, wps.length)
       wpInstances.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+      if (colored) {
+        const c = new THREE.Color()
+        let piece = 0
+        for (let i = 0; i < wps.length; i++) {
+          if (i > 0 && breakSet.has(i)) piece++
+          wpInstances.setColorAt(i, c.set(pieceColors[piece] || '#22d3ee'))
+        }
+      }
       scene.add(wpInstances)
     }
 
@@ -419,44 +526,58 @@ export default function Map3D({
       scene.add(startMarker, endMarker)
     }
 
-    /* --- contorno da área, drapejado no terreno -------------------------- */
-    let ringGeo = null
-    let ringZ = null
-    if (ring && ring.length >= 3) {
+    /* --- linhas drapejadas no terreno (área, blocos, zonas) ------------- */
+    // { geo, z }: cotas SEM exagero, reescaladas em applyExaggeration
+    const draped = []
+    const drape = (lonlats, color, opacity, liftM = 2) => {
+      if (!Array.isArray(lonlats) || lonlats.length < 3) return
       // densifica cada aresta para a linha acompanhar o relevo
-      const closed = [...ring, ring[0]]
+      const closed = [...lonlats, lonlats[0]]
       const pts = []
       for (let i = 0; i < closed.length - 1; i++) {
         const [x0, y0] = toLocal(closed[i])
         const [x1, y1] = toLocal(closed[i + 1])
         const len = Math.hypot(x1 - x0, y1 - y0)
         const steps = Math.max(1, Math.min(400, Math.ceil(len / Math.max(5, extent / 400))))
-        for (let s = 0; s < steps; s++) {
-          const t = s / steps
+        for (let k = 0; k < steps; k++) {
+          const t = k / steps
           pts.push([x0 + (x1 - x0) * t, y0 + (y1 - y0) * t])
         }
       }
-      ringZ = new Float32Array(pts.length)
-      const ringPos = new Float32Array(pts.length * 3)
+      const z = new Float32Array(pts.length)
+      const pos = new Float32Array(pts.length * 3)
       pts.forEach(([x, y], i) => {
-        ringPos[i * 3] = x
-        ringPos[i * 3 + 1] = y
-        ringZ[i] = elevAt(lon0 + x / mLon, lat0 + y / M_PER_DEG_LAT) + 2 // +2 m acima do solo
+        pos[i * 3] = x
+        pos[i * 3 + 1] = y
+        z[i] = elevAt(lon0 + x / mLon, lat0 + y / M_PER_DEG_LAT) + liftM
       })
-      ringGeo = track(new THREE.BufferGeometry())
-      ringGeo.setAttribute('position', new THREE.BufferAttribute(ringPos, 3))
-      const ringMat = track(
-        new THREE.LineBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.85 }),
-      )
-      scene.add(new THREE.LineLoop(ringGeo, ringMat))
+      const geo = track(new THREE.BufferGeometry())
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+      const mat = track(new THREE.LineBasicMaterial({ color, transparent: true, opacity }))
+      scene.add(new THREE.LineLoop(geo, mat))
+      draped.push({ geo, z })
     }
+
+    // contorno da área
+    if (ring && ring.length >= 3) drape(ring, '#ffffff', 0.85)
+
+    // contorno de cada bloco, na cor da sua base
+    const blockList = (Array.isArray(blocks3d) ? blocks3d : []).filter(
+      (b) => Array.isArray(b?.ring) && b.ring.length >= 3,
+    )
+    for (const b of blockList) drape(b.ring, b.color || '#22d3ee', 0.95, 3)
 
     /* --- objetos ao nível do solo (base, GCPs, etiquetas) ---------------- */
     // { obj, groundZ, lift }: z = groundZ × exagero + lift
     const groundObjects = []
 
-    // as bases do projecto (pontos marcados)
-    for (const basePoint of basePoints ?? []) {
+    // as bases do projecto: com rótulo, cor e zona quando vêm do painel,
+    // senão só os pontos (âmbar)
+    const baseList = Array.isArray(bases3d)
+      ? bases3d
+      : (basePoints ?? []).map((point) => ({ point, label: null, color: null, radiusM: 0 }))
+    for (const base of baseList) {
+      const basePoint = base?.point
       if (
         !Array.isArray(basePoint) ||
         !Number.isFinite(basePoint[0]) ||
@@ -464,23 +585,72 @@ export default function Map3D({
       )
         continue
       const [bx, by] = toLocal(basePoint)
+      const color = base.color || '#f59e0b'
       const group = new THREE.Group()
       const mastGeo = track(new THREE.CylinderGeometry(unit * 0.28, unit * 0.28, unit * 3, 12))
       mastGeo.rotateX(Math.PI / 2) // eixo do cilindro alinhado com Z
-      const amber = track(new THREE.MeshLambertMaterial({ color: '#f59e0b' }))
-      const mast = new THREE.Mesh(mastGeo, amber)
+      const mat = track(new THREE.MeshLambertMaterial({ color }))
+      const mast = new THREE.Mesh(mastGeo, mat)
       mast.position.z = unit * 1.5
       const capGeo = track(new THREE.SphereGeometry(unit * 0.75, 14, 10))
-      const cap = new THREE.Mesh(capGeo, amber)
+      const cap = new THREE.Mesh(capGeo, mat)
       cap.position.z = unit * 3
       group.add(mast, cap)
       group.position.set(bx, by, 0)
       scene.add(group)
-      groundObjects.push({
-        obj: group,
-        groundZ: elevAt(basePoint[0], basePoint[1]),
-        lift: unit * 0.4,
-      })
+      const ground = elevAt(basePoint[0], basePoint[1])
+      groundObjects.push({ obj: group, groundZ: ground, lift: unit * 0.4 })
+      if (base.label) {
+        const sprite = makeLabelSprite(String(base.label), unit * 2.4, color)
+        if (sprite) {
+          sprite.position.set(bx, by, 0)
+          scene.add(sprite)
+          track(sprite.material.map)
+          track(sprite.material)
+          groundObjects.push({ obj: sprite, groundZ: ground, lift: unit * 5.2 })
+        }
+      }
+      // zona de descolagem: círculo drapejado com o raio efectivo
+      if (Number.isFinite(base.radiusM) && base.radiusM > 0) {
+        const mLonB = metersPerDegLon(basePoint[1]) || 1
+        const circle = []
+        for (let k = 0; k < 48; k++) {
+          const a = (2 * Math.PI * k) / 48
+          circle.push([
+            basePoint[0] + (base.radiusM * Math.sin(a)) / mLonB,
+            basePoint[1] + (base.radiusM * Math.cos(a)) / M_PER_DEG_LAT,
+          ])
+        }
+        drape(circle, color, 0.9, 2)
+      }
+    }
+
+    // rótulo de cada voo no centro do bloco (até 120 blocos)
+    if (blockList.length <= 120) {
+      for (const b of blockList) {
+        if (!b.label) continue
+        const open = b.ring
+        let sx = 0
+        let sy = 0
+        for (const p of open) {
+          const [x, y] = toLocal(p)
+          sx += x
+          sy += y
+        }
+        const x = sx / open.length
+        const y = sy / open.length
+        const sprite = makeLabelSprite(String(b.label), unit * 1.8, b.color || '#facc15')
+        if (!sprite) continue
+        sprite.position.set(x, y, 0)
+        scene.add(sprite)
+        track(sprite.material.map)
+        track(sprite.material)
+        groundObjects.push({
+          obj: sprite,
+          groundZ: elevAt(lon0 + x / mLon, lat0 + y / M_PER_DEG_LAT),
+          lift: unit * 2.4,
+        })
+      }
     }
 
     if (Array.isArray(gcps) && gcps.length > 0) {
@@ -583,11 +753,11 @@ export default function Map3D({
         startMarker.position.set(pathXY[0][0], pathXY[0][1], pathZ[0] * k)
         endMarker.position.set(pathXY[last][0], pathXY[last][1], pathZ[last] * k)
       }
-      if (ringGeo && ringZ) {
-        const arr = ringGeo.attributes.position
-        for (let i = 0; i < ringZ.length; i++) arr.setZ(i, ringZ[i] * k)
+      for (const { geo, z } of draped) {
+        const arr = geo.attributes.position
+        for (let i = 0; i < z.length; i++) arr.setZ(i, z[i] * k)
         arr.needsUpdate = true
-        ringGeo.computeBoundingSphere()
+        geo.computeBoundingSphere()
       }
       groundObjects.forEach(({ obj, groundZ, lift }) => {
         obj.position.z = groundZ * k + lift
@@ -615,6 +785,7 @@ export default function Map3D({
           setImagery('fallback')
           return
         }
+        paintBlocks(canvas, blockList, [minLon, minLat, maxLon, maxLat])
         const texture = new THREE.CanvasTexture(canvas)
         texture.colorSpace = THREE.SRGBColorSpace
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy()

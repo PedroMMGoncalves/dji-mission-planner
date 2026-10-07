@@ -47,7 +47,7 @@ import {
   removeBase as removeBaseFrom,
   setBaseRadius,
 } from './mission/bases.js'
-import { blocksViewRoute, gatherToBase, summarizeBases } from './mission/baseLayout.js'
+import { blockRing, blocksViewRoute, gatherToBase, summarizeBases } from './mission/baseLayout.js'
 import { baseFieldSheets } from './mission/fieldSheet.js'
 import { buildBasesKML } from './mission/basesKml.js'
 import {
@@ -1313,6 +1313,26 @@ function AppInner({ lang, setLang }) {
     blocks,
     params.altitude,
   ])
+
+  // Vista 3D com bases: a cor de cada voo (a da sua base, como no mapa),
+  // pela ordem dos troços de view3d, e o contorno e o rótulo de cada bloco
+  const view3dColors = useMemo(() => {
+    if (missionMode !== 'area' || view3d?.refSource !== 'bases' || !baseLayout?.hasBases)
+      return null
+    const tfOk = terrainResult && !terrainResult.error
+    const src = tfOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
+    if (!src?.length) return null
+    const colorOf = (id) => baseLayout.byBlock[id]?.color ?? null
+    return {
+      // um troço por bloco com waypoints (os vazios não abrem troço)
+      pieces: src.filter((b) => b.waypoints?.length > 0).map((b) => colorOf(b.id)),
+      blocks: (blocks ?? []).map((b) => ({
+        ring: b.cellRing ?? blockRing(b),
+        color: colorOf(b.id),
+        label: baseLayout.byBlock[b.id]?.flightLabel ?? '',
+      })),
+    }
+  }, [missionMode, view3d, baseLayout, terrainResult, blocks])
 
   // Pior folga ao solo da rota que sairia no KMZ, sobre o relevo carregado.
   // E daqui que o preflight bloqueia uma rota que entra no terreno.
@@ -2648,7 +2668,15 @@ function AppInner({ lang, setLang }) {
             }
             waypoints={view3d.waypoints}
             refElev={view3d.refElev}
-            basePoints={bases.map((b) => b.point)}
+            breaks={view3d.breaks ?? null}
+            pieceColors={view3dColors?.pieces ?? null}
+            blocks3d={view3dColors?.blocks ?? null}
+            bases3d={baseRows.map((b) => ({
+              point: b.point,
+              label: b.label,
+              color: b.color,
+              radiusM: b.radiusM,
+            }))}
             gcps={missionMode === 'area' ? gcps : null}
             onClose={() => setShow3d(false)}
           />

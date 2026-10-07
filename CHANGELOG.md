@@ -6,6 +6,15 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Alterado (vista 3D com bases)
+
+- Na vista 3D, com bases, cada voo vem na cor da sua base, como no mapa: o
+  traçado, os waypoints, o contorno do bloco drapejado no relevo, a área do
+  bloco pintada na imagem de satélite e o rótulo do voo. Cada base aparece
+  com o rótulo e o círculo da zona de descolagem.
+- Os saltos de um voo para o seguinte deixam de se desenhar (eram as rectas
+  que atravessavam a área; não se voam).
+
 ### Alterado (vista a partir do melhor ponto da zona)
 
 - As bacias de visão e a proposta de bases contam a vista a partir do
