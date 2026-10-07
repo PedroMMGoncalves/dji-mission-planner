@@ -18,184 +18,121 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## 1.4.0 — 2026-10-07
 
-### Alterado (exportação por base e «Juntar aqui»)
+### Acrescentado (várias bases de descolagem)
 
-- **Exportação**: em vez de um botão por base, **Todos os voos por base
-  (ZIP)** (`_voos-por-base.zip`, uma pasta por base: com vários pilotos,
-  cada um leva as pastas das suas bases) ao lado de **Todos os voos (ZIP)**
-  (`_voos.zip`, todos soltos). Com bases, o botão de exportar do cabeçalho
-  descarrega os dois. A escolha de **Um voo** deixou de ficar espremida.
-- **Juntar aqui**: o botão está em todas as bases, com a contagem («Juntar
-  aqui (+4 voos)», ou «Nada a juntar»). Ao passar o rato o mapa mostra o
-  alcance a tracejado, os blocos que entram e os que ficam de fora; clicar
-  no pino da base no mapa abre a mesma acção numa barra por cima do mapa.
-- Tempos de uma hora ou mais em horas («17 h 19 min» em vez de «1039 min
-  11 s»).
-- README (PT e EN), ajuda e manual de QA actualizados (o README em
-  português dizia ainda que as acções de segurança não estavam no painel).
+- **Várias bases** na missão de área. «Marcar base» acrescenta bases A, B,
+  C...: marcadores arrastáveis com o rótulo, que se retiram na lista do
+  painel. Cada base é uma **zona** (o raio da Configuração, 100 m por
+  omissão, ou um raio próprio por base), porque no campo se descola onde
+  as condições deixam; a seleccionada mostra a zona no mapa, e o raio
+  pedido a tracejado quando foi reduzido junto a uma corta ou talude. A
+  aplicação nunca move uma base marcada pelo operador.
+- **Alturas por bloco.** As alturas de cada bloco referem-se à cota MAIS
+  BAIXA da zona da sua base: descolando em qualquer ponto da zona voa-se
+  igual ou acima do plano, nunca abaixo. Com seguir terreno, o KMZ de cada
+  bloco sai com `AGL + terreno − cota da zona`; sem ele as alturas ficam
+  planas. A folga ao solo, o 3D, o perfil e o preflight usam a cota de
+  cada bloco, e os troços de um voo para o seguinte, que não se voam, não
+  contam.
+- **Atribuição dos blocos**: à base mais próxima no pior caso, ou à
+  escolhida à mão (com «Clique num bloco → Atribuir base», o clique passa
+  o bloco para a base seleccionada, ou para a seguinte). Voos numerados
+  base a base pela ordem dos rótulos e, em cada base, pela ordem do
+  mosaico — A-1, A-2, B-3 — no mapa (blocos na cor da sua base), na lista
+  de blocos, no perfil e na vista 3D.
+- **Lista de bases** no painel: os voos de cada uma, a zona (raio,
+  reduzida e porquê, fora do relevo), a cota de referência e «voo entre 0
+  e +X m acima do planeado».
+- **Preflight bloco a bloco**: voo fora do alcance visual da sua base, com
+  a distância no pior caso (aviso); tempo do voo com o trânsito de ida e
+  volta acima do tempo útil (aviso; bloqueio quando só o trânsito o passa);
+  base fora do relevo (bloqueio); zona reduzida (nota); bloco sem base
+  (bloqueio).
+- **Ctrl+Z nas bases**: marcar, arrastar e retirar uma base, o raio da zona
+  (escrito tecla a tecla, um só passo), atribuir um bloco à mão, «Propor
+  bases» e «Juntar aqui» entram no mesmo histórico das edições da área e
+  das células.
+- **Mosaico refeito sem perder as escolhas.** Mudar o ângulo das faixas, o
+  lado, a orientação, o tempo útil ou editar a área mantém, em cada bloco
+  novo, a base escolhida à mão e o estado desactivado do bloco antigo que
+  cobre pelo menos metade dele; os outros ficam com a base automática e
+  activos. Com a área substituída por outra (menos de metade em comum)
+  nada passa. As atribuições que não passam são ditas no painel das bases,
+  com um botão para dispensar o aviso. METODOS §4.2.
+- **Perfil de elevação**: cada voo à parte, com a cota da zona da sua base;
+  em «Tudo», os saltos entre voos ficam como falhas e não contam na folga
+  nem no percurso.
+- **Vista 3D**: cada voo na cor da sua base (traçado, waypoints, contorno
+  do bloco drapejado no relevo, área do bloco pintada na imagem de satélite
+  e rótulo do voo), cada base com o rótulo e o círculo da zona de
+  descolagem, e sem os saltos entre voos.
+- Os outros modos (corredor, circular, fachada, órbita, inspecção)
+  continuam com uma base de referência: a mais próxima da sua rota. Com
+  uma só base, como antes.
 
-### Alterado (vista 3D com bases)
+### Acrescentado (propor bases e «Juntar aqui»)
 
-- Na vista 3D, com bases, cada voo vem na cor da sua base, como no mapa: o
-  traçado, os waypoints, o contorno do bloco drapejado no relevo, a área do
-  bloco pintada na imagem de satélite e o rótulo do voo. Cada base aparece
-  com o rótulo e o círculo da zona de descolagem.
-- Os saltos de um voo para o seguinte deixam de se desenhar (eram as rectas
-  que atravessavam a área; não se voam).
-
-### Alterado (vista a partir do melhor ponto da zona)
-
-- As bacias de visão e a proposta de bases contam a vista a partir do
-  **melhor ponto da zona de descolagem** para cada voo, e não só do ponto
-  da base: o operador anda até à beira do patamar para ver a encosta. Num
-  alto convexo o ombro escondia do ponto da base a parte baixa da encosta;
-  na área de teste, a 120 m AGL, os pontos à vista passam de 87 % para
-  98 %. O painel e a ficha de campo dizem onde ficar («olhos a 90 m E da
-  base», com as coordenadas na ficha). Com vegetação somada ao relevo o
-  olho fica no ponto (a beira de um cabeço arborizado não é clareira).
-
-### Acrescentado (juntar a esta base)
-
-- **Juntar a esta base**, no painel das bases com uma base seleccionada:
-  todos os blocos que ela vê inteiros dentro do alcance visual (pior caso,
-  com o raio da zona) passam a ela, mesmo os de outras bases; as bases que
-  ficam sem voos saem. O painel diz quantos juntou e quantos ficam de fora,
-  com a distância do mais perto. Para descolar de um alto (um vértice
-  geodésico) sem mudar de base. O rádio e a vista continuam no preflight;
-  Ctrl+Z desfaz.
-
-### Corrigido (perfil de elevação com bases)
-
-- Em «Tudo», com várias bases, o perfil ligava o fim de cada voo ao início
-  do seguinte e media a folga e o percurso nesses saltos, que não se voam:
-  a folga mínima podia cair a ~20 m num voo a 120 m AGL, e o percurso
-  vinha inflacionado. Agora cada voo é um troço à parte, os saltos ficam
-  como falhas e não contam. O preflight já os ignorava; os KMZ não mudam.
-
-### Corrigido (proposta de bases: um sítio, uma base)
-
-- **«Propor bases» podia pôr duas bases no mesmo ponto.** Um bloco sem
-  nenhum sítio com o rádio limpo ia para o melhor sítio que o vê, mas
-  esse passo criava sempre uma base nova, mesmo quando o sítio já era
-  base: duas bases sobrepostas e o operador a «mudar de base» sem sair do
-  sítio. Agora os blocos juntam-se à base que já lá está.
-- **Consolidação no fim da proposta:** uma base cujos blocos possam todos
-  passar para outras bases já escolhidas (dentro do alcance visual, com o
-  sítio aceite ou o rádio pelo menos tão bom, sem passar o limite de voos)
-  desaparece, para haver menos deslocações. As letras são renumeradas.
-
-### Alterado (painel de estatísticas)
-
-- **Três grupos:** qualidade (GSD, pegada, espaçamento, intervalo de
-  disparo), voo (linhas, waypoints, distância, fotos, tempo) e operação.
-- **Operação, nova:** voos e bases; baterias necessárias contra os
-  conjuntos da equipa; o voo mais longo, com o trânsito desde a sua base,
-  contra o tempo útil de uma bateria («A-2 23:20 / 25:00»); tempo total de
-  voo com os trânsitos.
-- **Cor nos limites:** voo mais longo a âmbar acima de 90 % do tempo útil e
-  a vermelho acima de 100 %; menos conjuntos do que voos e intervalo de
-  disparo abaixo do mínimo da câmara a âmbar. O preflight tem os avisos
-  completos; o painel só os põe à vista.
-- **Corrigido:** nos separadores corredor, fachada e órbita o painel
-  mostrava os números da área; passa a mostrar os do separador aberto (o
-  GSD da fachada e da órbita vem do plano delas, e a pegada, o espaçamento
-  e o intervalo das grelhas não se aplicam). «Base → área» só aparece com
-  uma base.
-
-### Alterado (painel da área em cartões)
-
-- **O painel da área passou a uma coluna de sete cartões numerados pela
-  ordem do trabalho**: 1 Missão, 2 Área e relevo, 3 Parâmetros de voo, 4
-  Divisão em voos, 5 Bases e segurança, 6 Extras, 7 Resumo e exportar. Cada
-  cartão mostra o essencial; o resto abre em **Mais opções ›**, uma gaveta ao
-  lado do painel, por cima do mapa (num tablet também): uma de cada vez, fecha
-  no ✕ e com Escape, o foco entra nela e volta ao botão. Nas gavetas: preset
-  de missão, sensor próprio, FOV de trabalho e enums WPML (1); grelha de
-  réplicas, datum, sugestões de encosta e reimportar o MDT ou voltar ao
-  relevo global (2); espaçamento manual, disparo e paragens, gimbal,
-  overshoot, expansão, dupla grelha, passagem nadir e fiada de amarração
-  (3); orientação do mosaico, lado máximo, área por bloco, anular/reactivar
-  células e as contagens (4); bacias de visão e vegetação (5); GCPs e pontos
-  de inspecção (6). A exportação por voo e por base e o KML «Bases e blocos»
-  passaram para o cartão 7, com os números da missão (voos, tempo, voos
-  contra conjuntos de baterias, área) e os botões da missão (KMZ) e da área
-  (KML); o botão do cabeçalho fica como estava. Nenhum controlo saiu: um
-  cenário E2E novo (`inventario-painel-area`) verifica os 124 controlos do
-  painel antigo, no cartão ou na gaveta. Os outros modos (corredor,
-  circular, fachada, órbita) usam o mesmo aspecto de cartões.
-
-### Acrescentado (acções de segurança)
-
-- **No fim da missão** (regressar à base, por omissão; pairar no último
-  ponto; aterrar no local; voltar ao primeiro waypoint) e **Perda de sinal**
-  (interromper a missão e regressar à base, aterrar ou pairar; ou continuar
-  a missão até ao fim), no cartão 5 da área e num cartão próprio nos outros
-  modos, as mesmas em todos. Saem no `missionConfig` do KMZ de todos os
-  modos (área, por voo incluído, corredor, circular, fachada, órbita e
-  pontos de inspecção), ficam no projecto (`safety`, no esquema JSON) e a
-  checklist de campo diz quais são. Um projecto anterior abre com as
-  omissões, que são os valores que a exportação sempre escreveu.
-
-### Corrigido (MDT/MDS no projecto)
-
-- **A escolha «Este ficheiro é: MDT / MDS» fica no projecto.** O ficheiro
-  de relevo não vai no projecto (pode ter centenas de MB), mas o nome e a
-  escolha sim. Ao reabrir, o painel do terreno lembra que ficheiro
-  reimportar; reimportado o mesmo ficheiro, volta como MDT ou MDS conforme
-  foi gravado. Antes voltava sempre como MDT, e as bacias de visão somavam
-  a vegetação a um MDS que já a tinha.
-
-### Alterado (proposta de bases: sítios planos ou altos, com o rádio livre)
-
-- **A regra dos sítios baixos saiu.** Nesta mesma versão, «Propor bases» com
-  seguir terreno passou a preferir sítios BAIXOS (`lowSiteRule`), para os
-  blocos mais baixos não ficarem com alturas relativas pequenas. Isso
-  contrariava a prática da equipa: descola-se sempre de um sítio PLANO ou de
-  um dos pontos mais ALTOS da área, nunca de um baixo, por causa da ligação
-  rádio — em Mata de Vilar (Lousada), um monte pequeno com árvores altas, o
-  sinal caiu quando o drone passou para trás dele. Alturas relativas
-  pequenas ou negativas a partir de uma base alta são aceitáveis: o aviso do
-  preflight (altura relativa < 20 m) e as verificações de folga ao solo já
-  falam, e a proposta não troca o rádio nem a vista por elas.
-- **Regra nova («bons sítios»), com ou sem seguir terreno, sempre que há
-  relevo.** Um sítio serve se tiver relevo e a sua zona de descolagem não
-  ficar reduzida abaixo de metade do raio pedido (chão plano à volta). Um
-  bloco aceita-o quando, numa bacia de visão grosseira desde o ponto (grelha
-  de 60 m, raio lido a 20 m, com o rádio pela zona de Fresnel, as alturas
-  dos olhos e do comando, a vegetação da missão e a cota do drone como nas
-  bacias de visão), o rádio fica livre em pelo menos 95 % do bloco. Entre
-  candidatos: mais blocos; melhor rádio; melhor vista; o sítio mais alto; o
-  mais plano. Sem sítio aceite para um bloco, propõe-se o melhor que há e o
-  painel diz quantas bases ficaram assim («sem sítio com o rádio livre…»);
-  as bacias de visão e o preflight dizem o resto.
+- **«Propor bases»** (área dividida em blocos): bases para os blocos que
+  nenhuma base vê inteiros dentro do alcance visual da aeronave (M300
+  1000 m), com o «máximo de voos por base» da Configuração (0 = sem
+  limite); as bases já marcadas ficam onde estão.
+- **Sítios planos ou altos, com o rádio livre.** A prática da equipa é
+  descolar de um sítio PLANO ou de um dos pontos mais ALTOS da área, nunca
+  de um baixo, por causa da ligação rádio (em Mata de Vilar, Lousada, um
+  monte pequeno com árvores altas, o sinal caiu quando o drone passou para
+  trás dele). Com relevo, um sítio serve se a sua zona de descolagem não
+  ficar reduzida abaixo de metade do raio pedido; um bloco aceita-o quando,
+  numa bacia de visão grosseira (grelha de 60 m, raio lido a 20 m, rádio
+  pela zona de Fresnel, alturas dos olhos e do comando, vegetação da
+  missão, cota do drone como nas bacias de visão), o rádio fica livre em
+  pelo menos 95 % do bloco, vista do ponto ou de um de 8 pontos na beira
+  da zona (com vegetação somada, só do ponto). Entre candidatos: mais
+  blocos; melhor rádio; melhor vista; o sítio mais alto; o mais plano. Sem
+  sítio aceite para um bloco, propõe-se o melhor que há e o painel diz
+  quantas bases ficaram assim. Alturas relativas pequenas ou negativas a
+  partir de uma base alta ficam para o aviso do preflight.
 - **Candidatos nos altos do relevo**, além dos vértices, pontos médios e
   centros dos blocos: uma grelha de 100 m sobre os blocos e uma margem do
   tamanho do alcance visual, os máximos locais e os patamares planos, até 3
-  por bloco (os mais altos que servem; uma crista íngreme, sem onde
-  descolar, não tira o lugar a um alto plano).
+  por bloco.
+- **Um sítio, uma base, e consolidação no fim**: os blocos que vão para um
+  sítio que já é base juntam-se a ela; uma base cujos blocos possam todos
+  passar para outras já escolhidas (dentro do alcance visual, com o sítio
+  aceite ou o rádio pelo menos tão bom, sem passar o limite) desaparece, e
+  as letras são renumeradas. Menos deslocações.
 - **Sem prender o browser**: a proposta corre em fatias de 12 ms, com «A
-  propor bases… N %» e «Cancelar» no painel (uma edição a meio também a
-  cancela; nada muda nas bases). Medido no browser: 9 blocos em ~0,1 s e 163
-  blocos em ~0,75 s, fatias até 20 ms. O resultado não depende das fatias.
-  Sem relevo, a proposta é a de sempre, e as bases do operador nunca se
-  mexem. METODOS §4.1.
+  propor bases… N %» e «Cancelar»; o resultado não depende das fatias. Sem
+  relevo, a proposta é só a da cobertura. METODOS §4.1.
+- **«Juntar aqui»**, para descolar de um alto sem mudar de base: o botão de
+  cada base diz quantos voos mais ela pode levar dentro do alcance visual
+  (pior caso, com o raio da zona), mesmo os de outras bases («Juntar aqui
+  (+4 voos)», ou «Nada a juntar»). Ao passar o rato o mapa mostra o
+  alcance a tracejado, os blocos que entram e os que ficam de fora; clicar
+  no pino da base no mapa abre a mesma acção numa barra por cima do mapa.
+  As bases que ficam sem voos saem; o rádio e a vista continuam no
+  preflight.
 
 ### Acrescentado (bacias de visão e ligação rádio)
 
 - **Bacias de visão por voo.** Com a área dividida em blocos, bases e
-  relevo, cada bloco é visto do **ponto** da sua base, à altura dos olhos,
-  numa grelha de 25 m, à cota a que o drone lá passa (cota da zona + altura,
-  ou relevo + AGL com seguir terreno), com curvatura da Terra e refracção. A
-  zona de descolagem não é varrida: fica-se no ponto. No painel das bases e
-  na ficha de campo, por voo, «82 % visível — tapado a ~420 m da base», e o
-  relevo usado («relevo global ~30 m», «MDT importado «ficheiro»», «MDS
-  importado …») com a ressalva de que um MDT não tem árvores, edifícios nem
-  escombreiras.
+  relevo, cada bloco é visto à altura dos olhos do **melhor ponto da zona
+  de descolagem** da sua base, numa grelha de 25 m, à cota a que o drone lá
+  passa (cota da zona + altura, ou relevo + AGL com seguir terreno), com
+  curvatura da Terra e refracção. O operador anda até à beira do patamar
+  para ver a encosta: num alto convexo o ombro esconde do ponto da base a
+  parte baixa da encosta (na área de teste, a 120 m AGL, 87 % dos pontos à
+  vista do ponto da base, 98 % do melhor ponto da zona). Com vegetação
+  somada ao relevo, o olho fica no ponto da base (a beira de um cabeço
+  arborizado não é clareira).
+- No painel das bases e na ficha de campo, por voo, «82 % visível — olhos a
+  90 m E da base — tapado a ~420 m do operador» (as coordenadas dos olhos
+  na ficha), e o relevo usado («relevo global ~30 m», «MDT importado
+  «ficheiro»», «MDS importado …») com a ressalva de que um MDT não tem
+  árvores, edifícios nem escombreiras.
 - **Rádio (zona de Fresnel).** Cada ponto também com a ligação do comando:
   em risco quando o relevo entra em 60 % da primeira zona de Fresnel a
   2,4 GHz, a partir da antena do comando. Um bloco pode ver-se todo e ter o
-  rádio em risco na orla de uma crista (o caso de um cabeço com árvores, onde
-  o sinal caiu com o drone à vista).
+  rádio em risco na orla de uma crista.
 - **Preflight por voo e por causa**: «Voo A-3: 18 % do bloco fica atrás do
   relevo visto da base A, tapado a ~420 m» e «… com o sinal de rádio em
   risco …», aviso a partir de 5 % do bloco, nota abaixo; nunca bloqueia.
@@ -206,103 +143,44 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - **Vegetação e obstáculos** a somar ao relevo, por missão (no projecto,
   0-60 m), a mais de 30 m da base, só com um MDT ou o relevo global. Ao
   importar um ficheiro de relevo, «Este ficheiro é: MDT / MDS» (MDT por
-  omissão); com MDS nada se soma.
+  omissão); com MDS nada se soma. A escolha fica no projecto com o nome do
+  ficheiro (que não vai no projecto): ao reabrir, o painel do terreno
+  lembra que ficheiro reimportar, e o mesmo ficheiro volta como foi
+  gravado.
 - **Configuração**: altura dos olhos (1,7 m) e do comando (1,5 m), 1-5 m.
 - Cálculo sem prender a interface: depois de 350 ms sem edições, em fatias
   de 12 ms, só para os blocos cujo resultado mudou (mover a base A refaz os
-  blocos de A; Ctrl+Z reaproveita). 192 blocos no browser sem tarefas acima
-  de 50 ms. METODOS §4.3.
+  blocos de A; Ctrl+Z reaproveita). METODOS §4.3.
 
-### Corrigido (bases: Ctrl+Z e mosaico refeito)
+### Acrescentado (exportação por voo e ficha de campo)
 
-- **Ctrl+Z também nas bases.** Marcar, arrastar e retirar uma base, o raio
-  da zona, atribuir um bloco à mão e «Propor bases» entram no mesmo
-  histórico das edições da área e das células: cada Ctrl+Z desfaz a última
-  edição de qualquer tipo, pela ordem, e repõe o estado inteiro de antes
-  dela. O raio escrito tecla a tecla é um só passo.
-- **Mosaico refeito sem perder as escolhas.** Mudar o ângulo das faixas, o
-  lado, a orientação, o tempo útil ou editar a área deixava de aplicar as
-  atribuições manuais e reactivava as células desactivadas. Agora cada
-  bloco novo herda a base escolhida à mão e o estado desactivado do bloco
-  antigo que cobre pelo menos metade dele; os outros ficam com a base
-  automática e activos. Com a área substituída por outra (menos de metade
-  da menor em comum, ex. um desenho ou uma importação noutro sítio) nada
-  passa; a área movida inteira é a mesma. As atribuições que não passam são
-  ditas no painel das bases («N atribuições manuais não passaram para o novo
-  mosaico»), com um botão para dispensar o aviso. METODOS §4.2.
-
-### Acrescentado (exportação base a base e ficha de campo)
-
-- **Exportar voos** no painel das bases, com a área dividida em voos:
-  «Todos os voos (ZIP)», «Voos da base B (ZIP)» para cada base com voos
-  («estou na base B») e «Um voo (KMZ)» com a escolha do voo. Atrás do
-  mesmo preflight do botão do cabeçalho, que continua a exportar todos os
-  voos.
+- **Exportar voos** no cartão 7, com a área dividida em voos: **Todos os
+  voos (ZIP)** (`..._voos.zip`, todos soltos), **Todos os voos por base
+  (ZIP)** (`..._voos-por-base.zip`, uma pasta por base: com vários pilotos,
+  cada um leva as pastas das suas bases) e **Um voo (KMZ)** com a escolha
+  do voo. Com bases, o botão de exportar do cabeçalho descarrega os dois
+  ZIP. Tudo atrás do mesmo preflight.
+- **Nomes dos ficheiros**: cada voo sai em
+  `<missão>_<tipo>[-variantes]_<voo>.kmz`, ex. `corta-norte_area-tf_A-1.kmz`
+  (antes `..._bNN.kmz` pelo id do bloco), e o nome é também o título da
+  missão dentro do KMZ, que é o que o Pilot 2 mostra; dentro dos ZIP, os
+  KMZ vão pela ordem de voo. Com 10 voos ou mais o número leva zeros
+  (`A-01` ... `B-10`), para a lista do Pilot 2 sair pela ordem de voo. Uma
+  missão sem divisão mantém o nome de sempre; a órbita por nível e os
+  blocos da circular mantêm `_bNN`.
 - **Ficha de campo por base** na checklist de campo e no relatório da
   missão: rótulo, coordenadas (6 casas) com ligação para abrir na
   aplicação de mapas (`https` e `geo:`), zona («descolar até R m do
   ponto», reduzida e porquê), cota de referência e «voo entre 0 e +X m
   acima do planeado», voos com o tempo com trânsito e o nome do KMZ de
-  cada um, conjuntos de baterias que a base pede contra os da equipa e o
-  alcance visual usado (com o pior caso dos voos). Imprimível, cada base
-  inteira numa página. «Importar blocos do plano» na checklist passa a
-  numerar o registo de voos pelos voos (A-1, ...), com o trânsito.
+  cada um, a vista de cada voo, conjuntos de baterias que a base pede
+  contra os da equipa e o alcance visual usado. Imprimível, cada base
+  inteira numa página. «Importar blocos do plano» na checklist numera o
+  registo de voos pelos voos (A-1, ...), com o trânsito.
 - **«Bases e blocos (KML)»** para o Google Earth ou a navegação no
   telemóvel: bases com o rótulo e a ficha na descrição, zonas de
   descolagem (círculo com o raio efectivo) e o contorno de cada bloco com
   o rótulo do seu voo, nas cores das bases.
-
-### Alterado (nomes dos ficheiros dos voos)
-
-- Cada voo de uma área dividida sai em `<missão>_<tipo>[-variantes]_<voo>.kmz`,
-  ex. `corta-norte_area-tf_A-1.kmz` (antes `..._bNN.kmz` pelo id do
-  bloco), e o nome é também o título da missão dentro do KMZ, que é o que
-  o Pilot 2 mostra. ZIP de todos os voos `..._voos.zip` (antes
-  `..._blocos.zip`), de uma base `..._base-B.zip`; dentro do ZIP, os KMZ
-  vão pela ordem de voo. Com 10 voos ou mais o número leva zeros no nome do
-  ficheiro (`A-01` ... `B-10`), para a lista do Pilot 2 sair pela ordem de
-  voo. Uma missão sem divisão mantém o nome de sempre; a órbita por nível
-  e os blocos da circular mantêm `_bNN`.
-
-### Acrescentado (bases múltiplas e mosaico de quadrados robusto)
-
-- **Várias bases de descolagem.** «Marcar base» acrescenta bases A, B,
-  C...: marcadores arrastáveis com o rótulo, que se retiram na lista do
-  painel. Cada base é uma **zona** (o raio da Configuração, 100 m por
-  omissão, ou um raio próprio por base), porque no campo se descola onde
-  as condições deixam. A seleccionada mostra a zona no mapa, e o raio
-  pedido a tracejado quando foi reduzido junto a uma corta ou talude. A
-  aplicação nunca move uma base marcada pelo operador.
-- **«Propor bases»** (área dividida em blocos): bases para os blocos que
-  nenhuma base vê inteiros dentro do alcance visual da aeronave (M300
-  1000 m), pela ordem do mosaico, com o «máximo de voos por base» da
-  Configuração (0 = sem limite). As bases já marcadas ficam onde estão.
-  Depois arrasta-se, retira-se ou acrescenta-se. Os blocos ficam
-  atribuídos à base mais próxima no pior caso, ou à escolhida à mão: com
-  «Clique num bloco → Atribuir base», o clique passa o bloco para a base
-  seleccionada (ou para a seguinte).
-- **Lista de bases** no painel: os voos de cada uma, a zona (raio,
-  reduzida e porquê, fora do relevo), a cota de referência e «voo entre 0
-  e +X m acima do planeado».
-- **Alturas por bloco.** As alturas de cada bloco referem-se à cota MAIS
-  BAIXA da zona da sua base: descolando em qualquer ponto da zona voa-se
-  igual ou acima do plano, nunca abaixo. Com seguir terreno, o KMZ de cada
-  bloco sai com `AGL + terreno − cota da zona`; sem ele as alturas ficam
-  planas, e a folga ao solo, o 3D, o perfil e o preflight usam a cota de
-  cada bloco (os troços entre blocos, que não se voam, deixam de contar).
-- **Voos numerados por base**: base a base pela ordem dos rótulos e, em
-  cada base, pela ordem do mosaico — A-1, A-2, B-3 — no mapa (blocos na
-  cor da sua base, cores que se distinguem também pela luminosidade), na
-  lista de blocos e no perfil. Os ids dos blocos não mudam (os ficheiros
-  passam a levar o rótulo do voo: ver acima).
-- **Preflight bloco a bloco**: voo fora do alcance visual da sua base, com
-  a distância no pior caso (aviso); tempo do voo com o trânsito de ida e
-  volta da base acima do tempo útil (aviso; bloqueio quando só o trânsito
-  o passa); base fora do relevo (bloqueio); zona reduzida (nota); bloco sem
-  base (bloqueio).
-- Os outros modos (corredor, circular, fachada, órbita, inspecção)
-  continuam com uma base de referência: a mais próxima da sua rota. Com
-  uma só base, como antes.
 
 ### Alterado (mosaico de quadrados)
 
@@ -357,20 +235,72 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   `public/schema/project-v2.schema.json` actualizado; os ficheiros antigos
   continuam a validar.
 
+### Alterado (painel da área em cartões)
+
+- **O painel da área passou a uma coluna de sete cartões numerados pela
+  ordem do trabalho**: 1 Missão, 2 Área e relevo, 3 Parâmetros de voo, 4
+  Divisão em voos, 5 Bases e segurança, 6 Extras, 7 Resumo e exportar. Cada
+  cartão mostra o essencial; o resto abre em **Mais opções ›**, uma gaveta ao
+  lado do painel, por cima do mapa (num tablet também): uma de cada vez, fecha
+  no ✕ e com Escape, o foco entra nela e volta ao botão. Nas gavetas: preset
+  de missão, sensor próprio, FOV de trabalho e enums WPML (1); grelha de
+  réplicas, datum, sugestões de encosta e reimportar o MDT ou voltar ao
+  relevo global (2); espaçamento manual, disparo e paragens, gimbal,
+  overshoot, expansão, dupla grelha, passagem nadir e fiada de amarração
+  (3); orientação do mosaico, lado máximo, área por bloco, anular/reactivar
+  células e as contagens (4); bacias de visão e vegetação (5); GCPs e pontos
+  de inspecção (6). A exportação por voo e por base e o KML «Bases e blocos»
+  passaram para o cartão 7, com os números da missão (voos, tempo, voos
+  contra conjuntos de baterias, área) e os botões da missão (KMZ) e da área
+  (KML). Nenhum controlo saiu: um
+  cenário E2E novo (`inventario-painel-area`) verifica os 124 controlos do
+  painel antigo, no cartão ou na gaveta. Os outros modos (corredor,
+  circular, fachada, órbita) usam o mesmo aspecto de cartões.
+
+### Alterado (painel de estatísticas)
+
+- **Três grupos:** qualidade (GSD, pegada, espaçamento, intervalo de
+  disparo), voo (linhas, waypoints, distância, fotos, tempo) e operação.
+- **Operação, nova:** voos e bases; baterias necessárias contra os
+  conjuntos da equipa; o voo mais longo, com o trânsito desde a sua base,
+  contra o tempo útil de uma bateria («A-2 23:20 / 25:00»); tempo total de
+  voo com os trânsitos.
+- **Cor nos limites:** voo mais longo a âmbar acima de 90 % do tempo útil e
+  a vermelho acima de 100 %; menos conjuntos do que voos e intervalo de
+  disparo abaixo do mínimo da câmara a âmbar. O preflight tem os avisos
+  completos; o painel só os põe à vista.
+- **Corrigido:** nos separadores corredor, fachada e órbita o painel
+  mostrava os números da área; passa a mostrar os do separador aberto (o
+  GSD da fachada e da órbita vem do plano delas, e a pegada, o espaçamento
+  e o intervalo das grelhas não se aplicam). «Base → área» só aparece com
+  uma base.
+- Tempos de uma hora ou mais em horas («17 h 19 min» em vez de «1039 min
+  11 s»), também no resumo do cartão 7.
+
+### Acrescentado (acções de segurança)
+
+- **No fim da missão** (regressar à base, por omissão; pairar no último
+  ponto; aterrar no local; voltar ao primeiro waypoint) e **Perda de sinal**
+  (interromper a missão e regressar à base, aterrar ou pairar; ou continuar
+  a missão até ao fim), no cartão 5 da área e num cartão próprio nos outros
+  modos, as mesmas em todos. Saem no `missionConfig` do KMZ de todos os
+  modos (área, por voo incluído, corredor, circular, fachada, órbita e
+  pontos de inspecção), ficam no projecto (`safety`, no esquema JSON) e a
+  checklist de campo diz quais são. Um projecto anterior abre com as
+  omissões, que são os valores que a exportação sempre escreveu.
+
 ### Acrescentado (aviso antes de usar)
 
 - **Aviso na primeira abertura.** Uma janela com cinco pontos: sem
   garantia (GPL-3.0, os autores não respondem por danos na medida máxima
-  permitida pela lei), a responsabilidade é do piloto remoto, verificar
-  cada missão no DJI Pilot 2 antes de descolar, limitações do relevo e o
-  que ainda não foi validado em voo, com ligação para a matriz de
-  compatibilidade. Em PT e EN, com a escolha de língua no próprio aviso.
-  Aparece uma vez por aparelho e volta quando o texto muda; só fecha no
-  botão «Li e compreendo». Relê-se a partir da ajuda («Acerca»). Secção
-  curta de aviso no topo dos dois README.
-- O ponto 2 do aviso passa a incluir o seguro de responsabilidade civil,
-  quando exigido, entre as obrigações do piloto. Versão do aviso 2: volta
-  a aparecer uma vez a quem já tinha aceite a anterior.
+  permitida pela lei), a responsabilidade é do piloto remoto (incluindo o
+  seguro de responsabilidade civil, quando exigido), verificar cada missão
+  no DJI Pilot 2 antes de descolar, limitações do relevo e o que ainda não
+  foi validado em voo, com ligação para a matriz de compatibilidade. Em PT
+  e EN, com a escolha de língua no próprio aviso. Aparece uma vez por
+  aparelho e volta quando o texto muda; só fecha no botão «Li e
+  compreendo». Relê-se a partir da ajuda («Acerca»). Secção curta de aviso
+  no topo dos dois README.
 
 ### Alterado (não há missão sem relevo)
 
@@ -384,44 +314,25 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - **Descarga imediata.** Fechar uma geometria (área desenhada, importada
   ou ancorada, eixo do corredor, fachada, órbita) descarrega logo o relevo
   global que a cubra; antes esperava 1,5 s. Editar uma geometria já com
-  relevo para lá dele espera 0,8 s.
+  relevo para lá dele espera 0,8 s. Cada tile tem 20 s.
 - **Novas tentativas.** Uma descarga falhada tentava uma vez e desistia até
   se mudar a área. Agora volta a tentar aos 3, 10 e 30 s e quando a
   ligação volta; uma descarga antiga que chegue tarde já não substitui a
   da geometria actual.
-- **Uma caixa de relevo para todo o projecto.** A fachada, a órbita e as
-  células das partes importadas de um MultiPolygon entram na caixa a
-  cobrir, com a área e o corredor (até 20 km). Antes as partes fora do
-  contorno principal ficavam sem relevo.
-- **MDT importado.** Continua a nunca ser substituído enquanto tocar na
-  geometria; um MDT de outro sítio, que não lhe toca, dá lugar ao relevo
-  global. A falha a ler um ficheiro fica à vista.
+- **Uma caixa de relevo para todo o projecto.** A fachada, a órbita, os
+  pontos de inspecção e as células das partes importadas de um
+  MultiPolygon entram na caixa a cobrir, com a área, o corredor e a rota do
+  separador aberto (até 20 km). O relevo global declara coberta a extensão
+  dos tiles descarregados, e não só a caixa pedida.
+- **MDT importado.** Nunca é substituído enquanto tocar na geometria; um
+  MDT de outro sítio, que não lhe toca, dá lugar ao relevo global. Fica em
+  memória e é recortado de novo, do mesmo ficheiro, para o separador
+  aberto, para não perder resolução (a grelha lida tem no máximo 2048
+  píxeis de lado). A falha a ler um ficheiro tem mensagem própria.
 - **Pontos de inspecção com a mesma regra.** A sua exportação não passava
-  por preflight nenhum e os pontos não entravam na caixa do relevo: longe
-  da área, saíam sem relevo. Agora entram na caixa (com a área) e o botão
-  do KMZ fica desactivado, com o motivo, enquanto o relevo não os cobrir.
-- **Revisão desta alteração (três problemas reais, corrigidos):**
-  - o relevo global declarava coberta só a caixa pedida (~1 km de margem),
-    e não a extensão dos tiles descarregados: uma grelha circular sobre um
-    triângulo de 1,8 km, ou uma área de 6 km com 30 % de margem, saem mais
-    do que isso e ficavam bloqueadas para sempre. Passa a declarar a
-    extensão dos tiles, e a rota do separador aberto entra na caixa;
-  - um MDT importado era recortado uma vez, para a caixa desse momento: um
-    corredor desenhado depois, ou a margem da área, saía do recorte e
-    ficava bloqueado, embora o ficheiro o cobrisse. Agora o recorte volta
-    a sair do mesmo ficheiro, e só o operador o troca pelo global;
-  - uma descarga presa deixava o relevo em «a descarregar» sem saída:
-    cada tile tem agora 20 s.
-  - Menores: a falha a ler um MDT tem mensagem própria e o regresso da
-    ligação já não a tapa com o global.
-- **O MDT importado não perde resolução com a união.** A grelha lida tem
-  no máximo 2048 píxeis de lado; recortar o ficheiro para a área e um
-  corredor juntos baixava um MDT de 50 cm de ~1 m para ~3 m de grelha,
-  também sobre a área. Passa a ser recortado só para o separador aberto, e
-  de novo ao mudar de separador (o ficheiro está em memória); o relevo
-  global continua a cobrir todas as geometrias juntas.
-- A nota do preflight sobre a categoria aberta mede-se só sobre o relevo,
-  e a nota «sem base» deixa de falar em «sem relevo».
+  por preflight nenhum: o botão do KMZ fica desactivado, com o motivo,
+  enquanto o relevo não os cobrir.
+- A nota do preflight sobre a categoria aberta mede-se só sobre o relevo.
 
 ### Alterado (sem tecto de altura)
 
@@ -480,7 +391,7 @@ problema.
   a espiral em vídeo interpola entre níveis desiguais em vez de assumir o
   primeiro passo (só alcançável por programação).
 
-### Adicionado (corredor com seguimento de terreno)
+### Acrescentado (corredor com seguimento de terreno)
 
 - **O corredor passa a seguir o terreno.** Era a limitação declarada do
   modo: as passagens voavam a uma altitude única relativa à descolagem, e
