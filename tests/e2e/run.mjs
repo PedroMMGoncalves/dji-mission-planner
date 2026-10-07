@@ -2342,6 +2342,52 @@ await scenario('bacias-visao-cumeada', async () => {
     sheetText.replace(/\s+/g, ' ').slice(0, 300),
   )
 
+  // MDT/MDS no projecto: o ficheiro não vai no projecto, mas o nome e a
+  // escolha sim; ao reabrir, o painel lembra qual reimportar, e o mesmo
+  // ficheiro volta com a escolha gravada
+  const demInput = page.locator('input[accept=".tif,.tiff"]').first()
+  const reopenAndReimport = async () => {
+    await page.goto(URL, { waitUntil: 'domcontentloaded' })
+    const note = page.getByTestId('dem-remembered')
+    await note.waitFor({ timeout: 20000 })
+    const noteText = await note.innerText()
+    await demInput.setInputFiles(fx.demRidge)
+    await page.getByTestId('dem-surface-dsm').waitFor({ timeout: 20000 })
+    return {
+      noteText,
+      dsm: (await page.getByTestId('dem-surface-dsm').getAttribute('aria-pressed')) === 'true',
+    }
+  }
+  await page.waitForTimeout(800) // autosave com debounce
+  check(
+    'cumeada: o projecto grava o nome do MDT e a escolha MDT',
+    JSON.stringify((await savedProject(page))?.demFile) ===
+      JSON.stringify({ label: 'cumeada.tif', surface: 'dtm' }),
+    JSON.stringify((await savedProject(page))?.demFile),
+  )
+  let back = await reopenAndReimport()
+  check(
+    'cumeada: reaberto, o painel lembra o MDT a reimportar, e volta como MDT',
+    /MDT «cumeada\.tif»/.test(back.noteText) && !back.dsm,
+    back.noteText,
+  )
+  await page.getByTestId('dem-surface-dsm').click()
+  await page.waitForTimeout(800)
+  check(
+    'cumeada: marcado como MDS, o projecto grava-o',
+    (await savedProject(page))?.demFile?.surface === 'dsm',
+  )
+  back = await reopenAndReimport()
+  check(
+    'cumeada: reaberto, o painel lembra o MDS, e o mesmo ficheiro volta como MDS',
+    /MDS «cumeada\.tif»/.test(back.noteText) && back.dsm,
+    back.noteText,
+  )
+  check(
+    'cumeada: com o ficheiro reimportado o lembrete desaparece',
+    (await page.getByTestId('dem-remembered').count()) === 0,
+  )
+
   check('cumeada: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }

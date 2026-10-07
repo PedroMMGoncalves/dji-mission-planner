@@ -455,7 +455,10 @@ bases e relevo sobre a área, cada bloco é visto da base que o serve.
   ao relevo nas amostras dos raios a mais de 30 m da base (a clareira onde o
   operador está; nunca nos pés do operador nem na cota do drone). Só com um
   MDT ou o relevo global: um ficheiro importado marcado como **MDS** («Este
-  ficheiro é: MDT / MDS», MDT por omissão) já os tem, e nada se soma. Uma
+  ficheiro é: MDT / MDS», MDT por omissão) já os tem, e nada se soma. O
+  ficheiro não vai no projecto, mas o nome e a escolha sim (`demFile`): ao
+  reabrir, o painel lembra qual reimportar, e o ficheiro com o mesmo nome
+  volta com a escolha gravada; outro ficheiro começa como MDT. Uma
   altura uniforme é pessimista em campo aberto; o MDS da equipa (último voo)
   é o que mais se aproxima do que se vê. O painel e a ficha dizem o modelo e
   a altura somada.

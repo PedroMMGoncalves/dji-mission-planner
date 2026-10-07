@@ -4,6 +4,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   MISSION_MODES,
+  normalizeDemFile,
   normalizeProject,
   projectFileName,
   serializeProject,
@@ -379,5 +380,33 @@ describe('planArea', () => {
     const l0 = lats(composto.cellPlans[0])
     expect([...lats(composto.cellPlans[1])].every((y) => l0.has(y))).toBe(true)
     expect(planArea(null, null, opts)).toBeNull()
+  })
+})
+
+describe('ficheiro de relevo no projecto (MDT/MDS)', () => {
+  test('so o nome e o tipo, normalizados', () => {
+    expect(normalizeDemFile({ label: ' dgt.tif ', surface: 'dsm' })).toEqual({
+      label: 'dgt.tif',
+      surface: 'dsm',
+    })
+    expect(normalizeDemFile({ label: 'x.tif', surface: 'lixo' })).toEqual({
+      label: 'x.tif',
+      surface: 'dtm',
+    })
+    expect(normalizeDemFile({ label: '   ' })).toBeNull()
+    expect(normalizeDemFile(null)).toBeNull()
+    expect(normalizeDemFile('x.tif')).toBeNull()
+    expect(normalizeDemFile({ label: 'a'.repeat(300) }).label).toHaveLength(200)
+  })
+
+  test('grava-se e volta ao abrir; projectos antigos abrem sem ele', () => {
+    const out = JSON.parse(
+      JSON.stringify(serializeProject({ demFile: { label: 'mds-2025.tif', surface: 'dsm' } })),
+    )
+    expect(out.demFile).toEqual({ label: 'mds-2025.tif', surface: 'dsm' })
+    expect(normalizeProject(out).demFile).toEqual({ label: 'mds-2025.tif', surface: 'dsm' })
+    const none = JSON.parse(JSON.stringify(serializeProject({})))
+    expect('demFile' in none).toBe(false)
+    expect(normalizeProject({ version: 2 }).demFile).toBeNull()
   })
 })

@@ -47,6 +47,8 @@ export function useTerrain({
   ringValid,
   targetBbox = null,
   activeBbox = null,
+  // nome e tipo (MDT/MDS) do ficheiro de relevo do projecto aberto
+  rememberedDem = null,
 }) {
   const ringBbox = targetBbox ?? areaBbox
   // o MDT importado recorta-se só para o separador aberto: recortar de novo
@@ -65,6 +67,10 @@ export function useTerrain({
   // global também o é) ou um MDS (com a vegetação e as construções): diz-o
   // o operador ao importar; as bacias de visão só somam vegetação a um MDT
   const [demSurface, setDemSurface] = useState(/** @type {'dtm'|'dsm'} */ ('dtm'))
+  // nome do ficheiro importado em uso: estável enquanto o mesmo ficheiro é
+  // recortado de novo (o relevo passa por «a carregar» sem o nome); só
+  // muda ao importar outro, ao escolher o global ou numa falha de leitura
+  const [demFileLabel, setDemFileLabel] = useState(/** @type {string|null} */ (null))
 
   // Só o pedido mais recente conta: uma descarga lenta de uma caixa antiga
   // não pode substituir o relevo da geometria actual
@@ -110,6 +116,7 @@ export function useTerrain({
   // MDT importado (a descarga automática nunca o faz)
   const handleLoadTerrain = useCallback(() => {
     fileRef.current = null
+    setDemFileLabel(null)
     return downloadGlobal()
   }, [downloadGlobal])
 
@@ -130,6 +137,7 @@ export function useTerrain({
         // o erro do ficheiro fica à vista: nada de o tapar logo com o relevo
         // global (o botão manual carrega-o; mudar a geometria também)
         fileRef.current = null
+        setDemFileLabel(null)
         autoRef.current = { key: boxKey(ringBbox), attempts: Infinity }
         setTerrain({
           status: 'error',
@@ -147,10 +155,17 @@ export function useTerrain({
     (file) => {
       if (!file) return
       fileRef.current = { file, extent: null }
-      setDemSurface('dtm')
+      setDemFileLabel(file.name || 'MDT')
+      // o mesmo ficheiro que o projecto usou volta com a escolha gravada;
+      // qualquer outro começa como MDT (o caso por omissão)
+      setDemSurface(
+        rememberedDem && file.name && file.name === rememberedDem.label
+          ? rememberedDem.surface
+          : 'dtm',
+      )
       return cropFromFile(file)
     },
-    [cropFromFile],
+    [cropFromFile, rememberedDem],
   )
 
   // A área está coberta pelo relevo carregado? Mede-se contra a caixa DA
@@ -253,5 +268,6 @@ export function useTerrain({
     // MDT ou MDS do ficheiro importado (o global é sempre MDT)
     demSurface,
     setDemSurface,
+    demFileLabel,
   }
 }

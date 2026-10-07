@@ -227,6 +227,16 @@
         "tolerance": { "type": "number", "minimum": 0 }
       }
     },
+    "demFile": {
+      "description": "Ficheiro de relevo importado: so o nome e se e um MDT (so o chao) ou um MDS (com vegetacao e construcoes). O ficheiro nao vai no projecto; a escolha volta quando um ficheiro com o mesmo nome for reimportado.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "surface"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "surface": { "enum": ["dtm", "dsm"] }
+      }
+    },
     "obstacleHeightM": {
       "description": "Bacias de visao: altura de vegetacao e obstaculos (m) a somar ao relevo nas linhas de vista e no radio, so com um MDT ou o relevo global (nunca com um MDS importado). 0 por omissao.",
       "type": "number",

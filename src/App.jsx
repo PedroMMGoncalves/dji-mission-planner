@@ -182,6 +182,11 @@ function AppInner({ lang, setLang }) {
   // bacias de visão: vegetação e obstáculos a somar a um MDT (por missão,
   // no projecto: dependem do sítio)
   const [obstacleM, setObstacleM] = useState(0)
+  // ficheiro de relevo do projecto aberto (nome e MDT/MDS): o ficheiro não
+  // vai no projecto, mas a escolha volta quando for reimportado
+  const [demMemory, setDemMemory] = useState(
+    /** @type {{label: string, surface: 'dtm'|'dsm'}|null} */ (null),
+  )
   // camada das bacias de visão: desligada por omissão, lembrada neste aparelho
   const [viewshedLayerOn, setViewshedLayerOn] = useState(
     () => browserStorage()?.getItem(VIEWSHED_LAYER_KEY) === '1',
@@ -707,12 +712,14 @@ function AppInner({ lang, setLang }) {
     slopeHint,
     demSurface,
     setDemSurface,
+    demFileLabel,
   } = useTerrain({
     ring,
     ringBbox,
     ringValid: validation.valid,
     targetBbox: terrainTarget,
     activeBbox: terrainActive,
+    rememberedDem: demMemory,
   })
 
   // Pontos de inspecção: missão própria, fora do preflight da área, mas com a
@@ -1582,6 +1589,7 @@ function AppInner({ lang, setLang }) {
       if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
       if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
       setObstacleM(n.obstacleHeightM ?? 0)
+      setDemMemory(n.demFile ?? null)
     },
     [
       setCorridorConfig,
@@ -1604,6 +1612,14 @@ function AppInner({ lang, setLang }) {
   )
 
   // tudo o que o projecto guarda, num só objecto (autosave e ficheiro)
+  // ficheiro de relevo a gravar no projecto: com um ficheiro carregado, o
+  // dele; sem ele (ainda por reimportar), o do projecto aberto. Depende só
+  // de valores simples: o relevo recortado de novo (outro objecto, o mesmo
+  // ficheiro) não pode reiniciar a espera da gravação automática
+  const projectDemFile = useMemo(
+    () => (demFileLabel ? { label: demFileLabel, surface: demSurface } : demMemory),
+    [demFileLabel, demSurface, demMemory],
+  )
   const projectState = useMemo(
     () => ({
       missionName,
@@ -1630,6 +1646,9 @@ function AppInner({ lang, setLang }) {
       terrainFollow,
       gcpConfig,
       obstacleHeightM: obstacleM,
+      // com um ficheiro carregado grava-se o dele; sem ele (ainda por
+      // reimportar) mantém-se o do projecto aberto
+      demFile: projectDemFile,
     }),
     [
       missionName,
@@ -1655,6 +1674,7 @@ function AppInner({ lang, setLang }) {
       terrainFollow,
       gcpConfig,
       obstacleM,
+      projectDemFile,
     ],
   )
 
@@ -2192,6 +2212,7 @@ function AppInner({ lang, setLang }) {
                 onImportDem={handleImportDem}
                 demSurface={demSurface}
                 onDemSurface={setDemSurface}
+                rememberedDem={demFileLabel ? null : demMemory}
                 onShowProfile={() => setShowProfile(true)}
                 terrainResult={terrainResult}
                 slopeHint={slopeHint}

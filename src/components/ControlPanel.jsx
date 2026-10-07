@@ -173,6 +173,7 @@ export default function ControlPanel({
   onLoadTerrain,
   onImportDem,
   demSurface = 'dtm',
+  rememberedDem = null,
   onDemSurface = null,
   onShowProfile,
   terrainResult,
@@ -1370,6 +1371,20 @@ export default function ControlPanel({
         >
           <IconChart /> {t('cp.terrain.profile')}
         </button>
+
+        {rememberedDem && (
+          <p
+            data-testid="dem-remembered"
+            className="mt-2 rounded border border-slate-700 bg-slate-900 p-2 text-[11px] leading-relaxed text-slate-300"
+          >
+            {t(
+              rememberedDem.surface === 'dsm'
+                ? 'cp.terrain.rememberedDsm'
+                : 'cp.terrain.rememberedDtm',
+              { file: rememberedDem.label },
+            )}
+          </p>
+        )}
 
         {terrain.status === 'ready' && terrain.data?.source === 'file' && (
           <div className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">

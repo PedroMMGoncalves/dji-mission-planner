@@ -68,6 +68,7 @@ export function serializeProject(state) {
     terrainFollow,
     gcpConfig,
     obstacleHeightM,
+    demFile,
   } = state
   return {
     $schema: PROJECT_SCHEMA_URL,
@@ -105,7 +106,22 @@ export function serializeProject(state) {
     gcpConfig,
     // bacias de visão: vegetação e obstáculos a somar a um MDT (m)
     obstacleHeightM: normalizeObstacleM(obstacleHeightM),
+    // o ficheiro de relevo não vai no projecto: só o nome e se é MDT ou
+    // MDS, para a escolha voltar quando o mesmo ficheiro for reimportado
+    demFile: normalizeDemFile(demFile) ?? undefined,
   }
+}
+
+/**
+ * Nome e tipo (MDT/MDS) do ficheiro de relevo importado, ou null.
+ * @param {any} v
+ * @returns {{label: string, surface: 'dtm'|'dsm'}|null}
+ */
+export function normalizeDemFile(v) {
+  if (!isObject(v) || typeof v.label !== 'string') return null
+  const label = v.label.trim().slice(0, 200)
+  if (!label) return null
+  return { label, surface: v.surface === 'dsm' ? 'dsm' : 'dtm' }
 }
 
 /** Nome do ficheiro de projecto a partir do nome da missão. */
@@ -134,6 +150,7 @@ export function projectFileName(missionName) {
  *    orientação guardada num mosaico manual e seguem as faixas na divisão
  *    por bateria (que não tinha orientação na interface)
  *  - obstacleHeightM: vegetação e obstáculos das bacias de visão, 0-60 m
+ *  - demFile: nome e tipo (MDT/MDS) do ficheiro de relevo importado, ou null
  *    (0 nos projectos anteriores)
  *  - legacyMosaic: {disabled: Set, basePoint} quando um projecto anterior ao
  *    mosaico novo tinha células desactivadas; disabledTiles fica vazio até a
@@ -194,6 +211,7 @@ export function normalizeProject(p) {
   if (p.terrainFollow) out.terrainFollow = p.terrainFollow
   if (p.gcpConfig) out.gcpConfig = p.gcpConfig
   out.obstacleHeightM = normalizeObstacleM(p.obstacleHeightM)
+  out.demFile = normalizeDemFile(p.demFile)
   return out
 }
 

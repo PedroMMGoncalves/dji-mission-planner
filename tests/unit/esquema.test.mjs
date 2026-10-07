@@ -242,3 +242,19 @@ describe('esquema JSON do ficheiro de projecto', () => {
     expect(validate({ ...ok, battery: { ...ok.battery, reservePct: 20 } })).toBe(false)
   })
 })
+
+describe('esquema: ficheiro de relevo (MDT/MDS)', () => {
+  test('aceita nome e tipo, recusa o resto', () => {
+    const base = roundTrip(defaults())
+    expect(validate({ ...base, demFile: { label: 'dgt.tif', surface: 'dsm' } })).toBe(true)
+    expect(
+      validate(roundTrip({ ...defaults(), demFile: { label: 'dgt.tif', surface: 'dtm' } })),
+    ).toBe(true)
+    expect(validate({ ...base, demFile: { label: 'dgt.tif', surface: 'mds' } })).toBe(false)
+    expect(validate({ ...base, demFile: { label: '', surface: 'dtm' } })).toBe(false)
+    expect(validate({ ...base, demFile: { label: 'dgt.tif' } })).toBe(false)
+    expect(validate({ ...base, demFile: { label: 'dgt.tif', surface: 'dtm', bytes: 'x' } })).toBe(
+      false,
+    )
+  })
+})

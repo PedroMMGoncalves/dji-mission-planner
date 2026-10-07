@@ -6,6 +6,15 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Corrigido (MDT/MDS no projecto)
+
+- **A escolha «Este ficheiro é: MDT / MDS» fica no projecto.** O ficheiro
+  de relevo não vai no projecto (pode ter centenas de MB), mas o nome e a
+  escolha sim. Ao reabrir, o painel do terreno lembra que ficheiro
+  reimportar; reimportado o mesmo ficheiro, volta como MDT ou MDS conforme
+  foi gravado. Antes voltava sempre como MDT, e as bacias de visão somavam
+  a vegetação a um MDS que já a tinha.
+
 ### Alterado (proposta de bases: sítios planos ou altos, com o rádio livre)
 
 - **A regra dos sítios baixos saiu.** Nesta mesma versão, «Propor bases» com

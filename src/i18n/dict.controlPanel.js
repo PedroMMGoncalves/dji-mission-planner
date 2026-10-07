@@ -417,6 +417,14 @@ export default {
     en: 'Terrain (DEM) — Terrain Follow',
   },
   'cp.terrain.loading': { pt: 'A carregar terreno…', en: 'Loading terrain…' },
+  'cp.terrain.rememberedDtm': {
+    pt: 'Este projecto usou o MDT «{file}». O ficheiro não fica no projecto: importe-o de novo para o usar.',
+    en: 'This project used the DTM “{file}”. The file is not stored in the project: import it again to use it.',
+  },
+  'cp.terrain.rememberedDsm': {
+    pt: 'Este projecto usou o MDS «{file}». O ficheiro não fica no projecto: importe-o de novo e volta a ser tratado como MDS.',
+    en: 'This project used the DSM “{file}”. The file is not stored in the project: import it again and it is treated as a DSM again.',
+  },
   'cp.terrain.downloadGlobal': {
     pt: 'Descarregar relevo global (~30 m)',
     en: 'Download global terrain (~30 m)',
