@@ -967,15 +967,21 @@ export function blockExportParams(params, block) {
  * voo): missao_area_A-1.kmz, missao_area_A-2.kmz, … ou, nos blocos sem
  * nome, missao_b01.kmz, … Cada KMZ é uma missão completa e independente
  * para o DJI Pilot 2 (uma bateria por bloco). Nomes repetidos são recusados
- * (um ficheiro escreveria por cima do outro dentro do ZIP).
+ * (um ficheiro escreveria por cima do outro dentro do ZIP). `folderOf(bloco)`
+ * põe cada KMZ numa pasta (os voos por base: base-A/…, base-B/…).
+ * @param {any} params
+ * @param {any[]} blocks
+ * @param {{folderOf?: ((block: any) => string|null)|null}} [opts]
  * @returns {Promise<Blob>}
  */
-export async function buildBlocksZip(params, blocks) {
+export async function buildBlocksZip(params, blocks, { folderOf = null } = {}) {
   const master = new JSZip()
   const seen = new Set()
   for (const block of blocks) {
     const p = blockExportParams(params, block)
-    const file = `${p.name}.kmz`
+    // com `folderOf`, cada KMZ vai para a pasta que ela der (ex.: a da base)
+    const folder = typeof folderOf === 'function' ? folderOf(block) : null
+    const file = folder ? `${folder}/${p.name}.kmz` : `${p.name}.kmz`
     if (seen.has(file)) throw new MissionExportError('param-out-of-range', `name=${file}`)
     seen.add(file)
     master.file(file, await buildKmz(p, 'arraybuffer'))
@@ -987,7 +993,7 @@ export async function buildBlocksZip(params, blocks) {
  * Descarrega o ZIP dos blocos como `<zipName>.zip` (por omissão
  * `<missao>_blocos.zip`; os voos da área usam `_voos` e `_base-B`).
  */
-export async function exportBlocksZip(params, blocks, zipName = null) {
-  const blob = await buildBlocksZip(params, blocks)
+export async function exportBlocksZip(params, blocks, zipName = null, opts = {}) {
+  const blob = await buildBlocksZip(params, blocks, opts)
   downloadBlob(blob, `${zipName || `${params.name}_blocos`}.zip`)
 }

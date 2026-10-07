@@ -10,6 +10,7 @@ import {
   areaExportName,
   exportChoices,
   flightDigits,
+  baseFolder,
   flightFiles,
   flightToken,
   flightsArchiveName,
@@ -239,6 +240,40 @@ describe('exportação dos voos (buildAreaExport + ZIP)', () => {
       const folder = findAll(tpl.documentElement, 'Folder')[0]
       expect(textOf(childNamed(folder, 'name'))).toBe(n.replace(/\.kmz$/, ''))
     }
+  })
+
+  test('ZIP por base: todos os voos, uma pasta por base, título = nome do ficheiro', async () => {
+    const fx = fixture()
+    const { params, blocks } = exportOf(fx)
+    const chosen = selectFlights(blocks, { kind: 'byBase' })
+    expect(chosen).toHaveLength(blocks.length)
+    const zip = await JSZip.loadAsync(
+      await (
+        await buildBlocksZip(params, chosen, { folderOf: (b) => baseFolder(b.baseLabel) })
+      ).arrayBuffer(),
+    )
+    const names = Object.keys(zip.files).filter((n) => n.endsWith('.kmz'))
+    expect(names).toHaveLength(blocks.length)
+    for (const n of names) {
+      const m = /^base-([A-Z]+)\/corta-norte_area_([A-Z]+)-\d+\.kmz$/.exec(n)
+      expect(m && m[1]).toBe(m && m[2])
+      const kmz = await JSZip.loadAsync(await zip.file(n).async('arraybuffer'))
+      const tpl = await kmz.file('wpmz/template.kml').async('string')
+      expect(tpl).toContain(
+        `<name>${n
+          .split('/')
+          .pop()
+          .replace(/\.kmz$/, '')}</name>`,
+      )
+    }
+    expect(names.filter((n) => n.startsWith('base-B/'))).toEqual([
+      'base-B/corta-norte_area_B-3.kmz',
+      'base-B/corta-norte_area_B-4.kmz',
+    ])
+    expect(flightsArchiveName('m_area-tf', { kind: 'byBase' })).toBe('m_area-tf_voos-por-base')
+    expect(flightsArchiveName('m_area-tf', { kind: 'both' })).toBe('m_area-tf_voos')
+    expect(baseFolder('AB')).toBe('base-AB')
+    expect(baseFolder('')).toBeNull()
   })
 
   test('nomes repetidos dentro do ZIP são recusados', async () => {

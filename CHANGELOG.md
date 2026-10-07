@@ -6,6 +6,22 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Alterado (exportação por base e «Juntar aqui»)
+
+- **Exportação**: em vez de um botão por base, **Todos os voos por base
+  (ZIP)** (`_voos-por-base.zip`, uma pasta por base: com vários pilotos,
+  cada um leva as pastas das suas bases) ao lado de **Todos os voos (ZIP)**
+  (`_voos.zip`, todos soltos). Com bases, o botão de exportar do cabeçalho
+  descarrega os dois. A escolha de **Um voo** deixou de ficar espremida.
+- **Juntar aqui**: o botão está em todas as bases, com a contagem («Juntar
+  aqui (+4 voos)», ou «Nada a juntar»). Ao passar o rato o mapa mostra o
+  alcance a tracejado, os blocos que entram e os que ficam de fora; clicar
+  no pino da base no mapa abre a mesma acção numa barra por cima do mapa.
+- Tempos de uma hora ou mais em horas («17 h 19 min» em vez de «1039 min
+  11 s»).
+- README (PT e EN), ajuda e manual de QA actualizados (o README em
+  português dizia ainda que as acções de segurança não estavam no painel).
+
 ### Alterado (vista 3D com bases)
 
 - Na vista 3D, com bases, cada voo vem na cor da sua base, como no mapa: o

@@ -111,8 +111,10 @@ export function flightFiles({ baseName, blockIds, layout = null }) {
 }
 
 /**
- * Escolha do que se exporta: `{kind: 'all'}`, `{kind: 'base', baseId}` ou
- * `{kind: 'flight', blockId}`.
+ * Escolha do que se exporta: `{kind: 'all'}` (todos os voos soltos num ZIP),
+ * `{kind: 'byBase'}` (todos, numa pasta por base: cada piloto leva as pastas
+ * das suas bases), `{kind: 'both'}` (os dois ZIP, o botão do cabeçalho com
+ * bases), `{kind: 'base', baseId}` ou `{kind: 'flight', blockId}`.
  * @typedef {{kind: string, baseId?: string|null, blockId?: number}} FlightSelection
  */
 
@@ -125,7 +127,7 @@ export function flightFiles({ baseName, blockIds, layout = null }) {
  */
 export function selectFlights(items, sel) {
   const list = Array.isArray(items) ? items : []
-  if (!sel || sel.kind === 'all') return [...list]
+  if (!sel || sel.kind === 'all' || sel.kind === 'byBase' || sel.kind === 'both') return [...list]
   if (sel.kind === 'base') return list.filter((x) => x.baseId != null && x.baseId === sel.baseId)
   if (sel.kind === 'flight')
     return list.filter((x) => (x.blockId ?? x.id) === sel.blockId).slice(0, 1)
@@ -133,18 +135,26 @@ export function selectFlights(items, sel) {
 }
 
 /**
- * Nome do ZIP (sem extensão) de uma escolha: `<base>_voos` para todos, e
- * `<base>_base-B` para os de uma base (rótulo `baseLabel`).
+ * Nome do ZIP (sem extensão) de uma escolha: `<base>_voos` para todos,
+ * `<base>_voos-por-base` para todos numa pasta por base, e `<base>_base-B`
+ * para os de uma base (rótulo `baseLabel`).
  * @param {string} baseName
  * @param {FlightSelection|null|undefined} sel
  * @param {string|null} [baseLabel]
  */
 export function flightsArchiveName(baseName, sel, baseLabel = null) {
+  if (sel?.kind === 'byBase') return `${baseName}_voos-por-base`
   if (sel?.kind === 'base') {
     const label = String(baseLabel ?? '').replace(/[^\w-]+/g, '') || 'x'
     return `${baseName}_base-${label}`
   }
   return `${baseName}_voos`
+}
+
+/** Pasta de uma base dentro do ZIP dos voos por base: `base-A`. */
+export function baseFolder(label) {
+  const clean = String(label ?? '').replace(/[^\w-]+/g, '')
+  return clean ? `base-${clean}` : null
 }
 
 /**

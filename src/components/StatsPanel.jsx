@@ -14,11 +14,16 @@ function fmtDist(m) {
   return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(1)} m`
 }
 
+/** Duração: «12 min 05 s», ou «17 h 19 min» a partir de uma hora. */
 function fmtTime(s) {
-  if (s == null) return '—'
-  const min = Math.floor(s / 60)
-  const sec = Math.round(s % 60)
-  return `${min} min ${sec.toString().padStart(2, '0')} s`
+  if (!Number.isFinite(s)) return '—'
+  const t = Math.round(s)
+  if (t >= 3600) {
+    const h = Math.floor(t / 3600)
+    const min = Math.round((t % 3600) / 60)
+    return min === 60 ? `${h + 1} h 00 min` : `${h} h ${String(min).padStart(2, '0')} min`
+  }
+  return `${Math.floor(t / 60)} min ${String(t % 60).padStart(2, '0')} s`
 }
 
 /** mm:ss (ou h:mm:ss) para comparar um voo com o tempo útil da bateria. */

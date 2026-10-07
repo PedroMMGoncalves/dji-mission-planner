@@ -183,6 +183,15 @@ function InstrucoesPt() {
           das bases. Com a área substituída por outra (menos de metade em comum) nada passa.
         </Li>
         <Li>
+          <strong>Juntar aqui</strong> — para descolar de um alto e não mudar de sítio: cada base
+          tem o botão «Juntar aqui (+N voos)» com os voos que ainda pode levar dentro do alcance
+          visual (no pior caso, com o raio da zona), mesmo os de outras bases. Ao passar o rato, o
+          mapa mostra o alcance a tracejado, os blocos que entram a cheio na cor da base e os que
+          ficam de fora a cinzento; clicar no pino da base no mapa abre a mesma acção numa barra por
+          cima do mapa. As bases que ficam sem voos saem; o rádio e a vista continuam no preflight;
+          Ctrl+Z desfaz.
+        </Li>
+        <Li>
           <strong>Bacias de visão</strong> — com bases, blocos e relevo, cada bloco é visto do{' '}
           <strong>melhor ponto da zona</strong> da sua base (à altura dos olhos da Configuração; o
           painel e a ficha dizem onde ficar, «olhos a 90 m E da base»; com vegetação somada, o ponto
@@ -249,12 +258,13 @@ function InstrucoesPt() {
           (missao_area-tf_A-1.kmz, que é o que o Pilot 2 mostra), pela ordem de voo.
         </Li>
         <Li>
-          <strong>Exportar voos</strong> (cartão 7, Resumo e exportar) — no campo, base a base:
-          «Todos os voos (ZIP)», «Voos da base B (ZIP)» (só os dessa base, …_base-B.zip) ou «Um voo
-          (KMZ)». A checklist de campo e o relatório trazem a ficha de cada base (coordenadas com
-          ligação para os mapas, zona, cota, voos com os ficheiros, baterias); «Bases e blocos
-          (KML)» leva as bases, as zonas e os blocos com o rótulo do voo para o Google Earth ou o
-          telemóvel.
+          <strong>Exportar voos</strong> (cartão 7, Resumo e exportar) — «Todos os voos (ZIP)»
+          (…_voos.zip, todos soltos), «Todos os voos por base (ZIP)» (…_voos-por-base.zip, uma pasta
+          por base: com vários pilotos, cada um leva as pastas das suas bases) ou «Um voo (KMZ)».
+          Com bases, o botão de exportar do cabeçalho descarrega os dois ZIP. A checklist de campo e
+          o relatório trazem a ficha de cada base (coordenadas com ligação para os mapas, zona,
+          cota, voos com os ficheiros, baterias); «Bases e blocos (KML)» leva as bases, as zonas e
+          os blocos com o rótulo do voo para o Google Earth ou o telemóvel.
         </Li>
         <Li>
           <strong>Acções de segurança</strong> (cartão 5 da área, e um cartão próprio nos outros
@@ -440,15 +450,25 @@ function InstrucoesEn() {
           area is replaced by another (less than half in common), nothing carries over.
         </Li>
         <Li>
-          <strong>Viewsheds</strong> — with bases, blocks and terrain, each block is seen from its
-          base <strong>point</strong> (at the eye height in Settings; the rest of the zone is not
-          swept) on a 25 m grid, at the height the aircraft flies there. Orange: behind the terrain;
-          yellow hatch: in sight, but the terrain enters 60 % of the radio Fresnel zone (2.4 GHz,
-          from the controller antenna) and the link may drop. Preflight warns per flight from 5 % of
-          the block. A DTM and the global terrain have no trees, buildings or spoil heaps: add them
-          in “Vegetation and obstacles” (per mission, beyond 30 m from the base) or import the
-          team’s DSM and mark “This file is: DSM”. The layer is switched in card 5 (More options) or
-          the map’s layer control and remembered on this device.
+          <strong>Gather here</strong> — to take off from a high point and not move: each base has a
+          “Gather here (+N flights)” button with the flights it can still take within visual range
+          (worst case, with the zone radius), even other bases’ ones. Hovering it, the map shows the
+          reach dashed, the blocks that join filled in the base’s colour and the ones that stay out
+          in grey; clicking the base pin on the map opens the same action in a bar over the map.
+          Bases left without flights are removed; radio and sight stay in the preflight; Ctrl+Z
+          undoes it.
+        </Li>
+        <Li>
+          <strong>Viewsheds</strong> — with bases, blocks and terrain, each block is seen from the{' '}
+          <strong>best point of its base’s zone</strong> (at the eye height in Settings; the panel
+          and the sheet say where to stand, “eyes 90 m E of the base”; with vegetation added, the
+          base point) on a 25 m grid, at the height the aircraft flies there. Orange: behind the
+          terrain; yellow hatch: in sight, but the terrain enters 60 % of the radio Fresnel zone
+          (2.4 GHz, from the controller antenna) and the link may drop. Preflight warns per flight
+          from 5 % of the block. A DTM and the global terrain have no trees, buildings or spoil
+          heaps: add them in “Vegetation and obstacles” (per mission, beyond 30 m from the base) or
+          import the team’s DSM and mark “This file is: DSM”. The layer is switched in card 5 (More
+          options) or the map’s layer control and remembered on this device.
         </Li>
         <Li>
           <strong>Settings</strong> (gear in the header) — per aircraft, the visual range and the
@@ -505,12 +525,13 @@ function InstrucoesEn() {
           after its flight (mission_area-tf_A-1.kmz, which is what Pilot 2 shows), in flight order.
         </Li>
         <Li>
-          <strong>Export flights</strong> (card 7, Summary and export) — in the field, base by base:
-          “All flights (ZIP)”, “Base B flights (ZIP)” (only that base’s, …_base-B.zip) or “One
-          flight (KMZ)”. The field checklist and the report carry a sheet per base (coordinates with
-          a maps link, zone, reference elevation, flights with their files, batteries); “Bases and
-          blocks (KML)” takes the bases, zones and blocks labelled with their flight to Google Earth
-          or a phone.
+          <strong>Export flights</strong> (card 7, Summary and export) — “All flights (ZIP)”
+          (…_voos.zip, all loose), “All flights by base (ZIP)” (…_voos-por-base.zip, one folder per
+          base: with several pilots, each takes the folders of their bases) or “One flight (KMZ)”.
+          With bases, the header export button downloads both ZIPs. The field checklist and the
+          report carry a sheet per base (coordinates with a maps link, zone, reference elevation,
+          flights with their files, batteries); “Bases and blocks (KML)” takes the bases, zones and
+          blocks labelled with their flight to Google Earth or a phone.
         </Li>
         <Li>
           <strong>Safety actions</strong> (card 5 of the area, and a card of their own in the other

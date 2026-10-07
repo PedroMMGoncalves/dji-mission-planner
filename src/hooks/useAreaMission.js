@@ -14,6 +14,7 @@ import { buildAreaExport } from '../mission/areaExport.js'
 import {
   areaExportName,
   flightFiles,
+  baseFolder,
   flightsArchiveName,
   selectFlights,
 } from '../mission/flightFiles.js'
@@ -412,8 +413,25 @@ export function useAreaMission({
         runExport(() => exportWPMLKmz(blockExportParams(exportParams, chosen[0])))
         return
       }
+      // por base: uma pasta por base (cada piloto leva as das suas bases)
+      const byBase = { folderOf: (b) => baseFolder(b.baseLabel) }
+      if (sel?.kind === 'both') {
+        // o cabeçalho com bases: os dois ZIP, soltos e por base
+        runExport(async () => {
+          await exportBlocksZip(exportParams, chosen, flightsArchiveName(exportParams.name, sel))
+          await exportBlocksZip(
+            exportParams,
+            chosen,
+            flightsArchiveName(exportParams.name, { kind: 'byBase' }),
+            byBase,
+          )
+        })
+        return
+      }
       const zipName = flightsArchiveName(exportParams.name, sel, chosen[0].baseLabel)
-      runExport(() => exportBlocksZip(exportParams, chosen, zipName))
+      runExport(() =>
+        exportBlocksZip(exportParams, chosen, zipName, sel?.kind === 'byBase' ? byBase : {}),
+      )
     },
     [
       canExportKMZ,
@@ -440,10 +458,12 @@ export function useAreaMission({
     ],
   )
 
-  // o botão do cabeçalho: a missão inteira (todos os voos)
+  // o botão do cabeçalho: a missão inteira (todos os voos); com bases, os
+  // dois ZIP (todos soltos e numa pasta por base)
+  const hasBases = Boolean(baseLayout?.hasBases && blocks?.length)
   const handleExportKMZ = useCallback(
-    () => handleExportFlights({ kind: 'all' }),
-    [handleExportFlights],
+    () => handleExportFlights({ kind: hasBases ? 'both' : 'all' }),
+    [handleExportFlights, hasBases],
   )
 
   return {

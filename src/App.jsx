@@ -7,6 +7,7 @@ import MissionModeSelector from './components/MissionModeSelector.jsx'
 import FacePanel from './components/FacePanel.jsx'
 import OrbitPanel from './components/OrbitPanel.jsx'
 import ProjectSummary from './components/ProjectSummary.jsx'
+import { GatherBar } from './components/BasesPanel.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import ChecklistPage from './components/ChecklistPage.jsx'
 import HelpModal from './components/HelpModal.jsx'
@@ -258,6 +259,8 @@ function AppInner({ lang, setLang }) {
   const [baseProposal, setBaseProposal] = useState(null)
   // o último «Juntar a esta base»: {label, joined, kept, tooFar, nearestFarM, removed}
   const [baseGathered, setBaseGathered] = useState(null)
+  // base sob o rato no botão «Juntar aqui» (pré-visualização no mapa)
+  const [gatherHover, setGatherHover] = useState(null)
   const [exportError, setExportError] = useState(null)
 
   /**
@@ -1902,6 +1905,52 @@ function AppInner({ lang, setLang }) {
     params.altitude,
     startProposal,
   ])
+  // «Juntar aqui», para cada base: o que faria (voos que passam, os que
+  // ficam de fora, bases que ficam vazias); a contagem no painel, a
+  // pré-visualização no mapa e a barra da base seleccionada
+  const gatherPreviews = useMemo(() => {
+    if (missionMode !== 'area' || !blocks?.length || !baseLayout?.hasBases) return null
+    /** @type {Record<string, any>} */
+    const out = {}
+    for (const b of bases) {
+      const r = gatherToBase({
+        blocks,
+        bases,
+        zones,
+        manual: blockBaseEffective,
+        vlosM,
+        defaultRadiusM: equipment.zoneRadiusM,
+        baseId: b.id,
+      })
+      if (r) out[b.id] = r
+    }
+    return out
+  }, [
+    missionMode,
+    blocks,
+    baseLayout,
+    bases,
+    zones,
+    blockBaseEffective,
+    vlosM,
+    equipment.zoneRadiusM,
+  ])
+  const gatherCounts = useMemo(
+    () =>
+      gatherPreviews
+        ? Object.fromEntries(
+            Object.entries(gatherPreviews).map(([id, r]) => [id, { joined: r.joined }]),
+          )
+        : null,
+    [gatherPreviews],
+  )
+  const previewBaseId = gatherHover ?? selectedBaseId
+  const mapGatherPreview = useMemo(() => {
+    const r = previewBaseId ? gatherPreviews?.[previewBaseId] : null
+    const row = r ? baseRows.find((b) => b.id === previewBaseId) : null
+    return r && row ? { ...r, point: row.point, color: row.color } : null
+  }, [previewBaseId, gatherPreviews, baseRows])
+
   // "Juntar a esta base": os blocos que a base vê inteiros dentro do VLOS
   // passam para ela (src/mission/baseLayout.js, gatherToBase)
   const gatherToBaseById = useCallback(
@@ -1924,6 +1973,7 @@ function AppInner({ lang, setLang }) {
         setManualBlockBase(res.blockBase)
       }
       setBaseProposal(null)
+      setGatherHover(null)
       setBaseGathered({ label, ...res })
     },
     [
@@ -2419,6 +2469,8 @@ function AppInner({ lang, setLang }) {
                   onPropose: proposeBasesForBlocks,
                   onGather: gatherToBaseById,
                   gathered: baseGathered,
+                  gatherCounts,
+                  onGatherHover: setGatherHover,
                   // proposta em curso: progresso e cancelar
                   proposing: proposing
                     ? { progress: proposeProgress, onCancel: cancelProposal }
@@ -2474,6 +2526,7 @@ function AppInner({ lang, setLang }) {
             bases={baseRows}
             selectedBaseId={selectedBaseId}
             onBaseSelect={setSelectedBaseId}
+            gatherPreview={mapGatherPreview}
             baseLayout={missionMode === 'area' ? baseLayout : null}
             blockClickMode={blockClickMode}
             onBlockClick={handleBlockClick}
@@ -2507,6 +2560,15 @@ function AppInner({ lang, setLang }) {
             viewshedLayerOn={viewshedLayerOn}
             onViewshedLayer={setViewshedLayerOn}
           />
+          {selectedBaseId && gatherPreviews?.[selectedBaseId] && (
+            <GatherBar
+              base={baseRows.find((b) => b.id === selectedBaseId)}
+              preview={gatherPreviews[selectedBaseId]}
+              vlosM={vlosM}
+              onGather={gatherToBaseById}
+              onClose={() => setSelectedBaseId(null)}
+            />
+          )}
           <StatsPanel
             uncertainty={uncertainty}
             gsd={gsd}

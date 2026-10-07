@@ -1402,6 +1402,27 @@ async function download(page, locator, file) {
   await dl.saveAs(file)
   return [dl.suggestedFilename(), file]
 }
+/** Os `n` ficheiros que um clique descarrega (guardados como `<prefixo>-<i>`). */
+async function downloads(page, locator, n, prefix) {
+  const got = []
+  const done = new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`só ${got.length}/${n} downloads`)), 30000)
+    const on = async (dl) => {
+      const file = `${prefix}-${got.length + 1}`
+      got.push([dl.suggestedFilename(), file, dl])
+      if (got.length === n) {
+        clearTimeout(timer)
+        page.off('download', on)
+        resolve()
+      }
+    }
+    page.on('download', on)
+  })
+  await locator.click()
+  await done
+  for (const [, file, dl] of got) await dl.saveAs(file)
+  return got.map(([name, file]) => [name, file])
+}
 /** Nomes dos KMZ dentro de um ZIP, pela ordem em que lá estão. */
 const zipOrder = async (file) =>
   Object.keys((await JSZip.loadAsync(readFileSync(file))).files).filter((n) => n.endsWith('.kmz'))
@@ -1596,57 +1617,83 @@ await scenario('bases-exportar-por-base', async () => {
   )
   const panel = page.getByTestId('flight-exports')
   check(
-    'por base: um botão «Voos da base X (ZIP)» por base com voos',
-    (await panel.getByTestId('export-base-flights').count()) === withFlights.length,
+    'por base: um só botão «Todos os voos por base (ZIP)» (e não um por base)',
+    (await panel.getByTestId('export-by-base').count()) === 1 &&
+      (await panel.getByTestId('export-base-flights').count()) === 0,
   )
   const header = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
   check(
     'por base: os botões seguem o preflight do botão do cabeçalho',
-    (await panel.getByTestId('export-all-flights').isDisabled()) === (await header.isDisabled()),
+    (await panel.getByTestId('export-all-flights').isDisabled()) === (await header.isDisabled()) &&
+      (await panel.getByTestId('export-by-base').isDisabled()) === (await header.isDisabled()),
   )
 
-  // base B: só os seus voos, pela ordem de voo
+  // todos os voos por base: uma pasta por base, cada uma com os seus voos
+  // pela ordem de voo (com vários pilotos, cada um leva as suas pastas)
   const B = withFlights[1]
   const wantB = order.filter((f) => f.startsWith(`${B.label}-`))
-  const [zipB, fileB] = await download(
+  const [zipByBase, fileByBase] = await download(
     page,
-    panel.locator(`[data-testid="export-base-flights"][data-base-label="${B.label}"]`),
-    join(OUT, 'base-B.zip'),
+    panel.getByTestId('export-by-base'),
+    join(OUT, 'voos-por-base.zip'),
   )
-  const prefix = zipB.replace(new RegExp(`_base-${B.label}\\.zip$`), '')
-  const inB = await zipOrder(fileB)
+  const prefix = zipByBase.replace(/_voos-por-base\.zip$/, '')
+  const entries = await zipOrder(fileByBase)
   check(
-    `por base: ZIP «…_base-${B.label}.zip»`,
-    zipB.endsWith(`_base-${B.label}.zip`) && /_area-tf$/.test(prefix),
-    zipB,
+    'por base: ZIP «…_voos-por-base.zip»',
+    zipByBase.endsWith('_voos-por-base.zip') && /_area-tf$/.test(prefix),
+    zipByBase,
   )
   check(
-    `por base: o ZIP da base ${B.label} só tem os voos dela, pela ordem de voo`,
+    'por base: uma pasta por base com voos, e cada voo na pasta da sua base',
+    withFlights.every((r) => entries.some((n) => n.startsWith(`base-${r.label}/`))) &&
+      entries.every((n) => {
+        const m = /^base-([A-Z]+)\/[^/]+_([A-Z]+)-\d+\.kmz$/.exec(n)
+        return m && m[1] === m[2]
+      }) &&
+      entries.length === order.length,
+    entries.join(' '),
+  )
+  const inB = entries.filter((n) => n.startsWith(`base-${B.label}/`))
+  check(
+    `por base: a pasta da base ${B.label} só tem os voos dela, pela ordem de voo`,
     inB.map(flightOfFile).join(',') === wantB.join(','),
     `${inB.join(' ')} / ${wantB.join(' ')}`,
   )
   check(
     'por base: cada KMZ chama-se <missão>_area-tf_<voo>.kmz',
-    inB.every((n) => n.startsWith(`${prefix}_${B.label}-`) && /^[\w-]+\.kmz$/.test(n)),
+    inB.every((n) => {
+      const f = n.split('/').pop()
+      return f.startsWith(`${prefix}_${B.label}-`) && /^[\w-]+\.kmz$/.test(f)
+    }),
     inB.join(' '),
   )
-  const zip = await JSZip.loadAsync(readFileSync(fileB))
+  const zip = await JSZip.loadAsync(readFileSync(fileByBase))
   const titles = await Promise.all(
     inB.map(async (n) => kmzTitle(await zip.file(n).async('nodebuffer'))),
   )
   check(
     'por base: o título da missão no KMZ é o nome do ficheiro',
-    titles.every((t, i) => t === inB[i].replace(/\.kmz$/, '')),
+    titles.every(
+      (t, i) =>
+        t ===
+        inB[i]
+          .split('/')
+          .pop()
+          .replace(/\.kmz$/, ''),
+    ),
     titles.join(' '),
   )
-  const routesB = await readRoutes(fileB)
+  const routesB = (await readRoutes(fileByBase)).filter((x) =>
+    x.name.startsWith(`base-${B.label}/`),
+  )
   const refB = routesB.map((x) => {
     const a = analyseRoute(x.wpml, { toM, ground, aglNominalM: AGL_M })
     return Math.max(...a.points.map(([px, py, h]) => AGL_M + ground(px, py) - h))
   })
   check(
     `por base: as alturas dos voos de ${B.label} referem-se à cota da sua zona (±2 m)`,
-    refB.every((r) => Math.abs(r - B.ref) <= 2),
+    refB.length === wantB.length && refB.every((r) => Math.abs(r - B.ref) <= 2),
     `${refB.map((r) => r.toFixed(1)).join(',')} / ${B.ref}`,
   )
 
@@ -1681,11 +1728,16 @@ await scenario('bases-exportar-por-base', async () => {
     allName === `${prefix}_voos.zip` && all.map(flightOfFile).join(',') === order.join(','),
     `${allName}: ${all.join(' ')}`,
   )
-  const [headName, headFile] = await download(page, header, join(OUT, 'cabecalho.zip'))
+  // o cabeçalho com bases: os dois ZIP (todos soltos e por base)
+  const heads = await downloads(page, header, 2, join(OUT, 'cabecalho'))
+  const headAll = heads.find(([n]) => n === allName)
+  const headByBase = heads.find(([n]) => n === zipByBase)
   check(
-    'todos: o botão do cabeçalho exporta o mesmo ZIP',
-    headName === allName && (await zipOrder(headFile)).join() === all.join(),
-    headName,
+    'todos: o botão do cabeçalho descarrega os dois ZIP (todos os voos e por base)',
+    Boolean(headAll && headByBase) &&
+      (await zipOrder(headAll[1])).join() === all.join() &&
+      (await zipOrder(headByBase[1])).join() === entries.join(),
+    heads.map(([n]) => n).join(' + '),
   )
 
   // KML de campo: bases, zonas, blocos com o rótulo do voo
@@ -1712,7 +1764,7 @@ await scenario('bases-exportar-por-base', async () => {
   )
   check(
     'kml: a ficha da base leva os ficheiros dos voos',
-    inB.every((n) => kml.includes(n)),
+    inB.every((n) => kml.includes(n.split('/').pop())),
   )
 
   // checklist de campo: uma ficha por base com voos
@@ -1745,7 +1797,7 @@ await scenario('bases-exportar-por-base', async () => {
       /Alcance visual/i.test(sB.text) &&
       /necessários/.test(sB.text) &&
       sB.flights.join(',') === wantB.join(',') &&
-      inB.every((n) => sB.text.includes(n)),
+      inB.every((n) => sB.text.includes(n.split('/').pop())),
     sB ? sB.text.replace(/\s+/g, ' ').slice(0, 300) : 'sem ficha',
   )
   await page.getByRole('button', { name: /Voltar ao planeador|Back to planner/ }).click()
@@ -1922,15 +1974,45 @@ await scenario('juntar-a-esta-base', async () => {
   const total = rows0.reduce((n, r) => n + r.blocks.length, 0)
   check('juntar: a proposta dá pelo menos duas bases', rows0.length >= 2, layout0)
   const A = rows0[0]
-  check(
-    'juntar: sem base seleccionada o botão não aparece',
-    (await page.getByTestId('base-gather').count()) === 0,
+  // o botão de cada base diz já quantos voos junta, sem seleccionar nada
+  const rowBtn = page.locator(
+    `[data-testid="base-row"][data-base-label="${A.label}"] [data-testid="base-gather"]`,
   )
-  await page
-    .locator(`[data-testid="base-row"][data-base-label="${A.label}"]`)
-    .getByTitle(new RegExp(`Seleccionar a base ${A.label}`))
-    .click()
-  await page.getByTestId('base-gather').click()
+  const wouldJoin = Number(await rowBtn.getAttribute('data-joined'))
+  check(
+    'juntar: cada base tem o botão com a contagem («Juntar aqui (+N voos)»)',
+    (await page.getByTestId('base-gather').count()) === rows0.length &&
+      (wouldJoin > 0
+        ? new RegExp(`Juntar aqui \\(\\+${wouldJoin} voos\\)`).test(await rowBtn.innerText())
+        : await rowBtn.isDisabled()),
+    `${A.label}: +${wouldJoin}`,
+  )
+  // passar o rato: o mapa mostra o que entra (a cheio) e o que fica de fora
+  await rowBtn.hover()
+  await page.waitForTimeout(400)
+  const inMap = await page.locator('path.gather-in').count()
+  const outMap = await page.locator('path.gather-out').count()
+  check(
+    'juntar: ao passar o rato, o mapa mostra os blocos que entram e os que ficam de fora',
+    inMap === wouldJoin &&
+      inMap + outMap + (await page.locator('path.gather-kept').count()) === total,
+    `entram ${inMap}, de fora ${outMap}`,
+  )
+  await page.mouse.move(5, 5)
+  // clicar no pino da base no mapa: a barra com a mesma acção
+  await basePin(page, A.label).click()
+  const bar = page.getByTestId('gather-bar')
+  await bar.waitFor({ timeout: 5000 })
+  check(
+    'juntar: clicar no pino da base abre a barra sobre o mapa com o que vai acontecer',
+    wouldJoin > 0
+      ? new RegExp(`\\+${wouldJoin} voos ao alcance`).test(await bar.innerText())
+      : /Nenhum voo novo/.test(await bar.innerText()),
+    (await bar.innerText()).replace(/\s+/g, ' '),
+  )
+  await page.screenshot({ path: join(OUT, 'juntar-barra.png') })
+  if (wouldJoin > 0) await page.getByTestId('gather-bar-apply').click()
+  else await rowBtn.click({ force: true })
   await page.waitForTimeout(1200)
   const msg = page.getByTestId('bases-gathered')
   check('juntar: o painel diz o que fez', (await msg.count()) === 1)
@@ -2814,7 +2896,7 @@ const INVENTARIO_BATERIA = [
   ['bases', 'camada das bacias de visão', inv.id('viewshed-toggle')],
   ['bases', 'vegetação e obstáculos', inv.id('viewshed-obstacle')],
   ['resumo', 'exportar todos os voos', inv.id('export-all-flights')],
-  ['resumo', 'exportar os voos da base', inv.id('export-base-flights')],
+  ['resumo', 'exportar todos os voos por base', inv.id('export-by-base')],
   ['resumo', 'escolher um voo', inv.id('export-flight-select')],
   ['resumo', 'exportar um voo', inv.id('export-one-flight')],
   ['resumo', 'KML das bases e blocos', inv.id('export-bases-kml')],
