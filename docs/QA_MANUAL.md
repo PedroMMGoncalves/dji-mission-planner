@@ -244,13 +244,12 @@ tablet real):
   do plano (relativa à cota da zona de B, «voo entre 0 e +X m acima do
   planeado»); descolar dentro do raio da zona.
 
-- ☐ Numa base num alto, passar o rato por **Juntar aqui (+N voos)** na lista.
-  **Esperado:** o mapa mostra o alcance a tracejado, os N blocos que entram
-  a cheio na cor da base e os de fora a cinzento. Clicar no pino da base no
-  mapa: a barra por cima do mapa diz o mesmo (voos ao alcance, bases que
-  ficam sem voos, os de fora) com **Juntar aqui**. Juntar: a base fica com
-  esses voos, as bases sem voos saem, o painel diz o que fez; **Ctrl+Z**
-  repõe tudo.
+- ☐ Seleccionar uma base num alto (o pino no mapa ou o rótulo na lista) →
+  **Juntar a esta base**.
+  **Esperado:** a base fica com todos os voos que vê inteiros dentro do
+  alcance visual; o painel diz quantos juntou, quantos ficam de fora e a
+  que distância está o mais perto deles (pior caso); as bases sem voos
+  saem; **Ctrl+Z** repõe tudo.
 
 ## 14. Bacias de visão e rádio — verificação no campo (~2 min + campo)
 

@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import { useLang, useT } from '../i18n.jsx'
 import { hiddenStrips, radioStrips, ringLabelPoint } from '../mission/viewshedPlan.js'
-import { blockRing } from '../mission/baseLayout.js'
 
 /**
  * Mapa Leaflet com camadas imperativas sincronizadas com o estado React:
@@ -31,7 +30,6 @@ export default function MapView({
   bases = null,
   selectedBaseId = null,
   onBaseSelect,
-  gatherPreview = null,
   baseLayout = null,
   blockClickMode = 'toggle',
   onBlockClick,
@@ -207,8 +205,6 @@ export default function MapView({
       orbit: L.layerGroup().addTo(map),
       circular: L.layerGroup().addTo(map),
       bases: L.layerGroup().addTo(map),
-      // pré-visualização do «Juntar aqui»: alcance e blocos que entram/ficam
-      gather: L.layerGroup().addTo(map),
       // bacias de visão: só no mapa quando ligada (controlo de camadas ou painel)
       viewshed: L.layerGroup(),
       canvas: L.canvas({ padding: 0.3 }),
@@ -358,52 +354,6 @@ export default function MapView({
       })
     }
   }, [bases, selectedBaseId, baseTitle])
-
-  // «Juntar aqui»: o alcance da base (um vértice de bloco para lá dele passa
-  // o VLOS no pior caso), os blocos que passam a ela a cheio na sua cor, os
-  // que já eram dela só contornados e os que ficam de fora a cinzento
-  useEffect(() => {
-    const g = layersRef.current?.gather
-    if (!g) return
-    g.clearLayers()
-    const p = gatherPreview
-    if (!p || !Array.isArray(p.point) || !blocks?.length) return
-    if (p.reachM > 0)
-      L.circle(toLatLng(p.point), {
-        radius: p.reachM,
-        color: p.color,
-        weight: 2,
-        dashArray: '8 6',
-        fill: false,
-        interactive: false,
-      }).addTo(g)
-    const joined = new Set(p.joinedIds ?? [])
-    const kept = new Set(p.keptIds ?? [])
-    const far = new Set(p.farIds ?? [])
-    for (const b of blocks) {
-      const ring = b.cellRing ?? blockRing(b)
-      if (!Array.isArray(ring) || ring.length < 3) continue
-      const style = joined.has(b.id)
-        ? { color: p.color, weight: 3, fillColor: p.color, fillOpacity: 0.3 }
-        : kept.has(b.id)
-          ? { color: p.color, weight: 2, fill: false }
-          : far.has(b.id)
-            ? {
-                color: '#94a3b8',
-                weight: 1.5,
-                dashArray: '4 4',
-                fillColor: '#0f172a',
-                fillOpacity: 0.35,
-              }
-            : null
-      if (!style) continue
-      L.polygon(ring.map(toLatLng), {
-        ...style,
-        interactive: false,
-        className: joined.has(b.id) ? 'gather-in' : kept.has(b.id) ? 'gather-kept' : 'gather-out',
-      }).addTo(g)
-    }
-  }, [gatherPreview, blocks])
 
   // Bacias de visão: a camada segue o estado (painel ou controlo de camadas)
   useEffect(() => {

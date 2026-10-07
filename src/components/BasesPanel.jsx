@@ -40,8 +40,6 @@ export default function BasesPanel({
   onPropose,
   onGather = null,
   gathered = null,
-  gatherCounts = null,
-  onGatherHover = null,
   hasBlocks,
   proposal,
   proposing = null,
@@ -218,8 +216,6 @@ export default function BasesPanel({
             onRemove={onRemove}
             onRadius={onRadius}
             onGather={hasBlocks ? onGather : null}
-            gatherCount={gatherCounts?.[b.id] ?? null}
-            onGatherHover={onGatherHover}
             vlosM={vlosM}
             defaultRadiusM={defaultRadiusM}
             views={viewshed?.byBlock ?? null}
@@ -430,8 +426,6 @@ function BaseRow({
   onRemove,
   onRadius,
   onGather,
-  gatherCount,
-  onGatherHover,
   vlosM,
   defaultRadiusM,
   views,
@@ -531,23 +525,15 @@ function BaseRow({
           ? t('bases.flights', { list: b.flights.join(', ') })
           : t('bases.noFlights')}
       </p>
-      {onGather && gatherCount && (
+      {selected && onGather && (
         <button
           type="button"
           data-testid="base-gather"
-          data-joined={gatherCount.joined}
-          disabled={gatherCount.joined === 0}
           onClick={() => onGather(b.id)}
-          onMouseEnter={() => onGatherHover?.(b.id)}
-          onMouseLeave={() => onGatherHover?.(null)}
-          onFocus={() => onGatherHover?.(b.id)}
-          onBlur={() => onGatherHover?.(null)}
           title={t('bases.gatherTitle', { label: b.label, m: vlosM })}
-          className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-[11px] font-medium text-sky-200 transition-colors hover:bg-slate-700 disabled:cursor-default disabled:text-slate-500 disabled:hover:bg-slate-800"
+          className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-[11px] font-medium text-sky-200 transition-colors hover:bg-slate-700"
         >
-          {gatherCount.joined > 0
-            ? t('bases.gatherN', { n: gatherCount.joined })
-            : t('bases.gatherNone')}
+          {t('bases.gather')}
         </button>
       )}
       {seen.length > 0 && (
@@ -596,66 +582,5 @@ function BaseRow({
         </p>
       )}
     </li>
-  )
-}
-
-/**
- * Barra sobre o mapa com a base seleccionada: «Juntar aqui» com o que vai
- * acontecer (voos que passam, bases que ficam sem voos, os que ficam de
- * fora do alcance). O mapa mostra o mesmo (alcance e blocos).
- * @param {{base: any, preview: any, vlosM: number, onGather: (id: string) => void,
- *   onClose: () => void}} props
- */
-export function GatherBar({ base, preview, vlosM, onGather, onClose }) {
-  const t = useT()
-  if (!base || !preview) return null
-  return (
-    <div
-      data-testid="gather-bar"
-      className="pointer-events-auto absolute left-1/2 top-3 z-[1000] flex max-w-[calc(100%-1rem)] -translate-x-1/2 items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/95 px-3 py-2 text-xs text-slate-200 shadow-xl"
-    >
-      <span
-        className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-slate-950"
-        style={{ backgroundColor: base.color }}
-      >
-        {base.label}
-      </span>
-      <span className="min-w-0">
-        {preview.joined > 0
-          ? t('bases.gatherBar', { n: preview.joined, total: preview.joined + preview.kept })
-          : t('bases.gatherBarNone', { total: preview.kept })}
-        {preview.removed.length > 0 && (
-          <span className="text-slate-400">
-            {' '}
-            {t('bases.gatherBarEmpty', { list: preview.removed.join(', ') })}
-          </span>
-        )}
-        {preview.tooFar > 0 && (
-          <span className="text-slate-400">
-            {' '}
-            {t('bases.gatherBarFar', { n: preview.tooFar, m: vlosM })}
-          </span>
-        )}
-      </span>
-      {preview.joined > 0 && (
-        <button
-          type="button"
-          data-testid="gather-bar-apply"
-          onClick={() => onGather(base.id)}
-          className="shrink-0 rounded bg-sky-600 px-2.5 py-1 font-medium text-white hover:bg-sky-500"
-        >
-          {t('bases.gather')}
-        </button>
-      )}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label={t('bases.gatherBarClose')}
-        title={t('bases.gatherBarClose')}
-        className="shrink-0 rounded px-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-      >
-        ×
-      </button>
-    </div>
   )
 }

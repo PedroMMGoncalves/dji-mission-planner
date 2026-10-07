@@ -59,29 +59,7 @@ export default {
   },
   'bases.label': { pt: 'Base {label}', en: 'Base {label}' },
   'bases.noFlights': { pt: 'sem voos', en: 'no flights' },
-  'bases.gather': { pt: 'Juntar aqui', en: 'Gather here' },
-  'bases.gatherN': { pt: 'Juntar aqui (+{n} voos)', en: 'Gather here (+{n} flights)' },
-  'bases.gatherNone': {
-    pt: 'Nada a juntar: nenhum voo novo ao alcance',
-    en: 'Nothing to gather: no new flight within reach',
-  },
-  'bases.gatherBar': {
-    pt: '+{n} voos ao alcance ({total} no total).',
-    en: '+{n} flights within reach ({total} in total).',
-  },
-  'bases.gatherBarNone': {
-    pt: 'Nenhum voo novo ao alcance ({total} já são desta base).',
-    en: 'No new flight within reach ({total} already belong to this base).',
-  },
-  'bases.gatherBarEmpty': {
-    pt: 'Ficam sem voos e saem: {list}.',
-    en: 'Left without flights and removed: {list}.',
-  },
-  'bases.gatherBarFar': {
-    pt: '{n} ficam de fora (para lá dos {m} m de alcance visual).',
-    en: '{n} stay out (beyond the {m} m visual range).',
-  },
-  'bases.gatherBarClose': { pt: 'Fechar (deseleccionar a base)', en: 'Close (deselect the base)' },
+  'bases.gather': { pt: 'Juntar a esta base', en: 'Gather to this base' },
   'bases.gatherTitle': {
     pt: 'Passa para a base {label} todos os blocos que ela vê inteiros dentro do alcance visual ({m} m no pior caso), mesmo os de outras bases: menos deslocações. As bases que ficarem sem voos saem. O rádio e a vista continuam no preflight. Ctrl+Z desfaz.',
     en: 'Moves to base {label} every block it sees entirely within visual range ({m} m worst case), even those of other bases: fewer moves. Bases left without flights are removed. Radio and sight stay in the preflight. Ctrl+Z undoes.',

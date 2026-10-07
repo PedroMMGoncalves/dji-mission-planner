@@ -4,6 +4,18 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); versões
 [SemVer](https://semver.org/lang/pt-BR/). A etiqueta git `vX.Y.Z` é a
 versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
+## Por publicar
+
+### Alterado («Juntar a esta base» volta ao desenho anterior)
+
+- Sai a versão da 1.4.0 com o botão «Juntar aqui (+N voos)» em todas as
+  bases, a pré-visualização no mapa e a barra por cima do mapa: tirava a
+  sensação de escolha e misturava-se com o «Atribuir base». Volta o botão
+  «Juntar a esta base» na linha da base seleccionada (o pino no mapa ou o
+  rótulo na lista), que leva todos os blocos ao alcance; blocos soltos
+  passam-se com «Atribuir base» e um clique no bloco. A exportação por
+  base em pastas e os dois ZIP do cabeçalho ficam.
+
 ## 1.4.0 — 2026-10-07
 
 ### Alterado (exportação por base e «Juntar aqui»)

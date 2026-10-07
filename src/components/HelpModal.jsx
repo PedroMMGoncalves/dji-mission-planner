@@ -183,13 +183,13 @@ function InstrucoesPt() {
           das bases. Com a área substituída por outra (menos de metade em comum) nada passa.
         </Li>
         <Li>
-          <strong>Juntar aqui</strong> — para descolar de um alto e não mudar de sítio: cada base
-          tem o botão «Juntar aqui (+N voos)» com os voos que ainda pode levar dentro do alcance
-          visual (no pior caso, com o raio da zona), mesmo os de outras bases. Ao passar o rato, o
-          mapa mostra o alcance a tracejado, os blocos que entram a cheio na cor da base e os que
-          ficam de fora a cinzento; clicar no pino da base no mapa abre a mesma acção numa barra por
-          cima do mapa. As bases que ficam sem voos saem; o rádio e a vista continuam no preflight;
-          Ctrl+Z desfaz.
+          <strong>Juntar a esta base</strong> — para descolar de um alto e não mudar de sítio:
+          seleccione a base (o pino no mapa ou o rótulo na lista) e carregue em «Juntar a esta base»
+          na linha dela. Todos os blocos que ela vê inteiros dentro do alcance visual (no pior caso,
+          com o raio da zona) passam a ela, mesmo os de outras bases; as bases que ficam sem voos
+          saem, e o painel diz quantos juntou e quantos ficam de fora. Blocos soltos passam-se com
+          «Atribuir base» e um clique no bloco. O rádio e a vista continuam no preflight; Ctrl+Z
+          desfaz.
         </Li>
         <Li>
           <strong>Bacias de visão</strong> — com bases, blocos e relevo, cada bloco é visto do{' '}
@@ -450,13 +450,12 @@ function InstrucoesEn() {
           area is replaced by another (less than half in common), nothing carries over.
         </Li>
         <Li>
-          <strong>Gather here</strong> — to take off from a high point and not move: each base has a
-          “Gather here (+N flights)” button with the flights it can still take within visual range
-          (worst case, with the zone radius), even other bases’ ones. Hovering it, the map shows the
-          reach dashed, the blocks that join filled in the base’s colour and the ones that stay out
-          in grey; clicking the base pin on the map opens the same action in a bar over the map.
-          Bases left without flights are removed; radio and sight stay in the preflight; Ctrl+Z
-          undoes it.
+          <strong>Gather to this base</strong> — to take off from a high point and not move: select
+          the base (its pin on the map or its label in the list) and press “Gather to this base” in
+          its row. Every block it sees entirely within visual range (worst case, with the zone
+          radius) moves to it, even other bases’ ones; bases left without flights are removed, and
+          the panel says how many joined and how many stay out. Single blocks are moved with “Assign
+          base” and a click on the block. Radio and sight stay in the preflight; Ctrl+Z undoes it.
         </Li>
         <Li>
           <strong>Viewsheds</strong> — with bases, blocks and terrain, each block is seen from the{' '}

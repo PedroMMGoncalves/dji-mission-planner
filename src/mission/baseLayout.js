@@ -409,13 +409,10 @@ export function applyProposal({ bases = [], manual = {}, proposal }) {
  * @param {number} [args.defaultRadiusM]
  * @param {string} args.baseId
  * @returns {null | {bases: any[], blockBase: Record<string, string>, joined: number,
- *   kept: number, tooFar: number, nearestFarM: number|null, removed: string[],
- *   joinedIds: any[], keptIds: any[], farIds: any[], reachM: number}}
+ *   kept: number, tooFar: number, nearestFarM: number|null, removed: string[]}}
  *   `joined`: blocos que mudaram para a base; `kept`: os que já eram dela;
  *   `tooFar`: os que ficam de fora por passarem o VLOS (`nearestFarM`, o
- *   pior caso do mais perto deles); `removed`: rótulos das bases retiradas;
- *   os ids de cada grupo e `reachM` (o alcance do ponto) servem a
- *   pré-visualização no mapa
+ *   pior caso do mais perto deles); `removed`: rótulos das bases retiradas
  */
 export function gatherToBase({
   blocks,
@@ -436,9 +433,6 @@ export function gatherToBase({
   let joined = 0
   let kept = 0
   let tooFar = 0
-  const joinedIds = []
-  const keptIds = []
-  const farIds = []
   let nearestFarM = null
   for (const b of blocks) {
     const ring = blockRing(b)
@@ -446,17 +440,11 @@ export function gatherToBase({
     const worst = blockWorstVlosM({ point: base.point, radiusM }, ring)
     if (worst > vlosM + 1e-6) {
       tooFar += 1
-      farIds.push(b.id)
       if (nearestFarM == null || worst < nearestFarM) nearestFarM = worst
       continue
     }
-    if (before?.byBlock[b.id]?.baseId === base.id) {
-      kept += 1
-      keptIds.push(b.id)
-    } else {
-      joined += 1
-      joinedIds.push(b.id)
-    }
+    if (before?.byBlock[b.id]?.baseId === base.id) kept += 1
+    else joined += 1
     map[String(b.id)] = base.id
   }
   // bases que ficaram sem voos por causa disto saem (com as atribuições que
@@ -479,12 +467,6 @@ export function gatherToBase({
     joined,
     kept,
     tooFar,
-    joinedIds,
-    keptIds,
-    farIds,
-    // alcance a partir do ponto: um vértice de bloco a mais do que isto passa
-    // o VLOS no pior caso (com o raio da zona)
-    reachM: Math.max(0, vlosM - radiusM),
     nearestFarM,
     removed,
   }

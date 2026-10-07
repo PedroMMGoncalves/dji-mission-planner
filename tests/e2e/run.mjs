@@ -1974,45 +1974,15 @@ await scenario('juntar-a-esta-base', async () => {
   const total = rows0.reduce((n, r) => n + r.blocks.length, 0)
   check('juntar: a proposta dá pelo menos duas bases', rows0.length >= 2, layout0)
   const A = rows0[0]
-  // o botão de cada base diz já quantos voos junta, sem seleccionar nada
-  const rowBtn = page.locator(
-    `[data-testid="base-row"][data-base-label="${A.label}"] [data-testid="base-gather"]`,
-  )
-  const wouldJoin = Number(await rowBtn.getAttribute('data-joined'))
   check(
-    'juntar: cada base tem o botão com a contagem («Juntar aqui (+N voos)»)',
-    (await page.getByTestId('base-gather').count()) === rows0.length &&
-      (wouldJoin > 0
-        ? new RegExp(`Juntar aqui \\(\\+${wouldJoin} voos\\)`).test(await rowBtn.innerText())
-        : await rowBtn.isDisabled()),
-    `${A.label}: +${wouldJoin}`,
+    'juntar: sem base seleccionada o botão não aparece',
+    (await page.getByTestId('base-gather').count()) === 0,
   )
-  // passar o rato: o mapa mostra o que entra (a cheio) e o que fica de fora
-  await rowBtn.hover()
-  await page.waitForTimeout(400)
-  const inMap = await page.locator('path.gather-in').count()
-  const outMap = await page.locator('path.gather-out').count()
-  check(
-    'juntar: ao passar o rato, o mapa mostra os blocos que entram e os que ficam de fora',
-    inMap === wouldJoin &&
-      inMap + outMap + (await page.locator('path.gather-kept').count()) === total,
-    `entram ${inMap}, de fora ${outMap}`,
-  )
-  await page.mouse.move(5, 5)
-  // clicar no pino da base no mapa: a barra com a mesma acção
-  await basePin(page, A.label).click()
-  const bar = page.getByTestId('gather-bar')
-  await bar.waitFor({ timeout: 5000 })
-  check(
-    'juntar: clicar no pino da base abre a barra sobre o mapa com o que vai acontecer',
-    wouldJoin > 0
-      ? new RegExp(`\\+${wouldJoin} voos ao alcance`).test(await bar.innerText())
-      : /Nenhum voo novo/.test(await bar.innerText()),
-    (await bar.innerText()).replace(/\s+/g, ' '),
-  )
-  await page.screenshot({ path: join(OUT, 'juntar-barra.png') })
-  if (wouldJoin > 0) await page.getByTestId('gather-bar-apply').click()
-  else await rowBtn.click({ force: true })
+  await page
+    .locator(`[data-testid="base-row"][data-base-label="${A.label}"]`)
+    .getByTitle(new RegExp(`Seleccionar a base ${A.label}`))
+    .click()
+  await page.getByTestId('base-gather').click()
   await page.waitForTimeout(1200)
   const msg = page.getByTestId('bases-gathered')
   check('juntar: o painel diz o que fez', (await msg.count()) === 1)
