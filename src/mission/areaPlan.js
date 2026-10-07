@@ -14,6 +14,13 @@ import {
   ringToPolygon,
 } from '../utils/geo.js'
 
+/**
+ * @param {number[][]} ring
+ * @param {number[][][]|null} activeCells anéis das células activas
+ * @param {any} opts parâmetros de generateFlightPlan; `cellHoles` (opcional,
+ *   alinhado com activeCells) dá os buracos de cada célula já recortados pelo
+ *   mosaico (buildSquareMosaic), em vez de os procurar entre os da área
+ */
 export function planArea(ring, activeCells, opts) {
   if (!ring) return null
   if (!activeCells) return generateFlightPlan(ring, opts)
@@ -35,8 +42,15 @@ export function planArea(ring, activeCells, opts) {
       }
     })
   }
-  const perCell = activeCells.map((cell) =>
-    generateFlightPlan(cell, { ...opts, align, align2, holes: holesFor(cell) }),
+  const cellHoles = Array.isArray(opts.cellHoles) ? opts.cellHoles : null
+  const { cellHoles: _ignored, ...cellOpts } = opts
+  const perCell = activeCells.map((cell, i) =>
+    generateFlightPlan(cell, {
+      ...cellOpts,
+      align,
+      align2,
+      holes: cellHoles ? (cellHoles[i]?.length ? cellHoles[i] : null) : holesFor(cell),
+    }),
   )
   return composeCellPlans(ring, perCell, {
     photoIntervalM: opts.photoIntervalM,

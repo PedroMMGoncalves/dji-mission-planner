@@ -10,6 +10,14 @@
  * reserva `split.reservePct` fica a 0. Um projecto sem `battery` é anterior:
  * abre com o tempo útil equivalente (legacyUsefulMin), para os blocos não
  * mudarem.
+ *
+ * Bases múltiplas: `bases` [{id, label, point, radiusM}] e as atribuições
+ * manuais `blockBase` {idDoBloco: idDaBase}. A base única antiga
+ * (`basePoint`) abre como base A. O mosaico de quadrados passou a
+ * buildSquareMosaic (`split.mosaic` 2): as células desactivadas de um
+ * projecto anterior são traduzidas para o mosaico novo (mosaicLegacy.js),
+ * e as orientações: num mosaico manual mantém-se a guardada, na divisão por
+ * bateria os quadrados passam a seguir as faixas.
  */
 import {
   AIRCRAFT,
@@ -22,6 +30,7 @@ import { normalizeFaceConfig } from '../utils/faceMode.js'
 import { normalizeOrbitConfig } from '../utils/orbit.js'
 import { normalizeCorridorConfig } from '../utils/corridor.js'
 import { normalizeCircularConfig } from '../utils/circular.js'
+import { legacyBases, normalizeBases, normalizeBlockBase } from './bases.js'
 
 export const PROJECT_VERSION = 2
 /** Esquema JSON (draft 2020-12) do ficheiro v2, servido com a aplicação: public/schema/. */
@@ -29,6 +38,8 @@ export const PROJECT_SCHEMA_URL =
   'https://pedrommgoncalves.github.io/dji-mission-planner/schema/project-v2.schema.json'
 export const PROJECT_STORAGE_KEY = 'dji-mission-planner:project:v1'
 export const MISSION_MODES = ['area', 'face', 'orbit', 'corridor', 'circular']
+/** Geração do mosaico de quadrados: 2 = buildSquareMosaic (src/mission/squareMosaic.js). */
+export const MOSAIC_VERSION = 2
 
 /** Objecto serializável com tudo o que o projecto guarda (a mesma forma do autosave). */
 export function serializeProject(state) {
@@ -50,7 +61,8 @@ export function serializeProject(state) {
     ring,
     holes,
     areaOrigin,
-    basePoint,
+    bases,
+    blockBase,
     disabledTiles,
     terrainFollow,
     gcpConfig,
@@ -73,12 +85,19 @@ export function serializeProject(state) {
     orbitConfig,
     circularConfig,
     params,
-    split,
+    // os índices das células desactivadas são do mosaico desta geração
+    split: split ? { ...split, mosaic: MOSAIC_VERSION } : split,
     anchor,
     ring,
     holes,
     areaOrigin,
-    basePoint,
+    bases: (bases ?? []).map((b) => ({
+      id: b.id,
+      label: b.label,
+      point: b.point,
+      radiusM: b.radiusM ?? null,
+    })),
+    blockBase: { ...(blockBase ?? {}) },
     disabledTiles: [...(disabledTiles ?? [])],
     terrainFollow,
     gcpConfig,
@@ -104,7 +123,15 @@ export function projectFileName(missionName) {
  *  - split: sem o batteryMin antigo e sempre com reservePct 0 (a reserva
  *    vive no tempo útil)
  *  - inspectPoints: só os pontos com coordenadas; nextInspectId para o contador
- *  - disabledTiles: Set; ring/basePoint só quando são arrays
+ *  - disabledTiles: Set; ring só quando é array
+ *  - bases: lista normalizada (a `basePoint` antiga passa a base A);
+ *    blockBase: só atribuições a bases existentes
+ *  - split.tileOrientationAuto: os projectos anteriores ao campo ficam com a
+ *    orientação guardada num mosaico manual e seguem as faixas na divisão
+ *    por bateria (que não tinha orientação na interface)
+ *  - legacyMosaic: {disabled: Set, basePoint} quando um projecto anterior ao
+ *    mosaico novo tinha células desactivadas; disabledTiles fica vazio até a
+ *    geometria as traduzir (legacyDisabledForMosaic)
  */
 export function normalizeProject(p) {
   if (!p || (p.version !== 1 && p.version !== 2)) return null
@@ -119,6 +146,8 @@ export function normalizeProject(p) {
   // a reserva já está no tempo útil: os consumidores (blocos, lado do
   // quadrado, preflight, resumo) recebem reservePct 0 e não a aplicam outra vez
   out.split = { ...restSplit, reservePct: 0 }
+  if (typeof restSplit.tileOrientationAuto !== 'boolean')
+    out.split.tileOrientationAuto = restSplit.mode !== 'tiles'
   if (MISSION_MODES.includes(p.missionMode)) out.missionMode = p.missionMode
   if (p.faceConfig) out.faceConfig = normalizeFaceConfig(p.faceConfig)
   if (p.orbitConfig) out.orbitConfig = normalizeOrbitConfig(p.orbitConfig)
@@ -136,8 +165,26 @@ export function normalizeProject(p) {
   if (Array.isArray(p.ring)) out.ring = p.ring
   out.holes = Array.isArray(p.holes) ? p.holes.filter((h) => Array.isArray(h) && h.length >= 3) : []
   out.areaOrigin = p.areaOrigin ?? null
-  out.basePoint = Array.isArray(p.basePoint) ? p.basePoint : null
-  out.disabledTiles = new Set(Array.isArray(p.disabledTiles) ? p.disabledTiles : [])
+  out.bases = Array.isArray(p.bases) ? normalizeBases(p.bases) : legacyBases(p.basePoint)
+  out.blockBase = normalizeBlockBase(p.blockBase, out.bases)
+  const disabled = new Set(
+    (Array.isArray(p.disabledTiles) ? p.disabledTiles : []).filter(
+      (i) => Number.isInteger(i) && i >= 0,
+    ),
+  )
+  const legacyMosaic =
+    restSplit.mosaic !== MOSAIC_VERSION &&
+    (restSplit.mode === 'tiles' || restSplit.mode === 'battery') &&
+    disabled.size > 0
+  if (legacyMosaic) {
+    out.legacyMosaic = {
+      disabled,
+      basePoint: Array.isArray(p.basePoint) ? p.basePoint : null,
+      tileOrientation: Number.isFinite(restSplit.tileOrientation) ? restSplit.tileOrientation : 0,
+    }
+    out.disabledTiles = new Set()
+  } else out.disabledTiles = disabled
+  out.split.mosaic = MOSAIC_VERSION
   if (p.terrainFollow) out.terrainFollow = p.terrainFollow
   if (p.gcpConfig) out.gcpConfig = p.gcpConfig
   return out

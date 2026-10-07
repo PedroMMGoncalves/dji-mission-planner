@@ -36,13 +36,24 @@ import {
   loadEquipment,
   resolveMissionBattery,
   saveEquipment,
+  vlosFor,
 } from './mission/equipment.js'
+import {
+  addBase,
+  assignBlockBase,
+  moveBase,
+  nearestBase,
+  removeBase as removeBaseFrom,
+  setBaseRadius,
+} from './mission/bases.js'
+import { blocksViewRoute, proposeMoreBases, summarizeBases } from './mission/baseLayout.js'
 import {
   aggregatePlans,
   normalizeTriggerMode,
   normalizeWaypointStops,
   computeFootprint,
   computeGSD,
+  distanceToArea,
   findOptimalDirection,
   lidarPointDensity,
   lineSpacing,
@@ -95,6 +106,29 @@ function browserStorage() {
 }
 import { LANGS, LangContext, useT } from './i18n.jsx'
 
+/** Bases a menos de ~3 km da caixa da área: entram na caixa do relevo (a cota da zona). */
+function basePointsNear(bases, ring) {
+  if (!Array.isArray(ring) || ring.length < 3) return []
+  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]
+  for (const [x, y] of ring) {
+    x0 = Math.min(x0, x)
+    y0 = Math.min(y0, y)
+    x1 = Math.max(x1, x)
+    y1 = Math.max(y1, y)
+  }
+  const dLat = 3000 / 110574
+  const dLon = 3000 / (111320 * Math.max(0.1, Math.cos(((y0 + y1) / 2) * (Math.PI / 180))))
+  // a zona (até 500 m) também tem de ficar dentro do relevo
+  const r = 500 / 110574
+  const out = []
+  for (const b of bases ?? []) {
+    const [x, y] = b.point
+    if (x < x0 - dLon || x > x1 + dLon || y < y0 - dLat || y > y1 + dLat) continue
+    out.push([x - r * 1.3, y - r], [x + r * 1.3, y + r])
+  }
+  return out
+}
+
 export default function App() {
   const [lang, setLang] = useState(() => localStorage.getItem('dji-mission-planner:lang') ?? 'pt')
   useEffect(() => {
@@ -138,6 +172,11 @@ function AppInner({ lang, setLang }) {
     saveEquipment(browserStorage(), equipment)
   }, [equipment])
   const [showSettings, setShowSettings] = useState(false)
+  // zona de descolagem das bases (Configuração): raio e desnível máximo
+  const zoneConfig = useMemo(
+    () => ({ radiusM: equipment.zoneRadiusM, maxReliefM: equipment.zoneMaxReliefM }),
+    [equipment.zoneRadiusM, equipment.zoneMaxReliefM],
+  )
   // bateria da missão: tipo e tempo útil acertado para o dia (null = o da
   // bateria); só vale para a aeronave em que foi escolhida
   const [missionBattery, setMissionBattery] = useState(() => ({
@@ -151,7 +190,16 @@ function AppInner({ lang, setLang }) {
   const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit' | 'corridor'
   // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
   const [draftVertices, setDraftVertices] = useState([])
-  const [basePoint, setBasePoint] = useState(null) // base do operador [lon,lat]
+  // Bases de descolagem (A, B, ...): pontos do operador, cada um com a sua
+  // zona (src/mission/bases.js). Os modos de rota única usam a mais próxima.
+  const [bases, setBases] = useState(/** @type {any[]} */ ([]))
+  // atribuições manuais de blocos a bases, válidas para a disposição de
+  // blocos `key` (null = adoptar a actual, ao abrir um projecto)
+  const [blockBaseState, setBlockBaseState] = useState(() => ({ key: null, map: {} }))
+  const [selectedBaseId, setSelectedBaseId] = useState(null)
+  // clique num bloco no mapa: activar/desactivar a célula ou atribuir a base
+  const [blockClickMode, setBlockClickMode] = useState('toggle') // 'toggle' | 'assign'
+  const [baseProposal, setBaseProposal] = useState(null) // {added, outOfVlos} da última proposta
   const [exportError, setExportError] = useState(null)
 
   /**
@@ -198,6 +246,8 @@ function AppInner({ lang, setLang }) {
   /* ------------------- Pipeline de cálculo (memo) -------------------- */
   const aircraft = AIRCRAFT[drone.aircraftId]
   const payload = PAYLOADS[drone.payloadId]
+  // alcance visual da aeronave (Configuração): bases e blocos
+  const vlosM = vlosFor(equipment, drone.aircraftId)
   // Escrito num efeito e não durante o render: mutar um ref no corpo do
   // componente é inseguro com renderização concorrente (React pode repetir ou
   // descartar o render). aircraftRef só é lido dentro de callbacks, por acção
@@ -437,7 +487,7 @@ function AppInner({ lang, setLang }) {
     handleInspectDrag,
     handleExportInspection,
   } = useInspection({
-    basePoint,
+    bases,
     altitude: params.altitude,
     speed,
     gimbalPitch: params.gimbalPitch,
@@ -479,9 +529,11 @@ function AppInner({ lang, setLang }) {
     tiles,
     tilesError,
     tileSide,
+    tileOrientation,
     activeCells,
+    activeCellIds,
+    activeCellHoles,
     refAzimuth,
-    baseDistance,
     undoEdit,
     toggleTile,
     restoreAllTiles,
@@ -508,7 +560,9 @@ function AppInner({ lang, setLang }) {
     mode,
     setMode,
     setDraftVertices,
-    basePoint,
+    // os quadrados seguem as faixas: o ângulo que o plano usa
+    lineAngle: params.angle,
+    zoneRadiusM: equipment.zoneRadiusM,
     speed,
     spacing,
     batteryMin,
@@ -543,6 +597,8 @@ function AppInner({ lang, setLang }) {
       ...(ring && validation.valid ? ring : []),
       ...(ring && validation.valid && Array.isArray(gridCells) ? gridCells.flat() : []),
       ...(inspectPoints ?? []).map((p) => p.point),
+      // as zonas das bases junto da área: a cota de referência de cada bloco
+      ...(ring && validation.valid ? basePointsNear(bases, ring) : []),
     ]
     const boxes = {
       areaBbox: bboxOfPoints(areaPts),
@@ -582,6 +638,7 @@ function AppInner({ lang, setLang }) {
     validation.valid,
     gridCells,
     inspectPoints,
+    bases,
     corridorBbox,
     facePlan,
     orbitPlan,
@@ -628,6 +685,19 @@ function AppInner({ lang, setLang }) {
   }, [facePlan, dsmLoaded, terrain.data, faceConfig.minClearanceM])
 
   /* ---------- Corredor, parte 2: relevo, referência, exportação -------- */
+  // Modos de rota única: a base de referência é a mais próxima da rota (ou
+  // da geometria) desse modo; com uma só base é sempre ela, como antes
+  const corridorBase = useMemo(
+    () =>
+      nearestBase(
+        bases,
+        corridorPlanFlat && !corridorPlanFlat.error
+          ? corridorPlanFlat.waypoints
+          : corridorConfig.centreline,
+      ),
+    [bases, corridorPlanFlat, corridorConfig.centreline],
+  )
+  const circularBase = useMemo(() => nearestBase(bases, ring), [bases, ring])
   const {
     corridorRoute: corridorPlan,
     corridorTerrain,
@@ -641,7 +711,7 @@ function AppInner({ lang, setLang }) {
     corridorSpeed,
     terrain,
     terrainFollow,
-    basePoint,
+    basePoint: corridorBase?.point ?? null,
     altitude: params.altitude,
     interval,
     missionName,
@@ -664,6 +734,12 @@ function AppInner({ lang, setLang }) {
     gcpInfo,
     terrainResult,
     reference,
+    zones,
+    baseLayout,
+    blockRefs,
+    refBase,
+    layoutKey,
+    blockBase: blockBaseEffective,
     canExportKML,
     canExportKMZ,
     handleExportKML,
@@ -674,7 +750,14 @@ function AppInner({ lang, setLang }) {
     holes,
     validation,
     activeCells,
-    basePoint,
+    activeCellIds,
+    activeCellHoles,
+    tiles,
+    gridCells,
+    bases,
+    blockBaseState,
+    zoneConfig,
+    vlosM,
     params,
     spacing,
     interval,
@@ -690,6 +773,14 @@ function AppInner({ lang, setLang }) {
     runExport,
     t,
   })
+
+  // As atribuições lidas de um projecto adoptam a disposição de blocos com
+  // que ele reabre (key null); daí em diante, refeito o mosaico, deixam de valer
+  useEffect(() => {
+    if (blockBaseState.key === null && layoutKey)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setBlockBaseState((st) => ({ ...st, key: layoutKey }))
+  }, [blockBaseState.key, layoutKey])
 
   /* --------------- Modo circular (circlegrammetry) -------------------- */
   // Sobre o mesmo poligono da area: herda o relevo, a cota de referencia e
@@ -724,13 +815,38 @@ function AppInner({ lang, setLang }) {
     wpml,
     terrain,
     terrainFollow,
-    basePoint,
+    basePoint: circularBase?.point ?? null,
     batteryMin,
     reservePct: split.reservePct,
     missionMode,
     runExport,
     avisoIntervalo,
   })
+
+  // Base de referência da área numa rota única (a mais próxima dela) e a
+  // sua distância; com blocos, cada bloco tem a sua (baseLayout)
+  const areaBasePoint = refBase?.point ?? null
+  const perBlockBases = Boolean(baseLayout?.hasBases && blocks?.length)
+  const areaBaseDistance = useMemo(
+    () => (areaBasePoint && ring ? distanceToArea(areaBasePoint, ring) : null),
+    [areaBasePoint, ring],
+  )
+  const circularBaseDistance = useMemo(
+    () => (circularBase && ring ? distanceToArea(circularBase.point, ring) : null),
+    [circularBase, ring],
+  )
+
+  // bases para o painel e o mapa: zona, cota de referência e voos de cada uma
+  const baseRows = useMemo(
+    () =>
+      summarizeBases({
+        bases,
+        zones,
+        layout: baseLayout,
+        defaultRadiusM: equipment.zoneRadiusM,
+      }),
+    [bases, zones, baseLayout, equipment.zoneRadiusM],
+  )
 
   // tipos de bateria da aeronave (selector da missão) e voos contra os
   // conjuntos que a equipa tem — o aviso só aparece com a contagem conhecida
@@ -747,7 +863,10 @@ function AppInner({ lang, setLang }) {
     (lonlat) => {
       if (handleAreaClick(lonlat)) return
       if (mode === 'base') {
-        setBasePoint(lonlat)
+        // "Marcar base" acrescenta uma base (A, B, C...) e selecciona-a
+        const res = addBase(bases, lonlat)
+        setBases(res.bases)
+        if (res.base) setSelectedBaseId(res.base.id)
         setMode('idle')
       } else if (mode === 'face' || mode === 'corridor') {
         setDraftVertices((d) => [...d, lonlat])
@@ -758,7 +877,7 @@ function AppInner({ lang, setLang }) {
         addInspectPoint(lonlat)
       }
     },
-    [mode, handleAreaClick, addInspectPoint, setOrbitConfig],
+    [mode, handleAreaClick, addInspectPoint, setOrbitConfig, bases],
   )
 
   /* ---------------------- Interacções comuns -------------------------- */
@@ -807,8 +926,10 @@ function AppInner({ lang, setLang }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [mode, removeLastDraftVertex])
 
-  const handleBaseDrag = useCallback((lonlat) => {
-    setBasePoint(lonlat)
+  // arrastar uma base: só o operador a move
+  const handleBaseDrag = useCallback((id, lonlat) => {
+    setBases((bs) => moveBase(bs, id, lonlat))
+    setSelectedBaseId(id)
   }, [])
 
   const applySlopeAngle = useCallback(() => {
@@ -876,6 +997,18 @@ function AppInner({ lang, setLang }) {
     }
     if (!planOk) return null
     const tfOk = terrainResult && !terrainResult.error
+    // Bases múltiplas: cada bloco na cota da zona da sua base, exprimido na
+    // comum (a mesma altitude absoluta); os troços entre blocos não se voam
+    if (blockRefs && blocks?.length) {
+      const src = tfOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
+      const vr = blocksViewRoute(src, blockRefs, params.altitude)
+      return {
+        waypoints: vr.waypoints,
+        breaks: vr.breaks,
+        refElev: blockRefs.common,
+        refSource: 'bases',
+      }
+    }
     const wps = tfOk
       ? terrainResult.waypoints
       : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
@@ -898,6 +1031,8 @@ function AppInner({ lang, setLang }) {
     terrainResult,
     terrain,
     reference,
+    blockRefs,
+    blocks,
     params.altitude,
   ])
 
@@ -906,7 +1041,11 @@ function AppInner({ lang, setLang }) {
   const clearance = useMemo(() => {
     const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
     if (!elevationAt || !view3d?.waypoints?.length || !Number.isFinite(view3d.refElev)) return null
-    return routeClearance(view3d.waypoints, { elevationAt, refElev: view3d.refElev })
+    return routeClearance(view3d.waypoints, {
+      elevationAt,
+      refElev: view3d.refElev,
+      breaks: view3d.breaks ?? null,
+    })
   }, [terrain, view3d])
 
   // Maior altura acima do solo da rota exportável, sobre o relevo. Só para a
@@ -994,9 +1133,9 @@ function AppInner({ lang, setLang }) {
     return terrainReliefRange(
       planOk.waypoints,
       terrain.data.elevationAt,
-      basePoint ?? planOk.waypoints[0],
+      areaBasePoint ?? planOk.waypoints[0],
     )
-  }, [planOk, terrain, basePoint])
+  }, [planOk, terrain, areaBasePoint])
   const tfActive = Boolean(terrainFollow.enabled && terrainResult && !terrainResult.error)
   const uncertainty = useMemo(
     () =>
@@ -1038,7 +1177,11 @@ function AppInner({ lang, setLang }) {
         : missionMode === 'circular'
           ? circularSpeed
           : speed
-    return routeChecks(view3d.waypoints, { speed: v, maxClimbMS: aircraft.maxClimbMS ?? 5 })
+    return routeChecks(view3d.waypoints, {
+      speed: v,
+      maxClimbMS: aircraft.maxClimbMS ?? 5,
+      breaks: view3d.breaks ?? null,
+    })
   }, [view3d, missionMode, orbitConfig.speedMS, circularSpeed, speed, aircraft.maxClimbMS])
 
   /* ----------------------------- Preflight ---------------------------- */
@@ -1054,8 +1197,15 @@ function AppInner({ lang, setLang }) {
         terrainFollow,
         terrainCovers,
         terrainResult,
-        basePoint,
-        baseDistance,
+        basePoint: areaBasePoint,
+        // com blocos e bases, o alcance e o trânsito vão bloco a bloco
+        baseDistance: perBlockBases ? null : areaBaseDistance,
+        baseLayout: perBlockBases ? baseLayout : null,
+        refZone:
+          !perBlockBases && refBase && zones[refBase.id] && !zones[refBase.id].error
+            ? { label: refBase.label, zone: zones[refBase.id] }
+            : null,
+        vlosM,
         speed,
         batteryMin,
         reservePct: split.reservePct,
@@ -1093,7 +1243,7 @@ function AppInner({ lang, setLang }) {
         terrainCovers: corridorCovers,
         terrainResult: corridorTerrain,
         reference: corridorReference,
-        basePoint,
+        basePoint: corridorBase?.point ?? null,
         baseDistance: corridorBaseDistance,
         speed: corridorSpeed,
       })
@@ -1107,8 +1257,8 @@ function AppInner({ lang, setLang }) {
         terrainCovers: circularCovers,
         terrainResult: circularTerrain,
         reference: circularReference,
-        basePoint,
-        baseDistance,
+        basePoint: circularBase?.point ?? null,
+        baseDistance: circularBaseDistance,
         speed: circularSpeed,
       })
     if (missionMode === 'face') return preflightPlan({ ...other, plan: facePlan })
@@ -1124,8 +1274,16 @@ function AppInner({ lang, setLang }) {
     terrainFollow,
     terrainCovers,
     terrainResult,
-    basePoint,
-    baseDistance,
+    areaBasePoint,
+    areaBaseDistance,
+    perBlockBases,
+    baseLayout,
+    refBase,
+    zones,
+    vlosM,
+    corridorBase,
+    circularBase,
+    circularBaseDistance,
     speed,
     batteryMin,
     split.reservePct,
@@ -1225,7 +1383,12 @@ function AppInner({ lang, setLang }) {
         inspectSeqRef.current = n.nextInspectId
       }
       applyProjectGeometry(n) // split, anchor, ring, origem e células desactivadas
-      setBasePoint(n.basePoint)
+      // bases (a base única antiga abre como A) e as atribuições manuais,
+      // que valem para a disposição de blocos que o projecto reabre
+      setBases(n.bases ?? [])
+      setBlockBaseState({ key: null, map: n.blockBase ?? {} })
+      setSelectedBaseId(null)
+      setBaseProposal(null)
       if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
       if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
     },
@@ -1269,7 +1432,9 @@ function AppInner({ lang, setLang }) {
       ring,
       holes,
       areaOrigin,
-      basePoint,
+      bases,
+      // só as atribuições que valem para os blocos de agora
+      blockBase: blockBaseEffective,
       disabledTiles,
       terrainFollow,
       gcpConfig,
@@ -1292,7 +1457,8 @@ function AppInner({ lang, setLang }) {
       ring,
       holes,
       areaOrigin,
-      basePoint,
+      bases,
+      blockBaseEffective,
       disabledTiles,
       terrainFollow,
       gcpConfig,
@@ -1312,10 +1478,87 @@ function AppInner({ lang, setLang }) {
     setMode((m) => (m === 'base' ? 'idle' : 'base'))
   }, [])
 
+  // retirar uma base: os blocos atribuídos à mão a ela voltam à automática
+  const removeBaseById = useCallback(
+    (id) => {
+      const res = removeBaseFrom(bases, blockBaseState.map, id)
+      setBases(res.bases)
+      setBlockBaseState((st) => ({ ...st, map: res.blockBase }))
+      setSelectedBaseId((sel) => (sel === id ? null : sel))
+      setMode((m) => (m === 'base' ? 'idle' : m))
+    },
+    [bases, blockBaseState.map],
+  )
+
+  // "Remover base": a seleccionada, senão a de referência do separador
+  // aberto (a única, num projecto com uma base)
   const removeBase = useCallback(() => {
-    setBasePoint(null)
-    setMode((m) => (m === 'base' ? 'idle' : m))
+    const ref =
+      missionMode === 'corridor'
+        ? corridorBase
+        : missionMode === 'circular'
+          ? circularBase
+          : (refBase ?? null)
+    const id = bases.some((b) => b.id === selectedBaseId) ? selectedBaseId : ref?.id
+    if (id) removeBaseById(id)
+  }, [missionMode, corridorBase, circularBase, refBase, bases, selectedBaseId, removeBaseById])
+
+  const setBaseRadiusById = useCallback((id, r) => {
+    setBases((bs) => setBaseRadius(bs, id, r))
   }, [])
+
+  // "Propor bases": bases novas só para os blocos que nenhuma base vê
+  // inteiros; as do operador ficam onde estão
+  const proposeBasesForBlocks = useCallback(() => {
+    if (!blocks?.length) return
+    const res = proposeMoreBases({
+      blocks,
+      bases,
+      zones,
+      manual: blockBaseEffective,
+      vlosM,
+      defaultRadiusM: equipment.zoneRadiusM,
+      maxBlocksPerBase: equipment.maxFlightsPerBase ?? 0,
+    })
+    setBases(res.bases)
+    setBlockBaseState({ key: layoutKey, map: res.blockBase })
+    setBaseProposal({ added: res.added, outOfVlos: res.outOfVlos })
+  }, [blocks, bases, zones, blockBaseEffective, vlosM, equipment, layoutKey])
+
+  // atribuição manual de um bloco: a base seleccionada, ou a seguinte
+  const assignBlock = useCallback(
+    (blockId) => {
+      if (!bases.length || !baseLayout?.byBlock[blockId]) return
+      const current = baseLayout.byBlock[blockId].baseId
+      const pick = selectedBaseId && selectedBaseId !== current ? selectedBaseId : null
+      setBlockBaseState({
+        key: layoutKey,
+        map: assignBlockBase(blockBaseEffective, blockId, bases, {
+          baseId: pick,
+          currentBaseId: current,
+        }),
+      })
+    },
+    [bases, baseLayout, selectedBaseId, layoutKey, blockBaseEffective],
+  )
+
+  // clique numa célula do mosaico: activar/desactivar, ou atribuir a base
+  const handleTileClick = useCallback(
+    (index) => {
+      if (blockClickMode === 'assign' && bases.length > 0) {
+        if (!disabledTiles.has(index)) assignBlock(index + 1)
+        return
+      }
+      toggleTile(index)
+    },
+    [blockClickMode, bases.length, disabledTiles, assignBlock, toggleTile],
+  )
+  const handleBlockClick = useCallback(
+    (blockId) => {
+      if (blockClickMode === 'assign' && bases.length > 0) assignBlock(blockId)
+    },
+    [blockClickMode, bases.length, assignBlock],
+  )
 
   // Catálogo de presets de missão aplicáveis ao sensor ativo, com a
   // velocidade já resolvida para a aeronave selecionada
@@ -1577,7 +1820,7 @@ function AppInner({ lang, setLang }) {
                 setTerrainFollow={setTerrainFollow}
                 corridorTerrain={corridorTerrain}
                 corridorReference={corridorReference}
-                hasBase={Boolean(basePoint)}
+                hasBase={Boolean(corridorBase)}
                 onStartBase={startBase}
                 onRemoveBase={removeBase}
                 onLoadTerrain={handleLoadTerrain}
@@ -1647,7 +1890,7 @@ function AppInner({ lang, setLang }) {
                 planErrorCells={plan?.cells ?? null}
                 anchor={anchor}
                 setAnchorParam={setAnchorParam}
-                hasBase={Boolean(basePoint)}
+                hasBase={bases.length > 0}
                 refAzimuth={refAzimuth}
                 split={split}
                 setSplitParam={setSplitParam}
@@ -1717,6 +1960,25 @@ function AppInner({ lang, setLang }) {
                 onSetAngleOptimal={setAngleOptimal}
                 onFinishDraw={handleFinishDraw}
                 onClear={clearAll}
+                baseLayout={baseLayout}
+                tileOrientation={tiles ? tileOrientation : null}
+                zoneRadiusM={equipment.zoneRadiusM}
+                basesPanel={{
+                  rows: baseRows,
+                  selectedBaseId,
+                  onSelect: setSelectedBaseId,
+                  onRemove: removeBaseById,
+                  onRadius: setBaseRadiusById,
+                  onPropose: proposeBasesForBlocks,
+                  hasBlocks: Boolean(blocks?.length),
+                  proposal: baseProposal,
+                  clickMode: blockClickMode,
+                  onClickMode: setBlockClickMode,
+                  vlosM,
+                  defaultRadiusM: equipment.zoneRadiusM,
+                  maxFlightsPerBase: equipment.maxFlightsPerBase ?? 0,
+                  showClickMode: Boolean(tiles) || Boolean(gridCells) || split.mode === 'area',
+                }}
               />
             )}
           </div>
@@ -1732,14 +1994,19 @@ function AppInner({ lang, setLang }) {
             valid={validation.valid}
             kinks={validation.kinks}
             anchorCenter={anchor.center}
-            basePoint={basePoint}
+            bases={baseRows}
+            selectedBaseId={selectedBaseId}
+            onBaseSelect={setSelectedBaseId}
+            baseLayout={missionMode === 'area' ? baseLayout : null}
+            blockClickMode={blockClickMode}
+            onBlockClick={handleBlockClick}
             // no modo circular a grelha da area ficava por cima dos circulos
             plan={missionMode === 'circular' ? null : planOk}
             blocks={missionMode === 'circular' ? null : blocks}
             gridCells={gridCells}
             tiles={tiles}
             disabledTiles={disabledTiles}
-            onTileToggle={toggleTile}
+            onTileToggle={handleTileClick}
             gcps={gcps}
             inspectPoints={inspectPoints}
             onInspectDrag={handleInspectDrag}
@@ -1777,7 +2044,7 @@ function AppInner({ lang, setLang }) {
                   : null
                 : (planOk?.stats ?? null)
             }
-            baseDistance={baseDistance}
+            baseDistance={areaBaseDistance}
             blockCount={blocks?.length ?? null}
           />
         </main>
@@ -1825,15 +2092,35 @@ function AppInner({ lang, setLang }) {
                     : null
             }
             blocks={
-              // os blocos são da área; nos outros modos não se desenham
+              // os blocos são da área; nos outros modos não se desenham. Com
+              // bases, cada bloco com o número do voo e a cota da sua zona
               missionMode !== 'area'
                 ? null
-                : terrainResult && !terrainResult.error && terrainResult.blocks3
-                  ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
-                  : (blocks?.map((b) => ({
-                      id: b.id,
-                      waypoints: b.waypoints.map(([lon, lat]) => [lon, lat, params.altitude]),
-                    })) ?? null)
+                : blockRefs && blocks?.length
+                  ? (terrainResult && !terrainResult.error && terrainResult.blocks3
+                      ? terrainResult.blocks3
+                      : blocks
+                    ).map((b, i) => {
+                      const info = baseLayout?.byBlock[b.id]
+                      const r = blockRefs.refs[i] ?? blockRefs.common
+                      return {
+                        id: b.id,
+                        label: info?.flightLabel || `B${String(b.id).padStart(2, '0')}`,
+                        refElev: r,
+                        reference: { elev: r, source: 'zone', base: info?.baseLabel ?? '' },
+                        waypoints: b.waypoints.map(([lon, lat, h]) => [
+                          lon,
+                          lat,
+                          Number.isFinite(h) ? h : params.altitude,
+                        ]),
+                      }
+                    })
+                  : terrainResult && !terrainResult.error && terrainResult.blocks3
+                    ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
+                    : (blocks?.map((b) => ({
+                        id: b.id,
+                        waypoints: b.waypoints.map(([lon, lat]) => [lon, lat, params.altitude]),
+                      })) ?? null)
             }
             onClose={() => setShowProfile(false)}
           />
@@ -1860,7 +2147,7 @@ function AppInner({ lang, setLang }) {
             stats={planOk.stats}
             blocks={blocks}
             ring={ring}
-            basePoint={basePoint}
+            basePoints={bases.map((b) => b.point)}
             gcps={gcps}
             lines={planOk.lines}
             reproducibility={{
@@ -1895,7 +2182,7 @@ function AppInner({ lang, setLang }) {
             }
             waypoints={view3d.waypoints}
             refElev={view3d.refElev}
-            basePoint={basePoint}
+            basePoints={bases.map((b) => b.point)}
             gcps={missionMode === 'area' ? gcps : null}
             onClose={() => setShow3d(false)}
           />

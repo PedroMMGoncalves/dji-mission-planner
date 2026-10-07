@@ -77,7 +77,7 @@ export function predictFromProject(json) {
     batteryMin: batteryMinFor(aircraft, drone.payloadId, n.batteryByCombo ?? {}),
     reservePct: split.reservePct,
     ring: n.ring ?? null,
-    basePoint: n.basePoint ?? null,
+    basePoint: n.bases?.[0]?.point ?? null,
     footprint,
     spacingM,
     intervalM,

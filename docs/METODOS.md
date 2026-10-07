@@ -192,10 +192,12 @@ pairagem. O custo de 3 s por viragem e o factor de velocidade efectiva em
 faixa estão marcados no código para calibração com logs de voo
 (Setembro de 2026; ver secção 16).
 
-Trânsito: sempre `2 · distância horizontal em linha recta / v`, da base à
-área (`distanceToArea`, distância à fronteira ou 0 se a base está dentro)
-ou da base ao primeiro waypoint de cada bloco. Entre células do mosaico o
-trânsito não é contado; entre as grelhas da dupla grelha é.
+Trânsito: numa rota única, `2 · distância horizontal em linha recta / v`
+da base de referência à área (`distanceToArea`, distância à fronteira ou 0
+se a base está dentro). Com blocos e bases, cada bloco conta o da SUA base
+no pior caso da zona: `(d(centro, 1.º waypoint) + r) + (d(centro, último
+waypoint) + r)`, a dividir por `v` (`blockWorstTransitM`). Entre células do
+mosaico o trânsito não é contado; entre as grelhas da dupla grelha é.
 
 Tempo útil por voo: o operador conta as baterias em minutos de voo por
 conjunto já descontada a reserva com que aterra (15-20 %): no M300 RTK,
@@ -232,6 +234,73 @@ lado `L`, `n ≈ L/s + 1` faixas, tempo `≈ (L²/s + 2L)/v + n · 3`, igualado
 ao tempo útil `T = max(60 s, (útil − trânsito) / passagens)` e resolvido
 como quadrática em `L`; limitado a `maxSide` (500 m por omissão, conforto
 VLOS, piso 100 m), arredondado para baixo à dezena, mínimo 50 m.
+
+Trânsito no dimensionamento (`squareSideWithBaseTransit`,
+`src/mission/baseLayout.js`): o lado não pode depender de onde estão as
+bases — mover uma base refaria o mosaico e perderia as células
+desactivadas e as atribuições. Dimensiona-se para uma base num CANTO do
+bloco, com a zona: a serpentina começa e acaba em cantos do quadrado, e a
+soma das distâncias do pior canto ao primeiro e ao último waypoint é no
+máximo `(1 + √2) · L` (um canto adjacente e o oposto). Trânsito
+`(2 · raio + (1 + √2) · L) / v`, e o lado é o maior `L` à dezena com `L ≤
+squareSideForBattery(trânsito(L))` (o segundo membro decresce com `L`).
+Uma base no bordo ou dentro do bloco cabe sempre; as mais longe vão ao
+preflight bloco a bloco, com o trânsito real da sua base (secção 14). Com
+o lado limitado pelo tecto (`maxSide`) sobra bateria e o trânsito não o
+muda. Até Outubro de 2026 o trânsito era o da base única até à área (0
+com a base dentro dela), e uma base longe encolhia todos os quadrados.
+
+Mosaico de quadrados (`buildSquareMosaic`, `src/mission/squareMosaic.js`),
+nas divisões por bateria e mosaico: quadrados de lado `L` recortados pela
+área (e pelos buracos, que vão por célula para o plano); grelha deslocada
+em 4 × 4 fracções do lado (2 × 2 acima de ~150 células, 1 × 1 acima de
+~600), mais a grelha centrada antiga, escolhendo menos células, depois
+menos tiras (`fillFrac < 0,25`), depois menos área em tiras; cada tira
+funde-se no vizinho com mais fronteira comum se o conjunto couber numa
+bateria (`cellFitsBattery`: o mesmo modelo, com a área `A` e a maior
+extensão `W` da célula, `passagens · (A·a + W·b + 3 s) + (2r + (1+√2)·W)/v ≤
+útil`; no mosaico manual, `A ≤ 1,25 · L²`). Orientação: arestas paralelas
+às faixas do ângulo usado (também o «Óptimo», que escreve o ângulo),
+`mosaicOrientationForLines`; desligado, a orientação manual. Numeração em
+serpentina. O mosaico antigo (`tilePolygonWithSquares`) mantinha quadrados
+inteiros que saíam da área, e o plano voava-os inteiros.
+
+Ids dos blocos: o da célula no mosaico (`índice + 1`), estável ao
+desactivar outras células — é o `_bNN` dos ficheiros exportados.
+
+### 4.1 Bases múltiplas e zonas de descolagem
+
+Módulos `src/mission/takeoffZones.js`, `src/mission/bases.js`,
+`src/mission/baseLayout.js`. Uma área de 5-10 km² voa-se de várias bases;
+o operador marca cada uma como um ponto (A, B, C...), mas no campo descola
+a 20-100 m dali. Cada base é uma ZONA de raio `r` (equipamento, 100 m por
+omissão, ou o raio próprio da base) e o planeamento usa o pior caso:
+
+- cota de referência = a MÍNIMA do relevo na zona (centro e anéis a cada
+  10 m em 16 azimutes); descolando em qualquer ponto da zona o voo fica
+  entre 0 e +ganho metros acima do planeado, `ganho = máx − mín`;
+- junto a uma corta, o raio reduz-se ao maior anel em que o desnível
+  acumulado é ≤ 10 m (equipamento), e regista-se o anel e o desnível que o
+  limitaram;
+- alcance visual no pior caso de um bloco = vértice mais afastado do
+  invólucro convexo (célula e waypoints) + `r`; trânsito como acima.
+
+Atribuição: a escolha manual do operador (`blockBase`), senão a base de
+menor alcance visual no pior caso (`assignBlocksToBases`). As atribuições
+manuais valem para a disposição de blocos em que foram feitas (mosaico,
+grelha ou corte): refeito o mosaico, deixam de se aplicar. «Propor bases»
+(`proposeMoreBases`) corre a cobertura gulosa de `proposeBases` só sobre os
+blocos que nenhuma base vê inteiros (as bases do operador não se mexem),
+com o máximo de voos por base da Configuração (0 = sem limite); as bases
+novas recebem os rótulos livres pela ordem do primeiro bloco que servem, e
+os seus blocos ficam-lhes atribuídos. Voos: base a base pela ordem dos
+rótulos e, em cada base, pela ordem do mosaico: A-1, A-2, B-3.
+
+Os modos de rota única (corredor, circular, fachada, órbita, inspecção, e
+a área sem blocos) usam uma base de referência: a mais próxima da sua rota
+ou geometria (`nearestBase`), a primeira pela ordem dos rótulos sem rota.
+Com uma só base é sempre ela. Na área sem blocos a cota é a mínima da zona
+dela; nos outros modos, como antes, a cota do ponto da base.
 
 ## 5. Terreno
 
@@ -333,7 +402,18 @@ rel = round10( AGL + (elev(ponto) − elev(referência)) )
 
 com a referência = base marcada com relevo, senão a cota **mínima** do
 relevo debaixo da rota (`src/mission/reference.js`), a mesma cota que o
-perfil, o 3D e a folga ao solo usam. A mínima, porque a altura real acima
+perfil, o 3D e a folga ao solo usam. Na missão de área com bases (secção
+4.1) a referência é a cota mínima da ZONA: numa rota única, a da base de
+referência; com blocos, a da base de CADA bloco — o bloco é recalculado
+com a sua cota (os mesmos pontos: cada troço é amostrado por si e a
+ligação que o antecede não entra), e as alturas exportadas desse bloco são
+`AGL + terreno − cota da zona`. Sem seguir terreno as alturas ficam planas
+(`AGL`) e é a altitude absoluta de cada bloco que muda (`cota + AGL`). O
+3D, o perfil e a folga ao solo juntam os blocos numa só rota na cota comum
+(a mais baixa das zonas), `h + cotaBloco − comum`, e não contam o troço que
+começa cada bloco: não se voa (cada bloco descola da sua base). Uma base
+fora do relevo deixa os seus blocos na mínima de cada bloco, e o preflight
+bloqueia. A mínima, porque a altura real acima
 do solo é `AGL planeado + (cota real da descolagem − cota assumida)`:
 descolando em qualquer ponto da área o termo é ≥ 0 e o drone voa mais
 alto do que o planeado, nunca mais baixo; o custo é GSD quando a
@@ -804,6 +884,19 @@ sobre o relevo carregado, em todos os modos); base a uma distância cujo
 trânsito de ida e volta excede o tempo útil de uma bateria. Lembretes: sem
 base em terreno plano; alturas relativas à descolagem.
 
+Bases múltiplas, bloco a bloco (missão de área com blocos e bases,
+`blockBaseItems`; os blocos nomeados pelo voo e pelo id, «Voo B-4 (bloco
+7)», as bases pelo rótulo): voo fora do alcance visual da sua base no pior
+caso da zona, com a distância (aviso); tempo do bloco com o trânsito de
+ida e volta da sua base acima do tempo útil (aviso, o nível de sempre da
+bateria), e bloqueio quando só o trânsito já o passa (como a base
+inalcançável); base fora do relevo carregado (bloqueio: a cota de
+referência dos seus voos é desconhecida); bloco sem base com bases no
+projecto (bloqueio; não devia acontecer); zona reduzida junto a um
+desnível, com o raio, o pedido, o desnível e onde (nota; também na rota
+única com bases). Com blocos e bases deixam de se aplicar o aviso de base
+a mais de 2 km da área e a bateria por bloco sem trânsito.
+
 ## 15. Tabela de constantes e tolerâncias
 
 | Grandeza | Valor | Módulo |
@@ -815,6 +908,15 @@ base em terreno plano; alturas relativas à descolagem.
 | Células máximas do mosaico | 400 | geo.js |
 | Lado mínimo do mosaico | 10 m | geo.js |
 | Lado por bateria: tecto / piso / arredondamento | 500 m (≥100) / 50 m / 10 m | geo.js |
+| Trânsito de dimensionamento do quadrado | (2·raio + (1+√2)·L) / v (base num canto) | baseLayout.js |
+| Mosaico: tira / deslocamentos / fusão no mosaico manual | fillFrac < 0,25 / 4×4 (2×2 > 150, 1×1 > 600 células) / ≤ 1,25·L² | squareMosaic.js |
+| Mosaico antigo → novo: célula desactivada | ≥ 50 % da área nas células antigas desactivadas | mosaicLegacy.js |
+| Zona de descolagem: raio / desnível máximo | 100 m / 10 m (Configuração; raio próprio por base 0-500 m) | equipment.js, bases.js |
+| Zona: amostragem | anéis a 10 m, 16 azimutes; cota = mínima; ganho = máx − mín | takeoffZones.js |
+| Alcance visual (VLOS) | M300 RTK 1000 m; M3E, M4T, outras 500 m | equipment.js |
+| Pior caso: VLOS / trânsito | vértice mais afastado + raio / (d₁ + r) + (d₂ + r) | takeoffZones.js |
+| Máximo de voos por base na proposta | 0 = sem limite (0-50) | equipment.js |
+| Bases na caixa do relevo | a menos de 3 km da área, com 500 m à volta | App.jsx |
 | Reserva de bateria aplicada pelo motor | 0 % (já no tempo útil; projectos antigos: 30 % convertidos ao abrir) | equipment.js, project.js |
 | Tempo útil por conjunto, M300 RTK | TB60 25 min / TB65 28 min | equipment.js |
 | Quebra do disparo nas ligações | max(2,5·spacing, 60 m) | areaExport.js, exportParams.js |

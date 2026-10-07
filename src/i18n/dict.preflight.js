@@ -82,6 +82,30 @@ export default {
     pt: 'Bloco {id}: {min} min excede o tempo útil por voo ({usable} min, já com a reserva de aterragem).',
     en: 'Block {id}: {min} min exceeds the useful time per flight ({usable} min, landing reserve included).',
   },
+  'preflight.battery-block-base': {
+    pt: 'Voo {flight} (bloco {id}, base {base}): {min} min com {transit} min de trânsito de ida e volta do pior ponto da zona excede o tempo útil por voo ({usable} min). Aproxime a base ou reduza o lado do bloco.',
+    en: 'Flight {flight} (block {id}, base {base}): {min} min including {transit} min of round-trip transit from the worst point of the zone exceeds the useful time per flight ({usable} min). Move the base closer or reduce the block side.',
+  },
+  'preflight.block-base-unreachable': {
+    pt: 'Voo {flight} (bloco {id}): só o trânsito de ida e volta da base {base} leva {min} min, acima dos {usable} min úteis de uma bateria. Mude a base deste bloco.',
+    en: 'Flight {flight} (block {id}): the round trip from base {base} alone takes {min} min, above the {usable} usable minutes of one battery. Change this block’s base.',
+  },
+  'preflight.block-vlos': {
+    pt: 'Voo {flight} (bloco {id}) fora do alcance visual da base {base}: {m} m no pior caso (descolando na orla da zona), acima dos {vlos} m da aeronave. Mude a base do bloco ou aproxime-a.',
+    en: 'Flight {flight} (block {id}) beyond visual line of sight from base {base}: {m} m in the worst case (taking off at the edge of the zone), above the aircraft’s {vlos} m. Change the block’s base or move it closer.',
+  },
+  'preflight.block-no-base': {
+    pt: 'Voo {flight} (bloco {id}) sem base: não se sabe de onde descola nem a que cota se referem as alturas.',
+    en: 'Flight {flight} (block {id}) has no base: neither the take-off point nor the reference elevation of its heights is known.',
+  },
+  'preflight.base-zone-no-terrain': {
+    pt: 'A base {base} está fora do relevo carregado: as alturas dos voos {flights} não têm cota de referência conhecida (assumiu-se a mínima de cada bloco). Mova a base para dentro do relevo ou carregue relevo que a cubra.',
+    en: 'Base {base} is outside the loaded elevation data: flights {flights} have no known reference elevation (each block’s lowest point was assumed). Move the base inside the elevation data or load terrain that covers it.',
+  },
+  'preflight.base-zone-reduced': {
+    pt: 'Zona da base {base} reduzida a {r} m (pedidos {req} m): {relief} m de desnível a {at} m da base. Descole a menos de {r} m do ponto marcado.',
+    en: 'Zone of base {base} reduced to {r} m ({req} m requested): {relief} m of relief at {at} m from the base. Take off within {r} m of the marked point.',
+  },
   'preflight.terrain-datum-ellipsoidal': {
     pt: 'O MDT declara alturas elipsoidais ({model}): as alturas relativas continuam certas, mas não compare cotas deste ficheiro com fontes ortométricas.',
     en: 'The DTM declares ellipsoidal heights ({model}): relative heights are still right, but do not compare its elevations with orthometric sources.',

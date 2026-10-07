@@ -270,8 +270,8 @@ export default {
   },
   'cp.area.removeBase': { pt: 'Remover base', en: 'Remove base' },
   'cp.area.baseHint': {
-    pt: 'Clique no mapa para marcar a base (arrastável). A distância à área aparece no painel de métricas e o ponto é incluído no KML.',
-    en: 'Click on the map to set the base (draggable). The distance to the area is shown in the metrics panel and the point is included in the KML.',
+    pt: 'Clique no mapa para acrescentar uma base (A, B, C...; arrastável). Cada base é uma zona: as alturas dos seus blocos referem-se à cota mais baixa dela.',
+    en: 'Click on the map to add a base (A, B, C...; draggable). Each base is a zone: the heights of its blocks refer to its lowest elevation.',
   },
   'cp.area.drawHintA': {
     pt: 'Clique no mapa para adicionar vértices ({n}).',
@@ -365,8 +365,8 @@ export default {
   },
   'cp.split.restoreAll': { pt: 'Reactivar todas', en: 'Re-enable all' },
   'cp.split.tilesHintA': {
-    pt: 'O polígono é coberto por quadrados (podem exceder os limites).',
-    en: 'The polygon is covered by squares (they may extend beyond its limits).',
+    pt: 'O polígono é coberto por quadrados recortados pelo contorno; as tiras pequenas juntam-se ao vizinho.',
+    en: 'The polygon is covered by squares clipped to its outline; small slivers are merged into a neighbour.',
   },
   'cp.split.clickCell': {
     pt: 'Clique numa célula no mapa',
@@ -394,10 +394,6 @@ export default {
     pt: ', dimensionados para {min} min úteis por voo',
     en: ', sized for {min} useful min per flight',
   },
-  'cp.split.transitDeducted': {
-    pt: '(trânsito à base descontado)',
-    en: '(transit to base deducted)',
-  },
   'cp.split.batteryHintA': {
     pt: 'Áreas compactas mantêm o voo dentro do alcance visual (VLOS) e a troca de baterias perto do bloco.',
     en: 'Compact areas keep the flight within visual line of sight (VLOS) and battery swaps close to the block.',
@@ -407,12 +403,12 @@ export default {
     en: 'to disable/re-enable it.',
   },
   'cp.split.markBaseHint': {
-    pt: 'Marque a base para descontar o trânsito ao dimensionar.',
-    en: 'Set the base to deduct the transit when sizing.',
+    pt: 'Marque ou proponha as bases: o trânsito de cada bloco conta a partir da sua.',
+    en: 'Set or propose the bases: each block’s transit counts from its own.',
   },
   'cp.split.exportHint': {
-    pt: 'A exportação WPML gera um ZIP com um KMZ por bloco, numerados pela ordem de voo.',
-    en: 'The WPML export produces a ZIP with one KMZ per block, numbered in flight order.',
+    pt: 'A exportação WPML gera um ZIP com um KMZ por bloco (bNN = bloco), cada um com as alturas referidas à zona da sua base.',
+    en: 'The WPML export produces a ZIP with one KMZ per block (bNN = block), each with heights referred to its base zone.',
   },
 
   /* ---- Terreno (DEM) ---- */

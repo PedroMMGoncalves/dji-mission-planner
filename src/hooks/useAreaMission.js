@@ -14,15 +14,39 @@ import { buildAreaExport } from '../mission/areaExport.js'
 import { downloadBlob, exportBlocksZip, exportAreaKML, exportWPMLKmz } from '../utils/exporters.js'
 import { stripRouteStats } from '../utils/geo.js'
 import { referenceElevation } from '../mission/reference.js'
+import {
+  blockLayoutKey,
+  blockReferences,
+  computeZones,
+  layoutBlocks,
+} from '../mission/baseLayout.js'
+import { nearestBase } from '../mission/bases.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from '../utils/gcp.js'
 import { DEFAULT_GCP_CONFIG } from '../mission/defaults.js'
 
+/** Mapa vazio estável (as atribuições de outra disposição de blocos não valem). */
+const NO_MAP = Object.freeze({})
+
+/**
+ * Bases múltiplas (`bases`, `blockBaseState`): cada bloco tem a sua base e
+ * as alturas referem-se à zona dela (src/mission/baseLayout.js). As
+ * atribuições manuais valem para a disposição de blocos em que foram feitas
+ * (`blockBaseState.key`, null = adoptar a actual, ao abrir um projecto):
+ * refeito o mosaico ou o corte, deixam de se aplicar.
+ */
 export function useAreaMission({
   ring,
   holes = null,
   validation,
   activeCells,
-  basePoint,
+  activeCellIds = null,
+  activeCellHoles = null,
+  tiles = null,
+  gridCells = null,
+  bases = [],
+  blockBaseState = { key: null, map: {} },
+  zoneConfig = { radiusM: 100, maxReliefM: 10 },
+  vlosM = 500,
   params,
   spacing,
   interval,
@@ -61,11 +85,14 @@ export function useAreaMission({
       tieLine: Boolean(params.tieLine),
       photoMode,
       holes,
+      // buracos de cada célula do mosaico, já recortados (buildSquareMosaic)
+      cellHoles: activeCellHoles,
       waypointStops: params.waypointStops,
     }
     // plano simples, ou um plano por célula com alinhamento global (src/mission/areaPlan.js)
     return planArea(ring, activeCells, opts)
   }, [
+    activeCellHoles,
     photoMode,
     ring,
     holes,
@@ -87,18 +114,55 @@ export function useAreaMission({
 
   // Divisão em blocos de voo numerados: células da grelha, ou corte da
   // serpentina por área/bateria
+  // (o trânsito de cada bloco vem da sua base, em layoutBlocks)
   const blocks = useMemo(
     () =>
       planBlocks(planOk, {
         activeCells,
+        cellIds: activeCellIds,
         split,
         batteryMin,
         speed,
         spacingM: spacing,
-        basePoint,
         waypointStops: params.waypointStops,
       }),
-    [planOk, activeCells, split, batteryMin, speed, spacing, basePoint, params.waypointStops],
+    [planOk, activeCells, activeCellIds, split, batteryMin, speed, spacing, params.waypointStops],
+  )
+
+  /* ---------------- Bases: zonas, atribuição, voos -------------------- */
+  const elevationAt = terrain.data?.elevationAt ?? null
+  const zones = useMemo(
+    () =>
+      computeZones(bases, {
+        elevationAt: typeof elevationAt === 'function' ? elevationAt : null,
+        radiusM: zoneConfig.radiusM,
+        maxReliefM: zoneConfig.maxReliefM,
+      }),
+    [bases, elevationAt, zoneConfig.radiusM, zoneConfig.maxReliefM],
+  )
+  const layoutKey = blockLayoutKey({ tiles, gridCells, blocks })
+  const blockBase =
+    blockBaseState.key === null || blockBaseState.key === layoutKey ? blockBaseState.map : NO_MAP
+  const baseLayout = useMemo(
+    () =>
+      layoutBlocks({
+        blocks,
+        bases,
+        zones,
+        manual: blockBase,
+        vlosM,
+        defaultRadiusM: zoneConfig.radiusM,
+        speed,
+        elevationAt: typeof elevationAt === 'function' ? elevationAt : null,
+      }),
+    [blocks, bases, zones, blockBase, vlosM, zoneConfig.radiusM, speed, elevationAt],
+  )
+  // cotas de referência por bloco (null sem bases ou sem relevo)
+  const blockRefs = useMemo(() => blockReferences(blocks, baseLayout), [blocks, baseLayout])
+  // base de referência quando a missão sai numa só rota: a mais próxima dela
+  const refBase = useMemo(
+    () => (bases.length ? nearestBase(bases, planOk?.waypoints ?? ring) : null),
+    [bases, planOk, ring],
   )
 
   // B: aviso brando — missões com milhares de waypoints importam lentamente
@@ -135,11 +199,26 @@ export function useAreaMission({
   // Uma so, para o perfil, o 3D, a folga ao solo e o seguimento de terreno:
   // base com relevo, senao a minima do relevo debaixo da rota (nunca 0, nunca
   // o primeiro waypoint - ver src/mission/reference.js).
+  // Com bases, a zona: cada bloco na da sua base (a comum é a mais baixa,
+  // para o 3D e o perfil) e uma rota única na da base de referência — a
+  // cota mínima da zona, o lado seguro (takeoffZones.js).
   const reference = useMemo(() => {
-    const elevationAt = terrain.data?.elevationAt
     if (typeof elevationAt !== 'function' || !planOk?.waypoints?.length) return null
-    return referenceElevation({ elevationAt, basePoint, waypoints: planOk.waypoints })
-  }, [terrain.data, basePoint, planOk])
+    const area = referenceElevation({ elevationAt, basePoint: null, waypoints: planOk.waypoints })
+    if (blockRefs) return { ...area, elev: blockRefs.common, source: 'bases', baseOutside: false }
+    if (refBase) {
+      const z = zones[refBase.id]
+      if (z && !z.error)
+        return { ...area, elev: z.refElev, source: 'base', baseOutside: false, zone: z }
+      // fora do relevo: a mínima da área, e o aviso de sempre
+      return referenceElevation({
+        elevationAt,
+        basePoint: refBase.point,
+        waypoints: planOk.waypoints,
+      })
+    }
+    return area
+  }, [elevationAt, planOk, blockRefs, refBase, zones])
 
   /* ------------- Terrain follow: alturas por waypoint ----------------- */
   const terrainResult = useMemo(() => {
@@ -155,6 +234,8 @@ export function useAreaMission({
         refElev: reference?.elev ?? null,
         agl: params.altitude,
         toleranceM: terrainFollow.tolerance,
+        // cada bloco com a cota da zona da sua base
+        blockRefs: blockRefs?.refs ?? null,
       })
       if (res.error === 'ref-outside-terrain')
         return { error: 'Referência fora do terreno carregado' }
@@ -171,6 +252,7 @@ export function useAreaMission({
     planOk,
     blocks,
     reference,
+    blockRefs,
     params.altitude,
   ])
 
@@ -281,6 +363,12 @@ export function useAreaMission({
     gcpInfo,
     terrainResult,
     reference,
+    zones,
+    baseLayout,
+    blockRefs,
+    refBase,
+    layoutKey,
+    blockBase,
     canExportKML,
     canExportKMZ,
     handleExportKML,

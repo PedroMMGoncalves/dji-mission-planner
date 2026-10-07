@@ -14,13 +14,13 @@
  * vez do que o Playwright instala), E2E_OUT (pasta das capturas em falha).
  */
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import zlib from 'node:zlib'
 import { join, resolve } from 'node:path'
 import { chromium } from 'playwright'
 import Ajv2020 from 'ajv/dist/2020.js'
-import { ground, makeFixtures, toM } from './fixtures.mjs'
+import { ground, makeFixtures, rectRing, toLL, toM } from './fixtures.mjs'
 import { analyseRoute, readRoutes } from './kmz.mjs'
 
 const PORT = Number(process.env.E2E_PORT ?? 4173)
@@ -376,11 +376,18 @@ await scenario('blocos-bateria-crosshatch-nadir-tf', async () => {
     rs.every(clearanceOk),
     rs.map((r) => r.minClearance.toFixed(0)).join(','),
   )
-  // cada bloco arranca da base: o primeiro troço é uma linha, não um ponto de ligação
+  // cada bloco arranca da base: o primeiro troço é uma linha, não um ponto de
+  // ligação. As faixas da primeira grelha são E-W (90°) e as ligações entre
+  // elas N-S: o troço tem de ser E-W. Com o mosaico recortado uma célula de
+  // bordo pode ter faixas curtas, pelo que o comprimento já não serve de
+  // critério (antes: >= 100 m, com quadrados inteiros)
   check(
     'blocos: cada bloco começa numa linha de voo',
-    rs.every((r) => r.firstSegM >= 100),
-    rs.map((r) => r.firstSegM.toFixed(0)).join(','),
+    rs.every(
+      (r) =>
+        Math.abs(r.firstSeg[0]) >= 5 && Math.abs(r.firstSeg[1]) <= 0.02 * Math.abs(r.firstSeg[0]),
+    ),
+    rs.map((r) => `${r.firstSeg[0].toFixed(0)}/${r.firstSeg[1].toFixed(0)}`).join(','),
   )
   check(
     'blocos: intervalos de disparo válidos em índices locais',
@@ -1310,6 +1317,243 @@ await scenario('configuracao-equipamento', async () => {
     (await useful.inputValue()) === '28' && (await page.getByTestId('sets-note').count()) === 0,
   )
   check('equipamento: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+/* ---- bases multiplas ------------------------------------------------------ */
+// Operacao do LNEG: a area grande e dividida em quadrados por bateria e voada
+// de varias bases. "Propor bases" cobre os blocos dentro do alcance visual;
+// cada bloco sai com as alturas referidas a cota MINIMA da zona da sua base
+// (relevo do fixture: rampa e colinas, logo bases a cotas diferentes);
+// arrastar uma base refaz a zona; levada para longe, o preflight diz que os
+// seus voos ficaram fora do alcance visual; tudo volta com o projecto.
+const baseRows = (page) =>
+  page.getByTestId('base-row').evaluateAll((els) =>
+    els.map((e) => ({
+      id: e.dataset.baseId,
+      label: e.dataset.baseLabel,
+      blocks: e.dataset.blockIds ? e.dataset.blockIds.split(',').map(Number) : [],
+      ref: e.dataset.refElev === '' ? null : Number(e.dataset.refElev),
+      radius: Number(e.dataset.zoneRadius),
+    })),
+  )
+const savedProject = (page) =>
+  page.evaluate(() => JSON.parse(localStorage.getItem('dji-mission-planner:project:v1') ?? 'null'))
+async function dragMarker(page, locator, dx, dy) {
+  const box = await locator.boundingBox()
+  const x = box.x + box.width / 2
+  const y = box.y + box.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x + dx / 2, y + dy / 2, { steps: 8 })
+  await page.mouse.move(x + dx, y + dy, { steps: 8 })
+  await page.mouse.up()
+  await page.waitForTimeout(1200)
+}
+await scenario('bases-multiplas', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await configure(page, { tf: true, split: 'Bateria' })
+  const nBlocks = await page.getByTestId('block-row').count()
+  check(
+    'bases: a divisão por bateria dá vários blocos quadrados',
+    nBlocks >= 6,
+    `${nBlocks} blocos`,
+  )
+  check(
+    'bases: sem bases os voos são numerados 1..n',
+    (await page.getByTestId('block-row').first().getAttribute('data-flight')) === '1',
+  )
+
+  await page.getByTestId('propose-bases').click()
+  await page.waitForTimeout(1500)
+  let rows = await baseRows(page)
+  check(
+    'bases: "Propor bases" dá pelo menos duas bases',
+    rows.length >= 2,
+    rows.map((r) => r.label).join(','),
+  )
+  const assigned = rows.flatMap((r) => r.blocks)
+  check(
+    'bases: cada bloco fica com uma base, e só uma',
+    assigned.length === nBlocks && new Set(assigned).size === nBlocks,
+    `${assigned.length} atribuídos de ${nBlocks}`,
+  )
+  check(
+    'bases: zonas calculadas sobre o MDT (cota de referência por base)',
+    rows.every((r) => Number.isFinite(r.ref)),
+    rows.map((r) => `${r.label}:${r.ref}`).join(' '),
+  )
+  // numeração por base, pela ordem dos rótulos: A-1, A-2, B-3, ...
+  const flights = await page
+    .getByTestId('block-row')
+    .evaluateAll((els) => els.map((e) => e.dataset.flight))
+  const parsed = flights.map((f) => /^([A-Z]+)-(\d+)$/.exec(f))
+  check(
+    'bases: voos numerados base a base (A-1, A-2, B-3...)',
+    parsed.every(Boolean) &&
+      parsed.every((m, i) => Number(m[2]) === i + 1) &&
+      parsed.every((m, i) => i === 0 || m[1] >= parsed[i - 1][1]),
+    flights.join(' '),
+  )
+
+  // cada KMZ com as alturas referidas à zona da sua base
+  const routes = await readRoutes(await exportKmz(page, join(OUT, 'bases-blocos.zip')))
+  const refOfBlock = new Map()
+  for (const r of rows) for (const id of r.blocks) refOfBlock.set(id, r.ref)
+  const est = routes.map((x) => {
+    const id = Number(/_b(\d+)\.kmz$/.exec(x.name)?.[1])
+    const a = analyseRoute(x.wpml, { toM, ground, aglNominalM: AGL_M })
+    // h = AGL + terreno − ref (mais a subida do corredor lateral): o máximo
+    // de AGL + terreno − h é a cota de referência do bloco
+    const ref = Math.max(...a.points.map(([px, py, h]) => AGL_M + ground(px, py) - h))
+    return { id, ref, want: refOfBlock.get(id) }
+  })
+  check('bases: um KMZ por bloco', routes.length === nBlocks, `${routes.length} rotas`)
+  check(
+    'bases: as alturas de cada KMZ referem-se à cota da zona da sua base (±2 m)',
+    est.every((e) => Number.isFinite(e.want) && Math.abs(e.ref - e.want) <= 2),
+    est.map((e) => `b${e.id}:${e.ref.toFixed(1)}/${e.want?.toFixed(1)}`).join(' '),
+  )
+  const refs = rows.map((r) => r.ref)
+  const spread = Math.max(...refs) - Math.min(...refs)
+  const lo = est.reduce((m, e) => (e.want < m.want ? e : m))
+  const hi = est.reduce((m, e) => (e.want > m.want ? e : m))
+  check(
+    'bases: bases a cotas diferentes dão desvios de altura diferentes nos seus blocos',
+    spread > 5 && Math.abs(hi.ref - lo.ref - (hi.want - lo.want)) <= 2,
+    `zonas ${Math.min(...refs).toFixed(1)}..${Math.max(...refs).toFixed(1)} m; blocos ${lo.ref.toFixed(1)} e ${hi.ref.toFixed(1)} m`,
+  )
+
+  // arrastar uma base: a zona é refeita (outra cota) e o ponto gravado muda
+  const pin = (label) =>
+    page.locator('.base-marker-multi').filter({ has: page.locator(`[data-base-label="${label}"]`) })
+  const before = rows.find((r) => r.label === 'A')
+  const pt0 = (await savedProject(page))?.bases?.find((b) => b.label === 'A')?.point
+  await dragMarker(page, pin('A'), 90, -60)
+  rows = await baseRows(page)
+  const after = rows.find((r) => r.label === 'A')
+  const pt1 = (await savedProject(page))?.bases?.find((b) => b.label === 'A')?.point
+  check(
+    'bases: arrastar a base move o ponto e refaz a zona',
+    pt0 && pt1 && (pt0[0] !== pt1[0] || pt0[1] !== pt1[1]) && after.ref !== before.ref,
+    `cota ${before.ref} -> ${after.ref}`,
+  )
+  check(
+    'bases: a base arrastada mantém os seus voos (a aplicação não mexe na escolha)',
+    after.blocks.join(',') === before.blocks.join(','),
+  )
+
+  // levada para longe dos seus blocos: preflight bloco a bloco
+  const map = await page.locator('.leaflet-container').boundingBox()
+  const box = await pin('A').boundingBox()
+  const far = [
+    box.x < map.x + map.width / 2 ? map.x + map.width - 40 : map.x + 40,
+    box.y < map.y + map.height / 2 ? map.y + map.height - 40 : map.y + 60,
+  ]
+  await dragMarker(page, pin('A'), far[0] - box.x - box.width / 2, far[1] - box.y - box.height / 2)
+  await page.getByTestId('preflight-pill').click()
+  const lista = await page.getByTestId('preflight-list').innerText()
+  check(
+    'bases: o preflight diz que os voos da base A ficaram fora do alcance visual',
+    /Voo A-\d+ \(bloco \d+\) fora do alcance visual da base A: \d+ m/.test(lista),
+    lista
+      .split('\n')
+      .filter((l) => /alcance visual/.test(l))
+      .slice(0, 2)
+      .join(' | ')
+      .slice(0, 300),
+  )
+  await page.getByTestId('preflight-pill').click()
+
+  // o projecto guarda as bases e as atribuições, e volta igual
+  await page.waitForTimeout(800)
+  const saved = await savedProject(page)
+  const ajv = new Ajv2020({ allErrors: true })
+  const valid = ajv.compile(
+    JSON.parse(readFileSync('public/schema/project-v2.schema.json', 'utf8')),
+  )
+  check(
+    'bases: o projecto gravado leva as bases e valida contra o esquema',
+    Array.isArray(saved?.bases) &&
+      saved.bases.length === rows.length &&
+      Object.keys(saved.blockBase ?? {}).length === nBlocks &&
+      valid(saved) === true,
+    (valid.errors ?? []).map((e) => `${e.instancePath} ${e.message}`).join('; '),
+  )
+  const labels = rows.map((r) => r.label).join(',')
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page
+    .locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
+    .waitFor({ state: 'attached', timeout: 20000 })
+  await page.waitForTimeout(1500)
+  const again = await baseRows(page)
+  check(
+    'bases: recarregar repõe as bases, os rótulos e os voos de cada uma',
+    again.map((r) => r.label).join(',') === labels &&
+      again.every((r, i) => r.blocks.join(',') === rows[i].blocks.join(',')),
+    again.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' '),
+  )
+  const back = (await savedProject(page))?.bases?.find((b) => b.label === 'A')?.point
+  check(
+    'bases: a base movida volta onde o operador a deixou',
+    back && saved.bases.find((b) => b.label === 'A').point.join() === back.join(),
+  )
+  check('bases: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Projecto gravado antes das bases múltiplas e do mosaico novo: a base única
+// abre como base A, o mosaico manual mantém a orientação guardada e as
+// células desactivadas na grelha antiga passam para as células novas que
+// ficam (pelo menos meio) dentro delas.
+await scenario('projecto-antigo-mosaico-e-base', async () => {
+  const { page, errors } = await openMission({})
+  const file = join(OUT, 'projecto-antigo.json')
+  writeFileSync(
+    file,
+    JSON.stringify({
+      version: 2,
+      missionName: 'antigo',
+      drone: { aircraftId: 'M300RTK', payloadId: 'P1' },
+      params: { altitude: 100, speed: 10, frontOverlap: 80, sideOverlap: 70, angle: 90 },
+      split: { mode: 'tiles', tileSize: 500, tileOrientation: 0, reservePct: 30, maxSide: 500 },
+      ring: rectRing.slice(0, -1),
+      areaOrigin: 'draw',
+      basePoint: toLL(100, 100),
+      disabledTiles: [0, 1],
+    }),
+  )
+  await page
+    .locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
+    .waitFor({ state: 'attached', timeout: 20000 })
+  await page.locator('input[accept=".json"]').setInputFiles(file)
+  await page.waitForTimeout(1500)
+  const rows = await baseRows(page)
+  check(
+    'antigo: a base única abre como base A',
+    rows.length === 1 && rows[0].label === 'A',
+    rows.map((r) => r.label).join(','),
+  )
+  check(
+    'antigo: o mosaico manual mantém a orientação guardada (não segue as faixas)',
+    (await page.getByTestId('tile-orientation-auto').isChecked()) === false,
+  )
+  const m = /(\d+) células geradas, (\d+) activas/.exec(await bodyText(page))
+  const total = Number(m?.[1])
+  const active = Number(m?.[2])
+  check(
+    'antigo: as duas células desactivadas passam para o mosaico novo',
+    m && total - active === 2,
+    m ? `${active} activas de ${total}` : 'sem contagem',
+  )
+  check('antigo: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

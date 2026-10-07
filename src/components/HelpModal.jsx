@@ -144,9 +144,19 @@ function InstrucoesPt() {
         </Li>
         <Li>
           <strong>Bateria</strong> — quadrados dimensionados pelo{' '}
-          <strong>tempo útil por voo</strong> (trânsito à base descontado, tecto VLOS). Escolha o
-          tipo de bateria e acerte o tempo útil para as condições do dia; já inclui a reserva com
-          que aterra, nada é descontado por cima.
+          <strong>tempo útil por voo</strong> (com o trânsito de uma base num canto do bloco, tecto
+          VLOS). Escolha o tipo de bateria e acerte o tempo útil para as condições do dia; já inclui
+          a reserva com que aterra, nada é descontado por cima. Os quadrados são recortados pela
+          área, seguem as faixas e as tiras pequenas juntam-se ao vizinho quando cabem na bateria.
+        </Li>
+        <Li>
+          <strong>Bases</strong> — «Marcar base» acrescenta A, B, C... (arraste para mover; retire
+          na lista). «Propor bases» cobre os blocos que nenhuma base vê dentro do alcance visual,
+          sem mexer nas suas. Cada base é uma <strong>zona</strong> (100 m na Configuração): as
+          alturas dos seus blocos referem-se à cota mais baixa da zona, e descolando em qualquer
+          ponto dela voa-se entre 0 e +X m acima do planeado. Voos numerados por base: A-1, A-2,
+          B-3. Com «Atribuir base», clicar num bloco passa-o para a base seleccionada (ou para a
+          seguinte).
         </Li>
         <Li>
           <strong>Configuração</strong> (roda dentada no cabeçalho) — por aeronave, o alcance visual
@@ -155,7 +165,8 @@ function InstrucoesPt() {
           em ficheiro.
         </Li>
         <Li>
-          <strong>Mosaico</strong> — quadrados de lado manual sobre o polígono.
+          <strong>Mosaico</strong> — quadrados de lado manual sobre o polígono, paralelos às faixas
+          ou com a orientação escolhida.
         </Li>
         <Li>
           <Kbd>Clique numa célula</Kbd> — desactiva/reactiva · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> —
@@ -180,7 +191,7 @@ function InstrucoesPt() {
         </Li>
         <Li>
           Marque a <strong>base no local real de descolagem</strong> — as alturas WPML são relativas
-          a esse ponto.
+          a esse ponto; com várias bases, cada bloco descola da zona da sua.
         </Li>
         <Li>
           A <strong>Vista 3D</strong> mostra as linhas de voo à altura real sobre o relevo (órbita
@@ -334,9 +345,18 @@ function InstrucoesEn() {
         </Li>
         <Li>
           <strong>Battery</strong> — squares sized by the <strong>useful time per flight</strong>{' '}
-          (transit to home deducted, VLOS cap). Pick the battery type and adjust the useful time for
-          the day’s conditions; it already includes the reserve you land with, nothing more is
-          deducted.
+          (including transit from a base at a block corner, VLOS cap). Pick the battery type and
+          adjust the useful time for the day’s conditions; it already includes the reserve you land
+          with, nothing more is deducted. Squares are clipped to the area, follow the flight lines,
+          and small slivers merge into a neighbour when the result still fits the battery.
+        </Li>
+        <Li>
+          <strong>Bases</strong> — “Set base” adds A, B, C... (drag to move; remove from the list).
+          “Propose bases” covers the blocks no base sees within visual range, without touching
+          yours. Each base is a <strong>zone</strong> (100 m in Settings): its blocks’ heights refer
+          to the zone’s lowest elevation, and taking off anywhere in it you fly between 0 and +X m
+          above plan. Flights are numbered by base: A-1, A-2, B-3. With “Assign base”, clicking a
+          block moves it to the selected base (or to the next one).
         </Li>
         <Li>
           <strong>Settings</strong> (gear in the header) — per aircraft, the visual range and the
@@ -344,7 +364,8 @@ function InstrucoesEn() {
           missions that need more flights); stored in the browser, exported and imported as a file.
         </Li>
         <Li>
-          <strong>Mosaic</strong> — squares of manual size over the polygon.
+          <strong>Mosaic</strong> — squares of manual size over the polygon, parallel to the flight
+          lines or at the chosen orientation.
         </Li>
         <Li>
           <Kbd>Click a cell</Kbd> — disables/enables it · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> — undo.
@@ -369,7 +390,7 @@ function InstrucoesEn() {
         </Li>
         <Li>
           Mark the <strong>home point at the real takeoff location</strong> — WPML heights are
-          relative to it.
+          relative to it; with several bases, each block takes off from its base’s zone.
         </Li>
         <Li>
           The <strong>3D view</strong> shows the flight lines at their true height over the relief

@@ -3,6 +3,7 @@ import controlPanelDict from './i18n/dict.controlPanel.js'
 import missionModesDict from './i18n/dict.missionModes.js'
 import preflightDict from './i18n/dict.preflight.js'
 import settingsDict from './i18n/dict.settings.js'
+import basesDict from './i18n/dict.bases.js'
 
 /**
  * Internacionalização PT/EN.
@@ -205,6 +206,7 @@ const DICT = {
   ...missionModesDict,
   ...preflightDict,
   ...settingsDict,
+  ...basesDict,
 }
 
 export default DICT

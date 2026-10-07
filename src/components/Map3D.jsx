@@ -170,7 +170,15 @@ const EXAG_OPTIONS = [
   { value: 2, label: '2×' },
 ]
 
-export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gcps, onClose }) {
+export default function Map3D({
+  terrain,
+  ring,
+  waypoints,
+  refElev,
+  basePoints = null,
+  gcps,
+  onClose,
+}) {
   const t = useT()
   const hostRef = useRef(null)
   const apiRef = useRef(null) // { applyExaggeration, resetView } da cena viva
@@ -187,7 +195,7 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
   // acção do utilizador, sempre depois de o efeito ter corrido, pelo que
   // continuam a ler a versão mais recente.
   useEffect(() => {
-    propsRef.current = { terrain, ring, waypoints, refElev, basePoint, gcps }
+    propsRef.current = { terrain, ring, waypoints, refElev, basePoints, gcps }
     onCloseRef.current = onClose
     exagRef.current = exag
   })
@@ -204,7 +212,7 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
     ring?.length ?? 0,
     waypoints?.length ?? 0,
     Number.isFinite(refElev) ? Math.round(refElev) : 'x',
-    basePoint ? basePoint.join(',') : '-',
+    (basePoints ?? []).map((p) => p.join(',')).join(';') || '-',
     gcps?.length ?? 0,
   ].join('|')
 
@@ -220,7 +228,7 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
   // Construção da cena (uma vez por conjunto de dados)
   useEffect(() => {
     const host = hostRef.current
-    const { terrain, ring, waypoints, refElev, basePoint, gcps } = propsRef.current
+    const { terrain, ring, waypoints, refElev, basePoints, gcps } = propsRef.current
     if (!host || !Array.isArray(terrain?.bbox) || typeof terrain.elevationAt !== 'function') return
 
     setImagery('loading')
@@ -447,11 +455,14 @@ export default function Map3D({ terrain, ring, waypoints, refElev, basePoint, gc
     // { obj, groundZ, lift }: z = groundZ × exagero + lift
     const groundObjects = []
 
-    if (
-      Array.isArray(basePoint) &&
-      Number.isFinite(basePoint[0]) &&
-      Number.isFinite(basePoint[1])
-    ) {
+    // as bases do projecto (pontos marcados)
+    for (const basePoint of basePoints ?? []) {
+      if (
+        !Array.isArray(basePoint) ||
+        !Number.isFinite(basePoint[0]) ||
+        !Number.isFinite(basePoint[1])
+      )
+        continue
       const [bx, by] = toLocal(basePoint)
       const group = new THREE.Group()
       const mastGeo = track(new THREE.CylinderGeometry(unit * 0.28, unit * 0.28, unit * 3, 12))

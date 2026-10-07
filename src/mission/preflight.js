@@ -141,6 +141,87 @@ function routeItems(c) {
 }
 
 /**
+ * Bases múltiplas, bloco a bloco (`c.baseLayout`, de layoutBlocks): bloco
+ * sem base (não devia acontecer: bloqueia), fora do alcance visual da sua
+ * base no pior ponto da zona (aviso, com a distância), voo com o trânsito
+ * da base acima do tempo útil (aviso, como a bateria sempre foi; bloqueio
+ * quando só o trânsito já o passa, como a base inalcançável), base fora do
+ * relevo (bloqueio: a cota de referência dos seus blocos é desconhecida) e
+ * zona reduzida junto a um desnível (nota). Os blocos são nomeados pelo voo
+ * e pelo id da exportação; as bases pelo rótulo.
+ */
+function blockBaseItems(c, usable) {
+  const L = c.baseLayout
+  if (!L?.hasBases) return []
+  const out = []
+  const blocks = Array.isArray(c.blocks) ? c.blocks : []
+  for (const id of L.order) {
+    const e = L.byBlock[id]
+    if (!e) continue
+    const who = { flight: e.flightLabel, id }
+    if (!e.baseId) {
+      out.push(item('block', 'block-no-base', who))
+      continue
+    }
+    const base = e.baseLabel
+    if (!e.withinVlos && Number.isFinite(e.worstVlosM))
+      out.push(
+        item('warn', 'block-vlos', {
+          ...who,
+          base,
+          m: Math.round(e.worstVlosM),
+          vlos: Math.round(c.vlosM ?? 0),
+        }),
+      )
+    const b = blocks.find((x) => x.id === id)
+    if (usable != null && b) {
+      const transitMin = (e.transitS ?? 0) / 60
+      const min = ((b.timeS ?? 0) + (e.transitS ?? 0)) / 60
+      if (transitMin >= usable)
+        out.push(
+          item('block', 'block-base-unreachable', {
+            ...who,
+            base,
+            min: round1(transitMin),
+            usable: round1(usable),
+          }),
+        )
+      else if (min > usable)
+        out.push(
+          item('warn', 'battery-block-base', {
+            ...who,
+            base,
+            min: round1(min),
+            transit: round1(transitMin),
+            usable: round1(usable),
+          }),
+        )
+    }
+  }
+  for (const base of L.bases) {
+    if (base.blockIds.length === 0) continue
+    if (base.noTerrain)
+      out.push(
+        item('block', 'base-zone-no-terrain', {
+          base: base.label,
+          flights: base.flights.join(', '),
+        }),
+      )
+    else if (base.zone?.reduced)
+      out.push(
+        item('info', 'base-zone-reduced', {
+          base: base.label,
+          r: Math.round(base.zone.radiusM),
+          req: Math.round(base.zone.requestedRadiusM),
+          relief: Math.round(base.zone.cause?.reliefM ?? base.zone.reliefM),
+          at: Math.round(base.zone.cause?.atM ?? base.zone.radiusM),
+        }),
+      )
+  }
+  return out
+}
+
+/**
  * Minutos úteis por voo; null sem bateria. A missão passa o tempo útil do
  * equipamento (já sem a reserva de aterragem) com reservePct 0 — a reserva
  * por omissão é 0 para nunca ser descontada duas vezes.
@@ -176,6 +257,9 @@ export function usableBatteryMin(batteryMin, reservePct = 0) {
  * @param {{worst: number, min: number, max: number}|null} [c.gimbal] inclinação pedida fora do intervalo do payload (gimbalRangeViolation)
  * @param {number|null} [c.aglMaxM] maior altura acima do solo da rota (nota da categoria aberta)
  * @param {{covered: boolean, status: string, source: string|null, error: string|null, fromFile?: boolean}|null} [c.terrainRoute] o relevo cobre a rota exportada
+ * @param {any} [c.baseLayout] bases múltiplas: layoutBlocks (src/mission/baseLayout.js)
+ * @param {number} [c.vlosM] alcance visual da aeronave (m), para a mensagem
+ * @param {{label: string, zone: any}|null} [c.refZone] rota única com bases: a zona da base de referência
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
@@ -253,7 +337,25 @@ export function preflightArea(c) {
   out.push(...routeItems(c))
 
   const usable = usableBatteryMin(c.batteryMin, c.reservePct)
-  if (usable != null) {
+  if (c.baseLayout?.hasBases && blocks) {
+    // bases múltiplas: bateria, alcance visual e zona bloco a bloco
+    out.push(...blockBaseItems(c, usable))
+  } else if (c.refZone?.zone?.reduced) {
+    // rota única: a zona da base de referência
+    const z = c.refZone.zone
+    out.push(
+      item('info', 'base-zone-reduced', {
+        base: c.refZone.label,
+        r: Math.round(z.radiusM),
+        req: Math.round(z.requestedRadiusM),
+        relief: Math.round(z.cause?.reliefM ?? z.reliefM),
+        at: Math.round(z.cause?.atM ?? z.radiusM),
+      }),
+    )
+  }
+  if (c.baseLayout?.hasBases && blocks) {
+    // (a bateria já foi vista bloco a bloco, com o trânsito de cada base)
+  } else if (usable != null) {
     if (blocks) {
       for (const b of blocks) {
         const min = ((b.timeS ?? 0) + (b.transitS ?? 0)) / 60

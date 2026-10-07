@@ -33,7 +33,10 @@ export const DEFAULT_SPLIT = {
   reservePct: 0,
   maxSide: 500, // teto do lado do bloco por bateria (conforto VLOS)
   tileSize: 250, // lado dos quadrados do mosaico (m)
-  tileOrientation: 0, // azimute da malha do mosaico
+  tileOrientation: 0, // azimute da malha do mosaico (quando não segue as faixas)
+  // quadrados com as arestas paralelas às linhas de voo (mosaicOrientationForLines)
+  tileOrientationAuto: true,
+  mosaic: 2, // geração do mosaico: 2 = buildSquareMosaic (project.js, MOSAIC_VERSION)
 }
 
 /** Rectângulo ou grelha gerados a partir de um ponto-âncora. */

@@ -375,6 +375,22 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
           <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
             {t('set.zoneReliefHint')}
           </p>
+          <div className="mb-1 flex items-center gap-2">
+            <label htmlFor="set-max-flights" className="flex-1">
+              {t('set.maxFlightsPerBase')}
+            </label>
+            <NumField
+              id="set-max-flights"
+              value={equipment.maxFlightsPerBase ?? 0}
+              limits={L.maxFlightsPerBase}
+              integer
+              onCommit={(v) => edit((eq) => ({ ...eq, maxFlightsPerBase: v }))}
+            />
+            <span className="w-8 text-xs text-slate-500" />
+          </div>
+          <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
+            {t('set.maxFlightsPerBaseHint')}
+          </p>
 
           <H>{t('set.fileTitle')}</H>
           <div className="grid grid-cols-2 gap-2">

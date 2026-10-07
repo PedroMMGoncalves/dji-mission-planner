@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
-import { BASE_MARKER_HTML } from './Icons.jsx'
 import { useLang, useT } from '../i18n.jsx'
 
 /**
@@ -9,6 +8,8 @@ import { useLang, useT } from '../i18n.jsx'
  *  - vértices editáveis por arrasto após concluir
  *  - modo âncora (clique define o centro do retângulo, marcador arrastável)
  *  - área com buffer, linhas de voo em serpentina e waypoints
+ *  - bases de descolagem (A, B, ...) arrastáveis, a zona da seleccionada, e
+ *    os blocos na cor da sua base com o número do voo
  */
 
 const toLatLng = ([lon, lat]) => [lat, lon]
@@ -21,7 +22,12 @@ export default function MapView({
   valid,
   kinks,
   anchorCenter,
-  basePoint,
+  bases = null,
+  selectedBaseId = null,
+  onBaseSelect,
+  baseLayout = null,
+  blockClickMode = 'toggle',
+  onBlockClick,
   plan,
   blocks,
   gridCells,
@@ -71,6 +77,8 @@ export default function MapView({
       onDraftVertexRemove,
       onAreaMove,
       onBaseDrag,
+      onBaseSelect,
+      onBlockClick,
       onTileToggle,
       onInspectDrag,
       onOrbitPoiDrag,
@@ -187,6 +195,7 @@ export default function MapView({
       corridor: L.layerGroup().addTo(map),
       orbit: L.layerGroup().addTo(map),
       circular: L.layerGroup().addTo(map),
+      bases: L.layerGroup().addTo(map),
       canvas: L.canvas({ padding: 0.3 }),
     }
 
@@ -276,30 +285,56 @@ export default function MapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey])
 
-  // Marcador da base do operador (ponto de descolagem)
+  // Bases de descolagem: rótulo na cor da base, arrastável (só o operador
+  // as move); a seleccionada mostra a zona, com o raio pedido a tracejado
+  // quando foi reduzido junto a um desnível
+  const baseTitle = t('bases.markerTitle', { label: '{label}' })
   useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-    let marker = null
-    if (basePoint) {
+    const g = layersRef.current?.bases
+    if (!g) return
+    g.clearLayers()
+    for (const b of bases ?? []) {
+      const sel = b.id === selectedBaseId
+      if (sel) {
+        if (b.reduced && b.requestedRadiusM > 0)
+          L.circle(toLatLng(b.point), {
+            radius: b.requestedRadiusM,
+            color: b.color,
+            weight: 1.5,
+            dashArray: '6 6',
+            fill: false,
+            interactive: false,
+          }).addTo(g)
+        if (b.radiusM > 0)
+          L.circle(toLatLng(b.point), {
+            radius: b.radiusM,
+            color: b.color,
+            weight: 2,
+            fillColor: b.color,
+            fillOpacity: 0.12,
+            interactive: false,
+          }).addTo(g)
+      }
       const icon = L.divIcon({
-        className: 'base-marker',
-        html: BASE_MARKER_HTML,
+        className: 'base-marker-multi',
+        html: `<div class="base-pin${sel ? ' selected' : ''}" data-base-label="${b.label}" style="background:${b.color}">${b.label}</div>`,
         iconSize: [30, 30],
         iconAnchor: [15, 15],
       })
-      marker = L.marker(toLatLng(basePoint), { icon, draggable: true, zIndexOffset: 500 }).addTo(
-        map,
-      )
+      const marker = L.marker(toLatLng(b.point), {
+        icon,
+        draggable: true,
+        zIndexOffset: sel ? 700 : 500,
+        title: baseTitle.replace('{label}', b.label),
+        bubblingMouseEvents: false,
+      }).addTo(g)
+      marker.on('click', () => stateRef.current.onBaseSelect?.(b.id))
       marker.on('dragend', () => {
         const p = marker.getLatLng()
-        stateRef.current.onBaseDrag([p.lng, p.lat])
+        stateRef.current.onBaseDrag?.(b.id, [p.lng, p.lat])
       })
     }
-    return () => {
-      if (marker) marker.remove()
-    }
-  }, [basePoint])
+  }, [bases, selectedBaseId, baseTitle])
 
   // Rascunho durante o desenho livre
   useEffect(() => {
@@ -388,22 +423,26 @@ export default function MapView({
       })
     }
 
-    // Células do mosaico: clicar ativa/desativa cada quadrado
+    // Células do mosaico: clicar ativa/desativa cada quadrado (ou atribui a
+    // base, conforme o painel); com bases, cada célula na cor da sua base
     if (tiles) {
       tiles.forEach((cell, i) => {
         const off = disabledTiles?.has(i)
+        const tint = !off ? baseLayout?.byBlock?.[i + 1]?.color : null
+        const on = tint ?? '#f59e0b'
         const p = L.polygon(cell.map(toLatLng), {
-          color: off ? '#64748b' : '#f59e0b',
+          color: off ? '#64748b' : on,
           weight: off ? 1 : 1.5,
-          dashArray: off ? '2 5' : '3 4',
-          fillColor: off ? '#64748b' : '#f59e0b',
-          fillOpacity: off ? 0.04 : 0.08,
+          dashArray: off ? '2 5' : tint ? null : '3 4',
+          fillColor: off ? '#64748b' : on,
+          fillOpacity: off ? 0.04 : tint ? 0.16 : 0.08,
           opacity: off ? 0.5 : 0.9,
           bubblingMouseEvents: false,
         }).addTo(g)
         p.on('click', () => stateRef.current.onTileToggle(i))
         if (off) {
-          const c = cell.reduce((a, v) => [a[0] + v[0] / 4, a[1] + v[1] / 4], [0, 0])
+          let c = [0, 0]
+          for (const v of cell) c = [c[0] + v[0] / cell.length, c[1] + v[1] / cell.length]
           L.marker(toLatLng(c), {
             icon: L.divIcon({ className: 'tile-off-label', html: '✕', iconSize: null }),
             interactive: false,
@@ -420,7 +459,7 @@ export default function MapView({
         fill: false,
       }).addTo(g)
     })
-  }, [ring, holes, valid, kinks, editable, gridCells, tiles, disabledTiles])
+  }, [ring, holes, valid, kinks, editable, gridCells, tiles, disabledTiles, baseLayout])
 
   // Pega central: move a ÁREA INTEIRA (anel, buracos e células). Existe
   // sempre que há área — não só no modo âncora, como antes, e deliberadamente
@@ -490,9 +529,12 @@ export default function MapView({
       '#fb923c',
       '#60a5fa',
     ]
-    if (blocks && blocks.length > 1) {
-      blocks.forEach((block) => {
-        const color = BLOCK_COLORS[(block.id - 1) % BLOCK_COLORS.length]
+    const assign = blockClickMode === 'assign' && Boolean(baseLayout?.hasBases)
+    if (blocks && (blocks.length > 1 || baseLayout?.hasBases)) {
+      blocks.forEach((block, i) => {
+        // com bases: a cor da base do bloco; sem elas, uma cor por bloco
+        const info = baseLayout?.byBlock?.[block.id]
+        const color = info?.color ?? BLOCK_COLORS[i % BLOCK_COLORS.length]
         block.lines.forEach((seg) => {
           L.polyline(seg.map(toLatLng), {
             color,
@@ -500,17 +542,20 @@ export default function MapView({
             renderer: layers.canvas,
           }).addTo(layers.lines)
         })
-        // etiqueta numerada no início do bloco
+        // etiqueta com o número do voo no início do bloco ("A-1"; sem bases, 1, 2, ...)
         const first = block.lines[0]
         const mid = [(first[0][0] + first[1][0]) / 2, (first[0][1] + first[1][1]) / 2]
-        L.marker(toLatLng(mid), {
+        const label = String(info?.flightLabel || block.id).replace(/[<>&]/g, '')
+        const m = L.marker(toLatLng(mid), {
           icon: L.divIcon({
-            className: 'block-label',
-            html: `<span style="border-color:${color}">${block.id}</span>`,
+            className: `block-label${assign ? ' clickable' : ''}`,
+            html: `<span data-block-id="${block.id}" style="border-color:${color}">${label}</span>`,
             iconSize: null,
           }),
-          interactive: false,
+          interactive: assign,
+          bubblingMouseEvents: false,
         }).addTo(layers.lines)
+        if (assign) m.on('click', () => stateRef.current.onBlockClick?.(block.id))
       })
     } else {
       plan.lines.forEach((seg) => {
@@ -535,7 +580,7 @@ export default function MapView({
         renderer: layers.canvas,
       }).addTo(layers.lines)
     })
-  }, [plan, blocks])
+  }, [plan, blocks, baseLayout, blockClickMode])
 
   // Alvos GCP planeados (xadrez amarelo, com etiqueta)
   useEffect(() => {

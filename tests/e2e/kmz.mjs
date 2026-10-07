@@ -79,6 +79,10 @@ export function analyseRoute(wpml, { toM, ground, aglNominalM = null }) {
     }
   }
   const firstSegM = wps.length > 1 ? Math.hypot(wps[1][0] - wps[0][0], wps[1][1] - wps[0][1]) : 0
+  // primeiro troço em metros locais [dx, dy]: a direcção diz se é uma faixa
+  const firstSeg = wps.length > 1 ? [wps[1][0] - wps[0][0], wps[1][1] - wps[0][1]] : [0, 0]
+  // alturas e posições, para medir a cota de referência de cada rota
+  const points = wps
   const nan = wps.filter((w) => !w.every(Number.isFinite)).length
   return {
     n: wps.length,
@@ -91,6 +95,8 @@ export function analyseRoute(wpml, { toM, ground, aglNominalM = null }) {
     minStep3DM,
     linksWithoutTrigger,
     firstSegM,
+    firstSeg,
+    points,
     nan,
   }
 }

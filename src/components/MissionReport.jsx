@@ -609,7 +609,7 @@ export default function MissionReport({
   stats,
   blocks,
   ring,
-  basePoint,
+  basePoints = null,
   gcps,
   lines,
   reproducibility = null,
@@ -671,12 +671,10 @@ export default function MissionReport({
         drawFlightLines(ctx, view, groups)
         drawBlockBadges(ctx, view, groups)
       }
-      if (
-        Array.isArray(basePoint) &&
-        Number.isFinite(basePoint[0]) &&
-        Number.isFinite(basePoint[1])
-      ) {
-        drawBase(ctx, view, basePoint)
+      // todas as bases do projecto (pontos marcados)
+      for (const bp of basePoints ?? []) {
+        if (Array.isArray(bp) && Number.isFinite(bp[0]) && Number.isFinite(bp[1]))
+          drawBase(ctx, view, bp)
       }
       if (Array.isArray(gcps) && gcps.length > 0) drawGcps(ctx, view, gcps)
     }
@@ -717,7 +715,7 @@ export default function MissionReport({
       })
       pending.clear()
     }
-  }, [ring, groups, basePoint, gcps])
+  }, [ring, groups, basePoints, gcps])
 
   /* ---------------------------- Dados derivados ---------------------------- */
   const p = params || {}

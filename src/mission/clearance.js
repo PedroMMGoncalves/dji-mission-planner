@@ -15,19 +15,31 @@ import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
  * chama `cb(lon, lat, index, t)` em cada ponto: `index` é o waypoint de
  * chegada do segmento e `t` a fracção percorrida nele. Partilhado pela
  * folga ao solo e pela cota de referência, para amostrarem o mesmo relevo.
+ * `breaks` (opcional): índices i cujo troço i−1 → i não se voa (início de
+ * um bloco que descola da sua base); o waypoint i é amostrado sozinho.
  */
-export function forEachRouteSample(waypoints, { stepM = 40, maxSamples = 20000 } = {}, cb) {
+export function forEachRouteSample(
+  waypoints,
+  { stepM = 40, maxSamples = 20000, breaks = null } = {},
+  cb,
+) {
   if (!Array.isArray(waypoints) || waypoints.length === 0) return
+  const skip = breaks ? new Set(breaks) : null
   const mLon = metersPerDegLon(waypoints[0][1])
   const segLen = (a, b) => Math.hypot((b[0] - a[0]) * mLon, (b[1] - a[1]) * M_PER_DEG_LAT)
   let totalM = 0
-  for (let i = 1; i < waypoints.length; i++) totalM += segLen(waypoints[i - 1], waypoints[i])
+  for (let i = 1; i < waypoints.length; i++)
+    if (!skip?.has(i)) totalM += segLen(waypoints[i - 1], waypoints[i])
   // passo efectivo: nunca mais de maxSamples ao todo, nem menos do que stepM
   const step = Math.max(stepM, totalM / Math.max(1, maxSamples - waypoints.length))
   cb(waypoints[0][0], waypoints[0][1], 0, 0)
   for (let i = 1; i < waypoints.length; i++) {
     const a = waypoints[i - 1]
     const b = waypoints[i]
+    if (skip?.has(i)) {
+      cb(b[0], b[1], i, 1)
+      continue
+    }
     const n = Math.max(1, Math.ceil(segLen(a, b) / step))
     for (let k = 1; k <= n; k++) {
       const t = k / n
@@ -60,13 +72,14 @@ export function terrainRangeAlong(waypoints, { elevationAt, stepM = 40, maxSampl
  * Folga ao solo da rota: a menor (e onde) e a maior altura acima do solo.
  * @param {number[][]} waypoints [lon, lat, alturaRelativa]
  * @param {{elevationAt: (lon: number, lat: number) => number|null, refElev: number,
- *   stepM?: number, maxSamples?: number}} opts
+ *   stepM?: number, maxSamples?: number, breaks?: number[]|null}} opts `breaks`: troços
+ *   que não se voam (forEachRouteSample)
  * @returns {{minM: number, maxM: number, at: {lon: number, lat: number, index: number},
  *   samples: number}|null} null quando não há relevo em nenhum ponto amostrado
  */
 export function routeClearance(
   waypoints,
-  { elevationAt, refElev, stepM = 40, maxSamples = 20000 },
+  { elevationAt, refElev, stepM = 40, maxSamples = 20000, breaks = null },
 ) {
   if (!Array.isArray(waypoints) || waypoints.length === 0) return null
   if (typeof elevationAt !== 'function' || !Number.isFinite(refElev)) return null
@@ -75,7 +88,7 @@ export function routeClearance(
   let maxM = -Infinity
   let at = null
   let samples = 0
-  forEachRouteSample(waypoints, { stepM, maxSamples }, (lon, lat, i, t) => {
+  forEachRouteSample(waypoints, { stepM, maxSamples, breaks }, (lon, lat, i, t) => {
     const g = elevationAt(lon, lat)
     if (!Number.isFinite(g)) return
     samples++

@@ -6,9 +6,14 @@ import { useCallback, useRef, useState } from 'react'
 import { nearestNeighbourOrder, reorderList } from '../utils/inspect.js'
 import { inspectionExportParams } from '../mission/exportParams.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
+import { nearestBase } from '../mission/bases.js'
 
+/**
+ * `bases`: as bases do projecto; a ordem sugerida parte da mais próxima dos
+ * pontos (com uma só base, essa — como antes).
+ */
 export function useInspection({
-  basePoint,
+  bases = [],
   altitude,
   speed,
   gimbalPitch,
@@ -69,8 +74,16 @@ export function useInspection({
   }, [])
 
   const suggestInspectOrder = useCallback(() => {
-    setInspectPoints((pts) => nearestNeighbourOrder(pts, basePoint ?? null))
-  }, [basePoint])
+    setInspectPoints((pts) =>
+      nearestNeighbourOrder(
+        pts,
+        nearestBase(
+          bases,
+          pts.map((p) => p.point),
+        )?.point ?? null,
+      ),
+    )
+  }, [bases])
 
   const handleInspectDrag = useCallback((id, lonlat) => {
     setInspectPoints((pts) => pts.map((p) => (p.id === id ? { ...p, point: lonlat } : p)))

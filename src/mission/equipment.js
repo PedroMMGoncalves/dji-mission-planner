@@ -43,6 +43,7 @@ export const EQUIPMENT_KIND = 'dji-mission-planner/equipment'
  * @property {number} version
  * @property {number} zoneRadiusM     raio da zona de descolagem (m)
  * @property {number} zoneMaxReliefM  desnível máximo aceite na zona de descolagem (m)
+ * @property {number} maxFlightsPerBase máximo de voos (blocos) por base na proposta de bases; 0 = sem limite
  * @property {Object<string, AircraftEquipment>} aircraft  chaves = ids de AIRCRAFT
  */
 
@@ -58,10 +59,13 @@ const LIMITS = {
   count: { min: 0, max: 999 },
   zoneRadiusM: { min: 0, max: 500 },
   zoneMaxReliefM: { min: 1, max: 100 },
+  maxFlightsPerBase: { min: 0, max: 50 },
 }
 
 const DEFAULT_ZONE_RADIUS_M = 100
 const DEFAULT_ZONE_MAX_RELIEF_M = 10
+/** Sem limite de voos por base na proposta de bases. */
+const DEFAULT_MAX_FLIGHTS_PER_BASE = 0
 const GENERIC_VLOS_M = 500
 /** Fracção da duração nominal (DJI) tomada como útil quando não há dados de campo. */
 const GENERIC_USEFUL_FRACTION = 0.6
@@ -178,6 +182,7 @@ export function defaultEquipment() {
     version: EQUIPMENT_VERSION,
     zoneRadiusM: DEFAULT_ZONE_RADIUS_M,
     zoneMaxReliefM: DEFAULT_ZONE_MAX_RELIEF_M,
+    maxFlightsPerBase: DEFAULT_MAX_FLIGHTS_PER_BASE,
     aircraft,
   }
 }
@@ -249,7 +254,7 @@ function normalizeAircraftEquipment(raw, def) {
  * importado ou lixo): preenche aeronaves e campos em falta com os valores
  * por omissão, descarta aeronaves que já não estão no catálogo, limita os
  * números (vlosM 50-5000, usefulMin 1-120, count null ou inteiro 0-999,
- * zoneRadiusM 0-500, zoneMaxReliefM 1-100), garante ids de bateria únicos,
+ * zoneRadiusM 0-500, zoneMaxReliefM 1-100, maxFlightsPerBase inteiro 0-50), garante ids de bateria únicos,
  * nomes aparados e não vazios e defaultBatteryId válido. Nunca lança.
  * @param {any} raw
  * @returns {Equipment}
@@ -270,6 +275,9 @@ export function normalizeEquipment(raw) {
     version: EQUIPMENT_VERSION,
     zoneRadiusM: clampNum(raw.zoneRadiusM, LIMITS.zoneRadiusM, def.zoneRadiusM),
     zoneMaxReliefM: clampNum(raw.zoneMaxReliefM, LIMITS.zoneMaxReliefM, def.zoneMaxReliefM),
+    maxFlightsPerBase: Math.round(
+      clampNum(raw.maxFlightsPerBase, LIMITS.maxFlightsPerBase, def.maxFlightsPerBase),
+    ),
     aircraft,
   }
 }

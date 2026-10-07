@@ -61,11 +61,18 @@ export function regroupTerrainBlocks(res, blocks) {
  * `refElev` quando o chamador já a decidiu (referenceElevation — base, ou a
  * mínima da área), senão a cota do terreno em `refPt`. Devolve
  * `{ error: 'ref-outside-terrain' }` quando não há cota nenhuma.
+ *
+ * `blockRefs` (opcional, alinhado com `blocks`): com bases múltiplas cada
+ * bloco descola da sua base e as alturas do bloco referem-se à cota da zona
+ * dela, `agl + terreno − refBloco`. Os blocos com cota própria são
+ * recalculados com ela (os mesmos pontos: cada troço é amostrado por si, e a
+ * ligação que antecede o bloco já não entrava); a rota inteira
+ * (`waypoints`) fica na cota comum `refElev`, para o 3D e a folga ao solo.
  */
 export function planTerrainFollow(
   terrain,
   plan,
-  { blocks = null, refPt = null, refElev: refGiven = null, agl, toleranceM = 5 },
+  { blocks = null, refPt = null, refElev: refGiven = null, agl, toleranceM = 5, blockRefs = null },
 ) {
   const refElev = Number.isFinite(refGiven)
     ? refGiven
@@ -78,5 +85,21 @@ export function planTerrainFollow(
     refElev,
     toleranceM: Math.max(1, toleranceM),
   })
-  return { ...res, refElev, blocks3: blocks ? regroupTerrainBlocks(res, blocks) : null }
+  let blocks3 = blocks ? regroupTerrainBlocks(res, blocks) : null
+  if (blocks3 && Array.isArray(blockRefs)) {
+    const warnings = [...(res.warnings ?? [])]
+    blocks3 = blocks3.map((b3, i) => {
+      const r = blockRefs[i]
+      if (!Number.isFinite(r) || r === refElev) return { ...b3, refElev }
+      const own = terrainFollowLines(terrain, blocks[i].lines, {
+        agl,
+        refElev: r,
+        toleranceM: Math.max(1, toleranceM),
+      })
+      for (const w of own.warnings ?? []) if (!warnings.includes(w)) warnings.push(w)
+      return { ...regroupTerrainBlocks(own, [blocks[i]])[0], refElev: r }
+    })
+    return { ...res, warnings, refElev, blocks3 }
+  }
+  return { ...res, refElev, blocks3 }
 }

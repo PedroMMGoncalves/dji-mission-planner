@@ -52,6 +52,8 @@ const TXT = {
   reference: bi('Referência (descolagem)', 'Reference (take-off)'),
   refBase: bi('base', 'home point'),
   refAreaMin: bi('mínima da área', 'lowest of the area'),
+  refBases: bi('a mais baixa das zonas das bases', 'lowest of the base zones'),
+  refZone: bi('zona da base', 'base zone'),
   length: bi('Percurso', 'Route length'),
   waypoints: bi('Waypoints', 'Waypoints'),
   axisDist: bi('Distância acumulada', 'Cumulative distance'),
@@ -342,15 +344,17 @@ export default function ElevationProfile({
   // Se os blocos mudarem e a seleção deixar de existir, volta a "Tudo".
   const active = blockList.some((b) => String(b.id) === sel) ? sel : 'all'
 
-  const wps = useMemo(() => {
-    if (active !== 'all') {
-      const b = blockList.find((x) => String(x.id) === active)
-      if (b) return b.waypoints
-    }
-    return Array.isArray(waypoints) ? waypoints : []
-  }, [active, blockList, waypoints])
+  // Um bloco com cota de referência própria (bases múltiplas: a zona da sua
+  // base) usa-a; a rota inteira usa a comum
+  const selected = active !== 'all' ? blockList.find((x) => String(x.id) === active) : null
+  const wps = useMemo(
+    () => (selected ? selected.waypoints : Array.isArray(waypoints) ? waypoints : []),
+    [selected, waypoints],
+  )
+  const ref = Number.isFinite(selected?.refElev) ? selected.refElev : refElev
+  const shownRef = selected?.reference ?? reference
 
-  const p = useMemo(() => buildProfile(wps, terrain, refElev), [wps, terrain, refElev])
+  const p = useMemo(() => buildProfile(wps, terrain, ref), [wps, terrain, ref])
 
   // Escalas
   const xMax = p.totalM > 0 ? p.totalM : 1
@@ -423,9 +427,11 @@ export default function ElevationProfile({
                   const n = Number(b.id)
                   return {
                     key: String(b.id),
-                    label: Number.isFinite(n)
-                      ? `B${String(n).padStart(2, '0')}`
-                      : String(b.id ?? i + 1),
+                    label: b.label
+                      ? String(b.label)
+                      : Number.isFinite(n)
+                        ? `B${String(n).padStart(2, '0')}`
+                        : String(b.id ?? i + 1),
                   }
                 }),
               ].map((c) => (
@@ -472,10 +478,20 @@ export default function ElevationProfile({
                       : L(TXT.na)
                   }
                 />
-                {reference?.elev != null && (
+                {shownRef?.elev != null && (
                   <Metric
                     label={L(TXT.reference)}
-                    value={`${Math.round(reference.elev)} m · ${L(reference.source === 'base' ? TXT.refBase : TXT.refAreaMin)}`}
+                    value={`${Math.round(shownRef.elev)} m · ${
+                      shownRef.source === 'zone'
+                        ? `${L(TXT.refZone)} ${shownRef.base ?? ''}`.trim()
+                        : L(
+                            shownRef.source === 'base'
+                              ? TXT.refBase
+                              : shownRef.source === 'bases'
+                                ? TXT.refBases
+                                : TXT.refAreaMin,
+                          )
+                    }`}
                   />
                 )}
                 <Metric label={L(TXT.length)} value={fmtDist(p.totalM, p.totalM)} />

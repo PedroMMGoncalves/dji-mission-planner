@@ -7,15 +7,18 @@ import { nadirLineLocalPerBlock, splitIntoBlocks } from '../utils/geo.js'
 
 /**
  * @param {any} plan plano de área válido (generateFlightPlan / composeCellPlans)
- * @param {{activeCells?: any[]|null, split: {mode: string, maxAreaHa?: number, reservePct?: number},
+ * @param {{activeCells?: any[]|null, cellIds?: number[]|null,
+ *   split: {mode: string, maxAreaHa?: number, reservePct?: number},
  *   batteryMin?: number, speed?: number, spacingM?: number, basePoint?: number[]|null,
- *   waypointStops?: string}} opts
+ *   waypointStops?: string}} opts `cellIds`: id estável de cada célula activa (o
+ *   do mosaico, que não muda ao desactivar outra); sem ele, a posição + 1
  * @returns {Array<object>|null} lista de blocos ou null (sem divisão)
  */
 export function planBlocks(
   plan,
   {
     activeCells = null,
+    cellIds = null,
     split,
     batteryMin,
     speed,
@@ -27,7 +30,9 @@ export function planBlocks(
   if (!plan) return null
   if (activeCells && plan.cellPlans) {
     return plan.cellPlans.map((p, i) => ({
-      id: i + 1,
+      id: Number.isInteger(cellIds?.[i]) ? cellIds[i] : i + 1,
+      // contorno da célula: alcance visual e proposta de bases
+      cellRing: activeCells[i] ?? null,
       lines: p.lines,
       waypoints: p.waypoints,
       areaHa: p.stats.areaHa,

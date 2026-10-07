@@ -34,7 +34,11 @@ describe('projecto: serializar e ler', () => {
     anchor: { center: null },
     ring: [em(0, 0), em(100, 0), em(100, 100)],
     areaOrigin: 'draw',
-    basePoint: em(5, 5),
+    bases: [
+      { id: 'b1', label: 'A', point: em(5, 5), radiusM: null },
+      { id: 'b2', label: 'B', point: em(900, 5), radiusM: 60 },
+    ],
+    blockBase: { 3: 'b2' },
     disabledTiles: new Set([2, 5]),
     terrainFollow: { enabled: true, tolerance: 5 },
     gcpConfig: { enabled: false },
@@ -48,7 +52,11 @@ describe('projecto: serializar e ler', () => {
     expect(n.missionName).toBe('Quinta')
     expect(n.drone).toEqual({ ...estado.drone, rtk: false })
     expect(n.ring).toEqual(estado.ring)
-    expect(n.basePoint).toEqual(estado.basePoint)
+    // bases e atribuições manuais voltam iguais; a base única antiga já não se escreve
+    expect(json.basePoint).toBeUndefined()
+    expect(n.bases).toEqual(estado.bases)
+    expect(n.blockBase).toEqual({ 3: 'b2' })
+    expect(n.legacyMosaic).toBeUndefined()
     expect([...n.disabledTiles]).toEqual([2, 5])
     expect(n.corridorConfig.bufferM).toBe(80)
     expect(n.inspectPoints).toHaveLength(1)
@@ -59,7 +67,15 @@ describe('projecto: serializar e ler', () => {
     expect(json.battery).toEqual({ batteryId: 'padrao', usefulMin: 28 })
     expect(json.batteryByCombo).toBeUndefined()
     expect(n.battery).toEqual({ aircraftId: 'M3E', batteryId: 'padrao', usefulMin: 28 })
-    expect(n.split).toEqual({ mode: 'area', maxAreaHa: 10, reservePct: 0 })
+    // a geração do mosaico vai no ficheiro; a orientação dos quadrados segue as faixas
+    expect(json.split.mosaic).toBe(2)
+    expect(n.split).toEqual({
+      mode: 'area',
+      maxAreaHa: 10,
+      reservePct: 0,
+      mosaic: 2,
+      tileOrientationAuto: true,
+    })
   })
 
   test('v1: droneId migra para a selecção nova e o batteryMin do split vira tempo útil', () => {
@@ -77,7 +93,7 @@ describe('projecto: serializar e ler', () => {
     expect(n.drone.aircraftId).toBeTruthy()
     // a duração nominal do v1 (25 min) com a reserva por omissão de então
     // (30 %) dá o mesmo tempo útil de antes: 17.5 min, sem reserva por cima
-    expect(n.split).toEqual({ mode: 'area', reservePct: 0 })
+    expect(n.split).toEqual({ mode: 'area', reservePct: 0, mosaic: 2, tileOrientationAuto: true })
     expect(n.battery).toEqual({ aircraftId: n.drone.aircraftId, batteryId: null, usefulMin: 17.5 })
   })
 
@@ -95,7 +111,8 @@ describe('projecto: serializar e ler', () => {
     expect(n.missionMode).toBeUndefined()
     expect(n.inspectPoints).toEqual([{ id: 2, point: [0, 0] }])
     expect(n.nextInspectId).toBe(3)
-    expect(n.basePoint).toBeNull()
+    expect(n.bases).toEqual([])
+    expect(n.blockBase).toEqual({})
     expect(n.disabledTiles.size).toBe(0)
     expect(n.areaOrigin).toBeNull()
   })
@@ -155,7 +172,13 @@ describe('projecto: migração da bateria (duração nominal + reserva → tempo
       split: { mode: 'battery', reservePct: 20, maxSide: 500 },
     })
     expect(n.battery).toEqual({ aircraftId: 'M300RTK', batteryId: null, usefulMin: 40 })
-    expect(n.split).toEqual({ mode: 'battery', reservePct: 0, maxSide: 500 })
+    expect(n.split).toEqual({
+      mode: 'battery',
+      reservePct: 0,
+      maxSide: 500,
+      mosaic: 2,
+      tileOrientationAuto: true,
+    })
   })
 
   test('sem override nem reserva: duração do catálogo com os 30 % de então', () => {

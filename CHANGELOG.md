@@ -6,6 +6,64 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Acrescentado (bases múltiplas e mosaico de quadrados robusto)
+
+- **Várias bases de descolagem.** «Marcar base» acrescenta bases A, B,
+  C...: marcadores arrastáveis com o rótulo, que se retiram na lista do
+  painel. Cada base é uma **zona** (o raio da Configuração, 100 m por
+  omissão, ou um raio próprio por base), porque no campo se descola onde
+  as condições deixam. A seleccionada mostra a zona no mapa, e o raio
+  pedido a tracejado quando foi reduzido junto a uma corta ou talude. A
+  aplicação nunca move uma base marcada pelo operador.
+- **«Propor bases»** (área dividida em blocos): bases para os blocos que
+  nenhuma base vê inteiros dentro do alcance visual da aeronave (M300
+  1000 m), pela ordem do mosaico, com o «máximo de voos por base» da
+  Configuração (0 = sem limite). As bases já marcadas ficam onde estão.
+  Depois arrasta-se, retira-se ou acrescenta-se. Os blocos ficam
+  atribuídos à base mais próxima no pior caso, ou à escolhida à mão: com
+  «Clique num bloco → Atribuir base», o clique passa o bloco para a base
+  seleccionada (ou para a seguinte).
+- **Lista de bases** no painel: os voos de cada uma, a zona (raio,
+  reduzida e porquê, fora do relevo), a cota de referência e «voo entre 0
+  e +X m acima do planeado».
+- **Alturas por bloco.** As alturas de cada bloco referem-se à cota MAIS
+  BAIXA da zona da sua base: descolando em qualquer ponto da zona voa-se
+  igual ou acima do plano, nunca abaixo. Com seguir terreno, o KMZ de cada
+  bloco sai com `AGL + terreno − cota da zona`; sem ele as alturas ficam
+  planas, e a folga ao solo, o 3D, o perfil e o preflight usam a cota de
+  cada bloco (os troços entre blocos, que não se voam, deixam de contar).
+- **Voos numerados por base**: base a base pela ordem dos rótulos e, em
+  cada base, pela ordem do mosaico — A-1, A-2, B-3 — no mapa (blocos na
+  cor da sua base, cores que se distinguem também pela luminosidade), na
+  lista de blocos e no perfil. Os ids dos blocos (os `_bNN` dos ficheiros)
+  não mudam.
+- **Preflight bloco a bloco**: voo fora do alcance visual da sua base, com
+  a distância no pior caso (aviso); tempo do voo com o trânsito de ida e
+  volta da base acima do tempo útil (aviso; bloqueio quando só o trânsito
+  o passa); base fora do relevo (bloqueio); zona reduzida (nota); bloco sem
+  base (bloqueio).
+- Os outros modos (corredor, circular, fachada, órbita, inspecção)
+  continuam com uma base de referência: a mais próxima da sua rota. Com
+  uma só base, como antes.
+
+### Alterado (mosaico de quadrados)
+
+- A divisão por bateria e o mosaico usam o mosaico novo: quadrados
+  recortados pela área (antes podiam sair dela e voava-se o quadrado
+  inteiro), grelha deslocada para dar menos células e menos tiras, tiras
+  pequenas fundidas no vizinho quando o conjunto ainda cabe numa bateria,
+  e buracos por célula. Os quadrados seguem as faixas por omissão (o
+  ângulo usado, também o «Óptimo»); «Quadrados paralelos às faixas»
+  desligado devolve a orientação manual.
+- O lado do quadrado por bateria passa a contar o trânsito de uma base
+  num canto do bloco (zona incluída) e não depende de onde estão as bases;
+  o trânsito real de cada bloco é verificado no preflight.
+- Projecto: guarda `bases` e `blockBase` (atribuições manuais), e a
+  geração do mosaico (`split.mosaic`). Um projecto antigo abre com a base
+  única como base A; as células desactivadas no mosaico antigo passam para
+  as células novas que ficam pelo menos meio dentro delas; um mosaico
+  manual antigo mantém a orientação guardada. Esquema actualizado.
+
 ### Acrescentado (configuração do equipamento e tempo útil por voo)
 
 - **Janela «Configuração»** (roda dentada no cabeçalho, ao lado da ajuda).

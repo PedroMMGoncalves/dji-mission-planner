@@ -15,6 +15,7 @@ import {
   IconTrash,
 } from './Icons.jsx'
 import BatterySetsNote from './BatterySetsNote.jsx'
+import BasesPanel from './BasesPanel.jsx'
 
 /** Secção com título, estilo dashboard de engenharia. */
 function Section({ title, children }) {
@@ -50,6 +51,50 @@ function NumberInput({ value, onChange, min, max, step = 1, wide, testId }) {
       step={step}
       onChange={(e) => onChange(Number(e.target.value))}
     />
+  )
+}
+
+/**
+ * Orientação dos quadrados do mosaico: por omissão paralelos às faixas (o
+ * ângulo que o plano usa, também o "óptimo"); desligado, a orientação manual.
+ */
+function MosaicOrientation({ split, setSplitParam, tileOrientation }) {
+  const t = useT()
+  const auto = split.tileOrientationAuto !== false
+  return (
+    <div className="mb-2">
+      <label className="mb-1 flex items-center gap-2 text-sm text-slate-300">
+        <input
+          type="checkbox"
+          data-testid="tile-orientation-auto"
+          checked={auto}
+          onChange={(e) => {
+            // ao passar a manual parte-se da orientação que estava a ser usada
+            if (!e.target.checked && Number.isFinite(tileOrientation))
+              setSplitParam('tileOrientation', Math.round(tileOrientation))
+            setSplitParam('tileOrientationAuto', e.target.checked)
+          }}
+          className="accent-sky-500"
+        />
+        <span className="flex-1">{t('cp.split.orientationAuto')}</span>
+      </label>
+      {auto ? (
+        <p className="text-[11px] leading-relaxed text-slate-500">
+          {t('cp.split.orientationAutoHint', {
+            deg: Number.isFinite(tileOrientation) ? Math.round(tileOrientation) : '-',
+          })}
+        </p>
+      ) : (
+        <Field label={t('cp.split.meshOrientation')} suffix="°">
+          <NumberInput
+            value={split.tileOrientation}
+            min={0}
+            max={180}
+            onChange={(v) => setSplitParam('tileOrientation', v)}
+          />
+        </Field>
+      )}
+    </div>
   )
 }
 
@@ -155,6 +200,13 @@ export default function ControlPanel({
   onSetAngleOptimal,
   onFinishDraw,
   onClear,
+  // bases múltiplas: props de BasesPanel (null esconde a lista)
+  basesPanel = null,
+  // voos por bloco (layoutBlocks): rótulo "A-1" e cor da base
+  baseLayout = null,
+  // orientação efectiva dos quadrados (segue as faixas, ou a manual)
+  tileOrientation = null,
+  zoneRadiusM = 100,
 }) {
   const t = useT()
   const lang = useLang()
@@ -849,6 +901,7 @@ export default function ControlPanel({
         </div>
 
         {mode === 'base' && <p className="mt-2 text-xs text-slate-400">{t('cp.area.baseHint')}</p>}
+        {basesPanel && <BasesPanel {...basesPanel} />}
 
         {mode === 'draw' && (
           <div className="mt-2 space-y-2">
@@ -1059,14 +1112,11 @@ export default function ControlPanel({
                 onChange={(v) => setSplitParam('tileSize', v)}
               />
             </Field>
-            <Field label={t('cp.split.meshOrientation')} suffix="°">
-              <NumberInput
-                value={split.tileOrientation}
-                min={0}
-                max={180}
-                onChange={(v) => setSplitParam('tileOrientation', v)}
-              />
-            </Field>
+            <MosaicOrientation
+              split={split}
+              setSplitParam={setSplitParam}
+              tileOrientation={tileOrientation}
+            />
             <div className="mb-2 grid grid-cols-2 gap-2">
               <button
                 onClick={onTilesUndo}
@@ -1179,14 +1229,19 @@ export default function ControlPanel({
                 onChange={(v) => setSplitParam('maxSide', v)}
               />
             </Field>
+            <MosaicOrientation
+              split={split}
+              setSplitParam={setSplitParam}
+              tileOrientation={tileOrientation}
+            />
             {tileSide != null && (
               <p className="mb-2 rounded border border-sky-800 bg-sky-950/40 p-2 text-[11px] leading-relaxed text-sky-200">
                 {t('cp.split.squareBlocks')}{' '}
                 <strong>
                   {tileSide} × {tileSide} m
                 </strong>
-                {t('cp.split.batteryUse', { min: usefulMin })}
-                {hasBase ? ` ${t('cp.split.transitDeducted')}` : ''}.
+                {t('cp.split.batteryUse', { min: usefulMin })}{' '}
+                {t('cp.split.transitCorner', { r: zoneRadiusM })}.
               </p>
             )}
             <div className="mb-2 grid grid-cols-2 gap-2">
@@ -1227,14 +1282,46 @@ export default function ControlPanel({
 
         {(gridActive || split.mode !== 'none') && blocks && (
           <div className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded border border-slate-800 bg-slate-900/60 p-2">
-            {blocks.map((b) => (
-              <div key={b.id} className="flex items-center justify-between text-xs text-slate-300">
-                <span className="font-mono text-sky-300">B{String(b.id).padStart(2, '0')}</span>
-                <span>{b.areaHa.toFixed(1)} ha</span>
-                <span>{(b.lengthM / 1000).toFixed(1)} km</span>
-                <span className="font-mono">{Math.round(b.timeS / 60)} min</span>
-              </div>
-            ))}
+            {[...blocks]
+              .sort(
+                (a, b) =>
+                  (baseLayout?.byBlock[a.id]?.flight ?? a.id) -
+                  (baseLayout?.byBlock[b.id]?.flight ?? b.id),
+              )
+              .map((b) => {
+                const f = baseLayout?.byBlock[b.id]
+                return (
+                  <div
+                    key={b.id}
+                    data-testid="block-row"
+                    data-block-id={b.id}
+                    data-flight={f?.flightLabel ?? ''}
+                    className="flex items-center justify-between text-xs text-slate-300"
+                  >
+                    <span
+                      className="font-mono text-sky-300"
+                      title={
+                        f?.flightLabel
+                          ? t('bases.flightLabel', { flight: f.flightLabel, id: b.id })
+                          : undefined
+                      }
+                    >
+                      {f?.baseId && (
+                        <span
+                          className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
+                          style={{ backgroundColor: f.color }}
+                        />
+                      )}
+                      {f?.baseId ? `${f.flightLabel} · ` : ''}B{String(b.id).padStart(2, '0')}
+                    </span>
+                    <span>{b.areaHa.toFixed(1)} ha</span>
+                    <span>{(b.lengthM / 1000).toFixed(1)} km</span>
+                    <span className="font-mono">
+                      {Math.round((b.timeS + (f?.transitS ?? 0)) / 60)} min
+                    </span>
+                  </div>
+                )
+              })}
             <p className="pt-1 text-[11px] text-slate-500">{t('cp.split.exportHint')}</p>
             <BatterySetsNote check={setsCheck} battery={battery?.label || battery?.id || ''} />
           </div>

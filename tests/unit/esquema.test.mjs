@@ -49,7 +49,8 @@ const defaults = () => ({
   anchor: { ...DEFAULT_ANCHOR },
   ring: null,
   areaOrigin: null,
-  basePoint: null,
+  bases: [],
+  blockBase: {},
   disabledTiles: new Set(),
   terrainFollow: { ...DEFAULT_TERRAIN_FOLLOW },
   gcpConfig: { ...DEFAULT_GCP_CONFIG },
@@ -102,8 +103,12 @@ describe('esquema JSON do ficheiro de projecto', () => {
     ]
     st.areaOrigin = 'anchor'
     st.anchor = { ...st.anchor, center: [-9.135, 38.705], shape: 'square', cols: 2, rows: 3 }
-    st.basePoint = [-9.141, 38.699]
-    st.split = { ...st.split, mode: 'battery' }
+    st.bases = [
+      { id: 'b1', label: 'A', point: [-9.141, 38.699], radiusM: null },
+      { id: 'b2', label: 'B', point: [-9.129, 38.711], radiusM: 60 },
+    ]
+    st.blockBase = { 1: 'b2', 6: 'b1' }
+    st.split = { ...st.split, mode: 'battery', tileOrientationAuto: false, tileOrientation: 30 }
     st.disabledTiles = new Set([0, 4])
     st.payloadTuning = { M4T_LIDAR: { effectiveFov: 50 } }
     st.battery = { batteryId: 'padrao', usefulMin: 27.5 }
@@ -151,6 +156,9 @@ describe('esquema JSON do ficheiro de projecto', () => {
     const n = normalizeProject(json)
     expect(n.ring).toEqual(st.ring)
     expect([...n.disabledTiles]).toEqual([0, 4])
+    expect(n.bases).toEqual(st.bases)
+    expect(n.blockBase).toEqual({ 1: 'b2', 6: 'b1' })
+    expect(n.split).toMatchObject({ tileOrientationAuto: false, tileOrientation: 30, mosaic: 2 })
     expect(n.inspectPoints).toHaveLength(2)
     expect(n.battery).toEqual({ aircraftId: 'M3E', batteryId: 'padrao', usefulMin: 27.5 })
   })
@@ -175,6 +183,35 @@ describe('esquema JSON do ficheiro de projecto', () => {
     expect(hoje.batteryByCombo).toBeUndefined()
     expect(hoje.split.reservePct).toBe(0)
     expect(validate(hoje), errors()).toBe(true)
+  })
+
+  test('projecto anterior às bases múltiplas (basePoint) valida e abre com a base A', () => {
+    const antigo = roundTrip(defaults())
+    delete antigo.bases
+    delete antigo.blockBase
+    delete antigo.split.mosaic
+    delete antigo.split.tileOrientationAuto
+    antigo.basePoint = [-9.141, 38.699]
+    expect(validate(antigo), errors()).toBe(true)
+    const n = normalizeProject(antigo)
+    expect(n.bases).toEqual([{ id: 'b1', label: 'A', point: [-9.141, 38.699], radiusM: null }])
+    // regravado: as bases, sem a base única
+    const hoje = roundTrip({ ...defaults(), bases: n.bases })
+    expect(hoje.basePoint).toBeUndefined()
+    expect(validate(hoje), errors()).toBe(true)
+  })
+
+  test('bases e atribuições inválidas falham', () => {
+    const ok = roundTrip(defaults())
+    const base = { id: 'b1', label: 'A', point: [-9.14, 38.7], radiusM: null }
+    expect(validate({ ...ok, bases: [base] })).toBe(true)
+    expect(validate({ ...ok, bases: [{ ...base, label: 'a' }] })).toBe(false)
+    expect(validate({ ...ok, bases: [{ ...base, point: [200, 0] }] })).toBe(false)
+    expect(validate({ ...ok, bases: [{ ...base, radiusM: 900 }] })).toBe(false)
+    expect(validate({ ...ok, bases: [{ ...base, cor: 'x' }] })).toBe(false)
+    expect(validate({ ...ok, blockBase: { 0: 'b1' } })).toBe(false)
+    expect(validate({ ...ok, blockBase: { 3: 7 } })).toBe(false)
+    expect(validate({ ...ok, split: { ...ok.split, tileOrientationAuto: 'sim' } })).toBe(false)
   })
 
   test('lixo falha: versao errada, anel com dois vertices, altitude em texto, campo desconhecido', () => {

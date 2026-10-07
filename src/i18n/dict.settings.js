@@ -56,6 +56,11 @@ export default {
     pt: 'Desnível aceite dentro da zona; acima dele o raio é reduzido, para a cota de referência não cair num fundo de corta.',
     en: 'Relief accepted inside the zone; above it the radius shrinks, so the reference elevation does not drop into a pit floor.',
   },
+  'set.maxFlightsPerBase': { pt: 'Máximo de voos por base', en: 'Max. flights per base' },
+  'set.maxFlightsPerBaseHint': {
+    pt: 'Limite de blocos que a proposta de bases dá a cada base (0 = sem limite, só o alcance visual). As escolhas manuais não são limitadas.',
+    en: 'How many blocks the base proposal gives each base (0 = no limit, only the visual range). Manual choices are not limited.',
+  },
   'set.fileTitle': { pt: 'Ficheiro', en: 'File' },
   'set.export': { pt: 'Exportar', en: 'Export' },
   'set.exportTitle': {

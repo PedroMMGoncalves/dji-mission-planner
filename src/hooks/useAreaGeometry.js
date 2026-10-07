@@ -8,15 +8,15 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  distanceToArea,
   gridFromAnchor,
   longestEdgeBearing,
   rectangleFromAnchor,
-  squareSideForBattery,
-  tilePolygonWithSquares,
   translateRing,
   validateRing,
 } from '../utils/geo.js'
+import { buildSquareMosaic, mosaicOrientationForLines } from '../mission/squareMosaic.js'
+import { cellFitsBattery, squareSideWithBaseTransit } from '../mission/baseLayout.js'
+import { legacyDisabledForMosaic } from '../mission/mosaicLegacy.js'
 import {
   parseAreaFile,
   reprojectParts,
@@ -31,7 +31,8 @@ import { DEFAULT_ANCHOR, DEFAULT_SPLIT } from '../mission/defaults.js'
  * @param {string} args.mode modo de interacção corrente ('draw' | 'anchor' | ...)
  * @param {Function} args.setMode
  * @param {Function} args.setDraftVertices
- * @param {number[]|null} args.basePoint base do operador (para o trânsito no mosaico por bateria)
+ * @param {number} args.lineAngle ângulo das faixas (°), que os quadrados seguem por omissão
+ * @param {number} [args.zoneRadiusM] raio da zona de descolagem (trânsito de dimensionamento)
  * @param {number} args.speed velocidade efectiva (m/s)
  * @param {number} args.spacing espaçamento entre linhas (m)
  * @param {number} args.batteryMin tempo útil por voo (min, já com a reserva de aterragem; split.reservePct é 0)
@@ -44,7 +45,8 @@ export function useAreaGeometry({
   mode,
   setMode,
   setDraftVertices,
-  basePoint,
+  lineAngle = 0,
+  zoneRadiusM = 100,
   speed,
   spacing,
   batteryMin,
@@ -66,6 +68,9 @@ export function useAreaGeometry({
   // aviso brando da importação (ex.: MultiPolygon com partes ignoradas)
   const [importWarning, setImportWarning] = useState(null)
   const [fitKey, setFitKey] = useState(0) // sinal para enquadrar o mapa na área
+  // projecto anterior ao mosaico novo com células desactivadas: traduzidas
+  // quando o mosaico novo estiver calculado (mosaicLegacy.js)
+  const [pendingLegacy, setPendingLegacy] = useState(null)
 
   // Histórico de edição unificado (Ctrl+Z): geometria da área + seleção de células
   const editHistoryRef = useRef([])
@@ -139,28 +144,29 @@ export function useAreaGeometry({
     return [minX, minY, maxX, maxY]
   }, [ring])
 
-  // Mosaico de quadrados: manual ('tiles') ou dimensionado pela bateria
-  // ('battery' — lado calculado a partir do tempo útil e do teto VLOS)
+  // Orientação dos quadrados: arestas paralelas às faixas (o ângulo das
+  // linhas que o plano usa, também o "óptimo"), ou a manual do mosaico
+  const tileOrientation =
+    split.tileOrientationAuto === false
+      ? split.tileOrientation
+      : mosaicOrientationForLines(lineAngle)
+
+  // Mosaico de quadrados (buildSquareMosaic): manual ('tiles') ou com o lado
+  // dimensionado pela bateria ('battery'). Células recortadas pela área, com
+  // procura do deslocamento da grelha e fusão das tiras; o lado por bateria
+  // conta o trânsito de uma base num canto do bloco (squareSideWithBaseTransit)
+  // e não depende de onde estão as bases: mover uma base não refaz o mosaico.
   const tilesResult = useMemo(() => {
     if (!ring || !validation.valid || gridCells) return null
     if (split.mode !== 'tiles' && split.mode !== 'battery') return null
     let side = split.tileSize
+    let fits = null
     if (split.mode === 'battery') {
-      const dist = basePoint ? distanceToArea(basePoint, ring) : null
-      let transitS = dist != null ? (2 * dist) / (speed || 10) : 0
-      // Uma base a dezenas de km (esquecida de outro projecto, ou a area
-      // movida sem ela) tem um transito maior do que a bateria: sem isto o
-      // orcamento caia no minimo de 60 s e saiam 239 blocos de 80 m. Blocos
-      // dimensionados para uma base inalcancavel nao querem dizer nada;
-      // dimensionam-se sem transito e o preflight bloqueia com a razao.
-      const usableS = batteryMin > 0 ? batteryMin * 60 * (1 - split.reservePct / 100) : null
-      if (usableS != null && transitS >= usableS) transitS = 0
-      side = squareSideForBattery({
+      const opts = {
         batteryMin,
         reservePct: split.reservePct,
         speed,
         spacingM: spacing,
-        transitS,
         maxSideM: split.maxSide,
         // O lado do quadrado dimensionado por bateria depende do número de
         // passagens (cross-hatch e passagem nadir extra multiplicam o voo por
@@ -170,9 +176,26 @@ export function useAreaGeometry({
         passes,
         // com paragem em cada foto, cada faixa custa mais e o lado encolhe
         stopEveryM,
+      }
+      side = squareSideWithBaseTransit(opts, { zoneRadiusM }).side
+      // uma tira só se funde no vizinho se o conjunto ainda couber na bateria
+      fits = cellFitsBattery({
+        usableS: batteryMin > 0 ? batteryMin * 60 * (1 - split.reservePct / 100) : 0,
+        spacingM: spacing,
+        speed,
+        passes,
+        stopEveryM,
+        lineAngleDeg: lineAngle,
+        zoneRadiusM,
       })
     }
-    return { cells: tilePolygonWithSquares(ring, side, split.tileOrientation, holes), side }
+    const mosaic = buildSquareMosaic(ring, {
+      holes,
+      sideM: side,
+      orientationDeg: tileOrientation,
+      fits,
+    })
+    return { mosaic, side }
   }, [
     ring,
     holes,
@@ -180,19 +203,22 @@ export function useAreaGeometry({
     gridCells,
     split.mode,
     split.tileSize,
-    split.tileOrientation,
+    tileOrientation,
     batteryMin,
     split.reservePct,
     split.maxSide,
     speed,
     spacing,
-    basePoint,
     passes,
     stopEveryM,
+    lineAngle,
+    zoneRadiusM,
   ])
 
-  const tiles = Array.isArray(tilesResult?.cells) ? tilesResult.cells : null
-  const tilesError = tilesResult?.cells?.error ?? null
+  const mosaicCells = Array.isArray(tilesResult?.mosaic?.cells) ? tilesResult.mosaic.cells : null
+  // anéis das células (mapa, células activas) e os buracos de cada uma
+  const tiles = useMemo(() => (mosaicCells ? mosaicCells.map((c) => c.ring) : null), [mosaicCells])
+  const tilesError = tilesResult?.mosaic?.error ?? null
   const tileSide = tilesResult?.side ?? null
 
   // espelhos do estado atual, para os snapshots do histórico
@@ -257,7 +283,41 @@ export function useAreaGeometry({
       return
     }
     setDisabledTiles(new Set())
-  }, [ring, split.mode, tileSide, split.tileOrientation])
+  }, [ring, split.mode, tileSide, tileOrientation])
+
+  // Projecto anterior ao mosaico novo: a selecção antiga passa para as
+  // células novas que ficam pelo menos meio dentro das antigas desactivadas
+  useEffect(() => {
+    if (!pendingLegacy || !mosaicCells || !ring) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDisabledTiles(
+      legacyDisabledForMosaic({
+        ring,
+        holes,
+        split: { ...split, tileOrientation: pendingLegacy.tileOrientation },
+        basePoint: pendingLegacy.basePoint,
+        batteryMin,
+        speed,
+        spacingM: spacing,
+        passes,
+        stopEveryM,
+        disabled: pendingLegacy.disabled,
+        newCells: mosaicCells,
+      }),
+    )
+    setPendingLegacy(null)
+  }, [
+    pendingLegacy,
+    mosaicCells,
+    ring,
+    holes,
+    split,
+    batteryMin,
+    speed,
+    spacing,
+    passes,
+    stopEveryM,
+  ])
 
   const toggleTile = useCallback(
     (index) => {
@@ -292,15 +352,25 @@ export function useAreaGeometry({
     return () => window.removeEventListener('keydown', onKey)
   }, [undoEdit])
 
-  // Células ativas: grelha da âncora, ou mosaico sem as células removidas
-  const activeCells = useMemo(() => {
-    if (gridCells) return gridCells
-    if (tiles) {
-      const kept = tiles.filter((_, i) => !disabledTiles.has(i))
-      return kept.length > 0 ? kept : null
+  // Células ativas: grelha da âncora, ou mosaico sem as células removidas,
+  // com o id estável de cada uma (o do mosaico: desactivar uma célula não
+  // muda o número das outras nem o nome dos ficheiros) e os seus buracos
+  const active = useMemo(() => {
+    if (gridCells) return { cells: gridCells, ids: null, holes: null }
+    if (mosaicCells) {
+      const kept = mosaicCells.map((c, i) => ({ c, i })).filter(({ i }) => !disabledTiles.has(i))
+      if (kept.length === 0) return null
+      return {
+        cells: kept.map(({ c }) => c.ring),
+        ids: kept.map(({ i }) => i + 1),
+        holes: kept.map(({ c }) => c.holes ?? []),
+      }
     }
     return null
-  }, [gridCells, tiles, disabledTiles])
+  }, [gridCells, mosaicCells, disabledTiles])
+  const activeCells = active?.cells ?? null
+  const activeCellIds = active?.ids ?? null
+  const activeCellHoles = active?.holes ?? null
 
   // Direção de referência: orientação do bloco (âncora) ou aresta mais longa
   const refAzimuth = useMemo(() => {
@@ -308,11 +378,6 @@ export function useAreaGeometry({
     if (areaOrigin === 'anchor') return ((anchor.orientation % 180) + 180) % 180
     return longestEdgeBearing(ring)
   }, [ring, areaOrigin, anchor.orientation])
-
-  const baseDistance = useMemo(
-    () => (basePoint && ring ? distanceToArea(basePoint, ring) : null),
-    [basePoint, ring],
-  )
 
   /* --------------------------- Desenho -------------------------------- */
   const startDraw = useCallback(() => {
@@ -564,6 +629,7 @@ export function useAreaGeometry({
     setHoles(Array.isArray(n.holes) ? n.holes : [])
     setAreaOrigin(n.areaOrigin)
     setDisabledTiles(n.disabledTiles)
+    setPendingLegacy(n.legacyMosaic ?? null)
   }, [])
 
   return {
@@ -583,9 +649,11 @@ export function useAreaGeometry({
     tiles,
     tilesError,
     tileSide,
+    tileOrientation,
     activeCells,
+    activeCellIds,
+    activeCellHoles,
     refAzimuth,
-    baseDistance,
     undoEdit,
     toggleTile,
     restoreAllTiles,

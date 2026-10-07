@@ -145,13 +145,21 @@ export const MIN_WAYPOINT_DIST_M = 0.5
  * demasiado longos e taxa de subida acima da aeronave. Corre sobre a
  * geometria que sai no KMZ, em todos os modos.
  * @param {number[][]} waypoints [lon, lat, h?]
- * @param {{speed?: number, maxClimbMS?: number, maxSegmentM?: number}} [opts]
+ * @param {{speed?: number, maxClimbMS?: number, maxSegmentM?: number,
+ *   breaks?: number[]|null}} [opts] `breaks`: índices i cujo troço i−1 → i não se
+ *   voa (cada bloco descola da sua base)
  */
-export function routeChecks(waypoints, { speed = 0, maxClimbMS = 5, maxSegmentM = 5000 } = {}) {
+export function routeChecks(
+  waypoints,
+  { speed = 0, maxClimbMS = 5, maxSegmentM = 5000, breaks = null } = {},
+) {
   const out = { duplicates: [], longSegments: [], climb: [] }
   if (!Array.isArray(waypoints) || waypoints.length < 2) return out
   const mLat = 110574
+  // troços que não se voam: o início de cada bloco com base própria
+  const skip = breaks ? new Set(breaks) : null
   for (let i = 1; i < waypoints.length; i++) {
+    if (skip?.has(i)) continue
     const a = waypoints[i - 1]
     const b = waypoints[i]
     const mLon = 111320 * Math.cos((((a[1] + b[1]) / 2) * Math.PI) / 180)
