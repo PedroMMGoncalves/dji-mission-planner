@@ -34,7 +34,7 @@ import { DEFAULT_ANCHOR, DEFAULT_SPLIT } from '../mission/defaults.js'
  * @param {number[]|null} args.basePoint base do operador (para o trânsito no mosaico por bateria)
  * @param {number} args.speed velocidade efectiva (m/s)
  * @param {number} args.spacing espaçamento entre linhas (m)
- * @param {number} args.batteryMin duração de bateria efectiva (min)
+ * @param {number} args.batteryMin tempo útil por voo (min, já com a reserva de aterragem; split.reservePct é 0)
  * @param {number} args.passes número de passagens (1, 2 ou 3 com nadir extra)
  * @param {number} [args.stopEveryM] paragem a cada X m ao longo da faixa (0 = só nos cantos)
  * @param {Function} args.onImportedMission reimportação de um WPML: recebe {name, altitude, speed}

@@ -7,12 +7,14 @@ import {
   IconCheck,
   IconDownload,
   IconFolder,
+  IconGear,
   IconHelipad,
   IconMountain,
   IconPolygon,
   IconTarget,
   IconTrash,
 } from './Icons.jsx'
+import BatterySetsNote from './BatterySetsNote.jsx'
 
 /** Secção com título, estilo dashboard de engenharia. */
 function Section({ title, children }) {
@@ -36,10 +38,11 @@ function Field({ label, suffix, children }) {
   )
 }
 
-function NumberInput({ value, onChange, min, max, step = 1, wide }) {
+function NumberInput({ value, onChange, min, max, step = 1, wide, testId }) {
   return (
     <input
       type="number"
+      data-testid={testId}
       className={`${wide ? 'w-28' : 'w-20'} rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-sm text-slate-100 focus:border-sky-500 focus:outline-none`}
       value={value}
       min={min}
@@ -86,9 +89,14 @@ export default function ControlPanel({
   refAzimuth,
   split,
   setSplitParam,
-  batteryMin,
-  batteryDefault,
-  onBatteryMin,
+  batteries = [],
+  battery = null,
+  usefulMin,
+  usefulOverridden = false,
+  onBatteryId,
+  onUsefulMin,
+  setsCheck = null,
+  onOpenSettings,
   blocks,
   gridActive,
   tilesTotal,
@@ -1111,31 +1119,57 @@ export default function ControlPanel({
 
         {!gridActive && split.mode === 'battery' && (
           <div className="mt-2">
-            <Field label={t('cp.split.batteryDuration')} suffix="min">
+            <Field label={t('cp.split.batteryType')}>
+              <select
+                className="w-36 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+                data-testid="mission-battery"
+                value={battery?.id ?? ''}
+                onChange={(e) => onBatteryId(e.target.value)}
+              >
+                {batteries.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.label || b.id} · {b.usefulMin} min
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label={t('cp.split.usefulMin')} suffix="min">
               <div className="flex items-center gap-1.5">
-                <NumberInput value={batteryMin} min={5} max={120} onChange={onBatteryMin} />
-                {batteryMin !== batteryDefault && (
+                <NumberInput
+                  value={usefulMin}
+                  min={1}
+                  max={120}
+                  step={0.5}
+                  onChange={onUsefulMin}
+                  testId="mission-useful"
+                />
+                {usefulOverridden && battery && (
                   <button
-                    onClick={() => onBatteryMin(batteryDefault)}
-                    title={t('cp.split.batteryResetTitle', { min: batteryDefault })}
+                    data-testid="mission-useful-reset"
+                    onClick={() => onUsefulMin(battery.usefulMin)}
+                    title={t('cp.split.usefulResetTitle', { min: battery.usefulMin })}
                     className="rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-700"
                   >
-                    {t('cp.split.batteryReset')}
+                    {t('cp.split.usefulReset', { min: battery.usefulMin })}
                   </button>
                 )}
               </div>
             </Field>
             <p className="mb-2 text-[11px] leading-relaxed text-slate-500">
-              {t('cp.split.batteryComboHint', { min: batteryDefault })}
+              {t('cp.split.usefulHint')}{' '}
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className="inline-flex items-center gap-1 text-sky-400 underline hover:text-sky-300"
+              >
+                <IconGear className="h-3 w-3" />
+                {t('app.settings')}
+              </button>
+              .
+              {battery?.estimated && !usefulOverridden && (
+                <span className="text-amber-300/90"> {t('cp.split.estimated')}</span>
+              )}
             </p>
-            <Field label={t('cp.split.returnReserve')} suffix="%">
-              <NumberInput
-                value={split.reservePct}
-                min={10}
-                max={50}
-                onChange={(v) => setSplitParam('reservePct', v)}
-              />
-            </Field>
             <Field label={t('cp.split.maxSide')} suffix="m">
               <NumberInput
                 value={split.maxSide}
@@ -1151,7 +1185,7 @@ export default function ControlPanel({
                 <strong>
                   {tileSide} × {tileSide} m
                 </strong>
-                {t('cp.split.batteryUse', { pct: 100 - split.reservePct })}
+                {t('cp.split.batteryUse', { min: usefulMin })}
                 {hasBase ? ` ${t('cp.split.transitDeducted')}` : ''}.
               </p>
             )}
@@ -1202,6 +1236,7 @@ export default function ControlPanel({
               </div>
             ))}
             <p className="pt-1 text-[11px] text-slate-500">{t('cp.split.exportHint')}</p>
+            <BatterySetsNote check={setsCheck} battery={battery?.label || battery?.id || ''} />
           </div>
         )}
       </Section>

@@ -4,9 +4,20 @@
  * o App.jsx só distribui o resultado pelo estado.
  *
  * v1: droneId (perfil único) · v2: drone {aircraftId, payloadId}, e a duração
- * de bateria passou de `split.batteryMin` para `batteryByCombo`.
+ * de bateria passou de `split.batteryMin` para `batteryByCombo`. Desde o
+ * equipamento (Configuração), a missão guarda `battery` {batteryId,
+ * usefulMin}: o tempo útil por voo, já com a reserva de aterragem, e a
+ * reserva `split.reservePct` fica a 0. Um projecto sem `battery` é anterior:
+ * abre com o tempo útil equivalente (legacyUsefulMin), para os blocos não
+ * mudarem.
  */
-import { migrateDroneSelection } from '../data/drones.js'
+import {
+  AIRCRAFT,
+  DEFAULT_SELECTION,
+  batteryMinFor,
+  migrateDroneSelection,
+} from '../data/drones.js'
+import { EQUIPMENT_LIMITS, legacyUsefulMin } from './equipment.js'
 import { normalizeFaceConfig } from '../utils/faceMode.js'
 import { normalizeOrbitConfig } from '../utils/orbit.js'
 import { normalizeCorridorConfig } from '../utils/corridor.js'
@@ -26,7 +37,7 @@ export function serializeProject(state) {
     drone,
     custom,
     payloadTuning,
-    batteryByCombo,
+    battery,
     inspectPoints,
     missionMode,
     faceConfig,
@@ -51,7 +62,10 @@ export function serializeProject(state) {
     drone,
     custom,
     payloadTuning,
-    batteryByCombo,
+    // bateria da missão: o tipo e o tempo útil efectivo (o que dimensionou os blocos)
+    battery: battery
+      ? { batteryId: battery.batteryId ?? null, usefulMin: battery.usefulMin }
+      : undefined,
     inspectPoints,
     missionMode,
     faceConfig,
@@ -85,8 +99,10 @@ export function projectFileName(missionName) {
  * senão um objecto só com os campos presentes e já normalizados, pronto a
  * ser distribuído pelo estado. Campos:
  *  - drone: selecção migrada (v1 droneId → v2), ou ausente
- *  - split: sem o batteryMin antigo; legacyBatteryMin à parte, para ser
- *    guardado como override da combinação seleccionada
+ *  - battery: {aircraftId, batteryId, usefulMin} — sempre presente; ver
+ *    readMissionBattery (migração dos projectos anteriores ao equipamento)
+ *  - split: sem o batteryMin antigo e sempre com reservePct 0 (a reserva
+ *    vive no tempo útil)
  *  - inspectPoints: só os pontos com coordenadas; nextInspectId para o contador
  *  - disabledTiles: Set; ring/basePoint só quando são arrays
  */
@@ -98,13 +114,11 @@ export function normalizeProject(p) {
   if (p.custom) out.custom = p.custom
   if (p.payloadTuning && typeof p.payloadTuning === 'object') out.payloadTuning = p.payloadTuning
   if (p.params) out.params = p.params
-  if (p.split) {
-    const { batteryMin: legacyBatteryMin, ...restSplit } = p.split
-    out.split = restSplit
-    if (Number.isFinite(legacyBatteryMin)) out.legacyBatteryMin = legacyBatteryMin
-  }
-  if (p.batteryByCombo && typeof p.batteryByCombo === 'object')
-    out.batteryByCombo = p.batteryByCombo
+  const { batteryMin: _v1BatteryMin, ...restSplit } = isObject(p.split) ? p.split : {}
+  out.battery = readMissionBattery(p, out.drone ?? DEFAULT_SELECTION)
+  // a reserva já está no tempo útil: os consumidores (blocos, lado do
+  // quadrado, preflight, resumo) recebem reservePct 0 e não a aplicam outra vez
+  out.split = { ...restSplit, reservePct: 0 }
   if (MISSION_MODES.includes(p.missionMode)) out.missionMode = p.missionMode
   if (p.faceConfig) out.faceConfig = normalizeFaceConfig(p.faceConfig)
   if (p.orbitConfig) out.orbitConfig = normalizeOrbitConfig(p.orbitConfig)
@@ -127,4 +141,58 @@ export function normalizeProject(p) {
   if (p.terrainFollow) out.terrainFollow = p.terrainFollow
   if (p.gcpConfig) out.gcpConfig = p.gcpConfig
   return out
+}
+
+function isObject(v) {
+  return v !== null && typeof v === 'object' && !Array.isArray(v)
+}
+
+/** Número finito positivo, ou null. */
+function positive(v) {
+  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null
+}
+
+/** Tempo útil limitado ao intervalo do equipamento (1-120 min), ou null. */
+function clampUseful(v) {
+  const n = positive(v)
+  if (n === null) return null
+  const { min, max } = EQUIPMENT_LIMITS.usefulMin
+  return Math.min(max, Math.max(min, n))
+}
+
+/**
+ * Bateria da missão guardada no projecto, já com a reserva incorporada:
+ *  - com `battery` (projectos de hoje): o tipo e o tempo útil guardados. Uma
+ *    reserva > 0 ao lado (ficheiro editado à mão) entra no tempo útil, para
+ *    não ficar escondida;
+ *  - sem `battery` (projectos anteriores ao equipamento): a duração NOMINAL
+ *    (split.batteryMin do v1, o override de batteryByCombo da combinação, ou
+ *    a da aeronave no catálogo) com a reserva split.reservePct (30 % quando
+ *    falta) passa a tempo útil por legacyUsefulMin — os blocos ficam como
+ *    estavam (ao meio minuto). O tipo fica por escolher (a bateria por
+ *    omissão do equipamento).
+ * @param {any} p projecto lido
+ * @param {{aircraftId: string, payloadId: string}} drone selecção já migrada
+ * @returns {{aircraftId: string, batteryId: string|null, usefulMin: number|null}}
+ */
+function readMissionBattery(p, drone) {
+  const reserve = isObject(p.split) ? positive(p.split.reservePct) : null
+  if (isObject(p.battery)) {
+    const id = typeof p.battery.batteryId === 'string' ? p.battery.batteryId.trim() : ''
+    let usefulMin = clampUseful(p.battery.usefulMin)
+    if (usefulMin !== null && reserve !== null)
+      usefulMin = clampUseful(legacyUsefulMin(usefulMin, reserve))
+    return { aircraftId: drone.aircraftId, batteryId: id || null, usefulMin }
+  }
+  const aircraft = AIRCRAFT[drone.aircraftId] ?? AIRCRAFT[DEFAULT_SELECTION.aircraftId]
+  const nominal =
+    positive(isObject(p.split) ? p.split.batteryMin : null) ??
+    batteryMinFor(aircraft, drone.payloadId, isObject(p.batteryByCombo) ? p.batteryByCombo : {})
+  const legacyReserve =
+    isObject(p.split) && Number.isFinite(p.split.reservePct) ? p.split.reservePct : 30
+  return {
+    aircraftId: drone.aircraftId,
+    batteryId: null,
+    usefulMin: clampUseful(legacyUsefulMin(nominal, legacyReserve)),
+  }
 }

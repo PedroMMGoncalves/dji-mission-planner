@@ -427,3 +427,164 @@ export function flightsVsSets(eq, aircraftId, batteryId, flights) {
   const sets = batteryFor(eq, aircraftId, batteryId).count ?? null
   return { flights: f, sets, short: sets !== null && f > sets }
 }
+
+/* ------------------------------------------------------------------ */
+/* Edição (janela Configuração)                                        */
+/* ------------------------------------------------------------------ */
+
+/** Limites dos campos numéricos, para a interface validar enquanto se escreve. */
+export const EQUIPMENT_LIMITS = LIMITS
+
+/**
+ * Cópia do equipamento com a aeronave `aircraftId` substituída por
+ * `fn(actual)`. Não normaliza: um nome a meio de ser escrito (com espaço no
+ * fim, ou vazio) fica como está; quem grava normaliza (saveEquipment).
+ * @param {Equipment} eq
+ * @param {string} aircraftId
+ * @param {(a: AircraftEquipment) => AircraftEquipment} fn
+ * @returns {Equipment}
+ */
+function withAircraft(eq, aircraftId, fn) {
+  const a = aircraftEquipmentFor(eq, aircraftId)
+  return { ...eq, aircraft: { ...eq.aircraft, [aircraftId]: fn(a) } }
+}
+
+/**
+ * Altera campos de uma aeronave (ex.: { vlosM: 800 }).
+ * @param {Equipment} eq
+ * @param {string} aircraftId
+ * @param {Partial<AircraftEquipment>} patch
+ * @returns {Equipment}
+ */
+export function updateAircraftEquipment(eq, aircraftId, patch) {
+  return withAircraft(eq, aircraftId, (a) => ({ ...a, ...patch }))
+}
+
+/**
+ * Altera campos de uma bateria. O id não muda (é a referência guardada nas
+ * missões); um id desconhecido devolve o equipamento sem alterações.
+ * @param {Equipment} eq
+ * @param {string} aircraftId
+ * @param {string} batteryId
+ * @param {Partial<Battery>} patch
+ * @returns {Equipment}
+ */
+export function updateBattery(eq, aircraftId, batteryId, patch) {
+  const { id: _ignored, ...rest } = patch ?? {}
+  return withAircraft(eq, aircraftId, (a) => ({
+    ...a,
+    batteries: a.batteries.map((b) => (b.id === batteryId ? { ...b, ...rest } : b)),
+  }))
+}
+
+/**
+ * Acrescenta um tipo de bateria com um id novo (bateria-2, bateria-3, ...)
+ * e o tempo útil da bateria por omissão como ponto de partida. Valores
+ * introduzidos pelo operador não são estimativas: `estimated: false`.
+ * @param {Equipment} eq
+ * @param {string} aircraftId
+ * @param {string} label nome inicial (vem da interface, na língua activa)
+ * @returns {{equipment: Equipment, batteryId: string}}
+ */
+export function addBattery(eq, aircraftId, label) {
+  const a = aircraftEquipmentFor(eq, aircraftId)
+  const used = new Set(a.batteries.map((b) => b.id))
+  let n = a.batteries.length + 1
+  while (used.has(`bateria-${n}`)) n++
+  const id = `bateria-${n}`
+  const ref = batteryFor(eq, aircraftId, null)
+  const battery = {
+    id,
+    label: cleanText(label) || id,
+    usefulMin: ref.usefulMin,
+    count: null,
+    estimated: false,
+  }
+  return {
+    equipment: withAircraft(eq, aircraftId, (x) => ({
+      ...x,
+      batteries: [...x.batteries, battery],
+    })),
+    batteryId: id,
+  }
+}
+
+/**
+ * Retira um tipo de bateria; a última nunca sai (devolve o equipamento sem
+ * alterações). Retirada a bateria por omissão, passa a sê-lo a primeira.
+ * @param {Equipment} eq
+ * @param {string} aircraftId
+ * @param {string} batteryId
+ * @returns {Equipment}
+ */
+export function removeBattery(eq, aircraftId, batteryId) {
+  const a = aircraftEquipmentFor(eq, aircraftId)
+  const batteries = a.batteries.filter((b) => b.id !== batteryId)
+  if (batteries.length === 0 || batteries.length === a.batteries.length) return eq
+  const defaultBatteryId = batteries.some((b) => b.id === a.defaultBatteryId)
+    ? a.defaultBatteryId
+    : batteries[0].id
+  return withAircraft(eq, aircraftId, (x) => ({ ...x, batteries, defaultBatteryId }))
+}
+
+/**
+ * Escolhe a bateria por omissão da aeronave (a que as missões novas usam).
+ * Um id desconhecido devolve o equipamento sem alterações.
+ * @param {Equipment} eq
+ * @param {string} aircraftId
+ * @param {string} batteryId
+ * @returns {Equipment}
+ */
+export function setDefaultBattery(eq, aircraftId, batteryId) {
+  const a = aircraftEquipmentFor(eq, aircraftId)
+  if (!a.batteries.some((b) => b.id === batteryId)) return eq
+  return withAircraft(eq, aircraftId, (x) => ({ ...x, defaultBatteryId: batteryId }))
+}
+
+/* ------------------------------------------------------------------ */
+/* Bateria da missão                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * @typedef {object} MissionBatteryChoice
+ * @property {string|null} aircraftId aeronave em que a escolha foi feita
+ * @property {string|null} batteryId  tipo de bateria; null = a por omissão
+ * @property {number|null} usefulMin  tempo útil por voo acertado para o dia; null = o da bateria
+ */
+
+/**
+ * Bateria e tempo útil por voo de uma missão. A escolha só vale para a
+ * aeronave em que foi feita: trocada a aeronave, a missão passa à bateria
+ * por omissão da nova, com o tempo útil dela. `overridden` diz se o tempo
+ * útil foi acertado à mão (e difere do da bateria).
+ * @param {Equipment|null|undefined} eq
+ * @param {string} aircraftId
+ * @param {MissionBatteryChoice|null|undefined} choice
+ * @returns {{battery: Battery, usefulMin: number, overridden: boolean}}
+ */
+export function resolveMissionBattery(eq, aircraftId, choice) {
+  const own = choice && choice.aircraftId === aircraftId ? choice : null
+  const battery = batteryFor(eq, aircraftId, own?.batteryId ?? null)
+  const n = toNumber(own?.usefulMin)
+  const usefulMin =
+    n === null ? battery.usefulMin : clampNum(n, LIMITS.usefulMin, battery.usefulMin)
+  return { battery, usefulMin, overridden: usefulMin !== battery.usefulMin }
+}
+
+/**
+ * Escolha de bateria lida de um projecto: um tempo útil igual ao da bateria
+ * no equipamento deste browser passa a null (segue a bateria se ela for
+ * reconfigurada); diferente, fica como acerto da missão.
+ * @param {Equipment|null|undefined} eq
+ * @param {MissionBatteryChoice} choice
+ * @returns {MissionBatteryChoice}
+ */
+export function followBatteryIfEqual(eq, choice) {
+  if (!choice?.aircraftId) return choice
+  const { battery, usefulMin } = resolveMissionBattery(eq, choice.aircraftId, choice)
+  return {
+    aircraftId: choice.aircraftId,
+    batteryId: choice.batteryId ?? null,
+    usefulMin: usefulMin === battery.usefulMin ? null : usefulMin,
+  }
+}

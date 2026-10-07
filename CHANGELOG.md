@@ -6,6 +6,41 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Acrescentado (configuração do equipamento e tempo útil por voo)
+
+- **Janela «Configuração»** (roda dentada no cabeçalho, ao lado da ajuda).
+  Por aeronave: o alcance visual (VLOS) e os tipos de bateria, cada um com
+  o **tempo útil por conjunto** — os minutos de voo já descontada a
+  reserva com que se aterra — e, opcionalmente, quantos conjuntos a equipa
+  tem; acrescentam-se e retiram-se tipos (fica sempre um) e escolhe-se o
+  que as missões usam por omissão. O M300 RTK traz os tempos medidos no
+  campo (TB60 25 min, TB65 28 min); os das outras aeronaves são
+  estimativas e estão marcados como tal. Guarda também o raio e o
+  desnível máximo das zonas de descolagem, para as bases múltiplas. Fica
+  no browser, à parte dos projectos, e leva-se para outro computador com
+  Exportar / Importar (ficheiro JSON; um ficheiro errado dá o motivo na
+  própria janela). «Repor valores por omissão» pede confirmação.
+- **Bateria da missão em tempo útil.** Na divisão por bateria, «Duração
+  da bateria» e «Reserva de regresso» dão lugar a um selector do tipo de
+  bateria e ao «Tempo útil por voo», que segue o da bateria e se acerta à
+  mão para as condições do dia (com reposição ao valor da bateria). A
+  reserva deixa de ser aplicada por cima: blocos, lado do quadrado,
+  preflight, resumo do projecto e circular usam o tempo útil tal como
+  está, o que é como o operador conta as baterias.
+- **Voos contra conjuntos.** Com a contagem de conjuntos conhecida, a
+  lista de blocos (e os blocos da circular) mostra uma nota quando a
+  missão precisa de mais voos do que os conjuntos que a equipa tem.
+
+### Alterado (projecto: bateria)
+
+- O projecto guarda a bateria da missão (`battery`: tipo e tempo útil) e
+  a reserva fica a 0; `batteryByCombo` deixa de ser escrito. Um projecto
+  antigo abre com o tempo útil equivalente — duração nominal × (1 −
+  reserva), ao meio minuto, com os 30 % de então quando a reserva falta —
+  e os seus blocos ficam como estavam. Esquema
+  `public/schema/project-v2.schema.json` actualizado; os ficheiros antigos
+  continuam a validar.
+
 ### Acrescentado (aviso antes de usar)
 
 - **Aviso na primeira abertura.** Uma janela com cinco pontos: sem

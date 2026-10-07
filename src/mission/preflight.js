@@ -140,8 +140,12 @@ function routeItems(c) {
   return out
 }
 
-/** Minutos úteis de uma bateria, descontada a reserva; null sem bateria. */
-export function usableBatteryMin(batteryMin, reservePct = 30) {
+/**
+ * Minutos úteis por voo; null sem bateria. A missão passa o tempo útil do
+ * equipamento (já sem a reserva de aterragem) com reservePct 0 — a reserva
+ * por omissão é 0 para nunca ser descontada duas vezes.
+ */
+export function usableBatteryMin(batteryMin, reservePct = 0) {
   if (!(batteryMin > 0)) return null
   return batteryMin * (1 - Math.min(95, Math.max(0, reservePct)) / 100)
 }

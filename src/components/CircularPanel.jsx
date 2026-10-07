@@ -1,5 +1,6 @@
 import { useT } from '../i18n.jsx'
 import { IconDownload, IconTrash } from './Icons.jsx'
+import BatterySetsNote from './BatterySetsNote.jsx'
 import { MAX_CIRCLES } from '../utils/circular.js'
 
 /**
@@ -57,6 +58,8 @@ export default function CircularPanel({
   advice,
   blocks,
   usableMin,
+  setsCheck = null,
+  batteryLabel = '',
   triggerWarn,
   altitude,
   frontOverlap,
@@ -289,6 +292,7 @@ export default function CircularPanel({
                 {t('ci.plan.blocks', { n: blocks.length, min: Math.round(usableMin) })}
               </p>
             )}
+            <BatterySetsNote check={setsCheck} battery={batteryLabel} />
           </div>
         )}
         <div className="mt-3 grid grid-cols-1 gap-2">

@@ -1830,6 +1830,12 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
     'agregado: sem bateria valida -> batteries null',
     aggregatePlans([{ flightTimeS: 60 }], {}).batteries === null,
   )
+  // tempo útil por voo (equipamento) sem reserva indicada: nada se desconta
+  // por cima — 25 min de voo cabem num voo de 25 min úteis
+  check(
+    'agregado: sem reserva indicada o tempo útil não é reduzido',
+    aggregatePlans([{ flightTimeS: 1500 }], { batteryMin: 25 }).batteries === 1,
+  )
 }
 
 /* 9. Trava de segurança */

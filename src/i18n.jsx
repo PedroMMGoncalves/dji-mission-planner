@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react'
 import controlPanelDict from './i18n/dict.controlPanel.js'
 import missionModesDict from './i18n/dict.missionModes.js'
 import preflightDict from './i18n/dict.preflight.js'
+import settingsDict from './i18n/dict.settings.js'
 
 /**
  * Internacionalização PT/EN.
@@ -198,6 +199,12 @@ const BASE_DICT = {
   'map.parishes': { pt: 'Freguesias (CAOP)', en: 'Parishes (CAOP)' },
 }
 
-const DICT = { ...BASE_DICT, ...controlPanelDict, ...missionModesDict, ...preflightDict }
+const DICT = {
+  ...BASE_DICT,
+  ...controlPanelDict,
+  ...missionModesDict,
+  ...preflightDict,
+  ...settingsDict,
+}
 
 export default DICT

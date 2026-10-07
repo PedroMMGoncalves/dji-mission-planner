@@ -27,13 +27,13 @@ const MIN_SEGMENT_M = 1 // segmentos mais curtos que isto são descartados
  *      bateria e squareSideForBattery). PRÉ-CALIBRADO contra o DJI Pilot 2,
  *      não contra voo medido: ver a nota de turnCostS.
  *
- * 2. AUTONOMIA REAL por combinação aeronave+payload (min): tempo de motor
- *    ligado até à reserva de regresso, por combinação (M300+P1, M300+
- *    Mapper+, M3E, M4T), com vento típico.
- *    → entra pela interface (campo de bateria, override por combinação —
- *      batteryByCombo, T1.4) e, se o valor por omissão da aeronave estiver
- *      sistematicamente errado, corrige-se `batteryMin` em
- *      src/data/drones.js (AIRCRAFT).
+ * 2. TEMPO ÚTIL por conjunto de baterias (min): tempo de motor ligado até
+ *    aterrar com a reserva habitual (15-20 %), por aeronave e tipo de
+ *    bateria (M300 TB60/TB65, M3E, M4T), com vento típico.
+ *    → entra pela interface: Configuração > equipamento (por tipo de
+ *      bateria, guardado no browser) e, para o dia, o «Tempo útil por voo»
+ *      da missão. Os valores por omissão estão em src/mission/equipment.js
+ *      (PRESETS).
  *
  * 3. VELOCIDADE EFECTIVA em faixa (m/s): distância de faixa voada ÷ tempo
  *    em faixa, comparada com a velocidade programada. Se a razão medida
@@ -343,7 +343,7 @@ const MAX_TILES = 400 // trava contra mosaicos com células minúsculas
  */
 export function squareSideForBattery({
   batteryMin,
-  reservePct,
+  reservePct = 0, // a aplicação passa o tempo útil, já sem a reserva
   speed,
   spacingM,
   transitS = 0,
@@ -1177,11 +1177,13 @@ export function nadirLineLocalPerBlock(blockLineCounts, nadirStartLine) {
  * E3.2: agregado do projecto quando coexistem vários planos (área, fachada,
  * órbita): soma tempo e fotos e estima as baterias somando POR PLANO
  * (missões separadas não partilham a bateria a meio), com o tempo útil
- * = bateria × (1 − reserva). Devolve null sem planos válidos.
+ * = bateria × (1 − reserva). A aplicação passa o tempo útil por voo do
+ * equipamento (já com a reserva de aterragem) e reserva 0, que é também a
+ * omissão. Devolve null sem planos válidos.
  */
 export function aggregatePlans(
   statsList,
-  { batteryMin, reservePct = 30 } = /** @type {{batteryMin?: number, reservePct?: number}} */ ({}),
+  { batteryMin, reservePct = 0 } = /** @type {{batteryMin?: number, reservePct?: number}} */ ({}),
 ) {
   const valid = (statsList ?? []).filter((s) => s && Number.isFinite(s.flightTimeS))
   if (valid.length === 0) return null
@@ -1215,7 +1217,8 @@ export function aggregatePlans(
  *  - modo 'battery': orçamento = tempo útil de voo
  *                    = duração da bateria × (1 − reserva/100)
  *                    − trânsito ida+volta à base (se a base estiver marcada).
- *                    A reserva por defeito é 30% (regressar com 30%).
+ *                    A aplicação passa o tempo útil por voo do equipamento
+ *                    (já sem a reserva de aterragem) com reserva 0.
  *
  * Como os blocos partilham faixas adjacentes da MESMA grelha, a sobreposição
  * lateral fotográfica entre blocos mantém-se — não são precisas margens
@@ -1228,7 +1231,7 @@ export function splitIntoBlocks(plan, options) {
     mode,
     maxAreaHa,
     batteryMin,
-    reservePct,
+    reservePct = 0,
     speed,
     spacingM,
     basePoint,

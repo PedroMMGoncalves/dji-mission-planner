@@ -27,7 +27,10 @@ export const DEFAULT_PARAMS = {
 export const DEFAULT_SPLIT = {
   mode: 'none', // 'none' | 'area' | 'battery' | 'tiles'
   maxAreaHa: 20,
-  reservePct: 30, // regressar à base com 30% de bateria
+  // Reserva sobre a bateria: 0, porque o tempo útil por voo (equipamento,
+  // Configuração) já desconta a reserva com que se aterra. Só os projectos
+  // antigos traziam 30 %, que a leitura incorpora no tempo útil (project.js).
+  reservePct: 0,
   maxSide: 500, // teto do lado do bloco por bateria (conforto VLOS)
   tileSize: 250, // lado dos quadrados do mosaico (m)
   tileOrientation: 0, // azimute da malha do mosaico

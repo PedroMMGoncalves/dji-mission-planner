@@ -37,7 +37,7 @@ const defaults = () => ({
   drone: { ...DEFAULT_SELECTION },
   custom: { ...DEFAULT_CUSTOM_SENSOR },
   payloadTuning: {},
-  batteryByCombo: {},
+  battery: { batteryId: 'padrao', usefulMin: 30 },
   inspectPoints: [],
   missionMode: 'area',
   faceConfig: { ...DEFAULT_FACE_CONFIG },
@@ -63,6 +63,8 @@ describe('esquema JSON do ficheiro de projecto', () => {
 
   test('o estado por omissao valida', () => {
     expect(validate(roundTrip(defaults())), errors()).toBe(true)
+    // a reserva por omissao e 0: o tempo util ja a inclui
+    expect(DEFAULT_SPLIT.reservePct).toBe(0)
   })
 
   test('paragem nos waypoints: os dois valores validam, o resto e recusado', () => {
@@ -104,7 +106,7 @@ describe('esquema JSON do ficheiro de projecto', () => {
     st.split = { ...st.split, mode: 'battery' }
     st.disabledTiles = new Set([0, 4])
     st.payloadTuning = { M4T_LIDAR: { effectiveFov: 50 } }
-    st.batteryByCombo = { 'M3E:M3E_WIDE': 28 }
+    st.battery = { batteryId: 'padrao', usefulMin: 27.5 }
     st.inspectPoints = [
       {
         id: 1,
@@ -150,6 +152,29 @@ describe('esquema JSON do ficheiro de projecto', () => {
     expect(n.ring).toEqual(st.ring)
     expect([...n.disabledTiles]).toEqual([0, 4])
     expect(n.inspectPoints).toHaveLength(2)
+    expect(n.battery).toEqual({ aircraftId: 'M3E', batteryId: 'padrao', usefulMin: 27.5 })
+  })
+
+  test('projecto anterior ao equipamento: valida, e abre com o tempo útil equivalente', () => {
+    const antigo = roundTrip(defaults())
+    delete antigo.battery
+    antigo.drone = { aircraftId: 'M300RTK', payloadId: 'P1' }
+    antigo.batteryByCombo = { 'M300RTK:P1': 40 }
+    antigo.split = { ...antigo.split, mode: 'battery', reservePct: 25 }
+    expect(validate(antigo), errors()).toBe(true)
+    const n = normalizeProject(antigo)
+    expect(n.battery).toEqual({ aircraftId: 'M300RTK', batteryId: null, usefulMin: 30 })
+    expect(n.split.reservePct).toBe(0)
+    // regravado, sai no formato de hoje e continua a validar
+    const hoje = roundTrip({
+      ...defaults(),
+      drone: n.drone,
+      split: { ...DEFAULT_SPLIT, ...n.split },
+      battery: { batteryId: 'TB60', usefulMin: n.battery.usefulMin },
+    })
+    expect(hoje.batteryByCombo).toBeUndefined()
+    expect(hoje.split.reservePct).toBe(0)
+    expect(validate(hoje), errors()).toBe(true)
   })
 
   test('lixo falha: versao errada, anel com dois vertices, altitude em texto, campo desconhecido', () => {
@@ -175,5 +200,8 @@ describe('esquema JSON do ficheiro de projecto', () => {
     expect(validate({ ...ok, extra: 1 })).toBe(false)
     expect(validate({ ...ok, inspectPoints: [{ id: 1 }] })).toBe(false)
     expect(validate({ ...ok, split: { ...ok.split, batteryMin: 25 } })).toBe(false) // so v1
+    expect(validate({ ...ok, battery: { ...ok.battery, usefulMin: 0 } })).toBe(false)
+    expect(validate({ ...ok, battery: { ...ok.battery, usefulMin: '25' } })).toBe(false)
+    expect(validate({ ...ok, battery: { ...ok.battery, reservePct: 20 } })).toBe(false)
   })
 })

@@ -123,15 +123,6 @@ export default {
     pt: 'Prolonga cada faixa nos dois extremos: as viragens ficam fora da área e os dados dentro dela são captados a velocidade e atitude estáveis. Sugerido 10–20 m para LiDAR; 0 desliga. Conta para o tempo e para os blocos.',
     en: 'Extends every line at both ends: turns happen outside the area and in-area data is captured at stable speed and attitude. Suggested 10–20 m for LiDAR; 0 disables. Counts toward time and block budgets.',
   },
-  'cp.split.batteryReset': { pt: 'Defeito', en: 'Default' },
-  'cp.split.batteryResetTitle': {
-    pt: 'Voltar ao valor por defeito da aeronave ({min} min)',
-    en: 'Back to the aircraft default ({min} min)',
-  },
-  'cp.split.batteryComboHint': {
-    pt: 'Por defeito da aeronave: {min} min. Um valor editado fica guardado para esta combinação aeronave+payload (um payload pesado encurta a autonomia real).',
-    en: 'Aircraft default: {min} min. An edited value is stored for this aircraft+payload combination (a heavy payload shortens real endurance).',
-  },
   'cp.flight.aglCapWarn': {
     pt: 'O payload {payload} tem tecto operacional de {cap} m AGL e a rota chega a ~{worst} m sobre o terreno. Reduza a altitude.',
     en: 'The {payload} payload is rated to {cap} m AGL and the route reaches ~{worst} m above ground. Lower the altitude.',
@@ -393,17 +384,15 @@ export default {
     en: 'Too many cells (>400). Increase the square side.',
   },
   'cp.split.tooManyCellsBattery': {
-    pt: 'Demasiadas células (>400). Aumente a duração da bateria ou o tecto VLOS.',
-    en: 'Too many cells (>400). Increase the battery duration or the VLOS ceiling.',
+    pt: 'Demasiadas células (>400). Aumente o tempo útil por voo ou o tecto VLOS.',
+    en: 'Too many cells (>400). Increase the useful time per flight or the VLOS ceiling.',
   },
   'cp.split.maxAreaPerBlock': { pt: 'Área máx. por bloco', en: 'Max. area per block' },
-  'cp.split.batteryDuration': { pt: 'Duração da bateria', en: 'Battery duration' },
-  'cp.split.returnReserve': { pt: 'Reserva de regresso', en: 'Return reserve' },
   'cp.split.maxSide': { pt: 'Lado máx. (VLOS)', en: 'Max. side (VLOS)' },
   'cp.split.squareBlocks': { pt: 'Blocos quadrados de', en: 'Square blocks of' },
   'cp.split.batteryUse': {
-    pt: ', dimensionados para {pct}% da bateria',
-    en: ', sized for {pct}% of the battery',
+    pt: ', dimensionados para {min} min úteis por voo',
+    en: ', sized for {min} useful min per flight',
   },
   'cp.split.transitDeducted': {
     pt: '(trânsito à base descontado)',

@@ -808,6 +808,14 @@ await scenario('projecto-autosave-ficheiro', async () => {
       onDisk.params?.crosshatch === true &&
       JSON.stringify(onDisk.ring) === JSON.stringify(saved.ring),
   )
+  check(
+    'projecto: guarda a bateria da missão (tipo e tempo útil) sem reserva por cima',
+    typeof onDisk.battery?.batteryId === 'string' &&
+      onDisk.battery.usefulMin > 0 &&
+      onDisk.split?.reservePct === 0 &&
+      onDisk.batteryByCombo === undefined,
+    JSON.stringify(onDisk.battery),
+  )
 
   // estado limpo, depois abrir o ficheiro: tudo tem de voltar
   await page.evaluate(() => localStorage.clear())
@@ -1160,6 +1168,148 @@ await scenario('area-mover-inteira', async () => {
     `${c[0].toFixed(6)},${c[1].toFixed(6)}`,
   )
   check('mover: sem erros de pagina', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Configuração (equipamento): o tempo útil por conjunto de cada bateria
+// alimenta a bateria da missão (selector e tempo útil por voo, que seguem a
+// configuração até serem acertados à mão), sobrevive ao recarregar e vai e
+// volta por ficheiro.
+await scenario('configuracao-equipamento', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await page.getByRole('button', { name: 'Bateria', exact: true }).click()
+  const batSel = page.getByTestId('mission-battery')
+  const useful = page.getByTestId('mission-useful')
+  check(
+    'equipamento: M300 abre na TB60 com 25 min úteis',
+    (await batSel.inputValue()) === 'TB60' && (await useful.inputValue()) === '25',
+    `${await batSel.inputValue()} / ${await useful.inputValue()}`,
+  )
+  check(
+    'equipamento: sem campo de reserva de regresso na divisão por bateria',
+    (await page.getByText(/Reserva de regresso|Return reserve/).count()) === 0,
+  )
+  await batSel.selectOption('TB65')
+  check('equipamento: TB65 escolhida dá 28 min úteis', (await useful.inputValue()) === '28')
+
+  // abrir a configuração no botão do cabeçalho e mudar o tempo da TB65
+  const gear = page.getByRole('button', { name: /^(Configuração|Settings)$/ }).first()
+  await page.getByTestId('open-settings').click()
+  const dlg = page.getByRole('dialog', { name: /Configuração|Settings/ })
+  check(
+    'equipamento: a configuração abre do cabeçalho, na aeronave da missão',
+    (await dlg.isVisible()) &&
+      (await gear.getAttribute('title')) !== null &&
+      (await dlg
+        .getByRole('tab', { name: 'DJI Matrice 300 RTK' })
+        .getAttribute('aria-selected')) === 'true',
+  )
+  const tb65 = dlg.locator('li[data-battery-id="TB65"]')
+  await tb65.locator('input[id$="-useful"]').fill('30')
+  await tb65.locator('input[id$="-count"]').fill('3')
+  await tb65.locator('input[id$="-count"]').press('Tab')
+  const fechar = () =>
+    dlg
+      .getByRole('button', { name: /^(Fechar|Close)$/ })
+      .last()
+      .click()
+  await fechar()
+  await page.waitForTimeout(400)
+  check(
+    'equipamento: o selector e o tempo útil da missão seguem a configuração',
+    (await batSel.inputValue()) === 'TB65' &&
+      (await useful.inputValue()) === '30' &&
+      /TB65 · 30 min/.test(await batSel.locator('option[value="TB65"]').innerText()),
+    `${await useful.inputValue()}`,
+  )
+  check(
+    'equipamento: mais voos do que os 3 conjuntos dá a nota',
+    await page.getByTestId('sets-note').isVisible(),
+  )
+  const stored = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('dji-mission-planner:equipment') ?? 'null'),
+  )
+  const tb65Stored = stored?.aircraft?.M300RTK?.batteries?.find((b) => b.id === 'TB65')
+  check(
+    'equipamento: guardado no browser',
+    tb65Stored?.usefulMin === 30 && tb65Stored?.count === 3 && tb65Stored?.estimated === false,
+  )
+
+  // acerto do dia na missão e volta ao valor da bateria
+  await useful.fill('26')
+  await page.waitForTimeout(300)
+  const reset = page.getByTestId('mission-useful-reset')
+  check('equipamento: tempo útil acertado à mão mostra a reposição', await reset.isVisible())
+  await reset.click()
+  check('equipamento: repor volta ao tempo da bateria', (await useful.inputValue()) === '30')
+
+  // exportar, estragar, importar de volta
+  await page.getByTestId('open-settings').click()
+  const [dl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 15000 }),
+    dlg.getByRole('button', { name: /^(Exportar|Export)$/ }).click(),
+  ])
+  const file = join(OUT, 'equipamento-e2e.json')
+  await dl.saveAs(file)
+  const exported = JSON.parse(readFileSync(file, 'utf8'))
+  check(
+    'equipamento: o ficheiro exportado leva o marcador e o tempo da TB65',
+    exported.kind === 'dji-mission-planner/equipment' &&
+      exported.aircraft.M300RTK.batteries.find((b) => b.id === 'TB65')?.usefulMin === 30,
+  )
+  await tb65.locator('input[id$="-useful"]').fill('27')
+  await tb65.locator('input[id$="-useful"]').press('Tab')
+  const importInput = dlg.getByTestId('settings-import')
+  await importInput.setInputFiles(fx.rect)
+  check(
+    'equipamento: um ficheiro que não é de equipamento dá o erro em português',
+    /não é uma configuração de equipamento/.test(await dlg.getByRole('alert').innerText()),
+  )
+  await importInput.setInputFiles(file)
+  await page.waitForTimeout(300)
+  check(
+    'equipamento: importar repõe a configuração exportada',
+    (await tb65.locator('input[id$="-useful"]').inputValue()) === '30' &&
+      /importada|imported/.test(await dlg.getByRole('status').innerText()),
+  )
+  await fechar()
+
+  // recarregar: equipamento e escolha da missão persistem
+  await page.waitForTimeout(800) // autosave do projecto (debounce 500 ms)
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page
+    .locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
+    .waitFor({ state: 'attached', timeout: 20000 })
+  await page.waitForTimeout(800)
+  check(
+    'equipamento: recarregar mantém a TB65 com 30 min e a missão a segui-la',
+    (await batSel.inputValue()) === 'TB65' &&
+      (await useful.inputValue()) === '30' &&
+      (await page.getByTestId('mission-useful-reset').count()) === 0,
+    `${await batSel.inputValue()} / ${await useful.inputValue()}`,
+  )
+
+  // repor os valores por omissão pede confirmação
+  await page.getByTestId('open-settings').click()
+  await dlg.getByRole('button', { name: /Repor valores por omissão|Restore defaults/ }).click()
+  check(
+    'equipamento: repor pede confirmação antes de apagar',
+    (await tb65.locator('input[id$="-useful"]').inputValue()) === '30' &&
+      (await dlg.getByRole('alertdialog').isVisible()),
+  )
+  await dlg.getByRole('button', { name: /^(Repor|Restore)$/ }).click()
+  await fechar()
+  check(
+    'equipamento: valores por omissão repostos (TB65 28 min) e a missão segue',
+    (await useful.inputValue()) === '28' && (await page.getByTestId('sets-note').count()) === 0,
+  )
+  check('equipamento: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

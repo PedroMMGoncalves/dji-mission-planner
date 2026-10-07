@@ -45,8 +45,17 @@
         "properties": { "effectiveFov": { "type": "number", "exclusiveMinimum": 0, "maximum": 180 } }
       }
     },
+    "battery": {
+      "description": "Bateria da missao: o tipo (id de uma bateria da aeronave no equipamento, Configuracao) e o tempo util por voo em minutos, ja descontada a reserva com que se aterra. Sem este campo o projecto e anterior ao equipamento: abre com o tempo util equivalente a batteryByCombo e split.reservePct.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "batteryId": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
+        "usefulMin": { "type": "number", "minimum": 1, "maximum": 120 }
+      }
+    },
     "batteryByCombo": {
-      "description": "Duracao de bateria em minutos por combinacao 'aircraftId:payloadId'.",
+      "description": "Legado (projectos anteriores ao equipamento): duracao NOMINAL de bateria em minutos por combinacao 'aircraftId:payloadId'. Ao abrir, converte-se em battery.usefulMin com split.reservePct.",
       "type": "object",
       "additionalProperties": { "type": "number", "exclusiveMinimum": 0 }
     },
@@ -136,7 +145,10 @@
       "properties": {
         "mode": { "enum": ["none", "area", "battery", "tiles"] },
         "maxAreaHa": { "type": "number", "exclusiveMinimum": 0 },
-        "reservePct": { "$ref": "#/$defs/pct" },
+        "reservePct": {
+          "description": "Reserva sobre a bateria (%). 0 nos projectos de hoje: a reserva ja esta em battery.usefulMin. Nos antigos (sem battery; 30 quando falta) entra no tempo util ao abrir.",
+          "$ref": "#/$defs/pct"
+        },
         "maxSide": { "type": "number", "exclusiveMinimum": 0 },
         "tileSize": { "type": "number", "exclusiveMinimum": 0 },
         "tileOrientation": { "type": "number", "minimum": 0, "maximum": 360 }

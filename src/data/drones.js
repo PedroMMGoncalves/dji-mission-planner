@@ -11,8 +11,12 @@
  * Aircraft fields:
  *  - label:      name shown in the dropdown
  *  - speedRange: mission speed limits (m/s), clamped in the UI
- *  - batteryMin: default battery duration (min, DJI spec max) — per-combo
- *                overrides arrive with T1.4
+ *  - batteryMin: nominal battery duration (min, DJI spec max). Missions no
+ *                longer use it directly: they fly the USEFUL time per set
+ *                from the equipment settings (src/mission/equipment.js).
+ *                It converts legacy projects (batteryMinFor +
+ *                legacyUsefulMin) and seeds estimates for aircraft
+ *                without a preset.
  *  - wpml:       { droneEnumValue, droneSubEnumValue } for template/waylines
  *  - payloads:   ids into PAYLOADS, first entry is the default
  *
@@ -327,9 +331,10 @@ export function aglCapWarning(
 }
 
 /**
- * Battery duration (min) for an aircraft+payload combo (T1.4): the per-combo
- * override when one is stored (a heavy payload shortens real endurance),
- * otherwise the aircraft default.
+ * Nominal battery duration (min) for an aircraft+payload combo (T1.4): the
+ * per-combo override when one is stored (a heavy payload shortens real
+ * endurance), otherwise the aircraft default. Only read when opening legacy
+ * projects (batteryByCombo), see src/mission/project.js.
  */
 export function batteryMinFor(aircraft, payloadId, overrides = {}) {
   const o = overrides[`${aircraft.id}:${payloadId}`]

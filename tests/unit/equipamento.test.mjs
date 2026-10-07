@@ -7,17 +7,25 @@ import { AIRCRAFT } from '../../src/data/drones.js'
 import {
   EQUIPMENT_KEY,
   EQUIPMENT_KIND,
+  EQUIPMENT_LIMITS,
   EQUIPMENT_VERSION,
+  addBattery,
   batteryFor,
   defaultAircraftEquipment,
   defaultEquipment,
   equipmentFromJson,
   equipmentToJson,
   flightsVsSets,
+  followBatteryIfEqual,
   legacyUsefulMin,
   loadEquipment,
   normalizeEquipment,
+  removeBattery,
+  resolveMissionBattery,
   saveEquipment,
+  setDefaultBattery,
+  updateAircraftEquipment,
+  updateBattery,
   usefulMinFor,
   vlosFor,
 } from '../../src/mission/equipment.js'
@@ -393,5 +401,115 @@ describe('equipamento: voos contra conjuntos de baterias', () => {
     expect(flightsVsSets(eq, 'M3E', null, NaN)).toEqual({ flights: 0, sets: 0, short: false })
     expect(flightsVsSets(eq, 'M3E', null, 1.2)).toEqual({ flights: 2, sets: 0, short: true })
     expect(flightsVsSets(eq, 'M3E', null, -3).flights).toBe(0)
+  })
+})
+
+describe('edição (janela Configuração)', () => {
+  test('limites expostos para a interface', () => {
+    expect(EQUIPMENT_LIMITS.usefulMin).toEqual({ min: 1, max: 120 })
+    expect(EQUIPMENT_LIMITS.vlosM.min).toBe(50)
+  })
+
+  test('alterar o VLOS e uma bateria não toca nas outras aeronaves nem no original', () => {
+    const eq = defaultEquipment()
+    const a = updateAircraftEquipment(eq, 'M300RTK', { vlosM: 800 })
+    expect(a.aircraft.M300RTK.vlosM).toBe(800)
+    expect(eq.aircraft.M300RTK.vlosM).toBe(1000)
+    expect(a.aircraft.M3E).toBe(eq.aircraft.M3E)
+    const b = updateBattery(a, 'M300RTK', 'TB65', { usefulMin: 30, count: 4, id: 'outro' })
+    expect(batteryFor(b, 'M300RTK', 'TB65')).toMatchObject({ id: 'TB65', usefulMin: 30, count: 4 })
+    expect(batteryFor(b, 'M300RTK', 'TB60').usefulMin).toBe(25)
+    // id desconhecido: nada muda
+    expect(
+      updateBattery(b, 'M300RTK', 'TB99', { usefulMin: 1 }).aircraft.M300RTK.batteries,
+    ).toEqual(b.aircraft.M300RTK.batteries)
+  })
+
+  test('acrescentar: id novo e único, tempo da bateria por omissão, não estimado', () => {
+    const eq = defaultEquipment()
+    const r1 = addBattery(eq, 'M300RTK', '  TB60 velhas ')
+    expect(r1.batteryId).toBe('bateria-3')
+    const nova = batteryFor(r1.equipment, 'M300RTK', 'bateria-3')
+    expect(nova).toEqual({
+      id: 'bateria-3',
+      label: 'TB60 velhas',
+      usefulMin: 25,
+      count: null,
+      estimated: false,
+    })
+    const r2 = addBattery(r1.equipment, 'M300RTK', '')
+    expect(r2.batteryId).toBe('bateria-4')
+    expect(batteryFor(r2.equipment, 'M300RTK', 'bateria-4').label).toBe('bateria-4')
+    // a normalização mantém-no
+    expect(normalizeEquipment(r2.equipment).aircraft.M300RTK.batteries).toHaveLength(4)
+  })
+
+  test('retirar: fica sempre uma; retirada a por omissão, passa a primeira', () => {
+    const eq = defaultEquipment()
+    const a = removeBattery(eq, 'M300RTK', 'TB60')
+    expect(a.aircraft.M300RTK.batteries.map((b) => b.id)).toEqual(['TB65'])
+    expect(a.aircraft.M300RTK.defaultBatteryId).toBe('TB65')
+    expect(removeBattery(a, 'M300RTK', 'TB65')).toBe(a)
+    expect(removeBattery(eq, 'M300RTK', 'nada')).toBe(eq)
+    const b = removeBattery(eq, 'M300RTK', 'TB65')
+    expect(b.aircraft.M300RTK.defaultBatteryId).toBe('TB60')
+  })
+
+  test('bateria por omissão: só ids existentes', () => {
+    const eq = defaultEquipment()
+    expect(setDefaultBattery(eq, 'M300RTK', 'TB65').aircraft.M300RTK.defaultBatteryId).toBe('TB65')
+    expect(setDefaultBattery(eq, 'M300RTK', 'x')).toBe(eq)
+  })
+})
+
+describe('bateria da missão', () => {
+  test('sem escolha: a bateria por omissão e o tempo útil dela', () => {
+    const eq = defaultEquipment()
+    expect(resolveMissionBattery(eq, 'M300RTK', null)).toMatchObject({
+      battery: { id: 'TB60' },
+      usefulMin: 25,
+      overridden: false,
+    })
+  })
+
+  test('tipo escolhido segue a configuração; acerto do dia sobrepõe-se', () => {
+    let eq = defaultEquipment()
+    const choice = { aircraftId: 'M300RTK', batteryId: 'TB65', usefulMin: null }
+    expect(resolveMissionBattery(eq, 'M300RTK', choice).usefulMin).toBe(28)
+    eq = updateBattery(eq, 'M300RTK', 'TB65', { usefulMin: 30 })
+    expect(resolveMissionBattery(eq, 'M300RTK', choice).usefulMin).toBe(30)
+    const dia = resolveMissionBattery(eq, 'M300RTK', { ...choice, usefulMin: 26 })
+    expect(dia).toMatchObject({ usefulMin: 26, overridden: true })
+    // igual ao da bateria não conta como acerto
+    expect(resolveMissionBattery(eq, 'M300RTK', { ...choice, usefulMin: 30 }).overridden).toBe(
+      false,
+    )
+    // limites do equipamento
+    expect(resolveMissionBattery(eq, 'M300RTK', { ...choice, usefulMin: 999 }).usefulMin).toBe(120)
+  })
+
+  test('a escolha só vale para a aeronave em que foi feita; bateria retirada cai na por omissão', () => {
+    const eq = defaultEquipment()
+    const choice = { aircraftId: 'M300RTK', batteryId: 'TB65', usefulMin: 20 }
+    expect(resolveMissionBattery(eq, 'M3E', choice)).toMatchObject({
+      battery: { id: 'padrao' },
+      usefulMin: 30,
+      overridden: false,
+    })
+    const sem = removeBattery(eq, 'M300RTK', 'TB65')
+    expect(resolveMissionBattery(sem, 'M300RTK', { ...choice, usefulMin: null }).battery.id).toBe(
+      'TB60',
+    )
+  })
+
+  test('followBatteryIfEqual: igual ao equipamento segue-o, diferente fica', () => {
+    const eq = defaultEquipment()
+    expect(
+      followBatteryIfEqual(eq, { aircraftId: 'M300RTK', batteryId: 'TB60', usefulMin: 25 }),
+    ).toEqual({ aircraftId: 'M300RTK', batteryId: 'TB60', usefulMin: null })
+    expect(
+      followBatteryIfEqual(eq, { aircraftId: 'M300RTK', batteryId: null, usefulMin: 22 }).usefulMin,
+    ).toBe(22)
+    expect(followBatteryIfEqual(eq, null)).toBeNull()
   })
 })

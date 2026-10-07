@@ -31,7 +31,7 @@ para o local real na interface e guardar o projecto com o mesmo nome.
 |---|---|---|
 | R1 | Rectângulo 400 × 250 m, nadir, 80 m, 80/70 %, M3E | caso base: GSD, intervalo, espaçamento, sobreposições, fotos, duração |
 | R2 | Polígono em U 600 × 500 m com entalhe, seguimento de terreno (5 m), dupla grelha + passagem nadir, gimbal −60°, 100 m | ligações amostradas no relevo, disparo suspenso nas ligações, marcador do gimbal nadir, alturas relativas |
-| R3 | Rectângulo 900 × 700 m a 60 m, faixas a 45°, blocos por bateria (reserva 30 %) | um KMZ por bloco, arranque de cada bloco na base, tempo por bloco vs bateria real |
+| R3 | Rectângulo 900 × 700 m a 60 m, faixas a 45°, blocos por bateria (tempo útil por voo da bateria escolhida) | um KMZ por bloco, arranque de cada bloco na base, tempo por bloco vs bateria real |
 | L1 | Rectângulo 500 × 300 m, M300 RTK + YellowScan Mapper+, 80 m, 5 m/s, 50 % lateral, fiada de amarração | swath e densidade LiDAR, enum PSDK 65534, fiada perpendicular |
 
 Cada missão voa-se **duas vezes** no mesmo dia (repetibilidade) e, se o

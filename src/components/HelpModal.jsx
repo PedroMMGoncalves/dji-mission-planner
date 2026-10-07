@@ -143,8 +143,16 @@ function InstrucoesPt() {
           <strong>Faixas</strong> — corta a serpentina por área máxima (linhas longas).
         </Li>
         <Li>
-          <strong>Bateria</strong> — quadrados dimensionados pela bateria (duração × reserva,
-          trânsito à base descontado, tecto VLOS).
+          <strong>Bateria</strong> — quadrados dimensionados pelo{' '}
+          <strong>tempo útil por voo</strong> (trânsito à base descontado, tecto VLOS). Escolha o
+          tipo de bateria e acerte o tempo útil para as condições do dia; já inclui a reserva com
+          que aterra, nada é descontado por cima.
+        </Li>
+        <Li>
+          <strong>Configuração</strong> (roda dentada no cabeçalho) — por aeronave, o alcance visual
+          e os tipos de bateria com o tempo útil por conjunto e quantos conjuntos tem a equipa (para
+          avisar quando a missão precisa de mais voos); guardada no browser, exporta-se e importa-se
+          em ficheiro.
         </Li>
         <Li>
           <strong>Mosaico</strong> — quadrados de lado manual sobre o polígono.
@@ -325,8 +333,15 @@ function InstrucoesEn() {
           <strong>Strips</strong> — cuts the serpentine by maximum area (long lines).
         </Li>
         <Li>
-          <strong>Battery</strong> — squares sized by the battery (duration × return reserve,
-          transit to home deducted, VLOS cap).
+          <strong>Battery</strong> — squares sized by the <strong>useful time per flight</strong>{' '}
+          (transit to home deducted, VLOS cap). Pick the battery type and adjust the useful time for
+          the day’s conditions; it already includes the reserve you land with, nothing more is
+          deducted.
+        </Li>
+        <Li>
+          <strong>Settings</strong> (gear in the header) — per aircraft, the visual range and the
+          battery types with the useful time per set and how many sets the team has (to flag
+          missions that need more flights); stored in the browser, exported and imported as a file.
         </Li>
         <Li>
           <strong>Mosaic</strong> — squares of manual size over the polygon.

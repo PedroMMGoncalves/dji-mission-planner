@@ -132,6 +132,8 @@ describe('preflightArea', () => {
     )
     expect(bl.map((i) => i.params.id)).toEqual([2])
     expect(usableBatteryMin(0)).toBeNull()
+    // sem reserva indicada não se desconta nada: o tempo útil já a inclui
+    expect(usableBatteryMin(25)).toBe(25)
   })
 
   test('avisos passados (tecto AGL, obturador) e lembrete sem base', () => {

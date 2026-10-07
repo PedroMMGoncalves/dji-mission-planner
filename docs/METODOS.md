@@ -197,10 +197,24 @@ Trânsito: sempre `2 · distância horizontal em linha recta / v`, da base à
 ou da base ao primeiro waypoint de cada bloco. Entre células do mosaico o
 trânsito não é contado; entre as grelhas da dupla grelha é.
 
-Tempo útil de uma bateria: `batteryMin · 60 · (1 − reserva/100)`, reserva
-por omissão 30 %. Baterias do projecto (`aggregatePlans`): somadas por
-plano, `max(1, ceil(tempo / útil))` por cada plano, porque missões
-separadas não partilham uma bateria a meio.
+Tempo útil por voo: o operador conta as baterias em minutos de voo por
+conjunto já descontada a reserva com que aterra (15-20 %): no M300 RTK,
+TB60 25 min e TB65 28 min, medidos no campo; nas outras aeronaves os
+valores por omissão são estimativas (`src/mission/equipment.js`, marcadas
+como tal). Cada tipo de bateria guarda esse tempo na Configuração
+(equipamento, no browser); a missão escolhe o tipo e pode acertar o tempo
+útil para o dia. Esse valor entra no motor como `batteryMin` com reserva
+0, e todas as contas usam `útil = batteryMin · 60 · (1 − reserva/100)` =
+`batteryMin · 60`: não há reserva aplicada por cima, em lado nenhum (a
+reserva por omissão dos módulos puros é 0). Os projectos anteriores
+guardavam a duração nominal e a reserva à parte (30 % por omissão); ao
+abrir, `legacyUsefulMin` converte-as em tempo útil, `nominal · (1 −
+reserva/100)` arredondado ao meio minuto (55 min a 30 % → 38,5 min), e a
+reserva passa a 0, pelo que os blocos não mudam. Baterias do projecto
+(`aggregatePlans`): somadas por plano, `max(1, ceil(tempo / útil))` por
+cada plano, porque missões separadas não partilham uma bateria a meio. Com
+o número de conjuntos da equipa conhecido, a lista de blocos avisa quando
+há mais voos do que conjuntos (`flightsVsSets`).
 
 Divisão em blocos (`splitIntoBlocks`; modelo do UgCS "Large Projects" e do
 DroneDeploy multi-flight): a grelha global mantém-se e é cortada em grupos
@@ -801,7 +815,8 @@ base em terreno plano; alturas relativas à descolagem.
 | Células máximas do mosaico | 400 | geo.js |
 | Lado mínimo do mosaico | 10 m | geo.js |
 | Lado por bateria: tecto / piso / arredondamento | 500 m (≥100) / 50 m / 10 m | geo.js |
-| Reserva de bateria por omissão | 30 % | vários |
+| Reserva de bateria aplicada pelo motor | 0 % (já no tempo útil; projectos antigos: 30 % convertidos ao abrir) | equipment.js, project.js |
+| Tempo útil por conjunto, M300 RTK | TB60 25 min / TB65 28 min | equipment.js |
 | Quebra do disparo nas ligações | max(2,5·spacing, 60 m) | areaExport.js, exportParams.js |
 | Limiar de GSD (|pitch|) | 20° | geo.js |
 | Zoom / tiles / falhas do Terrarium | 12 / 600 / 20 % | terrain.js |
@@ -851,8 +866,8 @@ ponto de inserção único no código para cada grandeza:
    do critério que conta as faixas. Isso alinha-nos com a **previsão** do
    Pilot 2, não com voo medido: o `wpml:duration` é o modelo da DJI, não
    um cronómetro;
-2. autonomia real por combinação aeronave + payload, pela interface
-   (`batteryByCombo`) ou corrigindo `batteryMin` no catálogo;
+2. tempo útil real por tipo de bateria e aeronave, na Configuração
+   (equipamento) ou nos valores por omissão de `src/mission/equipment.js`;
 3. custo de uma paragem intermédia (`stopCostS`, com «Em todos»):
    **deduzido**, metade de uma inversão, porque uma inversão são duas
    paragens. Medir no registo de um voo com paragem em cada foto (o

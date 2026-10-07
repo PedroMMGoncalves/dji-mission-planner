@@ -10,6 +10,7 @@ import ProjectSummary from './components/ProjectSummary.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import ChecklistPage from './components/ChecklistPage.jsx'
 import HelpModal from './components/HelpModal.jsx'
+import SettingsModal from './components/SettingsModal.jsx'
 import DisclaimerModal, {
   acceptDisclaimer,
   disclaimerAccepted,
@@ -27,8 +28,15 @@ import {
   DEFAULT_SELECTION,
   MISSION_PRESETS,
   aglCapWarning,
-  batteryMinFor,
 } from './data/drones.js'
+import {
+  aircraftEquipmentFor,
+  flightsVsSets,
+  followBatteryIfEqual,
+  loadEquipment,
+  resolveMissionBattery,
+  saveEquipment,
+} from './mission/equipment.js'
 import {
   aggregatePlans,
   normalizeTriggerMode,
@@ -72,9 +80,19 @@ import {
   IconCube,
   IconDrone,
   IconDownload,
+  IconGear,
 } from './components/Icons.jsx'
 
 const FLAG_BY_LANG = { pt: FlagPT, en: FlagGB }
+
+/** localStorage, ou null quando o browser o recusa (modo privado, cookies bloqueados). */
+function browserStorage() {
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
+}
 import { LANGS, LangContext, useT } from './i18n.jsx'
 
 export default function App() {
@@ -113,8 +131,20 @@ function AppInner({ lang, setLang }) {
   const [custom, setCustom] = useState(DEFAULT_CUSTOM_SENSOR)
   // afinações por payload (T1.2): { [payloadId]: { effectiveFov } }
   const [payloadTuning, setPayloadTuning] = useState({})
-  // duração de bateria por combinação (T1.4): { 'aircraftId:payloadId': min }
-  const [batteryByCombo, setBatteryByCombo] = useState({})
+  // Equipamento (Configuração): baterias com tempo útil, VLOS e zona de
+  // descolagem por aeronave. Vive no browser, à parte do projecto.
+  const [equipment, setEquipment] = useState(() => loadEquipment(browserStorage()))
+  useEffect(() => {
+    saveEquipment(browserStorage(), equipment)
+  }, [equipment])
+  const [showSettings, setShowSettings] = useState(false)
+  // bateria da missão: tipo e tempo útil acertado para o dia (null = o da
+  // bateria); só vale para a aeronave em que foi escolhida
+  const [missionBattery, setMissionBattery] = useState(() => ({
+    aircraftId: null,
+    batteryId: null,
+    usefulMin: null,
+  }))
   const [params, setParams] = useState(() => ({ ...DEFAULT_PARAMS }))
   const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect' | 'face'
   // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
@@ -221,22 +251,34 @@ function AppInner({ lang, setLang }) {
     [drone.payloadId],
   )
 
-  // duração de bateria efetiva: override da combinação, senão o defeito da
-  // aeronave; editar para o valor de defeito remove o override
-  const batteryMin = batteryMinFor(aircraft, drone.payloadId, batteryByCombo)
-  const setBatteryMin = useCallback(
+  // Tempo útil por voo efectivo (min): o acerto da missão, senão o da
+  // bateria escolhida no equipamento. JÁ inclui a reserva de aterragem, por
+  // isso entra em todo o lado como `batteryMin` com split.reservePct a 0
+  // (blocos, lado do quadrado, preflight, resumo, circular).
+  const {
+    battery: missionBatteryType,
+    usefulMin: batteryMin,
+    overridden: batteryOverridden,
+  } = resolveMissionBattery(equipment, drone.aircraftId, missionBattery)
+  const setMissionBatteryId = useCallback(
+    (batteryId) => setMissionBattery({ aircraftId: drone.aircraftId, batteryId, usefulMin: null }),
+    [drone.aircraftId],
+  )
+  // editar para o valor da bateria (ou um valor inválido) volta a segui-la
+  const setUsefulMin = useCallback(
     (value) => {
-      setBatteryByCombo((m) => {
-        const key = `${drone.aircraftId}:${drone.payloadId}`
-        const dflt = AIRCRAFT[drone.aircraftId]?.batteryMin
-        if (!Number.isFinite(value) || value <= 0 || value === dflt) {
-          const { [key]: _drop, ...rest } = m
-          return rest
-        }
-        return { ...m, [key]: Math.min(120, Math.max(5, value)) }
+      const id = missionBatteryType.id
+      const own = missionBatteryType.usefulMin
+      setMissionBattery({
+        aircraftId: drone.aircraftId,
+        batteryId: id,
+        usefulMin:
+          !Number.isFinite(value) || value <= 0 || value === own
+            ? null
+            : Math.min(120, Math.max(1, value)),
       })
     },
-    [drone],
+    [drone.aircraftId, missionBatteryType],
   )
 
   // Enums WPML: aeronave + payload; o editor custom substitui o enum do
@@ -689,6 +731,17 @@ function AppInner({ lang, setLang }) {
     runExport,
     avisoIntervalo,
   })
+
+  // tipos de bateria da aeronave (selector da missão) e voos contra os
+  // conjuntos que a equipa tem — o aviso só aparece com a contagem conhecida
+  const equipmentBatteries = aircraftEquipmentFor(equipment, drone.aircraftId).batteries
+  const setsCheck = blocks?.length
+    ? flightsVsSets(equipment, drone.aircraftId, missionBatteryType.id, blocks.length)
+    : null
+  const circularSetsCheck =
+    circularBlocks?.length > 1
+      ? flightsVsSets(equipment, drone.aircraftId, missionBatteryType.id, circularBlocks.length)
+      : null
 
   const handleMapClick = useCallback(
     (lonlat) => {
@@ -1159,15 +1212,9 @@ function AppInner({ lang, setLang }) {
           waypointStops: normalizeWaypointStops(n.params.waypointStops),
         }))
       }
-      // projectos antigos guardavam uma duração de bateria única dentro de
-      // split — preserva o comportamento exacto como override da combinação
-      if (n.legacyBatteryMin != null && n.drone) {
-        setBatteryByCombo((m) => ({
-          ...m,
-          [`${n.drone.aircraftId}:${n.drone.payloadId}`]: n.legacyBatteryMin,
-        }))
-      }
-      if (n.batteryByCombo) setBatteryByCombo((m) => ({ ...m, ...n.batteryByCombo }))
+      // bateria da missão (os projectos antigos já vêm convertidos em tempo
+      // útil, project.js): igual ao do equipamento, passa a segui-lo
+      if (n.battery) setMissionBattery(followBatteryIfEqual(equipment, n.battery))
       if (n.missionMode) setMissionMode(n.missionMode)
       if (n.faceConfig) setFaceConfig(n.faceConfig)
       if (n.orbitConfig) setOrbitConfig(n.orbitConfig)
@@ -1192,7 +1239,14 @@ function AppInner({ lang, setLang }) {
       setTerrainFollow,
       applyProjectGeometry,
       setGcpConfig,
+      equipment,
     ],
+  )
+
+  // a bateria tal como o projecto a guarda: o tipo e o tempo útil efectivo
+  const projectBattery = useMemo(
+    () => ({ batteryId: missionBatteryType.id, usefulMin: batteryMin }),
+    [missionBatteryType.id, batteryMin],
   )
 
   // tudo o que o projecto guarda, num só objecto (autosave e ficheiro)
@@ -1202,7 +1256,7 @@ function AppInner({ lang, setLang }) {
       drone,
       custom,
       payloadTuning,
-      batteryByCombo,
+      battery: projectBattery,
       inspectPoints,
       missionMode,
       faceConfig,
@@ -1225,7 +1279,7 @@ function AppInner({ lang, setLang }) {
       drone,
       custom,
       payloadTuning,
-      batteryByCombo,
+      projectBattery,
       inspectPoints,
       missionMode,
       faceConfig,
@@ -1403,8 +1457,17 @@ function AppInner({ lang, setLang }) {
             <IconDownload /> {t('app.exportWpml')}
           </button>
 
-          {/* ajuda e língua encostados à direita */}
+          {/* configuração, ajuda e língua encostados à direita */}
           <div className="ml-3 flex items-center gap-2 border-l border-slate-800 pl-3">
+            <button
+              onClick={() => setShowSettings(true)}
+              title={t('app.settingsTitle')}
+              aria-label={t('app.settings')}
+              data-testid="open-settings"
+              className="flex items-center gap-1.5 rounded border border-slate-700 px-2.5 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
+            >
+              <IconGear />
+            </button>
             <button
               onClick={() => setShowHelp(true)}
               title={t('app.helpTitle')}
@@ -1534,6 +1597,8 @@ function AppInner({ lang, setLang }) {
                 advice={circularAdvice}
                 blocks={circularBlocks}
                 usableMin={circularUsableMin}
+                setsCheck={circularSetsCheck}
+                batteryLabel={missionBatteryType.label || missionBatteryType.id}
                 triggerWarn={circularTriggerWarn}
                 altitude={params.altitude}
                 frontOverlap={params.frontOverlap}
@@ -1586,9 +1651,14 @@ function AppInner({ lang, setLang }) {
                 refAzimuth={refAzimuth}
                 split={split}
                 setSplitParam={setSplitParam}
-                batteryMin={batteryMin}
-                batteryDefault={aircraft.batteryMin}
-                onBatteryMin={setBatteryMin}
+                batteries={equipmentBatteries}
+                battery={missionBatteryType}
+                usefulMin={batteryMin}
+                usefulOverridden={batteryOverridden}
+                onBatteryId={setMissionBatteryId}
+                onUsefulMin={setUsefulMin}
+                setsCheck={setsCheck}
+                onOpenSettings={() => setShowSettings(true)}
                 blocks={blocks}
                 gridActive={Boolean(gridCells)}
                 tilesTotal={tiles?.length ?? null}
@@ -1720,6 +1790,14 @@ function AppInner({ lang, setLang }) {
             setShowHelp(false)
             setDisclaimer('review')
           }}
+        />
+      )}
+      {showSettings && (
+        <SettingsModal
+          equipment={equipment}
+          setEquipment={setEquipment}
+          initialAircraftId={drone.aircraftId}
+          onClose={() => setShowSettings(false)}
         />
       )}
       {disclaimer && (

@@ -75,12 +75,12 @@ export default {
     en: 'Photo interval of {s} s below the shutter minimum ({min} s); maximum speed {vmax} m/s.',
   },
   'preflight.battery': {
-    pt: 'Tempo estimado de {min} min excede o útil de uma bateria ({usable} min com reserva): divida em blocos.',
-    en: 'Estimated {min} min exceeds one battery’s usable time ({usable} min with reserve): split into blocks.',
+    pt: 'Tempo estimado de {min} min excede o tempo útil por voo ({usable} min, já com a reserva de aterragem): divida em blocos.',
+    en: 'Estimated {min} min exceeds the useful time per flight ({usable} min, landing reserve included): split into blocks.',
   },
   'preflight.battery-block': {
-    pt: 'Bloco {id}: {min} min excede o útil de uma bateria ({usable} min com reserva).',
-    en: 'Block {id}: {min} min exceeds one battery’s usable time ({usable} min with reserve).',
+    pt: 'Bloco {id}: {min} min excede o tempo útil por voo ({usable} min, já com a reserva de aterragem).',
+    en: 'Block {id}: {min} min exceeds the useful time per flight ({usable} min, landing reserve included).',
   },
   'preflight.terrain-datum-ellipsoidal': {
     pt: 'O MDT declara alturas elipsoidais ({model}): as alturas relativas continuam certas, mas não compare cotas deste ficheiro com fontes ortométricas.',
