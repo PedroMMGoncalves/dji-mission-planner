@@ -455,23 +455,41 @@ export function greedyBases(setup, candidates, { withSite = false } = {}) {
   let remaining = coverable.filter(Boolean).length
   /** @type {ProposedBase[]} */
   const bases = []
+  // por base: o candidato e as entradas (bloco, vista) que serve — para
+  // juntar a uma base os blocos que outro passo lhe dê, e para a consolidação
+  /** @type {Array<{c: any, picks: any[]}>} */
+  const own = []
+  const siteOf = (c, picks) => {
+    const q = withSite ? pooledView(picks) : null
+    return q
+      ? {
+          elev: c.info ? c.info.elev : null,
+          reliefM: c.info ? c.info.reliefM : null,
+          radio: q.radio,
+          visible: q.visible,
+        }
+      : null
+  }
   const push = (c, pick, siteOk) => {
     for (const e of pick) covered[e.bi] = true
-    const q = withSite ? pooledView(pick) : null
+    // o mesmo sítio já é base: os blocos juntam-se a ela (antes saía uma
+    // segunda base no mesmo ponto, e o operador mudava de base sem sair do sítio)
+    const k = own.findIndex((o) => o.c === c)
+    if (k >= 0 && bases[k].blockIds.length + pick.length <= cap) {
+      own[k].picks.push(...pick)
+      bases[k].blockIds.push(...pick.map((e) => prepared[e.bi].id))
+      bases[k].siteOk = bases[k].siteOk && siteOk
+      bases[k].site = siteOf(c, own[k].picks)
+      return
+    }
+    own.push({ c, picks: [...pick] })
     bases.push({
       id: baseLabel(bases.length),
       point: c.point.slice(),
       blockIds: pick.map((e) => prepared[e.bi].id),
       outOfVlos: false,
       siteOk,
-      site: q
-        ? {
-            elev: c.info ? c.info.elev : null,
-            reliefM: c.info ? c.info.reliefM : null,
-            radio: q.radio,
-            visible: q.visible,
-          }
-        : null,
+      site: siteOf(c, pick),
     })
   }
   // a melhor do que b? Mais blocos; com sítio, melhor rádio e
@@ -564,6 +582,54 @@ export function greedyBases(setup, candidates, { withSite = false } = {}) {
     push(best.c, best.pick, false)
     left -= best.pick.length
   }
+  // Consolidação: menos bases é menos deslocações. Uma base cujos blocos
+  // TODOS passem para outras bases já escolhidas (que os vejam dentro do
+  // VLOS, com sítio aceite — ou, para um bloco sem sítio aceite, com o rádio
+  // pelo menos tão bom — e sem passar o limite de voos) desaparece. As mais
+  // pequenas primeiro, até não haver mudanças.
+  const entryOf = (o, bi) => o.c.all.find((e) => e.bi === bi) ?? null
+  const radioOf = (e) => (e && e.view ? e.view.radio : 0)
+  for (let changed = true; changed;) {
+    changed = false
+    const order = own.map((o, k) => k).sort((a, b) => own[a].picks.length - own[b].picks.length)
+    for (const k of order) {
+      if (own[k].picks.length === 0) continue
+      const moves = []
+      const load = own.map((o) => o.picks.length)
+      for (const e of own[k].picks) {
+        let to = -1
+        for (let j = 0; j < own.length; j++) {
+          if (j === k || own[j].picks.length === 0 || load[j] + 1 > cap) continue
+          const t = entryOf(own[j], e.bi)
+          if (!t) continue
+          const fine = withSite ? t.ok || (!e.ok && radioOf(t) >= radioOf(e)) : true
+          if (!fine) continue
+          if (to < 0 || load[j] > load[to]) to = j // a maior: concentra
+        }
+        if (to < 0) break
+        moves.push([e, to])
+        load[to]++
+      }
+      if (moves.length !== own[k].picks.length) continue
+      for (const [e, to] of moves) {
+        const t = entryOf(own[to], e.bi)
+        own[to].picks.push(t)
+        bases[to].blockIds.push(prepared[e.bi].id)
+        if (withSite && !t.ok) bases[to].siteOk = false
+      }
+      own[k].picks = []
+      bases[k].blockIds = []
+      changed = true
+    }
+  }
+  for (let k = bases.length - 1; k >= 0; k--) {
+    if (bases[k].blockIds.length === 0) {
+      bases.splice(k, 1)
+      own.splice(k, 1)
+    } else bases[k].site = siteOf(own[k].c, own[k].picks)
+  }
+  bases.forEach((b, i) => (b.id = baseLabel(i)))
+
   // blocos que nenhum candidato vê inteiros: base própria, assinalada
   for (let bi = 0; bi < nB; bi++) {
     if (visible[bi]) continue

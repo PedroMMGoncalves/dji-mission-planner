@@ -523,3 +523,48 @@ describe('createBaseProposalRun: bons sítios para as bases', () => {
     }
   })
 })
+
+describe('proposta: um sitio, uma base; e consolidacao', () => {
+  const row = [
+    { id: 'b1', ring: square(0, 0, 300) },
+    { id: 'b2', ring: square(300, 0, 300) },
+    { id: 'b3', ring: square(600, 0, 300) },
+  ]
+  const P = [300, 150] // meio da aresta comum a b1 e b2
+  const atP = (p) => near(p, P[0], P[1])
+  const flatInfo = () => ({ elev: 300, reliefM: 1 })
+
+  test('um bloco sem sitio aceite vai para a base que ja esta no melhor sitio, sem a duplicar', () => {
+    // P aceita b1 e b2; ninguem aceita b3, mas P e o melhor que o ve
+    const site = {
+      info: flatInfo,
+      view: (p, id) =>
+        id === 'b3'
+          ? { radio: atP(p) ? 0.8 : 0.5, visible: 1, n: 10 }
+          : atP(p)
+            ? { radio: 1, visible: 1, n: 10 }
+            : { radio: 0.5, visible: 1, n: 10 },
+      accepts: siteAccepts,
+    }
+    const out = proposeBases(row, { vlosM: 1000, radiusM: 100, site })
+    const keys = out.map((b) => b.point.map((v) => v.toFixed(7)).join())
+    expect(new Set(keys).size).toBe(keys.length) // nunca duas bases no mesmo ponto
+    expect(out).toHaveLength(1)
+    expect(atP(out[0].point)).toBe(true)
+    expect(out[0].blockIds.sort()).toEqual(['b1', 'b2', 'b3'])
+    expect(out[0].siteOk).toBe(false) // leva um bloco sem sitio aceite: o preflight fala
+  })
+
+  test('consolidacao: uma base cujos blocos outra aceita desaparece', () => {
+    // dois sitios aceitam tudo o que veem; a gulosa escolhe primeiro o que
+    // cobre mais, e a base que sobrar com blocos que essa tambem aceita sai
+    const site = {
+      info: flatInfo,
+      view: () => ({ radio: 1, visible: 1, n: 10 }),
+      accepts: siteAccepts,
+    }
+    const out = proposeBases(row, { vlosM: 1000, radiusM: 100, site })
+    expect(out).toHaveLength(1)
+    expect(out[0].blockIds).toHaveLength(3)
+  })
+})

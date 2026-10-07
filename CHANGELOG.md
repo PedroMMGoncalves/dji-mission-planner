@@ -6,6 +6,18 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Corrigido (proposta de bases: um sítio, uma base)
+
+- **«Propor bases» podia pôr duas bases no mesmo ponto.** Um bloco sem
+  nenhum sítio com o rádio limpo ia para o melhor sítio que o vê, mas
+  esse passo criava sempre uma base nova, mesmo quando o sítio já era
+  base: duas bases sobrepostas e o operador a «mudar de base» sem sair do
+  sítio. Agora os blocos juntam-se à base que já lá está.
+- **Consolidação no fim da proposta:** uma base cujos blocos possam todos
+  passar para outras bases já escolhidas (dentro do alcance visual, com o
+  sítio aceite ou o rádio pelo menos tão bom, sem passar o limite de voos)
+  desaparece, para haver menos deslocações. As letras são renumeradas.
+
 ### Alterado (painel de estatísticas)
 
 - **Três grupos:** qualidade (GSD, pegada, espaçamento, intervalo de

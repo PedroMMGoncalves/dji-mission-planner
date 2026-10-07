@@ -340,7 +340,11 @@ solo já falam, e a proposta não troca o rádio nem a vista por elas.
   o rádio livre é ≥ `SITE_RADIO_OK_FRAC` = 95 %. `proposeBases` recebe a
   regra pelo gancho `site = { info(ponto), view(ponto, bloco, info),
   accepts(view) }` (o módulo não sabe de relevo) e corre a gulosa sobre a
-  cobertura aceite; desempates, por esta ordem: mais blocos; maior fracção
+  cobertura aceite (um sítio dá uma só base: os blocos que um passo
+  seguinte lhe atribua juntam-se a ela, nunca uma segunda base no mesmo
+  ponto; no fim, uma consolidação desfaz as bases cujos blocos todos
+  passem para outras já escolhidas, dentro do VLOS, com o sítio aceite ou
+  o rádio pelo menos tão bom, e sem passar o limite de voos); desempates, por esta ordem: mais blocos; maior fracção
   média com o rádio livre dos blocos que serviria (pesada pelos pontos, ±0,5
   %); maior fracção visível (±0,5 %); os blocos mais difíceis (como sem
   regra); o sítio mais alto (cota no ponto, ±0,5 m); o mais plano (desnível
