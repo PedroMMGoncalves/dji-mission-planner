@@ -47,6 +47,8 @@ import {
   setBaseRadius,
 } from './mission/bases.js'
 import { blocksViewRoute, proposeMoreBases, summarizeBases } from './mission/baseLayout.js'
+import { baseFieldSheets } from './mission/fieldSheet.js'
+import { buildBasesKML } from './mission/basesKml.js'
 import {
   aggregatePlans,
   normalizeTriggerMode,
@@ -60,7 +62,7 @@ import {
   photoInterval,
   resolveSensor,
 } from './utils/geo.js'
-import { MissionExportError } from './utils/exporters.js'
+import { MissionExportError, downloadBlob } from './utils/exporters.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission, useCorridorRoute } from './hooks/useCorridorMission.js'
@@ -745,6 +747,10 @@ function AppInner({ lang, setLang }) {
     handleExportKML,
     handleExportGcps,
     handleExportKMZ,
+    handleExportFlights,
+    flightFiles,
+    exportBaseName,
+    safeName: areaSafeName,
   } = useAreaMission({
     ring,
     holes,
@@ -847,6 +853,56 @@ function AppInner({ lang, setLang }) {
       }),
     [bases, zones, baseLayout, equipment.zoneRadiusM],
   )
+
+  // ficha de campo por base (checklist, relatório e KML «Bases e blocos»):
+  // só com a área dividida em blocos e bases marcadas
+  const fieldSheets = useMemo(
+    () =>
+      perBlockBases
+        ? baseFieldSheets({
+            rows: baseRows,
+            layout: baseLayout,
+            blocks,
+            files: flightFiles,
+            vlosM,
+            equipment,
+            aircraftId: drone.aircraftId,
+            batteryId: missionBatteryType.id,
+            baseWord: t('bases.label', { label: '' }).trim(),
+          })
+        : [],
+    [
+      perBlockBases,
+      baseRows,
+      baseLayout,
+      blocks,
+      flightFiles,
+      vlosM,
+      equipment,
+      drone.aircraftId,
+      missionBatteryType.id,
+      t,
+    ],
+  )
+  const handleExportBasesKml = useCallback(() => {
+    if (!fieldSheets.length) return
+    runExport(() => {
+      const kml = buildBasesKML(
+        {
+          name: missionName.trim() || areaSafeName,
+          sheets: fieldSheets,
+          blocks,
+          layout: baseLayout,
+          files: flightFiles,
+        },
+        t,
+      )
+      downloadBlob(
+        new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }),
+        `${areaSafeName}_bases.kml`,
+      )
+    })
+  }, [fieldSheets, runExport, missionName, areaSafeName, blocks, baseLayout, flightFiles, t])
 
   // tipos de bateria da aeronave (selector da missão) e voos contra os
   // conjuntos que a equipa tem — o aviso só aparece com a contagem conhecida
@@ -1624,6 +1680,8 @@ function AppInner({ lang, setLang }) {
         faceMode={missionMode === 'face' && Boolean(faceConfig.baseline)}
         corridorMode={missionMode === 'corridor' && Boolean(corridorConfig.centreline)}
         blocks={blocks ?? []}
+        flightLabels={baseLayout?.byBlock ?? null}
+        baseSheets={missionMode === 'area' ? fieldSheets : []}
         plannedGcps={gcps ?? []}
         onBack={() => setView('planner')}
       />
@@ -1978,6 +2036,15 @@ function AppInner({ lang, setLang }) {
                   defaultRadiusM: equipment.zoneRadiusM,
                   maxFlightsPerBase: equipment.maxFlightsPerBase ?? 0,
                   showClickMode: Boolean(tiles) || Boolean(gridCells) || split.mode === 'area',
+                  // exportação por voo / por base, atrás do preflight
+                  exportFlights: {
+                    files: flightFiles,
+                    baseName: exportBaseName,
+                    canExport: canExportKMZ,
+                    blocked: exportBlocked,
+                    onExport: (sel) => gated(() => handleExportFlights(sel))(),
+                    onExportKml: fieldSheets.length ? handleExportBasesKml : null,
+                  },
                 }}
               />
             )}
@@ -2148,6 +2215,7 @@ function AppInner({ lang, setLang }) {
             blocks={blocks}
             ring={ring}
             basePoints={bases.map((b) => b.point)}
+            baseSheets={missionMode === 'area' ? fieldSheets : []}
             gcps={gcps}
             lines={planOk.lines}
             reproducibility={{

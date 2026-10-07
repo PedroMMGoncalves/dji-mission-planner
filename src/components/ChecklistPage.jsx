@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLang } from '../i18n.jsx'
+import { useLang, useT } from '../i18n.jsx'
 import { groupApplies } from '../data/checklist.js'
+import BaseFieldSheets from './BaseFieldSheets.jsx'
 
 /* ------------------------------------------------------------------ *
  * Checklist de campo UAV — pré-campo, durante, pós-campo + relatório.
@@ -1154,10 +1155,15 @@ export default function ChecklistPage({
   faceMode = false, // liga o grupo 'face' quando houver missão de fachada
   corridorMode = false, // idem para o grupo 'corridor'
   blocks = [],
+  // voo de cada bloco (layoutBlocks: byBlock), para numerar o registo de voos
+  flightLabels = null,
+  // ficha de campo por base (baseFieldSheets), com a área dividida e bases
+  baseSheets = [],
   plannedGcps = [],
   onBack,
 }) {
   const lang = useLang()
+  const t = useT()
   const L = (v) => tr(v, lang)
 
   // O estado gravado é lido UMA vez e semeia todos os átomos abaixo
@@ -1252,11 +1258,18 @@ export default function ChecklistPage({
 
   const importarBlocos = () => {
     if (!blocks || blocks.length === 0) return
-    const novas = blocks.map((b, i) => ({
+    // pela ordem de voo, com o rótulo do voo (A-1) e o trânsito da base
+    const voo = (b) => flightLabels?.[b.id] ?? null
+    const ordenados = [...blocks].sort(
+      (a, b) => (voo(a)?.flight ?? a.id) - (voo(b)?.flight ?? b.id),
+    )
+    const novas = ordenados.map((b, i) => ({
       ...linhaVazia(COLS_VOO),
-      n: String(b.id ?? i + 1),
+      n: voo(b)?.flightLabel || String(b.id ?? i + 1),
       area: Number.isFinite(b.areaHa) ? b.areaHa.toFixed(1) : '',
-      duracao: Number.isFinite(b.timeS) ? String(Math.round(b.timeS / 60)) : '',
+      duracao: Number.isFinite(b.timeS)
+        ? String(Math.round((b.timeS + (voo(b)?.transitS ?? 0)) / 60))
+        : '',
     }))
     setVoos((prev) => {
       const preenchidas = prev.filter((l) =>
@@ -1401,6 +1414,21 @@ export default function ChecklistPage({
           </div>
         </section>
 
+        {/* ------------- Bases de descolagem: ficha de campo ------------- */}
+        {baseSheets.length > 0 && (
+          <section
+            data-testid="checklist-bases"
+            className="chk-bases mb-5 rounded-lg border border-slate-800 bg-slate-900 p-4"
+          >
+            <Titulo className="mb-3">{t('bases.sheet.title')}</Titulo>
+            <BaseFieldSheets
+              sheets={baseSheets}
+              cardClass="chk-base bg-slate-950"
+              tableClass="chk-base-tabela"
+            />
+          </section>
+        )}
+
         {/* -------------------- Colunas de checklist -------------------- */}
         <div className="chk-cols mb-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
           {FASES.map((fase) => (
@@ -1538,6 +1566,26 @@ const PRINT_CSS = `
   }
 
   .chk-grupo { break-inside: avoid; }
+
+  /* ficha das bases: cada base inteira numa página, a secção pode partir */
+  .chk-root .chk-bases {
+    border: 1px solid #bbb !important;
+    border-radius: 0 !important;
+    padding: 3mm !important;
+  }
+  .chk-root .chk-base {
+    border: 1px solid #ccc !important;
+    border-radius: 0 !important;
+    padding: 2mm !important;
+    break-inside: avoid;
+  }
+  .chk-root .chk-base-tabela th,
+  .chk-root .chk-base-tabela td {
+    border: 1px solid #ccc !important;
+    padding: 0.5mm 1mm !important;
+    font-size: 7.5pt !important;
+  }
+  .chk-root .chk-base a { text-decoration: none !important; }
 
   .chk-item {
     padding: 0.4mm 0 !important;

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useT } from '../i18n.jsx'
-import { IconTrash } from './Icons.jsx'
+import { IconDownload, IconTrash } from './Icons.jsx'
+import { exportChoices, flightsArchiveName } from '../mission/flightFiles.js'
 
 /**
  * Lista das bases de descolagem do modo área: por base, os seus voos, a
@@ -9,6 +10,10 @@ import { IconTrash } from './Icons.jsx'
  * remoção. Mais a proposta de bases a partir dos blocos e o que faz o
  * clique num bloco no mapa. As linhas vêm de summarizeBases
  * (src/mission/baseLayout.js); a interface não calcula nada.
+ *
+ * Com a área dividida em voos, a exportação por voo (`exportFlights`):
+ * todos os voos, os de uma base («estou na base B») ou um só, atrás do
+ * preflight, e o KML «Bases e blocos» para o campo.
  */
 export default function BasesPanel({
   rows,
@@ -25,6 +30,7 @@ export default function BasesPanel({
   defaultRadiusM,
   maxFlightsPerBase = 0,
   showClickMode = true,
+  exportFlights = null,
 }) {
   const t = useT()
   return (
@@ -114,6 +120,115 @@ export default function BasesPanel({
           />
         ))}
       </ul>
+
+      {exportFlights && exportFlights.files.length > 1 && (
+        <FlightExports {...exportFlights} rows={rows} />
+      )}
+    </div>
+  )
+}
+
+/**
+ * Exportação dos voos: «Todos os voos (ZIP)», «Voos da base X (ZIP)» por
+ * base, «Um voo (KMZ)» com a escolha do voo, e o KML de campo. Os nomes
+ * vêm de flightFiles (os mesmos que o ficheiro leva).
+ */
+function FlightExports({ files, baseName, rows, canExport, blocked, onExport, onExportKml }) {
+  const t = useT()
+  const { bases } = exportChoices(files, rows)
+  const [picked, setPicked] = useState(null)
+  // um voo que deixou de existir (mosaico refeito) volta ao primeiro
+  const flight = files.find((f) => f.blockId === picked) ?? files[0]
+  const disabled = !canExport || blocked
+  const why = blocked ? t('bases.export.blocked') : undefined
+  const btn =
+    'flex w-full items-center justify-center gap-1.5 rounded px-2 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40'
+  return (
+    <div data-testid="flight-exports" className="mt-2 border-t border-slate-800 pt-2">
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        {t('bases.export.title')}
+      </p>
+      <div className="space-y-1.5">
+        <button
+          type="button"
+          data-testid="export-all-flights"
+          disabled={disabled}
+          onClick={() => onExport({ kind: 'all' })}
+          title={
+            why ??
+            t('bases.export.allTitle', {
+              file: `${flightsArchiveName(baseName, { kind: 'all' })}.zip`,
+            })
+          }
+          className={`${btn} bg-sky-700 text-white hover:bg-sky-600`}
+        >
+          <IconDownload /> {t('bases.export.all')}
+        </button>
+        {bases.length > 0 && (
+          <div className="grid grid-cols-2 gap-1.5">
+            {bases.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                data-testid="export-base-flights"
+                data-base-label={b.label}
+                disabled={disabled}
+                onClick={() => onExport({ kind: 'base', baseId: b.id })}
+                title={
+                  why ??
+                  t('bases.export.baseTitle', {
+                    label: b.label,
+                    list: b.files.map((f) => f.flightLabel).join(', '),
+                    file: `${flightsArchiveName(baseName, { kind: 'base', baseId: b.id }, b.label)}.zip`,
+                  })
+                }
+                className={`${btn} bg-slate-800 text-slate-200 hover:bg-slate-700`}
+              >
+                {t('bases.export.base', { label: b.label })}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center gap-1.5">
+          <select
+            data-testid="export-flight-select"
+            aria-label={t('bases.export.oneSelect')}
+            value={flight.blockId}
+            onChange={(e) => setPicked(Number(e.target.value))}
+            className="min-w-0 flex-1 rounded border border-slate-700 bg-slate-900 px-1.5 py-1 font-mono text-[11px] text-slate-100 focus:border-sky-500 focus:outline-none"
+          >
+            {files.map((f) => (
+              <option key={f.blockId} value={f.blockId}>
+                {f.flightLabel}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            data-testid="export-one-flight"
+            disabled={disabled}
+            onClick={() => onExport({ kind: 'flight', blockId: flight.blockId })}
+            title={why ?? flight.file}
+            className={`${btn} w-auto shrink-0 bg-slate-800 text-slate-200 hover:bg-slate-700`}
+          >
+            {t('bases.export.one')}
+          </button>
+        </div>
+        <p className="text-[11px] leading-relaxed text-slate-500">
+          {t('bases.export.names', { example: files[0].file })}
+        </p>
+        {onExportKml && (
+          <button
+            type="button"
+            data-testid="export-bases-kml"
+            onClick={onExportKml}
+            title={t('bases.export.kmlTitle')}
+            className={`${btn} bg-emerald-700 text-white hover:bg-emerald-600`}
+          >
+            <IconDownload /> {t('bases.export.kml')}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

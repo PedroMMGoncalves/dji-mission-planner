@@ -207,7 +207,15 @@ function InstrucoesPt() {
         </Li>
         <Li>
           <strong>WPML (KMZ)</strong> — missão executável com waypoints e disparo automático; com
-          blocos activos gera um ZIP com um KMZ por bloco.
+          blocos activos gera um ZIP com um KMZ por voo, cada um com o nome do voo
+          (missao_area-tf_A-1.kmz, que é o que o Pilot 2 mostra), pela ordem de voo.
+        </Li>
+        <Li>
+          <strong>Exportar voos</strong> (painel das bases) — no campo, base a base: «Todos os voos
+          (ZIP)», «Voos da base B (ZIP)» (só os dessa base, …_base-B.zip) ou «Um voo (KMZ)». A
+          checklist de campo e o relatório trazem a ficha de cada base (coordenadas com ligação para
+          os mapas, zona, cota, voos com os ficheiros, baterias); «Bases e blocos (KML)» leva as
+          bases, as zonas e os blocos com o rótulo do voo para o Google Earth ou o telemóvel.
         </Li>
         <Li>
           <strong>Disparo por waypoint</strong> — em «Disparo por: Waypoint», cada passagem é
@@ -406,7 +414,15 @@ function InstrucoesEn() {
         </Li>
         <Li>
           <strong>WPML (KMZ)</strong> — executable mission with waypoints and automatic camera
-          triggering; with blocks active it generates a ZIP with one KMZ per block.
+          triggering; with blocks active it generates a ZIP with one KMZ per flight, each named
+          after its flight (mission_area-tf_A-1.kmz, which is what Pilot 2 shows), in flight order.
+        </Li>
+        <Li>
+          <strong>Export flights</strong> (bases panel) — in the field, base by base: “All flights
+          (ZIP)”, “Base B flights (ZIP)” (only that base’s, …_base-B.zip) or “One flight (KMZ)”. The
+          field checklist and the report carry a sheet per base (coordinates with a maps link, zone,
+          reference elevation, flights with their files, batteries); “Bases and blocks (KML)” takes
+          the bases, zones and blocks labelled with their flight to Google Earth or a phone.
         </Li>
         <Li>
           <strong>Per-waypoint trigger</strong> — with “Trigger by: Waypoint”, each pass is

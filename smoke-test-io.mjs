@@ -51,7 +51,8 @@ const { parseAreaFile, reprojectRing, simplifyRingIfNeeded, CRS_OPTIONS } =
 const { parseWpmlKmz } = await import('./src/utils/importWpml.js')
 const { loadDemFromFile, projectBox, resolveRasterCrs } = await import('./src/utils/demFile.js')
 const { makeFloatTiff } = await import('./tests/lib/geotiff.mjs')
-const { buildTemplateKML, buildWaylinesWPML } = await import('./src/utils/exporters.js')
+const { blockExportParams, buildBlocksZip, buildTemplateKML, buildWaylinesWPML } =
+  await import('./src/utils/exporters.js')
 
 let failures = 0
 function check(label, ok, detail = '') {
@@ -971,6 +972,54 @@ function bboxFrom(x0, y0, x1, y1) {
     describeVerticalDatum({ VerticalUnitsGeoKey: 9999 }).unitLabel.includes('9999'),
   )
   check('datum: sem chaves e desconhecido', describeVerticalDatum(undefined).kind === 'unknown')
+}
+
+/* ZIP dos voos: um KMZ por voo, pela ordem dada, com o nome do voo no
+   ficheiro e no título; os blocos sem nome caem no _bNN do id */
+{
+  const wps = [
+    [-8.5, 39.5],
+    [-8.495, 39.5],
+    [-8.495, 39.504],
+    [-8.5, 39.504],
+  ]
+  const params = missionParams(wps, { name: 'm_area-tf' })
+  const blocks = [
+    { id: 4, name: 'm_area-tf_B-3', waypoints: wps },
+    { id: 1, name: 'm_area-tf_B-4', waypoints: wps.slice(0, 3) },
+    { id: 7, waypoints: wps },
+  ]
+  const zip = await JSZip.loadAsync(await (await buildBlocksZip(params, blocks)).arrayBuffer())
+  const names = Object.keys(zip.files)
+  check(
+    'voos: ZIP pela ordem dada, nome do voo ou _bNN',
+    names.join() === 'm_area-tf_B-3.kmz,m_area-tf_B-4.kmz,m_area-tf_b07.kmz',
+    names.join(),
+  )
+  const inner = await parseWpmlKmz(await zip.file('m_area-tf_B-4.kmz').async('uint8array'))
+  check(
+    'voos: cada KMZ do ZIP é uma missão legível com os seus waypoints',
+    inner.waypointCount === 3,
+    `${inner.waypointCount}`,
+  )
+  const tpl = await (
+    await JSZip.loadAsync(await zip.file('m_area-tf_B-3.kmz').async('uint8array'))
+  )
+    .file('wpmz/template.kml')
+    .async('string')
+  check('voos: título da missão = nome do ficheiro', tpl.includes('<name>m_area-tf_B-3</name>'))
+  check(
+    'voos: blockExportParams usa o nome do bloco',
+    blockExportParams(params, blocks[0]).name === 'm_area-tf_B-3' &&
+      blockExportParams(params, blocks[2]).name === 'm_area-tf_b07',
+  )
+  let refused = false
+  try {
+    await buildBlocksZip(params, [blocks[0], { ...blocks[1], name: 'm_area-tf_B-3' }])
+  } catch {
+    refused = true
+  }
+  check('voos: dois voos com o mesmo nome no ZIP são recusados', refused)
 }
 
 console.log(

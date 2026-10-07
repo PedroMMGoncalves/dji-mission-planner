@@ -251,7 +251,8 @@ function fmtCoord(v) {
 /**
  * E3.1: nome canónico dos ficheiros exportados, com o tipo de missão e a
  * variante codificados: `<missao>_<tipo>[-variante][_parte]`, ex.:
- *   quinta_area-crosshatch-nadir_b01 · quinta_face-p1-6 · quinta_orbit-n3
+ *   quinta_area-crosshatch-nadir_A-1 · quinta_face-p1-6 · quinta_orbit-n3
+ * (os voos de uma área dividida levam o rótulo do voo: src/mission/flightFiles.js)
  * `variant` pode ser string ou lista (filtra vazios e junta com '-');
  * `part` é o sufixo de bloco/nível. Sem extensão — o chamador acrescenta.
  */
@@ -939,12 +940,14 @@ export async function exportWPMLKmz(params) {
 
 /**
  * Parâmetros de um bloco: os da missão, com o que é local ao bloco trocado
- * pelo do bloco.
+ * pelo do bloco. O nome é o do bloco quando o traz (`block.name`: os voos
+ * da área, `<missao>_area_A-1`), senão `<missao>_bNN` pelo id (órbita por
+ * nível, blocos da circular).
  */
 export function blockExportParams(params, block) {
   return {
     ...params,
-    name: `${params.name}_b${String(block.id).padStart(2, '0')}`,
+    name: block.name || `${params.name}_b${String(block.id).padStart(2, '0')}`,
     waypoints: block.waypoints,
     // um perWaypoint global indexaria mal as fatias — cada bloco traz o
     // seu (ex.: marcador de gimbal nadir do R2.10), ou nenhum
@@ -960,16 +963,31 @@ export function blockExportParams(params, block) {
 }
 
 /**
- * Exporta um ZIP com um KMZ WPML por bloco de voo, numerados pela ordem de
- * voo: missao-b01.kmz, missao-b02.kmz, … Cada KMZ é uma missão completa e
- * independente para o DJI Pilot 2 (uma bateria por bloco).
+ * ZIP com um KMZ WPML por bloco de voo, pela ordem de `blocks` (a ordem de
+ * voo): missao_area_A-1.kmz, missao_area_A-2.kmz, … ou, nos blocos sem
+ * nome, missao_b01.kmz, … Cada KMZ é uma missão completa e independente
+ * para o DJI Pilot 2 (uma bateria por bloco). Nomes repetidos são recusados
+ * (um ficheiro escreveria por cima do outro dentro do ZIP).
+ * @returns {Promise<Blob>}
  */
-export async function exportBlocksZip(params, blocks) {
+export async function buildBlocksZip(params, blocks) {
   const master = new JSZip()
+  const seen = new Set()
   for (const block of blocks) {
     const p = blockExportParams(params, block)
-    master.file(`${p.name}.kmz`, await buildKmz(p, 'arraybuffer'))
+    const file = `${p.name}.kmz`
+    if (seen.has(file)) throw new MissionExportError('param-out-of-range', `name=${file}`)
+    seen.add(file)
+    master.file(file, await buildKmz(p, 'arraybuffer'))
   }
-  const blob = await master.generateAsync({ type: 'blob' })
-  downloadBlob(blob, `${params.name}_blocos.zip`)
+  return master.generateAsync({ type: 'blob' })
+}
+
+/**
+ * Descarrega o ZIP dos blocos como `<zipName>.zip` (por omissão
+ * `<missao>_blocos.zip`; os voos da área usam `_voos` e `_base-B`).
+ */
+export async function exportBlocksZip(params, blocks, zipName = null) {
+  const blob = await buildBlocksZip(params, blocks)
+  downloadBlob(blob, `${zipName || `${params.name}_blocos`}.zip`)
 }

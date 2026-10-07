@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLang } from '../i18n.jsx'
+import { useLang, useT } from '../i18n.jsx'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
+import BaseFieldSheets from './BaseFieldSheets.jsx'
 
 /* ------------------------------------------------------------------ *
  * Relatório de plano de missão — página imprimível (A4 retrato).
@@ -610,12 +611,15 @@ export default function MissionReport({
   blocks,
   ring,
   basePoints = null,
+  // ficha de campo por base (baseFieldSheets), com a área dividida e bases
+  baseSheets = [],
   gcps,
   lines,
   reproducibility = null,
   onClose,
 }) {
   const lang = useLang()
+  const t = useT()
   const L = (v) => tr(v, lang)
 
   const canvasRef = useRef(null)
@@ -1017,6 +1021,23 @@ export default function MissionReport({
           </Section>
         )}
 
+        {/* ------------------- Bases de descolagem (campo) ------------------- */}
+        {Array.isArray(baseSheets) && baseSheets.length > 0 && (
+          <section
+            data-testid="report-bases"
+            className="rep-bases mb-3 rounded border border-slate-800 bg-slate-900 p-3"
+          >
+            <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-sky-400">
+              {t('bases.sheet.title')}
+            </h2>
+            <BaseFieldSheets
+              sheets={baseSheets}
+              cardClass="rep-base bg-slate-950"
+              tableClass="rep-table"
+            />
+          </section>
+        )}
+
         {/* ------------------------------ GCPs ------------------------------ */}
         {validGcps.length > 0 && (
           <Section title={L(UI.gcpsTitle)} right={L(UI.gcpsNote)}>
@@ -1169,6 +1190,22 @@ const PRINT_CSS = `
     break-inside: avoid;
   }
   .rep-block h2 { font-size: 7pt !important; }
+
+  /* bases: a secção pode partir entre páginas, cada base fica inteira */
+  .rep-bases {
+    border: 1px solid #bbb !important;
+    border-radius: 0 !important;
+    padding: 2mm !important;
+    margin-bottom: 2.5mm !important;
+  }
+  .rep-bases h2 { font-size: 7pt !important; }
+  .rep-base {
+    border: 1px solid #ccc !important;
+    border-radius: 0 !important;
+    padding: 1.5mm !important;
+    break-inside: avoid;
+  }
+  .rep-base a { text-decoration: none !important; }
 
   .rep-table th,
   .rep-table td {

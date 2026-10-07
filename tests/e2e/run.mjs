@@ -20,6 +20,7 @@ import zlib from 'node:zlib'
 import { join, resolve } from 'node:path'
 import { chromium } from 'playwright'
 import Ajv2020 from 'ajv/dist/2020.js'
+import JSZip from 'jszip'
 import { ground, makeFixtures, rectRing, toLL, toM } from './fixtures.mjs'
 import { analyseRoute, readRoutes } from './kmz.mjs'
 
@@ -1351,6 +1352,36 @@ async function dragMarker(page, locator, dx, dy) {
   await page.mouse.up()
   await page.waitForTimeout(1200)
 }
+// rótulo do voo no nome de um KMZ (…_B-3.kmz, …_B-03.kmz → "B-3")
+const flightOfFile = (name) => {
+  const m = /_([A-Z]+)-(\d+)\.kmz$/.exec(name)
+  return m ? `${m[1]}-${Number(m[2])}` : null
+}
+const blockOfFlightMap = async (page) =>
+  new Map(
+    await page
+      .getByTestId('block-row')
+      .evaluateAll((els) => els.map((e) => [e.dataset.flight, Number(e.dataset.blockId)])),
+  )
+/** Carrega num botão e devolve [nome sugerido, caminho gravado] do download. */
+async function download(page, locator, file) {
+  const [dl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    locator.click(),
+  ])
+  await dl.saveAs(file)
+  return [dl.suggestedFilename(), file]
+}
+/** Nomes dos KMZ dentro de um ZIP, pela ordem em que lá estão. */
+const zipOrder = async (file) =>
+  Object.keys((await JSZip.loadAsync(readFileSync(file))).files).filter((n) => n.endsWith('.kmz'))
+/** Título da missão dentro de um KMZ (o <name> da pasta do template.kml). */
+async function kmzTitle(buf) {
+  const kmz = await JSZip.loadAsync(buf)
+  const tpl = await kmz.file('wpmz/template.kml').async('string')
+  return /<Folder>\s*<name>([^<]*)<\/name>/.exec(tpl)?.[1] ?? null
+}
+
 await scenario('bases-multiplas', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
   await page
@@ -1402,12 +1433,14 @@ await scenario('bases-multiplas', async () => {
     flights.join(' '),
   )
 
-  // cada KMZ com as alturas referidas à zona da sua base
+  // cada KMZ com as alturas referidas à zona da sua base; o ficheiro tem o
+  // rótulo do voo (…_A-1.kmz), e o bloco vem da lista de blocos
   const routes = await readRoutes(await exportKmz(page, join(OUT, 'bases-blocos.zip')))
   const refOfBlock = new Map()
   for (const r of rows) for (const id of r.blocks) refOfBlock.set(id, r.ref)
+  const blockOfFlight = await blockOfFlightMap(page)
   const est = routes.map((x) => {
-    const id = Number(/_b(\d+)\.kmz$/.exec(x.name)?.[1])
+    const id = blockOfFlight.get(flightOfFile(x.name))
     const a = analyseRoute(x.wpml, { toM, ground, aglNominalM: AGL_M })
     // h = AGL + terreno − ref (mais a subida do corredor lateral): o máximo
     // de AGL + terreno − h é a cota de referência do bloco
@@ -1505,6 +1538,199 @@ await scenario('bases-multiplas', async () => {
     back && saved.bases.find((b) => b.label === 'A').point.join() === back.join(),
   )
   check('bases: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Exportação base a base: no campo o operador chega à base B e só quer os
+// voos dela. ZIP da base B só com os voos de B, pela ordem de voo e com o
+// rótulo no nome; um voo só; todos; KML de campo; ficha na checklist.
+await scenario('bases-exportar-por-base', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await configure(page, { tf: true, split: 'Bateria' })
+  await page.getByTestId('propose-bases').click()
+  await page.waitForTimeout(1500)
+  await exportReady(page)
+  const rows = await baseRows(page)
+  const order = await page
+    .getByTestId('block-row')
+    .evaluateAll((els) => els.map((e) => e.dataset.flight))
+  const withFlights = rows.filter((r) => r.blocks.length > 0)
+  check(
+    'por base: pelo menos duas bases com voos',
+    withFlights.length >= 2,
+    rows.map((r) => `${r.label}:${r.blocks.length}`).join(' '),
+  )
+  const panel = page.getByTestId('flight-exports')
+  check(
+    'por base: um botão «Voos da base X (ZIP)» por base com voos',
+    (await panel.getByTestId('export-base-flights').count()) === withFlights.length,
+  )
+  const header = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  check(
+    'por base: os botões seguem o preflight do botão do cabeçalho',
+    (await panel.getByTestId('export-all-flights').isDisabled()) === (await header.isDisabled()),
+  )
+
+  // base B: só os seus voos, pela ordem de voo
+  const B = withFlights[1]
+  const wantB = order.filter((f) => f.startsWith(`${B.label}-`))
+  const [zipB, fileB] = await download(
+    page,
+    panel.locator(`[data-testid="export-base-flights"][data-base-label="${B.label}"]`),
+    join(OUT, 'base-B.zip'),
+  )
+  const prefix = zipB.replace(new RegExp(`_base-${B.label}\\.zip$`), '')
+  const inB = await zipOrder(fileB)
+  check(
+    `por base: ZIP «…_base-${B.label}.zip»`,
+    zipB.endsWith(`_base-${B.label}.zip`) && /_area-tf$/.test(prefix),
+    zipB,
+  )
+  check(
+    `por base: o ZIP da base ${B.label} só tem os voos dela, pela ordem de voo`,
+    inB.map(flightOfFile).join(',') === wantB.join(','),
+    `${inB.join(' ')} / ${wantB.join(' ')}`,
+  )
+  check(
+    'por base: cada KMZ chama-se <missão>_area-tf_<voo>.kmz',
+    inB.every((n) => n.startsWith(`${prefix}_${B.label}-`) && /^[\w-]+\.kmz$/.test(n)),
+    inB.join(' '),
+  )
+  const zip = await JSZip.loadAsync(readFileSync(fileB))
+  const titles = await Promise.all(
+    inB.map(async (n) => kmzTitle(await zip.file(n).async('nodebuffer'))),
+  )
+  check(
+    'por base: o título da missão no KMZ é o nome do ficheiro',
+    titles.every((t, i) => t === inB[i].replace(/\.kmz$/, '')),
+    titles.join(' '),
+  )
+  const routesB = await readRoutes(fileB)
+  const refB = routesB.map((x) => {
+    const a = analyseRoute(x.wpml, { toM, ground, aglNominalM: AGL_M })
+    return Math.max(...a.points.map(([px, py, h]) => AGL_M + ground(px, py) - h))
+  })
+  check(
+    `por base: as alturas dos voos de ${B.label} referem-se à cota da sua zona (±2 m)`,
+    refB.every((r) => Math.abs(r - B.ref) <= 2),
+    `${refB.map((r) => r.toFixed(1)).join(',')} / ${B.ref}`,
+  )
+
+  // um voo só: o segundo da lista (ou o único de B)
+  const pick = wantB[wantB.length - 1]
+  const blockOfFlight = await blockOfFlightMap(page)
+  await panel.getByTestId('export-flight-select').selectOption(String(blockOfFlight.get(pick)))
+  const [oneName, oneFile] = await download(
+    page,
+    panel.getByTestId('export-one-flight'),
+    join(OUT, 'um-voo.kmz'),
+  )
+  check(
+    `um voo: KMZ «${prefix}_${pick}.kmz»`,
+    flightOfFile(oneName) === pick && oneName.startsWith(`${prefix}_`),
+    oneName,
+  )
+  check(
+    'um voo: título no KMZ igual ao nome do ficheiro',
+    (await kmzTitle(readFileSync(oneFile))) === oneName.replace(/\.kmz$/, ''),
+  )
+
+  // todos os voos: o ZIP de todos, pela ordem de voo; igual ao do cabeçalho
+  const [allName, allFile] = await download(
+    page,
+    panel.getByTestId('export-all-flights'),
+    join(OUT, 'todos.zip'),
+  )
+  const all = await zipOrder(allFile)
+  check(
+    'todos: «…_voos.zip» com todos os voos pela ordem de voo',
+    allName === `${prefix}_voos.zip` && all.map(flightOfFile).join(',') === order.join(','),
+    `${allName}: ${all.join(' ')}`,
+  )
+  const [headName, headFile] = await download(page, header, join(OUT, 'cabecalho.zip'))
+  check(
+    'todos: o botão do cabeçalho exporta o mesmo ZIP',
+    headName === allName && (await zipOrder(headFile)).join() === all.join(),
+    headName,
+  )
+
+  // KML de campo: bases, zonas, blocos com o rótulo do voo
+  const [kmlName, kmlFile] = await download(
+    page,
+    panel.getByTestId('export-bases-kml'),
+    join(OUT, 'bases.kml'),
+  )
+  const kml = readFileSync(kmlFile, 'utf8')
+  const names = [...kml.matchAll(/<name>([^<]*)<\/name>/g)].map((m) => m[1])
+  check('kml: ficheiro «…_bases.kml»', kmlName.endsWith('_bases.kml'), kmlName)
+  check(
+    'kml: um ponto por base com o rótulo e uma zona com o raio efectivo',
+    withFlights.every(
+      (r) => names.includes(`Base ${r.label}`) && names.includes(`Zona ${r.label} (${r.radius} m)`),
+    ),
+    names.filter((n) => /Base|Zona/.test(n)).join(' | '),
+  )
+  check(
+    'kml: um contorno por bloco com o rótulo do voo, pela ordem de voo',
+    order.every((f) => names.includes(f)) &&
+      names.filter((n) => order.includes(n)).join(',') === order.join(','),
+    names.filter((n) => /^[A-Z]+-\d+$/.test(n)).join(' '),
+  )
+  check(
+    'kml: a ficha da base leva os ficheiros dos voos',
+    inB.every((n) => kml.includes(n)),
+  )
+
+  // checklist de campo: uma ficha por base com voos
+  await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
+  const sec = page.getByTestId('checklist-bases')
+  await sec.waitFor({ timeout: 10000 })
+  const sheets = await sec.getByTestId('base-sheet').evaluateAll((els) =>
+    els.map((e) => ({
+      label: e.dataset.baseLabel,
+      text: e.innerText,
+      href: e.querySelector('[data-testid="base-sheet-link"]')?.getAttribute('href') ?? '',
+      flights: [...e.querySelectorAll('[data-testid="base-sheet-flight"]')].map(
+        (r) => r.dataset.flight,
+      ),
+    })),
+  )
+  check(
+    'checklist: uma ficha por base com voos',
+    sheets.map((x) => x.label).join() === withFlights.map((r) => r.label).join(),
+    sheets.map((x) => x.label).join(),
+  )
+  const sB = sheets.find((x) => x.label === B.label)
+  check(
+    `checklist: ficha da base ${B.label} com coordenadas, ligação, zona, cota, voos e ficheiros`,
+    sB &&
+      /-?\d+\.\d{6}, -?\d+\.\d{6}/.test(sB.text) &&
+      /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/.test(sB.href) &&
+      /descolar até \d+ m do ponto/.test(sB.text) &&
+      /voo entre 0 e \+\d+ m acima do planeado/.test(sB.text) &&
+      /Alcance visual/i.test(sB.text) &&
+      /necessários/.test(sB.text) &&
+      sB.flights.join(',') === wantB.join(',') &&
+      inB.every((n) => sB.text.includes(n)),
+    sB ? sB.text.replace(/\s+/g, ' ').slice(0, 300) : 'sem ficha',
+  )
+  await page.getByRole('button', { name: /Voltar ao planeador|Back to planner/ }).click()
+
+  // relatório: a mesma ficha
+  await page.getByRole('button', { name: /^(Relatório|Report)$/ }).click()
+  const rep = page.getByTestId('report-bases')
+  await rep.waitFor({ timeout: 10000 })
+  check(
+    'relatório: ficha por base',
+    (await rep.getByTestId('base-sheet').count()) === withFlights.length,
+  )
+  check('por base: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

@@ -6,6 +6,39 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Acrescentado (exportação base a base e ficha de campo)
+
+- **Exportar voos** no painel das bases, com a área dividida em voos:
+  «Todos os voos (ZIP)», «Voos da base B (ZIP)» para cada base com voos
+  («estou na base B») e «Um voo (KMZ)» com a escolha do voo. Atrás do
+  mesmo preflight do botão do cabeçalho, que continua a exportar todos os
+  voos.
+- **Ficha de campo por base** na checklist de campo e no relatório da
+  missão: rótulo, coordenadas (6 casas) com ligação para abrir na
+  aplicação de mapas (`https` e `geo:`), zona («descolar até R m do
+  ponto», reduzida e porquê), cota de referência e «voo entre 0 e +X m
+  acima do planeado», voos com o tempo com trânsito e o nome do KMZ de
+  cada um, conjuntos de baterias que a base pede contra os da equipa e o
+  alcance visual usado (com o pior caso dos voos). Imprimível, cada base
+  inteira numa página. «Importar blocos do plano» na checklist passa a
+  numerar o registo de voos pelos voos (A-1, ...), com o trânsito.
+- **«Bases e blocos (KML)»** para o Google Earth ou a navegação no
+  telemóvel: bases com o rótulo e a ficha na descrição, zonas de
+  descolagem (círculo com o raio efectivo) e o contorno de cada bloco com
+  o rótulo do seu voo, nas cores das bases.
+
+### Alterado (nomes dos ficheiros dos voos)
+
+- Cada voo de uma área dividida sai em `<missão>_<tipo>[-variantes]_<voo>.kmz`,
+  ex. `corta-norte_area-tf_A-1.kmz` (antes `..._bNN.kmz` pelo id do
+  bloco), e o nome é também o título da missão dentro do KMZ, que é o que
+  o Pilot 2 mostra. ZIP de todos os voos `..._voos.zip` (antes
+  `..._blocos.zip`), de uma base `..._base-B.zip`; dentro do ZIP, os KMZ
+  vão pela ordem de voo. Com 10 voos ou mais o número leva zeros no nome do
+  ficheiro (`A-01` ... `B-10`), para a lista do Pilot 2 sair pela ordem de
+  voo. Uma missão sem divisão mantém o nome de sempre; a órbita por nível
+  e os blocos da circular mantêm `_bNN`.
+
 ### Acrescentado (bases múltiplas e mosaico de quadrados robusto)
 
 - **Várias bases de descolagem.** «Marcar base» acrescenta bases A, B,
@@ -35,8 +68,8 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - **Voos numerados por base**: base a base pela ordem dos rótulos e, em
   cada base, pela ordem do mosaico — A-1, A-2, B-3 — no mapa (blocos na
   cor da sua base, cores que se distinguem também pela luminosidade), na
-  lista de blocos e no perfil. Os ids dos blocos (os `_bNN` dos ficheiros)
-  não mudam.
+  lista de blocos e no perfil. Os ids dos blocos não mudam (os ficheiros
+  passam a levar o rótulo do voo: ver acima).
 - **Preflight bloco a bloco**: voo fora do alcance visual da sua base, com
   a distância no pior caso (aviso); tempo do voo com o trânsito de ida e
   volta da base acima do tempo útil (aviso; bloqueio quando só o trânsito

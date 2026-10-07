@@ -4,8 +4,8 @@
  * o marcador de gimbal da grelha nadir. Lógica pura, sem React, para ser
  * testada sem browser — vivia no handler de exportação do App.jsx.
  */
-import { buildExportName } from '../utils/exporters.js'
 import { passThroughFor, stripRouteStats, triggerRangesForLines } from '../utils/geo.js'
+import { areaExportName, flightFiles } from './flightFiles.js'
 
 /** Copia `pw` com o gimbal a −90° no waypoint `at` (fundindo a entrada existente). */
 export function withNadirPitch(pw, at) {
@@ -32,6 +32,12 @@ export function nadirMarkerIndex(block, terrainOk) {
  * Devolve `{ params, blocks }`: `params` para exportWPMLKmz, e `blocks`
  * (com `triggerRanges` e `perWaypoint` locais) para exportBlocksZip quando
  * a missão sai em mais de um bloco — senão null.
+ *
+ * Com `layout` (layoutBlocks, src/mission/baseLayout.js) os blocos saem pela
+ * ordem de voo, cada um com o nome do seu ficheiro (`name`, que é também o
+ * título da missão no KMZ: `<missao>_area[-variantes]_A-1`), o rótulo do voo
+ * e a base (flightFiles); sem ele ficam pela ordem do plano e sem nome (o
+ * exportador cai no `_bNN` do id).
  */
 export function buildAreaExport({
   missionName,
@@ -52,6 +58,7 @@ export function buildAreaExport({
   tieLine = false,
   // 'corners' | 'all': paragem só nos cantos das faixas, ou em todos
   waypointStops = 'corners',
+  layout = null,
 }) {
   const terrainOk = Boolean(terrainResult && !terrainResult.error)
   // waypoints por faixa: os do plano (densificado) ou 2 por faixa
@@ -71,14 +78,7 @@ export function buildAreaExport({
   const routePerLine = terrainOk ? terrainResult.perLine : (plan.perLine ?? null)
   const routePerLink = terrainOk ? (terrainResult.perLink ?? null) : null
   // E3.1: tipo e variantes codificados no nome do ficheiro
-  const name = buildExportName(missionName, 'area', {
-    variant: [
-      crosshatch && 'crosshatch',
-      crosshatch && includeNadir && 'nadir',
-      tieLine && 'tie',
-      terrainOk && 'tf',
-    ],
-  })
+  const name = areaExportName({ missionName, crosshatch, includeNadir, tieLine, terrainOk })
   const params = {
     name,
     waypoints: routeWps,
@@ -125,6 +125,18 @@ export function buildAreaExport({
       ),
     })) ?? null
   const multiBlock = Boolean(exportBlocks && exportBlocks.length > 1)
+  if (multiBlock && layout) {
+    // ordem de voo e nome de cada ficheiro (A-1, A-2, B-3...)
+    const files = flightFiles({ baseName: name, blockIds: exportBlocks.map((b) => b.id), layout })
+    const byId = new Map(exportBlocks.map((b) => [b.id, b]))
+    exportBlocks = files.map((f) => ({
+      ...byId.get(f.blockId),
+      name: f.name,
+      flightLabel: f.flightLabel,
+      baseId: f.baseId,
+      baseLabel: f.baseLabel,
+    }))
+  }
 
   // acções de foto por waypoint do plano (null no modo distância); o
   // marcador de gimbal nadir funde-se com a entrada existente do waypoint

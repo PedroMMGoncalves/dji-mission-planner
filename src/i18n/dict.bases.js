@@ -76,6 +76,92 @@ export default {
     pt: 'Voo {flight} (bloco {id})',
     en: 'Flight {flight} (block {id})',
   },
+  /* ---- Exportação por voo / por base (src/mission/flightFiles.js) ---- */
+  'bases.export.title': { pt: 'Exportar voos', en: 'Export flights' },
+  'bases.export.all': { pt: 'Todos os voos (ZIP)', en: 'All flights (ZIP)' },
+  'bases.export.allTitle': {
+    pt: 'Um KMZ por voo, pela ordem de voo, num ZIP: {file}',
+    en: 'One KMZ per flight, in flight order, in a ZIP: {file}',
+  },
+  'bases.export.base': { pt: 'Voos da base {label} (ZIP)', en: 'Base {label} flights (ZIP)' },
+  'bases.export.baseTitle': {
+    pt: 'Só os voos da base {label} ({list}): {file}',
+    en: 'Only the flights of base {label} ({list}): {file}',
+  },
+  'bases.export.one': { pt: 'Um voo (KMZ)', en: 'One flight (KMZ)' },
+  'bases.export.oneSelect': { pt: 'Voo a exportar', en: 'Flight to export' },
+  'bases.export.blocked': {
+    pt: 'O preflight bloqueia a exportação: veja a lista ao lado do botão de exportar.',
+    en: 'Preflight blocks the export: see the list next to the export button.',
+  },
+  'bases.export.names': {
+    pt: 'O nome de cada KMZ é o do voo no mapa (ex.: {example}), e é o que o Pilot 2 mostra.',
+    en: 'Each KMZ is named after its flight on the map (e.g. {example}), which is what Pilot 2 shows.',
+  },
+  'bases.export.kml': { pt: 'Bases e blocos (KML)', en: 'Bases and blocks (KML)' },
+  'bases.export.kmlTitle': {
+    pt: 'Para o Google Earth ou o telemóvel: bases com a ficha, zonas de descolagem e blocos com o rótulo do voo. Não é para o Pilot 2.',
+    en: 'For Google Earth or a phone: bases with their sheet, take-off zones and blocks labelled with their flight. Not for Pilot 2.',
+  },
+  'bases.kml.basesFolder': { pt: 'Bases', en: 'Bases' },
+  'bases.kml.zonesFolder': { pt: 'Zonas de descolagem', en: 'Take-off zones' },
+  'bases.kml.blocksFolder': { pt: 'Blocos (voos)', en: 'Blocks (flights)' },
+  'bases.kml.zone': {
+    pt: 'descolar até {r} m do ponto',
+    en: 'take off within {r} m of the point',
+  },
+  'bases.kml.zoneReduced': {
+    pt: 'descolar até {r} m do ponto (reduzida de {req} m: {relief} m de desnível a {at} m)',
+    en: 'take off within {r} m of the point (reduced from {req} m: {relief} m of relief at {at} m)',
+  },
+  'bases.kml.zoneName': { pt: 'Zona {label} ({r} m)', en: 'Zone {label} ({r} m)' },
+  'bases.kml.flight': {
+    pt: 'voo {flight}: {min} min com trânsito · {file}',
+    en: 'flight {flight}: {min} min incl. transit · {file}',
+  },
+  'bases.kml.block': { pt: 'bloco {id}', en: 'block {id}' },
+  'bases.kml.time': {
+    pt: '{min} min com trânsito',
+    en: '{min} min incl. transit',
+  },
+  /* ---- Ficha de campo por base (checklist e relatório) ---- */
+  'bases.sheet.title': {
+    pt: 'Bases de descolagem — ficha de campo',
+    en: 'Take-off bases — field sheet',
+  },
+  'bases.sheet.coords': { pt: 'Coordenadas (WGS84)', en: 'Coordinates (WGS84)' },
+  'bases.sheet.open': { pt: 'abrir no mapa', en: 'open in maps' },
+  'bases.sheet.openGeo': { pt: 'aplicação (geo:)', en: 'app (geo:)' },
+  'bases.sheet.zone': { pt: 'Zona', en: 'Zone' },
+  'bases.sheet.ref': { pt: 'Cota de referência', en: 'Reference elevation' },
+  'bases.sheet.refValue': {
+    pt: '{ref} m · voo entre 0 e +{gain} m acima do planeado',
+    en: '{ref} m · flight between 0 and +{gain} m above plan',
+  },
+  'bases.sheet.batteries': { pt: 'Conjuntos de baterias', en: 'Battery sets' },
+  'bases.sheet.setsKnown': {
+    pt: '{flights} necessários · a equipa tem {sets}',
+    en: '{flights} needed · the team has {sets}',
+  },
+  'bases.sheet.setsUnknown': {
+    pt: '{flights} necessários (contagem da equipa por definir na Configuração)',
+    en: '{flights} needed (team count not set in Settings)',
+  },
+  'bases.sheet.setsShort': {
+    pt: 'recarregar no campo ou voltar noutro dia',
+    en: 'recharge in the field or come back another day',
+  },
+  'bases.sheet.vlos': { pt: 'Alcance visual', en: 'Visual range' },
+  'bases.sheet.vlosValue': {
+    pt: '{vlos} m · pior caso dos voos {worst} m',
+    en: '{vlos} m · worst case of the flights {worst} m',
+  },
+  'bases.sheet.flight': { pt: 'Voo', en: 'Flight' },
+  'bases.sheet.time': { pt: 'Tempo (min)', en: 'Time (min)' },
+  'bases.sheet.transit': { pt: 'dos quais trânsito', en: 'of which transit' },
+  'bases.sheet.file': { pt: 'Ficheiro KMZ', en: 'KMZ file' },
+  'bases.sheet.total': { pt: 'Total da base', en: 'Base total' },
+  'bases.sheet.outOfVlos': { pt: 'fora do alcance visual', en: 'beyond visual range' },
   'cp.split.orientationAuto': {
     pt: 'Quadrados paralelos às faixas',
     en: 'Squares parallel to the flight lines',

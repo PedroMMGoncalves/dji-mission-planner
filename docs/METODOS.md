@@ -266,7 +266,8 @@ serpentina. O mosaico antigo (`tilePolygonWithSquares`) mantinha quadrados
 inteiros que saíam da área, e o plano voava-os inteiros.
 
 Ids dos blocos: o da célula no mosaico (`índice + 1`), estável ao
-desactivar outras células — é o `_bNN` dos ficheiros exportados.
+desactivar outras células (a «célula N» do mapa e do preflight). Os
+ficheiros exportados levam o rótulo do voo (A-1, B-3: §4.1 e §11.3).
 
 ### 4.1 Bases múltiplas e zonas de descolagem
 
@@ -738,9 +739,10 @@ altitude finita > 0, velocidade em (0, 30] m/s, enums WPML numéricos,
 `photoIntervalM ≥ 0`, RTH em (0, 1500], pitch em [−120, 60], rumos em
 [−180, 360), `takeOffSecurityHeight` em (0, 200], intervalos de disparo
 inteiros, crescentes e dentro da rota. Caracteres XML ilegais e substitutos
-isolados são retirados dos textos. Blocos: um KMZ por bloco
-(`<nome>_b01.kmz`, ...) num zip, com waypoints, acções e intervalos de
-disparo locais ao bloco.
+isolados são retirados dos textos. Blocos: um KMZ por voo num zip, com
+waypoints, acções e intervalos de disparo locais ao bloco (nomes em
+§11.3); a órbita por nível e os blocos da circular continuam com
+`<nome>_b01.kmz`, ... pelo id.
 
 Enums de aeronave e payload (`src/data/drones.js`) vêm da documentação
 DJI (`dji-sdk/Cloud-API-Doc`), excepto os dois do M300 que 81 KMZ reais
@@ -799,6 +801,61 @@ está validado. Sem uso: `coordinateTurn` global (amortecimento fixo sem
 verificação do troço) não é alcançável pela interface. A especificação não
 fixa uma distância mínima entre waypoints; os 0,5 m do preflight são o
 mínimo do SDK da DJI.
+
+### 11.3 Voos de uma área dividida: nomes e exportação por base
+
+Módulos `src/mission/flightFiles.js`, `src/mission/areaExport.js`,
+`src/mission/fieldSheet.js` e `src/mission/basesKml.js`. No campo
+trabalha-se base a base (chega-se à base B e voam-se os voos dela), e o
+Pilot 2 lista as missões pelo nome do ficheiro, que é também o título da
+missão dentro do KMZ (`<name>` da pasta do `template.kml`). Por isso:
+
+- **Um KMZ por voo**, com o rótulo do voo: `<missão>_<tipo>[-variantes]_<voo>.kmz`,
+  com o nome e as variantes de `buildExportName` (E3.1), ex.:
+  `corta-norte_area-tf_A-1.kmz`, `corta-norte_area-crosshatch-nadir-tf_B-3.kmz`.
+  Sem bases, o voo é o número (`corta-norte_area_1.kmz`). Só letras ASCII,
+  algarismos, `-` e `_` (o nome da missão é limpo como sempre; um voo sem
+  base, `?-3`, que o preflight bloqueia, sairia `x-3`). Com 10 voos ou mais
+  o número leva zeros à esquerda no ficheiro (`A-01` ... `B-10`), para a
+  lista do Pilot 2, ordenada pelo nome, sair pela ordem de voo; no mapa o
+  rótulo continua `A-1`. Nomes repetidos não acontecem (o número do voo é
+  único); se acontecessem, o segundo leva `-b<id>`, e o ZIP recusa dois
+  ficheiros com o mesmo nome em vez de escrever um por cima do outro.
+- **Escolhas** (painel das bases, atrás do mesmo preflight do botão do
+  cabeçalho): «Todos os voos (ZIP)» = `<missão>_<tipo>[-variantes]_voos.zip`
+  (é também o que o botão do cabeçalho exporta); «Voos da base B (ZIP)» =
+  `..._base-B.zip`, só os voos dessa base; «Um voo (KMZ)» = o KMZ desse voo
+  sozinho. Dentro de um ZIP, os KMZ vão pela ordem de voo (base a base,
+  pela ordem dos rótulos, e em cada base pela ordem do mosaico).
+- As alturas de cada KMZ são as do seu bloco (cota da zona da sua base,
+  §4.1), qualquer que seja a escolha: exportar só a base B dá exactamente
+  os mesmos ficheiros de B que exportar tudo.
+- Uma missão sem divisão continua a sair num só KMZ, `<missão>_<tipo>[-variantes].kmz`.
+- Antes (até à 1.3.0) os ficheiros dos blocos da área chamavam-se
+  `..._bNN.kmz` pelo id do bloco e o ZIP `..._blocos.zip`; nenhum ficheiro
+  nem teste dependia desses nomes, e o id do bloco continua na descrição do
+  KML de campo.
+
+**Ficha de campo por base** (`baseFieldSheets`), na checklist de campo e
+no relatório: rótulo; coordenadas WGS84 com 6 casas (~0,1 m) e ligação
+`https://www.google.com/maps/search/?api=1&query=lat,lon` (abre a aplicação
+de mapas no telemóvel) mais `geo:lat,lon?q=lat,lon(Base B)` (RFC 5870);
+zona («descolar até R m do ponto», o raio efectivo, e quando reduzida o
+pedido, o desnível e a distância que a limitaram); cota de referência e
+«voo entre 0 e +X m acima do planeado»; voos com o tempo do bloco mais o
+trânsito de ida e volta no pior caso da zona, e o nome do KMZ de cada um;
+conjuntos de baterias que a base pede (um por voo) contra os da equipa
+(`flightsVsSets`); alcance visual da aeronave e o pior caso dos voos.
+
+**KML «Bases e blocos»** (`buildBasesKML`, `<missão>_bases.kml`), para o
+Google Earth ou a navegação no telemóvel — nunca para o Pilot 2: pasta
+«Bases» (um ponto por base, com a ficha na descrição), pasta «Zonas de
+descolagem» (círculo de 72 lados com o raio efectivo), pasta «Blocos
+(voos)» (contorno de cada bloco — a célula do mosaico, ou o invólucro da
+rota no corte por área — numa `MultiGeometry` com um ponto no centro, que
+é onde o Google Earth escreve o rótulo do voo). Cores das bases do mapa
+(`aabbggrr`). As descrições são HTML: cada valor é escapado como HTML e a
+descrição inteira como XML.
 
 ## 12. Datums verticais tal como estão implementados
 

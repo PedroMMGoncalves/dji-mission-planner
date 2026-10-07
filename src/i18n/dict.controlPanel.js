@@ -407,8 +407,8 @@ export default {
     en: 'Set or propose the bases: each block’s transit counts from its own.',
   },
   'cp.split.exportHint': {
-    pt: 'A exportação WPML gera um ZIP com um KMZ por bloco (bNN = bloco), cada um com as alturas referidas à zona da sua base.',
-    en: 'The WPML export produces a ZIP with one KMZ per block (bNN = block), each with heights referred to its base zone.',
+    pt: 'A exportação WPML gera um ZIP com um KMZ por voo, pela ordem de voo e com o rótulo do voo no nome (…_A-1.kmz), cada um com as alturas referidas à zona da sua base. Os voos de uma só base, ou um só voo, exportam-se no painel das bases.',
+    en: 'The WPML export produces a ZIP with one KMZ per flight, in flight order and named after the flight (…_A-1.kmz), each with heights referred to its base zone. One base’s flights, or a single flight, are exported from the bases panel.',
   },
 
   /* ---- Terreno (DEM) ---- */

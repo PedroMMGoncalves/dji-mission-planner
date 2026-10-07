@@ -1,4 +1,4 @@
-# Protocolo de QA manual (≈12 min por release)
+# Protocolo de QA manual (≈15 min por release)
 
 As suites automáticas (`npm test`, correm também no CI) cobrem a matemática, o
 WPML e a fronteira de leitura de ficheiros; **não** cobrem a integração de
@@ -205,6 +205,33 @@ tablet real):
   **Esperado:** o MDT importado não é substituído; no separador Corredor o
   preflight diz que o MDT importado não cobre a rota e oferece o relevo
   global.
+
+## 13. Várias bases e exportação por base (~3 min + campo)
+
+- ☐ M300 RTK, área de alguns km², divisão por **Bateria**, relevo carregado.
+  Marcar **duas bases** (A e B) nos dois extremos e **Propor bases**.
+  **Esperado:** cada bloco com uma base; voos numerados A-1, A-2, B-3...;
+  na lista, a zona e «voo entre 0 e +X m acima do planeado» de cada base.
+- ☐ No painel das bases, **Voos da base B (ZIP)**.
+  **Esperado:** `<missão>_area[-variantes]_base-B.zip` só com os voos de B,
+  pela ordem de voo (`..._B-3.kmz`, `..._B-4.kmz`, com zeros a partir de 10
+  voos); **Um voo (KMZ)** com B-3 dá `..._B-3.kmz`; **Todos os voos (ZIP)** e
+  o botão do cabeçalho dão `..._voos.zip`. Com um bloqueio no preflight os
+  três ficam desactivados.
+- ☐ **Bases e blocos (KML)** aberto no Google Earth (ou no telemóvel).
+  **Esperado:** pontos «Base A» e «Base B» com a ficha ao clicar, círculos
+  das zonas, contornos dos blocos com o rótulo do voo.
+- ☐ **Checklist de campo** e **Relatório**, e imprimir.
+  **Esperado:** uma ficha por base: coordenadas (6 casas) que abrem nos
+  mapas, zona (reduzida e porquê), cota de referência, voos com tempo
+  (trânsito incluído) e o nome do KMZ, conjuntos de baterias contra os da
+  equipa, alcance visual; cada base inteira numa página.
+- ☐ **No campo**, na base B: importar o ZIP da base B no DJI Pilot 2
+  (cartão ou cabo).
+  **Esperado:** as missões aparecem com o nome do ficheiro (`..._B-3`), pela
+  ordem de voo; abrir uma e confirmar a altura do primeiro waypoint contra a
+  do plano (relativa à cota da zona de B, «voo entre 0 e +X m acima do
+  planeado»); descolar dentro do raio da zona.
 
 ---
 

@@ -11,7 +11,19 @@ import { planArea } from '../mission/areaPlan.js'
 import { planBlocks } from '../mission/blocks.js'
 import { planTerrainFollow } from '../mission/terrainFollow.js'
 import { buildAreaExport } from '../mission/areaExport.js'
-import { downloadBlob, exportBlocksZip, exportAreaKML, exportWPMLKmz } from '../utils/exporters.js'
+import {
+  areaExportName,
+  flightFiles,
+  flightsArchiveName,
+  selectFlights,
+} from '../mission/flightFiles.js'
+import {
+  blockExportParams,
+  downloadBlob,
+  exportBlocksZip,
+  exportAreaKML,
+  exportWPMLKmz,
+} from '../utils/exporters.js'
 import { stripRouteStats } from '../utils/geo.js'
 import { referenceElevation } from '../mission/reference.js'
 import {
@@ -302,53 +314,102 @@ export function useAreaMission({
     )
   }, [gcps, safeName])
 
-  const handleExportKMZ = useCallback(() => {
-    if (!canExportKMZ) return
-    // toda a montagem (nome com variantes, waypoints do terrain follow,
-    // intervalos de disparo, blocos, marcador do gimbal nadir) é pura e
-    // testada em src/mission/areaExport.js
-    const { params: exportParams, blocks: exportBlocks } = buildAreaExport({
+  // Voos pela ordem de voo e o nome do KMZ de cada um (o mesmo que a
+  // exportação escreve): para o painel das bases, a checklist e o KML
+  const terrainOk = Boolean(terrainResult && !terrainResult.error)
+  const exportBaseName = areaExportName({
+    missionName,
+    crosshatch: params.crosshatch,
+    includeNadir: params.includeNadir,
+    tieLine: params.tieLine,
+    terrainOk,
+  })
+  const flightFileList = useMemo(
+    () =>
+      blocks && blocks.length > 1
+        ? flightFiles({
+            baseName: exportBaseName,
+            blockIds: blocks.map((b) => b.id),
+            layout: baseLayout,
+          })
+        : [],
+    [blocks, exportBaseName, baseLayout],
+  )
+
+  /**
+   * Exporta a missão: um KMZ sem divisão; com blocos, a escolha `sel` —
+   * todos os voos (ZIP `_voos`), os de uma base (ZIP `_base-B`) ou um voo
+   * (KMZ `_A-1`), sempre pela ordem de voo (src/mission/flightFiles.js).
+   * @param {import('../mission/flightFiles.js').FlightSelection} [sel]
+   */
+  const handleExportFlights = useCallback(
+    (sel = { kind: 'all' }) => {
+      if (!canExportKMZ) return
+      // toda a montagem (nome com variantes, waypoints do terrain follow,
+      // intervalos de disparo, blocos pela ordem de voo, marcador do gimbal
+      // nadir) é pura e testada em src/mission/areaExport.js
+      const { params: exportParams, blocks: exportBlocks } = buildAreaExport({
+        missionName,
+        plan: planOk,
+        terrainResult,
+        blocks,
+        spacingM: spacing,
+        photoMode,
+        sensorType: sensor.type,
+        altitude: params.altitude,
+        speed,
+        wpml,
+        photoIntervalM: interval,
+        triggerMode: params.triggerMode,
+        gimbalPitch: params.gimbalPitch,
+        crosshatch: params.crosshatch,
+        includeNadir: params.includeNadir,
+        tieLine: params.tieLine,
+        waypointStops: params.waypointStops,
+        layout: baseLayout,
+      })
+      if (!exportBlocks) {
+        runExport(() => exportWPMLKmz(exportParams))
+        return
+      }
+      const chosen = selectFlights(exportBlocks, sel)
+      if (chosen.length === 0) return
+      if (sel?.kind === 'flight') {
+        runExport(() => exportWPMLKmz(blockExportParams(exportParams, chosen[0])))
+        return
+      }
+      const zipName = flightsArchiveName(exportParams.name, sel, chosen[0].baseLabel)
+      runExport(() => exportBlocksZip(exportParams, chosen, zipName))
+    },
+    [
+      canExportKMZ,
       missionName,
-      plan: planOk,
+      planOk,
       terrainResult,
       blocks,
-      spacingM: spacing,
+      spacing,
       photoMode,
-      sensorType: sensor.type,
-      altitude: params.altitude,
+      sensor.type,
+      params.altitude,
+      params.triggerMode,
+      params.gimbalPitch,
+      params.crosshatch,
+      params.includeNadir,
+      params.tieLine,
+      params.waypointStops,
       speed,
       wpml,
-      photoIntervalM: interval,
-      triggerMode: params.triggerMode,
-      gimbalPitch: params.gimbalPitch,
-      crosshatch: params.crosshatch,
-      includeNadir: params.includeNadir,
-      tieLine: params.tieLine,
-      waypointStops: params.waypointStops,
-    })
-    if (exportBlocks) runExport(() => exportBlocksZip(exportParams, exportBlocks))
-    else runExport(() => exportWPMLKmz(exportParams))
-  }, [
-    canExportKMZ,
-    missionName,
-    planOk,
-    terrainResult,
-    blocks,
-    spacing,
-    photoMode,
-    sensor.type,
-    params.altitude,
-    params.triggerMode,
-    params.gimbalPitch,
-    params.crosshatch,
-    params.includeNadir,
-    params.tieLine,
-    params.waypointStops,
-    speed,
-    wpml,
-    interval,
-    runExport,
-  ])
+      interval,
+      runExport,
+      baseLayout,
+    ],
+  )
+
+  // o botão do cabeçalho: a missão inteira (todos os voos)
+  const handleExportKMZ = useCallback(
+    () => handleExportFlights({ kind: 'all' }),
+    [handleExportFlights],
+  )
 
   return {
     gcpConfig,
@@ -374,5 +435,9 @@ export function useAreaMission({
     handleExportKML,
     handleExportGcps,
     handleExportKMZ,
+    handleExportFlights,
+    flightFiles: flightFileList,
+    exportBaseName,
+    safeName,
   }
 }
