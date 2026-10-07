@@ -125,6 +125,9 @@ export function siteViewOf(res) {
   }
 }
 
+/** Vista que não se pode melhorar: tudo à vista e o rádio livre em todo o bloco. */
+const perfectView = (v) => Boolean(v) && v.visible >= 1 - 1e-9 && v.radio >= 1 - 1e-9
+
 /** A melhor de duas vistas: mais à vista, depois melhor rádio (a primeira no empate). */
 export const betterView = (a, b) =>
   !b ||
@@ -399,6 +402,7 @@ export function goodSiteRule(ctx) {
       for (const eye of siteEyes(point, info, ctx)) {
         const v = siteViewOf(blockVisibility(viewArgs(eye, info, ring, ctx)))
         if (betterView(v, best)) best = v
+        if (perfectView(best)) break
       }
       return best
     },
@@ -587,7 +591,9 @@ export function createBaseProposalRun({
           if (betterView(v, eyeBest)) eyeBest = v
           viewer = null
           eyeIdx++
-          if (eyeIdx >= c.eyes.length) {
+          // do ponto (ou de outro olho) já se vê tudo com o rádio livre: os
+          // outros não podem fazer melhor
+          if (eyeIdx >= c.eyes.length || perfectView(eyeBest)) {
             e.view = eyeBest
             e.ok = siteAccepts(e.view)
             eyeBest = null

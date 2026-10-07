@@ -373,6 +373,8 @@ export function createViewshedRun(
               }
               if (better(cand, search.best)) search.best = cand
             }
+            // tudo à vista com o rádio livre: nenhum outro ponto faz melhor
+            if (search.best && search.best.vis >= 1 - 1e-9 && search.best.radio >= 1 - 1e-9) break
             if (search.k < search.pts.length && shouldYield()) return false
           }
           if (search.best) eyePoint = search.best.point
