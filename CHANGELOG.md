@@ -31,8 +31,13 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   seleccionada os rótulos ficam por cima dos pinos das outras bases.
 - Os traços das faixas e os waypoints deixam de apanhar o clique, que
   chega à célula por baixo.
-- «Marcar base» com o clique dentro de uma célula do mosaico desactivava a
-  célula em vez de criar a base; agora cria a base.
+- Com o mosaico à vista, um clique dentro de uma célula ia sempre para a
+  célula: «Marcar base», um ponto de inspecção, o POI da órbita ou o eixo
+  do corredor dentro de um quadrado desactivavam o quadrado em vez de fazer
+  a acção. Nos modos de marcar ou desenhar o clique passa para o mapa.
+- O Esc fecha primeiro o que está por cima: com uma gaveta ou uma janela
+  aberta (3D, perfil, ajuda, relatório, configuração), fecha-a e a base
+  continua seleccionada.
 
 ## 1.4.0 — 2026-10-07
 

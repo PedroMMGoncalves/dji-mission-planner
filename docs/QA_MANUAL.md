@@ -249,8 +249,10 @@ tablet real):
   **Esperado:** o cartão 5 diz «Base B seleccionada…»; os dois blocos passam
   para B (cor e rótulo B-…); o segundo clique deixa-o em B. **Esc**: o
   cartão volta à indicação geral e um clique num bloco desactiva-o
-  (**Ctrl+Z** repõe). **Marcar base** com o clique dentro de uma célula
-  cria a base.
+  (**Ctrl+Z** repõe). **Marcar base** e um ponto de inspecção com o clique
+  dentro de uma célula criam a base e o ponto (a célula não se desactiva).
+  Com uma gaveta aberta, o primeiro Esc fecha a gaveta e a base continua
+  seleccionada.
 - ☐ Seleccionar uma base num alto (o pino no mapa ou o rótulo na lista) →
   **Juntar a esta base**.
   **Esperado:** a base fica com todos os voos que vê inteiros dentro do

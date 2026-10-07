@@ -19,6 +19,9 @@ import { hiddenStrips, radioStrips, ringLabelPoint } from '../mission/viewshedPl
 
 const toLatLng = ([lon, lat]) => [lat, lon]
 
+/** Modos em que um clique no mapa marca ou desenha (vértice, base, ponto, POI). */
+const MAP_CLICK_MODES = new Set(['draw', 'anchor', 'base', 'inspect', 'face', 'orbit', 'corridor'])
+
 export default function MapView({
   mode,
   draftVertices,
@@ -220,17 +223,7 @@ export default function MapView({
 
     map.on('click', (e) => {
       const s = stateRef.current
-      if (
-        s.mode === 'draw' ||
-        s.mode === 'anchor' ||
-        s.mode === 'base' ||
-        s.mode === 'inspect' ||
-        s.mode === 'face' ||
-        s.mode === 'orbit' ||
-        s.mode === 'corridor'
-      ) {
-        s.onMapClick([e.latlng.lng, e.latlng.lat])
-      }
+      if (MAP_CLICK_MODES.has(s.mode)) s.onMapClick([e.latlng.lng, e.latlng.lat])
     })
     map.on('dblclick', () => {
       const s = stateRef.current
@@ -494,11 +487,13 @@ export default function MapView({
       })
     }
 
-    // «Marcar base» dentro de uma célula: a célula apanha o clique, que tem
-    // de chegar ao mapa (senão desactivava a célula em vez de criar a base)
+    // Nos modos de marcar ou desenhar («Marcar base», pontos de inspecção,
+    // POI da órbita, eixo do corredor, pé da fachada...) a célula apanha o
+    // clique, que tem de chegar ao mapa: senão desactivava a célula em vez
+    // de fazer a acção do modo
     const toMapClick = (e) => {
       const s = stateRef.current
-      if (s.mode !== 'base') return false
+      if (!MAP_CLICK_MODES.has(s.mode)) return false
       s.onMapClick([e.latlng.lng, e.latlng.lat])
       return true
     }

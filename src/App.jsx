@@ -1986,17 +1986,24 @@ function AppInner({ lang, setLang }) {
     (id) => setSelectedBaseId((sel) => (sel === id ? null : id)),
     [],
   )
-  // Esc desselecciona a base (fora dos campos de texto e dos desenhos)
+  // Esc desselecciona a base (fora dos campos de texto e dos desenhos). O
+  // Esc fecha primeiro o que está por cima: com uma janela (3D, perfil,
+  // ajuda, relatório, configuração, aviso) ou uma gaveta aberta, a base fica
+  const overlayOpen =
+    show3d || showProfile || showHelp || showReport || showSettings || Boolean(disclaimer)
   useEffect(() => {
-    if (!selectedBaseId || mode !== 'idle') return
+    if (!selectedBaseId || mode !== 'idle' || overlayOpen) return
     const onKey = (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
-      if (e.key === 'Escape') setSelectedBaseId(null)
+      if (document.querySelector('[data-testid^="drawer-"]:not([hidden]), [aria-modal="true"]'))
+        return
+      setSelectedBaseId(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedBaseId, mode])
+  }, [selectedBaseId, mode, overlayOpen])
 
   // Catálogo de presets de missão aplicáveis ao sensor ativo, com a
   // velocidade já resolvida para a aeronave selecionada

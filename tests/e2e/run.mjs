@@ -2082,6 +2082,16 @@ await scenario('atribuir-bloco-a-base', async () => {
         `bloco ${blk2} -> ${owner?.label}`,
       )
     }
+    // com uma gaveta aberta, o Esc fecha a gaveta e a base continua seleccionada
+    if (await openDrawer(page, 'bases')) {
+      await page.keyboard.press('Escape')
+      await page.waitForTimeout(300)
+      check(
+        `${split}: com uma gaveta aberta, o Esc fecha a gaveta e a base fica seleccionada`,
+        (await page.locator('[data-testid="drawer-bases"]:visible').count()) === 0 &&
+          (await hint.getAttribute('data-assign')) === 'on',
+      )
+    }
     // Esc desselecciona
     await page.keyboard.press('Escape')
     await page.waitForTimeout(300)
@@ -2097,6 +2107,25 @@ await scenario('atribuir-bloco-a-base', async () => {
         'Bateria: «Marcar base» dentro de uma célula cria a base (não desactiva a célula)',
         (await baseRows(page)).length === n0 + 1,
         `${n0} -> ${(await baseRows(page)).length}`,
+      )
+      // ponto de inspecção dentro de uma célula: cria o ponto (antes
+      // desactivava a célula)
+      const blocks0 = (await baseRows(page)).reduce((n, r) => n + r.blocks.length, 0)
+      const ip0 = (await savedProject(page))?.inspectPoints?.length ?? 0
+      await openDrawer(page, 'extras')
+      await page
+        .getByRole('button', { name: /Marcar pontos no mapa|Place points on the map/ })
+        .click()
+      await closeDrawer(page)
+      const cellI = await page.locator(`path.block-cell-${blk}`).boundingBox()
+      await page.mouse.click(cellI.x + cellI.width * 0.7, cellI.y + cellI.height * 0.3)
+      await page.waitForTimeout(1000)
+      const ip1 = (await savedProject(page))?.inspectPoints?.length ?? 0
+      const blocks1 = (await baseRows(page)).reduce((n, r) => n + r.blocks.length, 0)
+      check(
+        'Bateria: um ponto de inspecção dentro de uma célula cria o ponto (não desactiva a célula)',
+        ip1 === ip0 + 1 && blocks1 === blocks0,
+        `pontos ${ip0} -> ${ip1}; blocos ${blocks0} -> ${blocks1}`,
       )
     }
     check(`${split}: sem erros de página`, errors.length === 0, errors.join(' | '))
@@ -3056,7 +3085,7 @@ await scenario('inventario-painel-area', async () => {
   await verifica(p2, INVENTARIO_AREA)
   await (await usa(p2, 'voo', inv.field(/Espaçamento manual/))).uncheck()
   await (await usa(p2, 'voo', inv.field(/crosshatch/))).uncheck()
-  // pontos de inspecção e GCPs, antes da divisão (um clique no mosaico desactiva células)
+  // pontos de inspecção e GCPs, antes da divisão
   await (await usa(p2, 'extras', inv.btn(/Marcar pontos no mapa/))).click()
   await closeDrawer(p2)
   for (const [dx, dy] of [
