@@ -152,16 +152,20 @@ function InstrucoesPt() {
         <Li>
           <strong>Bases</strong> — «Marcar base» acrescenta A, B, C... (arraste para mover; retire
           na lista). «Propor bases» cobre os blocos que nenhuma base vê dentro do alcance visual,
-          sem mexer nas suas; com «Seguir terreno» prefere sítios baixos, que deixem os blocos com
-          pelo menos 20 m de altura relativa (num cabeço os blocos mais baixos ficavam rasos ou
-          abaixo da descolagem). Cada base é uma <strong>zona</strong> (100 m na Configuração): as
-          alturas dos seus blocos referem-se à cota mais baixa da zona, e descolando em qualquer
-          ponto dela voa-se entre 0 e +X m acima do planeado. Voos numerados por base: A-1, A-2,
-          B-3. Com «Atribuir base», clicar num bloco passa-o para a base seleccionada (ou para a
-          seguinte). Refeito o mosaico (ângulo, lado, bateria, área editada), cada bloco novo herda
-          a base escolhida à mão e o estado desactivado do bloco antigo que cobre pelo menos metade
-          dele; as atribuições que não passam são ditas no painel das bases. Com a área substituída
-          por outra (menos de metade em comum) nada passa.
+          sem mexer nas suas. Com relevo, prefere sítios <strong>planos ou altos</strong> com o
+          rádio livre: a zona de descolagem não pode ficar reduzida a menos de metade, cada bloco
+          tem de ter o rádio livre (zona de Fresnel, com a vegetação da missão) em 95 % dos pontos,
+          e entre os que servem ganha o melhor rádio, a melhor vista, o mais alto e o mais plano;
+          procura também nos altos do relevo à volta dos blocos. Nunca escolhe um sítio baixo: uma
+          altura relativa pequena a partir de uma base alta fica para o aviso do preflight. Corre em
+          fatias («A propor bases… N %», com «Cancelar»). Cada base é uma <strong>zona</strong> (100
+          m na Configuração): as alturas dos seus blocos referem-se à cota mais baixa da zona, e
+          descolando em qualquer ponto dela voa-se entre 0 e +X m acima do planeado. Voos numerados
+          por base: A-1, A-2, B-3. Com «Atribuir base», clicar num bloco passa-o para a base
+          seleccionada (ou para a seguinte). Refeito o mosaico (ângulo, lado, bateria, área
+          editada), cada bloco novo herda a base escolhida à mão e o estado desactivado do bloco
+          antigo que cobre pelo menos metade dele; as atribuições que não passam são ditas no painel
+          das bases. Com a área substituída por outra (menos de metade em comum) nada passa.
         </Li>
         <Li>
           <strong>Bacias de visão</strong> — com bases, blocos e relevo, cada bloco é visto do{' '}
@@ -379,16 +383,20 @@ function InstrucoesEn() {
         <Li>
           <strong>Bases</strong> — “Set base” adds A, B, C... (drag to move; remove from the list).
           “Propose bases” covers the blocks no base sees within visual range, without touching
-          yours; with “Follow terrain” it prefers low sites that leave the blocks at least 20 m of
-          relative height (on a hilltop the lower blocks were flown too low or below take-off). Each
-          base is a <strong>zone</strong> (100 m in Settings): its blocks’ heights refer to the
-          zone’s lowest elevation, and taking off anywhere in it you fly between 0 and +X m above
-          plan. Flights are numbered by base: A-1, A-2, B-3. With “Assign base”, clicking a block
-          moves it to the selected base (or to the next one). When the mosaic is rebuilt (angle,
-          size, battery, edited area), each new block inherits the hand-picked base and the disabled
-          state of the old block covering at least half of it; assignments that do not carry over
-          are reported in the bases panel. If the area is replaced by another (less than half in
-          common), nothing carries over.
+          yours. With terrain it prefers <strong>flat or high</strong> sites with a clear radio
+          link: the take-off zone must keep at least half its radius, each block needs a clear radio
+          link (Fresnel zone, with the mission’s vegetation) over 95 % of its points, and among the
+          sites that qualify the best radio, the best view, the highest and the flattest win; it
+          also looks at the terrain high points around the blocks. It never picks a low site: a
+          small relative height from a high base is left to the preflight warning. It runs in slices
+          (“Proposing bases… N %”, with “Cancel”). Each base is a <strong>zone</strong> (100 m in
+          Settings): its blocks’ heights refer to the zone’s lowest elevation, and taking off
+          anywhere in it you fly between 0 and +X m above plan. Flights are numbered by base: A-1,
+          A-2, B-3. With “Assign base”, clicking a block moves it to the selected base (or to the
+          next one). When the mosaic is rebuilt (angle, size, battery, edited area), each new block
+          inherits the hand-picked base and the disabled state of the old block covering at least
+          half of it; assignments that do not carry over are reported in the bases panel. If the
+          area is replaced by another (less than half in common), nothing carries over.
         </Li>
         <Li>
           <strong>Viewsheds</strong> — with bases, blocks and terrain, each block is seen from its

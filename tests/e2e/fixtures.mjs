@@ -25,16 +25,6 @@ export const ground = (x, y) =>
   60 * G(x, y, 1200, 300, 150)
 
 /**
- * Planície a 150 m com um cabeço de 150 m (σ 60 m) no meio de um
- * rectângulo de 500 × 250 m (dois quadrados de 250 m do mosaico): o ponto
- * médio da aresta comum, onde a proposta sem relevo põe a base, fica no
- * alto. Com 100 m de AGL e seguimento de terreno os blocos ficavam com
- * alturas relativas negativas.
- */
-export const HILL = { base: 150, height: 150, x: 1250, y: 1125, sigma: 60 }
-export const hillGround = (x, y) => HILL.base + HILL.height * G(x, y, HILL.x, HILL.y, HILL.sigma)
-
-/**
  * Planície a 150 m com uma cumeada norte-sul de 41,5 m (σ 40 m) em x = 900 m,
  * entre uma base na planície a oeste (x = 650 m) e o rectângulo do cabeço
  * (x 1000..1500 m). Do olho (151,7 m) ao drone a 250 m (100 m sobre a cota
@@ -46,6 +36,38 @@ export const hillGround = (x, y) => HILL.base + HILL.height * G(x, y, HILL.x, HI
 export const RIDGE = { base: 150, height: 41.5, x: 900, sigma: 40, baseX: 650 }
 export const ridgeGround = (x) =>
   RIDGE.base + RIDGE.height * Math.exp(-((x - RIDGE.x) ** 2) / (2 * RIDGE.sigma ** 2))
+
+/**
+ * Planície a 150 m com dois altos de topo plano (raio 100 m, encostas σ
+ * 60 m) e uma cumeada estreita entre o alto de oeste e o rectângulo do
+ * cabeço (x 1000..1500 m):
+ *  - oeste: topo a 200 m em (650, 1125), o sítio mais alto; vê os dois
+ *    blocos dentro do VLOS de 1000 m, mas a cumeada (x = 850 m, 95 m de
+ *    altura, σ 35 m: encostas íngremes, sem zona de descolagem) passa pela
+ *    linha de rádio para quase todo o rectângulo — o caso de Mata de Vilar;
+ *  - leste: topo a 185 m em (1700, 1125), plano, com o rádio livre para os
+ *    dois blocos. É aí que a proposta tem de pôr a base.
+ */
+export const MESAS = {
+  base: 150,
+  west: { x: 650, y: 1125, top: 200 },
+  east: { x: 1700, y: 1125, top: 185 },
+  topR: 100,
+  sigma: 60,
+  ridge: { x: 850, height: 95, sigma: 35 },
+}
+const mesa = (x, y, m) => {
+  const r = Math.hypot(x - m.x, y - m.y)
+  const k = r <= MESAS.topR ? 1 : Math.exp(-((r - MESAS.topR) ** 2) / (2 * MESAS.sigma ** 2))
+  return MESAS.base + (m.top - MESAS.base) * k
+}
+export const mesasGround = (x, y) =>
+  Math.max(
+    MESAS.base +
+      MESAS.ridge.height * Math.exp(-((x - MESAS.ridge.x) ** 2) / (2 * MESAS.ridge.sigma ** 2)),
+    mesa(x, y, MESAS.west),
+    mesa(x, y, MESAS.east),
+  )
 
 const feature = (rings, type = 'Polygon') =>
   JSON.stringify({ type: 'Feature', properties: {}, geometry: { type, coordinates: rings } })
@@ -74,7 +96,7 @@ const small = (lon, lat) =>
     [lon, lat + 0.001],
   ])
 
-/** O rectângulo do cabeço: 500 × 250 m, com o cabeço no meio. */
+/** O rectângulo do cabeço: 500 × 250 m (dois quadrados de 250 m do mosaico). */
 export const hillRing = closed([
   toLL(1000, 1000),
   toLL(1500, 1000),
@@ -121,19 +143,6 @@ export async function makeFixtures(dir) {
       return ground(x, y)
     },
   })
-  const hillTif = makeFloatTiff({
-    width,
-    height,
-    originX,
-    originY,
-    scale,
-    nodata: -9999,
-    geoKeys: { GTModelTypeGeoKey: 2, GeographicTypeGeoKey: 4326 },
-    valueAt: (px, py) => {
-      const [x, y] = toM(originX + (px + 0.5) * scale, originY - (py + 0.5) * scale)
-      return hillGround(x, y)
-    },
-  })
   const ridgeTif = makeFloatTiff({
     width,
     height,
@@ -147,9 +156,22 @@ export async function makeFixtures(dir) {
       return ridgeGround(x)
     },
   })
+  const mesasTif = makeFloatTiff({
+    width,
+    height,
+    originX,
+    originY,
+    scale,
+    nodata: -9999,
+    geoKeys: { GTModelTypeGeoKey: 2, GeographicTypeGeoKey: 4326 },
+    valueAt: (px, py) => {
+      const [x, y] = toM(originX + (px + 0.5) * scale, originY - (py + 0.5) * scale)
+      return mesasGround(x, y)
+    },
+  })
   const paths = {
+    demMesas: join(dir, 'mesas.tif'),
     demRidge: join(dir, 'cumeada.tif'),
-    demHill: join(dir, 'cabeco.tif'),
     hill: join(dir, 'cabeco.geojson'),
     demBig: join(dir, 'grande.tif'),
     dem: join(dir, 'dem.tif'),
@@ -158,8 +180,8 @@ export async function makeFixtures(dir) {
     multi: join(dir, 'multi.geojson'),
   }
   writeFileSync(paths.dem, Buffer.from(await tif.arrayBuffer()))
-  writeFileSync(paths.demHill, Buffer.from(await hillTif.arrayBuffer()))
   writeFileSync(paths.demRidge, Buffer.from(await ridgeTif.arrayBuffer()))
+  writeFileSync(paths.demMesas, Buffer.from(await mesasTif.arrayBuffer()))
   writeFileSync(paths.hill, feature([hillRing]))
   writeFileSync(paths.demBig, Buffer.from(await big.arrayBuffer()))
   writeFileSync(paths.rect, feature([rectRing]))

@@ -46,12 +46,7 @@ import {
   removeBase as removeBaseFrom,
   setBaseRadius,
 } from './mission/bases.js'
-import {
-  blocksViewRoute,
-  lowSiteRule,
-  proposeMoreBases,
-  summarizeBases,
-} from './mission/baseLayout.js'
+import { blocksViewRoute, summarizeBases } from './mission/baseLayout.js'
 import { baseFieldSheets } from './mission/fieldSheet.js'
 import { buildBasesKML } from './mission/basesKml.js'
 import {
@@ -79,6 +74,7 @@ import { useInspection } from './hooks/useInspection.js'
 import { useTerrain } from './hooks/useTerrain.js'
 import { useProject } from './hooks/useProject.js'
 import { terrainIdentity, useViewsheds } from './hooks/useViewsheds.js'
+import { useBaseProposal } from './hooks/useBaseProposal.js'
 import { viewshedJobs, viewshedTerrainModel } from './mission/viewshedPlan.js'
 import { DEFAULT_PARAMS } from './mission/defaults.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
@@ -249,7 +245,8 @@ function AppInner({ lang, setLang }) {
   )
   // clique num bloco no mapa: activar/desactivar a célula ou atribuir a base
   const [blockClickMode, setBlockClickMode] = useState('toggle') // 'toggle' | 'assign'
-  const [baseProposal, setBaseProposal] = useState(null) // {added, outOfVlos} da última proposta
+  // a última proposta: {added, outOfVlos, poorSites} ou {cancelled: true}
+  const [baseProposal, setBaseProposal] = useState(null)
   const [exportError, setExportError] = useState(null)
 
   /**
@@ -1712,38 +1709,53 @@ function AppInner({ lang, setLang }) {
   )
 
   // "Propor bases": bases novas só para os blocos que nenhuma base vê
-  // inteiros; as do operador ficam onde estão. Com seguimento de terreno e
-  // relevo, sítios baixos: a cota da zona de cada base proposta deixa os
-  // seus blocos com pelo menos 20 m de altura relativa (lowSiteRule)
+  // inteiros; as do operador ficam onde estão. Com relevo, sítios planos e
+  // altos com o rádio livre para os blocos que servem (src/mission/baseSites.js),
+  // em fatias (useBaseProposal): o painel diz «A propor bases…» e deixa
+  // cancelar. Sem relevo, a cobertura de sempre.
+  const {
+    start: startProposal,
+    cancel: cancelProposalRun,
+    running: proposing,
+    progress: proposeProgress,
+  } = useBaseProposal()
   const proposeBasesForBlocks = useCallback(() => {
     if (!blocks?.length) return
-    const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
-    const site =
-      terrainFollow.enabled && typeof elevationAt === 'function'
-        ? lowSiteRule({
-            blocks,
-            elevationAt,
-            altitudeM: params.altitude,
-            radiusM: equipment.zoneRadiusM,
-            maxReliefM: equipment.zoneMaxReliefM,
-          })
-        : null
-    const res = proposeMoreBases({
-      blocks,
-      bases,
-      zones,
-      manual: blockBaseEffective,
-      vlosM,
-      defaultRadiusM: equipment.zoneRadiusM,
-      maxBlocksPerBase: equipment.maxFlightsPerBase ?? 0,
-      site,
-    })
-    if (res.added > 0) {
-      pushHistory()
-      setBases(res.bases)
-      setManualBlockBase(res.blockBase)
-    }
-    setBaseProposal({ added: res.added, outOfVlos: res.outOfVlos, highSites: res.highSites })
+    const ready = terrain.status === 'ready' && terrainCovers
+    const model = ready
+      ? viewshedTerrainModel(terrain.data, {
+          surface: terrain.data?.source === 'file' ? demSurface : 'dtm',
+          obstacleM,
+        })
+      : null
+    setBaseProposal(null)
+    startProposal(
+      {
+        blocks,
+        bases,
+        zones,
+        manual: blockBaseEffective,
+        vlosM,
+        defaultRadiusM: equipment.zoneRadiusM,
+        maxBlocksPerBase: equipment.maxFlightsPerBase ?? 0,
+        maxReliefM: equipment.zoneMaxReliefM,
+        terrain: model
+          ? { elevationAt: terrain.data.elevationAt, obstacleM: model.obstacleM }
+          : null,
+        altitudeM: params.altitude,
+        terrainFollow: viewshedTf,
+        eyeHeightM: equipment.eyeHeightM,
+        antennaHeightM: equipment.antennaHeightM,
+      },
+      (res) => {
+        if (res.added > 0) {
+          pushHistory()
+          setBases(res.bases)
+          setManualBlockBase(res.blockBase)
+        }
+        setBaseProposal({ added: res.added, outOfVlos: res.outOfVlos, poorSites: res.poorSites })
+      },
+    )
   }, [
     blocks,
     bases,
@@ -1754,9 +1766,20 @@ function AppInner({ lang, setLang }) {
     pushHistory,
     setManualBlockBase,
     terrain,
-    terrainFollow.enabled,
+    terrainCovers,
+    demSurface,
+    obstacleM,
+    viewshedTf,
     params.altitude,
+    startProposal,
   ])
+  const cancelProposal = useCallback(() => {
+    if (cancelProposalRun()) setBaseProposal({ cancelled: true })
+  }, [cancelProposalRun])
+  // uma edição a meio da proposta: o resultado já não seria o desta área
+  useEffect(() => {
+    cancelProposalRun()
+  }, [cancelProposalRun, blocks, bases, blockBaseEffective, terrain.data])
 
   // atribuição manual de um bloco: a base seleccionada, ou a seguinte
   const assignBlock = useCallback(
@@ -2207,6 +2230,10 @@ function AppInner({ lang, setLang }) {
                   onRemove: removeBaseById,
                   onRadius: setBaseRadiusById,
                   onPropose: proposeBasesForBlocks,
+                  // proposta em curso: progresso e cancelar
+                  proposing: proposing
+                    ? { progress: proposeProgress, onCancel: cancelProposal }
+                    : null,
                   // atribuições manuais que não passaram para o mosaico refeito
                   carryLost: blocks?.length ? manualLost : 0,
                   onDismissCarry: () => setBlockBaseState((st) => ({ ...st, lost: 0 })),

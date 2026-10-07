@@ -10,7 +10,9 @@ import { viewCaveatText, viewTerrainText } from './BaseFieldSheets.jsx'
  * acima do planeado"; selecção (mostra a zona no mapa), raio pedido e
  * remoção. Mais a proposta de bases a partir dos blocos e o que faz o
  * clique num bloco no mapa. As linhas vêm de summarizeBases
- * (src/mission/baseLayout.js); a interface não calcula nada.
+ * (src/mission/baseLayout.js); a interface não calcula nada. A proposta corre
+ * em fatias (useBaseProposal): enquanto corre (`proposing`), o botão diz «A
+ * propor bases… N %» e há «Cancelar».
  *
  * Refeito o mosaico, as atribuições manuais passam para os blocos novos por
  * sobreposição; as que não passaram são contadas (`carryLost`) e ditas aqui,
@@ -33,6 +35,7 @@ export default function BasesPanel({
   onPropose,
   hasBlocks,
   proposal,
+  proposing = null,
   carryLost = 0,
   onDismissCarry = null,
   clickMode,
@@ -60,31 +63,48 @@ export default function BasesPanel({
         </span>
       </div>
 
-      <button
-        type="button"
-        onClick={onPropose}
-        disabled={!hasBlocks}
-        title={hasBlocks ? t('bases.proposeTitle') : t('bases.proposeNeedsBlocks')}
-        data-testid="propose-bases"
-        className="mb-1.5 w-full rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {t('bases.propose')}
-      </button>
+      <div className="mb-1.5 flex gap-1.5">
+        <button
+          type="button"
+          onClick={onPropose}
+          disabled={!hasBlocks || Boolean(proposing)}
+          title={hasBlocks ? t('bases.proposeTitle') : t('bases.proposeNeedsBlocks')}
+          data-testid="propose-bases"
+          data-state={proposing ? 'running' : 'idle'}
+          className="flex-1 rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {proposing
+            ? t('bases.proposing', { pct: Math.round((proposing.progress ?? 0) * 100) })
+            : t('bases.propose')}
+        </button>
+        {proposing && (
+          <button
+            type="button"
+            onClick={proposing.onCancel}
+            data-testid="propose-cancel"
+            className="rounded bg-slate-800 px-2 py-1.5 text-xs font-medium text-amber-200 transition-colors hover:bg-slate-700"
+          >
+            {t('bases.proposeCancel')}
+          </button>
+        )}
+      </div>
       {proposal && (
         <p data-testid="bases-proposal" className="mb-1.5 text-[11px] leading-relaxed text-sky-200">
-          {proposal.added > 0
-            ? t('bases.proposed', { n: proposal.added })
-            : t('bases.proposedNone')}
+          {proposal.cancelled
+            ? t('bases.proposeCancelled')
+            : proposal.added > 0
+              ? t('bases.proposed', { n: proposal.added })
+              : t('bases.proposedNone')}
           {proposal.outOfVlos > 0 && (
             <span className="text-amber-300">
               {' '}
               {t('bases.proposedOut', { n: proposal.outOfVlos })}
             </span>
           )}
-          {proposal.highSites > 0 && (
-            <span data-testid="bases-proposal-high" className="text-amber-300">
+          {proposal.poorSites > 0 && (
+            <span data-testid="bases-proposal-radio" className="text-amber-300">
               {' '}
-              {t('bases.proposedHigh', { n: proposal.highSites })}
+              {t('bases.proposedRadio', { n: proposal.poorSites })}
             </span>
           )}
         </p>

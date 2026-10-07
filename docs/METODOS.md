@@ -291,32 +291,78 @@ menor alcance visual no pior caso (`assignBlocksToBases`). As atribuições
 manuais guardam a disposição de blocos em que foram feitas (mosaico,
 grelha ou corte), com as células e o contorno da área; refeito o mosaico,
 passam para os blocos novos por sobreposição (§4.2). «Propor bases»
-(`proposeMoreBases`) corre a cobertura gulosa de `proposeBases` só sobre os
-blocos que nenhuma base vê inteiros (as bases do operador não se mexem),
-com o máximo de voos por base da Configuração (0 = sem limite); as bases
-novas recebem os rótulos livres pela ordem do primeiro bloco que servem, e
-os seus blocos ficam-lhes atribuídos. Voos: base a base pela ordem dos
+(`proposalTargets`, `proposeBases`, `applyProposal`; de uma vez em
+`proposeMoreBases`, em fatias em `createBaseProposalRun`) corre a cobertura
+gulosa de `proposeBases` só sobre os blocos que nenhuma base vê inteiros
+(as bases do operador não se mexem), com o máximo de voos por base da
+Configuração (0 = sem limite); as bases novas recebem os rótulos livres
+pela ordem do primeiro bloco que servem, e os seus blocos ficam-lhes
+atribuídos. Voos: base a base pela ordem dos
 rótulos e, em cada base, pela ordem do mosaico: A-1, A-2, B-3.
 
-Sítios baixos na proposta (`lowSiteRule`, com seguimento de terreno e
-relevo carregado). A altura relativa de um waypoint é `AGL + terreno −
-referência`; uma base proposta no alto de um cabeço deixava os blocos mais
-baixos com alturas relativas pequenas ou negativas. `proposeBases` aceita
-um gancho opcional `site = { score(ponto), accepts(bloco, score) }`, sem
-saber de relevo: um candidato só cobre um bloco se, além do VLOS, o bloco
-aceitar o sítio; entre candidatos que serviriam os mesmos blocos fica o de
-menor `score` (antes do desempate pela distância); os blocos que nenhum
-sítio aceitável cobre recebem, numa segunda volta, o candidato de menor
-`score` que os vê (`siteOk: false`, contado no painel: o preflight fala).
-A regra da aplicação: `score` = cota de referência da zona do candidato
-(`computeTakeoffZone` com o raio e o desnível do equipamento; null fora do
-relevo, nunca aceite), e um bloco aceita-o quando `referência ≤ mínimo do
-relevo debaixo da rota do bloco + AGL − 20 m` (`MIN_SAFE_REL_M`, o limiar
-do aviso de altura relativa do seguimento de terreno). Custos e mínimos
-calculados uma vez por candidato e por bloco (~150 blocos e centenas de
-candidatos em menos de 1 s). Sem seguimento de terreno as alturas são
-planas — a altura relativa é o AGL pedido, e uma base baixa só aproximaria
-o voo do relevo alto —, pelo que a proposta fica a de sempre.
+Bons sítios na proposta (`src/mission/baseSites.js`, com relevo sobre a
+área, com ou sem seguimento de terreno). A prática da equipa é descolar de
+um sítio PLANO ou de um dos pontos mais ALTOS da área, nunca de um baixo,
+por causa da ligação rádio (Mata de Vilar, Lousada: monte pequeno com
+árvores altas, sinal perdido com o drone do outro lado). Uma regra anterior
+desta mesma versão (`lowSiteRule`) preferia sítios baixos para evitar
+alturas relativas pequenas com seguir terreno; saiu: alturas relativas
+pequenas ou negativas a partir de uma base alta são aceitáveis, o aviso de
+altura relativa (< 20 m, `MIN_SAFE_REL_M`) e as verificações de folga ao
+solo já falam, e a proposta não troca o rádio nem a vista por elas.
+
+- **Sítio utilizável** (`siteInfo`): relevo no ponto, e a zona de
+  descolagem (`computeTakeoffZone`, raio e desnível do equipamento) com o
+  raio efectivo ≥ `SITE_MIN_ZONE_FRAC` = 50 % do pedido — há chão plano
+  para descolar à volta. Uma encosta ou a crista íngreme de uma cumeada não
+  servem.
+- **Candidatos**: os de sempre (vértices, pontos médios das arestas e
+  centróides dos blocos) e os altos do relevo (`highPointsStepper`): uma
+  grelha de `SITE_HIGHPOINT_GRID_M` = 100 m, alinhada a múltiplos de 100 m
+  (não depende da caixa), sobre os blocos e uma margem igual ao VLOS; entram
+  os máximos locais (nenhum dos 8 vizinhos mais alto) e os patamares planos
+  (desnível do nó e dos vizinhos ≤ desnível máximo da zona). Por bloco, os
+  `SITE_HIGHPOINTS_PER_BLOCK` = 3 mais altos (depois os mais planos) que o
+  vêem inteiro dentro do VLOS, utilizáveis e a pelo menos 2 nós uns dos
+  outros; a união vai para a proposta. Acima de 40 000 nós o passo cresce.
+- **Rádio e vista por par candidato/bloco**: bacia de visão GROSSEIRA
+  (§4.3) a partir do ponto do candidato — grelha de `SITE_VIEW_GRID_M` =
+  60 m, relevo lido a `SITE_VIEW_STEP_M` = 20 m (sem descer à resolução do
+  MDT), 60 % da 1.ª zona de Fresnel a 2,4 GHz desde a antena do comando,
+  altura dos olhos e do comando da Configuração, vegetação da missão (só
+  com MDT ou relevo global) e a cota do drone como nas bacias de visão: com
+  seguir terreno `relevo + AGL`, sem ele `cota da zona do candidato +
+  altura`. Fracção com o rádio livre = pontos sem intrusão na zona de
+  Fresnel (os tapados contam como em risco) / pontos do bloco; fracção
+  visível idem. As bacias finas (25 m, 10 m) ficam para o painel, o mapa e
+  o preflight, já com as bases escolhidas.
+- **Aceitação e escolha**: um bloco aceita um candidato quando a fracção com
+  o rádio livre é ≥ `SITE_RADIO_OK_FRAC` = 95 %. `proposeBases` recebe a
+  regra pelo gancho `site = { info(ponto), view(ponto, bloco, info),
+  accepts(view) }` (o módulo não sabe de relevo) e corre a gulosa sobre a
+  cobertura aceite; desempates, por esta ordem: mais blocos; maior fracção
+  média com o rádio livre dos blocos que serviria (pesada pelos pontos, ±0,5
+  %); maior fracção visível (±0,5 %); os blocos mais difíceis (como sem
+  regra); o sítio mais alto (cota no ponto, ±0,5 m); o mais plano (desnível
+  da zona, ±0,5 m); o mais perto. Os blocos que nenhum candidato aceite
+  cobre recebem, numa segunda volta, o melhor sítio que os vê (utilizável
+  primeiro, depois rádio, vista, mais blocos, cota, desnível) com
+  `siteOk: false`, contado no painel («sem sítio com o rádio livre em 95 %
+  …»): as bacias de visão e o preflight avisam. Sem relevo não há regra e a
+  proposta é a de sempre.
+- **Agendamento** (`createBaseProposalRun`, hook `useBaseProposal`): os
+  blocos sem base que os veja, a grelha dos altos (uma linha por passo), a
+  escolha dos altos (um bloco por passo), a cobertura (um candidato por
+  passo), as zonas (uma por passo), as bacias grosseiras (um ponto da
+  grelha por passo) e a gulosa no fim; fatias de 12 ms separadas por um
+  `setTimeout`, com «A propor bases… N %» e «Cancelar» no painel. Uma
+  edição a meio (blocos, bases, atribuições, relevo) cancela a corrida; as
+  bases só mudam no fim, num passo do Ctrl+Z. O resultado não depende das
+  fatias (testado contra o cálculo de uma vez). Medido em Node, relevo
+  analítico: 9 blocos de 660 m em ~35 ms, 150 blocos de 300 m em ~270 ms,
+  passo indivisível mais longo ≤ 10 ms; no browser, MDT importado: 9 blocos
+  em ~0,1 s e 163 blocos de 175 m em ~0,75 s, fatias até 20 ms (a última
+  com a gulosa).
 
 Ctrl+Z: as edições das bases (marcar, arrastar, retirar, raio da zona,
 atribuir um bloco, propor) entram no mesmo histórico das edições da área e
@@ -1105,7 +1151,12 @@ base fora do relevo ou só com pontos desconhecidos.
 | Mosaico: tira / deslocamentos / fusão no mosaico manual | fillFrac < 0,25 / 4×4 (2×2 > 150, 1×1 > 600 células) / ≤ 1,25·L² | squareMosaic.js |
 | Mosaico antigo → novo: célula desactivada | ≥ 50 % da área nas células antigas desactivadas | mosaicLegacy.js |
 | Mosaico refeito: herança / mesma área / área movida | célula antiga ≥ 50 % da nova / ≥ 50 % da menor em comum / translação ±1 m | cellCarryOver.js |
-| Proposta de bases com seguir terreno: sítio aceite | cota da zona ≤ mín. do relevo do bloco + AGL − 20 m | baseLayout.js |
+| Proposta de bases: sítio utilizável | zona ≥ 50 % do raio pedido, com relevo (`SITE_MIN_ZONE_FRAC`) | baseSites.js |
+| Proposta de bases: bloco aceita o sítio | rádio livre em ≥ 95 % dos pontos (`SITE_RADIO_OK_FRAC`) | baseSites.js |
+| Proposta de bases: altos do relevo | grelha de 100 m + margem = VLOS (≤ 40 000 nós); 3 por bloco, a ≥ 2 nós | baseSites.js |
+| Proposta de bases: bacia grosseira | grelha 60 m / raio a 20 m (`SITE_VIEW_GRID_M`, `SITE_VIEW_STEP_M`) | baseSites.js |
+| Proposta de bases: desempates | rádio ±0,5 % / vista ±0,5 % / cota ±0,5 m / desnível ±0,5 m | takeoffZones.js |
+| Proposta de bases: fatia | 12 ms | useBaseProposal.js |
 | Bacias de visão: olhos / comando | 1,7 m / 1,5 m acima do ponto da base (Configuração, 1-5 m) | equipment.js, viewshed.js |
 | Bacias de visão: grelha / passo do raio / pontas | 25 m / 10 m (resolução do MDT; global ~30 m; mínimo 1 m) / 1 passo | viewshed.js, viewshedPlan.js |
 | Curvatura e refracção | d·(D − d)·(1 − 0,13)/(2·6371 km) | viewshed.js |

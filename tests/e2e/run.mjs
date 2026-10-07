@@ -22,7 +22,7 @@ import { chromium } from 'playwright'
 import Ajv2020 from 'ajv/dist/2020.js'
 import JSZip from 'jszip'
 import * as turf from '@turf/turf'
-import { HILL, RIDGE, ground, hillGround, makeFixtures, rectRing, toLL, toM } from './fixtures.mjs'
+import { MESAS, RIDGE, ground, makeFixtures, rectRing, toLL, toM } from './fixtures.mjs'
 import { analyseRoute, readRoutes } from './kmz.mjs'
 
 const PORT = Number(process.env.E2E_PORT ?? 4173)
@@ -1348,6 +1348,21 @@ const baseRows = (page) =>
   )
 const savedProject = (page) =>
   page.evaluate(() => JSON.parse(localStorage.getItem('dji-mission-planner:project:v1') ?? 'null'))
+/**
+ * «Propor bases» e esperar pelo fim: com relevo a proposta corre em fatias
+ * («A propor bases… N %»), e só no fim aparece o resumo da proposta.
+ */
+async function proposeAndWait(page) {
+  await page.getByTestId('propose-bases').click()
+  await page.waitForFunction(
+    () =>
+      document.querySelector('[data-testid="propose-bases"]')?.dataset.state === 'idle' &&
+      document.querySelector('[data-testid="bases-proposal"]'),
+    null,
+    { timeout: 30000 },
+  )
+  await page.waitForTimeout(800)
+}
 async function dragMarker(page, locator, dx, dy) {
   const box = await locator.boundingBox()
   const x = box.x + box.width / 2
@@ -1408,8 +1423,7 @@ await scenario('bases-multiplas', async () => {
     (await page.getByTestId('block-row').first().getAttribute('data-flight')) === '1',
   )
 
-  await page.getByTestId('propose-bases').click()
-  await page.waitForTimeout(1500)
+  await proposeAndWait(page)
   let rows = await baseRows(page)
   check(
     'bases: "Propor bases" dá pelo menos duas bases',
@@ -1560,8 +1574,7 @@ await scenario('bases-exportar-por-base', async () => {
     .first()
     .selectOption('M300RTK')
   await configure(page, { tf: true, split: 'Bateria' })
-  await page.getByTestId('propose-bases').click()
-  await page.waitForTimeout(1500)
+  await proposeAndWait(page)
   await exportReady(page)
   const rows = await baseRows(page)
   const order = await page
@@ -1811,8 +1824,7 @@ await scenario('bases-desfazer', async () => {
     .first()
     .selectOption('M300RTK')
   await configure(page, { tf: true, split: 'Bateria' })
-  await page.getByTestId('propose-bases').click()
-  await page.waitForTimeout(1500)
+  await proposeAndWait(page)
   const rows0 = await baseRows(page)
   const layout0 = rows0.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ')
   check('desfazer: a proposta dá pelo menos duas bases', rows0.length >= 2, layout0)
@@ -1919,8 +1931,7 @@ await scenario('mosaico-refeito-mantem-atribuicoes', async () => {
     .first()
     .selectOption('M300RTK')
   await configure(page, { tf: true, split: 'Bateria' })
-  await page.getByTestId('propose-bases').click()
-  await page.waitForTimeout(1500)
+  await proposeAndWait(page)
   const kml = async (file) =>
     readFileSync(
       (await download(page, page.getByTestId('export-bases-kml'), join(OUT, file)))[1],
@@ -1987,61 +1998,6 @@ await scenario('mosaico-refeito-mantem-atribuicoes', async () => {
     rows.flatMap((r) => r.blocks).length === neu.length,
   )
   check('refeito: sem erros de página', errors.length === 0, errors.join(' | '))
-  await page.close()
-  return { page }
-})
-
-// "Propor bases" com um cabeço: sem seguimento de terreno a proposta é a de
-// sempre (o ponto médio da aresta comum, no alto); com ele, a cota da zona
-// da base deixa os blocos com pelo menos 20 m de altura relativa.
-await scenario('propor-bases-evita-cabeco', async () => {
-  const { page, errors } = await openMission({ area: fx.hill, demFile: fx.demHill })
-  await page
-    .locator('select')
-    .filter({ has: page.locator('option[value="M300RTK"]') })
-    .first()
-    .selectOption('M300RTK')
-  await configure(page, { split: 'Mosaico' })
-  check('cabeço: dois quadrados de 250 m', (await page.getByTestId('block-row').count()) === 2)
-  const limit = HILL.base + AGL_M - 20 // a planície debaixo dos blocos + AGL − 20 m
-  await page.getByTestId('propose-bases').click()
-  await page.waitForTimeout(1500)
-  let rows = await baseRows(page)
-  check(
-    'cabeço: sem seguir terreno, a proposta de sempre fica no alto do cabeço',
-    rows.length === 1 && rows[0].ref > limit + 20,
-    rows.map((r) => `${r.label}:${r.ref}`).join(' '),
-  )
-  await undo(page)
-  check('cabeço: Ctrl+Z retira a proposta', (await baseRows(page)).length === 0)
-
-  await label(page, TF).check()
-  await page.waitForTimeout(1200)
-  await page.getByTestId('propose-bases').click()
-  await page.waitForTimeout(1500)
-  rows = await baseRows(page)
-  check(
-    'cabeço: com seguir terreno, a base fica num sítio baixo (cota ≤ planície + AGL − 20 m)',
-    rows.length >= 1 && rows.every((r) => Number.isFinite(r.ref) && r.ref <= limit + 0.5),
-    rows.map((r) => `${r.label}:${r.ref}`).join(' '),
-  )
-  check(
-    'cabeço: sem aviso de sítio alto na proposta',
-    (await page.getByTestId('bases-proposal-high').count()) === 0,
-  )
-  await exportReady(page)
-  const routes = await readRoutes(await exportKmz(page, join(OUT, 'cabeco.zip')))
-  const minRel = Math.min(
-    ...routes.flatMap((x) =>
-      analyseRoute(x.wpml, { toM, ground: hillGround, aglNominalM: AGL_M }).points.map((q) => q[2]),
-    ),
-  )
-  check(
-    'cabeço: nenhum waypoint exportado abaixo de 20 m de altura relativa',
-    routes.length === 2 && minRel >= 20 - 0.5,
-    `${routes.length} rotas, mínimo ${minRel.toFixed(1)} m`,
-  )
-  check('cabeço: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })
@@ -2387,6 +2343,169 @@ await scenario('bacias-visao-cumeada', async () => {
   )
 
   check('cumeada: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// «Propor bases» com relevo: um sítio plano ou alto com o rádio livre, nunca
+// um baixo — a prática da equipa (Mata de Vilar, Lousada: sinal perdido com
+// o drone atrás de um monte com árvores). Relevo MESAS: o alto de oeste é o
+// mais alto e vê os dois blocos dentro do VLOS, mas a cumeada entre ele e a
+// área corta o rádio; o de leste, mais baixo e plano, tem o rádio livre.
+// Uma base do operador no alto de oeste nunca é mexida (a proposta diz que
+// todos os blocos têm base; o preflight avisa do rádio). Sem ela, a proposta
+// vai para o alto de leste, com e sem seguir terreno, e o preflight não tem
+// aviso de rádio nem de relevo para essa disposição.
+await scenario('propor-bases-sitio-alto', async () => {
+  const { page, errors } = await openMission({ area: fx.hill, demFile: fx.demMesas })
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await configure(page, { split: 'Mosaico' })
+  check('alto: dois blocos de 250 m', (await page.getByTestId('block-row').count()) === 2)
+  const preflightText = async () => {
+    await page.getByTestId('preflight-pill').click()
+    const text = await page.getByTestId('preflight-list').innerText()
+    await page.getByTestId('preflight-pill').click()
+    return text
+  }
+  const viewsReady = () =>
+    page.waitForFunction(
+      () =>
+        document.querySelector('[data-testid="base-view"]')?.dataset.view?.split(',').length >= 2,
+      null,
+      { timeout: 20000 },
+    )
+
+  // 1) a base do operador no alto de oeste: arrastada para lá com o mapa
+  // calibrado pela base e pela pega do centro da área
+  await page.locator('.leaflet-control-zoom-out').click()
+  await page.waitForTimeout(800)
+  await page.getByRole('button', { name: /Marcar base|Set base/ }).click()
+  await clickMap(page, -250, 0)
+  await page.waitForTimeout(1200)
+  const proj = await mapProjector(
+    page,
+    { locator: basePin(page, 'A'), lonlat: (await savedBase(page, 'A')).point },
+    { locator: page.locator('.anchor-handle'), lonlat: toLL(1250, 1125) },
+  )
+  const box = await basePin(page, 'A').boundingBox()
+  const [tx, ty] = proj(toLL(MESAS.west.x + 40, MESAS.west.y))
+  await dragMarker(
+    page,
+    basePin(page, 'A'),
+    tx - box.x - box.width / 2,
+    ty - box.y - box.height / 2,
+  )
+  const mine = (await savedBase(page, 'A')).point
+  const [mx, my] = toM(...mine)
+  check(
+    'alto: base A do operador no alto de oeste (o sítio mais alto)',
+    Math.hypot(mx - MESAS.west.x, my - MESAS.west.y) < 70,
+    `(${mx.toFixed(0)}, ${my.toFixed(0)}) m`,
+  )
+  await proposeAndWait(page)
+  let rows = await baseRows(page)
+  const said = await page.getByTestId('bases-proposal').innerText()
+  check(
+    'alto: a proposta nunca mexe na base do operador (todos os blocos já têm base)',
+    rows.length === 1 &&
+      rows[0].label === 'A' &&
+      rows[0].blocks.length === 2 &&
+      (await savedBase(page, 'A')).point.join() === mine.join() &&
+      /já têm uma base/.test(said),
+    `${rows.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ')}; ${said}`,
+  )
+  await viewsReady()
+  let lista = await preflightText()
+  check(
+    'alto: com a base A no alto de oeste o preflight avisa que a cumeada corta o rádio',
+    /visto da base A/.test(lista) && /rádio em risco|atrás do relevo/.test(lista),
+    lista
+      .split('\n')
+      .filter((l) => /visto da base/.test(l))
+      .join(' | ')
+      .slice(0, 300),
+  )
+
+  // 2) sem a base do operador: a proposta vai para o alto plano de leste
+  await page.getByRole('button', { name: /Retirar a base A|Remove base A/ }).click()
+  await page.waitForTimeout(800)
+  check('alto: base A retirada', (await baseRows(page)).length === 0)
+  // a proposta corre em fatias: «A propor bases… 0 %» e «Cancelar». O React
+  // desenha o clique numa microtarefa e a primeira fatia vem num setTimeout:
+  // entre as duas, cancelar não deixa mudar nada
+  const started = await page.evaluate(async () => {
+    const btn = document.querySelector('[data-testid="propose-bases"]')
+    btn.click()
+    for (let i = 0; i < 5; i++) await Promise.resolve()
+    const running = { state: btn.dataset.state, text: btn.textContent, disabled: btn.disabled }
+    document.querySelector('[data-testid="propose-cancel"]').click()
+    return running
+  })
+  await page.waitForTimeout(1500)
+  check(
+    'alto: «A propor bases… 0 %» com o botão desactivado enquanto corre',
+    started.state === 'running' && /A propor bases… 0 %/.test(started.text) && started.disabled,
+    JSON.stringify(started),
+  )
+  check(
+    'alto: «Cancelar» pára a proposta e as bases ficam como estavam',
+    (await baseRows(page)).length === 0 &&
+      (await page.getByTestId('propose-bases').getAttribute('data-state')) === 'idle' &&
+      (await page.getByTestId('propose-cancel').count()) === 0 &&
+      /Proposta cancelada/.test(await page.getByTestId('bases-proposal').innerText()),
+  )
+  for (const tf of [false, true]) {
+    const tag = tf ? 'com seguir terreno' : 'sem seguir terreno'
+    if (tf) {
+      await label(page, TF).check()
+      await page.waitForTimeout(1200)
+    }
+    await proposeAndWait(page)
+    rows = await baseRows(page)
+    const at = toM(...(await savedBase(page, 'A')).point)
+    check(
+      `alto: ${tag}, uma base no alto plano de leste — nem na planície, nem no alto de oeste atrás da cumeada`,
+      rows.length === 1 &&
+        rows[0].blocks.length === 2 &&
+        rows[0].ref >= MESAS.east.top - 10.5 &&
+        rows[0].ref <= MESAS.east.top + 0.5 &&
+        Math.hypot(at[0] - MESAS.east.x, at[1] - MESAS.east.y) <= 100,
+      `${rows.map((r) => `${r.label}:${r.ref}`).join(' ')} em (${at[0].toFixed(0)}, ${at[1].toFixed(0)}) m`,
+    )
+    check(
+      `alto: ${tag}, a proposta não diz que ficou sem sítio com rádio`,
+      (await page.getByTestId('bases-proposal-radio').count()) === 0,
+    )
+    await viewsReady()
+    const views = await panelViews(page)
+    const radio = await panelViews(page, 'data-radio')
+    check(
+      `alto: ${tag}, os dois voos todos à vista e sem rádio em risco no painel`,
+      Object.keys(views).length === 2 &&
+        Object.values(views).every((v) => v === 100) &&
+        Object.values(radio).every((v) => v === 0),
+      `${JSON.stringify(views)} ${JSON.stringify(radio)}`,
+    )
+    lista = await preflightText()
+    check(
+      `alto: ${tag}, o preflight não tem aviso de rádio nem de relevo para a disposição proposta`,
+      !/rádio em risco/.test(lista) && !/atrás do relevo/.test(lista),
+      lista
+        .split('\n')
+        .filter((l) => /visto da base/.test(l))
+        .join(' | ')
+        .slice(0, 300),
+    )
+    if (!tf) {
+      await undo(page)
+      check('alto: Ctrl+Z retira a proposta', (await baseRows(page)).length === 0)
+    }
+  }
+  check('alto: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

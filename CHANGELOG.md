@@ -6,6 +6,41 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Alterado (proposta de bases: sítios planos ou altos, com o rádio livre)
+
+- **A regra dos sítios baixos saiu.** Nesta mesma versão, «Propor bases» com
+  seguir terreno passou a preferir sítios BAIXOS (`lowSiteRule`), para os
+  blocos mais baixos não ficarem com alturas relativas pequenas. Isso
+  contrariava a prática da equipa: descola-se sempre de um sítio PLANO ou de
+  um dos pontos mais ALTOS da área, nunca de um baixo, por causa da ligação
+  rádio — em Mata de Vilar (Lousada), um monte pequeno com árvores altas, o
+  sinal caiu quando o drone passou para trás dele. Alturas relativas
+  pequenas ou negativas a partir de uma base alta são aceitáveis: o aviso do
+  preflight (altura relativa < 20 m) e as verificações de folga ao solo já
+  falam, e a proposta não troca o rádio nem a vista por elas.
+- **Regra nova («bons sítios»), com ou sem seguir terreno, sempre que há
+  relevo.** Um sítio serve se tiver relevo e a sua zona de descolagem não
+  ficar reduzida abaixo de metade do raio pedido (chão plano à volta). Um
+  bloco aceita-o quando, numa bacia de visão grosseira desde o ponto (grelha
+  de 60 m, raio lido a 20 m, com o rádio pela zona de Fresnel, as alturas
+  dos olhos e do comando, a vegetação da missão e a cota do drone como nas
+  bacias de visão), o rádio fica livre em pelo menos 95 % do bloco. Entre
+  candidatos: mais blocos; melhor rádio; melhor vista; o sítio mais alto; o
+  mais plano. Sem sítio aceite para um bloco, propõe-se o melhor que há e o
+  painel diz quantas bases ficaram assim («sem sítio com o rádio livre…»);
+  as bacias de visão e o preflight dizem o resto.
+- **Candidatos nos altos do relevo**, além dos vértices, pontos médios e
+  centros dos blocos: uma grelha de 100 m sobre os blocos e uma margem do
+  tamanho do alcance visual, os máximos locais e os patamares planos, até 3
+  por bloco (os mais altos que servem; uma crista íngreme, sem onde
+  descolar, não tira o lugar a um alto plano).
+- **Sem prender o browser**: a proposta corre em fatias de 12 ms, com «A
+  propor bases… N %» e «Cancelar» no painel (uma edição a meio também a
+  cancela; nada muda nas bases). Medido no browser: 9 blocos em ~0,1 s e 163
+  blocos em ~0,75 s, fatias até 20 ms. O resultado não depende das fatias.
+  Sem relevo, a proposta é a de sempre, e as bases do operador nunca se
+  mexem. METODOS §4.1.
+
 ### Acrescentado (bacias de visão e ligação rádio)
 
 - **Bacias de visão por voo.** Com a área dividida em blocos, bases e
@@ -39,7 +74,7 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   blocos de A; Ctrl+Z reaproveita). 192 blocos no browser sem tarefas acima
   de 50 ms. METODOS §4.3.
 
-### Corrigido (bases: Ctrl+Z, mosaico refeito e proposta em relevo)
+### Corrigido (bases: Ctrl+Z e mosaico refeito)
 
 - **Ctrl+Z também nas bases.** Marcar, arrastar e retirar uma base, o raio
   da zona, atribuir um bloco à mão e «Propor bases» entram no mesmo
@@ -56,15 +91,6 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   passa; a área movida inteira é a mesma. As atribuições que não passam são
   ditas no painel das bases («N atribuições manuais não passaram para o novo
   mosaico»), com um botão para dispensar o aviso. METODOS §4.2.
-- **«Propor bases» evita os cabeços.** Com seguir terreno, a altura relativa
-  é `AGL + terreno − cota da zona`, e uma base proposta no alto deixava os
-  blocos mais baixos com alturas pequenas ou negativas. A proposta passa a
-  aceitar só sítios cuja zona tem a cota de referência até `mínimo do relevo
-  do bloco + AGL − 20 m` (o limiar do aviso de altura relativa) e, entre
-  sítios que servem os mesmos blocos, o mais baixo. Sem sítio aceitável
-  propõe o mais baixo que vê o bloco e diz quantas bases ficaram assim (o
-  preflight fala). Sem seguir terreno a proposta fica a de sempre.
-  METODOS §4.1.
 
 ### Acrescentado (exportação base a base e ficha de campo)
 

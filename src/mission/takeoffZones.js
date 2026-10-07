@@ -235,10 +235,11 @@ export function baseLabel(index) {
 
 /**
  * Pontos candidatos a base: vértices, pontos médios das arestas e
- * centróides dos blocos, sem duplicados a menos de ~1 m (vértices e arestas
- * partilhados por blocos vizinhos aparecem uma só vez).
+ * centróides dos blocos, e depois os pontos dados de fora (`extra`, ex.: os
+ * altos do relevo de baseSites.js), sem duplicados a menos de ~1 m
+ * (vértices e arestas partilhados por blocos vizinhos aparecem uma só vez).
  */
-function candidatePoints(prepared) {
+function candidatePoints(prepared, extra = []) {
   const lat0 = prepared[0].centroid[1]
   const mLon = metersPerDegLonSafe(lat0)
   const cells = new Map()
@@ -269,6 +270,7 @@ function candidatePoints(prepared) {
     }
     add(b.centroid)
   }
+  for (const p of extra ?? []) if (isPoint(p)) add([p[0], p[1]])
   return out
 }
 
@@ -297,24 +299,295 @@ function covers(p, blk, radiusM, vlosM) {
 }
 
 /**
- * @typedef {object} SiteRule
- *   Preferência pelo sítio de uma base, de fora do módulo (ex.: a cota de
- *   referência da zona contra o relevo dos blocos, baseLayout.js), para a
- *   proposta não ficar presa ao relevo.
- * @property {(point: number[]) => number|null} score custo do sítio (menor
- *   é melhor); null = sítio inutilizável (ex.: fora do relevo)
- * @property {(blockId: any, score: number) => boolean} accepts o sítio com
- *   este custo serve o bloco
+ * @typedef {object} SiteInfo
+ *   O sítio de um candidato (baseSites.js, siteInfo).
+ * @property {number} elev    cota do relevo no ponto (m)
+ * @property {number} reliefM desnível da zona de descolagem à volta dele (m)
  */
+
+/**
+ * @typedef {object} SiteView
+ *   Um bloco visto de um candidato (bacia de visão grosseira, baseSites.js).
+ * @property {number} radio   fracção dos pontos do bloco com o rádio livre (0..1)
+ * @property {number} visible fracção dos pontos do bloco à vista (0..1)
+ * @property {number} n       pontos avaliados (o peso na média de vários blocos)
+ */
+
+/**
+ * @typedef {object} SiteRule
+ *   Qualidade do sítio de uma base, de fora do módulo (relevo, rádio e
+ *   vista: baseSites.js), para a proposta não ficar presa à geometria.
+ * @property {(point: number[]) => SiteInfo|null} info o sítio do candidato;
+ *   null = inutilizável (fora do relevo, zona demasiado reduzida)
+ * @property {(point: number[], blockId: any, info: SiteInfo) => SiteView|null} view
+ *   o bloco visto do candidato
+ * @property {(view: SiteView) => boolean} accepts o bloco aceita o candidato com esta vista
+ */
+
+/**
+ * @typedef {object} ProposalEntry
+ * @property {number} bi   índice do bloco em `setup.prepared`
+ * @property {number} d    distância do candidato ao centróide do bloco (m)
+ * @property {SiteView|null} [view]
+ * @property {boolean} [ok] o bloco aceita o sítio (só com regra de sítio)
+ */
+
+/**
+ * @typedef {object} ProposalCandidate
+ * @property {number[]} point
+ * @property {ProposalEntry[]} all blocos que vê inteiros dentro do VLOS, do mais perto ao mais longe
+ * @property {SiteInfo|null} [info]
+ */
+
+/**
+ * @typedef {object} ProposalSetup
+ * @property {Array<{id: any, ring: number[][], centroid: number[], spanM: number}>} prepared
+ * @property {number[][]} points candidatos, pela ordem (os dos blocos, depois os de fora)
+ * @property {number} radiusM
+ * @property {number} vlosM
+ * @property {number} cap  máximo de blocos por base (Infinity sem limite)
+ */
+
+/**
+ * @typedef {object} ProposedBase
+ * @property {string} id   rótulo pela ordem de escolha
+ * @property {number[]} point
+ * @property {any[]} blockIds
+ * @property {boolean} outOfVlos bloco maior do que o VLOS: base própria no centróide
+ * @property {boolean} siteOk    todos os blocos aceitam o sítio (sempre true sem regra de sítio)
+ * @property {{elev: number|null, reliefM: number|null, radio: number, visible: number}|null} site
+ *   com regra de sítio: a cota e o desnível da zona, e o rádio e a vista médios dos seus blocos
+ */
+
+/**
+ * Preparação da proposta: blocos válidos e pontos candidatos (os de fora,
+ * `extraPoints`, depois dos dos blocos). Null sem blocos ou sem VLOS.
+ * @param {Array<{id: any, ring: number[][]}>} blocks
+ * @param {{vlosM: number, radiusM?: number, maxBlocksPerBase?: number, extraPoints?: number[][]}} opts
+ * @returns {ProposalSetup|null}
+ */
+export function proposalSetup(
+  blocks,
+  { vlosM, radiusM = DEFAULT_ZONE_RADIUS_M, maxBlocksPerBase = Infinity, extraPoints = [] },
+) {
+  const valid = (blocks ?? []).filter((b) => Array.isArray(b?.ring) && b.ring.length >= 3)
+  if (valid.length === 0 || !(vlosM > 0)) return null
+  const prepared = prepareBlocks(valid)
+  return {
+    prepared,
+    points: candidatePoints(prepared, extraPoints),
+    radiusM: Number.isFinite(radiusM) && radiusM > 0 ? radiusM : 0,
+    vlosM,
+    cap: maxBlocksPerBase >= 1 ? Math.floor(maxBlocksPerBase) : Infinity,
+  }
+}
+
+/**
+ * Blocos que o candidato `point` vê inteiros dentro do VLOS (pior caso, com
+ * a zona), do mais perto ao mais longe (distância ao centróide).
+ * @param {ProposalSetup} setup
+ * @param {number[]} point
+ * @returns {ProposalEntry[]}
+ */
+export function candidateCover(setup, point) {
+  const { prepared, radiusM, vlosM } = setup
+  const cov = []
+  for (let bi = 0; bi < prepared.length; bi++)
+    if (covers(point, prepared[bi], radiusM, vlosM))
+      cov.push({ bi, d: distanceM(point, prepared[bi].centroid) })
+  cov.sort((a, b) => a.d - b.d)
+  return cov
+}
+
+/** Tolerâncias dos desempates pelo sítio: fracções de rádio e vista, cota, desnível. */
+const SITE_FRAC_TOL = 0.005
+const SITE_ELEV_TOL_M = 0.5
+const SITE_RELIEF_TOL_M = 0.5
+/** 1 quando x é maior do que y para lá da tolerância, −1 quando menor, 0 iguais. */
+const cmpTol = (x, y, tol) => (x > y + tol ? 1 : y > x + tol ? -1 : 0)
+
+/** Rádio e vista médios de vários blocos, pesados pelos pontos de cada um. */
+function pooledView(entries) {
+  let n = 0
+  let radio = 0
+  let visible = 0
+  for (const e of entries) {
+    const w = e.view && e.view.n > 0 ? e.view.n : 1
+    n += w
+    radio += (e.view?.radio ?? 0) * w
+    visible += (e.view?.visible ?? 0) * w
+  }
+  return n > 0 ? { radio: radio / n, visible: visible / n } : { radio: 0, visible: 0 }
+}
+
+/** Cota e desnível (desempates finais pelo sítio): a mais alta, depois a mais plana. */
+function cmpTerrain(a, b) {
+  return (
+    cmpTol(a?.elev ?? -Infinity, b?.elev ?? -Infinity, SITE_ELEV_TOL_M) ||
+    cmpTol(b?.reliefM ?? Infinity, a?.reliefM ?? Infinity, SITE_RELIEF_TOL_M)
+  )
+}
+
+/**
+ * Cobertura gulosa dos blocos pelos candidatos (de candidateCover e, com
+ * regra de sítio, com `info` e `view`/`ok` em cada bloco). Ver proposeBases.
+ * @param {ProposalSetup} setup
+ * @param {ProposalCandidate[]} candidates
+ * @param {{withSite?: boolean}} [opts]
+ * @returns {ProposedBase[]}
+ */
+export function greedyBases(setup, candidates, { withSite = false } = {}) {
+  const { prepared, cap } = setup
+  const nB = prepared.length
+  const cands = candidates
+    .filter((c) => c.all.length > 0)
+    .map((c) => ({
+      point: c.point,
+      all: c.all,
+      info: withSite ? (c.info ?? null) : null,
+      cov: withSite ? c.all.filter((e) => e.ok) : c.all,
+    }))
+  const visible = new Array(nB).fill(false)
+  for (const c of cands) for (const { bi } of c.all) visible[bi] = true
+  const coverable = new Array(nB).fill(false)
+  for (const c of cands) for (const { bi } of c.cov) coverable[bi] = true
+  const covered = new Array(nB).fill(false)
+  let remaining = coverable.filter(Boolean).length
+  /** @type {ProposedBase[]} */
+  const bases = []
+  const push = (c, pick, siteOk) => {
+    for (const e of pick) covered[e.bi] = true
+    const q = withSite ? pooledView(pick) : null
+    bases.push({
+      id: baseLabel(bases.length),
+      point: c.point.slice(),
+      blockIds: pick.map((e) => prepared[e.bi].id),
+      outOfVlos: false,
+      siteOk,
+      site: q
+        ? {
+            elev: c.info ? c.info.elev : null,
+            reliefM: c.info ? c.info.reliefM : null,
+            radio: q.radio,
+            visible: q.visible,
+          }
+        : null,
+    })
+  }
+  // a melhor do que b? Mais blocos; com sítio, melhor rádio e
+  // melhor vista; blocos mais difíceis; com sítio, mais alto e mais plano;
+  // mais perto
+  const better = (a, b) => {
+    if (a.gain !== b.gain) return a.gain > b.gain
+    if (withSite) {
+      const s =
+        cmpTol(a.q.radio, b.q.radio, SITE_FRAC_TOL) ||
+        cmpTol(a.q.visible, b.q.visible, SITE_FRAC_TOL)
+      if (s !== 0) return s > 0
+    }
+    if (a.opt !== b.opt) return a.opt < b.opt
+    if (withSite) {
+      const s = cmpTerrain(a.c.info, b.c.info)
+      if (s !== 0) return s > 0
+    }
+    return a.sum < b.sum - 1
+  }
+  while (remaining > 0) {
+    // ganho de cada candidato e quantos candidatos partilháveis vêem cada bloco
+    const gain = cands.map((c) => {
+      let n = 0
+      for (const { bi } of c.cov) if (!covered[bi]) n++
+      return Math.min(n, cap)
+    })
+    const options = new Array(nB).fill(0)
+    cands.forEach((c, ci) => {
+      if (gain[ci] < 2) return
+      for (const { bi } of c.cov) if (!covered[bi]) options[bi]++
+    })
+    let best = null
+    for (let ci = 0; ci < cands.length; ci++) {
+      if (gain[ci] === 0 || (best && gain[ci] < best.gain)) continue
+      const pick = []
+      let opt = 0
+      let sum = 0
+      for (const e of cands[ci].cov) {
+        if (covered[e.bi]) continue
+        pick.push(e)
+        opt += options[e.bi]
+        sum += e.d
+        if (pick.length >= cap) break
+      }
+      const cur = {
+        c: cands[ci],
+        gain: gain[ci],
+        opt,
+        sum,
+        pick,
+        q: withSite ? pooledView(pick) : null,
+      }
+      if (!best || better(cur, best)) best = cur
+    }
+    if (!best) break // não acontece: remaining > 0 implica um candidato com ganho
+    push(best.c, best.pick, true)
+    remaining -= best.pick.length
+  }
+  // blocos que se vêem, mas de nenhum sítio aceite: o melhor sítio que os vê
+  // (utilizável primeiro, depois rádio, vista, mais blocos, cota, desnível,
+  // distância), assinalado
+  let left = 0
+  for (let bi = 0; bi < nB; bi++) if (visible[bi] && !coverable[bi]) left++
+  const fallbackBetter = (a, b) => {
+    const s =
+      cmpTol(a.c.info ? 1 : 0, b.c.info ? 1 : 0, 0) ||
+      cmpTol(a.q.radio, b.q.radio, SITE_FRAC_TOL) ||
+      cmpTol(a.q.visible, b.q.visible, SITE_FRAC_TOL) ||
+      cmpTol(a.pick.length, b.pick.length, 0) ||
+      cmpTerrain(a.c.info, b.c.info)
+    return s !== 0 ? s > 0 : a.sum < b.sum - 1
+  }
+  while (left > 0) {
+    let best = null
+    for (const c of cands) {
+      const pick = []
+      let sum = 0
+      for (const e of c.all) {
+        if (coverable[e.bi] || covered[e.bi]) continue
+        pick.push(e)
+        sum += e.d
+        if (pick.length >= cap) break
+      }
+      if (pick.length === 0) continue
+      const cur = { c, pick, sum, q: pooledView(pick) }
+      if (!best || fallbackBetter(cur, best)) best = cur
+    }
+    if (!best) break
+    push(best.c, best.pick, false)
+    left -= best.pick.length
+  }
+  // blocos que nenhum candidato vê inteiros: base própria, assinalada
+  for (let bi = 0; bi < nB; bi++) {
+    if (visible[bi]) continue
+    bases.push({
+      id: baseLabel(bases.length),
+      point: prepared[bi].centroid.slice(),
+      blockIds: [prepared[bi].id],
+      outOfVlos: true,
+      siteOk: true, // sítio não avaliado: o bloco já vai assinalado
+      site: null,
+    })
+  }
+  return bases
+}
 
 /**
  * Proposta de bases: cobertura gulosa dos blocos por pontos candidatos.
  *
- * Candidatos = vértices, pontos médios das arestas e centróides dos blocos.
- * Um candidato cobre um bloco quando blockWorstVlosM({point, radiusM}, ring)
- * ≤ vlosM. Em cada passo escolhe-se o candidato que cobre mais blocos ainda
- * por cobrir (no máximo `maxBlocksPerBase`, os mais próximos). Desempates,
- * por esta ordem:
+ * Candidatos = vértices, pontos médios das arestas e centróides dos blocos,
+ * mais `extraPoints` (ex.: os altos do relevo, baseSites.js). Um candidato
+ * cobre um bloco quando blockWorstVlosM({point, radiusM}, ring) ≤ vlosM. Em
+ * cada passo escolhe-se o candidato que cobre mais blocos ainda por cobrir
+ * (no máximo `maxBlocksPerBase`, os mais próximos). Desempates, por esta
+ * ordem:
  *  1. blocos mais "difíceis" primeiro: menor soma, sobre os blocos que o
  *     candidato cobriria, do número de candidatos que ainda partilham cada
  *     um com outro bloco. Sem isto, numa grelha regular (todos os pontos
@@ -327,188 +600,54 @@ function covers(p, blk, radiusM, vlosM) {
  * `outOfVlos: true` (o bloco é grande de mais para o VLOS dado, mesmo
  * descolando dentro dele). Rótulos A..Z, AA, AB, ... pela ordem de escolha.
  *
- * Com `site` (SiteRule), um candidato só cobre um bloco se, além do VLOS, o
- * sítio o servir (`accepts(bloco, score)`; o custo de cada candidato é
- * calculado uma vez, e só para os que vêem algum bloco). A gulosa corre
- * sobre essa cobertura, e entre candidatos que serviriam os MESMOS blocos
- * fica o de menor custo (antes do desempate pela distância). Os blocos que
- * nenhum sítio aceitável cobre recebem, numa segunda volta, o candidato de
- * MENOR custo que os vê (depois mais blocos, depois mais perto), com
+ * Com `site` (SiteRule): cada candidato tem o seu sítio (`info`, null =
+ * inutilizável) e cada bloco que vê a sua vista (`view`: rádio e vista); um
+ * candidato só cobre um bloco se, além do VLOS, o sítio for utilizável e o
+ * bloco o aceitar (`accepts(view)`). A gulosa corre sobre essa cobertura e
+ * os desempates passam a ser: mais blocos; melhor rádio médio dos blocos
+ * que serviria; melhor vista média; os blocos mais difíceis; o sítio mais
+ * alto; o mais plano (menor desnível da zona); o mais perto. Os blocos que
+ * nenhum sítio aceite cobre recebem, numa segunda volta, o melhor sítio que
+ * os vê (utilizável, rádio, vista, mais blocos, cota, desnível), com
  * `siteOk: false`: propõe-se o melhor que há e o preflight fala. Sem `site`
  * o resultado é o de sempre.
  *
  * @param {Array<{id: any, ring: number[][]}>} blocks
- * @param {{vlosM: number, radiusM?: number, maxBlocksPerBase?: number, site?: SiteRule|null}} opts
- * @returns {Array<{id: string, point: number[], blockIds: any[], outOfVlos: boolean,
- *   siteOk: boolean, score: number|null}>}
+ * @param {{vlosM: number, radiusM?: number, maxBlocksPerBase?: number, site?: SiteRule|null,
+ *   extraPoints?: number[][]}} opts
+ * @returns {ProposedBase[]}
  */
 export function proposeBases(
   blocks,
-  { vlosM, radiusM = DEFAULT_ZONE_RADIUS_M, maxBlocksPerBase = Infinity, site = null },
+  {
+    vlosM,
+    radiusM = DEFAULT_ZONE_RADIUS_M,
+    maxBlocksPerBase = Infinity,
+    site = null,
+    extraPoints = [],
+  },
 ) {
-  const valid = (blocks ?? []).filter((b) => Array.isArray(b?.ring) && b.ring.length >= 3)
-  if (valid.length === 0 || !(vlosM > 0)) return []
-  const r = Number.isFinite(radiusM) && radiusM > 0 ? radiusM : 0
-  const cap = maxBlocksPerBase >= 1 ? Math.floor(maxBlocksPerBase) : Infinity
-  const prepared = prepareBlocks(valid)
-  const nB = prepared.length
-
-  // matriz de cobertura esparsa: para cada candidato, os blocos que vê
-  // (com a distância ao centróide, para o desempate e o limite por base)
+  const setup = proposalSetup(blocks, { vlosM, radiusM, maxBlocksPerBase, extraPoints })
+  if (!setup) return []
+  const rule = site && typeof site.info === 'function' ? site : null
+  /** @type {ProposalCandidate[]} */
   const candidates = []
-  for (const p of candidatePoints(prepared)) {
-    const cov = []
-    for (let bi = 0; bi < nB; bi++)
-      if (covers(p, prepared[bi], r, vlosM))
-        cov.push({ bi, d: distanceM(p, prepared[bi].centroid) })
+  for (const point of setup.points) {
+    const all = candidateCover(setup, point)
     // candidatos que não cobrem nada não entram na gulosa
-    if (cov.length > 0) {
-      cov.sort((a, b) => a.d - b.d)
-      candidates.push({ point: p, cov, all: cov, score: null })
-    }
-  }
-  // com `site`: custo de cada candidato (uma vez) e só os blocos que aceitam o sítio
-  const rule = site && typeof site.score === 'function' ? site : null
-  if (rule) {
-    for (const c of candidates) {
-      const s = rule.score(c.point)
-      c.score = Number.isFinite(s) ? s : null
-      c.cov =
-        c.score === null
-          ? []
-          : c.all.filter(({ bi }) => rule.accepts?.(prepared[bi].id, c.score) !== false)
-    }
-  }
-  const costOf = (c) => (c.score === null ? Infinity : c.score)
-  const visible = new Array(nB).fill(false)
-  for (const c of candidates) for (const { bi } of c.all) visible[bi] = true
-  const coverable = new Array(nB).fill(false)
-  for (const c of candidates) for (const { bi } of c.cov) coverable[bi] = true
-
-  const covered = new Array(nB).fill(false)
-  let remaining = coverable.filter(Boolean).length
-  const bases = []
-  // os mesmos blocos, em qualquer ordem
-  const samePick = (a, b) => {
-    if (a.length !== b.length) return false
-    const sb = new Set(b)
-    return a.every((x) => sb.has(x))
-  }
-  while (remaining > 0) {
-    // ganho de cada candidato e quantos candidatos partilháveis vêem cada bloco
-    const gain = candidates.map((c) => {
-      let n = 0
-      for (const { bi } of c.cov) if (!covered[bi]) n++
-      return Math.min(n, cap)
-    })
-    const options = new Array(nB).fill(0)
-    candidates.forEach((c, ci) => {
-      if (gain[ci] < 2) return
-      for (const { bi } of c.cov) if (!covered[bi]) options[bi]++
-    })
-    let best = -1
-    let bestGain = 0
-    let bestOpt = Infinity
-    let bestSum = Infinity
-    let bestPick = null
-    for (let ci = 0; ci < candidates.length; ci++) {
-      if (gain[ci] === 0 || gain[ci] < bestGain) continue
-      const pick = []
-      let opt = 0
-      let sum = 0
-      for (const e of candidates[ci].cov) {
-        if (covered[e.bi]) continue
-        pick.push(e.bi)
-        opt += options[e.bi]
-        sum += e.d
-        if (pick.length >= cap) break
-      }
-      let better = gain[ci] > bestGain || opt < bestOpt
-      if (!better && opt === bestOpt) {
-        // os mesmos blocos: o sítio de menor custo; senão o mais perto
-        const a = costOf(candidates[ci])
-        const b = best >= 0 ? costOf(candidates[best]) : Infinity
-        better =
-          rule && best >= 0 && samePick(pick, bestPick) && Math.abs(a - b) > 0.01
-            ? a < b
-            : sum < bestSum - 1
-      }
-      if (better) {
-        best = ci
-        bestGain = gain[ci]
-        bestOpt = opt
-        bestSum = sum
-        bestPick = pick
+    if (all.length === 0) continue
+    const c = { point, all, info: null }
+    if (rule) {
+      c.info = rule.info(point) ?? null
+      for (const e of all) {
+        const id = setup.prepared[e.bi].id
+        e.view = c.info ? (rule.view?.(point, id, c.info) ?? null) : null
+        e.ok = Boolean(c.info && e.view && (rule.accepts ? rule.accepts(e.view) : true))
       }
     }
-    if (best < 0) break // não acontece: remaining > 0 implica um candidato com ganho
-    for (const bi of bestPick) covered[bi] = true
-    remaining -= bestPick.length
-    bases.push({
-      id: baseLabel(bases.length),
-      point: candidates[best].point.slice(),
-      blockIds: bestPick.map((bi) => prepared[bi].id),
-      outOfVlos: false,
-      siteOk: true,
-      score: candidates[best].score,
-    })
+    candidates.push(c)
   }
-  // blocos que se vêem, mas de nenhum sítio aceitável: o de menor custo
-  let left = 0
-  for (let bi = 0; bi < nB; bi++) if (visible[bi] && !coverable[bi]) left++
-  while (left > 0) {
-    let best = -1
-    let bestCost = Infinity
-    let bestPick = null
-    let bestSum = Infinity
-    for (let ci = 0; ci < candidates.length; ci++) {
-      const pick = []
-      let sum = 0
-      for (const e of candidates[ci].all) {
-        if (coverable[e.bi] || covered[e.bi]) continue
-        pick.push(e.bi)
-        sum += e.d
-        if (pick.length >= cap) break
-      }
-      if (pick.length === 0) continue
-      const cost = costOf(candidates[ci])
-      const better =
-        best < 0 ||
-        cost < bestCost - 0.01 ||
-        (Math.abs(cost - bestCost) <= 0.01 &&
-          (pick.length > bestPick.length || (pick.length === bestPick.length && sum < bestSum - 1)))
-      if (better) {
-        best = ci
-        bestCost = cost
-        bestPick = pick
-        bestSum = sum
-      }
-    }
-    if (best < 0) break
-    for (const bi of bestPick) covered[bi] = true
-    left -= bestPick.length
-    bases.push({
-      id: baseLabel(bases.length),
-      point: candidates[best].point.slice(),
-      blockIds: bestPick.map((bi) => prepared[bi].id),
-      outOfVlos: false,
-      siteOk: false,
-      score: candidates[best].score,
-    })
-  }
-  // blocos que nenhum candidato vê inteiros: base própria, assinalada
-  for (let bi = 0; bi < nB; bi++) {
-    if (visible[bi]) continue
-    bases.push({
-      id: baseLabel(bases.length),
-      point: prepared[bi].centroid.slice(),
-      blockIds: [prepared[bi].id],
-      outOfVlos: true,
-      siteOk: true, // sítio não avaliado: o bloco já vai assinalado
-      score: null,
-    })
-  }
-  return bases
+  return greedyBases(setup, candidates, { withSite: Boolean(rule) })
 }
 
 /**

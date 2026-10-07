@@ -20,7 +20,6 @@
 import { squareSideForBattery, stopCostS, turnCostS } from '../utils/geo.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from '../utils/units.js'
 import { terrainRangeAlong } from './clearance.js'
-import { MIN_SAFE_REL_M } from '../utils/terrain.js'
 import { addBase, baseColor, sortedBases } from './bases.js'
 import {
   DEFAULT_ZONE_RADIUS_M,
@@ -328,68 +327,76 @@ export function blocksViewRoute(blocks, refs, altitude) {
 }
 
 /**
- * Sítios baixos para as bases propostas (SiteRule de proposeBases), com
- * seguimento de terreno: a altura relativa de um waypoint é `AGL + terreno −
- * referência`, e uma base no alto de um cabeço deixava os blocos mais
- * baixos com alturas relativas pequenas ou negativas. O custo de um
- * candidato é a cota de referência da SUA zona (computeTakeoffZone, raio e
- * desnível do equipamento; null fora do relevo), e um bloco aceita-o quando
- * `referência ≤ mínimo do relevo debaixo do bloco + AGL − MIN_SAFE_REL_M`
- * (os 20 m do aviso do seguimento de terreno). O mínimo de cada bloco é o
- * de terrainRangeAlong sobre a rota (o anel, sem waypoints). Tudo calculado
- * só quando pedido e guardado: ~150 blocos e centenas de candidatos.
- * @param {object} args
- * @param {any[]} args.blocks blocos do plano (id, waypoints, cellRing?)
- * @param {(lon: number, lat: number) => number|null} args.elevationAt
- * @param {number} args.altitudeM AGL pedido
- * @param {number} [args.radiusM] raio da zona dos candidatos
- * @param {number} [args.maxReliefM] desnível máximo da zona
- * @returns {import('./takeoffZones.js').SiteRule|null}
+ * Blocos para a proposta de bases: os que ainda não têm uma base que os
+ * veja inteiros (as bases do operador não se mexem, e um bloco atribuído à
+ * mão fica com a sua).
+ * @param {{blocks: any[]|null, bases?: any[], zones?: Record<string, any>,
+ *   manual?: Record<string, string>, vlosM: number, defaultRadiusM?: number}} args
+ * @returns {any[]}
  */
-export function lowSiteRule({
+export function proposalTargets({
   blocks,
-  elevationAt,
-  altitudeM,
-  radiusM = DEFAULT_ZONE_RADIUS_M,
-  maxReliefM,
+  bases = [],
+  zones = {},
+  manual = {},
+  vlosM,
+  defaultRadiusM = DEFAULT_ZONE_RADIUS_M,
 }) {
-  if (typeof elevationAt !== 'function' || !Number.isFinite(altitudeM)) return null
-  const byId = new Map((blocks ?? []).map((b) => [String(b.id), b]))
-  const lowest = new Map()
-  const minUnder = (id) => {
-    const k = String(id)
-    if (!lowest.has(k)) {
-      const b = byId.get(k)
-      const route = b?.waypoints?.length ? b.waypoints : blockRing(b)
-      lowest.set(k, terrainRangeAlong(route, { elevationAt })?.minM ?? null)
-    }
-    return lowest.get(k)
+  if (!Array.isArray(blocks) || blocks.length === 0 || !(vlosM > 0)) return []
+  const current = layoutBlocks({ blocks, bases, zones, manual, vlosM, defaultRadiusM })
+  return blocks.filter((b) => {
+    const e = current?.byBlock[b.id]
+    return !(e?.baseId && (e.manual || e.withinVlos))
+  })
+}
+
+/**
+ * @typedef {object} ProposalOutcome
+ * @property {any[]} bases            as do operador, mais as propostas
+ * @property {Record<string, string>} blockBase atribuições (as manuais e as das propostas)
+ * @property {number} added           bases propostas
+ * @property {number} outOfVlos       das quais com um bloco maior do que o VLOS
+ * @property {number} poorSites       das quais num sítio que algum dos seus blocos não aceita
+ *   (rádio livre em menos de SITE_RADIO_OK_FRAC do bloco): o melhor que havia
+ */
+
+/**
+ * As bases propostas (proposeBases) juntas às do operador: recebem os
+ * primeiros rótulos livres pela ordem do mosaico (a do primeiro bloco que
+ * servem), e os seus blocos ficam atribuídos a elas — o limite de voos por
+ * base vale assim também depois.
+ * @param {{bases?: any[], manual?: Record<string, string>,
+ *   proposal: import('./takeoffZones.js').ProposedBase[]}} args
+ * @returns {ProposalOutcome}
+ */
+export function applyProposal({ bases = [], manual = {}, proposal }) {
+  const list = [...(proposal ?? [])]
+  list.sort((a, b) => Math.min(...a.blockIds) - Math.min(...b.blockIds))
+  let next = bases ?? []
+  const map = { ...(manual ?? {}) }
+  for (const p of list) {
+    const res = addBase(next, p.point)
+    if (!res.base) continue
+    next = res.bases
+    for (const id of p.blockIds) map[String(id)] = res.base.id
   }
   return {
-    score: (point) => {
-      const z = computeTakeoffZone(point, { elevationAt, radiusM, maxReliefM })
-      return 'error' in z ? null : z.refElev
-    },
-    accepts: (id, refElev) => {
-      const m = minUnder(id)
-      return m === null || refElev <= m + altitudeM - MIN_SAFE_REL_M + 1e-6
-    },
+    bases: next,
+    blockBase: map,
+    added: list.length,
+    outOfVlos: list.filter((p) => p.outOfVlos).length,
+    poorSites: list.filter((p) => !p.siteOk).length,
   }
 }
 
 /**
  * Proposta de bases para os blocos que ainda não têm uma base que os veja
- * inteiros (as bases do operador não se mexem, e um bloco atribuído à mão
- * fica com a sua). As bases novas recebem os primeiros rótulos livres pela
- * ordem do mosaico (a do primeiro bloco que servem), e os seus blocos ficam
- * atribuídos a elas — o limite de voos por base vale assim também depois.
- *
- * Com `site` (ex.: lowSiteRule, com relevo e seguimento de terreno) a
- * proposta prefere sítios baixos e aceitáveis para os blocos que servem;
- * `highSites` conta as bases que ficaram num sítio que algum dos seus blocos
- * não aceita, porque não havia melhor (o preflight diz o resto).
- * @returns {{bases: any[], blockBase: Record<string, string>, added: number,
- *   outOfVlos: number, highSites: number}}
+ * inteiros (proposalTargets), num só passo e sem relevo: a cobertura de
+ * proposeBases e applyProposal. Com relevo a aplicação usa a corrida em
+ * fatias de baseSites.js (createBaseProposalRun), que acrescenta os altos do
+ * relevo aos candidatos e escolhe pelo rádio, pela vista, pela cota e pelo
+ * desnível; `site` e `extraPoints` passam a proposeBases tal como vêm.
+ * @returns {ProposalOutcome}
  */
 export function proposeMoreBases({
   blocks,
@@ -400,40 +407,22 @@ export function proposeMoreBases({
   defaultRadiusM = DEFAULT_ZONE_RADIUS_M,
   maxBlocksPerBase = 0,
   site = null,
+  extraPoints = [],
 }) {
-  const same = { bases, blockBase: manual ?? {}, added: 0, outOfVlos: 0, highSites: 0 }
-  if (!Array.isArray(blocks) || blocks.length === 0 || !(vlosM > 0)) return same
-  const current = layoutBlocks({ blocks, bases, zones, manual, vlosM, defaultRadiusM })
-  const uncovered = blocks.filter((b) => {
-    const e = current?.byBlock[b.id]
-    return !(e?.baseId && (e.manual || e.withinVlos))
-  })
-  if (uncovered.length === 0) return same
+  const same = { bases, blockBase: manual ?? {}, added: 0, outOfVlos: 0, poorSites: 0 }
+  const targets = proposalTargets({ blocks, bases, zones, manual, vlosM, defaultRadiusM })
+  if (targets.length === 0) return same
   const proposal = proposeBases(
-    uncovered.map((b) => ({ id: b.id, ring: blockRing(b) })),
+    targets.map((b) => ({ id: b.id, ring: blockRing(b) })),
     {
       vlosM,
       radiusM: defaultRadiusM,
       maxBlocksPerBase: maxBlocksPerBase > 0 ? maxBlocksPerBase : Infinity,
       site,
+      extraPoints,
     },
   )
-  proposal.sort((a, b) => Math.min(...a.blockIds) - Math.min(...b.blockIds))
-  let next = bases ?? []
-  const map = { ...(manual ?? {}) }
-  for (const p of proposal) {
-    const res = addBase(next, p.point)
-    if (!res.base) continue
-    next = res.bases
-    for (const id of p.blockIds) map[String(id)] = res.base.id
-  }
-  return {
-    bases: next,
-    blockBase: map,
-    added: proposal.length,
-    outOfVlos: proposal.filter((p) => p.outOfVlos).length,
-    highSites: proposal.filter((p) => !p.siteOk).length,
-  }
+  return applyProposal({ bases, manual, proposal })
 }
 
 /**

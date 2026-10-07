@@ -34,8 +34,8 @@ export const TILE_TIMEOUT_MS = 20000
 const MAX_FAIL_RATIO = 0.2 // acima de 20% de tiles em falha, desiste
 /**
  * Altura relativa mínima confortável (m): abaixo dela o seguimento de terreno
- * avisa, e a proposta de bases evita sítios que a deixariam passar
- * (baseLayout.js, lowSiteRule).
+ * avisa (a proposta de bases não a troca pelo rádio nem pela vista: deixa o
+ * aviso falar).
  */
 export const MIN_SAFE_REL_M = 20
 const MAX_PROFILE_POINTS = 20000 // trava contra `stepM` minúsculos

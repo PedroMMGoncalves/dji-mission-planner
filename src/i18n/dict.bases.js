@@ -8,8 +8,14 @@ export default {
   },
   'bases.propose': { pt: 'Propor bases', en: 'Propose bases' },
   'bases.proposeTitle': {
-    pt: 'Propõe bases para os blocos que nenhuma base vê inteiros dentro do alcance visual; as suas bases ficam onde estão. Com seguir terreno, prefere sítios baixos, que deixem os blocos com pelo menos 20 m de altura relativa. Depois arraste, retire ou acrescente.',
-    en: 'Proposes bases for the blocks that no base sees entirely within visual range; your bases stay where they are. With terrain following it prefers low sites that leave the blocks at least 20 m of relative height. Then drag, remove or add.',
+    pt: 'Propõe bases para os blocos que nenhuma base vê inteiros dentro do alcance visual; as suas bases ficam onde estão. Com relevo, prefere sítios planos e altos com o rádio livre (zona de Fresnel) para os blocos que servem, nunca um sítio baixo. Depois arraste, retire ou acrescente.',
+    en: 'Proposes bases for the blocks that no base sees entirely within visual range; your bases stay where they are. With terrain it prefers flat, high sites with a clear radio link (Fresnel zone) to the blocks they serve, never a low one. Then drag, remove or add.',
+  },
+  'bases.proposing': { pt: 'A propor bases… {pct} %', en: 'Proposing bases… {pct} %' },
+  'bases.proposeCancel': { pt: 'Cancelar', en: 'Cancel' },
+  'bases.proposeCancelled': {
+    pt: 'Proposta cancelada: as bases ficaram como estavam.',
+    en: 'Proposal cancelled: the bases are as they were.',
   },
   'bases.proposeNeedsBlocks': {
     pt: 'Divida a área em blocos (bateria ou mosaico) para propor bases.',
@@ -36,9 +42,9 @@ export default {
     en: '1 manual assignment did not carry over to the new mosaic: that block got the automatic base.',
   },
   'bases.carryDismiss': { pt: 'Dispensar o aviso', en: 'Dismiss this notice' },
-  'bases.proposedHigh': {
-    pt: '{n} base(s) sem sítio baixo que chegue: alguns dos seus blocos ficam com menos de 20 m de altura relativa (ver o preflight).',
-    en: '{n} base(s) without a low enough site: some of their blocks get less than 20 m of relative height (see preflight).',
+  'bases.proposedRadio': {
+    pt: '{n} base(s) sem sítio com o rádio livre em 95 % de cada um dos seus blocos: ficou o melhor que havia (ver as bacias de visão e o preflight).',
+    en: '{n} base(s) without a site with a clear radio link over 95 % of each of their blocks: the best available was used (see the viewsheds and preflight).',
   },
   'bases.maxPerBase': {
     pt: 'no máximo {n} voos por base',
