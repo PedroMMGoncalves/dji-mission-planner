@@ -4,9 +4,18 @@
  * (a linha de vista e a grelha de cada bloco) aos blocos, às bases e às
  * alturas do plano; o hook useViewsheds só agenda o trabalho.
  *
- *  - Um trabalho por bloco com base: o olho no PONTO da base (onde o
- *    operador a marcou; a zona de descolagem não é varrida — descolar a
- *    80 m dali pode ver mais ou menos), o anel do bloco (o invólucro da
+ *  - Um trabalho por bloco com base: o olho no MELHOR ponto da zona de
+ *    descolagem para esse bloco (o operador anda até à beira do patamar
+ *    para ver a encosta: num alto convexo, o ombro esconde do ponto da base
+ *    a parte baixa da encosta). Procura-se num leque de pontos da zona
+ *    (zoneEyePoints: o ponto da base e anéis até ao raio efectivo) com
+ *    bacias GROSSEIRAS (EYE_SEARCH_GRID_M, EYE_SEARCH_STEP_M); fica o que vê
+ *    mais do bloco, depois o de melhor rádio, depois o mais perto do ponto
+ *    da base, e a bacia fina sai dele. Sem zona (sem relevo na base), o
+ *    ponto da base. Com vegetação somada ao relevo, também o ponto da base:
+ *    não se sabe onde há clareiras, e a beira de um cabeço arborizado não é
+ *    uma (Mata de Vilar). O resultado diz onde ficou o olho (`eye`), para o
+ *    painel e a ficha de campo. O anel do bloco (o invólucro da
  *    célula e dos waypoints, o mesmo do alcance visual) e a cota absoluta do
  *    drone: sem seguimento de terreno `cota de referência do bloco + altura`
  *    (a mínima da zona: o drone mais baixo possível, o lado pessimista),
@@ -33,6 +42,7 @@ import {
   DEFAULT_LOS_STEP_M,
   FRESNEL_FRACTION,
   RADIO_FREQ_GHZ,
+  blockVisibility,
   blockVisibilityStepper,
 } from './viewshed.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from '../utils/units.js'
@@ -43,6 +53,56 @@ export const GLOBAL_TERRAIN_RESOLUTION_M = 30
 export const OBSTACLE_LIMITS_M = { min: 0, max: 60 }
 /** O rádio das bacias de visão: 60 % da 1.ª zona de Fresnel a 2,4 GHz. */
 export const RADIO_CHECK = Object.freeze({ freqGHz: RADIO_FREQ_GHZ, fraction: FRESNEL_FRACTION })
+
+/** Olho no melhor ponto da zona: anéis e direcções do leque de pontos. */
+export const EYE_ZONE_RINGS = 3
+export const EYE_ZONE_DIRS = 12
+/** Bacias grosseiras da procura do olho: grelha e passo ao longo da linha (m). */
+export const EYE_SEARCH_GRID_M = 60
+export const EYE_SEARCH_STEP_M = 20
+/** Abaixo disto, o olho conta como no ponto da base (m). */
+export const EYE_SHIFT_MIN_M = 5
+
+/**
+ * Pontos onde o operador pode ficar dentro da zona de descolagem: o ponto
+ * da base e EYE_ZONE_RINGS anéis (raio/3, 2·raio/3, raio) de EYE_ZONE_DIRS
+ * pontos cada. A zona já tem o raio efectivo (reduzido onde o desnível
+ * passa o do equipamento), por isso todos estão em chão de descolagem. A
+ * proposta de bases usa um leque mais leve (`rings`, `dirs`).
+ * @param {number[]} point [lon, lat]
+ * @param {number} radiusM
+ * @param {{rings?: number, dirs?: number}} [opts]
+ * @returns {number[][]}
+ */
+export function zoneEyePoints(
+  point,
+  radiusM,
+  { rings = EYE_ZONE_RINGS, dirs = EYE_ZONE_DIRS } = {},
+) {
+  if (!isPoint(point)) return []
+  const out = [[point[0], point[1]]]
+  if (!(radiusM > 0)) return out
+  const mLon = metersPerDegLonSafe(point[1])
+  for (let k = 1; k <= rings; k++) {
+    const r = (radiusM * k) / rings
+    for (let d = 0; d < dirs; d++) {
+      const a = (2 * Math.PI * d) / dirs
+      out.push([point[0] + (r * Math.sin(a)) / mLon, point[1] + (r * Math.cos(a)) / M_PER_DEG_LAT])
+    }
+  }
+  return out
+}
+
+/** Distância (m) e rumo (graus, 0 = norte) de `a` para `b`. */
+function offsetOf(a, b) {
+  const mLon = metersPerDegLonSafe(a[1])
+  const dx = (b[0] - a[0]) * mLon
+  const dy = (b[1] - a[1]) * M_PER_DEG_LAT
+  return {
+    shiftM: Math.hypot(dx, dy),
+    bearingDeg: ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360,
+  }
+}
 
 /** Vegetação e obstáculos de um projecto: número limitado a 0-60 m (meio metro), senão 0. */
 export function normalizeObstacleM(v) {
@@ -120,6 +180,7 @@ const ptKey = (p) => `${p[0].toFixed(7)},${p[1].toFixed(7)}`
  * @property {string} baseLabel
  * @property {string} flightLabel
  * @property {number[]} eye     ponto da base [lon, lat]
+ * @property {number} eyeRadiusM raio efectivo da zona onde se procura o olho (0: no ponto)
  * @property {number[][]} ring  anel do bloco
  * @property {DroneHeight} drone
  */
@@ -140,12 +201,14 @@ const ptKey = (p) => `${p[0].toFixed(7)},${p[1].toFixed(7)}`
  * @param {number} [args.obstacleM] vegetação e obstáculos somados ao relevo (m)
  * @param {number} [args.resolutionM]
  * @param {number} [args.gridStepM]
+ * @param {Record<string, any>} [args.zones] computeZones: o raio efectivo de cada base
  * @returns {ViewshedJob[]}
  */
 export function viewshedJobs({
   blocks,
   layout,
   bases,
+  zones = {},
   altitudeM,
   terrainFollow,
   terrainKey = '',
@@ -184,13 +247,20 @@ export function viewshedJobs({
     const ring = Array.isArray(block.ring) ? block.ring : blockRing(block)
     if (!Array.isArray(ring) || ring.length < 3) continue
     const droneKey = drone.mode === 'agl' ? `agl${drone.agl}` : `abs${drone.elev.toFixed(2)}`
+    const z = zones?.[base.id]
+    // com vegetação somada ao relevo o olho fica no ponto de descolagem: não
+    // se sabe onde há clareiras, e a beira de um cabeço arborizado não é
+    // uma (Mata de Vilar)
+    const zoneR = z && !z.error && fin(z.radiusM) && z.radiusM > 0 ? z.radiusM : 0
+    const eyeRadiusM = obstacleM > 0 ? 0 : zoneR
     out.push({
-      key: `${id}|${ptKey(base.point)}|${hash(ring.map(ptKey).join(';'))}|${droneKey}|${common}`,
+      key: `${id}|${ptKey(base.point)}|eye${eyeRadiusM.toFixed(1)}|${hash(ring.map(ptKey).join(';'))}|${droneKey}|${common}`,
       blockId: id,
       baseId: base.id,
       baseLabel: info.baseLabel ?? base.label ?? '',
       flightLabel: info.flightLabel || String(id),
       eye: base.point,
+      eyeRadiusM,
       ring,
       drone,
     })
@@ -258,13 +328,58 @@ export function createViewshedRun(
   let i = 0
   /** @type {import('./viewshed.js').BlockVisibilityStepper|null} */
   let cur = null
+  // onde ficou o olho do trabalho de agora
+  /** @type {{point: number[], shiftM: number, bearingDeg: number}|null} */
+  let curEye = null
+  // procura do olho do trabalho de agora: pontos da zona, o seguinte a
+  // avaliar e o melhor até aqui
+  /** @type {{pts: number[][], k: number, best: any}|null} */
+  let search = null
   const done = () => i >= jobs.length
+  const coarse = (job, point) =>
+    blockVisibility({
+      eye: { point, heightM: eyeHeightM, antennaHeightM },
+      blockRing: job.ring,
+      droneElevAt: droneElevation(job.drone, elevationAt),
+      elevationAt,
+      gridStepM: Math.max(EYE_SEARCH_GRID_M, gridStepM),
+      stepM: Math.max(EYE_SEARCH_STEP_M, stepM),
+      resolutionM: resolutionM > 0 ? resolutionM : undefined,
+      fresnel: RADIO_CHECK,
+      obstacleM,
+    })
+  // melhor olho: mais à vista, depois melhor rádio, depois mais perto da base
+  const better = (a, b) =>
+    !b ||
+    a.vis > b.vis + 1e-9 ||
+    (Math.abs(a.vis - b.vis) <= 1e-9 &&
+      (a.radio > b.radio + 1e-9 || (Math.abs(a.radio - b.radio) <= 1e-9 && a.shiftM < b.shiftM)))
   const step = (shouldYield) => {
     while (i < jobs.length) {
       const job = jobs[i]
       if (!cur) {
+        let eyePoint = job.eye
+        if (job.eyeRadiusM > 0) {
+          if (!search) search = { pts: zoneEyePoints(job.eye, job.eyeRadiusM), k: 0, best: null }
+          while (search.k < search.pts.length) {
+            const point = search.pts[search.k++]
+            const r = /** @type {any} */ (coarse(job, point))
+            if (!r.error && r.total > 0) {
+              const cand = {
+                point,
+                vis: r.visibleFrac ?? 0,
+                radio: (r.total - (r.radioFail ?? 0)) / r.total,
+                shiftM: offsetOf(job.eye, point).shiftM,
+              }
+              if (better(cand, search.best)) search.best = cand
+            }
+            if (search.k < search.pts.length && shouldYield()) return false
+          }
+          if (search.best) eyePoint = search.best.point
+          search = null
+        }
         const s = blockVisibilityStepper({
-          eye: { point: job.eye, heightM: eyeHeightM, antennaHeightM },
+          eye: { point: eyePoint, heightM: eyeHeightM, antennaHeightM },
           blockRing: job.ring,
           droneElevAt: droneElevation(job.drone, elevationAt),
           elevationAt,
@@ -281,11 +396,12 @@ export function createViewshedRun(
           continue
         }
         cur = s
+        curEye = { point: eyePoint, ...offsetOf(job.eye, eyePoint) }
       }
       let finished = cur.next()
       while (!finished && !shouldYield()) finished = cur.next()
       if (!finished) return false
-      results.set(job.key, cur.result())
+      results.set(job.key, { ...cur.result(), eye: curEye })
       cur = null
       i++
       if (shouldYield()) return done()
@@ -314,6 +430,8 @@ export function createViewshedRun(
  * @property {number} radioOnlyPct % inteira, 1 % no mínimo quando há algum
  * @property {number|null} radioAtM distância típica (mediana, à dezena) da pior intrusão na zona
  *   de Fresnel nesses pontos; null sem eles
+ * @property {{point: number[], shiftM: number, bearingDeg: number}|null} eye onde ficaram os
+ *   olhos, quando saem do ponto da base (EYE_SHIFT_MIN_M ou mais); null no ponto
  */
 
 /** Percentagem inteira de n em total, 1 % no mínimo quando n > 0. */
@@ -355,6 +473,7 @@ export function viewSummary(res) {
       radioOnlyFrac: 0,
       radioOnlyPct: 0,
       radioAtM: null,
+      eye: null,
     }
   const total = res.total ?? 0
   const hidden = Array.isArray(res.hidden) ? res.hidden.length : 0
@@ -376,6 +495,7 @@ export function viewSummary(res) {
     radioOnlyFrac: total > 0 ? radioOnlyList.length / total : 0,
     radioOnlyPct: pctOf(radioOnlyList.length, total),
     radioAtM: radioOnlyList.length ? medianTen(radioOnlyList.map((h) => h.atM)) : null,
+    eye: res.eye && res.eye.shiftM >= EYE_SHIFT_MIN_M ? res.eye : null,
   }
 }
 

@@ -184,15 +184,16 @@ function InstrucoesPt() {
         </Li>
         <Li>
           <strong>Bacias de visão</strong> — com bases, blocos e relevo, cada bloco é visto do{' '}
-          <strong>ponto</strong> da sua base (à altura dos olhos da Configuração; o resto da zona
-          não é varrido) numa grelha de 25 m, à cota a que o drone lá passa. Laranja: atrás do
-          relevo; amarelo tracejado: à vista, mas o relevo entra em 60 % da zona de Fresnel do rádio
-          (2,4 GHz, da antena do comando) e a ligação pode cair. O preflight avisa por voo a partir
-          de 5 % do bloco («Voo A-3: 18 % do bloco fica atrás do relevo visto da base A, tapado a
-          ~420 m», ou «sinal de rádio em risco»). Um MDT e o relevo global não têm árvores,
-          edifícios nem escombreiras: some-os em «Vegetação e obstáculos» (por missão, a mais de 30
-          m da base) ou importe o MDS da equipa e marque «Este ficheiro é: MDS». A camada liga-se no
-          cartão 5 (Mais opções) ou no controlo de camadas do mapa e fica lembrada neste aparelho.
+          <strong>melhor ponto da zona</strong> da sua base (à altura dos olhos da Configuração; o
+          painel e a ficha dizem onde ficar, «olhos a 90 m E da base»; com vegetação somada, o ponto
+          da base) numa grelha de 25 m, à cota a que o drone lá passa. Laranja: atrás do relevo;
+          amarelo tracejado: à vista, mas o relevo entra em 60 % da zona de Fresnel do rádio (2,4
+          GHz, da antena do comando) e a ligação pode cair. O preflight avisa por voo a partir de 5
+          % do bloco («Voo A-3: 18 % do bloco fica atrás do relevo visto da base A, tapado a ~420
+          m», ou «sinal de rádio em risco»). Um MDT e o relevo global não têm árvores, edifícios nem
+          escombreiras: some-os em «Vegetação e obstáculos» (por missão, a mais de 30 m da base) ou
+          importe o MDS da equipa e marque «Este ficheiro é: MDS». A camada liga-se no cartão 5
+          (Mais opções) ou no controlo de camadas do mapa e fica lembrada neste aparelho.
         </Li>
         <Li>
           <strong>Configuração</strong> (roda dentada no cabeçalho) — por aeronave, o alcance visual

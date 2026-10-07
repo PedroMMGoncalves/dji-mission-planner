@@ -6,6 +6,17 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Alterado (vista a partir do melhor ponto da zona)
+
+- As bacias de visão e a proposta de bases contam a vista a partir do
+  **melhor ponto da zona de descolagem** para cada voo, e não só do ponto
+  da base: o operador anda até à beira do patamar para ver a encosta. Num
+  alto convexo o ombro escondia do ponto da base a parte baixa da encosta;
+  na área de teste, a 120 m AGL, os pontos à vista passam de 87 % para
+  98 %. O painel e a ficha de campo dizem onde ficar («olhos a 90 m E da
+  base», com as coordenadas na ficha). Com vegetação somada ao relevo o
+  olho fica no ponto (a beira de um cabeço arborizado não é clareira).
+
 ### Acrescentado (juntar a esta base)
 
 - **Juntar a esta base**, no painel das bases com uma base seleccionada:

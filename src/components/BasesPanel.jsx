@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useT } from '../i18n.jsx'
 import { IconDownload, IconTrash } from './Icons.jsx'
 import { exportChoices, flightsArchiveName } from '../mission/flightFiles.js'
-import { viewCaveatText, viewTerrainText } from './BaseFieldSheets.jsx'
+import { eyeText, viewCaveatText, viewTerrainText } from './BaseFieldSheets.jsx'
 
 /**
  * Lista das bases de descolagem do modo área: por base, os seus voos, a
@@ -549,6 +549,10 @@ function BaseRow({
           data-testid="base-view"
           data-view={seen.map((v) => `${v.flight}:${v.visiblePct}`).join(',')}
           data-radio={seen.map((v) => `${v.flight}:${v.radioOnlyPct}`).join(',')}
+          data-eye={seen
+            .map((v) => `${v.flight}:${v.eye ? Math.round(v.eye.shiftM) : 0}`)
+            .join(',')}
+          title={seen.some((v) => v.eye) ? t('bases.view.eyeTitle') : undefined}
           className={`font-mono text-[11px] leading-relaxed ${
             seen.some((v) => v.hidden > 0 || v.radioOnly > 0) ? 'text-amber-300' : 'text-slate-400'
           }`}
@@ -564,9 +568,10 @@ function BaseRow({
                         m: v.blockedAtM,
                       })
                     : t('bases.view.visible', { flight: v.flight, pct: v.visiblePct })
+                const withEye = v.eye ? `${seen} (${eyeText(t, v.eye)})` : seen
                 return v.radioOnly > 0
-                  ? `${seen} ${t('bases.view.radio', { pct: v.radioOnlyPct, m: v.radioAtM })}`
-                  : seen
+                  ? `${withEye} ${t('bases.view.radio', { pct: v.radioOnlyPct, m: v.radioAtM })}`
+                  : withEye
               })
               .join(', '),
           })}

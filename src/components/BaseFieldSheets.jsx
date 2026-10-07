@@ -35,9 +35,26 @@ export function viewCaveatText(t, model) {
   return t('bases.view.caveat')
 }
 
+const DIRS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+
 /**
- * Parte visível de um voo vista da base: «82 % visível — tapado a ~420 m da
- * base», e o rádio quando a parte à vista o tem em risco («rádio em risco em
+ * Onde ficam os olhos quando não é no ponto da base (o melhor ponto da zona
+ * para aquele voo): «olhos a 90 m E da base», com as coordenadas se
+ * `coords` (a ficha de campo, para o telemóvel). '' no ponto da base.
+ * @param {(key: string, vars?: object) => string} t
+ * @param {{point: number[], shiftM: number, bearingDeg: number}|null|undefined} eye
+ * @param {{coords?: boolean}} [opts]
+ */
+export function eyeText(t, eye, { coords = false } = {}) {
+  if (!eye) return ''
+  const dir = t(`bases.dir.${DIRS[Math.round(eye.bearingDeg / 45) % 8]}`)
+  const txt = t('bases.view.eye', { m: Math.round(eye.shiftM / 5) * 5, dir })
+  return coords ? `${txt} (${eye.point[1].toFixed(5)}, ${eye.point[0].toFixed(5)})` : txt
+}
+
+/**
+ * Parte visível de um voo vista da base: «82 % visível — tapado a ~420 m do
+ * operador», e o rádio quando a parte à vista o tem em risco («rádio em risco em
  * 12 % (Fresnel a ~260 m)»); «—» enquanto se calcula ou sem relevo.
  * @param {(key: string, vars?: object) => string} t
  * @param {import('../mission/viewshedPlan.js').ViewSummary|null} view
@@ -45,6 +62,7 @@ export function viewCaveatText(t, model) {
 export function flightViewText(t, view) {
   if (!view) return '—'
   const parts = [t('bases.view.visiblePct', { pct: view.visiblePct })]
+  if (view.eye) parts.push(eyeText(t, view.eye, { coords: true }))
   if (view.hidden > 0) parts.push(t('bases.view.hiddenAt', { m: view.blockedAtM }))
   if (view.radioOnly > 0)
     parts.push(t('bases.view.radioAt', { pct: view.radioOnlyPct, m: view.radioAtM }))

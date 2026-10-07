@@ -20,6 +20,7 @@ import {
   createBaseProposalRun,
   goodSiteRule,
   siteAccepts,
+  siteEyes,
   siteInfo,
   siteViewOf,
   terrainHighPoints,
@@ -566,5 +567,17 @@ describe('proposta: um sitio, uma base; e consolidacao', () => {
     const out = proposeBases(row, { vlosM: 1000, radiusM: 100, site })
     expect(out).toHaveLength(1)
     expect(out[0].blockIds).toHaveLength(3)
+  })
+})
+
+describe('proposta: olhos na zona do candidato', () => {
+  test('o ponto e 8 na beira da zona; so o ponto com vegetacao ou sem zona', () => {
+    const p = em(0, 0)
+    const eyes = siteEyes(p, { radiusM: 100 }, {})
+    expect(eyes).toHaveLength(9)
+    expect(eyes[0]).toEqual(p)
+    for (const e of eyes.slice(1)) expect(Math.hypot(xOf(e[0]), yOf(e[1]))).toBeCloseTo(100, 0)
+    expect(siteEyes(p, { radiusM: 100 }, { obstacleM: 10 })).toEqual([p])
+    expect(siteEyes(p, null, {})).toEqual([p])
   })
 })

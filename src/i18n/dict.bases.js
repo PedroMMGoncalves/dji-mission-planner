@@ -210,11 +210,30 @@ export default {
   'bases.view.flights': { pt: 'Vista: {list}', en: 'Seen: {list}' },
   'bases.view.visible': { pt: '{flight} {pct} %', en: '{flight} {pct} %' },
   'bases.view.hidden': {
-    pt: '{flight} {pct} % (tapado a ~{m} m da base)',
-    en: '{flight} {pct} % (blocked at ~{m} m from the base)',
+    pt: '{flight} {pct} % (tapado a ~{m} m do operador)',
+    en: '{flight} {pct} % (blocked at ~{m} m from the operator)',
   },
+  'bases.view.eye': {
+    pt: 'olhos a {m} m {dir} da base',
+    en: 'eyes {m} m {dir} of the base',
+  },
+  'bases.view.eyeTitle': {
+    pt: 'O melhor ponto da zona de descolagem para ver este voo: o operador anda até lá (a vista conta a partir dele).',
+    en: 'The best point of the take-off zone to watch this flight: the operator walks there (the view is counted from it).',
+  },
+  'bases.dir.N': { pt: 'N', en: 'N' },
+  'bases.dir.NE': { pt: 'NE', en: 'NE' },
+  'bases.dir.E': { pt: 'E', en: 'E' },
+  'bases.dir.SE': { pt: 'SE', en: 'SE' },
+  'bases.dir.S': { pt: 'S', en: 'S' },
+  'bases.dir.SW': { pt: 'SO', en: 'SW' },
+  'bases.dir.W': { pt: 'O', en: 'W' },
+  'bases.dir.NW': { pt: 'NO', en: 'NW' },
   'bases.view.visiblePct': { pt: '{pct} % visível', en: '{pct} % visible' },
-  'bases.view.hiddenAt': { pt: 'tapado a ~{m} m da base', en: 'blocked at ~{m} m from the base' },
+  'bases.view.hiddenAt': {
+    pt: 'tapado a ~{m} m do operador',
+    en: 'blocked at ~{m} m from the operator',
+  },
   'bases.view.noTerrain': {
     pt: 'À espera do relevo carregado sobre a área.',
     en: 'Waiting for terrain loaded over the area.',
@@ -269,8 +288,8 @@ export default {
     en: 'A DTM has no trees, buildings or spoil heaps: add their height in “Vegetation and obstacles”, or import the team’s DSM, which gives a result closer to what you see.',
   },
   'bases.view.point': {
-    pt: 'Vistas do ponto da base, à altura dos olhos da Configuração; o resto da zona de descolagem não é varrido.',
-    en: 'Seen from the base point, at the eye height in Settings; the rest of the take-off zone is not swept.',
+    pt: 'Vistas do melhor ponto da zona de descolagem para cada voo («olhos a X m … da base»; com vegetação somada, do ponto da base), à altura dos olhos da Configuração.',
+    en: 'Seen from the best point of the take-off zone for each flight (“eyes X m … of the base”; with vegetation added, from the base point), at the eye height in Settings.',
   },
   'cp.split.orientationAuto': {
     pt: 'Quadrados paralelos às faixas',

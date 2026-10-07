@@ -53,7 +53,7 @@ import {
   blockVisibility,
   blockVisibilityStepper,
 } from './viewshed.js'
-import { RADIO_CHECK, droneElevation } from './viewshedPlan.js'
+import { RADIO_CHECK, droneElevation, zoneEyePoints } from './viewshedPlan.js'
 
 /** Fracção mínima do raio pedido que a zona de descolagem tem de manter (sítio plano). */
 export const SITE_MIN_ZONE_FRAC = 0.5
@@ -69,6 +69,8 @@ export const SITE_HIGHPOINT_MAX_NODES = 40000
 export const SITE_VIEW_GRID_M = 60
 /** Passo de leitura do relevo nos raios das bacias grosseiras (m). */
 export const SITE_VIEW_STEP_M = 20
+/** Olhos na zona de cada candidato: o ponto e SITE_EYE_DIRS pontos na beira da zona. */
+export const SITE_EYE_DIRS = 8
 
 const fin = (v) => typeof v === 'number' && Number.isFinite(v)
 const isPoint = (p) => Array.isArray(p) && fin(p[0]) && fin(p[1])
@@ -121,6 +123,30 @@ export function siteViewOf(res) {
     visible: fin(res.visibleFrac) ? res.visibleFrac : 0,
     n: res.total,
   }
+}
+
+/** A melhor de duas vistas: mais à vista, depois melhor rádio (a primeira no empate). */
+export const betterView = (a, b) =>
+  !b ||
+  (a != null &&
+    (a.visible > b.visible + 1e-9 ||
+      (Math.abs(a.visible - b.visible) <= 1e-9 && a.radio > b.radio + 1e-9)))
+
+/**
+ * Pontos de onde o operador pode ver os blocos a partir de um candidato: o
+ * ponto e a beira da sua zona (o raio efectivo de siteInfo). O operador anda
+ * até à beira do patamar; num alto convexo é dali que se vê a encosta.
+ * @param {number[]} point
+ * @param {any} info siteInfo do candidato (o raio efectivo da zona)
+ * @param {{obstacleM?: number}} [ctx]
+ */
+export function siteEyes(point, info, ctx) {
+  // com vegetação somada ao relevo o olho fica no ponto (ver viewshedPlan.js)
+  if (fin(ctx?.obstacleM) && ctx.obstacleM > 0) return [point]
+  return zoneEyePoints(point, fin(info?.radiusM) ? info.radiusM : 0, {
+    rings: 1,
+    dirs: SITE_EYE_DIRS,
+  })
 }
 
 /** O bloco aceita o sítio: rádio livre em pelo menos SITE_RADIO_OK_FRAC dos pontos. */
@@ -325,7 +351,10 @@ export function terrainHighPoints(args) {
  * @property {number} [stepM]     passo dos raios
  */
 
-/** Argumentos de blockVisibility(Stepper) para o bloco `ring` visto do candidato. */
+/**
+ * Argumentos de blockVisibility(Stepper) para o bloco `ring` visto de
+ * `point` (o candidato ou um ponto da sua zona).
+ */
 function viewArgs(point, info, ring, ctx) {
   return {
     eye: {
@@ -366,7 +395,12 @@ export function goodSiteRule(ctx) {
     view: (point, blockId, info) => {
       const ring = ctx.rings.get(blockId)
       if (!ring) return null
-      return siteViewOf(blockVisibility(viewArgs(point, info, ring, ctx)))
+      let best = null
+      for (const eye of siteEyes(point, info, ctx)) {
+        const v = siteViewOf(blockVisibility(viewArgs(eye, info, ring, ctx)))
+        if (betterView(v, best)) best = v
+      }
+      return best
     },
     accepts: siteAccepts,
   }
@@ -458,6 +492,10 @@ export function createBaseProposalRun({
   let ei = 0
   /** @type {any} */
   let viewer = null
+  // olho de agora (índice em c.eyes) e a melhor vista do par até aqui
+  let eyeIdx = 0
+  /** @type {any} */
+  let eyeBest = null
   let pairs = 0
   let pairsDone = 0
 
@@ -536,16 +574,27 @@ export function createBaseProposalRun({
         }
         const c = cands[ci]
         const e = c.all[ei]
+        // o olho percorre o ponto e a beira da zona; fica a melhor vista
+        if (!c.eyes) c.eyes = siteEyes(c.point, c.info, ctx)
         if (!viewer) {
-          viewer = blockVisibilityStepper(viewArgs(c.point, c.info, setup.prepared[e.bi].ring, ctx))
+          viewer = blockVisibilityStepper(
+            viewArgs(c.eyes[eyeIdx], c.info, setup.prepared[e.bi].ring, ctx),
+          )
           if ('error' in viewer) viewer = null
         }
         if (!viewer || viewer.next()) {
-          e.view = viewer ? siteViewOf(viewer.result()) : null
-          e.ok = siteAccepts(e.view)
+          const v = viewer ? siteViewOf(viewer.result()) : null
+          if (betterView(v, eyeBest)) eyeBest = v
           viewer = null
-          ei++
-          pairsDone++
+          eyeIdx++
+          if (eyeIdx >= c.eyes.length) {
+            e.view = eyeBest
+            e.ok = siteAccepts(e.view)
+            eyeBest = null
+            eyeIdx = 0
+            ei++
+            pairsDone++
+          }
         }
         return
       }

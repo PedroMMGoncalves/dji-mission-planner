@@ -337,6 +337,7 @@ function covers(p, blk, radiusM, vlosM) {
  * @property {number[]} point
  * @property {ProposalEntry[]} all blocos que vê inteiros dentro do VLOS, do mais perto ao mais longe
  * @property {SiteInfo|null} [info]
+ * @property {number[][]} [eyes] pontos da zona de onde se vê (a proposta com relevo)
  */
 
 /**

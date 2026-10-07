@@ -263,8 +263,13 @@ tablet real):
   um bloco); depois marcar o ficheiro como **MDS**.
   **Esperado:** com o MDT as zonas laranja crescem e o painel diz «+ 15 m de
   vegetação e obstáculos»; com o MDS o campo fica desligado e nada se soma.
-- ☐ **No campo**, de pé no ponto da base (não noutro sítio da zona) e com o
-  comando à altura habitual: comparar as zonas laranja de um bloco com o que
+- ☐ Base num alto de topo arredondado, seguir terreno a 40-60 m.
+  **Esperado:** no painel, por voo, «(olhos a X m DIR da base)» quando o
+  melhor ponto da zona não é o ponto da base; na ficha de campo o mesmo,
+  com as coordenadas. Com **Vegetação e obstáculos** acima de 0 o texto
+  desaparece (o olho fica no ponto).
+- ☐ **No campo**, de pé no ponto indicado para o voo (o da base, ou o dos
+  «olhos a X m» da ficha) e com o comando à altura habitual: comparar as zonas laranja de um bloco com o que
   se vê (cristas de cortas, bancadas, escombreiras, árvores). Durante o voo,
   anotar onde o sinal do comando cai ou o vídeo falha e comparar com as
   zonas amarelas e laranja.

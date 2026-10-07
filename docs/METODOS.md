@@ -340,7 +340,9 @@ solo já falam, e a proposta não troca o rádio nem a vista por elas.
   vêem inteiro dentro do VLOS, utilizáveis e a pelo menos 2 nós uns dos
   outros; a união vai para a proposta. Acima de 40 000 nós o passo cresce.
 - **Rádio e vista por par candidato/bloco**: bacia de visão GROSSEIRA
-  (§4.3) a partir do ponto do candidato — grelha de `SITE_VIEW_GRID_M` =
+  (§4.3) a partir do ponto do candidato e de `SITE_EYE_DIRS` = 8 pontos na
+  beira da sua zona (`siteEyes`; só o ponto com vegetação somada ao relevo),
+  fica a melhor (mais à vista, depois melhor rádio) — grelha de `SITE_VIEW_GRID_M` =
   60 m, relevo lido a `SITE_VIEW_STEP_M` = 20 m (sem descer à resolução do
   MDT), 60 % da 1.ª zona de Fresnel a 2,4 GHz desde a antena do comando,
   altura dos olhos e do comando da Configuração, vegetação da missão (só
@@ -435,11 +437,25 @@ Módulos `src/mission/viewshed.js` (linha de vista, grelha do bloco),
 `src/hooks/useViewsheds.js` (agendamento). Com a área dividida em blocos,
 bases e relevo sobre a área, cada bloco é visto da base que o serve.
 
-- **Olho e antena.** No **ponto** da base marcado pelo operador: relevo nesse
-  ponto + altura dos olhos (Configuração, 1,7 m, 1-5 m) para a vista, + altura
-  do comando (1,5 m, 1-5 m) para o rádio. A zona de descolagem **não é
-  varrida**: descolar a 80 m do ponto pode ver mais ou menos. Fica-se no
-  ponto, e é isso que a ficha de campo diz.
+- **Olho e antena.** No **melhor ponto da zona de descolagem** para cada
+  voo: relevo nesse ponto + altura dos olhos (Configuração, 1,7 m, 1-5 m)
+  para a vista, + altura do comando (1,5 m, 1-5 m) para o rádio. O operador
+  anda até à beira do patamar para ver a encosta: num alto convexo (topo
+  arredondado que primeiro desce devagar e depois a pique), o ombro esconde
+  do ponto da base a parte baixa da encosta. Na área de teste (alto de
+  486 m, seguir terreno, relevo global), os pontos à vista passam de 436
+  para 489 em 500 a 120 m AGL, e de 181 para 318 a 40 m. Procura
+  (`zoneEyePoints`, `createViewshedRun`): o ponto da base e 3 anéis (r/3,
+  2r/3, r, com `r` o raio efectivo da zona, já reduzido onde o desnível
+  passa o do equipamento) de 12 pontos, cada um com uma bacia GROSSEIRA
+  (`EYE_SEARCH_GRID_M` = 60 m, `EYE_SEARCH_STEP_M` = 20 m); fica o que vê
+  mais do bloco, depois o de melhor rádio, depois o mais perto do ponto, e
+  a bacia fina sai dele. O painel e a ficha de campo dizem onde ficar
+  («olhos a 90 m E da base», com as coordenadas na ficha) quando sai a
+  `EYE_SHIFT_MIN_M` = 5 m ou mais do ponto. Com **vegetação somada ao
+  relevo** o olho fica no ponto: não se sabe onde há clareiras, e a beira de
+  um cabeço arborizado não é uma (Mata de Vilar). Sem zona (base fora do
+  relevo), o ponto.
 - **Drone.** A cota absoluta a que o KMZ o põe em cada ponto: sem seguir
   terreno `cota de referência do bloco + altura` (a mínima da zona — o drone
   mais baixo possível, o lado pessimista); com seguir terreno `relevo + AGL`.

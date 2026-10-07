@@ -230,7 +230,11 @@ describe('corrida em fatias', () => {
         resolutionM: 10,
         fresnel: RADIO_CHECK,
       })
-      expect(run.results.get(j.key)).toEqual(ref)
+      // sem zonas o olho fica no ponto da base
+      expect(run.results.get(j.key)).toEqual({
+        ...ref,
+        eye: { point: j.eye, shiftM: 0, bearingDeg: 0 },
+      })
     }
   })
 
@@ -556,5 +560,87 @@ describe('altura dos olhos na Configuracao', () => {
     expect(normalizeEquipment({ eyeHeightM: '2.46' }).eyeHeightM).toBe(2.5)
     expect(normalizeEquipment({ eyeHeightM: 'x' }).eyeHeightM).toBe(1.7)
     expect(normalizeEquipment({}).eyeHeightM).toBe(1.7)
+  })
+})
+
+describe('olho no melhor ponto da zona', () => {
+  // alto convexo: patamar a 300 m ate x = 100 m, depois encosta de 60 % ate
+  // aos 150 m; o bloco la em baixo (x 400..650), drone a 40 m do solo. Do
+  // ponto da base (x = 0) o ombro tapa o bloco; da beira do patamar ve-se.
+  const hill = (lon) => Math.max(150, 300 - 0.6 * Math.max(0, xOf(lon) - 100))
+  const low = {
+    id: 9,
+    waypoints: [em(410, 10), em(640, 10), em(640, 240), em(410, 240)],
+    cellRing: [em(400, 0), em(650, 0), em(650, 250), em(400, 250)],
+  }
+  const B = { id: 'bb', label: 'B', point: em(0, 125), radiusM: null }
+  const zones = computeZones([B], { elevationAt: hill, radiusM: 100, maxReliefM: 10 })
+  const layout = layoutBlocks({
+    blocks: [low],
+    bases: [B],
+    zones,
+    vlosM: 1000,
+    speed: 10,
+    elevationAt: hill,
+  })
+  const jobs = (z) =>
+    viewshedJobs({
+      blocks: [low],
+      layout,
+      bases: [B],
+      zones: z,
+      altitudeM: 40,
+      terrainFollow: true,
+      terrainKey: 'h',
+      resolutionM: 10,
+    })
+  const run = (js) => {
+    const r = createViewshedRun(js, { elevationAt: hill, resolutionM: 10 })
+    r.step(() => false)
+    return r.results.get(js[0].key)
+  }
+
+  it('do ponto da base o ombro tapa; da beira do patamar ve-se o bloco', () => {
+    expect(zones.bb.radiusM).toBeGreaterThan(90)
+    const fixed = run(jobs({}))
+    expect(fixed.visibleFrac).toBeLessThan(0.5)
+    expect(viewSummary(fixed).eye).toBeNull()
+    const best = run(jobs(zones))
+    expect(best.visibleFrac).toBe(1)
+    // o olho foi para leste, ate a beira da zona
+    expect(best.eye.shiftM).toBeGreaterThan(60)
+    expect(best.eye.shiftM).toBeLessThanOrEqual(zones.bb.radiusM + 1)
+    expect(best.eye.bearingDeg).toBeGreaterThan(45)
+    expect(best.eye.bearingDeg).toBeLessThan(135)
+    expect(viewSummary(best).eye).toEqual(best.eye)
+  })
+
+  it('a chave muda com o raio da zona', () => {
+    expect(jobs(zones)[0].key).not.toBe(jobs({})[0].key)
+  })
+
+  it('com vegetacao somada ao relevo o olho fica no ponto da base', () => {
+    expect(jobs(zones)[0].eyeRadiusM).toBeGreaterThan(90)
+    const js = viewshedJobs({
+      blocks: [low],
+      layout,
+      bases: [B],
+      zones,
+      altitudeM: 40,
+      terrainFollow: true,
+      terrainKey: 'h',
+      resolutionM: 10,
+      obstacleM: 10,
+    })
+    expect(js[0].eyeRadiusM).toBe(0)
+  })
+
+  it('em fatias da o mesmo que de uma vez', () => {
+    const js = jobs(zones)
+    const r = createViewshedRun(js, { elevationAt: hill, resolutionM: 10 })
+    let n = 0
+    while (!r.step(() => true)) n++
+    expect(n).toBeGreaterThan(5)
+    expect(r.results.get(js[0].key)).toEqual(run(js))
   })
 })

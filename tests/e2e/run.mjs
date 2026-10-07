@@ -2187,7 +2187,7 @@ await scenario('bacias-visao-cumeada', async () => {
     .innerText()}`
   check(
     'cumeada: o painel diz a distância a que fica tapado e o relevo usado (com a ressalva do MDT)',
-    new RegExp(`${hf} \\d+ % \\(tapado a ~\\d+ m da base\\)`).test(panelText) &&
+    new RegExp(`${hf} \\d+ % \\(tapado a ~\\d+ m do operador\\)`).test(panelText) &&
       /Relevo: MDT importado «cumeada\.tif»/.test(panelText) &&
       /MDS/.test(panelText),
     panelText.replace(/\s+/g, ' ').slice(0, 400),
@@ -2199,10 +2199,13 @@ await scenario('bacias-visao-cumeada', async () => {
   const warn = new RegExp(
     `Voo ${hf}: \\d+ % do bloco fica atrás do relevo visto da base A, tapado a ~(\\d+) m`,
   ).exec(lista)
-  // a cumeada está a 250 m da base: o raio tapado (mediana) passa-a
+  // a cumeada está a 250 m da base: o raio tapado (mediana) passa-a. A
+  // distância conta dos olhos, no melhor ponto da zona: se recuaram, a
+  // cumeada fica mais longe deles, no máximo o recuo
+  const eyeShift = (await panelViews(page, 'data-eye'))[hf] ?? 0
   check(
     `cumeada: o preflight avisa «Voo ${hf}: N % do bloco fica atrás do relevo visto da base A»`,
-    Boolean(warn) && Number(warn[1]) >= 200 && Number(warn[1]) <= 300,
+    Boolean(warn) && Number(warn[1]) >= 200 && Number(warn[1]) <= 300 + eyeShift,
     lista
       .split('\n')
       .filter((l) => /relevo visto/.test(l))
@@ -2393,9 +2396,9 @@ await scenario('bacias-visao-cumeada', async () => {
     )
     .innerText()
   check(
-    `cumeada: a ficha da base A dá «N % visível — tapado a ~X m da base» no voo ${hf}`,
+    `cumeada: a ficha da base A dá «N % visível — olhos a … — tapado a ~X m do operador» no voo ${hf}`,
     new RegExp(
-      `^${views[hf]} % visível — tapado a ~\\d+ m da base( — rádio em risco em \\d+ % \\(Fresnel a ~\\d+ m\\))?$`,
+      `^${views[hf]} % visível( — olhos a \\d+ m [NSEO]{1,2} da base \\(-?\\d+\\.\\d{5}, -?\\d+\\.\\d{5}\\))? — tapado a ~\\d+ m do operador( — rádio em risco em \\d+ % \\(Fresnel a ~\\d+ m\\))?$`,
     ).test(cellText.trim()),
     cellText,
   )
@@ -2406,7 +2409,9 @@ await scenario('bacias-visao-cumeada', async () => {
     .innerText()
   check(
     `cumeada: e no voo ${vf} «100 % visível — rádio em risco em N % (Fresnel a ~X m)»`,
-    /^100 % visível — rádio em risco em \d+ % \(Fresnel a ~\d+ m\)$/.test(vfCell.trim()),
+    /^100 % visível( — olhos a \d+ m [NSEO]{1,2} da base \(-?\d+\.\d{5}, -?\d+\.\d{5}\))? — rádio em risco em \d+ % \(Fresnel a ~\d+ m\)$/.test(
+      vfCell.trim(),
+    ),
     vfCell,
   )
   check(
