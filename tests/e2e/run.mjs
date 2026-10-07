@@ -1905,6 +1905,62 @@ await scenario('bases-desfazer', async () => {
   return { page }
 })
 
+// «Juntar a esta base»: a base seleccionada fica com todos os blocos que vê
+// inteiros dentro do VLOS (os outros ficam de fora e são contados), as bases
+// que ficam sem voos saem, e um Ctrl+Z desfaz tudo.
+await scenario('juntar-a-esta-base', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await configure(page, { tf: true, split: 'Bateria' })
+  await proposeAndWait(page)
+  const rows0 = await baseRows(page)
+  const layout0 = rows0.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ')
+  const total = rows0.reduce((n, r) => n + r.blocks.length, 0)
+  check('juntar: a proposta dá pelo menos duas bases', rows0.length >= 2, layout0)
+  const A = rows0[0]
+  check(
+    'juntar: sem base seleccionada o botão não aparece',
+    (await page.getByTestId('base-gather').count()) === 0,
+  )
+  await page
+    .locator(`[data-testid="base-row"][data-base-label="${A.label}"]`)
+    .getByTitle(new RegExp(`Seleccionar a base ${A.label}`))
+    .click()
+  await page.getByTestId('base-gather').click()
+  await page.waitForTimeout(1200)
+  const msg = page.getByTestId('bases-gathered')
+  check('juntar: o painel diz o que fez', (await msg.count()) === 1)
+  const joined = Number(await msg.getAttribute('data-joined'))
+  const tooFar = Number(await msg.getAttribute('data-too-far'))
+  const rows = await baseRows(page)
+  const mine = rows.find((r) => r.label === A.label)
+  check(
+    'juntar: a base fica com mais voos e os de fora são os que sobram',
+    mine &&
+      mine.blocks.length === A.blocks.length + joined &&
+      mine.blocks.length + tooFar === total,
+    `${A.label}: ${A.blocks.length} -> ${mine?.blocks.length}; de fora ${tooFar}; total ${total}`,
+  )
+  check(
+    'juntar: nenhuma base fica sem voos',
+    rows.every((r) => r.blocks.length > 0),
+    rows.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' '),
+  )
+  check('juntar: houve blocos juntos ou nada a fazer', joined > 0 || rows0.length === rows.length)
+  if (joined > 0) {
+    await undo(page)
+    const back = (await baseRows(page)).map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ')
+    check('juntar: um Ctrl+Z repõe as bases e os voos', back === layout0, back)
+  }
+  check('juntar: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 // Mosaico refeito pelo ângulo das faixas: as atribuições manuais passam para
 // as células novas que ficam pelo menos meio dentro de uma antiga, e as que
 // não passaram são ditas no painel das bases. Verificado contra o contorno

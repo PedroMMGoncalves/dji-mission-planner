@@ -6,6 +6,16 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Acrescentado (juntar a esta base)
+
+- **Juntar a esta base**, no painel das bases com uma base seleccionada:
+  todos os blocos que ela vê inteiros dentro do alcance visual (pior caso,
+  com o raio da zona) passam a ela, mesmo os de outras bases; as bases que
+  ficam sem voos saem. O painel diz quantos juntou e quantos ficam de fora,
+  com a distância do mais perto. Para descolar de um alto (um vértice
+  geodésico) sem mudar de base. O rádio e a vista continuam no preflight;
+  Ctrl+Z desfaz.
+
 ### Corrigido (perfil de elevação com bases)
 
 - Em «Tudo», com várias bases, o perfil ligava o fim de cada voo ao início

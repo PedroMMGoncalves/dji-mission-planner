@@ -59,6 +59,23 @@ export default {
   },
   'bases.label': { pt: 'Base {label}', en: 'Base {label}' },
   'bases.noFlights': { pt: 'sem voos', en: 'no flights' },
+  'bases.gather': { pt: 'Juntar a esta base', en: 'Gather to this base' },
+  'bases.gatherTitle': {
+    pt: 'Passa para a base {label} todos os blocos que ela vê inteiros dentro do alcance visual ({m} m no pior caso), mesmo os de outras bases: menos deslocações. As bases que ficarem sem voos saem. O rádio e a vista continuam no preflight. Ctrl+Z desfaz.',
+    en: 'Moves to base {label} every block it sees entirely within visual range ({m} m worst case), even those of other bases: fewer moves. Bases left without flights are removed. Radio and sight stay in the preflight. Ctrl+Z undoes.',
+  },
+  'bases.gathered': {
+    pt: 'Base {label}: {n} voo(s) juntos ({kept} já eram dela).',
+    en: 'Base {label}: {n} flight(s) gathered ({kept} were already its own).',
+  },
+  'bases.gatheredFar': {
+    pt: '{n} bloco(s) ficam de fora: passam os {m} m de alcance visual (o mais perto a {near} m no pior caso, com o raio da zona).',
+    en: '{n} block(s) left out: beyond the {m} m visual range (the nearest at {near} m worst case, zone radius included).',
+  },
+  'bases.gatheredRemoved': {
+    pt: 'Bases retiradas, sem voos: {list}.',
+    en: 'Bases removed, left without flights: {list}.',
+  },
   'bases.flights': { pt: 'voos {list}', en: 'flights {list}' },
   'bases.zone': { pt: 'zona {r} m', en: 'zone {r} m' },
   'bases.zoneReduced': {
