@@ -3114,6 +3114,64 @@ await scenario('accoes-seguranca-kmz', async () => {
 })
 
 /* ---- tablet: cartões e gaveta por cima do mapa -------------------------- */
+await scenario('painel-estatisticas', async () => {
+  // três grupos (qualidade, voo, operação); a operação diz voos, baterias e
+  // o voo mais longo contra o tempo útil, com cor nos limites; e o painel é
+  // o do separador aberto (antes a órbita mostrava os números da área)
+  const { page, errors } = await openMission({ area: fx.rect })
+  const panel = page.getByTestId('stats-panel')
+  await page.getByTestId('stats-flights').waitFor({ timeout: 30000 })
+  const txt = await panel.innerText()
+  check(
+    'estatísticas: três grupos, qualidade, voo e operação',
+    /Qualidade/i.test(txt) && /\bVoo\b/i.test(txt) && /Operação/i.test(txt),
+    txt.replace(/\s+/g, ' ').slice(0, 160),
+  )
+  const flights = async () =>
+    (await page.getByTestId('stats-flights').locator('[data-tone]').innerText()).trim()
+  const longest = page.getByTestId('stats-longest').locator('[data-tone]')
+  check(
+    'estatísticas: sem divisão, um voo comparado com o tempo útil',
+    /\b1$/.test(await flights()) &&
+      /^\d+:\d\d(:\d\d)? \/ \d+:\d\d$/.test((await longest.innerText()).trim()),
+    `${await flights()} · ${await longest.innerText()}`,
+  )
+  // missão de um voo, muito acima do tempo útil: vermelho
+  check(
+    'estatísticas: o voo único passa o tempo útil e fica a vermelho',
+    (await longest.getAttribute('data-tone')) === 'over',
+    await longest.innerText(),
+  )
+  // divisão por bateria: os voos do painel são os blocos, e cabem
+  await page.getByRole('button', { name: 'Bateria', exact: true }).click()
+  await page.waitForTimeout(800)
+  const nBlocks = await page.getByTestId('block-row').count()
+  check(
+    'estatísticas: com divisão, os voos são os blocos e o total aparece',
+    nBlocks > 1 &&
+      new RegExp(`^${nBlocks}\\b`).test(await flights()) &&
+      (await page.getByTestId('stats-total').count()) === 1,
+    `${nBlocks} blocos · ${await flights()}`,
+  )
+  check(
+    'estatísticas: blocos dimensionados pela bateria não ficam a vermelho',
+    (await longest.getAttribute('data-tone')) !== 'over',
+    await longest.innerText(),
+  )
+  // órbita sem POI: nada da área no painel
+  await modo(page, /^Órbita$|^Orbit$/)
+  await page.waitForTimeout(500)
+  const orbitTxt = await panel.innerText()
+  check(
+    'estatísticas: no separador da órbita não aparecem os números da área',
+    !/\bha\b/.test(orbitTxt) && (await page.getByTestId('stats-flights').count()) === 0,
+    orbitTxt.replace(/\s+/g, ' ').slice(0, 160),
+  )
+  check('estatísticas: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 await scenario('tablet-cartoes-gaveta', async () => {
   const { page, errors } = await openMission({
     area: fx.rect,

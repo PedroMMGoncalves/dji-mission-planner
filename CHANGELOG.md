@@ -6,6 +6,24 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Alterado (painel de estatísticas)
+
+- **Três grupos:** qualidade (GSD, pegada, espaçamento, intervalo de
+  disparo), voo (linhas, waypoints, distância, fotos, tempo) e operação.
+- **Operação, nova:** voos e bases; baterias necessárias contra os
+  conjuntos da equipa; o voo mais longo, com o trânsito desde a sua base,
+  contra o tempo útil de uma bateria («A-2 23:20 / 25:00»); tempo total de
+  voo com os trânsitos.
+- **Cor nos limites:** voo mais longo a âmbar acima de 90 % do tempo útil e
+  a vermelho acima de 100 %; menos conjuntos do que voos e intervalo de
+  disparo abaixo do mínimo da câmara a âmbar. O preflight tem os avisos
+  completos; o painel só os põe à vista.
+- **Corrigido:** nos separadores corredor, fachada e órbita o painel
+  mostrava os números da área; passa a mostrar os do separador aberto (o
+  GSD da fachada e da órbita vem do plano delas, e a pegada, o espaçamento
+  e o intervalo das grelhas não se aplicam). «Base → área» só aparece com
+  uma base.
+
 ### Alterado (painel da área em cartões)
 
 - **O painel da área passou a uma coluna de sete cartões numerados pela

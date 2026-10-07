@@ -180,7 +180,35 @@ const BASE_DICT = {
   'stats.time': { pt: 'Tempo estimado', en: 'Estimated time' },
   'stats.baseToArea': { pt: 'Base → área', en: 'Base → area' },
   'stats.insideArea': { pt: 'dentro da área', en: 'inside the area' },
-  'stats.blocks': { pt: 'Blocos de voo', en: 'Flight blocks' },
+  'stats.groupQuality': { pt: 'Qualidade', en: 'Quality' },
+  'stats.groupFlight': { pt: 'Voo', en: 'Flight' },
+  'stats.groupOps': { pt: 'Operação', en: 'Operation' },
+  'stats.passes': { pt: 'Nº de passagens', en: 'No. of passes' },
+  'stats.levels': { pt: 'Nº de níveis', en: 'No. of levels' },
+  'stats.intervalWarnHint': {
+    pt: 'Abaixo do intervalo mínimo da câmara a esta velocidade: ver o preflight.',
+    en: 'Below the camera’s minimum interval at this speed: see the preflight.',
+  },
+  'stats.flights': { pt: 'Voos', en: 'Flights' },
+  'stats.flightsBases': { pt: '{n} · {b} bases', en: '{n} · {b} bases' },
+  'stats.batteries': { pt: 'Baterias', en: 'Batteries' },
+  'stats.setsNeeded': { pt: '{n} conj.', en: '{n} sets' },
+  'stats.setsVs': { pt: '{n} de {s} conj.', en: '{n} of {s} sets' },
+  'stats.setsShortHint': {
+    pt: 'A missão pede mais voos do que os conjuntos de baterias que a equipa tem.',
+    en: 'The mission needs more flights than the battery sets the team has.',
+  },
+  'stats.longest': { pt: 'Voo mais longo / útil', en: 'Longest flight / useful' },
+  'stats.vsBattery': { pt: 'Voo / tempo útil', en: 'Flight / useful time' },
+  'stats.longestHint': {
+    pt: 'Com o trânsito desde a base, contra o tempo útil de uma bateria. Âmbar acima de 90 %, vermelho acima de 100 %.',
+    en: 'Including transit from the base, against the useful time of one battery. Amber above 90 %, red above 100 %.',
+  },
+  'stats.totalTime': { pt: 'Tempo total de voo', en: 'Total flight time' },
+  'stats.totalTimeHint': {
+    pt: 'Soma de todos os voos, com os trânsitos; sem trocas de bateria nem mudanças de base.',
+    en: 'Sum of all flights, with transits; without battery swaps or base moves.',
+  },
 
   /* ---- Vista 3D ---- */
   'map3d.title': { pt: 'Vista 3D', en: '3D View' },

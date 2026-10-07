@@ -38,6 +38,7 @@ import {
   saveEquipment,
   vlosFor,
 } from './mission/equipment.js'
+import { opsSummary } from './mission/opsSummary.js'
 import {
   addBase,
   assignBlockBase,
@@ -1064,6 +1065,68 @@ function AppInner({ lang, setLang }) {
     circularBlocks?.length > 1
       ? flightsVsSets(equipment, drone.aircraftId, missionBatteryType.id, circularBlocks.length)
       : null
+
+  // Painel de estatísticas: os números do separador aberto (antes o
+  // corredor, a fachada e a órbita mostravam os da área) e o resumo
+  // operacional — voos, bases, baterias, voo mais longo e tempo total
+  const modeStats = useMemo(() => {
+    const ok = (p) => (p && !p.error ? (p.stats ?? null) : null)
+    if (missionMode === 'circular') return ok(circularPlan)
+    if (missionMode === 'corridor') return ok(corridorPlan)
+    if (missionMode === 'face') return ok(facePlan)
+    if (missionMode === 'orbit') return ok(orbitPlan)
+    return planOk?.stats ?? null
+  }, [missionMode, circularPlan, corridorPlan, facePlan, orbitPlan, planOk])
+  const statsOps = useMemo(() => {
+    const transit = (d, v) => (d > 0 && v > 0 ? (2 * d) / v : 0)
+    const flightsOf = (n) =>
+      flightsVsSets(equipment, drone.aircraftId, missionBatteryType.id, Math.max(1, n))
+    if (missionMode === 'area') {
+      const n = blocks?.length ?? 0
+      return opsSummary({
+        blocks: n ? blocks : null,
+        byBlock: baseLayout?.byBlock ?? null,
+        singleTimeS: planOk?.stats?.flightTimeS ?? null,
+        singleTransitS: transit(areaBaseDistance, speed),
+        usefulMin: batteryMin,
+        bases: bases.length,
+        sets: flightsOf(n),
+      })
+    }
+    if (missionMode === 'circular') {
+      const n = circularBlocks?.length > 1 ? circularBlocks.length : 0
+      return opsSummary({
+        blocks: n ? circularBlocks.map((b, i) => ({ id: i + 1, timeS: b.timeS })) : null,
+        singleTimeS: modeStats?.flightTimeS ?? null,
+        singleTransitS: transit(circularBaseDistance, circularSpeed),
+        usefulMin: batteryMin,
+        bases: bases.length,
+        sets: flightsOf(n),
+      })
+    }
+    return opsSummary({
+      singleTimeS: modeStats?.flightTimeS ?? null,
+      usefulMin: batteryMin,
+      bases: bases.length,
+      sets: flightsOf(1),
+    })
+  }, [
+    missionMode,
+    blocks,
+    baseLayout,
+    planOk,
+    areaBaseDistance,
+    speed,
+    batteryMin,
+    bases.length,
+    circularBlocks,
+    modeStats,
+    circularBaseDistance,
+    circularSpeed,
+    equipment,
+    drone.aircraftId,
+    missionBatteryType.id,
+  ])
 
   const handleMapClick = useCallback(
     (lonlat) => {
@@ -2391,15 +2454,19 @@ function AppInner({ lang, setLang }) {
             interval={interval}
             triggerMode={params.triggerMode}
             speed={speed}
-            stats={
+            missionMode={missionMode}
+            stats={modeStats}
+            ops={statsOps}
+            shutterWarn={Boolean(
               missionMode === 'circular'
-                ? circularPlan && !circularPlan.error
-                  ? circularPlan.stats
-                  : null
-                : (planOk?.stats ?? null)
-            }
-            baseDistance={areaBaseDistance}
-            blockCount={blocks?.length ?? null}
+                ? circularTriggerWarn
+                : missionMode === 'corridor'
+                  ? corridorTriggerWarn
+                  : missionMode === 'area'
+                    ? triggerWarn
+                    : null,
+            )}
+            baseDistance={missionMode === 'area' && bases.length <= 1 ? areaBaseDistance : null}
           />
         </main>
       </div>
