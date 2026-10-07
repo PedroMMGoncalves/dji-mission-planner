@@ -3120,6 +3120,16 @@ await scenario('tablet-cartoes-gaveta', async () => {
     viewport: { width: 834, height: 1112 },
   })
   const w = 834
+  // o cabeçalho quebra em linhas em vez de empurrar a configuração, a ajuda
+  // e a língua para fora do ecrã do tablet
+  const scrollW = await page.evaluate(() => document.documentElement.scrollWidth)
+  check('tablet: a página não transborda para o lado', scrollW <= w, `${scrollW} px`)
+  const gear = await page.getByTestId('open-settings').boundingBox()
+  check(
+    'tablet: a configuração fica dentro do ecrã',
+    gear != null && gear.x + gear.width <= w,
+    JSON.stringify(gear),
+  )
   const vistos = []
   for (const c of CARTOES) {
     const card = page.getByTestId(`card-${c}`)

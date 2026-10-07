@@ -1931,7 +1931,7 @@ function AppInner({ lang, setLang }) {
 
   return (
     <div className="flex h-full flex-col bg-slate-950 text-slate-100">
-      <header className="flex items-center justify-between gap-4 border-b border-slate-800 bg-slate-950 px-4 py-2.5">
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-800 bg-slate-950 px-4 py-2.5">
         <div className="flex items-center gap-2.5">
           <IconDrone className="h-7 w-7 text-sky-400" />
           <div>
@@ -1941,10 +1941,11 @@ function AppInner({ lang, setLang }) {
                 v{import.meta.env.APP_VERSION}
               </span>
             </h1>
-            <p className="text-[11px] text-slate-500">{t('app.subtitle')}</p>
+            {/* em ecrãs estreitos (tablet no campo) o subtítulo dá lugar aos botões */}
+            <p className="hidden text-[11px] text-slate-500 xl:block">{t('app.subtitle')}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             onClick={() => setShow3d(true)}
             disabled={
@@ -1955,7 +1956,7 @@ function AppInner({ lang, setLang }) {
               )
             }
             title={terrain.status === 'ready' ? t('app.view3dReady') : t('app.view3dNotReady')}
-            className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconCube /> {t('app.view3d')}
           </button>
@@ -1963,14 +1964,14 @@ function AppInner({ lang, setLang }) {
             onClick={() => setShowReport(true)}
             disabled={!planOk}
             title={t('app.reportTitle')}
-            className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {t('app.report')}
           </button>
           <button
             onClick={() => setView('checklist')}
             title={t('app.checklistTitle')}
-            className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-amber-500 hover:text-amber-300"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-amber-500 hover:text-amber-300"
           >
             <IconCheck /> {t('app.checklist')}
           </button>
@@ -1978,7 +1979,7 @@ function AppInner({ lang, setLang }) {
             onClick={handleExportKML}
             disabled={!canExportKML}
             title={t('app.exportKmlTitle')}
-            className="flex items-center gap-1.5 rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('app.exportKml')}
           </button>
@@ -1994,26 +1995,26 @@ function AppInner({ lang, setLang }) {
             onClick={gated(modeExport)}
             disabled={!modePlanOk || exportBlocked}
             title={t('app.exportWpmlTitle')}
-            className="flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('app.exportWpml')}
           </button>
 
           {/* configuração, ajuda e língua encostados à direita */}
-          <div className="ml-3 flex items-center gap-2 border-l border-slate-800 pl-3">
+          <div className="flex items-center gap-2 border-l border-slate-800 pl-3">
             <button
               onClick={() => setShowSettings(true)}
               title={t('app.settingsTitle')}
               aria-label={t('app.settings')}
               data-testid="open-settings"
-              className="flex items-center gap-1.5 rounded border border-slate-700 px-2.5 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded border border-slate-700 px-2.5 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
             >
               <IconGear />
             </button>
             <button
               onClick={() => setShowHelp(true)}
               title={t('app.helpTitle')}
-              className="flex items-center gap-1.5 rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
             >
               ?
             </button>

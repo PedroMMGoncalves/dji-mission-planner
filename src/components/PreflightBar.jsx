@@ -33,7 +33,7 @@ export function PreflightPill({ items, open, onToggle }) {
       aria-expanded={open}
       title={t('preflight.pillTitle')}
       data-testid="preflight-pill"
-      className={`flex items-center gap-1.5 rounded border px-3 py-1.5 text-sm font-medium transition-colors ${tone}`}
+      className={`flex items-center gap-1.5 whitespace-nowrap rounded border px-3 py-1.5 text-sm font-medium transition-colors ${tone}`}
     >
       {c.block > 0 ? LEVEL_MARK.block : c.warn > 0 ? LEVEL_MARK.warn : '✓'} {t('preflight.title')}
       <span className="text-xs opacity-80">· {label}</span>
