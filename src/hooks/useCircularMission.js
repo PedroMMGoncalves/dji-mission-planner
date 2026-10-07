@@ -31,6 +31,8 @@ export function useCircularMission({
   speedRange,
   missionName,
   wpml,
+  // acções de segurança da missão (src/mission/safety.js)
+  safety = null,
   terrain,
   terrainFollow,
   basePoint,
@@ -200,8 +202,9 @@ export function useCircularMission({
         speed: circularSpeed,
         wpml,
         sensorType: sensor.type,
+        safety,
       }),
-    [missionName, circularPlanOk, tfOk, altitude, circularSpeed, wpml, sensor.type],
+    [missionName, circularPlanOk, tfOk, altitude, circularSpeed, wpml, sensor.type, safety],
   )
 
   // seguimento de terreno pedido e sem resultado: não sai nada com alturas planas

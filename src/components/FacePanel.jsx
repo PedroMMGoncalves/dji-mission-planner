@@ -1,4 +1,5 @@
 import { useT } from '../i18n.jsx'
+import { Card, CardColumn, SafetyCard } from './Cards.jsx'
 import { IconCheck, IconDownload, IconPolygon, IconTrash } from './Icons.jsx'
 
 /**
@@ -30,17 +31,6 @@ function NumberInput({ value, onChange, min, max, step = 1 }) {
   )
 }
 
-function Section({ title, children }) {
-  return (
-    <div className="border-b border-slate-800 px-4 py-4">
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-sky-400">
-        {title}
-      </h2>
-      {children}
-    </div>
-  )
-}
-
 export default function FacePanel({
   faceConfig,
   setFaceParam,
@@ -56,14 +46,17 @@ export default function FacePanel({
   onClearBaseline,
   onExport,
   exportBlocked = false,
+  // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
+  safety = null,
+  setSafety = () => {},
 }) {
   const t = useT()
   const stats = facePlan && !facePlan.error ? facePlan.stats : null
 
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-800 bg-slate-950 lg:w-96">
+    <CardColumn label={t('cards.panel')}>
       {/* Baseline (pé da face) */}
-      <Section title={t('fp.baseline.title')}>
+      <Card id="fachada-1" n={1} title={t('fp.baseline.title')}>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onStartDraw}
@@ -111,10 +104,10 @@ export default function FacePanel({
             ⚠ {t('fp.cameraRequired')}
           </p>
         )}
-      </Section>
+      </Card>
 
       {/* Parâmetros da face */}
-      <Section title={t('fp.params.title')}>
+      <Card id="fachada-2" n={2} title={t('fp.params.title')}>
         <Field label={t('fp.params.height')} suffix="m">
           <NumberInput
             value={faceConfig.heightM}
@@ -184,10 +177,12 @@ export default function FacePanel({
             onChange={(v) => setFaceParam('speedMS', Math.max(1, Math.min(10, v)))}
           />
         </Field>
-      </Section>
+      </Card>
 
       {/* Plano e avisos */}
-      <Section title={t('fp.plan.title')}>
+      <SafetyCard id="fachada-seguranca" n={3} safety={safety} onChange={setSafety} />
+
+      <Card id="fachada-4" n={4} title={t('fp.plan.title')}>
         {!faceConfig.baseline && (
           <p className="text-xs leading-relaxed text-slate-500">{t('fp.plan.noBaseline')}</p>
         )}
@@ -259,7 +254,7 @@ export default function FacePanel({
           <IconDownload /> {t('fp.export')}
         </button>
         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{t('fp.exportHint')}</p>
-      </Section>
-    </div>
+      </Card>
+    </CardColumn>
   )
 }

@@ -15,6 +15,8 @@ export function useFaceMission({
   missionMode,
   missionName,
   wpml,
+  // acções de segurança da missão (src/mission/safety.js)
+  safety = null,
   setMode,
   setDraftVertices,
   runExport,
@@ -96,6 +98,7 @@ export function useFaceMission({
           wpml,
           gimbalPitch: faceConfig.gimbalPitch,
           sensorType: sensor.type,
+          safety,
         }),
       ),
     )
@@ -106,6 +109,7 @@ export function useFaceMission({
     wpml,
     faceConfig.gimbalPitch,
     sensor.type,
+    safety,
     runExport,
   ])
 

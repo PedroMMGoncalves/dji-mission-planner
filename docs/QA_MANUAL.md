@@ -10,6 +10,11 @@ passagem rápida com o estado normal (migração de projectos antigos).
 Cada item: **acção → resultado esperado → ☐**. Qualquer desvio: abrir issue
 com screenshot e os passos.
 
+O painel da área é uma coluna de sete cartões numerados (1 Missão, 2 Área e
+relevo, 3 Parâmetros de voo, 4 Divisão em voos, 5 Bases e segurança, 6
+Extras, 7 Resumo e exportar); o que não está no cartão está na gaveta dele,
+em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta).
+
 ## 1. Área em U — rota côncava-segura (~2 min)
 
 - ☐ Desenhar um U (braços verticais largos, base em baixo; ~600×600 m) com a
@@ -25,7 +30,7 @@ com screenshot e os passos.
 ## 2. Dupla grelha + terrain follow (~2 min)
 
 - ☐ Área retangular ~500×300 m em terreno com relevo; preset
-  **Modelo 3D · Dupla grelha**; esperar a descarga automática do relevo;
+  **Modelo 3D · Dupla grelha** (cartão 1, **Mais opções ›**); esperar a descarga automática do relevo;
   activar **terrain follow**.
   **Esperado:** duas famílias de linhas perpendiculares; cartão GSD passa a
   **"GSD (centro do quadro)"** (gimbal −60°) com valor ~15% pior do que a
@@ -45,7 +50,7 @@ com screenshot e os passos.
 - ☐ Importar um GeoJSON/KML com **dois polígonos**.
   **Esperado:** usa-se o maior e aparece o aviso âmbar "1 polígono a mais…
   ignorado"; com um MDT local carregado, a nota do terreno diz **"Fonte: MDT
-  local <ficheiro>"** e não Terrarium.
+  local <ficheiro>"** (cartão 2) e não Terrarium.
 - ☐ Exportar WPML e abrir o KMZ (unzip) num editor.
   **Esperado:** `waylines.wpml` com `executeHeight` variável por waypoint e
   grupo de `gimbalRotate` a −60.
@@ -150,7 +155,7 @@ com screenshot e os passos.
 
 ## 9. Pontos de inspecção — ordem e persistência (~1.5 min)
 
-- ☐ Modo Área → marcar 4 pontos; renomear dois; arrastar o cartão do 4.º
+- ☐ Modo Área → cartão 6 **Extras** → **Mais opções ›** → marcar 4 pontos; renomear dois; arrastar o cartão do 4.º
   para a 2.ª posição; carregar em Sugerir ordem.
   **Esperado:** o arrasto reordena (números do mapa acompanham); a sugestão
   reordena por proximidade a partir da base.
@@ -160,8 +165,8 @@ com screenshot e os passos.
 
 ## 10. Disparo por waypoint (~1.5 min)
 
-- ☐ Perfil de câmara (M3E); área rectangular ~100 × 60 m, overshoot 10 m;
-  **Disparo por: Waypoint**.
+- ☐ Perfil de câmara (M3E); área rectangular ~100 × 60 m; no cartão 3,
+  **Mais opções ›**: overshoot 10 m e **Disparo por: Waypoint**.
   **Esperado:** a opção só existe com câmara (desaparece com o Mapper+); o
   mapa mostra waypoints intermédios em cada faixa, nenhum nos troços de
   overshoot; o cartão **Fotos** passa a contar waypoints com foto (sem o
@@ -171,7 +176,8 @@ com screenshot e os passos.
   (`reachPoint`), sem `multipleDistance`/`multipleTiming`; os extremos de
   overshoot não têm grupo de foto.
 - ☐ Activar **Seguir terreno** com o disparo por waypoint.
-  **Esperado:** erro vermelho na secção de terreno e botão **WPML** desactivado;
+  **Esperado:** erro vermelho no cartão 3, por baixo de **Seguir terreno**, e
+  botão **WPML** desactivado;
   voltar a **Distância** reactiva ambos.
 - ☐ Abrir um projecto gravado antes desta versão.
   **Esperado:** carrega em **Distância** (nada muda no plano nem na exportação).
@@ -184,6 +190,9 @@ tablet real):
 - ☐ O selector de modo e os cinco painéis (Área/Fachada/Órbita/Corredor/Circular) são usáveis
   sem sobreposições; os campos numéricos aceitam toque; as listas fazem
   scroll dentro do painel.
+- ☐ Abrir **Mais opções ›** de um cartão.
+  **Esperado:** a gaveta abre ao lado do painel, por cima do mapa, sem sair
+  do ecrã; os botões dos cartões têm 44 px de altura; o ✕ e o Escape fecham.
 - ☐ No modo inspecção, reordenar com as **setas** (o arrastar HTML5 não
   dispara em ecrã táctil — comportamento esperado).
 - ☐ A faixa de resumo do projecto (2+ planos) não tapa os controlos do
@@ -212,7 +221,7 @@ tablet real):
   Marcar **duas bases** (A e B) nos dois extremos e **Propor bases**.
   **Esperado:** cada bloco com uma base; voos numerados A-1, A-2, B-3...;
   na lista, a zona e «voo entre 0 e +X m acima do planeado» de cada base.
-- ☐ No painel das bases, **Voos da base B (ZIP)**.
+- ☐ No cartão 7 **Resumo e exportar**, **Voos da base B (ZIP)**.
   **Esperado:** `<missão>_area[-variantes]_base-B.zip` só com os voos de B,
   pela ordem de voo (`..._B-3.kmz`, `..._B-4.kmz`, com zeros a partir de 10
   voos); **Um voo (KMZ)** com B-3 dá `..._B-3.kmz`; **Todos os voos (ZIP)** e
@@ -235,7 +244,8 @@ tablet real):
 
 ## 14. Bacias de visão e rádio — verificação no campo (~2 min + campo)
 
-- ☐ Na missão com bases e blocos, **Bacias de visão → Mostrar no mapa**.
+- ☐ Na missão com bases e blocos, cartão 5 → **Mais opções ›** → **Bacias de
+  visão → Mostrar no mapa**.
   **Esperado:** quadrados laranja onde o drone fica atrás do relevo visto do
   ponto da base, amarelos tracejados onde se vê mas a zona de Fresnel do
   rádio não está livre; a percentagem visível em cada bloco; no painel e na
@@ -255,6 +265,30 @@ tablet real):
   diz que se vê mas há árvores ou escombreiras que o MDT não tem, a vista e
   o rádio são piores do que o mapa (corrigir com a vegetação ou o MDS da
   equipa, e registar a diferença nas notas).
+
+## 15. Cartões, gavetas e acções de segurança (~2 min)
+
+- ☐ Modo Área: percorrer os sete cartões e abrir a gaveta de cada um.
+  **Esperado:** só uma gaveta aberta de cada vez; o foco entra na gaveta e
+  volta a **Mais opções ›** ao fechar (✕ ou Escape); um valor mudado numa
+  gaveta fica depois de a fechar e reabrir.
+- ☐ Cartão 5: **No fim da missão: Aterrar no local**; **Perda de sinal:
+  Interromper a missão** com **Pairar**. Exportar o KMZ.
+  **Esperado:** em `waylines.wpml` e `template.kml`,
+  `<wpml:finishAction>autoLand`, `<wpml:exitOnRCLost>executeLostAction` e
+  `<wpml:executeRCLostAction>hover`; com **Continuar a missão até ao fim** a
+  acção ao interromper fica desligada e o KMZ leva `goContinue`.
+- ☐ Mudar para Corredor, Circular, Fachada e Órbita.
+  **Esperado:** o cartão **Acções de segurança** com a mesma escolha; o KMZ
+  de cada modo leva-a.
+- ☐ **Checklist de campo**; guardar e reabrir o projecto; abrir um projecto
+  anterior.
+  **Esperado:** a checklist diz as acções escritas no KMZ; o projecto
+  guarda-as; um projecto anterior abre com **Regressar à base (RTH)** e
+  **Interromper a missão → Regressar à base (RTH)**.
+- ☐ **No campo**, abrir a rota no DJI Pilot 2.
+  **Esperado:** a acção de fim e a de perda de sinal da rota são as do
+  planeador.
 
 ---
 

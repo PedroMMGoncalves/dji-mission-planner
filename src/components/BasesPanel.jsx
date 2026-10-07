@@ -25,6 +25,11 @@ import { viewCaveatText, viewTerrainText } from './BaseFieldSheets.jsx'
  * Com a área dividida em voos, a exportação por voo (`exportFlights`):
  * todos os voos, os de uma base («estou na base B») ou um só, atrás do
  * preflight, e o KML «Bases e blocos» para o campo.
+ *
+ * No painel em cartões da área, `part="list"` desenha só a lista (cartão
+ * «Bases e segurança»); as bacias de visão (ViewshedBox) vão para a gaveta
+ * do cartão e a exportação por voo (FlightExports) para o cartão «Resumo e
+ * exportar».
  */
 export default function BasesPanel({
   rows,
@@ -46,8 +51,11 @@ export default function BasesPanel({
   showClickMode = true,
   exportFlights = null,
   viewshed = null,
+  // 'all': tudo; 'list': sem as bacias de visão nem a exportação por voo
+  part = 'all',
 }) {
   const t = useT()
+  const all = part === 'all'
   return (
     <div
       data-testid="bases-panel"
@@ -183,9 +191,9 @@ export default function BasesPanel({
         ))}
       </ul>
 
-      {viewshed && rows.length > 0 && hasBlocks && <ViewshedBox {...viewshed} />}
+      {all && viewshed && rows.length > 0 && hasBlocks && <ViewshedBox {...viewshed} />}
 
-      {exportFlights && exportFlights.files.length > 1 && (
+      {all && exportFlights && exportFlights.files.length > 1 && (
         <FlightExports {...exportFlights} rows={rows} />
       )}
     </div>
@@ -197,7 +205,15 @@ export default function BasesPanel({
  * base, «Um voo (KMZ)» com a escolha do voo, e o KML de campo. Os nomes
  * vêm de flightFiles (os mesmos que o ficheiro leva).
  */
-function FlightExports({ files, baseName, rows, canExport, blocked, onExport, onExportKml }) {
+export function FlightExports({
+  files,
+  baseName,
+  rows,
+  canExport,
+  blocked,
+  onExport,
+  onExportKml,
+}) {
   const t = useT()
   const { bases } = exportChoices(files, rows)
   const [picked, setPicked] = useState(null)
@@ -302,7 +318,14 @@ function FlightExports({ files, baseName, rows, canExport, blocked, onExport, on
  * usado e a ressalva — um MDT não tem árvores, edifícios nem escombreiras,
  * e a vista é a do ponto da base, não de toda a zona.
  */
-function ViewshedBox({ terrain, running, layerOn, onLayer, obstacleM = 0, onObstacle = null }) {
+export function ViewshedBox({
+  terrain,
+  running,
+  layerOn,
+  onLayer,
+  obstacleM = 0,
+  onObstacle = null,
+}) {
   const t = useT()
   // rascunho do campo enquanto se escreve
   const [draft, setDraft] = useState(null)

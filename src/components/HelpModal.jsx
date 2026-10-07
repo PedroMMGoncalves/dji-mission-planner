@@ -45,6 +45,21 @@ function InstrucoesPt() {
         </Li>
       </ol>
 
+      <H>Painel em cartões</H>
+      <p>
+        No modo Área o painel é uma coluna de sete cartões numerados pela ordem do trabalho:{' '}
+        <strong>1 Missão</strong> (nome, projecto, drone, sensor, RTK),{' '}
+        <strong>2 Área e relevo</strong>, <strong>3 Parâmetros de voo</strong>,{' '}
+        <strong>4 Divisão em voos</strong>, <strong>5 Bases e segurança</strong>,{' '}
+        <strong>6 Extras</strong> (GCPs e pontos de inspecção) e{' '}
+        <strong>7 Resumo e exportar</strong>. Cada cartão mostra o essencial; o resto abre em{' '}
+        <strong>Mais opções ›</strong>, uma gaveta ao lado do painel, por cima do mapa (só uma de
+        cada vez; fecha no ✕ ou com <Kbd>Esc</Kbd>). Ex.: preset de missão e sensor próprio (1);
+        grelha de réplicas, datum e sugestões de encosta (2); espaçamento manual, disparo, gimbal,
+        overshoot, expansão, dupla grelha (3); orientação do mosaico e células (4); bacias de visão
+        (5); GCPs e pontos de inspecção (6). Os outros modos usam o mesmo aspecto.
+      </p>
+
       <H>Tipos de missão</H>
       <ul className="list-none">
         <Li>
@@ -177,7 +192,7 @@ function InstrucoesPt() {
           ~420 m», ou «sinal de rádio em risco»). Um MDT e o relevo global não têm árvores,
           edifícios nem escombreiras: some-os em «Vegetação e obstáculos» (por missão, a mais de 30
           m da base) ou importe o MDS da equipa e marque «Este ficheiro é: MDS». A camada liga-se no
-          painel das bases ou no controlo de camadas do mapa e fica lembrada neste aparelho.
+          cartão 5 (Mais opções) ou no controlo de camadas do mapa e fica lembrada neste aparelho.
         </Li>
         <Li>
           <strong>Configuração</strong> (roda dentada no cabeçalho) — por aeronave, o alcance visual
@@ -233,11 +248,21 @@ function InstrucoesPt() {
           (missao_area-tf_A-1.kmz, que é o que o Pilot 2 mostra), pela ordem de voo.
         </Li>
         <Li>
-          <strong>Exportar voos</strong> (painel das bases) — no campo, base a base: «Todos os voos
-          (ZIP)», «Voos da base B (ZIP)» (só os dessa base, …_base-B.zip) ou «Um voo (KMZ)». A
-          checklist de campo e o relatório trazem a ficha de cada base (coordenadas com ligação para
-          os mapas, zona, cota, voos com os ficheiros, baterias); «Bases e blocos (KML)» leva as
-          bases, as zonas e os blocos com o rótulo do voo para o Google Earth ou o telemóvel.
+          <strong>Exportar voos</strong> (cartão 7, Resumo e exportar) — no campo, base a base:
+          «Todos os voos (ZIP)», «Voos da base B (ZIP)» (só os dessa base, …_base-B.zip) ou «Um voo
+          (KMZ)». A checklist de campo e o relatório trazem a ficha de cada base (coordenadas com
+          ligação para os mapas, zona, cota, voos com os ficheiros, baterias); «Bases e blocos
+          (KML)» leva as bases, as zonas e os blocos com o rótulo do voo para o Google Earth ou o
+          telemóvel.
+        </Li>
+        <Li>
+          <strong>Acções de segurança</strong> (cartão 5 da área, e um cartão próprio nos outros
+          modos; as mesmas em todos) — <strong>No fim da missão</strong>: regressar à base (RTH, por
+          omissão), pairar no último ponto, aterrar no local ou voltar ao primeiro waypoint.{' '}
+          <strong>Perda de sinal</strong>: interromper a missão e regressar à base (por omissão),
+          aterrar ou pairar; ou continuar a missão até ao fim sem comando (e depois a acção de fim).
+          Vão no KMZ de todos os voos, ficam no projecto e a checklist de campo lembra-as; confirme
+          no Pilot 2 que a altura de regresso livra o relevo.
         </Li>
         <Li>
           <strong>Disparo por waypoint</strong> — em «Disparo por: Waypoint», cada passagem é
@@ -276,6 +301,21 @@ function InstrucoesEn() {
           <strong>Export</strong>: simple KML (area) or WPML/KMZ (full mission for DJI Pilot 2).
         </Li>
       </ol>
+
+      <H>Panel in cards</H>
+      <p>
+        In the Area mode the panel is a column of seven cards numbered in work order:{' '}
+        <strong>1 Mission</strong> (name, project, drone, sensor, RTK),{' '}
+        <strong>2 Area and terrain</strong>, <strong>3 Flight parameters</strong>,{' '}
+        <strong>4 Split into flights</strong>, <strong>5 Bases and safety</strong>,{' '}
+        <strong>6 Extras</strong> (GCPs and inspection points) and{' '}
+        <strong>7 Summary and export</strong>. Each card shows the essentials; the rest opens under{' '}
+        <strong>More options ›</strong>, a drawer next to the panel, over the map (one at a time; ✕
+        or <Kbd>Esc</Kbd> closes it). E.g. mission preset and custom sensor (1); replica grid, datum
+        and slope suggestions (2); manual spacing, trigger, gimbal, overshoot, buffer, double grid
+        (3); mosaic orientation and cells (4); viewsheds (5); GCPs and inspection points (6). The
+        other modes use the same look.
+      </p>
 
       <H>Mission types</H>
       <ul className="list-none">
@@ -406,8 +446,8 @@ function InstrucoesEn() {
           from the controller antenna) and the link may drop. Preflight warns per flight from 5 % of
           the block. A DTM and the global terrain have no trees, buildings or spoil heaps: add them
           in “Vegetation and obstacles” (per mission, beyond 30 m from the base) or import the
-          team’s DSM and mark “This file is: DSM”. The layer is switched in the bases panel or the
-          map’s layer control and remembered on this device.
+          team’s DSM and mark “This file is: DSM”. The layer is switched in card 5 (More options) or
+          the map’s layer control and remembered on this device.
         </Li>
         <Li>
           <strong>Settings</strong> (gear in the header) — per aircraft, the visual range and the
@@ -464,11 +504,21 @@ function InstrucoesEn() {
           after its flight (mission_area-tf_A-1.kmz, which is what Pilot 2 shows), in flight order.
         </Li>
         <Li>
-          <strong>Export flights</strong> (bases panel) — in the field, base by base: “All flights
-          (ZIP)”, “Base B flights (ZIP)” (only that base’s, …_base-B.zip) or “One flight (KMZ)”. The
-          field checklist and the report carry a sheet per base (coordinates with a maps link, zone,
-          reference elevation, flights with their files, batteries); “Bases and blocks (KML)” takes
-          the bases, zones and blocks labelled with their flight to Google Earth or a phone.
+          <strong>Export flights</strong> (card 7, Summary and export) — in the field, base by base:
+          “All flights (ZIP)”, “Base B flights (ZIP)” (only that base’s, …_base-B.zip) or “One
+          flight (KMZ)”. The field checklist and the report carry a sheet per base (coordinates with
+          a maps link, zone, reference elevation, flights with their files, batteries); “Bases and
+          blocks (KML)” takes the bases, zones and blocks labelled with their flight to Google Earth
+          or a phone.
+        </Li>
+        <Li>
+          <strong>Safety actions</strong> (card 5 of the area, and a card of their own in the other
+          modes; the same for all) — <strong>At the end of the mission</strong>: return to home
+          (RTH, the default), hover at the last point, land in place or go back to the first
+          waypoint. <strong>Signal loss</strong>: stop the mission and return home (the default),
+          land or hover; or continue the mission to the end without control (then the end action).
+          They go into the KMZ of every flight, are kept in the project and listed in the field
+          checklist; check in Pilot 2 that the return height clears the terrain.
         </Li>
         <Li>
           <strong>Per-waypoint trigger</strong> — with “Trigger by: Waypoint”, each pass is

@@ -88,6 +88,7 @@ import {
   uncertaintyIntervals,
 } from './mission/uncertainty.js'
 import { serializeProject } from './mission/project.js'
+import { DEFAULT_SAFETY } from './mission/safety.js'
 import { PreflightList, PreflightPill } from './components/PreflightBar.jsx'
 import {
   FlagGB,
@@ -167,6 +168,8 @@ function AppInner({ lang, setLang }) {
     }
   }, [view])
   const [missionName, setMissionName] = useState('missao-drone')
+  // acções de segurança (fim da missão, sinal perdido) de todos os modos
+  const [safety, setSafety] = useState(() => ({ ...DEFAULT_SAFETY }))
   // seleção de hardware: aeronave + payload (T1.1)
   const [drone, setDrone] = useState(() => ({ ...DEFAULT_SELECTION }))
   const [custom, setCustom] = useState(DEFAULT_CUSTOM_SENSOR)
@@ -501,7 +504,15 @@ function AppInner({ lang, setLang }) {
     orbitPreview,
     handleExportOrbitSingle,
     handleExportOrbitPerLevel,
-  } = useOrbitMission({ sensor, missionMode, missionName, wpml, setMode, runExport })
+  } = useOrbitMission({
+    sensor,
+    missionMode,
+    missionName,
+    wpml,
+    safety,
+    setMode,
+    runExport,
+  })
 
   /* ----------------------- Modo fachada (E1.1) ------------------------ */
   const {
@@ -519,6 +530,7 @@ function AppInner({ lang, setLang }) {
     missionMode,
     missionName,
     wpml,
+    safety,
     setMode,
     setDraftVertices,
     runExport,
@@ -546,6 +558,7 @@ function AppInner({ lang, setLang }) {
     sensorType: sensor.type,
     missionName,
     wpml,
+    safety,
     setMode,
     runExport,
   })
@@ -774,6 +787,7 @@ function AppInner({ lang, setLang }) {
     interval,
     missionName,
     wpml,
+    safety,
     sensorType: sensor.type,
     runExport,
   })
@@ -830,6 +844,7 @@ function AppInner({ lang, setLang }) {
     split,
     sensor,
     wpml,
+    safety,
     missionName,
     terrain,
     terrainFollow,
@@ -892,6 +907,7 @@ function AppInner({ lang, setLang }) {
     speedRange,
     missionName,
     wpml,
+    safety,
     terrain,
     terrainFollow,
     basePoint: circularBase?.point ?? null,
@@ -1590,6 +1606,8 @@ function AppInner({ lang, setLang }) {
       if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
       setObstacleM(n.obstacleHeightM ?? 0)
       setDemMemory(n.demFile ?? null)
+      // projectos anteriores às acções de segurança abrem com as omissões
+      setSafety(n.safety ?? { ...DEFAULT_SAFETY })
     },
     [
       setCorridorConfig,
@@ -1646,6 +1664,7 @@ function AppInner({ lang, setLang }) {
       terrainFollow,
       gcpConfig,
       obstacleHeightM: obstacleM,
+      safety,
       // com um ficheiro carregado grava-se o dele; sem ele (ainda por
       // reimportar) mantém-se o do projecto aberto
       demFile: projectDemFile,
@@ -1674,6 +1693,7 @@ function AppInner({ lang, setLang }) {
       terrainFollow,
       gcpConfig,
       obstacleM,
+      safety,
       projectDemFile,
     ],
   )
@@ -1903,6 +1923,7 @@ function AppInner({ lang, setLang }) {
         flightLabels={baseLayout?.byBlock ?? null}
         baseSheets={missionMode === 'area' ? fieldSheets : []}
         plannedGcps={gcps ?? []}
+        safety={safety}
         onBack={() => setView('planner')}
       />
     )
@@ -2041,6 +2062,8 @@ function AppInner({ lang, setLang }) {
           <div className="min-h-0 flex-1">
             {missionMode === 'face' && (
               <FacePanel
+                safety={safety}
+                setSafety={setSafety}
                 faceConfig={faceConfig}
                 setFaceParam={setFaceParam}
                 facePlan={facePlan}
@@ -2059,6 +2082,8 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'orbit' && (
               <OrbitPanel
+                safety={safety}
+                setSafety={setSafety}
                 orbitConfig={orbitConfig}
                 setOrbitParam={setOrbitParam}
                 orbitPlan={orbitPlan}
@@ -2075,6 +2100,8 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'corridor' && (
               <CorridorPanel
+                safety={safety}
+                setSafety={setSafety}
                 triggerWarn={corridorTriggerWarn}
                 corridorConfig={
                   corridorConfig.speedMS === corridorSpeed
@@ -2108,6 +2135,8 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'circular' && (
               <CircularPanel
+                safety={safety}
+                setSafety={setSafety}
                 circularConfig={
                   circularConfig.speedMS === circularSpeed
                     ? circularConfig
@@ -2244,6 +2273,18 @@ function AppInner({ lang, setLang }) {
                 baseLayout={baseLayout}
                 tileOrientation={tiles ? tileOrientation : null}
                 zoneRadiusM={equipment.zoneRadiusM}
+                safety={safety}
+                setSafety={setSafety}
+                // cartão «Resumo e exportar»: os números do painel de métricas
+                summary={{
+                  flights: blocks?.length || (planOk ? 1 : 0),
+                  timeS: planOk?.stats?.flightTimeS ?? null,
+                  areaHa: planOk?.stats?.areaHa ?? null,
+                }}
+                onExportMission={gated(handleExportKMZ)}
+                canExportMission={canExportKMZ && !exportBlocked}
+                onExportArea={handleExportKML}
+                canExportArea={canExportKML}
                 basesPanel={{
                   rows: baseRows,
                   selectedBaseId,

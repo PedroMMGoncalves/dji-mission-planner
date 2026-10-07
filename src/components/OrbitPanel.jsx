@@ -1,4 +1,5 @@
 import { useT } from '../i18n.jsx'
+import { Card, CardColumn, SafetyCard } from './Cards.jsx'
 import { IconDownload, IconTarget, IconTrash } from './Icons.jsx'
 
 /**
@@ -31,17 +32,6 @@ function NumberInput({ value, onChange, min, max, step = 1 }) {
   )
 }
 
-function Section({ title, children }) {
-  return (
-    <div className="border-b border-slate-800 px-4 py-4">
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-sky-400">
-        {title}
-      </h2>
-      {children}
-    </div>
-  )
-}
-
 export default function OrbitPanel({
   orbitConfig,
   setOrbitParam,
@@ -55,6 +45,9 @@ export default function OrbitPanel({
   onExportSingle,
   onExportPerLevel,
   exportBlocked = false,
+  // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
+  safety = null,
+  setSafety = () => {},
 }) {
   const t = useT()
   const stats = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
@@ -62,9 +55,9 @@ export default function OrbitPanel({
   const pitches = (orbitPlan?.perWaypoint ?? []).map((w) => w.gimbalPitch)
 
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-800 bg-slate-950 lg:w-96">
+    <CardColumn label={t('cards.panel')}>
       {/* POI */}
-      <Section title={t('op.poi.title')}>
+      <Card id="orbita-1" n={1} title={t('op.poi.title')}>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onStartPoi}
@@ -99,10 +92,10 @@ export default function OrbitPanel({
           />
         </Field>
         <p className="text-[11px] leading-relaxed text-slate-500">{t('op.poi.heightHint')}</p>
-      </Section>
+      </Card>
 
       {/* Captura: aneis com fotografia, ou espiral em video */}
-      <Section title={t('op.capture.title')}>
+      <Card id="orbita-2" n={2} title={t('op.capture.title')}>
         <div
           className="grid grid-cols-2 gap-2"
           role="radiogroup"
@@ -127,10 +120,10 @@ export default function OrbitPanel({
         <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
           {t(video ? 'op.capture.videoHint' : 'op.capture.photoHint')}
         </p>
-      </Section>
+      </Card>
 
       {/* Geometria */}
-      <Section title={t('op.geom.title')}>
+      <Card id="orbita-3" n={3} title={t('op.geom.title')}>
         <Field label={t('op.geom.radius')} suffix="m">
           <NumberInput
             value={orbitConfig.radiusM}
@@ -203,10 +196,12 @@ export default function OrbitPanel({
             ⚠ {t('op.lidarNote')}
           </p>
         )}
-      </Section>
+      </Card>
 
       {/* Plano e exportação */}
-      <Section title={t('op.plan.title')}>
+      <SafetyCard id="orbita-seguranca" n={4} safety={safety} onChange={setSafety} />
+
+      <Card id="orbita-5" n={5} title={t('op.plan.title')}>
         {!orbitConfig.poi && (
           <p className="text-xs leading-relaxed text-slate-500">{t('op.plan.noPoi')}</p>
         )}
@@ -273,7 +268,7 @@ export default function OrbitPanel({
         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
           {t(video ? 'op.exportHintVideo' : 'op.exportHint')}
         </p>
-      </Section>
-    </div>
+      </Card>
+    </CardColumn>
   )
 }

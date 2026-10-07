@@ -4,6 +4,7 @@ import missionModesDict from './i18n/dict.missionModes.js'
 import preflightDict from './i18n/dict.preflight.js'
 import settingsDict from './i18n/dict.settings.js'
 import basesDict from './i18n/dict.bases.js'
+import cardsDict from './i18n/dict.cards.js'
 
 /**
  * Internacionalização PT/EN.
@@ -209,6 +210,7 @@ const DICT = {
   ...preflightDict,
   ...settingsDict,
   ...basesDict,
+  ...cardsDict,
 }
 
 export default DICT

@@ -20,6 +20,8 @@ export function useInspection({
   sensorType,
   missionName,
   wpml,
+  // acções de segurança da missão (src/mission/safety.js)
+  safety = null,
   setMode,
   runExport,
 }) {
@@ -101,10 +103,21 @@ export function useInspection({
           wpml,
           gimbalPitch,
           sensorType,
+          safety,
         }),
       ),
     )
-  }, [inspectPoints, missionName, altitude, speed, wpml, gimbalPitch, sensorType, runExport])
+  }, [
+    inspectPoints,
+    missionName,
+    altitude,
+    speed,
+    wpml,
+    gimbalPitch,
+    sensorType,
+    safety,
+    runExport,
+  ])
 
   return {
     inspectPoints,

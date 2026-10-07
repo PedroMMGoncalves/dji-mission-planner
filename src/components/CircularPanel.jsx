@@ -1,4 +1,5 @@
 import { useT } from '../i18n.jsx'
+import { Card, CardColumn, SafetyCard } from './Cards.jsx'
 import { IconDownload, IconTrash } from './Icons.jsx'
 import BatterySetsNote from './BatterySetsNote.jsx'
 import { MAX_CIRCLES } from '../utils/circular.js'
@@ -30,17 +31,6 @@ function NumberInput({ value, onChange, min, max, step = 1 }) {
       step={step}
       onChange={(e) => onChange(Number(e.target.value))}
     />
-  )
-}
-
-function Section({ title, children }) {
-  return (
-    <div className="border-b border-slate-800 px-4 py-4">
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-sky-400">
-        {title}
-      </h2>
-      {children}
-    </div>
   )
 }
 
@@ -78,6 +68,9 @@ export default function CircularPanel({
   onExportSingle,
   onExportBlocks,
   exportBlocked = false,
+  // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
+  safety = null,
+  setSafety = () => {},
   circularTerrain = null,
   circularCovers = false,
   onRemove,
@@ -90,9 +83,9 @@ export default function CircularPanel({
   const axisGroundM = pitchAbs > 0 ? altitude / Math.tan((pitchAbs * Math.PI) / 180) : Infinity
 
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-800 bg-slate-950 lg:w-96">
+    <CardColumn label={t('cards.panel')}>
       {/* Área: o mesmo polígono do modo Área */}
-      <Section title={t('ci.area.title')}>
+      <Card id="circular-1" n={1} title={t('ci.area.title')}>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={drawing ? onFinishDraw : onStartDraw}
@@ -125,10 +118,10 @@ export default function CircularPanel({
               ? t('ci.area.shared')
               : t('ci.area.none')}
         </p>
-      </Section>
+      </Card>
 
       {/* Círculos */}
-      <Section title={t('ci.params.title')}>
+      <Card id="circular-2" n={2} title={t('ci.params.title')}>
         <Field label={t('ci.params.radius')} suffix="m">
           <NumberInput
             value={circularConfig.radiusM}
@@ -247,10 +240,12 @@ export default function CircularPanel({
             ⚠ {terrainErrorText(circularTerrain, t)}
           </p>
         )}
-      </Section>
+      </Card>
 
       {/* Plano e exportação */}
-      <Section title={t('ci.plan.title')}>
+      <SafetyCard id="circular-seguranca" n={3} safety={safety} onChange={setSafety} />
+
+      <Card id="circular-4" n={4} title={t('ci.plan.title')}>
         {errorKey && (
           <p className="mb-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
             ⚠ {t(errorKey, { n: circularPlan.count ?? '', max: MAX_CIRCLES })}
@@ -326,7 +321,7 @@ export default function CircularPanel({
           </button>
         )}
         <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{t('ci.removeHint')}</p>
-      </Section>
-    </div>
+      </Card>
+    </CardColumn>
   )
 }

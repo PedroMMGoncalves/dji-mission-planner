@@ -3,15 +3,27 @@
  * pontos de inspecção: funções puras que devolvem o objecto que
  * exportWPMLKmz / exportBlocksZip recebem. Viviam nos handlers do App.jsx;
  * aqui são testáveis sem browser. A área tem o seu módulo (areaExport.js),
- * porque junta terrain follow, blocos e grelha nadir.
+ * porque junta terrain follow, blocos e grelha nadir. Todos levam as acções
+ * de segurança escolhidas (`safety`, src/mission/safety.js).
  */
 import { buildExportName } from '../utils/exporters.js'
 import { passThroughFor, triggerRangesForLines } from '../utils/geo.js'
 import { inspectionToWaypoints } from '../utils/inspect.js'
+import { safetyParams } from './safety.js'
 
 /** Fachada: uma foto por waypoint, rumo fixo; a altitude global é a passagem mais alta. */
-export function faceExportParams({ missionName, plan, speed, wpml, gimbalPitch, sensorType }) {
+export function faceExportParams({
+  missionName,
+  plan,
+  speed,
+  wpml,
+  gimbalPitch,
+  sensorType,
+  safety = null,
+}) {
   return {
+    // acções de segurança (fim da missão, sinal perdido): src/mission/safety.js
+    ...safetyParams(safety),
     name: buildExportName(missionName, 'face', { part: `p1-${plan.stats.passCount}` }),
     waypoints: plan.waypoints,
     perWaypoint: plan.perWaypoint,
@@ -31,9 +43,11 @@ export function faceExportParams({ missionName, plan, speed, wpml, gimbalPitch, 
  * Em vídeo o nome leva a variante (`_orbit-video_n5`): o KMZ grava uma
  * espiral, não tira fotografias, e convém distingui-lo à vista.
  */
-export function orbitExportParams({ missionName, plan, speed, wpml, sensorType }) {
+export function orbitExportParams({ missionName, plan, speed, wpml, sensorType, safety = null }) {
   const video = plan.stats.capture === 'video'
   return {
+    // acções de segurança (fim da missão, sinal perdido): src/mission/safety.js
+    ...safetyParams(safety),
     name: buildExportName(missionName, 'orbit', {
       variant: video ? 'video' : null,
       part: `n${plan.stats.levelCount}`,
@@ -67,8 +81,11 @@ export function circularExportParams({
   wpml,
   sensorType,
   durationS = null,
+  safety = null,
 }) {
   return {
+    // acções de segurança (fim da missão, sinal perdido): src/mission/safety.js
+    ...safetyParams(safety),
     name: buildExportName(missionName, 'circular', {
       variant: terrainOk ? 'tf' : null,
       part: `n${plan.stats.circleCount}`,
@@ -105,6 +122,7 @@ export function corridorExportParams({
   waypointStops = 'corners',
   // resultado de planCorridorTerrain; null = alturas planas, como sempre
   terrainResult = null,
+  safety = null,
 }) {
   const perWaypointPhotos = photoMode === 'waypoint'
   const tf = terrainResult && !terrainResult.error ? terrainResult : null
@@ -113,6 +131,8 @@ export function corridorExportParams({
   const perLink = tf ? tf.perLink : null
   const perWaypoint = tf ? tf.perWaypoint : plan.perWaypoint
   return {
+    // acções de segurança (fim da missão, sinal perdido): src/mission/safety.js
+    ...safetyParams(safety),
     name: buildExportName(missionName, 'corridor', {
       variant: tf ? 'tf' : null,
       part: `n${plan.stats.passCount}`,
@@ -146,9 +166,12 @@ export function inspectionExportParams({
   wpml,
   gimbalPitch,
   sensorType,
+  safety = null,
 }) {
   const { waypoints, perWaypoint } = inspectionToWaypoints(points)
   return {
+    // acções de segurança (fim da missão, sinal perdido): src/mission/safety.js
+    ...safetyParams(safety),
     name: buildExportName(missionName, 'inspect', { part: `n${points.length}` }),
     waypoints,
     perWaypoint,

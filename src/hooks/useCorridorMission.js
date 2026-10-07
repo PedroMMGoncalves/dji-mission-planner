@@ -143,6 +143,8 @@ export function useCorridorRoute({
   interval,
   missionName,
   wpml,
+  // acções de segurança da missão (src/mission/safety.js)
+  safety = null,
   sensorType,
   runExport,
 }) {
@@ -231,6 +233,7 @@ export function useCorridorRoute({
           sensorType,
           waypointStops: corridorConfig.waypointStops,
           terrainResult: tfOk,
+          safety,
         }),
       ),
     )
@@ -246,6 +249,7 @@ export function useCorridorRoute({
     wpml,
     interval,
     sensorType,
+    safety,
     runExport,
   ])
 

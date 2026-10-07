@@ -9,7 +9,16 @@ import { headingTicks } from '../utils/preview.js'
 import { orbitExportParams } from '../mission/exportParams.js'
 import { exportBlocksZip, exportWPMLKmz } from '../utils/exporters.js'
 
-export function useOrbitMission({ sensor, missionMode, missionName, wpml, setMode, runExport }) {
+export function useOrbitMission({
+  sensor,
+  missionMode,
+  missionName,
+  wpml,
+  // acções de segurança da missão (src/mission/safety.js)
+  safety = null,
+  setMode,
+  runExport,
+}) {
   const [orbitConfig, setOrbitConfig] = useState(() => ({ ...DEFAULT_ORBIT_CONFIG }))
 
   const setOrbitParam = useCallback((key, value) => {
@@ -85,8 +94,9 @@ export function useOrbitMission({ sensor, missionMode, missionName, wpml, setMod
         speed: orbitConfig.speedMS,
         wpml,
         sensorType: sensor.type,
+        safety,
       }),
-    [orbitPlan, missionName, orbitConfig.speedMS, wpml, sensor.type],
+    [orbitPlan, missionName, orbitConfig.speedMS, wpml, sensor.type, safety],
   )
 
   const handleExportOrbitSingle = useCallback(() => {

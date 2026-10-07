@@ -72,6 +72,8 @@ export function useAreaMission({
   split,
   sensor,
   wpml,
+  // acções de segurança da missão (src/mission/safety.js)
+  safety = null,
   missionName,
   terrain,
   terrainFollow,
@@ -398,6 +400,7 @@ export function useAreaMission({
         tieLine: params.tieLine,
         waypointStops: params.waypointStops,
         layout: baseLayout,
+        safety,
       })
       if (!exportBlocks) {
         runExport(() => exportWPMLKmz(exportParams))
@@ -433,6 +436,7 @@ export function useAreaMission({
       interval,
       runExport,
       baseLayout,
+      safety,
     ],
   )
 

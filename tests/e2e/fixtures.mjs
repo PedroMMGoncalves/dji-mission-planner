@@ -169,7 +169,24 @@ export async function makeFixtures(dir) {
       return mesasGround(x, y)
     },
   })
+  // encosta uniforme (~14°, a subir para este): a sugestão de declive do
+  // painel só aparece a partir de 8°
+  const steepTif = makeFloatTiff({
+    width,
+    height,
+    originX,
+    originY,
+    scale,
+    nodata: -9999,
+    geoKeys: { GTModelTypeGeoKey: 2, GeographicTypeGeoKey: 4326 },
+    valueAt: (px, py) => {
+      const [x] = toM(originX + (px + 0.5) * scale, originY - (py + 0.5) * scale)
+      return 150 + 0.25 * x
+    },
+  })
   const paths = {
+    demSteep: join(dir, 'encosta.tif'),
+    projected: join(dir, 'projectada.geojson'),
     demMesas: join(dir, 'mesas.tif'),
     demRidge: join(dir, 'cumeada.tif'),
     hill: join(dir, 'cabeco.geojson'),
@@ -180,6 +197,19 @@ export async function makeFixtures(dir) {
     multi: join(dir, 'multi.geojson'),
   }
   writeFileSync(paths.dem, Buffer.from(await tif.arrayBuffer()))
+  writeFileSync(paths.demSteep, Buffer.from(await steepTif.arrayBuffer()))
+  // coordenadas em metros (PT-TM06) sem CRS declarado: a importação pergunta o sistema
+  writeFileSync(
+    paths.projected,
+    feature([
+      closed([
+        [-87000, -105000],
+        [-86500, -105000],
+        [-86500, -104600],
+        [-87000, -104600],
+      ]),
+    ]),
+  )
   writeFileSync(paths.demRidge, Buffer.from(await ridgeTif.arrayBuffer()))
   writeFileSync(paths.demMesas, Buffer.from(await mesasTif.arrayBuffer()))
   writeFileSync(paths.hill, feature([hillRing]))

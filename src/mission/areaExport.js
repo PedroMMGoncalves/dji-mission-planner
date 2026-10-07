@@ -6,6 +6,7 @@
  */
 import { passThroughFor, stripRouteStats, triggerRangesForLines } from '../utils/geo.js'
 import { areaExportName, flightFiles } from './flightFiles.js'
+import { safetyParams } from './safety.js'
 
 /** Copia `pw` com o gimbal a −90° no waypoint `at` (fundindo a entrada existente). */
 export function withNadirPitch(pw, at) {
@@ -59,6 +60,8 @@ export function buildAreaExport({
   // 'corners' | 'all': paragem só nos cantos das faixas, ou em todos
   waypointStops = 'corners',
   layout = null,
+  // acções de segurança (fim da missão, sinal perdido): src/mission/safety.js
+  safety = null,
 }) {
   const terrainOk = Boolean(terrainResult && !terrainResult.error)
   // waypoints por faixa: os do plano (densificado) ou 2 por faixa
@@ -79,8 +82,11 @@ export function buildAreaExport({
   const routePerLink = terrainOk ? (terrainResult.perLink ?? null) : null
   // E3.1: tipo e variantes codificados no nome do ficheiro
   const name = areaExportName({ missionName, crosshatch, includeNadir, tieLine, terrainOk })
+  /** @type {Record<string, any>} */
   const params = {
     name,
+    // os blocos herdam-nas (blockExportParams)
+    ...safetyParams(safety),
     waypoints: routeWps,
     altitude,
     speed,

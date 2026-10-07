@@ -1,4 +1,5 @@
 import { useT } from '../i18n.jsx'
+import { Card, CardColumn, SafetyCard } from './Cards.jsx'
 import { useRef } from 'react'
 import {
   IconChart,
@@ -36,17 +37,6 @@ function NumberInput({ value, onChange, min, max, step = 1 }) {
       step={step}
       onChange={(e) => onChange(Number(e.target.value))}
     />
-  )
-}
-
-function Section({ title, children }) {
-  return (
-    <div className="border-b border-slate-800 px-4 py-4">
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-widest text-sky-400">
-        {title}
-      </h2>
-      {children}
-    </div>
   )
 }
 
@@ -89,6 +79,9 @@ export default function CorridorPanel({
   draftCount,
   onExport,
   exportBlocked = false,
+  // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
+  safety = null,
+  setSafety = () => {},
   // relevo e seguimento de terreno (partilhados com a área)
   terrain,
   corridorCovers,
@@ -122,8 +115,8 @@ export default function CorridorPanel({
   const droppedPasses = stats?.droppedPasses ?? 0
 
   return (
-    <div className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-r border-slate-800 bg-slate-950 lg:w-96">
-      <Section title={t('co.axis.title')}>
+    <CardColumn label={t('cards.panel')}>
+      <Card id="corredor-1" n={1} title={t('co.axis.title')}>
         {isLidar && (
           <p className="mb-2 rounded border border-slate-700 bg-slate-900 p-2 text-xs text-slate-400">
             {t('co.lidarNote')}
@@ -161,9 +154,9 @@ export default function CorridorPanel({
               ? t('co.axis.hint', { n: axis.length })
               : t('co.axis.none')}
         </p>
-      </Section>
+      </Card>
 
-      <Section title={t('co.params.title')}>
+      <Card id="corredor-2" n={2} title={t('co.params.title')}>
         <Field label={t('co.params.buffer')} suffix="m">
           <NumberInput
             value={corridorConfig.bufferM}
@@ -241,10 +234,10 @@ export default function CorridorPanel({
           ))}
         </div>
         <p className="mt-2 text-xs text-slate-500">{t('co.params.stopsHint')}</p>
-      </Section>
+      </Card>
 
       {/* Relevo: seguimento de terreno por passagem */}
-      <Section title={t('co.terrain.title')}>
+      <Card id="corredor-3" n={3} title={t('co.terrain.title')}>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onLoadTerrain}
@@ -373,9 +366,11 @@ export default function CorridorPanel({
         >
           <IconChart /> {t('cp.terrain.profile')}
         </button>
-      </Section>
+      </Card>
 
-      <Section title={t('co.plan.title')}>
+      <SafetyCard id="corredor-seguranca" n={4} safety={safety} onChange={setSafety} />
+
+      <Card id="corredor-5" n={5} title={t('co.plan.title')}>
         {errorKey && (
           <p className="mb-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
             ⚠ {t(errorKey)}
@@ -426,7 +421,7 @@ export default function CorridorPanel({
             </button>
           </div>
         )}
-      </Section>
-    </div>
+      </Card>
+    </CardColumn>
   )
 }

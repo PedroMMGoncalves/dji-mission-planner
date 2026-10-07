@@ -6,6 +6,40 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Alterado (painel da área em cartões)
+
+- **O painel da área passou a uma coluna de sete cartões numerados pela
+  ordem do trabalho**: 1 Missão, 2 Área e relevo, 3 Parâmetros de voo, 4
+  Divisão em voos, 5 Bases e segurança, 6 Extras, 7 Resumo e exportar. Cada
+  cartão mostra o essencial; o resto abre em **Mais opções ›**, uma gaveta ao
+  lado do painel, por cima do mapa (num tablet também): uma de cada vez, fecha
+  no ✕ e com Escape, o foco entra nela e volta ao botão. Nas gavetas: preset
+  de missão, sensor próprio, FOV de trabalho e enums WPML (1); grelha de
+  réplicas, datum, sugestões de encosta e reimportar o MDT ou voltar ao
+  relevo global (2); espaçamento manual, disparo e paragens, gimbal,
+  overshoot, expansão, dupla grelha, passagem nadir e fiada de amarração
+  (3); orientação do mosaico, lado máximo, área por bloco, anular/reactivar
+  células e as contagens (4); bacias de visão e vegetação (5); GCPs e pontos
+  de inspecção (6). A exportação por voo e por base e o KML «Bases e blocos»
+  passaram para o cartão 7, com os números da missão (voos, tempo, voos
+  contra conjuntos de baterias, área) e os botões da missão (KMZ) e da área
+  (KML); o botão do cabeçalho fica como estava. Nenhum controlo saiu: um
+  cenário E2E novo (`inventario-painel-area`) verifica os 124 controlos do
+  painel antigo, no cartão ou na gaveta. Os outros modos (corredor,
+  circular, fachada, órbita) usam o mesmo aspecto de cartões.
+
+### Acrescentado (acções de segurança)
+
+- **No fim da missão** (regressar à base, por omissão; pairar no último
+  ponto; aterrar no local; voltar ao primeiro waypoint) e **Perda de sinal**
+  (interromper a missão e regressar à base, aterrar ou pairar; ou continuar
+  a missão até ao fim), no cartão 5 da área e num cartão próprio nos outros
+  modos, as mesmas em todos. Saem no `missionConfig` do KMZ de todos os
+  modos (área, por voo incluído, corredor, circular, fachada, órbita e
+  pontos de inspecção), ficam no projecto (`safety`, no esquema JSON) e a
+  checklist de campo diz quais são. Um projecto anterior abre com as
+  omissões, que são os valores que a exportação sempre escreveu.
+
 ### Corrigido (MDT/MDS no projecto)
 
 - **A escolha «Este ficheiro é: MDT / MDS» fica no projecto.** O ficheiro

@@ -18,6 +18,10 @@
  * projecto anterior são traduzidas para o mosaico novo (mosaicLegacy.js),
  * e as orientações: num mosaico manual mantém-se a guardada, na divisão por
  * bateria os quadrados passam a seguir as faixas.
+ *
+ * Acções de segurança (`safety`, src/mission/safety.js): fim da missão e
+ * sinal perdido, as mesmas em todos os modos. Um projecto sem elas abre com
+ * as omissões (regressar à base; interromper e regressar).
  */
 import {
   AIRCRAFT,
@@ -32,6 +36,7 @@ import { normalizeCorridorConfig } from '../utils/corridor.js'
 import { normalizeCircularConfig } from '../utils/circular.js'
 import { legacyBases, normalizeBases, normalizeBlockBase } from './bases.js'
 import { normalizeObstacleM } from './viewshedPlan.js'
+import { normalizeSafety } from './safety.js'
 
 export const PROJECT_VERSION = 2
 /** Esquema JSON (draft 2020-12) do ficheiro v2, servido com a aplicação: public/schema/. */
@@ -69,6 +74,7 @@ export function serializeProject(state) {
     gcpConfig,
     obstacleHeightM,
     demFile,
+    safety,
   } = state
   return {
     $schema: PROJECT_SCHEMA_URL,
@@ -106,6 +112,8 @@ export function serializeProject(state) {
     gcpConfig,
     // bacias de visão: vegetação e obstáculos a somar a um MDT (m)
     obstacleHeightM: normalizeObstacleM(obstacleHeightM),
+    // fim da missão e sinal perdido (WPML missionConfig)
+    safety: normalizeSafety(safety),
     // o ficheiro de relevo não vai no projecto: só o nome e se é MDT ou
     // MDS, para a escolha voltar quando o mesmo ficheiro for reimportado
     demFile: normalizeDemFile(demFile) ?? undefined,
@@ -152,6 +160,8 @@ export function projectFileName(missionName) {
  *  - obstacleHeightM: vegetação e obstáculos das bacias de visão, 0-60 m
  *  - demFile: nome e tipo (MDT/MDS) do ficheiro de relevo importado, ou null
  *    (0 nos projectos anteriores)
+ *  - safety: acções de segurança, sempre presente (as omissões nos
+ *    projectos anteriores)
  *  - legacyMosaic: {disabled: Set, basePoint} quando um projecto anterior ao
  *    mosaico novo tinha células desactivadas; disabledTiles fica vazio até a
  *    geometria as traduzir (legacyDisabledForMosaic)
@@ -212,6 +222,7 @@ export function normalizeProject(p) {
   if (p.gcpConfig) out.gcpConfig = p.gcpConfig
   out.obstacleHeightM = normalizeObstacleM(p.obstacleHeightM)
   out.demFile = normalizeDemFile(p.demFile)
+  out.safety = normalizeSafety(p.safety)
   return out
 }
 

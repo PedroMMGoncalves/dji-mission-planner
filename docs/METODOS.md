@@ -893,8 +893,23 @@ waypoint 0 (omitido com LiDAR) e por waypoint quando indicado.
 `globalRTHHeight = min(1500, max(100, ceil(tecto da rota) + 20))`, com o
 tecto = máximo entre a altitude nominal e todas as alturas dos waypoints
 (uma missão num planalto 250 m acima da descolagem tem waypoints a ~350 m).
-`takeOffSecurityHeight` 30 m por omissão. `finishAction`, `exitOnRCLost`
-e `executeRCLostAction` fora das listas caem no primeiro valor permitido.
+`takeOffSecurityHeight` 30 m por omissão.
+
+Acções de segurança (`src/mission/safety.js`), escolhidas no cartão «Bases
+e segurança» da área e no cartão «Acções de segurança» dos outros modos, e
+as mesmas em todos: `finishAction` (no fim da missão: `goHome`, por
+omissão, `noAction`, `autoLand` ou `gotoFirstWaypoint`), `exitOnRCLost`
+(com o sinal do comando perdido: `executeLostAction`, por omissão, que
+interrompe a missão, ou `goContinue`, que acaba a rota sem comando e depois
+faz a acção de fim) e `executeRCLostAction` (a acção ao interromper:
+`goBack`, por omissão, `landing` ou `hover`; só vale com
+`executeLostAction`). Os parâmetros de exportação de todos os modos
+(`buildAreaExport` e os de `exportParams.js`: corredor, circular, fachada,
+órbita e pontos de inspecção) levam-nas, e os blocos herdam-nas; saem no
+`missionConfig` do `template.kml` e do `waylines.wpml`. Ficam no projecto
+(`safety`); um projecto anterior abre com as omissões, que são os valores
+que a exportação escrevia antes. Na fronteira, um valor fora das listas cai
+no primeiro valor permitido.
 O `Folder` do `waylines.wpml` leva `distance` (m) e `duration` (s), de onde
 o Pilot 2 tira o progresso e o tempo em falta da rota: a distância é o
 comprimento 3D (`routeLengthM`), a duração é a previsão do plano

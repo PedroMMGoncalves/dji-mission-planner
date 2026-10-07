@@ -1160,6 +1160,8 @@ export default function ChecklistPage({
   // ficha de campo por base (baseFieldSheets), com a área dividida e bases
   baseSheets = [],
   plannedGcps = [],
+  // acções de segurança escritas no KMZ (src/mission/safety.js)
+  safety = null,
   onBack,
 }) {
   const lang = useLang()
@@ -1413,6 +1415,31 @@ export default function ChecklistPage({
             ))}
           </div>
         </section>
+
+        {/* ------------- Acções de segurança escritas no KMZ ------------- */}
+        {safety && (
+          <section
+            data-testid="checklist-safety"
+            className="chk-bloco mb-5 rounded-lg border border-slate-800 bg-slate-900 p-4"
+          >
+            <Titulo className="mb-2">{t('safety.checklist')}</Titulo>
+            <p className="text-sm text-slate-200">
+              {t('safety.checklistLine', {
+                finish: t(`safety.finish.${safety.finishAction}`),
+                lost:
+                  safety.exitOnRCLost === 'executeLostAction'
+                    ? t('safety.checklistStop', {
+                        mode: t('safety.rcLost.executeLostAction'),
+                        action: t(`safety.rcAction.${safety.executeRCLostAction}`),
+                      })
+                    : t('safety.rcLost.goContinue'),
+              })}
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-400">
+              {t('safety.checklistHint')}
+            </p>
+          </section>
+        )}
 
         {/* ------------- Bases de descolagem: ficha de campo ------------- */}
         {baseSheets.length > 0 && (

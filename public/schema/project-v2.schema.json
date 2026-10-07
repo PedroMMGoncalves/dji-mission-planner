@@ -237,6 +237,16 @@
         "surface": { "enum": ["dtm", "dsm"] }
       }
     },
+    "safety": {
+      "description": "Accoes de seguranca escritas no missionConfig do WPML de todos os modos: o que a aeronave faz no fim da missao e quando perde o sinal do comando. Sem o campo (projectos anteriores): goHome, executeLostAction e goBack.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "finishAction": { "enum": ["goHome", "noAction", "autoLand", "gotoFirstWaypoint"] },
+        "exitOnRCLost": { "enum": ["executeLostAction", "goContinue"] },
+        "executeRCLostAction": { "enum": ["goBack", "landing", "hover"] }
+      }
+    },
     "obstacleHeightM": {
       "description": "Bacias de visao: altura de vegetacao e obstaculos (m) a somar ao relevo nas linhas de vista e no radio, so com um MDT ou o relevo global (nunca com um MDS importado). 0 por omissao.",
       "type": "number",
