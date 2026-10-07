@@ -45,12 +45,10 @@ export default function BasesPanel({
   proposing = null,
   carryLost = 0,
   onDismissCarry = null,
-  clickMode,
-  onClickMode,
+  assignMode = false,
   vlosM,
   defaultRadiusM,
   maxFlightsPerBase = 0,
-  showClickMode = true,
   exportFlights = null,
   viewshed = null,
   // 'all': tudo; 'list': sem as bacias de visão nem a exportação por voo
@@ -175,35 +173,20 @@ export default function BasesPanel({
         <p className="text-[11px] leading-relaxed text-slate-500">{t('bases.none')}</p>
       )}
 
-      {rows.length > 0 && showClickMode && hasBlocks && (
-        <div className="mb-1.5">
-          <p className="mb-1 text-[11px] text-slate-500">{t('bases.clickMode')}</p>
-          <div className="grid grid-cols-2 gap-1.5">
-            {[
-              { value: 'toggle', key: 'bases.clickToggle' },
-              { value: 'assign', key: 'bases.clickAssign' },
-            ].map(({ value, key }) => (
-              <button
-                key={value}
-                type="button"
-                data-testid={`click-mode-${value}`}
-                onClick={() => onClickMode(value)}
-                className={`rounded px-1 py-1 text-[11px] font-medium transition-colors ${
-                  clickMode === value
-                    ? 'bg-sky-500 text-slate-950'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                {t(key)}
-              </button>
-            ))}
-          </div>
-          {clickMode === 'assign' && (
-            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-              {t('bases.clickAssignHint')}
-            </p>
-          )}
-        </div>
+      {rows.length > 0 && hasBlocks && (
+        <p
+          data-testid="bases-click-hint"
+          data-assign={assignMode ? 'on' : 'off'}
+          className={`mb-1.5 rounded px-1.5 py-1 text-[11px] leading-relaxed ${
+            assignMode ? 'bg-sky-950/60 text-sky-200' : 'text-slate-500'
+          }`}
+        >
+          {assignMode
+            ? t('bases.clickAssignOn', {
+                label: rows.find((r) => r.id === selectedBaseId)?.label ?? '',
+              })
+            : t('bases.clickAssignOff')}
+        </p>
       )}
 
       <ul className="space-y-1">

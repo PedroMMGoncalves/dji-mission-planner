@@ -12,9 +12,27 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   bases, a pré-visualização no mapa e a barra por cima do mapa: tirava a
   sensação de escolha e misturava-se com o «Atribuir base». Volta o botão
   «Juntar a esta base» na linha da base seleccionada (o pino no mapa ou o
-  rótulo na lista), que leva todos os blocos ao alcance; blocos soltos
-  passam-se com «Atribuir base» e um clique no bloco. A exportação por
+  rótulo na lista), que leva todos os blocos ao alcance. A exportação por
   base em pastas e os dois ZIP do cabeçalho ficam.
+
+### Corrigido (passar um bloco a uma base)
+
+- **A base seleccionada é o destino dos blocos.** Antes, com a base B
+  seleccionada, clicar no bloco A-1 desactivava-o (o clique só passava o
+  bloco à base no modo «Atribuir base», escondido no cartão 5). Agora,
+  com uma base seleccionada (o pino no mapa ou o rótulo na lista), clicar
+  num bloco — o rótulo ou qualquer ponto da célula — passa-o para ela; um
+  segundo clique deixa-o lá (antes passava-o à base seguinte). Esc ou um
+  novo clique no pino desselecciona, e sem base seleccionada o clique
+  volta a activar ou desactivar a célula. O cartão 5 diz em que estado
+  está; os botões «Activar / desactivar» e «Atribuir base» saem.
+- Na divisão por faixas os pinos das bases ficavam em cima dos rótulos e
+  não havia onde clicar: as células passam a ser alvos, e com uma base
+  seleccionada os rótulos ficam por cima dos pinos das outras bases.
+- Os traços das faixas e os waypoints deixam de apanhar o clique, que
+  chega à célula por baixo.
+- «Marcar base» com o clique dentro de uma célula do mosaico desactivava a
+  célula em vez de criar a base; agora cria a base.
 
 ## 1.4.0 — 2026-10-07
 

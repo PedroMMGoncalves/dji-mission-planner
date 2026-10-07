@@ -176,19 +176,21 @@ function InstrucoesPt() {
           fatias («A propor bases… N %», com «Cancelar»). Cada base é uma <strong>zona</strong> (100
           m na Configuração): as alturas dos seus blocos referem-se à cota mais baixa da zona, e
           descolando em qualquer ponto dela voa-se entre 0 e +X m acima do planeado. Voos numerados
-          por base: A-1, A-2, B-3. Com «Atribuir base», clicar num bloco passa-o para a base
-          seleccionada (ou para a seguinte). Refeito o mosaico (ângulo, lado, bateria, área
-          editada), cada bloco novo herda a base escolhida à mão e o estado desactivado do bloco
-          antigo que cobre pelo menos metade dele; as atribuições que não passam são ditas no painel
-          das bases. Com a área substituída por outra (menos de metade em comum) nada passa.
+          por base: A-1, A-2, B-3. Para passar um bloco a uma base, seleccione-a (o pino no mapa ou
+          o rótulo na lista) e clique no bloco (o rótulo ou a célula); um segundo clique deixa-o lá,
+          Esc ou um novo clique no pino desselecciona. Sem base seleccionada, o clique activa ou
+          desactiva a célula. Refeito o mosaico (ângulo, lado, bateria, área editada), cada bloco
+          novo herda a base escolhida à mão e o estado desactivado do bloco antigo que cobre pelo
+          menos metade dele; as atribuições que não passam são ditas no painel das bases. Com a área
+          substituída por outra (menos de metade em comum) nada passa.
         </Li>
         <Li>
           <strong>Juntar a esta base</strong> — para descolar de um alto e não mudar de sítio:
           seleccione a base (o pino no mapa ou o rótulo na lista) e carregue em «Juntar a esta base»
           na linha dela. Todos os blocos que ela vê inteiros dentro do alcance visual (no pior caso,
           com o raio da zona) passam a ela, mesmo os de outras bases; as bases que ficam sem voos
-          saem, e o painel diz quantos juntou e quantos ficam de fora. Blocos soltos passam-se com
-          «Atribuir base» e um clique no bloco. O rádio e a vista continuam no preflight; Ctrl+Z
+          saem, e o painel diz quantos juntou e quantos ficam de fora. Blocos soltos passam-se com a
+          base seleccionada e um clique no bloco. O rádio e a vista continuam no preflight; Ctrl+Z
           desfaz.
         </Li>
         <Li>
@@ -443,8 +445,10 @@ function InstrucoesEn() {
           (“Proposing bases… N %”, with “Cancel”). Each base is a <strong>zone</strong> (100 m in
           Settings): its blocks’ heights refer to the zone’s lowest elevation, and taking off
           anywhere in it you fly between 0 and +X m above plan. Flights are numbered by base: A-1,
-          A-2, B-3. With “Assign base”, clicking a block moves it to the selected base (or to the
-          next one). When the mosaic is rebuilt (angle, size, battery, edited area), each new block
+          A-2, B-3. To move a block to a base, select it (its pin on the map or its label in the
+          list) and click the block (its label or its cell); a second click leaves it there, Esc or
+          another click on the pin deselects. With no base selected, a click enables or disables the
+          cell. When the mosaic is rebuilt (angle, size, battery, edited area), each new block
           inherits the hand-picked base and the disabled state of the old block covering at least
           half of it; assignments that do not carry over are reported in the bases panel. If the
           area is replaced by another (less than half in common), nothing carries over.
@@ -454,8 +458,8 @@ function InstrucoesEn() {
           the base (its pin on the map or its label in the list) and press “Gather to this base” in
           its row. Every block it sees entirely within visual range (worst case, with the zone
           radius) moves to it, even other bases’ ones; bases left without flights are removed, and
-          the panel says how many joined and how many stay out. Single blocks are moved with “Assign
-          base” and a click on the block. Radio and sight stay in the preflight; Ctrl+Z undoes it.
+          the panel says how many joined and how many stay out. Single blocks are moved by selecting
+          the base and clicking the block. Radio and sight stay in the preflight; Ctrl+Z undoes it.
         </Li>
         <Li>
           <strong>Viewsheds</strong> — with bases, blocks and terrain, each block is seen from the{' '}

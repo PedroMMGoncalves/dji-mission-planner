@@ -155,6 +155,19 @@ export function assignBlockBase(
 }
 
 /**
+ * Clique num bloco com uma base seleccionada: a base para onde o bloco vai,
+ * ou null quando não há nada a fazer (sem base seleccionada, ou o bloco já
+ * é dela — um segundo clique nunca o passa para outra base).
+ * @param {string|null|undefined} selectedBaseId
+ * @param {string|null|undefined} currentBaseId
+ * @returns {string|null}
+ */
+export function blockClickTarget(selectedBaseId, currentBaseId) {
+  if (selectedBaseId == null || selectedBaseId === currentBaseId) return null
+  return selectedBaseId
+}
+
+/**
  * Bases lidas de um projecto: só entradas com ponto válido; ids repetidos ou
  * em falta são refeitos, rótulos repetidos ou em falta recebem o primeiro
  * livre, raio normalizado.

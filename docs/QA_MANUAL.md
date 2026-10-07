@@ -244,6 +244,13 @@ tablet real):
   do plano (relativa à cota da zona de B, «voo entre 0 e +X m acima do
   planeado»); descolar dentro do raio da zona.
 
+- ☐ Clicar no pino da base B; clicar no rótulo de um bloco de A e depois
+  noutro ponto da célula de outro bloco de A; clicar de novo no mesmo bloco.
+  **Esperado:** o cartão 5 diz «Base B seleccionada…»; os dois blocos passam
+  para B (cor e rótulo B-…); o segundo clique deixa-o em B. **Esc**: o
+  cartão volta à indicação geral e um clique num bloco desactiva-o
+  (**Ctrl+Z** repõe). **Marcar base** com o clique dentro de uma célula
+  cria a base.
 - ☐ Seleccionar uma base num alto (o pino no mapa ou o rótulo na lista) →
   **Juntar a esta base**.
   **Esperado:** a base fica com todos os voos que vê inteiros dentro do

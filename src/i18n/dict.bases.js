@@ -50,12 +50,13 @@ export default {
     pt: 'no máximo {n} voos por base',
     en: 'at most {n} flights per base',
   },
-  'bases.clickMode': { pt: 'Clique num bloco no mapa', en: 'Click a block on the map' },
-  'bases.clickToggle': { pt: 'Activar / desactivar', en: 'Enable / disable' },
-  'bases.clickAssign': { pt: 'Atribuir base', en: 'Assign base' },
-  'bases.clickAssignHint': {
-    pt: 'Com uma base seleccionada, o bloco passa para ela; sem selecção, para a base seguinte.',
-    en: 'With a base selected the block goes to it; with none selected, to the next base.',
+  'bases.clickAssignOff': {
+    pt: 'Clique num bloco no mapa: activa / desactiva. Para passar blocos a uma base, seleccione-a (o pino no mapa ou o rótulo abaixo) e clique nos blocos.',
+    en: 'Click a block on the map: enable / disable. To move blocks to a base, select it (its pin on the map or its label below) and click the blocks.',
+  },
+  'bases.clickAssignOn': {
+    pt: 'Base {label} seleccionada: clique num bloco para o passar para {label}. Esc (ou um clique no pino) desselecciona.',
+    en: 'Base {label} selected: click a block to move it to {label}. Esc (or a click on the pin) deselects.',
   },
   'bases.label': { pt: 'Base {label}', en: 'Base {label}' },
   'bases.noFlights': { pt: 'sem voos', en: 'no flights' },

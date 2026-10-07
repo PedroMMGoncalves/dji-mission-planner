@@ -42,6 +42,7 @@ import { opsSummary } from './mission/opsSummary.js'
 import {
   addBase,
   assignBlockBase,
+  blockClickTarget,
   moveBase,
   nearestBase,
   removeBase as removeBaseFrom,
@@ -252,8 +253,6 @@ function AppInner({ lang, setLang }) {
     }),
     [],
   )
-  // clique num bloco no mapa: activar/desactivar a célula ou atribuir a base
-  const [blockClickMode, setBlockClickMode] = useState('toggle') // 'toggle' | 'assign'
   // a última proposta: {added, outOfVlos, poorSites} ou {cancelled: true}
   const [baseProposal, setBaseProposal] = useState(null)
   // o último «Juntar a esta base»: {label, joined, kept, tooFar, nearestFarM, removed}
@@ -1945,40 +1944,59 @@ function AppInner({ lang, setLang }) {
     cancelProposalRun()
   }, [cancelProposalRun, blocks, bases, blockBaseEffective, terrain.data])
 
-  // atribuição manual de um bloco: a base seleccionada, ou a seguinte
+  // Base seleccionada (o pino ou o rótulo na lista) = destino dos blocos:
+  // clicar num bloco passa-o para ela; sem base seleccionada, o clique
+  // activa/desactiva a célula. Esc ou um novo clique no pino desselecciona.
+  const assignMode =
+    missionMode === 'area' &&
+    mode === 'idle' &&
+    Boolean(blocks?.length) &&
+    bases.some((b) => b.id === selectedBaseId)
   const assignBlock = useCallback(
     (blockId) => {
-      if (!bases.length || !baseLayout?.byBlock[blockId]) return
-      const current = baseLayout.byBlock[blockId].baseId
-      const pick = selectedBaseId && selectedBaseId !== current ? selectedBaseId : null
+      if (!baseLayout?.byBlock[blockId]) return
+      const target = blockClickTarget(selectedBaseId, baseLayout.byBlock[blockId].baseId)
+      if (!target) return
       pushHistory()
-      setManualBlockBase(
-        assignBlockBase(blockBaseEffective, blockId, bases, {
-          baseId: pick,
-          currentBaseId: current,
-        }),
-      )
+      setManualBlockBase(assignBlockBase(blockBaseEffective, blockId, bases, { baseId: target }))
     },
     [bases, baseLayout, selectedBaseId, blockBaseEffective, pushHistory, setManualBlockBase],
   )
 
-  // clique numa célula do mosaico: activar/desactivar, ou atribuir a base
+  // clique numa célula do mosaico: passar o bloco para a base seleccionada,
+  // ou activar/desactivar a célula
   const handleTileClick = useCallback(
     (index) => {
-      if (blockClickMode === 'assign' && bases.length > 0) {
+      if (assignMode) {
         if (!disabledTiles.has(index)) assignBlock(index + 1)
         return
       }
       toggleTile(index)
     },
-    [blockClickMode, bases.length, disabledTiles, assignBlock, toggleTile],
+    [assignMode, disabledTiles, assignBlock, toggleTile],
   )
   const handleBlockClick = useCallback(
     (blockId) => {
-      if (blockClickMode === 'assign' && bases.length > 0) assignBlock(blockId)
+      if (assignMode) assignBlock(blockId)
     },
-    [blockClickMode, bases.length, assignBlock],
+    [assignMode, assignBlock],
   )
+  // o pino da base selecciona-a; um segundo clique desselecciona
+  const handleBaseSelect = useCallback(
+    (id) => setSelectedBaseId((sel) => (sel === id ? null : id)),
+    [],
+  )
+  // Esc desselecciona a base (fora dos campos de texto e dos desenhos)
+  useEffect(() => {
+    if (!selectedBaseId || mode !== 'idle') return
+    const onKey = (e) => {
+      const tag = e.target?.tagName
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+      if (e.key === 'Escape') setSelectedBaseId(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedBaseId, mode])
 
   // Catálogo de presets de missão aplicáveis ao sensor ativo, com a
   // velocidade já resolvida para a aeronave selecionada
@@ -2428,12 +2446,10 @@ function AppInner({ lang, setLang }) {
                   onDismissCarry: () => setBlockBaseState((st) => ({ ...st, lost: 0 })),
                   hasBlocks: Boolean(blocks?.length),
                   proposal: baseProposal,
-                  clickMode: blockClickMode,
-                  onClickMode: setBlockClickMode,
+                  assignMode,
                   vlosM,
                   defaultRadiusM: equipment.zoneRadiusM,
                   maxFlightsPerBase: equipment.maxFlightsPerBase ?? 0,
-                  showClickMode: Boolean(tiles) || Boolean(gridCells) || split.mode === 'area',
                   // exportação por voo / por base, atrás do preflight
                   exportFlights: {
                     files: flightFiles,
@@ -2473,9 +2489,9 @@ function AppInner({ lang, setLang }) {
             anchorCenter={anchor.center}
             bases={baseRows}
             selectedBaseId={selectedBaseId}
-            onBaseSelect={setSelectedBaseId}
+            onBaseSelect={handleBaseSelect}
             baseLayout={missionMode === 'area' ? baseLayout : null}
-            blockClickMode={blockClickMode}
+            assignMode={assignMode}
             onBlockClick={handleBlockClick}
             // no modo circular a grelha da area ficava por cima dos circulos
             plan={missionMode === 'circular' ? null : planOk}

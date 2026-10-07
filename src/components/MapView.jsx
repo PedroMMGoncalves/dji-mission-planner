@@ -31,7 +31,8 @@ export default function MapView({
   selectedBaseId = null,
   onBaseSelect,
   baseLayout = null,
-  blockClickMode = 'toggle',
+  // com uma base seleccionada, o clique num bloco passa-o para ela
+  assignMode = false,
   onBlockClick,
   plan,
   blocks,
@@ -493,17 +494,35 @@ export default function MapView({
       })
     }
 
-    // Contornos das células da grelha de blocos
+    // «Marcar base» dentro de uma célula: a célula apanha o clique, que tem
+    // de chegar ao mapa (senão desactivava a célula em vez de criar a base)
+    const toMapClick = (e) => {
+      const s = stateRef.current
+      if (s.mode !== 'base') return false
+      s.onMapClick([e.latlng.lng, e.latlng.lat])
+      return true
+    }
+
+    // Contornos das células da grelha de blocos; com uma base seleccionada,
+    // clicar na célula passa o bloco para ela (o pino da base pode estar em
+    // cima do rótulo)
     if (gridCells) {
-      gridCells.forEach((cell) => {
-        L.polygon(cell.map(toLatLng), {
+      gridCells.forEach((cell, i) => {
+        const p = L.polygon(cell.map(toLatLng), {
           color: '#f59e0b',
           weight: 1,
           dashArray: '3 4',
-          fill: false,
+          fill: assignMode,
+          fillOpacity: 0,
           opacity: 0.8,
-          interactive: false,
+          interactive: assignMode,
+          bubblingMouseEvents: !assignMode,
+          className: `block-cell block-cell-${i + 1}`,
         }).addTo(g)
+        if (assignMode)
+          p.on('click', (e) => {
+            if (!toMapClick(e)) stateRef.current.onBlockClick?.(i + 1)
+          })
       })
     }
 
@@ -522,8 +541,11 @@ export default function MapView({
           fillOpacity: off ? 0.04 : tint ? 0.16 : 0.08,
           opacity: off ? 0.5 : 0.9,
           bubblingMouseEvents: false,
+          className: `block-cell block-cell-${i + 1}`,
         }).addTo(g)
-        p.on('click', () => stateRef.current.onTileToggle(i))
+        p.on('click', (e) => {
+          if (!toMapClick(e)) stateRef.current.onTileToggle(i)
+        })
         if (off) {
           let c = [0, 0]
           for (const v of cell) c = [c[0] + v[0] / cell.length, c[1] + v[1] / cell.length]
@@ -543,7 +565,7 @@ export default function MapView({
         fill: false,
       }).addTo(g)
     })
-  }, [ring, holes, valid, kinks, editable, gridCells, tiles, disabledTiles, baseLayout])
+  }, [ring, holes, valid, kinks, editable, gridCells, tiles, disabledTiles, baseLayout, assignMode])
 
   // Pega central: move a ÁREA INTEIRA (anel, buracos e células). Existe
   // sempre que há área — não só no modo âncora, como antes, e deliberadamente
@@ -590,6 +612,7 @@ export default function MapView({
       weight: 1.5,
       dashArray: '4 6',
       opacity: 0.9,
+      interactive: false,
     }).addTo(layers.buffer)
 
     // Caminho completo em serpentina (faixas + viragens)
@@ -599,6 +622,7 @@ export default function MapView({
       weight: 1,
       dashArray: '2 4',
       opacity: 0.7,
+      interactive: false,
       renderer: layers.canvas,
     }).addTo(layers.lines)
 
@@ -613,16 +637,18 @@ export default function MapView({
       '#fb923c',
       '#60a5fa',
     ]
-    const assign = blockClickMode === 'assign' && Boolean(baseLayout?.hasBases)
+    const assign = assignMode && Boolean(baseLayout?.hasBases)
     if (blocks && (blocks.length > 1 || baseLayout?.hasBases)) {
       blocks.forEach((block, i) => {
         // com bases: a cor da base do bloco; sem elas, uma cor por bloco
         const info = baseLayout?.byBlock?.[block.id]
         const color = info?.color ?? BLOCK_COLORS[i % BLOCK_COLORS.length]
         block.lines.forEach((seg) => {
+          // sem eventos: o clique tem de chegar à célula do bloco por baixo
           L.polyline(seg.map(toLatLng), {
             color,
             weight: 2.5,
+            interactive: false,
             renderer: layers.canvas,
           }).addTo(layers.lines)
         })
@@ -638,6 +664,9 @@ export default function MapView({
           }),
           interactive: assign,
           bubblingMouseEvents: false,
+          // com uma base seleccionada, os rótulos ficam por cima dos pinos
+          // das outras bases (abaixo do seleccionado)
+          zIndexOffset: assign ? 650 : 0,
         }).addTo(layers.lines)
         if (assign) m.on('click', () => stateRef.current.onBlockClick?.(block.id))
       })
@@ -646,6 +675,7 @@ export default function MapView({
         L.polyline(seg.map(toLatLng), {
           color: '#22d3ee',
           weight: 2.5,
+          interactive: false,
           renderer: layers.canvas,
         }).addTo(layers.lines)
       })
@@ -661,10 +691,11 @@ export default function MapView({
         weight: 1,
         fillColor: isFirst ? '#4ade80' : isLast ? '#ef4444' : '#22d3ee',
         fillOpacity: 1,
+        interactive: false,
         renderer: layers.canvas,
       }).addTo(layers.lines)
     })
-  }, [plan, blocks, baseLayout, blockClickMode])
+  }, [plan, blocks, baseLayout, assignMode])
 
   // Alvos GCP planeados (xadrez amarelo, com etiqueta)
   useEffect(() => {

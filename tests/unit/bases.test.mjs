@@ -8,6 +8,7 @@ import { describe, expect, test } from 'vitest'
 import {
   addBase,
   assignBlockBase,
+  blockClickTarget,
   baseColor,
   BASE_COLORS,
   compareLabels,
@@ -471,5 +472,16 @@ describe('mosaico antigo: células desactivadas traduzidas para o mosaico novo',
       newCells: mosaic.cells,
     })
     expect([...full]).toEqual([...off])
+  })
+})
+
+describe('clique num bloco com uma base seleccionada', () => {
+  test('vai para a base seleccionada; se já é dela, nada; sem selecção, nada', () => {
+    expect(blockClickTarget('b2', 'b1')).toBe('b2')
+    expect(blockClickTarget('b2', null)).toBe('b2')
+    // um segundo clique nunca passa o bloco para a base seguinte
+    expect(blockClickTarget('b2', 'b2')).toBeNull()
+    expect(blockClickTarget(null, 'b1')).toBeNull()
+    expect(blockClickTarget(undefined, 'b1')).toBeNull()
   })
 })

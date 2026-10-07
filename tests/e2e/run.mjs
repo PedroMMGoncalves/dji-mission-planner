@@ -1891,20 +1891,21 @@ await scenario('bases-desfazer', async () => {
   const layout0 = rows0.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ')
   check('desfazer: a proposta dá pelo menos duas bases', rows0.length >= 2, layout0)
 
-  // 1) atribuição manual: o bloco de A passa para a base seguinte
+  // 1) atribuição manual: seleccionada a base B (o pino), o bloco de A passa para ela
   const A = rows0[0]
   const blk = A.blocks[0]
-  await page.getByTestId('click-mode-assign').click()
+  await basePin(page, rows0[1].label).click()
   await page.locator(`.block-label [data-block-id="${blk}"]`).click()
   await page.waitForTimeout(1200)
   let rows = await baseRows(page)
   const owner = rows.find((r) => r.blocks.includes(blk))
   check(
-    'desfazer: o clique no bloco passa-o para outra base',
-    owner && owner.label !== A.label,
+    'desfazer: com a base B seleccionada, o clique no bloco passa-o para B',
+    owner && owner.label === rows0[1].label,
     `bloco ${blk}: ${A.label} -> ${owner?.label}`,
   )
-  // 2) a base A arrastada
+  // 2) a base A arrastada (sem base seleccionada: Esc)
+  await page.keyboard.press('Escape')
   const ptA0 = (await savedBase(page, 'A'))?.point
   await dragMarker(page, basePin(page, 'A'), 90, 60)
   const ptA1 = (await savedBase(page, 'A'))?.point
@@ -2018,6 +2019,90 @@ await scenario('juntar-a-esta-base', async () => {
   check('juntar: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
+})
+
+// Passar um bloco a uma base: o pino selecciona a base, o clique no bloco
+// (rótulo ou célula) passa-o para ela; um segundo clique não o dá a outra
+// base; Esc desselecciona e o clique volta a activar/desactivar; «Marcar
+// base» dentro de uma célula cria a base (antes desactivava a célula).
+await scenario('atribuir-bloco-a-base', async () => {
+  for (const split of ['Bateria', 'Faixas']) {
+    const { page, errors } = await openMission({ area: fx.rect })
+    await page
+      .locator('select')
+      .filter({ has: page.locator('option[value="M300RTK"]') })
+      .first()
+      .selectOption('M300RTK')
+    await configure(page, { tf: true, split })
+    await proposeAndWait(page)
+    const rows0 = await baseRows(page)
+    const [A, B] = rows0
+    const hint = page.getByTestId('bases-click-hint')
+    check(
+      `${split}: sem base seleccionada, o painel diz como passar blocos`,
+      (await hint.getAttribute('data-assign')) === 'off' &&
+        /seleccione-a/.test(await hint.innerText()),
+    )
+    await basePin(page, B.label).click()
+    check(
+      `${split}: o pino selecciona a base e o painel diz que os cliques vão para ela`,
+      (await hint.getAttribute('data-assign')) === 'on' &&
+        new RegExp(`Base ${B.label} seleccionada`).test(await hint.innerText()),
+    )
+    // o rótulo do bloco de A, mesmo debaixo de um pino
+    const blk = A.blocks[0]
+    await page.locator(`.block-label [data-block-id="${blk}"]`).click()
+    await page.waitForTimeout(800)
+    let owner = (await baseRows(page)).find((r) => r.blocks.includes(blk))
+    check(
+      `${split}: o clique no bloco de ${A.label} passa-o para ${B.label}`,
+      owner?.label === B.label,
+      `bloco ${blk} -> ${owner?.label}`,
+    )
+    // segundo clique: fica em B (não roda para a base seguinte)
+    await page.locator(`.block-label [data-block-id="${blk}"]`).click()
+    await page.waitForTimeout(800)
+    owner = (await baseRows(page)).find((r) => r.blocks.includes(blk))
+    check(
+      `${split}: um segundo clique deixa o bloco em ${B.label}`,
+      owner?.label === B.label,
+      `bloco ${blk} -> ${owner?.label}`,
+    )
+    // a célula (fora do rótulo) também serve: um ponto dentro dela, longe
+    // do centro (onde a proposta costuma pôr os pinos)
+    const blk2 = A.blocks[A.blocks.length - 1]
+    if (blk2 !== blk) {
+      const cell = await page.locator(`path.block-cell-${blk2}`).boundingBox()
+      await page.mouse.click(cell.x + cell.width * 0.25, cell.y + cell.height * 0.75)
+      await page.waitForTimeout(800)
+      owner = (await baseRows(page)).find((r) => r.blocks.includes(blk2))
+      check(
+        `${split}: clicar dentro da célula do bloco (fora do rótulo) também o passa`,
+        owner?.label === B.label,
+        `bloco ${blk2} -> ${owner?.label}`,
+      )
+    }
+    // Esc desselecciona
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
+    check(`${split}: Esc desselecciona a base`, (await hint.getAttribute('data-assign')) === 'off')
+    if (split === 'Bateria') {
+      // «Marcar base» com o clique dentro de uma célula: cria a base
+      const n0 = (await baseRows(page)).length
+      await page.getByRole('button', { name: /Marcar base|Set base/ }).click()
+      const lbl = await page.locator(`.block-label [data-block-id="${blk}"]`).boundingBox()
+      await page.mouse.click(lbl.x + lbl.width / 2 + 30, lbl.y + lbl.height / 2 + 30)
+      await page.waitForTimeout(800)
+      check(
+        'Bateria: «Marcar base» dentro de uma célula cria a base (não desactiva a célula)',
+        (await baseRows(page)).length === n0 + 1,
+        `${n0} -> ${(await baseRows(page)).length}`,
+      )
+    }
+    check(`${split}: sem erros de página`, errors.length === 0, errors.join(' | '))
+    await page.close()
+  }
+  return {}
 })
 
 // Mosaico refeito pelo ângulo das faixas: as atribuições manuais passam para
@@ -2861,8 +2946,7 @@ const INVENTARIO_BATERIA = [
   ['bases', 'seleccionar a base', (r) => r.getByTitle(/Seleccionar a base A/)],
   ['bases', 'raio da zona', inv.id('base-radius')],
   ['bases', 'retirar a base', inv.btn(/Retirar a base A/)],
-  ['bases', 'clique: activar/desactivar', inv.id('click-mode-toggle')],
-  ['bases', 'clique: atribuir à base', inv.id('click-mode-assign')],
+  ['bases', 'clique num bloco (activar ou passar à base)', inv.id('bases-click-hint')],
   ['bases', 'camada das bacias de visão', inv.id('viewshed-toggle')],
   ['bases', 'vegetação e obstáculos', inv.id('viewshed-obstacle')],
   ['resumo', 'exportar todos os voos', inv.id('export-all-flights')],
