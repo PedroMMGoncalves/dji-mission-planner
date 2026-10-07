@@ -8,8 +8,8 @@ export default {
   },
   'bases.propose': { pt: 'Propor bases', en: 'Propose bases' },
   'bases.proposeTitle': {
-    pt: 'Propõe bases para os blocos que nenhuma base vê inteiros dentro do alcance visual; as suas bases ficam onde estão. Depois arraste, retire ou acrescente.',
-    en: 'Proposes bases for the blocks that no base sees entirely within visual range; your bases stay where they are. Then drag, remove or add.',
+    pt: 'Propõe bases para os blocos que nenhuma base vê inteiros dentro do alcance visual; as suas bases ficam onde estão. Com seguir terreno, prefere sítios baixos, que deixem os blocos com pelo menos 20 m de altura relativa. Depois arraste, retire ou acrescente.',
+    en: 'Proposes bases for the blocks that no base sees entirely within visual range; your bases stay where they are. With terrain following it prefers low sites that leave the blocks at least 20 m of relative height. Then drag, remove or add.',
   },
   'bases.proposeNeedsBlocks': {
     pt: 'Divida a área em blocos (bateria ou mosaico) para propor bases.',
@@ -26,6 +26,19 @@ export default {
   'bases.proposedOut': {
     pt: '{n} bloco(s) maiores do que o alcance visual: ficaram com base própria no centro, mas não cabem.',
     en: '{n} block(s) larger than the visual range: they got their own base at the centre, but do not fit.',
+  },
+  'bases.carryLost': {
+    pt: '{n} atribuições manuais não passaram para o novo mosaico: esses blocos ficaram com a base automática.',
+    en: '{n} manual assignments did not carry over to the new mosaic: those blocks got the automatic base.',
+  },
+  'bases.carryLostOne': {
+    pt: '1 atribuição manual não passou para o novo mosaico: esse bloco ficou com a base automática.',
+    en: '1 manual assignment did not carry over to the new mosaic: that block got the automatic base.',
+  },
+  'bases.carryDismiss': { pt: 'Dispensar o aviso', en: 'Dismiss this notice' },
+  'bases.proposedHigh': {
+    pt: '{n} base(s) sem sítio baixo que chegue: alguns dos seus blocos ficam com menos de 20 m de altura relativa (ver o preflight).',
+    en: '{n} base(s) without a low enough site: some of their blocks get less than 20 m of relative height (see preflight).',
   },
   'bases.maxPerBase': {
     pt: 'no máximo {n} voos por base',

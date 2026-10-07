@@ -288,14 +288,75 @@ omissão, ou o raio próprio da base) e o planeamento usa o pior caso:
 
 Atribuição: a escolha manual do operador (`blockBase`), senão a base de
 menor alcance visual no pior caso (`assignBlocksToBases`). As atribuições
-manuais valem para a disposição de blocos em que foram feitas (mosaico,
-grelha ou corte): refeito o mosaico, deixam de se aplicar. «Propor bases»
+manuais guardam a disposição de blocos em que foram feitas (mosaico,
+grelha ou corte), com as células e o contorno da área; refeito o mosaico,
+passam para os blocos novos por sobreposição (§4.2). «Propor bases»
 (`proposeMoreBases`) corre a cobertura gulosa de `proposeBases` só sobre os
 blocos que nenhuma base vê inteiros (as bases do operador não se mexem),
 com o máximo de voos por base da Configuração (0 = sem limite); as bases
 novas recebem os rótulos livres pela ordem do primeiro bloco que servem, e
 os seus blocos ficam-lhes atribuídos. Voos: base a base pela ordem dos
 rótulos e, em cada base, pela ordem do mosaico: A-1, A-2, B-3.
+
+Sítios baixos na proposta (`lowSiteRule`, com seguimento de terreno e
+relevo carregado). A altura relativa de um waypoint é `AGL + terreno −
+referência`; uma base proposta no alto de um cabeço deixava os blocos mais
+baixos com alturas relativas pequenas ou negativas. `proposeBases` aceita
+um gancho opcional `site = { score(ponto), accepts(bloco, score) }`, sem
+saber de relevo: um candidato só cobre um bloco se, além do VLOS, o bloco
+aceitar o sítio; entre candidatos que serviriam os mesmos blocos fica o de
+menor `score` (antes do desempate pela distância); os blocos que nenhum
+sítio aceitável cobre recebem, numa segunda volta, o candidato de menor
+`score` que os vê (`siteOk: false`, contado no painel: o preflight fala).
+A regra da aplicação: `score` = cota de referência da zona do candidato
+(`computeTakeoffZone` com o raio e o desnível do equipamento; null fora do
+relevo, nunca aceite), e um bloco aceita-o quando `referência ≤ mínimo do
+relevo debaixo da rota do bloco + AGL − 20 m` (`MIN_SAFE_REL_M`, o limiar
+do aviso de altura relativa do seguimento de terreno). Custos e mínimos
+calculados uma vez por candidato e por bloco (~150 blocos e centenas de
+candidatos em menos de 1 s). Sem seguimento de terreno as alturas são
+planas — a altura relativa é o AGL pedido, e uma base baixa só aproximaria
+o voo do relevo alto —, pelo que a proposta fica a de sempre.
+
+Ctrl+Z: as edições das bases (marcar, arrastar, retirar, raio da zona,
+atribuir um bloco, propor) entram no mesmo histórico das edições da área e
+das células (`useAreaGeometry`, até 100 passos). Cada passo é o estado
+inteiro de antes da edição — área, células desactivadas com a disposição a
+que se referem, bases e atribuições —, e um Ctrl+Z desfaz a última edição
+de qualquer tipo, pela ordem. O raio escrito tecla a tecla num campo é um
+só passo (até o campo perder o foco).
+
+### 4.2 Mosaico refeito: atribuições e células desactivadas
+
+Módulo `src/mission/cellCarryOver.js`. O mosaico refaz-se ao mudar o
+ângulo das faixas, o lado, a orientação, o tempo útil ou a área; antes, as
+atribuições manuais e as células desactivadas perdiam-se em silêncio. A
+regra, a mesma de `mosaicLegacy.js` para os projectos antigos:
+
+1. Mesma área? A área nova e a antiga têm de ter em comum pelo menos metade
+   da MENOR das duas (contornos exteriores). Abaixo disso a área foi
+   substituída — um desenho ou uma importação noutro sítio — e nada passa.
+   Uma área deslocada inteira (todos os vértices com o mesmo deslocamento,
+   ±1 m: a pega de mover; também uma cópia exacta noutro sítio) é a mesma
+   área, e as células antigas acompanham o deslocamento antes da
+   comparação.
+2. Cada célula nova herda da célula antiga que cobre pelo menos metade da
+   sua área (no máximo uma, as antigas não se sobrepõem): a base escolhida
+   à mão e o estado desactivado. Sem essa célula fica com a atribuição
+   automática e activa.
+3. As atribuições manuais que nenhuma célula nova herdou contam-se, e o
+   painel das bases diz «N atribuições manuais não passaram para o novo
+   mosaico» até o operador o dispensar ou o mosaico mudar de novo.
+
+Vale para o mosaico e a grelha da âncora (células) e para o corte da
+serpentina por área (o invólucro de cada bloco). Sobreposições por
+Sutherland–Hodgman num plano local em metros quando uma das células é
+convexa (quase sempre: quadrados), turf.intersect nas outras; ~150 células
+todas atribuídas em poucos milissegundos. Sem blocos (divisão desligada,
+área a ser redesenhada) as escolhas ficam guardadas com a disposição
+antiga e voltam por esta regra quando os blocos voltarem. Um Ctrl+Z repõe
+a disposição a que as escolhas se referiam; se o mosaico de agora for
+outro, passam para ele pela mesma regra.
 
 Os modos de rota única (corredor, circular, fachada, órbita, inspecção, e
 a área sem blocos) usam uma base de referência: a mais próxima da sua rota
@@ -968,6 +1029,9 @@ a mais de 2 km da área e a bateria por bloco sem trânsito.
 | Trânsito de dimensionamento do quadrado | (2·raio + (1+√2)·L) / v (base num canto) | baseLayout.js |
 | Mosaico: tira / deslocamentos / fusão no mosaico manual | fillFrac < 0,25 / 4×4 (2×2 > 150, 1×1 > 600 células) / ≤ 1,25·L² | squareMosaic.js |
 | Mosaico antigo → novo: célula desactivada | ≥ 50 % da área nas células antigas desactivadas | mosaicLegacy.js |
+| Mosaico refeito: herança / mesma área / área movida | célula antiga ≥ 50 % da nova / ≥ 50 % da menor em comum / translação ±1 m | cellCarryOver.js |
+| Proposta de bases com seguir terreno: sítio aceite | cota da zona ≤ mín. do relevo do bloco + AGL − 20 m | baseLayout.js |
+| Histórico de edição (Ctrl+Z) | 100 passos (área, células, bases, atribuições) | useAreaGeometry.js |
 | Zona de descolagem: raio / desnível máximo | 100 m / 10 m (Configuração; raio próprio por base 0-500 m) | equipment.js, bases.js |
 | Zona: amostragem | anéis a 10 m, 16 azimutes; cota = mínima; ganho = máx − mín | takeoffZones.js |
 | Alcance visual (VLOS) | M300 RTK 1000 m; M3E, M4T, outras 500 m | equipment.js |

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useT } from '../i18n.jsx'
 import { IconDownload, IconTrash } from './Icons.jsx'
 import { exportChoices, flightsArchiveName } from '../mission/flightFiles.js'
@@ -10,6 +10,10 @@ import { exportChoices, flightsArchiveName } from '../mission/flightFiles.js'
  * remoção. Mais a proposta de bases a partir dos blocos e o que faz o
  * clique num bloco no mapa. As linhas vêm de summarizeBases
  * (src/mission/baseLayout.js); a interface não calcula nada.
+ *
+ * Refeito o mosaico, as atribuições manuais passam para os blocos novos por
+ * sobreposição; as que não passaram são contadas (`carryLost`) e ditas aqui,
+ * até o operador as dispensar ou o mosaico mudar de novo.
  *
  * Com a área dividida em voos, a exportação por voo (`exportFlights`):
  * todos os voos, os de uma base («estou na base B») ou um só, atrás do
@@ -24,6 +28,8 @@ export default function BasesPanel({
   onPropose,
   hasBlocks,
   proposal,
+  carryLost = 0,
+  onDismissCarry = null,
   clickMode,
   onClickMode,
   vlosM,
@@ -69,7 +75,36 @@ export default function BasesPanel({
               {t('bases.proposedOut', { n: proposal.outOfVlos })}
             </span>
           )}
+          {proposal.highSites > 0 && (
+            <span data-testid="bases-proposal-high" className="text-amber-300">
+              {' '}
+              {t('bases.proposedHigh', { n: proposal.highSites })}
+            </span>
+          )}
         </p>
+      )}
+
+      {carryLost > 0 && (
+        <div
+          data-testid="bases-carry-lost"
+          data-lost={carryLost}
+          className="mb-1.5 flex items-start gap-1.5 rounded border border-amber-800/60 bg-amber-950/30 px-1.5 py-1 text-[11px] leading-relaxed text-amber-200"
+        >
+          <span className="flex-1">
+            {carryLost === 1 ? t('bases.carryLostOne') : t('bases.carryLost', { n: carryLost })}
+          </span>
+          {onDismissCarry && (
+            <button
+              type="button"
+              onClick={onDismissCarry}
+              title={t('bases.carryDismiss')}
+              aria-label={t('bases.carryDismiss')}
+              className="shrink-0 rounded px-1 text-amber-300 hover:bg-amber-900/60"
+            >
+              ×
+            </button>
+          )}
+        </div>
       )}
 
       {rows.length === 0 && (
@@ -233,10 +268,16 @@ function FlightExports({ files, baseName, rows, canExport, blocked, onExport, on
   )
 }
 
+/** Contador das edições do raio (uma por foco no campo), para o Ctrl+Z. */
+let radiusEdits = 0
+
 function BaseRow({ row: b, selected, onSelect, onRemove, onRadius, defaultRadiusM }) {
   const t = useT()
   // rascunho do raio enquanto se escreve (vazio = o da Configuração)
   const [draft, setDraft] = useState(null)
+  // cada vez que o campo ganha o foco é uma edição: tudo o que se escreve
+  // até sair dele é um só passo do Ctrl+Z
+  const editRef = useRef(0)
   const shown = draft ?? (b.customRadius ? String(b.requestedRadiusM) : '')
   const zoneText = b.noTerrain
     ? t('bases.zoneNoTerrain')
@@ -288,13 +329,18 @@ function BaseRow({ row: b, selected, onSelect, onRemove, onRadius, defaultRadius
             placeholder={String(defaultRadiusM)}
             title={t('bases.radiusTitle', { r: defaultRadiusM })}
             data-testid="base-radius"
-            onFocus={() => setDraft(shown)}
+            onFocus={() => {
+              setDraft(shown)
+              radiusEdits += 1
+              editRef.current = radiusEdits
+            }}
             onBlur={() => setDraft(null)}
             onChange={(e) => {
               const text = e.target.value
               setDraft(text)
-              if (text.trim() === '') onRadius(b.id, null)
-              else if (Number.isFinite(Number(text))) onRadius(b.id, Number(text))
+              const edit = String(editRef.current || ++radiusEdits)
+              if (text.trim() === '') onRadius(b.id, null, edit)
+              else if (Number.isFinite(Number(text))) onRadius(b.id, Number(text), edit)
             }}
             className="w-14 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
           />

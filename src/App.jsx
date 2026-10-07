@@ -46,7 +46,12 @@ import {
   removeBase as removeBaseFrom,
   setBaseRadius,
 } from './mission/bases.js'
-import { blocksViewRoute, proposeMoreBases, summarizeBases } from './mission/baseLayout.js'
+import {
+  blocksViewRoute,
+  lowSiteRule,
+  proposeMoreBases,
+  summarizeBases,
+} from './mission/baseLayout.js'
 import { baseFieldSheets } from './mission/fieldSheet.js'
 import { buildBasesKML } from './mission/basesKml.js'
 import {
@@ -195,10 +200,35 @@ function AppInner({ lang, setLang }) {
   // Bases de descolagem (A, B, ...): pontos do operador, cada um com a sua
   // zona (src/mission/bases.js). Os modos de rota única usam a mais próxima.
   const [bases, setBases] = useState(/** @type {any[]} */ ([]))
-  // atribuições manuais de blocos a bases, válidas para a disposição de
-  // blocos `key` (null = adoptar a actual, ao abrir um projecto)
-  const [blockBaseState, setBlockBaseState] = useState(() => ({ key: null, map: {} }))
+  // atribuições manuais de blocos a bases, feitas na disposição de blocos
+  // `key` (null = adoptar a actual, ao abrir um projecto), com as células e
+  // o contorno dela: refeito o mosaico, passam para os blocos novos por
+  // sobreposição, e `lost` conta as que não passaram (useAreaMission)
+  const [blockBaseState, setBlockBaseState] = useState(() => ({
+    key: /** @type {string|null} */ (null),
+    map: /** @type {Record<string, string>} */ ({}),
+    cells: /** @type {Array<{id: number, ring: number[][]}>|null} */ (null),
+    ring: /** @type {number[][]|null} */ (null),
+    lost: 0,
+  }))
   const [selectedBaseId, setSelectedBaseId] = useState(null)
+  // As bases e as atribuições entram no histórico de edição da área (Ctrl+Z,
+  // useAreaGeometry): um passo leva o estado inteiro de antes da edição
+  const basesSnapshotRef = useRef({ bases, blockBaseState })
+  useEffect(() => {
+    basesSnapshotRef.current = { bases, blockBaseState }
+  }, [bases, blockBaseState])
+  const basesHistory = useMemo(
+    () => ({
+      capture: () => basesSnapshotRef.current,
+      restore: (snap) => {
+        setBases(snap.bases)
+        setBlockBaseState(snap.blockBaseState)
+        setSelectedBaseId((sel) => (snap.bases.some((b) => b.id === sel) ? sel : null))
+      },
+    }),
+    [],
+  )
   // clique num bloco no mapa: activar/desactivar a célula ou atribuir a base
   const [blockClickMode, setBlockClickMode] = useState('toggle') // 'toggle' | 'assign'
   const [baseProposal, setBaseProposal] = useState(null) // {added, outOfVlos} da última proposta
@@ -537,6 +567,7 @@ function AppInner({ lang, setLang }) {
     activeCellHoles,
     refAzimuth,
     undoEdit,
+    pushHistory,
     toggleTile,
     restoreAllTiles,
     startDraw,
@@ -579,6 +610,7 @@ function AppInner({ lang, setLang }) {
         : 0,
     onImportedMission,
     t,
+    history: basesHistory,
   })
 
   /* ------------------------------ Terreno ----------------------------- */
@@ -741,7 +773,9 @@ function AppInner({ lang, setLang }) {
     blockRefs,
     refBase,
     layoutKey,
+    layoutCells,
     blockBase: blockBaseEffective,
+    manualLost,
     canExportKML,
     canExportKMZ,
     handleExportKML,
@@ -780,13 +814,28 @@ function AppInner({ lang, setLang }) {
     t,
   })
 
-  // As atribuições lidas de um projecto adoptam a disposição de blocos com
-  // que ele reabre (key null); daí em diante, refeito o mosaico, deixam de valer
+  // Disposição de blocos nova: as atribuições lidas de um projecto adoptam-na
+  // (key null); refeito o mosaico, ficam as que passaram por sobreposição
+  // (calculadas em useAreaMission) e a contagem das que se perderam. Sem
+  // blocos fica tudo como estava, para voltar quando os blocos voltarem.
   useEffect(() => {
-    if (blockBaseState.key === null && layoutKey)
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setBlockBaseState((st) => ({ ...st, key: layoutKey }))
-  }, [blockBaseState.key, layoutKey])
+    if (!layoutKey || blockBaseState.key === layoutKey) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBlockBaseState({
+      key: layoutKey,
+      map: blockBaseEffective,
+      cells: layoutCells,
+      ring,
+      lost: manualLost,
+    })
+  }, [blockBaseState.key, layoutKey, blockBaseEffective, layoutCells, ring, manualLost])
+
+  // atribuições manuais novas, na disposição de blocos de agora
+  const setManualBlockBase = useCallback(
+    (map) =>
+      setBlockBaseState((st) => ({ key: layoutKey, map, cells: layoutCells, ring, lost: st.lost })),
+    [layoutKey, layoutCells, ring],
+  )
 
   /* --------------- Modo circular (circlegrammetry) -------------------- */
   // Sobre o mesmo poligono da area: herda o relevo, a cota de referencia e
@@ -921,6 +970,7 @@ function AppInner({ lang, setLang }) {
       if (mode === 'base') {
         // "Marcar base" acrescenta uma base (A, B, C...) e selecciona-a
         const res = addBase(bases, lonlat)
+        if (res.base) pushHistory()
         setBases(res.bases)
         if (res.base) setSelectedBaseId(res.base.id)
         setMode('idle')
@@ -933,7 +983,7 @@ function AppInner({ lang, setLang }) {
         addInspectPoint(lonlat)
       }
     },
-    [mode, handleAreaClick, addInspectPoint, setOrbitConfig, bases],
+    [mode, handleAreaClick, addInspectPoint, setOrbitConfig, bases, pushHistory],
   )
 
   /* ---------------------- Interacções comuns -------------------------- */
@@ -982,11 +1032,15 @@ function AppInner({ lang, setLang }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [mode, removeLastDraftVertex])
 
-  // arrastar uma base: só o operador a move
-  const handleBaseDrag = useCallback((id, lonlat) => {
-    setBases((bs) => moveBase(bs, id, lonlat))
-    setSelectedBaseId(id)
-  }, [])
+  // arrastar uma base: só o operador a move (um passo do Ctrl+Z por arrasto)
+  const handleBaseDrag = useCallback(
+    (id, lonlat) => {
+      pushHistory()
+      setBases((bs) => moveBase(bs, id, lonlat))
+      setSelectedBaseId(id)
+    },
+    [pushHistory],
+  )
 
   const applySlopeAngle = useCallback(() => {
     if (slopeHint) setParams((p) => ({ ...p, angle: Math.round(slopeHint.contourAzimuthDeg) }))
@@ -1442,7 +1496,7 @@ function AppInner({ lang, setLang }) {
       // bases (a base única antiga abre como A) e as atribuições manuais,
       // que valem para a disposição de blocos que o projecto reabre
       setBases(n.bases ?? [])
-      setBlockBaseState({ key: null, map: n.blockBase ?? {} })
+      setBlockBaseState({ key: null, map: n.blockBase ?? {}, cells: null, ring: null, lost: 0 })
       setSelectedBaseId(null)
       setBaseProposal(null)
       if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
@@ -1535,15 +1589,17 @@ function AppInner({ lang, setLang }) {
   }, [])
 
   // retirar uma base: os blocos atribuídos à mão a ela voltam à automática
+  // (as atribuições guardadas, que podem ser de outra disposição de blocos)
   const removeBaseById = useCallback(
     (id) => {
+      pushHistory()
       const res = removeBaseFrom(bases, blockBaseState.map, id)
       setBases(res.bases)
       setBlockBaseState((st) => ({ ...st, map: res.blockBase }))
       setSelectedBaseId((sel) => (sel === id ? null : sel))
       setMode((m) => (m === 'base' ? 'idle' : m))
     },
-    [bases, blockBaseState.map],
+    [bases, blockBaseState.map, pushHistory],
   )
 
   // "Remover base": a seleccionada, senão a de referência do separador
@@ -1559,14 +1615,33 @@ function AppInner({ lang, setLang }) {
     if (id) removeBaseById(id)
   }, [missionMode, corridorBase, circularBase, refBase, bases, selectedBaseId, removeBaseById])
 
-  const setBaseRadiusById = useCallback((id, r) => {
-    setBases((bs) => setBaseRadius(bs, id, r))
-  }, [])
+  // raio da zona: o que se escreve num campo, tecla a tecla, é um só passo
+  // do Ctrl+Z (`edit` muda a cada vez que o campo ganha o foco)
+  const setBaseRadiusById = useCallback(
+    (id, r, edit = null) => {
+      pushHistory(edit ? `radius:${id}:${edit}` : null)
+      setBases((bs) => setBaseRadius(bs, id, r))
+    },
+    [pushHistory],
+  )
 
   // "Propor bases": bases novas só para os blocos que nenhuma base vê
-  // inteiros; as do operador ficam onde estão
+  // inteiros; as do operador ficam onde estão. Com seguimento de terreno e
+  // relevo, sítios baixos: a cota da zona de cada base proposta deixa os
+  // seus blocos com pelo menos 20 m de altura relativa (lowSiteRule)
   const proposeBasesForBlocks = useCallback(() => {
     if (!blocks?.length) return
+    const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
+    const site =
+      terrainFollow.enabled && typeof elevationAt === 'function'
+        ? lowSiteRule({
+            blocks,
+            elevationAt,
+            altitudeM: params.altitude,
+            radiusM: equipment.zoneRadiusM,
+            maxReliefM: equipment.zoneMaxReliefM,
+          })
+        : null
     const res = proposeMoreBases({
       blocks,
       bases,
@@ -1575,11 +1650,27 @@ function AppInner({ lang, setLang }) {
       vlosM,
       defaultRadiusM: equipment.zoneRadiusM,
       maxBlocksPerBase: equipment.maxFlightsPerBase ?? 0,
+      site,
     })
-    setBases(res.bases)
-    setBlockBaseState({ key: layoutKey, map: res.blockBase })
-    setBaseProposal({ added: res.added, outOfVlos: res.outOfVlos })
-  }, [blocks, bases, zones, blockBaseEffective, vlosM, equipment, layoutKey])
+    if (res.added > 0) {
+      pushHistory()
+      setBases(res.bases)
+      setManualBlockBase(res.blockBase)
+    }
+    setBaseProposal({ added: res.added, outOfVlos: res.outOfVlos, highSites: res.highSites })
+  }, [
+    blocks,
+    bases,
+    zones,
+    blockBaseEffective,
+    vlosM,
+    equipment,
+    pushHistory,
+    setManualBlockBase,
+    terrain,
+    terrainFollow.enabled,
+    params.altitude,
+  ])
 
   // atribuição manual de um bloco: a base seleccionada, ou a seguinte
   const assignBlock = useCallback(
@@ -1587,15 +1678,15 @@ function AppInner({ lang, setLang }) {
       if (!bases.length || !baseLayout?.byBlock[blockId]) return
       const current = baseLayout.byBlock[blockId].baseId
       const pick = selectedBaseId && selectedBaseId !== current ? selectedBaseId : null
-      setBlockBaseState({
-        key: layoutKey,
-        map: assignBlockBase(blockBaseEffective, blockId, bases, {
+      pushHistory()
+      setManualBlockBase(
+        assignBlockBase(blockBaseEffective, blockId, bases, {
           baseId: pick,
           currentBaseId: current,
         }),
-      })
+      )
     },
-    [bases, baseLayout, selectedBaseId, layoutKey, blockBaseEffective],
+    [bases, baseLayout, selectedBaseId, blockBaseEffective, pushHistory, setManualBlockBase],
   )
 
   // clique numa célula do mosaico: activar/desactivar, ou atribuir a base
@@ -2028,6 +2119,9 @@ function AppInner({ lang, setLang }) {
                   onRemove: removeBaseById,
                   onRadius: setBaseRadiusById,
                   onPropose: proposeBasesForBlocks,
+                  // atribuições manuais que não passaram para o mosaico refeito
+                  carryLost: blocks?.length ? manualLost : 0,
+                  onDismissCarry: () => setBlockBaseState((st) => ({ ...st, lost: 0 })),
                   hasBlocks: Boolean(blocks?.length),
                   proposal: baseProposal,
                   clickMode: blockClickMode,

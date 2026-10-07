@@ -32,7 +32,12 @@ const MAX_TILES = 600 // trava de segurança contra bboxes/zooms absurdos
 /** Um tile que não chega neste tempo conta como falhado (uma ligação presa não prende o relevo). */
 export const TILE_TIMEOUT_MS = 20000
 const MAX_FAIL_RATIO = 0.2 // acima de 20% de tiles em falha, desiste
-const MIN_SAFE_REL_M = 20 // altura relativa mínima confortável (aviso)
+/**
+ * Altura relativa mínima confortável (m): abaixo dela o seguimento de terreno
+ * avisa, e a proposta de bases evita sítios que a deixariam passar
+ * (baseLayout.js, lowSiteRule).
+ */
+export const MIN_SAFE_REL_M = 20
 const MAX_PROFILE_POINTS = 20000 // trava contra `stepM` minúsculos
 const MIN_STEP_M = 1 // passo mínimo de densificação
 

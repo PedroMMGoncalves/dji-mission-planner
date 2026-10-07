@@ -20,6 +20,7 @@
 import { squareSideForBattery, stopCostS, turnCostS } from '../utils/geo.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from '../utils/units.js'
 import { terrainRangeAlong } from './clearance.js'
+import { MIN_SAFE_REL_M } from '../utils/terrain.js'
 import { addBase, baseColor, sortedBases } from './bases.js'
 import {
   DEFAULT_ZONE_RADIUS_M,
@@ -327,13 +328,68 @@ export function blocksViewRoute(blocks, refs, altitude) {
 }
 
 /**
+ * Sítios baixos para as bases propostas (SiteRule de proposeBases), com
+ * seguimento de terreno: a altura relativa de um waypoint é `AGL + terreno −
+ * referência`, e uma base no alto de um cabeço deixava os blocos mais
+ * baixos com alturas relativas pequenas ou negativas. O custo de um
+ * candidato é a cota de referência da SUA zona (computeTakeoffZone, raio e
+ * desnível do equipamento; null fora do relevo), e um bloco aceita-o quando
+ * `referência ≤ mínimo do relevo debaixo do bloco + AGL − MIN_SAFE_REL_M`
+ * (os 20 m do aviso do seguimento de terreno). O mínimo de cada bloco é o
+ * de terrainRangeAlong sobre a rota (o anel, sem waypoints). Tudo calculado
+ * só quando pedido e guardado: ~150 blocos e centenas de candidatos.
+ * @param {object} args
+ * @param {any[]} args.blocks blocos do plano (id, waypoints, cellRing?)
+ * @param {(lon: number, lat: number) => number|null} args.elevationAt
+ * @param {number} args.altitudeM AGL pedido
+ * @param {number} [args.radiusM] raio da zona dos candidatos
+ * @param {number} [args.maxReliefM] desnível máximo da zona
+ * @returns {import('./takeoffZones.js').SiteRule|null}
+ */
+export function lowSiteRule({
+  blocks,
+  elevationAt,
+  altitudeM,
+  radiusM = DEFAULT_ZONE_RADIUS_M,
+  maxReliefM,
+}) {
+  if (typeof elevationAt !== 'function' || !Number.isFinite(altitudeM)) return null
+  const byId = new Map((blocks ?? []).map((b) => [String(b.id), b]))
+  const lowest = new Map()
+  const minUnder = (id) => {
+    const k = String(id)
+    if (!lowest.has(k)) {
+      const b = byId.get(k)
+      const route = b?.waypoints?.length ? b.waypoints : blockRing(b)
+      lowest.set(k, terrainRangeAlong(route, { elevationAt })?.minM ?? null)
+    }
+    return lowest.get(k)
+  }
+  return {
+    score: (point) => {
+      const z = computeTakeoffZone(point, { elevationAt, radiusM, maxReliefM })
+      return 'error' in z ? null : z.refElev
+    },
+    accepts: (id, refElev) => {
+      const m = minUnder(id)
+      return m === null || refElev <= m + altitudeM - MIN_SAFE_REL_M + 1e-6
+    },
+  }
+}
+
+/**
  * Proposta de bases para os blocos que ainda não têm uma base que os veja
  * inteiros (as bases do operador não se mexem, e um bloco atribuído à mão
  * fica com a sua). As bases novas recebem os primeiros rótulos livres pela
  * ordem do mosaico (a do primeiro bloco que servem), e os seus blocos ficam
  * atribuídos a elas — o limite de voos por base vale assim também depois.
+ *
+ * Com `site` (ex.: lowSiteRule, com relevo e seguimento de terreno) a
+ * proposta prefere sítios baixos e aceitáveis para os blocos que servem;
+ * `highSites` conta as bases que ficaram num sítio que algum dos seus blocos
+ * não aceita, porque não havia melhor (o preflight diz o resto).
  * @returns {{bases: any[], blockBase: Record<string, string>, added: number,
- *   outOfVlos: number}}
+ *   outOfVlos: number, highSites: number}}
  */
 export function proposeMoreBases({
   blocks,
@@ -343,8 +399,9 @@ export function proposeMoreBases({
   vlosM,
   defaultRadiusM = DEFAULT_ZONE_RADIUS_M,
   maxBlocksPerBase = 0,
+  site = null,
 }) {
-  const same = { bases, blockBase: manual ?? {}, added: 0, outOfVlos: 0 }
+  const same = { bases, blockBase: manual ?? {}, added: 0, outOfVlos: 0, highSites: 0 }
   if (!Array.isArray(blocks) || blocks.length === 0 || !(vlosM > 0)) return same
   const current = layoutBlocks({ blocks, bases, zones, manual, vlosM, defaultRadiusM })
   const uncovered = blocks.filter((b) => {
@@ -358,6 +415,7 @@ export function proposeMoreBases({
       vlosM,
       radiusM: defaultRadiusM,
       maxBlocksPerBase: maxBlocksPerBase > 0 ? maxBlocksPerBase : Infinity,
+      site,
     },
   )
   proposal.sort((a, b) => Math.min(...a.blockIds) - Math.min(...b.blockIds))
@@ -374,6 +432,7 @@ export function proposeMoreBases({
     blockBase: map,
     added: proposal.length,
     outOfVlos: proposal.filter((p) => p.outOfVlos).length,
+    highSites: proposal.filter((p) => !p.siteOk).length,
   }
 }
 

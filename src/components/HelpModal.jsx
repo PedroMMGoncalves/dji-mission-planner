@@ -152,11 +152,16 @@ function InstrucoesPt() {
         <Li>
           <strong>Bases</strong> — «Marcar base» acrescenta A, B, C... (arraste para mover; retire
           na lista). «Propor bases» cobre os blocos que nenhuma base vê dentro do alcance visual,
-          sem mexer nas suas. Cada base é uma <strong>zona</strong> (100 m na Configuração): as
+          sem mexer nas suas; com «Seguir terreno» prefere sítios baixos, que deixem os blocos com
+          pelo menos 20 m de altura relativa (num cabeço os blocos mais baixos ficavam rasos ou
+          abaixo da descolagem). Cada base é uma <strong>zona</strong> (100 m na Configuração): as
           alturas dos seus blocos referem-se à cota mais baixa da zona, e descolando em qualquer
           ponto dela voa-se entre 0 e +X m acima do planeado. Voos numerados por base: A-1, A-2,
           B-3. Com «Atribuir base», clicar num bloco passa-o para a base seleccionada (ou para a
-          seguinte).
+          seguinte). Refeito o mosaico (ângulo, lado, bateria, área editada), cada bloco novo herda
+          a base escolhida à mão e o estado desactivado do bloco antigo que cobre pelo menos metade
+          dele; as atribuições que não passam são ditas no painel das bases. Com a área substituída
+          por outra (menos de metade em comum) nada passa.
         </Li>
         <Li>
           <strong>Configuração</strong> (roda dentada no cabeçalho) — por aeronave, o alcance visual
@@ -169,8 +174,9 @@ function InstrucoesPt() {
           ou com a orientação escolhida.
         </Li>
         <Li>
-          <Kbd>Clique numa célula</Kbd> — desactiva/reactiva · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> —
-          desfaz.
+          <Kbd>Clique numa célula</Kbd> — desactiva/reactiva · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> — desfaz
+          a última edição, da área, das células ou das bases (marcar, arrastar, retirar, raio,
+          atribuir, propor), pela ordem.
         </Li>
         <Li>
           No modo ponto central, a <strong>grelha N×M</strong> replica a forma em colunas × linhas.
@@ -361,10 +367,16 @@ function InstrucoesEn() {
         <Li>
           <strong>Bases</strong> — “Set base” adds A, B, C... (drag to move; remove from the list).
           “Propose bases” covers the blocks no base sees within visual range, without touching
-          yours. Each base is a <strong>zone</strong> (100 m in Settings): its blocks’ heights refer
-          to the zone’s lowest elevation, and taking off anywhere in it you fly between 0 and +X m
-          above plan. Flights are numbered by base: A-1, A-2, B-3. With “Assign base”, clicking a
-          block moves it to the selected base (or to the next one).
+          yours; with “Follow terrain” it prefers low sites that leave the blocks at least 20 m of
+          relative height (on a hilltop the lower blocks were flown too low or below take-off). Each
+          base is a <strong>zone</strong> (100 m in Settings): its blocks’ heights refer to the
+          zone’s lowest elevation, and taking off anywhere in it you fly between 0 and +X m above
+          plan. Flights are numbered by base: A-1, A-2, B-3. With “Assign base”, clicking a block
+          moves it to the selected base (or to the next one). When the mosaic is rebuilt (angle,
+          size, battery, edited area), each new block inherits the hand-picked base and the disabled
+          state of the old block covering at least half of it; assignments that do not carry over
+          are reported in the bases panel. If the area is replaced by another (less than half in
+          common), nothing carries over.
         </Li>
         <Li>
           <strong>Settings</strong> (gear in the header) — per aircraft, the visual range and the
@@ -376,7 +388,9 @@ function InstrucoesEn() {
           lines or at the chosen orientation.
         </Li>
         <Li>
-          <Kbd>Click a cell</Kbd> — disables/enables it · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> — undo.
+          <Kbd>Click a cell</Kbd> — disables/enables it · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> — undoes the
+          last edit of the area, the cells or the bases (add, drag, remove, radius, assign,
+          propose), in order.
         </Li>
         <Li>
           In centre-point mode, the <strong>N×M grid</strong> replicates the shape in columns ×

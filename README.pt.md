@@ -142,7 +142,7 @@ O espaçamento entre faixas vem da pegada transversal no solo, `altitude × larg
 
 O selector no topo do painel escolhe o tipo de missão (**Área | Fachada | Órbita | Corredor | Circular**) e troca a ferramenta de desenho e os parâmetros; os pontos de inspecção são uma camada extra do modo Área. Dentro de cada modo o painel guia de cima para baixo; o cabeçalho tem a vista 3D, o relatório, a checklist, as exportações do modo Área, a ajuda e a língua. Tudo recalcula reactivamente; o painel de métricas (canto inferior direito) mostra GSD (ou densidade LiDAR), pegada, espaçamento, contagens, distância e tempo estimado, e uma faixa no topo do mapa soma os totais quando há vários planos no projecto.
 
-Gestos de edição: clique acrescenta vértices (Backspace ou clique num vértice remove, duplo clique conclui, Esc cancela); arraste vértices, arraste os pontos médios das arestas para inserir; clique nas células do mosaico para as desactivar; **Ctrl+Z** desfaz edições de área e células; os cartões dos pontos de inspecção arrastam-se na lista.
+Gestos de edição: clique acrescenta vértices (Backspace ou clique num vértice remove, duplo clique conclui, Esc cancela); arraste vértices, arraste os pontos médios das arestas para inserir; clique nas células do mosaico para as desactivar; **Ctrl+Z** desfaz edições de área, células e bases (bases marcadas, arrastadas, retiradas, raio da zona, atribuições de blocos, propostas), um passo de cada vez, pela ordem; os cartões dos pontos de inspecção arrastam-se na lista.
 
 ## Exportações
 

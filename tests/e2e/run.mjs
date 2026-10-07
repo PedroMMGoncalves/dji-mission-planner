@@ -21,7 +21,8 @@ import { join, resolve } from 'node:path'
 import { chromium } from 'playwright'
 import Ajv2020 from 'ajv/dist/2020.js'
 import JSZip from 'jszip'
-import { ground, makeFixtures, rectRing, toLL, toM } from './fixtures.mjs'
+import * as turf from '@turf/turf'
+import { HILL, ground, hillGround, makeFixtures, rectRing, toLL, toM } from './fixtures.mjs'
 import { analyseRoute, readRoutes } from './kmz.mjs'
 
 const PORT = Number(process.env.E2E_PORT ?? 4173)
@@ -145,7 +146,13 @@ function solidTerrariumPng([r, g, b]) {
 }
 const FLAT_TILE = solidTerrariumPng([128, 0, 0])
 
-async function openMission({ area = null, dem = true, globalTerrain = true, disclaimer = true }) {
+async function openMission({
+  area = null,
+  dem = true,
+  demFile = null,
+  globalTerrain = true,
+  disclaimer = true,
+}) {
   const page = await browser.newPage({
     viewport: { width: 1500, height: 950 },
     acceptDownloads: true,
@@ -180,7 +187,7 @@ async function openMission({ area = null, dem = true, globalTerrain = true, disc
       null,
       { timeout: 15000 },
     )
-    await page.locator('input[accept=".tif,.tiff"]').setInputFiles(fx.dem)
+    await page.locator('input[accept=".tif,.tiff"]').setInputFiles(demFile ?? fx.dem)
     await page.waitForFunction(
       () => {
         const l = [...document.querySelectorAll('label')].find((l) =>
@@ -1780,6 +1787,261 @@ await scenario('projecto-antigo-mosaico-e-base', async () => {
     m ? `${active} activas de ${total}` : 'sem contagem',
   )
   check('antigo: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Ctrl+Z desfaz a última edição de qualquer tipo, pela ordem: o raio
+// escrito numa base (um passo, tecla a tecla), a base arrastada, a
+// atribuição manual de um bloco e a própria proposta de bases.
+const basePin = (page, label) =>
+  page.locator('.base-marker-multi').filter({ has: page.locator(`[data-base-label="${label}"]`) })
+const savedBase = async (page, label) =>
+  (await savedProject(page))?.bases?.find((b) => b.label === label) ?? null
+const undo = async (page) => {
+  await page.evaluate(() => document.activeElement?.blur?.())
+  await page.keyboard.press('Control+z')
+  await page.waitForTimeout(1200)
+}
+await scenario('bases-desfazer', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await configure(page, { tf: true, split: 'Bateria' })
+  await page.getByTestId('propose-bases').click()
+  await page.waitForTimeout(1500)
+  const rows0 = await baseRows(page)
+  const layout0 = rows0.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ')
+  check('desfazer: a proposta dá pelo menos duas bases', rows0.length >= 2, layout0)
+
+  // 1) atribuição manual: o bloco de A passa para a base seguinte
+  const A = rows0[0]
+  const blk = A.blocks[0]
+  await page.getByTestId('click-mode-assign').click()
+  await page.locator(`.block-label [data-block-id="${blk}"]`).click()
+  await page.waitForTimeout(1200)
+  let rows = await baseRows(page)
+  const owner = rows.find((r) => r.blocks.includes(blk))
+  check(
+    'desfazer: o clique no bloco passa-o para outra base',
+    owner && owner.label !== A.label,
+    `bloco ${blk}: ${A.label} -> ${owner?.label}`,
+  )
+  // 2) a base A arrastada
+  const ptA0 = (await savedBase(page, 'A'))?.point
+  await dragMarker(page, basePin(page, 'A'), 90, 60)
+  const ptA1 = (await savedBase(page, 'A'))?.point
+  check('desfazer: a base A foi arrastada', ptA0 && ptA1 && ptA0.join() !== ptA1.join())
+  // 3) o raio da base B escrito tecla a tecla
+  const radius = page.locator(
+    `[data-testid="base-row"][data-base-label="${rows0[1].label}"] [data-testid="base-radius"]`,
+  )
+  await radius.click()
+  await page.keyboard.type('150')
+  await page.evaluate(() => document.activeElement?.blur?.())
+  await page.waitForTimeout(1200)
+  check(
+    'desfazer: raio da base B em 150 m',
+    (await savedBase(page, rows0[1].label))?.radiusM === 150,
+  )
+
+  // Ctrl+Z: o raio inteiro num passo; a base A fica onde foi arrastada
+  await undo(page)
+  const B1 = await savedBase(page, rows0[1].label)
+  check(
+    'desfazer: um Ctrl+Z repõe o raio escrito (as três teclas são um passo)',
+    B1 && B1.radiusM == null && (await savedBase(page, 'A'))?.point.join() === ptA1.join(),
+    `raio ${B1?.radiusM}`,
+  )
+  // Ctrl+Z: a base A volta onde estava
+  await undo(page)
+  check(
+    'desfazer: o Ctrl+Z seguinte repõe a base arrastada',
+    (await savedBase(page, 'A'))?.point.join() === ptA0.join(),
+  )
+  rows = await baseRows(page)
+  check(
+    'desfazer: … sem desfazer ainda a atribuição',
+    rows.find((r) => r.blocks.includes(blk))?.label === owner?.label,
+  )
+  // Ctrl+Z: o bloco volta à base A
+  await undo(page)
+  rows = await baseRows(page)
+  check(
+    'desfazer: o Ctrl+Z seguinte repõe a atribuição manual',
+    rows.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ') === layout0,
+    rows.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' '),
+  )
+  // Ctrl+Z: a proposta inteira sai
+  await undo(page)
+  check('desfazer: e depois a proposta de bases', (await baseRows(page)).length === 0)
+  check('desfazer: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Mosaico refeito pelo ângulo das faixas: as atribuições manuais passam para
+// as células novas que ficam pelo menos meio dentro de uma antiga, e as que
+// não passaram são ditas no painel das bases. Verificado contra o contorno
+// dos blocos no KML de campo, antes e depois, com o turf.
+const setAngle = (page, deg) =>
+  page.evaluate((v) => {
+    const el = [...document.querySelectorAll('input[type=range]')].find((i) => i.max === '360')
+    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+    set.call(el, String(v))
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+  }, deg)
+/** Blocos do KML «Bases e blocos»: id, rótulo do voo e contorno. */
+const kmlBlocks = (kml) =>
+  [...kml.matchAll(/<Placemark>([\s\S]*?)<\/Placemark>/g)]
+    .map((m) => m[1])
+    .filter((p) => /<Polygon>/.test(p) && /bloco (\d+)/.test(p))
+    .map((p) => {
+      const coords = /<LinearRing><coordinates>([^<]*)<\/coordinates>/.exec(p)[1]
+      const ring = coords
+        .trim()
+        .split(/\s+/)
+        .map((c) => c.split(',').slice(0, 2).map(Number))
+      return {
+        id: Number(/bloco (\d+)/.exec(p)[1]),
+        label: /<name>([^<]*)<\/name>/.exec(p)[1],
+        poly: turf.polygon([ring]),
+      }
+    })
+await scenario('mosaico-refeito-mantem-atribuicoes', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await configure(page, { tf: true, split: 'Bateria' })
+  await page.getByTestId('propose-bases').click()
+  await page.waitForTimeout(1500)
+  const kml = async (file) =>
+    readFileSync(
+      (await download(page, page.getByTestId('export-bases-kml'), join(OUT, file)))[1],
+      'utf8',
+    )
+  const old = kmlBlocks(await kml('refeito-antes.kml'))
+  const manual0 = (await savedProject(page))?.blockBase ?? {}
+  check(
+    'refeito: depois da proposta todos os blocos estão atribuídos à mão',
+    old.length > 4 && old.every((b) => manual0[b.id]),
+    `${old.length} blocos, ${Object.keys(manual0).length} atribuições`,
+  )
+  check(
+    'refeito: sem aviso antes de refazer o mosaico',
+    (await page.getByTestId('bases-carry-lost').count()) === 0,
+  )
+
+  await setAngle(page, 72)
+  await page.waitForTimeout(2500)
+  const neu = kmlBlocks(await kml('refeito-depois.kml'))
+  const manual1 = (await savedProject(page))?.blockBase ?? {}
+  check(
+    'refeito: o ângulo novo refez o mosaico',
+    neu.map((b) => b.poly.geometry.coordinates[0][0].join()).join() !==
+      old.map((b) => b.poly.geometry.coordinates[0][0].join()).join(),
+  )
+  // o oráculo: a célula antiga que cobre mais de cada célula nova
+  let carried = 0
+  let wrong = []
+  const heirs = new Set()
+  for (const n of neu) {
+    const A = turf.area(n.poly)
+    let best = { f: 0, o: null }
+    for (const o of old) {
+      const x = turf.intersect(turf.featureCollection([n.poly, o.poly]))
+      const f = x ? turf.area(x) / A : 0
+      if (f > best.f) best = { f, o }
+    }
+    if (best.f >= 0.5) heirs.add(best.o.id)
+    if (best.f >= 0.55) {
+      if (manual1[n.id] === manual0[best.o.id]) carried += 1
+      else wrong.push(`${n.id}<-${best.o.id}:${manual1[n.id]}/${manual0[best.o.id]}`)
+    } else if (best.f <= 0.45 && manual1[n.id] !== undefined) wrong.push(`${n.id}:sem herança`)
+  }
+  check(
+    'refeito: as células novas meio dentro de uma antiga ficam com a base escolhida',
+    carried > 0 && wrong.length === 0,
+    `${carried} herdadas; ${wrong.slice(0, 6).join(' ')}`,
+  )
+  const lostWanted = old.filter((o) => !heirs.has(o.id)).length
+  const info = page.getByTestId('bases-carry-lost')
+  const lost = (await info.count()) ? Number(await info.getAttribute('data-lost')) : 0
+  check(
+    'refeito: o painel diz quantas atribuições não passaram',
+    lostWanted > 0 &&
+      lost === lostWanted &&
+      /atribuições manuais não passaram para o novo mosaico/.test(await info.innerText()),
+    `${lost} no painel, ${lostWanted} esperadas`,
+  )
+  // os blocos sem herança voltam à base automática: todos com base
+  const rows = await baseRows(page)
+  check(
+    'refeito: todos os blocos novos continuam com uma base',
+    rows.flatMap((r) => r.blocks).length === neu.length,
+  )
+  check('refeito: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// "Propor bases" com um cabeço: sem seguimento de terreno a proposta é a de
+// sempre (o ponto médio da aresta comum, no alto); com ele, a cota da zona
+// da base deixa os blocos com pelo menos 20 m de altura relativa.
+await scenario('propor-bases-evita-cabeco', async () => {
+  const { page, errors } = await openMission({ area: fx.hill, demFile: fx.demHill })
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await configure(page, { split: 'Mosaico' })
+  check('cabeço: dois quadrados de 250 m', (await page.getByTestId('block-row').count()) === 2)
+  const limit = HILL.base + AGL_M - 20 // a planície debaixo dos blocos + AGL − 20 m
+  await page.getByTestId('propose-bases').click()
+  await page.waitForTimeout(1500)
+  let rows = await baseRows(page)
+  check(
+    'cabeço: sem seguir terreno, a proposta de sempre fica no alto do cabeço',
+    rows.length === 1 && rows[0].ref > limit + 20,
+    rows.map((r) => `${r.label}:${r.ref}`).join(' '),
+  )
+  await undo(page)
+  check('cabeço: Ctrl+Z retira a proposta', (await baseRows(page)).length === 0)
+
+  await label(page, TF).check()
+  await page.waitForTimeout(1200)
+  await page.getByTestId('propose-bases').click()
+  await page.waitForTimeout(1500)
+  rows = await baseRows(page)
+  check(
+    'cabeço: com seguir terreno, a base fica num sítio baixo (cota ≤ planície + AGL − 20 m)',
+    rows.length >= 1 && rows.every((r) => Number.isFinite(r.ref) && r.ref <= limit + 0.5),
+    rows.map((r) => `${r.label}:${r.ref}`).join(' '),
+  )
+  check(
+    'cabeço: sem aviso de sítio alto na proposta',
+    (await page.getByTestId('bases-proposal-high').count()) === 0,
+  )
+  await exportReady(page)
+  const routes = await readRoutes(await exportKmz(page, join(OUT, 'cabeco.zip')))
+  const minRel = Math.min(
+    ...routes.flatMap((x) =>
+      analyseRoute(x.wpml, { toM, ground: hillGround, aglNominalM: AGL_M }).points.map((q) => q[2]),
+    ),
+  )
+  check(
+    'cabeço: nenhum waypoint exportado abaixo de 20 m de altura relativa',
+    routes.length === 2 && minRel >= 20 - 0.5,
+    `${routes.length} rotas, mínimo ${minRel.toFixed(1)} m`,
+  )
+  check('cabeço: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

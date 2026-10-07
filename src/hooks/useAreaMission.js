@@ -29,9 +29,11 @@ import { referenceElevation } from '../mission/reference.js'
 import {
   blockLayoutKey,
   blockReferences,
+  blockRing,
   computeZones,
   layoutBlocks,
 } from '../mission/baseLayout.js'
+import { carryOverCells } from '../mission/cellCarryOver.js'
 import { nearestBase } from '../mission/bases.js'
 import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from '../utils/gcp.js'
 import { DEFAULT_GCP_CONFIG } from '../mission/defaults.js'
@@ -42,9 +44,12 @@ const NO_MAP = Object.freeze({})
 /**
  * Bases múltiplas (`bases`, `blockBaseState`): cada bloco tem a sua base e
  * as alturas referem-se à zona dela (src/mission/baseLayout.js). As
- * atribuições manuais valem para a disposição de blocos em que foram feitas
- * (`blockBaseState.key`, null = adoptar a actual, ao abrir um projecto):
- * refeito o mosaico ou o corte, deixam de se aplicar.
+ * atribuições manuais guardam a disposição de blocos em que foram feitas
+ * (`blockBaseState.key`, null = adoptar a actual, ao abrir um projecto; as
+ * células, `cells`, e o contorno da área, `ring`): refeito o mosaico, a
+ * grelha ou o corte, passam para os blocos novos por sobreposição
+ * (src/mission/cellCarryOver.js), e as que não passam são contadas
+ * (`manualLost`) para o painel o dizer.
  */
 export function useAreaMission({
   ring,
@@ -56,7 +61,7 @@ export function useAreaMission({
   tiles = null,
   gridCells = null,
   bases = [],
-  blockBaseState = { key: null, map: {} },
+  blockBaseState = { key: null, map: {}, cells: null, ring: null, lost: 0 },
   zoneConfig = { radiusM: 100, maxReliefM: 10 },
   vlosM = 500,
   params,
@@ -153,8 +158,34 @@ export function useAreaMission({
     [bases, elevationAt, zoneConfig.radiusM, zoneConfig.maxReliefM],
   )
   const layoutKey = blockLayoutKey({ tiles, gridCells, blocks })
-  const blockBase =
-    blockBaseState.key === null || blockBaseState.key === layoutKey ? blockBaseState.map : NO_MAP
+  // células da disposição de agora, com o id do bloco de cada uma: as do
+  // mosaico (todas, também as desactivadas) e da grelha (posição + 1), ou o
+  // contorno de cada bloco do corte da serpentina
+  const layoutCells = useMemo(() => {
+    if (Array.isArray(tiles) && tiles.length) return tiles.map((r, i) => ({ id: i + 1, ring: r }))
+    if (Array.isArray(gridCells) && gridCells.length)
+      return gridCells.map((r, i) => ({ id: i + 1, ring: r }))
+    if (Array.isArray(blocks) && blocks.length)
+      return blocks.map((b) => ({ id: b.id, ring: blockRing(b) }))
+    return null
+  }, [tiles, gridCells, blocks])
+  // atribuições manuais para os blocos de agora: as guardadas, se são desta
+  // disposição; senão as que passam por sobreposição; sem blocos, nenhuma
+  const manualCarry = useMemo(() => {
+    const st = blockBaseState
+    if (st.key === null || st.key === layoutKey)
+      return { map: st.map ?? NO_MAP, lost: st.lost ?? 0 }
+    if (!layoutKey) return { map: NO_MAP, lost: st.lost ?? 0 }
+    const res = carryOverCells({
+      oldRing: st.ring,
+      newRing: ring,
+      oldCells: st.cells,
+      newCells: layoutCells,
+      manual: st.map,
+    })
+    return { map: res.manual, lost: res.lost }
+  }, [blockBaseState, layoutKey, layoutCells, ring])
+  const blockBase = manualCarry.map
   const baseLayout = useMemo(
     () =>
       layoutBlocks({
@@ -429,7 +460,9 @@ export function useAreaMission({
     blockRefs,
     refBase,
     layoutKey,
+    layoutCells,
     blockBase,
+    manualLost: manualCarry.lost,
     canExportKML,
     canExportKMZ,
     handleExportKML,

@@ -360,8 +360,8 @@ export default {
   'cp.split.meshOrientation': { pt: 'Orientação da malha', en: 'Mosaic orientation' },
   'cp.split.undo': { pt: 'Anular (Ctrl+Z)', en: 'Undo (Ctrl+Z)' },
   'cp.split.undoTitle': {
-    pt: 'Desfazer a última alteração às células (Ctrl+Z)',
-    en: 'Undo the last change to the cells (Ctrl+Z)',
+    pt: 'Desfazer a última edição: área, células ou bases (Ctrl+Z)',
+    en: 'Undo the last edit: area, cells or bases (Ctrl+Z)',
   },
   'cp.split.restoreAll': { pt: 'Reactivar todas', en: 'Re-enable all' },
   'cp.split.tilesHintA': {

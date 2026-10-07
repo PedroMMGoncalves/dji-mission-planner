@@ -6,6 +6,33 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Corrigido (bases: Ctrl+Z, mosaico refeito e proposta em relevo)
+
+- **Ctrl+Z também nas bases.** Marcar, arrastar e retirar uma base, o raio
+  da zona, atribuir um bloco à mão e «Propor bases» entram no mesmo
+  histórico das edições da área e das células: cada Ctrl+Z desfaz a última
+  edição de qualquer tipo, pela ordem, e repõe o estado inteiro de antes
+  dela. O raio escrito tecla a tecla é um só passo.
+- **Mosaico refeito sem perder as escolhas.** Mudar o ângulo das faixas, o
+  lado, a orientação, o tempo útil ou editar a área deixava de aplicar as
+  atribuições manuais e reactivava as células desactivadas. Agora cada
+  bloco novo herda a base escolhida à mão e o estado desactivado do bloco
+  antigo que cobre pelo menos metade dele; os outros ficam com a base
+  automática e activos. Com a área substituída por outra (menos de metade
+  da menor em comum, ex. um desenho ou uma importação noutro sítio) nada
+  passa; a área movida inteira é a mesma. As atribuições que não passam são
+  ditas no painel das bases («N atribuições manuais não passaram para o novo
+  mosaico»), com um botão para dispensar o aviso. METODOS §4.2.
+- **«Propor bases» evita os cabeços.** Com seguir terreno, a altura relativa
+  é `AGL + terreno − cota da zona`, e uma base proposta no alto deixava os
+  blocos mais baixos com alturas pequenas ou negativas. A proposta passa a
+  aceitar só sítios cuja zona tem a cota de referência até `mínimo do relevo
+  do bloco + AGL − 20 m` (o limiar do aviso de altura relativa) e, entre
+  sítios que servem os mesmos blocos, o mais baixo. Sem sítio aceitável
+  propõe o mais baixo que vê o bloco e diz quantas bases ficaram assim (o
+  preflight fala). Sem seguir terreno a proposta fica a de sempre.
+  METODOS §4.1.
+
 ### Acrescentado (exportação base a base e ficha de campo)
 
 - **Exportar voos** no painel das bases, com a área dividida em voos:

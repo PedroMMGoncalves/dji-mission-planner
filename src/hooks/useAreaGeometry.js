@@ -2,7 +2,8 @@
  * Modo área, parte 1 — a geometria: anel (desenhado, importado ou gerado
  * pela âncora), grelha de células da âncora, mosaico de quadrados (manual
  * ou dimensionado pela bateria), células desactivadas, histórico de edição
- * (Ctrl+Z) e importação de ficheiros de área. O plano de voo sobre esta
+ * (Ctrl+Z, também das bases e das atribuições, por `history`) e importação
+ * de ficheiros de área. O plano de voo sobre esta
  * geometria fica em useAreaMission, porque depende do terreno, e o terreno
  * (useTerrain) depende do anel daqui — geometria → terreno → plano.
  */
@@ -15,8 +16,13 @@ import {
   validateRing,
 } from '../utils/geo.js'
 import { buildSquareMosaic, mosaicOrientationForLines } from '../mission/squareMosaic.js'
-import { cellFitsBattery, squareSideWithBaseTransit } from '../mission/baseLayout.js'
+import {
+  blockLayoutKey,
+  cellFitsBattery,
+  squareSideWithBaseTransit,
+} from '../mission/baseLayout.js'
 import { legacyDisabledForMosaic } from '../mission/mosaicLegacy.js'
+import { carryOverCells } from '../mission/cellCarryOver.js'
 import {
   parseAreaFile,
   reprojectParts,
@@ -40,6 +46,10 @@ import { DEFAULT_ANCHOR, DEFAULT_SPLIT } from '../mission/defaults.js'
  * @param {number} [args.stopEveryM] paragem a cada X m ao longo da faixa (0 = só nos cantos)
  * @param {Function} args.onImportedMission reimportação de um WPML: recebe {name, altitude, speed}
  * @param {Function} args.t tradução
+ * @param {{capture: () => any, restore: (snapshot: any) => void}} [args.history]
+ *   estado de fora do hook que entra no mesmo histórico (as bases e as
+ *   atribuições manuais, no App): `capture` dá o instantâneo antes de uma
+ *   edição, `restore` repõe-no ao desfazer
  */
 export function useAreaGeometry({
   mode,
@@ -54,6 +64,7 @@ export function useAreaGeometry({
   stopEveryM = 0,
   onImportedMission,
   t,
+  history = null,
 }) {
   const [ring, setRing] = useState(null) // anel aberto [[lon,lat], ...]
   const [holes, setHoles] = useState([]) // anéis interiores importados (buracos), não editáveis
@@ -62,7 +73,16 @@ export function useAreaGeometry({
   const [anchor, setAnchor] = useState(() => ({ ...DEFAULT_ANCHOR }))
   const [gridCells, setGridCells] = useState(null) // anéis das células da grelha
   const [split, setSplit] = useState(() => ({ ...DEFAULT_SPLIT }))
-  const [disabledTiles, setDisabledTiles] = useState(() => new Set())
+  // Células desactivadas do mosaico, com a disposição a que se referem:
+  // `key` (blockLayoutKey das células; null = adoptar a actual, ao abrir um
+  // projecto), as células e o contorno da área. Refeito o mosaico, passam
+  // para as células novas por sobreposição (cellCarryOver.js).
+  const [tileSel, setTileSel] = useState(() => ({
+    key: /** @type {string|null} */ (null),
+    cells: /** @type {Array<{id: number, ring: number[][]}>|null} */ (null),
+    ring: /** @type {number[][]|null} */ (null),
+    disabled: new Set(),
+  }))
   const [importState, setImportState] = useState(null) // {ring, filename} à espera de CRS
   const [importError, setImportError] = useState(null)
   // aviso brando da importação (ex.: MultiPolygon com partes ignoradas)
@@ -72,14 +92,18 @@ export function useAreaGeometry({
   // quando o mosaico novo estiver calculado (mosaicLegacy.js)
   const [pendingLegacy, setPendingLegacy] = useState(null)
 
-  // Histórico de edição unificado (Ctrl+Z): geometria da área + seleção de células
+  // Histórico de edição unificado (Ctrl+Z): geometria da área, selecção de
+  // células e, por `history`, as bases e as atribuições manuais
   const editHistoryRef = useRef([])
   const ringSnapshotRef = useRef(null)
   const holesSnapshotRef = useRef([])
   const cellsSnapshotRef = useRef(null)
   const anchorCenterSnapshotRef = useRef(null)
-  const tilesSnapshotRef = useRef(new Set())
-  const skipTileResetRef = useRef(false)
+  const tileSelSnapshotRef = useRef(tileSel)
+  const historyRef = useRef(history)
+  useEffect(() => {
+    historyRef.current = history
+  }, [history])
 
   const setAnchorParam = useCallback((key, value) => {
     setAnchor((a) => {
@@ -221,6 +245,28 @@ export function useAreaGeometry({
   const tilesError = tilesResult?.mosaic?.error ?? null
   const tileSide = tilesResult?.side ?? null
 
+  // Disposição do mosaico (a mesma chave das atribuições manuais) e as
+  // células com o índice de cada uma, para a passagem por sobreposição
+  const mosaicKey = useMemo(() => (tiles ? blockLayoutKey({ tiles }) : ''), [tiles])
+  const mosaicCellRefs = useMemo(
+    () => (mosaicCells ? mosaicCells.map((c, i) => ({ id: i, ring: c.ring })) : null),
+    [mosaicCells],
+  )
+  // Células desactivadas no mosaico de agora: as guardadas, se são deste
+  // mosaico; senão as que passam do mosaico anterior (mesma área, célula
+  // nova pelo menos meio dentro de uma antiga desactivada). Calculadas aqui
+  // e não num efeito, para o plano não correr uma vez sem elas.
+  const disabledTiles = useMemo(() => {
+    if (!mosaicKey || tileSel.key === null || tileSel.key === mosaicKey) return tileSel.disabled
+    return carryOverCells({
+      oldRing: tileSel.ring,
+      newRing: ring,
+      oldCells: tileSel.cells,
+      newCells: mosaicCellRefs,
+      disabled: tileSel.disabled,
+    }).disabled
+  }, [tileSel, mosaicKey, mosaicCellRefs, ring])
+
   // espelhos do estado atual, para os snapshots do histórico
   // Os instantaneos vivem em refs actualizados por efeito: pushHistory e
   // chamado ANTES do setState da edicao, pelo que apanha o estado anterior
@@ -238,60 +284,80 @@ export function useAreaGeometry({
     anchorCenterSnapshotRef.current = anchor.center
   }, [anchor.center])
   useEffect(() => {
-    tilesSnapshotRef.current = disabledTiles
-  }, [disabledTiles])
+    tileSelSnapshotRef.current = tileSel
+  }, [tileSel])
 
   /**
    * Um passo do historico e a AREA INTEIRA e nao so o anel: mover a area
    * desloca tambem os buracos, as celulas e a ancora, e repor so o anel
    * deixava-os desalinhados. Uma area com origem na ancora e reposta pela
    * ancora — o efeito acima regenera rectangulo, celulas e buracos —, as
-   * outras pela geometria guardada.
+   * outras pela geometria guardada. Leva tambem as celulas desactivadas com
+   * a disposicao a que se referem e o estado de fora (`history`: bases e
+   * atribuicoes manuais), para um Ctrl+Z desfazer a ultima edicao de
+   * qualquer tipo, pela ordem em que foram feitas.
+   *
+   * `coalesce`: uma sequencia de alteracoes com a mesma chave seguidas (o
+   * raio de uma base escrito tecla a tecla) e um so passo — o instantaneo
+   * e o de antes da primeira.
+   * @param {string|null} [coalesce]
    */
-  const pushHistory = useCallback(() => {
-    editHistoryRef.current.push({
+  const pushHistory = useCallback((coalesce = null) => {
+    const stack = editHistoryRef.current
+    const top = stack[stack.length - 1]
+    if (typeof coalesce === 'string' && top?.coalesce === coalesce) return
+    stack.push({
       ring: ringSnapshotRef.current,
       holes: holesSnapshotRef.current,
       gridCells: cellsSnapshotRef.current,
       anchorCenter: anchorCenterSnapshotRef.current,
-      tiles: new Set(tilesSnapshotRef.current),
+      tileSel: tileSelSnapshotRef.current,
+      extra: historyRef.current?.capture ? historyRef.current.capture() : null,
+      coalesce: typeof coalesce === 'string' ? coalesce : null,
     })
-    if (editHistoryRef.current.length > 100) editHistoryRef.current.shift()
+    if (stack.length > 100) stack.shift()
   }, [])
 
   const undoEdit = useCallback(() => {
     const prev = editHistoryRef.current.pop()
     if (!prev) return
-    skipTileResetRef.current = true
     if (prev.anchorCenter) {
-      // a ancora regenera o anel: nao o repor aqui, senao o anel muda duas
-      // vezes e a segunda limpa a seleccao de celulas
-      setAnchor((a) => ({ ...a, center: prev.anchorCenter }))
+      // a ancora regenera o anel: nao o repor aqui (mudaria duas vezes); a
+      // mesma ancora nao se repoe, para nao refazer o anel sem necessidade
+      setAnchor((a) => (a.center === prev.anchorCenter ? a : { ...a, center: prev.anchorCenter }))
     } else {
       setAnchor((a) => (a.center ? { ...a, center: null } : a))
       setRing(prev.ring)
       setHoles(prev.holes ?? [])
       setGridCells(prev.gridCells ?? null)
     }
-    setDisabledTiles(new Set(prev.tiles))
+    // as celulas desactivadas voltam com a disposicao a que se referem: se o
+    // mosaico de agora for outro, passam para ele por sobreposicao
+    setTileSel(prev.tileSel)
+    if (prev.extra != null) historyRef.current?.restore?.(prev.extra)
   }, [])
 
-  // regenerar o mosaico limpa a seleção de células desativadas
+  // Mosaico refeito: a selecção que passou para as células novas fica
+  // guardada com a disposição nova (o cálculo é o de disabledTiles, acima).
+  // Sem mosaico (área a ser desenhada, divisão desligada) fica como estava,
+  // para voltar quando o mosaico voltar.
   useEffect(() => {
-    if (skipTileResetRef.current) {
-      skipTileResetRef.current = false
-      return
-    }
-    setDisabledTiles(new Set())
-  }, [ring, split.mode, tileSide, tileOrientation])
+    if (!mosaicKey || tileSel.key === mosaicKey) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTileSel({ key: mosaicKey, cells: mosaicCellRefs, ring, disabled: disabledTiles })
+  }, [mosaicKey, tileSel.key, mosaicCellRefs, ring, disabledTiles])
 
   // Projecto anterior ao mosaico novo: a selecção antiga passa para as
   // células novas que ficam pelo menos meio dentro das antigas desactivadas
+  // (depois do efeito acima, para ser esta a que fica)
   useEffect(() => {
     if (!pendingLegacy || !mosaicCells || !ring) return
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDisabledTiles(
-      legacyDisabledForMosaic({
+    setTileSel({
+      key: mosaicKey,
+      cells: mosaicCellRefs,
+      ring,
+      disabled: legacyDisabledForMosaic({
         ring,
         holes,
         split: { ...split, tileOrientation: pendingLegacy.tileOrientation },
@@ -304,11 +370,13 @@ export function useAreaGeometry({
         disabled: pendingLegacy.disabled,
         newCells: mosaicCells,
       }),
-    )
+    })
     setPendingLegacy(null)
   }, [
     pendingLegacy,
     mosaicCells,
+    mosaicKey,
+    mosaicCellRefs,
     ring,
     holes,
     split,
@@ -321,21 +389,20 @@ export function useAreaGeometry({
 
   const toggleTile = useCallback(
     (index) => {
+      if (!mosaicKey) return
       pushHistory()
-      setDisabledTiles((prev) => {
-        const next = new Set(prev)
-        if (next.has(index)) next.delete(index)
-        else next.add(index)
-        return next
-      })
+      const next = new Set(disabledTiles)
+      if (next.has(index)) next.delete(index)
+      else next.add(index)
+      setTileSel({ key: mosaicKey, cells: mosaicCellRefs, ring, disabled: next })
     },
-    [pushHistory],
+    [pushHistory, mosaicKey, mosaicCellRefs, ring, disabledTiles],
   )
 
   const restoreAllTiles = useCallback(() => {
     pushHistory()
-    setDisabledTiles(new Set())
-  }, [pushHistory])
+    setTileSel({ key: mosaicKey || null, cells: mosaicCellRefs, ring, disabled: new Set() })
+  }, [pushHistory, mosaicKey, mosaicCellRefs, ring])
 
   // Ctrl+Z desfaz a última edição (vértices, área ou células)
   useEffect(() => {
@@ -500,9 +567,9 @@ export function useAreaGeometry({
    *
    * Com a area vinda da ancora desloca-se a ancora, que regenera o
    * rectangulo ou a grelha; nos restantes casos translada-se a geometria.
-   * A seleccao de celulas desactivadas mantem-se: o mosaico e calculado a
-   * partir do anel, acompanha-o na translacao e os indices continuam a
-   * valer.
+   * As celulas desactivadas e as atribuicoes manuais mantem-se: uma area
+   * deslocada inteira e a mesma area (cellCarryOver.js), e as celulas
+   * antigas acompanham o deslocamento antes da comparacao.
    */
   const handleAreaMove = useCallback(
     ([dLon, dLat]) => {
@@ -516,7 +583,6 @@ export function useAreaGeometry({
       if (!ring?.length) return
       const shift = (r) => translateRing(r, dLon, dLat)
       pushHistory()
-      skipTileResetRef.current = true
       setRing(shift(ring))
       setHoles((hs) => (hs?.length ? hs.map(shift) : hs))
       setGridCells((cells) => (cells?.length ? cells.map(shift) : cells))
@@ -622,13 +688,14 @@ export function useAreaGeometry({
 
   /** Reposição da geometria a partir de um projecto normalizado (mission/project.js). */
   const applyProjectGeometry = useCallback((n) => {
-    skipTileResetRef.current = true
     if (n.split) setSplit((prev) => ({ ...prev, ...n.split }))
     if (n.anchor) setAnchor((prev) => ({ ...prev, ...n.anchor }))
     if (n.ring) setRing(n.ring)
     setHoles(Array.isArray(n.holes) ? n.holes : [])
     setAreaOrigin(n.areaOrigin)
-    setDisabledTiles(n.disabledTiles)
+    // as células desactivadas do projecto valem para o mosaico com que ele
+    // reabre (key null = adoptar)
+    setTileSel({ key: null, cells: null, ring: null, disabled: n.disabledTiles ?? new Set() })
     setPendingLegacy(n.legacyMosaic ?? null)
   }, [])
 
@@ -655,6 +722,7 @@ export function useAreaGeometry({
     activeCellHoles,
     refAzimuth,
     undoEdit,
+    pushHistory,
     toggleTile,
     restoreAllTiles,
     startDraw,

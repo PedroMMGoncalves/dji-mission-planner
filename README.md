@@ -142,7 +142,7 @@ Line spacing comes from the across-track ground footprint, `altitude × sensor_w
 
 The selector at the top of the panel picks the mission type (**Area | Face | Orbit | Corridor | Circular**) and swaps the drawing tool and the parameters; inspection points are an extra layer of the Area mode. Within each mode the panel drives top-down; the header holds the 3D view, the mission report, the checklist, the Area-mode exports, help and language. Everything recomputes reactively; the metrics panel (bottom right) shows GSD (or LiDAR density), footprint, spacing, counts, distance and estimated time, and a strip at the top of the map sums the totals when several plans coexist in the project.
 
-Editing gestures: click adds vertices (Backspace or clicking a vertex removes, double-click closes, Esc cancels); drag vertices, drag edge midpoints to insert; click mosaic cells to toggle them; **Ctrl+Z** undoes area and cell edits; inspection-point cards drag within their list.
+Editing gestures: click adds vertices (Backspace or clicking a vertex removes, double-click closes, Esc cancels); drag vertices, drag edge midpoints to insert; click mosaic cells to toggle them; **Ctrl+Z** undoes area, cell and base edits (bases added, moved, removed, zone radius, block assignments, proposals), one step at a time in order; inspection-point cards drag within their list.
 
 ## Exports
 

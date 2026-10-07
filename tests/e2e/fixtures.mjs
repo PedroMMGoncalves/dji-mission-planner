@@ -24,6 +24,16 @@ export const ground = (x, y) =>
   120 * G(x, y, 1800, 1200, 300) +
   60 * G(x, y, 1200, 300, 150)
 
+/**
+ * Planície a 150 m com um cabeço de 150 m (σ 60 m) no meio de um
+ * rectângulo de 500 × 250 m (dois quadrados de 250 m do mosaico): o ponto
+ * médio da aresta comum, onde a proposta sem relevo põe a base, fica no
+ * alto. Com 100 m de AGL e seguimento de terreno os blocos ficavam com
+ * alturas relativas negativas.
+ */
+export const HILL = { base: 150, height: 150, x: 1250, y: 1125, sigma: 60 }
+export const hillGround = (x, y) => HILL.base + HILL.height * G(x, y, HILL.x, HILL.y, HILL.sigma)
+
 const feature = (rings, type = 'Polygon') =>
   JSON.stringify({ type: 'Feature', properties: {}, geometry: { type, coordinates: rings } })
 
@@ -50,6 +60,14 @@ const small = (lon, lat) =>
     [lon + 0.001, lat + 0.001],
     [lon, lat + 0.001],
   ])
+
+/** O rectângulo do cabeço: 500 × 250 m, com o cabeço no meio. */
+export const hillRing = closed([
+  toLL(1000, 1000),
+  toLL(1500, 1000),
+  toLL(1500, 1250),
+  toLL(1000, 1250),
+])
 
 /** Escreve os ficheiros do cenário em `dir` e devolve os caminhos. */
 export async function makeFixtures(dir) {
@@ -90,7 +108,22 @@ export async function makeFixtures(dir) {
       return ground(x, y)
     },
   })
+  const hillTif = makeFloatTiff({
+    width,
+    height,
+    originX,
+    originY,
+    scale,
+    nodata: -9999,
+    geoKeys: { GTModelTypeGeoKey: 2, GeographicTypeGeoKey: 4326 },
+    valueAt: (px, py) => {
+      const [x, y] = toM(originX + (px + 0.5) * scale, originY - (py + 0.5) * scale)
+      return hillGround(x, y)
+    },
+  })
   const paths = {
+    demHill: join(dir, 'cabeco.tif'),
+    hill: join(dir, 'cabeco.geojson'),
     demBig: join(dir, 'grande.tif'),
     dem: join(dir, 'dem.tif'),
     rect: join(dir, 'rect.geojson'),
@@ -98,6 +131,8 @@ export async function makeFixtures(dir) {
     multi: join(dir, 'multi.geojson'),
   }
   writeFileSync(paths.dem, Buffer.from(await tif.arrayBuffer()))
+  writeFileSync(paths.demHill, Buffer.from(await hillTif.arrayBuffer()))
+  writeFileSync(paths.hill, feature([hillRing]))
   writeFileSync(paths.demBig, Buffer.from(await big.arrayBuffer()))
   writeFileSync(paths.rect, feature([rectRing]))
   writeFileSync(paths.u, feature([uRing]))
