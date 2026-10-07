@@ -34,6 +34,19 @@ export const ground = (x, y) =>
 export const HILL = { base: 150, height: 150, x: 1250, y: 1125, sigma: 60 }
 export const hillGround = (x, y) => HILL.base + HILL.height * G(x, y, HILL.x, HILL.y, HILL.sigma)
 
+/**
+ * Planície a 150 m com uma cumeada norte-sul de 41,5 m (σ 40 m) em x = 900 m,
+ * entre uma base na planície a oeste (x = 650 m) e o rectângulo do cabeço
+ * (x 1000..1500 m). Do olho (151,7 m) ao drone a 250 m (100 m sobre a cota
+ * da zona), a cumeada tapa a parte do rectângulo a mais de ~600 m da base:
+ * quase todo o bloco de leste; o de oeste vê-se, mas na sua orla de leste a
+ * cumeada entra em 60 % da zona de Fresnel (2,4 GHz) — à vista, com o rádio
+ * em risco. Do alto da cumeada vê-se tudo.
+ */
+export const RIDGE = { base: 150, height: 41.5, x: 900, sigma: 40, baseX: 650 }
+export const ridgeGround = (x) =>
+  RIDGE.base + RIDGE.height * Math.exp(-((x - RIDGE.x) ** 2) / (2 * RIDGE.sigma ** 2))
+
 const feature = (rings, type = 'Polygon') =>
   JSON.stringify({ type: 'Feature', properties: {}, geometry: { type, coordinates: rings } })
 
@@ -121,7 +134,21 @@ export async function makeFixtures(dir) {
       return hillGround(x, y)
     },
   })
+  const ridgeTif = makeFloatTiff({
+    width,
+    height,
+    originX,
+    originY,
+    scale,
+    nodata: -9999,
+    geoKeys: { GTModelTypeGeoKey: 2, GeographicTypeGeoKey: 4326 },
+    valueAt: (px, py) => {
+      const [x] = toM(originX + (px + 0.5) * scale, originY - (py + 0.5) * scale)
+      return ridgeGround(x)
+    },
+  })
   const paths = {
+    demRidge: join(dir, 'cumeada.tif'),
     demHill: join(dir, 'cabeco.tif'),
     hill: join(dir, 'cabeco.geojson'),
     demBig: join(dir, 'grande.tif'),
@@ -132,6 +159,7 @@ export async function makeFixtures(dir) {
   }
   writeFileSync(paths.dem, Buffer.from(await tif.arrayBuffer()))
   writeFileSync(paths.demHill, Buffer.from(await hillTif.arrayBuffer()))
+  writeFileSync(paths.demRidge, Buffer.from(await ridgeTif.arrayBuffer()))
   writeFileSync(paths.hill, feature([hillRing]))
   writeFileSync(paths.demBig, Buffer.from(await big.arrayBuffer()))
   writeFileSync(paths.rect, feature([rectRing]))

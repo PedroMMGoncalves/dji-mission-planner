@@ -1,12 +1,64 @@
 import { useT } from '../i18n.jsx'
 
 /**
+ * Modelo de relevo das bacias de visão em texto: «relevo global ~30 m»,
+ * «MDT importado «ficheiro» (2.0 m)», «MDS importado ...», e a vegetação
+ * somada («+ 15 m de vegetação e obstáculos»).
+ * @param {(key: string, vars?: object) => string} t
+ * @param {import('../mission/viewshedPlan.js').TerrainModel|null} model
+ */
+export function viewTerrainText(t, model) {
+  if (!model) return ''
+  const res = model.resolutionM > 0 ? model.resolutionM.toFixed(1) : '?'
+  const dsm = model.surface === 'dsm'
+  const base =
+    model.kind === 'global'
+      ? t('bases.view.global')
+      : model.label
+        ? t(dsm ? 'bases.view.fileDsm' : 'bases.view.file', { label: model.label, res })
+        : t(dsm ? 'bases.view.fileDsmNoLabel' : 'bases.view.fileNoLabel', { res })
+  return model.obstacleM > 0
+    ? `${base} ${t('bases.view.plusObstacle', { m: model.obstacleM })}`
+    : base
+}
+
+/**
+ * Ressalva do modelo de relevo: um MDT (ou o global) não tem árvores,
+ * edifícios nem escombreiras (salvo a vegetação somada); um MDS já os tem.
+ * @param {(key: string, vars?: object) => string} t
+ * @param {import('../mission/viewshedPlan.js').TerrainModel|null} model
+ */
+export function viewCaveatText(t, model) {
+  if (!model) return ''
+  if (model.surface === 'dsm') return t('bases.view.caveatDsm')
+  if (model.obstacleM > 0) return t('bases.view.caveatObstacle', { m: model.obstacleM })
+  return t('bases.view.caveat')
+}
+
+/**
+ * Parte visível de um voo vista da base: «82 % visível — tapado a ~420 m da
+ * base», e o rádio quando a parte à vista o tem em risco («rádio em risco em
+ * 12 % (Fresnel a ~260 m)»); «—» enquanto se calcula ou sem relevo.
+ * @param {(key: string, vars?: object) => string} t
+ * @param {import('../mission/viewshedPlan.js').ViewSummary|null} view
+ */
+export function flightViewText(t, view) {
+  if (!view) return '—'
+  const parts = [t('bases.view.visiblePct', { pct: view.visiblePct })]
+  if (view.hidden > 0) parts.push(t('bases.view.hiddenAt', { m: view.blockedAtM }))
+  if (view.radioOnly > 0)
+    parts.push(t('bases.view.radioAt', { pct: view.radioOnlyPct, m: view.radioAtM }))
+  return parts.join(' — ')
+}
+
+/**
  * Ficha de campo por base (baseFieldSheets, src/mission/fieldSheet.js),
  * comum à checklist de campo e ao relatório da missão: rótulo, coordenadas
  * com a ligação para a aplicação de mapas, zona («descolar até R m do
  * ponto», reduzida e porquê), cota de referência e ganho, conjuntos de
  * baterias contra os da equipa, alcance visual e os voos com o tempo
- * (trânsito incluído) e o nome do KMZ. Imprimível: as ligações levam o
+ * (trânsito incluído), a parte de cada bloco que se vê da base (bacias de
+ * visão, com o relevo usado) e o nome do KMZ. Imprimível: as ligações levam o
  * texto das coordenadas, e as classes de impressão vêm de quem a usa.
  * @param {{sheets: any[], cardClass?: string, tableClass?: string}} props
  */
@@ -103,6 +155,19 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
                   })}
                 </td>
               </tr>
+              {s.viewTerrain && (
+                <tr data-testid="base-sheet-view-terrain">
+                  <th className={head}>{t('bases.sheet.viewTerrain')}</th>
+                  <td className={cell}>
+                    {t('bases.view.model', { model: viewTerrainText(t, s.viewTerrain) })}{' '}
+                    {s.viewPending ? `${t('bases.view.pending')} ` : ''}
+                    <span className="text-slate-400">
+                      {viewCaveatText(t, s.viewTerrain)} {t('bases.view.point')}{' '}
+                      {t('bases.view.radioRule')}
+                    </span>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           <table className={`mt-1.5 w-full border-collapse text-left ${tableClass}`}>
@@ -111,6 +176,7 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
                 <th className={`${head} w-20`}>{t('bases.sheet.flight')}</th>
                 <th className={`${head} w-24`}>{t('bases.sheet.time')}</th>
                 <th className={`${head} w-28`}>{t('bases.sheet.transit')}</th>
+                <th className={`${head} w-40`}>{t('bases.sheet.view')}</th>
                 <th className={head}>{t('bases.sheet.file')}</th>
               </tr>
             </thead>
@@ -125,6 +191,15 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
                   </td>
                   <td className={`${cell} font-mono`}>{min(f.totalS)}</td>
                   <td className={`${cell} font-mono text-slate-400`}>{min(f.transitS)}</td>
+                  <td
+                    data-testid="base-sheet-view"
+                    data-visible-pct={f.view ? f.view.visiblePct : ''}
+                    className={`${cell} ${
+                      f.view?.hidden > 0 || f.view?.radioOnly > 0 ? 'text-amber-300' : ''
+                    }`}
+                  >
+                    {flightViewText(t, f.view)}
+                  </td>
                   <td className={`${cell} break-all font-mono text-slate-300`}>{f.file ?? '—'}</td>
                 </tr>
               ))}
@@ -133,7 +208,7 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
               <tr>
                 <td className={`${head} normal-case`}>{t('bases.sheet.total')}</td>
                 <td className={`${cell} font-mono text-sky-300`}>{min(s.totalS)}</td>
-                <td className={cell} colSpan={2} />
+                <td className={cell} colSpan={3} />
               </tr>
             </tfoot>
           </table>

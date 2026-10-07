@@ -227,6 +227,12 @@
         "tolerance": { "type": "number", "minimum": 0 }
       }
     },
+    "obstacleHeightM": {
+      "description": "Bacias de visao: altura de vegetacao e obstaculos (m) a somar ao relevo nas linhas de vista e no radio, so com um MDT ou o relevo global (nunca com um MDS importado). 0 por omissao.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 60
+    },
     "gcpConfig": {
       "type": "object",
       "additionalProperties": false,

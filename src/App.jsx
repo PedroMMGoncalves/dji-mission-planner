@@ -78,6 +78,8 @@ import { useFaceMission } from './hooks/useFaceMission.js'
 import { useInspection } from './hooks/useInspection.js'
 import { useTerrain } from './hooks/useTerrain.js'
 import { useProject } from './hooks/useProject.js'
+import { terrainIdentity, useViewsheds } from './hooks/useViewsheds.js'
+import { viewshedJobs, viewshedTerrainModel } from './mission/viewshedPlan.js'
 import { DEFAULT_PARAMS } from './mission/defaults.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
 import { routeClearance } from './mission/clearance.js'
@@ -102,6 +104,8 @@ import {
 } from './components/Icons.jsx'
 
 const FLAG_BY_LANG = { pt: FlagPT, en: FlagGB }
+/** Camada «Bacias de visão» ligada neste aparelho ('1') ou não. */
+const VIEWSHED_LAYER_KEY = 'dji-mission-planner:viewshedLayer'
 
 /** localStorage, ou null quando o browser o recusa (modo privado, cookies bloqueados). */
 function browserStorage() {
@@ -179,6 +183,20 @@ function AppInner({ lang, setLang }) {
     saveEquipment(browserStorage(), equipment)
   }, [equipment])
   const [showSettings, setShowSettings] = useState(false)
+  // bacias de visão: vegetação e obstáculos a somar a um MDT (por missão,
+  // no projecto: dependem do sítio)
+  const [obstacleM, setObstacleM] = useState(0)
+  // camada das bacias de visão: desligada por omissão, lembrada neste aparelho
+  const [viewshedLayerOn, setViewshedLayerOn] = useState(
+    () => browserStorage()?.getItem(VIEWSHED_LAYER_KEY) === '1',
+  )
+  useEffect(() => {
+    try {
+      browserStorage()?.setItem(VIEWSHED_LAYER_KEY, viewshedLayerOn ? '1' : '0')
+    } catch {
+      /* ignora */
+    }
+  }, [viewshedLayerOn])
   // zona de descolagem das bases (Configuração): raio e desnível máximo
   const zoneConfig = useMemo(
     () => ({ radiusM: equipment.zoneRadiusM, maxReliefM: equipment.zoneMaxReliefM }),
@@ -690,6 +708,8 @@ function AppInner({ lang, setLang }) {
     handleImportDem,
     terrainCovers,
     slopeHint,
+    demSurface,
+    setDemSurface,
   } = useTerrain({
     ring,
     ringBbox,
@@ -903,6 +923,63 @@ function AppInner({ lang, setLang }) {
     [bases, zones, baseLayout, equipment.zoneRadiusM],
   )
 
+  // Bacias de visão: cada bloco visto dos olhos do operador no ponto da sua
+  // base (src/mission/viewshedPlan.js), na área dividida em blocos com bases
+  // e relevo sobre a área. A cota do drone é a do KMZ: com seguimento de
+  // terreno relevo + AGL, sem ele a cota da zona do bloco + altura. Calculado
+  // em fatias, depois de uma pausa nas edições (useViewsheds).
+  const viewshedOn =
+    missionMode === 'area' && perBlockBases && terrain.status === 'ready' && terrainCovers
+  const viewTerrain = useMemo(
+    () =>
+      viewshedOn
+        ? viewshedTerrainModel(terrain.data, {
+            surface: terrain.data?.source === 'file' ? demSurface : 'dtm',
+            obstacleM,
+          })
+        : null,
+    [viewshedOn, terrain.data, demSurface, obstacleM],
+  )
+  const viewshedTf = Boolean(terrainFollow.enabled && terrainResult && !terrainResult.error)
+  const viewJobs = useMemo(
+    () =>
+      viewshedOn && viewTerrain
+        ? viewshedJobs({
+            blocks,
+            layout: baseLayout,
+            bases,
+            altitudeM: params.altitude,
+            terrainFollow: viewshedTf,
+            terrainKey: terrainIdentity(terrain.data),
+            eyeHeightM: equipment.eyeHeightM,
+            antennaHeightM: equipment.antennaHeightM,
+            obstacleM: viewTerrain.obstacleM,
+            resolutionM: viewTerrain.resolutionM,
+          })
+        : [],
+    [
+      viewshedOn,
+      viewTerrain,
+      blocks,
+      baseLayout,
+      bases,
+      params.altitude,
+      viewshedTf,
+      terrain.data,
+      equipment.eyeHeightM,
+      equipment.antennaHeightM,
+    ],
+  )
+  const viewsheds = useViewsheds({
+    jobs: viewJobs,
+    elevationAt: viewshedOn ? (terrain.data?.elevationAt ?? null) : null,
+    eyeHeightM: equipment.eyeHeightM,
+    antennaHeightM: equipment.antennaHeightM,
+    obstacleM: viewTerrain?.obstacleM ?? 0,
+    resolutionM: viewTerrain?.resolutionM ?? 0,
+  })
+  const viewshedByBlock = viewJobs.length ? viewsheds.byBlock : null
+
   // ficha de campo por base (checklist, relatório e KML «Bases e blocos»):
   // só com a área dividida em blocos e bases marcadas
   const fieldSheets = useMemo(
@@ -918,9 +995,13 @@ function AppInner({ lang, setLang }) {
             aircraftId: drone.aircraftId,
             batteryId: missionBatteryType.id,
             baseWord: t('bases.label', { label: '' }).trim(),
+            viewsheds: viewshedByBlock,
+            viewTerrain,
           })
         : [],
     [
+      viewshedByBlock,
+      viewTerrain,
       perBlockBases,
       baseRows,
       baseLayout,
@@ -1311,6 +1392,7 @@ function AppInner({ lang, setLang }) {
         // com blocos e bases, o alcance e o trânsito vão bloco a bloco
         baseDistance: perBlockBases ? null : areaBaseDistance,
         baseLayout: perBlockBases ? baseLayout : null,
+        viewsheds: perBlockBases ? viewshedByBlock : null,
         refZone:
           !perBlockBases && refBase && zones[refBase.id] && !zones[refBase.id].error
             ? { label: refBase.label, zone: zones[refBase.id] }
@@ -1388,6 +1470,7 @@ function AppInner({ lang, setLang }) {
     areaBaseDistance,
     perBlockBases,
     baseLayout,
+    viewshedByBlock,
     refBase,
     zones,
     vlosM,
@@ -1501,6 +1584,7 @@ function AppInner({ lang, setLang }) {
       setBaseProposal(null)
       if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
       if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
+      setObstacleM(n.obstacleHeightM ?? 0)
     },
     [
       setCorridorConfig,
@@ -1548,6 +1632,7 @@ function AppInner({ lang, setLang }) {
       disabledTiles,
       terrainFollow,
       gcpConfig,
+      obstacleHeightM: obstacleM,
     }),
     [
       missionName,
@@ -1572,6 +1657,7 @@ function AppInner({ lang, setLang }) {
       disabledTiles,
       terrainFollow,
       gcpConfig,
+      obstacleM,
     ],
   )
 
@@ -2081,6 +2167,8 @@ function AppInner({ lang, setLang }) {
                 setTerrainFollow={setTerrainFollow}
                 onLoadTerrain={handleLoadTerrain}
                 onImportDem={handleImportDem}
+                demSurface={demSurface}
+                onDemSurface={setDemSurface}
                 onShowProfile={() => setShowProfile(true)}
                 terrainResult={terrainResult}
                 slopeHint={slopeHint}
@@ -2139,6 +2227,18 @@ function AppInner({ lang, setLang }) {
                     onExport: (sel) => gated(() => handleExportFlights(sel))(),
                     onExportKml: fieldSheets.length ? handleExportBasesKml : null,
                   },
+                  // bacias de visão: por voo no painel, relevo usado e camada do mapa
+                  viewshed: perBlockBases
+                    ? {
+                        byBlock: viewshedByBlock,
+                        terrain: viewTerrain,
+                        running: viewsheds.running,
+                        layerOn: viewshedLayerOn,
+                        onLayer: setViewshedLayerOn,
+                        obstacleM,
+                        onObstacle: setObstacleM,
+                      }
+                    : null,
                 }}
               />
             )}
@@ -2187,6 +2287,9 @@ function AppInner({ lang, setLang }) {
             onAreaMove={handleAreaMove}
             onBaseDrag={handleBaseDrag}
             onFinishDraw={handleFinishAny}
+            viewsheds={missionMode === 'area' ? viewshedByBlock : null}
+            viewshedLayerOn={viewshedLayerOn}
+            onViewshedLayer={setViewshedLayerOn}
           />
           <StatsPanel
             uncertainty={uncertainty}

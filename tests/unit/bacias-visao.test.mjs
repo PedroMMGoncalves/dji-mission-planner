@@ -3,7 +3,14 @@
 // segmento (sem as pontas), curvatura com refraccao, saida no 1.o obstaculo,
 // relevo desconhecido nao tapa mas fica contado.
 import { describe, it, expect } from 'vitest'
-import { baseViewsheds, blockVisibility, lineOfSight } from '../../src/mission/viewshed.js'
+import {
+  DEFAULT_OBSTACLE_CLEAR_M,
+  FRESNEL_FRACTION,
+  RADIO_FREQ_GHZ,
+  baseViewsheds,
+  blockVisibility,
+  lineOfSight,
+} from '../../src/mission/viewshed.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../../src/utils/units.js'
 
 const lon0 = -8.0
@@ -267,5 +274,144 @@ describe('baseViewsheds', () => {
     })
     expect(out[7].total).toBe(4 * 2)
     expect(out[7].visibleFrac).toBe(1)
+  })
+})
+
+// Radio: 60 % da 1.a zona de Fresnel a 2,4 GHz. A meio de um raio de 800 m
+// o raio da zona e sqrt(lambda*400*400/800) = 5,0 m, e 60 % sao 3,0 m.
+describe('radio (zona de Fresnel)', () => {
+  const fresnel = { freqGHz: RADIO_FREQ_GHZ, fraction: FRESNEL_FRACTION }
+
+  it('constantes: 2,4 GHz e 60 %', () => {
+    expect(RADIO_FREQ_GHZ).toBe(2.4)
+    expect(FRESNEL_FRACTION).toBe(0.6)
+  })
+
+  it('crista rente: o olho ve o drone, o radio nao tem a zona livre', () => {
+    // linha a meio: 101,7 + 38,3/2 = 120,85 m; crista a 119 m: 1,85 m de folga < 3,0 m
+    const elevationAt = ridge(395, 405, 119)
+    const eye = at(0, 0, 101.7)
+    const target = at(800, 0, 140)
+    const sem = lineOfSight(eye, target, { elevationAt })
+    expect(sem.visible).toBe(true)
+    // sem fresnel, nada de radio (compatibilidade)
+    expect('radioOk' in sem).toBe(false)
+    const r = lineOfSight(eye, target, { elevationAt, fresnel })
+    expect(r.visible).toBe(true)
+    expect(r.radioOk).toBe(false)
+    expect(r.radioWorstAtM).toBeGreaterThanOrEqual(390)
+    expect(r.radioWorstAtM).toBeLessThanOrEqual(410)
+    expect(r.radioMarginM).toBeCloseTo(1.85 - 3.0, 0)
+    // com a crista 2 m mais baixa (3,85 m de folga) o radio passa
+    const ok = lineOfSight(eye, target, { elevationAt: ridge(395, 405, 117), fresnel })
+    expect(ok.radioOk).toBe(true)
+    expect(ok.radioMarginM).toBeGreaterThan(0)
+  })
+
+  it('a mesma folga sobre o obstaculo: o raio curto passa, o longo nao', () => {
+    // linha horizontal a 101,7 m sobre um vale a 50 m; obstaculo a meio, 3 m
+    // abaixo da linha
+    const valley = (x0, x1) => (lon) => (xOf(lon) >= x0 && xOf(lon) <= x1 ? 98.7 : 50)
+    const shortR = lineOfSight(at(0, 0, 101.7), at(200, 0, 101.7), {
+      elevationAt: valley(95, 105),
+      fresnel,
+    })
+    const longR = lineOfSight(at(0, 0, 101.7), at(2000, 0, 101.7), {
+      elevationAt: valley(995, 1005),
+      fresnel,
+    })
+    // 60 % da zona: 1,5 m a 200 m, 4,7 m a 2 km
+    expect(shortR.visible && longR.visible).toBe(true)
+    expect(shortR.radioOk).toBe(true)
+    expect(longR.radioOk).toBe(false)
+    expect(longR.radioWorstAtM).toBeCloseTo(1000, -1)
+  })
+
+  it('com radio le o raio todo: o 1.o obstaculo visual e a pior intrusao mais adiante', () => {
+    // crista baixa a 200 m tapa; outra mais alta a 600 m e a pior intrusao
+    const elevationAt = (lon) => {
+      const x = xOf(lon)
+      if (x >= 195 && x <= 215) return 125
+      if (x >= 595 && x <= 615) return 160
+      return 100
+    }
+    const eye = at(0, 0, 101.7)
+    const target = at(800, 0, 140)
+    const sem = lineOfSight(eye, target, { elevationAt })
+    const r = lineOfSight(eye, target, { elevationAt, fresnel })
+    expect(sem.visible).toBe(false)
+    expect(r.visible).toBe(false)
+    expect(r.blockedAtM).toBe(sem.blockedAtM)
+    expect(r.blockedAtM).toBeLessThanOrEqual(215)
+    expect(r.radioOk).toBe(false)
+    expect(r.radioWorstAtM).toBeGreaterThanOrEqual(595)
+    expect(r.samples).toBeGreaterThan(sem.samples)
+    // a antena noutra cota: originElev
+    const alto = lineOfSight(eye, target, {
+      elevationAt: flat,
+      fresnel: { ...fresnel, originElev: 101.7 },
+    })
+    expect(alto.radioOk).toBe(true)
+  })
+
+  it('fraccao 0: o radio e a propria linha de vista', () => {
+    const eye = at(0, 0, 101.7)
+    for (const h of [119, 122]) {
+      const r = lineOfSight(eye, at(800, 0, 140), {
+        elevationAt: ridge(395, 405, h),
+        fresnel: { fraction: 0 },
+      })
+      expect(r.radioOk).toBe(r.visible)
+    }
+  })
+})
+
+describe('vegetacao e obstaculos somados ao relevo', () => {
+  it('somam-se as amostras longe do olho, nunca na clareira da base', () => {
+    const eye = at(0, 0, 101.7)
+    const target = at(800, 0, 140)
+    // planicie a 90 m e crista a 119 m a meio: a vista passa; com 5 m de
+    // arvores (a planicie a 95 m continua abaixo da linha), nao
+    const elevationAt = (lon) => (xOf(lon) >= 395 && xOf(lon) <= 405 ? 119 : 90)
+    expect(lineOfSight(eye, target, { elevationAt }).visible).toBe(true)
+    const r = lineOfSight(eye, target, { elevationAt, obstacleM: 5 })
+    expect(r.visible).toBe(false)
+    expect(r.blockedAtM).toBeGreaterThanOrEqual(395)
+    // arvores de 20 m em todo o lado menos na clareira de 30 m: a linha sobe
+    // devagar e fica tapada logo a seguir a clareira
+    const near = lineOfSight(eye, target, { elevationAt: flat, obstacleM: 20 })
+    expect(near.visible).toBe(false)
+    expect(near.blockedAtM).toBeGreaterThan(DEFAULT_OBSTACLE_CLEAR_M)
+    expect(near.blockedAtM).toBeLessThanOrEqual(DEFAULT_OBSTACLE_CLEAR_M + 10)
+    // sem clareira: tapado na primeira amostra
+    const none = lineOfSight(eye, target, { elevationAt: flat, obstacleM: 20, obstacleClearM: 0 })
+    expect(none.blockedAtM).toBe(10)
+  })
+})
+
+describe('blockVisibility com radio', () => {
+  const args = {
+    eye: { point: base, heightM: 1.7, antennaHeightM: 1.5 },
+    blockRing: rect(400, 1000, -100, 100),
+    droneElevAt: () => 140,
+    elevationAt: ridge(300, 320, 118),
+  }
+  it('pontos a vista com o radio em risco a parte; tapados contam no radio', () => {
+    const sem = blockVisibility(args)
+    const r = blockVisibility({ ...args, fresnel: { freqGHz: 2.4, fraction: 0.6 } })
+    // sem fresnel o resultado de sempre, sem campos do radio
+    expect('radioRisk' in sem).toBe(false)
+    expect(r.hidden).toEqual(sem.hidden)
+    expect(r.total).toBe(sem.total)
+    expect(r.radioRisk.length).toBeGreaterThan(0)
+    expect(r.radioFail).toBeGreaterThanOrEqual(r.hidden.length + r.radioRisk.length)
+    const hiddenKeys = new Set(r.hidden.map((h) => h.point.join()))
+    for (const q of r.radioRisk) {
+      expect(hiddenKeys.has(q.point.join())).toBe(false)
+      expect(q.atM).toBeGreaterThanOrEqual(290)
+      expect(q.atM).toBeLessThanOrEqual(330)
+    }
+    // a antena 1,5 m: a cota da antena e 0,2 m abaixo do olho
+    expect(r.eyeElev - r.antennaElev).toBeCloseTo(0.2, 6)
   })
 })

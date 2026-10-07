@@ -31,6 +31,7 @@ import { normalizeOrbitConfig } from '../utils/orbit.js'
 import { normalizeCorridorConfig } from '../utils/corridor.js'
 import { normalizeCircularConfig } from '../utils/circular.js'
 import { legacyBases, normalizeBases, normalizeBlockBase } from './bases.js'
+import { normalizeObstacleM } from './viewshedPlan.js'
 
 export const PROJECT_VERSION = 2
 /** Esquema JSON (draft 2020-12) do ficheiro v2, servido com a aplicação: public/schema/. */
@@ -66,6 +67,7 @@ export function serializeProject(state) {
     disabledTiles,
     terrainFollow,
     gcpConfig,
+    obstacleHeightM,
   } = state
   return {
     $schema: PROJECT_SCHEMA_URL,
@@ -101,6 +103,8 @@ export function serializeProject(state) {
     disabledTiles: [...(disabledTiles ?? [])],
     terrainFollow,
     gcpConfig,
+    // bacias de visão: vegetação e obstáculos a somar a um MDT (m)
+    obstacleHeightM: normalizeObstacleM(obstacleHeightM),
   }
 }
 
@@ -129,6 +133,8 @@ export function projectFileName(missionName) {
  *  - split.tileOrientationAuto: os projectos anteriores ao campo ficam com a
  *    orientação guardada num mosaico manual e seguem as faixas na divisão
  *    por bateria (que não tinha orientação na interface)
+ *  - obstacleHeightM: vegetação e obstáculos das bacias de visão, 0-60 m
+ *    (0 nos projectos anteriores)
  *  - legacyMosaic: {disabled: Set, basePoint} quando um projecto anterior ao
  *    mosaico novo tinha células desactivadas; disabledTiles fica vazio até a
  *    geometria as traduzir (legacyDisabledForMosaic)
@@ -187,6 +193,7 @@ export function normalizeProject(p) {
   out.split.mosaic = MOSAIC_VERSION
   if (p.terrainFollow) out.terrainFollow = p.terrainFollow
   if (p.gcpConfig) out.gcpConfig = p.gcpConfig
+  out.obstacleHeightM = normalizeObstacleM(p.obstacleHeightM)
   return out
 }
 

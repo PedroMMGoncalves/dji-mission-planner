@@ -94,6 +94,22 @@ export default {
     pt: 'Voo {flight} (bloco {id}) fora do alcance visual da base {base}: {m} m no pior caso (descolando na orla da zona), acima dos {vlos} m da aeronave. Mude a base do bloco ou aproxime-a.',
     en: 'Flight {flight} (block {id}) beyond visual line of sight from base {base}: {m} m in the worst case (taking off at the edge of the zone), above the aircraft’s {vlos} m. Change the block’s base or move it closer.',
   },
+  'preflight.block-viewshed': {
+    pt: 'Voo {flight}: {pct} % do bloco fica atrás do relevo visto da base {base}, tapado a ~{m} m. O drone sai da vista do operador: mude ou suba a base, ou confirme no campo (bacias de visão no mapa).',
+    en: 'Flight {flight}: {pct} % of the block is behind the terrain seen from base {base}, blocked at ~{m} m. The aircraft leaves the operator’s sight: move or raise the base, or check in the field (viewsheds on the map).',
+  },
+  'preflight.block-viewshed-minor': {
+    pt: 'Voo {flight}: {pct} % do bloco fica atrás do relevo visto da base {base} (tapado a ~{m} m).',
+    en: 'Flight {flight}: {pct} % of the block is behind the terrain seen from base {base} (blocked at ~{m} m).',
+  },
+  'preflight.block-radio': {
+    pt: 'Voo {flight}: {pct} % do bloco com o sinal de rádio em risco visto da base {base}: à vista, mas o relevo entra na zona de Fresnel (60 % a 2,4 GHz) a ~{m} m. Pode perder a ligação do comando: suba o comando ou a base, ou confirme no campo.',
+    en: 'Flight {flight}: {pct} % of the block with the radio signal at risk from base {base}: in sight, but the terrain enters the Fresnel zone (60 % at 2.4 GHz) at ~{m} m. The controller link may drop: raise the controller or the base, or check in the field.',
+  },
+  'preflight.block-radio-minor': {
+    pt: 'Voo {flight}: {pct} % do bloco com o sinal de rádio em risco visto da base {base} (relevo na zona de Fresnel a ~{m} m).',
+    en: 'Flight {flight}: {pct} % of the block with the radio signal at risk from base {base} (terrain in the Fresnel zone at ~{m} m).',
+  },
   'preflight.block-no-base': {
     pt: 'Voo {flight} (bloco {id}) sem base: não se sabe de onde descola nem a que cota se referem as alturas.',
     en: 'Flight {flight} (block {id}) has no base: neither the take-off point nor the reference elevation of its heights is known.',

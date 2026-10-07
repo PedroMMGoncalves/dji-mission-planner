@@ -44,6 +44,8 @@ export const EQUIPMENT_KIND = 'dji-mission-planner/equipment'
  * @property {number} zoneRadiusM     raio da zona de descolagem (m)
  * @property {number} zoneMaxReliefM  desnível máximo aceite na zona de descolagem (m)
  * @property {number} maxFlightsPerBase máximo de voos (blocos) por base na proposta de bases; 0 = sem limite
+ * @property {number} eyeHeightM      altura dos olhos do operador acima do chão na base (m), para as bacias de visão
+ * @property {number} antennaHeightM  altura da antena do comando acima do chão na base (m), para o rádio (zona de Fresnel)
  * @property {Object<string, AircraftEquipment>} aircraft  chaves = ids de AIRCRAFT
  */
 
@@ -60,12 +62,18 @@ const LIMITS = {
   zoneRadiusM: { min: 0, max: 500 },
   zoneMaxReliefM: { min: 1, max: 100 },
   maxFlightsPerBase: { min: 0, max: 50 },
+  eyeHeightM: { min: 1, max: 5 },
+  antennaHeightM: { min: 1, max: 5 },
 }
 
 const DEFAULT_ZONE_RADIUS_M = 100
 const DEFAULT_ZONE_MAX_RELIEF_M = 10
 /** Sem limite de voos por base na proposta de bases. */
 const DEFAULT_MAX_FLIGHTS_PER_BASE = 0
+/** Altura dos olhos do operador de pé (a mesma de DEFAULT_EYE_HEIGHT_M em viewshed.js). */
+const DEFAULT_EYE_HEIGHT_M = 1.7
+/** Antena do comando nas mãos do operador (a mesma de DEFAULT_ANTENNA_HEIGHT_M em viewshed.js). */
+const DEFAULT_ANTENNA_HEIGHT_M = 1.5
 const GENERIC_VLOS_M = 500
 /** Fracção da duração nominal (DJI) tomada como útil quando não há dados de campo. */
 const GENERIC_USEFUL_FRACTION = 0.6
@@ -183,6 +191,8 @@ export function defaultEquipment() {
     zoneRadiusM: DEFAULT_ZONE_RADIUS_M,
     zoneMaxReliefM: DEFAULT_ZONE_MAX_RELIEF_M,
     maxFlightsPerBase: DEFAULT_MAX_FLIGHTS_PER_BASE,
+    eyeHeightM: DEFAULT_EYE_HEIGHT_M,
+    antennaHeightM: DEFAULT_ANTENNA_HEIGHT_M,
     aircraft,
   }
 }
@@ -254,7 +264,8 @@ function normalizeAircraftEquipment(raw, def) {
  * importado ou lixo): preenche aeronaves e campos em falta com os valores
  * por omissão, descarta aeronaves que já não estão no catálogo, limita os
  * números (vlosM 50-5000, usefulMin 1-120, count null ou inteiro 0-999,
- * zoneRadiusM 0-500, zoneMaxReliefM 1-100, maxFlightsPerBase inteiro 0-50), garante ids de bateria únicos,
+ * zoneRadiusM 0-500, zoneMaxReliefM 1-100, maxFlightsPerBase inteiro 0-50, eyeHeightM e antennaHeightM 1-5
+ * à décima), garante ids de bateria únicos,
  * nomes aparados e não vazios e defaultBatteryId válido. Nunca lança.
  * @param {any} raw
  * @returns {Equipment}
@@ -278,6 +289,9 @@ export function normalizeEquipment(raw) {
     maxFlightsPerBase: Math.round(
       clampNum(raw.maxFlightsPerBase, LIMITS.maxFlightsPerBase, def.maxFlightsPerBase),
     ),
+    eyeHeightM: Math.round(clampNum(raw.eyeHeightM, LIMITS.eyeHeightM, def.eyeHeightM) * 10) / 10,
+    antennaHeightM:
+      Math.round(clampNum(raw.antennaHeightM, LIMITS.antennaHeightM, def.antennaHeightM) * 10) / 10,
     aircraft,
   }
 }

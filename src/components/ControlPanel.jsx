@@ -172,6 +172,8 @@ export default function ControlPanel({
   setTerrainFollow,
   onLoadTerrain,
   onImportDem,
+  demSurface = 'dtm',
+  onDemSurface = null,
   onShowProfile,
   terrainResult,
   slopeHint,
@@ -1370,13 +1372,40 @@ export default function ControlPanel({
         </button>
 
         {terrain.status === 'ready' && terrain.data?.source === 'file' && (
-          <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">
-            {t('cp.terrain.localDem')} <strong>{terrain.data.label}</strong>{' '}
-            {t('cp.terrain.demGrid', {
-              crs: terrain.data.crsCode,
-              res: terrain.data.resolutionM?.toFixed(1),
-            })}
-          </p>
+          <div className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">
+            <p>
+              {t(demSurface === 'dsm' ? 'cp.terrain.localDsm' : 'cp.terrain.localDem')}{' '}
+              <strong>{terrain.data.label}</strong>{' '}
+              {t('cp.terrain.demGrid', {
+                crs: terrain.data.crsCode,
+                res: terrain.data.resolutionM?.toFixed(1),
+              })}
+            </p>
+            {onDemSurface && (
+              <div className="mt-1.5 flex items-center gap-1.5" title={t('cp.terrain.surfaceHint')}>
+                <span className="text-emerald-300">{t('cp.terrain.surface')}</span>
+                {[
+                  { value: 'dtm', key: 'cp.terrain.surfaceDtm' },
+                  { value: 'dsm', key: 'cp.terrain.surfaceDsm' },
+                ].map(({ value, key }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    data-testid={`dem-surface-${value}`}
+                    aria-pressed={demSurface === value}
+                    onClick={() => onDemSurface(value)}
+                    className={`rounded px-2 py-0.5 font-medium transition-colors ${
+                      demSurface === value
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    {t(key)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {terrain.status === 'error' && (

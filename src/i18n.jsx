@@ -198,6 +198,8 @@ const BASE_DICT = {
   'map.topo': { pt: 'Topográfico (Esri)', en: 'Topographic (Esri)' },
   'map.municipalities': { pt: 'Municípios (CAOP)', en: 'Municipalities (CAOP)' },
   'map.parishes': { pt: 'Freguesias (CAOP)', en: 'Parishes (CAOP)' },
+  'map.viewsheds': { pt: 'Bacias de visão', en: 'Viewsheds' },
+  'map.viewshedRadio': { pt: '{vis} % · rádio −{pct} %', en: '{vis} % · radio −{pct} %' },
 }
 
 const DICT = {

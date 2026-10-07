@@ -233,6 +233,29 @@ tablet real):
   do plano (relativa à cota da zona de B, «voo entre 0 e +X m acima do
   planeado»); descolar dentro do raio da zona.
 
+## 14. Bacias de visão e rádio — verificação no campo (~2 min + campo)
+
+- ☐ Na missão com bases e blocos, **Bacias de visão → Mostrar no mapa**.
+  **Esperado:** quadrados laranja onde o drone fica atrás do relevo visto do
+  ponto da base, amarelos tracejados onde se vê mas a zona de Fresnel do
+  rádio não está livre; a percentagem visível em cada bloco; no painel e na
+  ficha de campo, por voo, «N % visível — tapado a ~X m da base» e o rádio
+  em risco; o relevo usado («relevo global ~30 m», «MDT importado …» ou
+  «MDS importado …»). A camada fica ligada ao recarregar neste aparelho.
+- ☐ Com MDT, **Vegetação e obstáculos** a 15 m (ex. pinhal entre a base e
+  um bloco); depois marcar o ficheiro como **MDS**.
+  **Esperado:** com o MDT as zonas laranja crescem e o painel diz «+ 15 m de
+  vegetação e obstáculos»; com o MDS o campo fica desligado e nada se soma.
+- ☐ **No campo**, de pé no ponto da base (não noutro sítio da zona) e com o
+  comando à altura habitual: comparar as zonas laranja de um bloco com o que
+  se vê (cristas de cortas, bancadas, escombreiras, árvores). Durante o voo,
+  anotar onde o sinal do comando cai ou o vídeo falha e comparar com as
+  zonas amarelas e laranja.
+  **Esperado:** o que fica atrás do relevo no mapa não se vê; onde o mapa
+  diz que se vê mas há árvores ou escombreiras que o MDT não tem, a vista e
+  o rádio são piores do que o mapa (corrigir com a vegetação ou o MDS da
+  equipa, e registar a diferença nas notas).
+
 ---
 
 Registo de execução:

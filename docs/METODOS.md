@@ -364,6 +364,74 @@ ou geometria (`nearestBase`), a primeira pela ordem dos rótulos sem rota.
 Com uma só base é sempre ela. Na área sem blocos a cota é a mínima da zona
 dela; nos outros modos, como antes, a cota do ponto da base.
 
+### 4.3 Bacias de visão e ligação rádio
+
+Módulos `src/mission/viewshed.js` (linha de vista, grelha do bloco),
+`src/mission/viewshedPlan.js` (trabalhos, resumos, faixas do mapa) e
+`src/hooks/useViewsheds.js` (agendamento). Com a área dividida em blocos,
+bases e relevo sobre a área, cada bloco é visto da base que o serve.
+
+- **Olho e antena.** No **ponto** da base marcado pelo operador: relevo nesse
+  ponto + altura dos olhos (Configuração, 1,7 m, 1-5 m) para a vista, + altura
+  do comando (1,5 m, 1-5 m) para o rádio. A zona de descolagem **não é
+  varrida**: descolar a 80 m do ponto pode ver mais ou menos. Fica-se no
+  ponto, e é isso que a ficha de campo diz.
+- **Drone.** A cota absoluta a que o KMZ o põe em cada ponto: sem seguir
+  terreno `cota de referência do bloco + altura` (a mínima da zona — o drone
+  mais baixo possível, o lado pessimista); com seguir terreno `relevo + AGL`.
+- **Grelha.** Centros das células de 25 m que cobrem o rectângulo envolvente
+  do invólucro do bloco (célula e waypoints, o mesmo do alcance visual), só
+  os de dentro. Cada ponto é um raio olho → drone.
+- **Raio.** Relevo lido a passos de 10 m (a resolução do MDT quando é mais
+  fina, nunca abaixo de 1 m; o global conta como ~30 m), sem o primeiro e o
+  último passo (o chão debaixo dos pés e do drone). A linha desce
+  `d·(D − d)·(1 − k)/(2R)` face ao relevo (curvatura da Terra com a
+  refracção normal, k = 0,13): centímetros num bloco, decisivo a vários km.
+  Tapado no primeiro obstáculo (`margem < 0`); a distância desse obstáculo é
+  o «tapado a ~X m da base» (mediana dos pontos tapados, à dezena). Relevo
+  em falta não tapa e conta como desconhecido.
+- **Rádio (zona de Fresnel).** O comando perde a ligação antes de o
+  operador perder o drone de vista quando o relevo, ou a vegetação, entra na
+  primeira zona de Fresnel: raio `r₁ = √(λ·d₁·d₂/D)`, λ = c/f. Um ponto fica
+  com o rádio em risco quando, em alguma amostra, a folga da linha antena →
+  drone é menor do que `0,6·r₁` (60 % livre, a regra habitual; frequência
+  2,4 GHz, a banda mais exigente do OcuSync do M300 — `RADIO_FREQ_GHZ`,
+  `FRESNEL_FRACTION`). A meio de um raio de 800 m são 3,0 m; de 2 km, 4,7 m:
+  uma crista que deixa passar a vista a 2 m da linha corta o rádio. Para o
+  veredicto do rádio o raio lê-se até ao fim (sem a saída no 1.º obstáculo),
+  e guarda-se a distância da pior intrusão. Distâncias horizontais
+  (d₁ + d₂ = D): a inclinação muda r₁ em menos de 1 %. O painel e o preflight
+  contam à parte os pontos **à vista** com o rádio em risco (os tapados já
+  contam na vista).
+- **Vegetação e obstáculos.** Um MDT (DGT) e o relevo global só têm o chão:
+  sem árvores, edifícios nem escombreiras, a bacia sai optimista. Por missão
+  (no projecto: depende do sítio) pode somar-se uma altura uniforme (0-60 m)
+  ao relevo nas amostras dos raios a mais de 30 m da base (a clareira onde o
+  operador está; nunca nos pés do operador nem na cota do drone). Só com um
+  MDT ou o relevo global: um ficheiro importado marcado como **MDS** («Este
+  ficheiro é: MDT / MDS», MDT por omissão) já os tem, e nada se soma. Uma
+  altura uniforme é pessimista em campo aberto; o MDS da equipa (último voo)
+  é o que mais se aproxima do que se vê. O painel e a ficha dizem o modelo e
+  a altura somada.
+- **Limiares do preflight.** Por voo e por causa: «atrás do relevo» quando a
+  fracção tapada do bloco é ≥ 5 % (`VIEWSHED_WARN_FRAC`), nota abaixo e acima
+  de 0; «sinal de rádio em risco» com a mesma regra sobre a fracção à vista
+  com o rádio em risco. Só pontos desconhecidos: nada. Nunca bloqueia: a
+  decisão é do operador, que pode confirmar no campo.
+- **Agendamento.** Os trabalhos têm uma chave com tudo o que muda o
+  resultado (ponto da base, anel, cota do drone, alturas, vegetação, relevo,
+  resolução): mover uma base só refaz os blocos dela, e um Ctrl+Z reaproveita
+  o que já foi calculado. Depois de 350 ms sem mudanças, corre em fatias de
+  12 ms (o relógio é visto a cada ponto da grelha), separadas por um
+  `setTimeout`; uma mudança a meio cancela a corrida. Medido: 150 blocos de
+  660 m em 260-350 ms de cálculo (2,4 s com um MDT de 1 m), fatias até 13 ms
+  (25 ms com 1 m); 192 blocos no browser sem nenhuma tarefa acima de 50 ms.
+  Um bloco de 660 m sem fatias leva 2-3 ms com 10-30 m e 15-22 ms com 1 m.
+- **Mapa.** Camada «Bacias de visão» (desligada por omissão, lembrada neste
+  aparelho): os pontos tapados como quadrados de 25 m a laranja, os à vista
+  com o rádio em risco a amarelo tracejado, juntos em faixas por linha da
+  grelha, e a percentagem visível de cada bloco.
+
 ## 5. Terreno
 
 Módulos `src/utils/terrain.js`, `src/utils/demFile.js`,
@@ -1015,6 +1083,13 @@ desnível, com o raio, o pedido, o desnível e onde (nota; também na rota
 única com bases). Com blocos e bases deixam de se aplicar o aviso de base
 a mais de 2 km da área e a bateria por bloco sem trânsito.
 
+Bacias de visão (secção 4.3), por voo e por causa: parte do bloco atrás do
+relevo visto do ponto da base (aviso a partir de 5 %, nota abaixo,
+«Voo A-3: 18 % do bloco fica atrás do relevo visto da base A, tapado a
+~420 m»), e parte à vista com o relevo em 60 % da zona de Fresnel do rádio
+(«sinal de rádio em risco», a mesma regra). Nada enquanto se calcula, com a
+base fora do relevo ou só com pontos desconhecidos.
+
 ## 15. Tabela de constantes e tolerâncias
 
 | Grandeza | Valor | Módulo |
@@ -1031,6 +1106,13 @@ a mais de 2 km da área e a bateria por bloco sem trânsito.
 | Mosaico antigo → novo: célula desactivada | ≥ 50 % da área nas células antigas desactivadas | mosaicLegacy.js |
 | Mosaico refeito: herança / mesma área / área movida | célula antiga ≥ 50 % da nova / ≥ 50 % da menor em comum / translação ±1 m | cellCarryOver.js |
 | Proposta de bases com seguir terreno: sítio aceite | cota da zona ≤ mín. do relevo do bloco + AGL − 20 m | baseLayout.js |
+| Bacias de visão: olhos / comando | 1,7 m / 1,5 m acima do ponto da base (Configuração, 1-5 m) | equipment.js, viewshed.js |
+| Bacias de visão: grelha / passo do raio / pontas | 25 m / 10 m (resolução do MDT; global ~30 m; mínimo 1 m) / 1 passo | viewshed.js, viewshedPlan.js |
+| Curvatura e refracção | d·(D − d)·(1 − 0,13)/(2·6371 km) | viewshed.js |
+| Rádio: fracção da 1.ª zona de Fresnel / frequência | 60 % livre / 2,4 GHz | viewshed.js |
+| Vegetação e obstáculos (só MDT ou global) / clareira da base | 0-60 m por missão / 30 m | viewshedPlan.js, viewshed.js |
+| Bacias de visão no preflight: aviso / nota | ≥ 5 % do bloco / > 0 (atrás do relevo; rádio em risco à vista) | preflight.js |
+| Bacias de visão: espera / fatia | 350 ms / 12 ms | useViewsheds.js |
 | Histórico de edição (Ctrl+Z) | 100 passos (área, células, bases, atribuições) | useAreaGeometry.js |
 | Zona de descolagem: raio / desnível máximo | 100 m / 10 m (Configuração; raio próprio por base 0-500 m) | equipment.js, bases.js |
 | Zona: amostragem | anéis a 10 m, 16 azimutes; cota = mínima; ganho = máx − mín | takeoffZones.js |
@@ -1074,7 +1156,11 @@ na pegada; obstáculos
 fora da folga da fachada; conversão entre datums verticais (só a
 declaração); retornos múltiplos e padrão de varrimento do LiDAR; a
 distribuição estatística dos erros (a incerteza é propagada por
-intervalos, com os extremos das fichas técnicas).
+intervalos, com os extremos das fichas técnicas). Nas bacias de visão: a
+zona de descolagem não é varrida (só o ponto da base); vegetação e
+construções só como altura uniforme ou pelo MDS; o rádio é só a geometria da
+zona de Fresnel (sem diagrama das antenas, potência, interferência nem
+multipercurso), à frequência mais exigente.
 
 Calibração com logs de voo (E3.3, prevista para Setembro de 2026), com um
 ponto de inserção único no código para cada grandeza:

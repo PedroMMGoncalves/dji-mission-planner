@@ -61,6 +61,10 @@ export function useTerrain({
     }),
   )
   const [terrainFollow, setTerrainFollow] = useState(() => ({ ...DEFAULT_TERRAIN_FOLLOW }))
+  // o ficheiro importado é um MDT (só o chão: o caso por omissão, e o relevo
+  // global também o é) ou um MDS (com a vegetação e as construções): diz-o
+  // o operador ao importar; as bacias de visão só somam vegetação a um MDT
+  const [demSurface, setDemSurface] = useState(/** @type {'dtm'|'dsm'} */ ('dtm'))
 
   // Só o pedido mais recente conta: uma descarga lenta de uma caixa antiga
   // não pode substituir o relevo da geometria actual
@@ -143,6 +147,7 @@ export function useTerrain({
     (file) => {
       if (!file) return
       fileRef.current = { file, extent: null }
+      setDemSurface('dtm')
       return cropFromFile(file)
     },
     [cropFromFile],
@@ -245,5 +250,8 @@ export function useTerrain({
     handleImportDem,
     terrainCovers,
     slopeHint,
+    // MDT ou MDS do ficheiro importado (o global é sempre MDT)
+    demSurface,
+    setDemSurface,
   }
 }

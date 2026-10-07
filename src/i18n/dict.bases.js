@@ -175,6 +175,80 @@ export default {
   'bases.sheet.file': { pt: 'Ficheiro KMZ', en: 'KMZ file' },
   'bases.sheet.total': { pt: 'Total da base', en: 'Base total' },
   'bases.sheet.outOfVlos': { pt: 'fora do alcance visual', en: 'beyond visual range' },
+  'bases.sheet.view': { pt: 'Vista da base', en: 'Seen from base' },
+  'bases.sheet.viewTerrain': { pt: 'Bacias de visão', en: 'Viewsheds' },
+  /* ---- Bacias de visão (src/mission/viewshedPlan.js) ---- */
+  'bases.view.title': { pt: 'Bacias de visão', en: 'Viewsheds' },
+  'bases.view.layer': { pt: 'Mostrar no mapa', en: 'Show on the map' },
+  'bases.view.layerTitle': {
+    pt: 'Pinta no mapa, a laranja, as partes de cada bloco em que o drone fica atrás do relevo visto do ponto da base, e a percentagem visível de cada bloco.',
+    en: 'Paints on the map, in orange, the parts of each block where the aircraft is behind the terrain seen from the base point, and the visible percentage of each block.',
+  },
+  'bases.view.flights': { pt: 'Vista: {list}', en: 'Seen: {list}' },
+  'bases.view.visible': { pt: '{flight} {pct} %', en: '{flight} {pct} %' },
+  'bases.view.hidden': {
+    pt: '{flight} {pct} % (tapado a ~{m} m da base)',
+    en: '{flight} {pct} % (blocked at ~{m} m from the base)',
+  },
+  'bases.view.visiblePct': { pt: '{pct} % visível', en: '{pct} % visible' },
+  'bases.view.hiddenAt': { pt: 'tapado a ~{m} m da base', en: 'blocked at ~{m} m from the base' },
+  'bases.view.noTerrain': {
+    pt: 'À espera do relevo carregado sobre a área.',
+    en: 'Waiting for terrain loaded over the area.',
+  },
+  'bases.view.pending': { pt: 'a calcular…', en: 'computing…' },
+  'bases.view.model': { pt: 'Relevo: {model}.', en: 'Terrain: {model}.' },
+  'bases.view.global': { pt: 'relevo global ~30 m', en: 'global terrain ~30 m' },
+  'bases.view.file': {
+    pt: 'MDT importado «{label}» ({res} m)',
+    en: 'imported DTM “{label}” ({res} m)',
+  },
+  'bases.view.fileDsm': {
+    pt: 'MDS importado «{label}» ({res} m)',
+    en: 'imported DSM “{label}” ({res} m)',
+  },
+  'bases.view.fileDsmNoLabel': { pt: 'MDS importado ({res} m)', en: 'imported DSM ({res} m)' },
+  'bases.view.plusObstacle': {
+    pt: '+ {m} m de vegetação e obstáculos',
+    en: '+ {m} m of vegetation and obstacles',
+  },
+  'bases.view.caveatDsm': {
+    pt: 'O MDS já tem a vegetação e as construções: não se lhe soma nada.',
+    en: 'The DSM already has the vegetation and buildings: nothing is added to it.',
+  },
+  'bases.view.caveatObstacle': {
+    pt: 'Os {m} m somam-se a todo o relevo a mais de 30 m da base (pessimista em campo aberto); com o MDS da equipa o resultado fica mais próximo do que se vê.',
+    en: 'The {m} m are added to all terrain more than 30 m from the base (pessimistic in open ground); the team’s DSM gives a result closer to what you see.',
+  },
+  'bases.view.radioRule': {
+    pt: 'Rádio: 60 % da 1.ª zona de Fresnel a 2,4 GHz livre, da antena do comando.',
+    en: 'Radio: 60 % of the 1st Fresnel zone at 2.4 GHz clear, from the controller antenna.',
+  },
+  'bases.view.radio': {
+    pt: '[rádio em risco em {pct} %, a ~{m} m]',
+    en: '[radio at risk in {pct} %, at ~{m} m]',
+  },
+  'bases.view.radioAt': {
+    pt: 'rádio em risco em {pct} % (Fresnel a ~{m} m)',
+    en: 'radio at risk in {pct} % (Fresnel at ~{m} m)',
+  },
+  'bases.view.obstacle': {
+    pt: 'Vegetação e obstáculos a somar ao relevo',
+    en: 'Vegetation and obstacles added to the terrain',
+  },
+  'bases.view.obstacleTitle': {
+    pt: 'Altura de árvores, edifícios e escombreiras (0-60 m) somada ao relevo nas linhas de vista e no rádio, a mais de 30 m da base, desta missão. Só com um MDT ou o relevo global; um MDS importado já os tem.',
+    en: 'Height of trees, buildings and spoil heaps (0-60 m) added to the terrain in the sight lines and the radio check, more than 30 m from the base, for this mission. Only with a DTM or the global terrain; an imported DSM already has them.',
+  },
+  'bases.view.fileNoLabel': { pt: 'MDT importado ({res} m)', en: 'imported DTM ({res} m)' },
+  'bases.view.caveat': {
+    pt: 'Um MDT não tem árvores, edifícios nem escombreiras: some a sua altura em «Vegetação e obstáculos», ou importe o MDS da equipa, que dá um resultado mais próximo do que se vê.',
+    en: 'A DTM has no trees, buildings or spoil heaps: add their height in “Vegetation and obstacles”, or import the team’s DSM, which gives a result closer to what you see.',
+  },
+  'bases.view.point': {
+    pt: 'Vistas do ponto da base, à altura dos olhos da Configuração; o resto da zona de descolagem não é varrido.',
+    en: 'Seen from the base point, at the eye height in Settings; the rest of the take-off zone is not swept.',
+  },
   'cp.split.orientationAuto': {
     pt: 'Quadrados paralelos às faixas',
     en: 'Squares parallel to the flight lines',

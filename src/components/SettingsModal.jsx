@@ -392,6 +392,40 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
             {t('set.maxFlightsPerBaseHint')}
           </p>
 
+          <H>{t('set.operatorTitle')}</H>
+          <div className="mb-1 flex items-center gap-2">
+            <label htmlFor="set-eye-height" className="flex-1">
+              {t('set.eyeHeight')}
+            </label>
+            <NumField
+              id="set-eye-height"
+              value={equipment.eyeHeightM}
+              limits={L.eyeHeightM}
+              step={0.1}
+              onCommit={(v) => edit((eq) => ({ ...eq, eyeHeightM: v }))}
+            />
+            <span className="w-8 text-xs text-slate-500">m</span>
+          </div>
+          <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
+            {t('set.eyeHeightHint')}
+          </p>
+          <div className="mb-1 flex items-center gap-2">
+            <label htmlFor="set-antenna-height" className="flex-1">
+              {t('set.antennaHeight')}
+            </label>
+            <NumField
+              id="set-antenna-height"
+              value={equipment.antennaHeightM}
+              limits={L.antennaHeightM}
+              step={0.1}
+              onCommit={(v) => edit((eq) => ({ ...eq, antennaHeightM: v }))}
+            />
+            <span className="w-8 text-xs text-slate-500">m</span>
+          </div>
+          <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
+            {t('set.antennaHeightHint')}
+          </p>
+
           <H>{t('set.fileTitle')}</H>
           <div className="grid grid-cols-2 gap-2">
             <button

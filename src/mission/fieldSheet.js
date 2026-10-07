@@ -4,8 +4,9 @@
  * mapas), a zona de descolagem, a cota de referência e o ganho, os voos
  * com o tempo (trânsito incluído) e o nome do KMZ de cada um, os conjuntos
  * de baterias que a base pede contra os que a equipa tem, e o alcance
- * visual usado. Lógica pura sobre summarizeBases, layoutBlocks e
- * flightFiles; a interface só formata.
+ * visual usado, e por voo a parte do bloco que se vê da base (bacias de
+ * visão, com o modelo de relevo usado). Lógica pura sobre summarizeBases,
+ * layoutBlocks, flightFiles e viewshedsByBlock; a interface só formata.
  */
 import { flightsVsSets } from './equipment.js'
 
@@ -36,6 +37,9 @@ export function mapLinks(point, label = '') {
   }
 }
 
+/** Resumo da bacia de visão de um voo, só quando calculada e com relevo. */
+const viewOf = (v) => (v?.summary?.status === 'ok' ? v.summary : null)
+
 /**
  * @typedef {object} FieldFlight
  * @property {number} blockId
@@ -46,6 +50,8 @@ export function mapLinks(point, label = '') {
  * @property {number} totalS
  * @property {number|null} worstVlosM
  * @property {boolean} withinVlos
+ * @property {import('./viewshedPlan.js').ViewSummary|null} view bacia de visão vista do ponto
+ *   da base (null enquanto se calcula, ou sem relevo)
  */
 
 /**
@@ -60,6 +66,8 @@ export function mapLinks(point, label = '') {
  * @param {string} [args.aircraftId]
  * @param {string|null} [args.batteryId]
  * @param {string} [args.baseWord] palavra antes do rótulo no nome do marcador ("Base")
+ * @param {Record<string, any>|null} [args.viewsheds] bacias de visão por bloco (viewshedsByBlock)
+ * @param {import('./viewshedPlan.js').TerrainModel|null} [args.viewTerrain] relevo das bacias
  */
 export function baseFieldSheets({
   rows,
@@ -71,6 +79,8 @@ export function baseFieldSheets({
   aircraftId = '',
   batteryId = null,
   baseWord = 'Base',
+  viewsheds = null,
+  viewTerrain = null,
 }) {
   if (!layout?.hasBases || !Array.isArray(blocks) || blocks.length === 0) return []
   const byId = new Map(blocks.map((b) => [b.id, b]))
@@ -96,6 +106,7 @@ export function baseFieldSheets({
           totalS: flightS + transitS,
           worstVlosM: fin(info.worstVlosM) ? info.worstVlosM : null,
           withinVlos: info.withinVlos !== false,
+          view: viewOf(viewsheds?.[id]),
         }
       })
       const worst = flights.map((f) => f.worstVlosM).filter(fin)
@@ -118,6 +129,9 @@ export function baseFieldSheets({
         sets: flightsVsSets(equipment, aircraftId, batteryId, flights.length),
         vlosM,
         worstVlosM: worst.length ? Math.max(...worst) : null,
+        // bacias de visão: o relevo usado e se ainda falta algum voo
+        viewTerrain: viewsheds ? viewTerrain : null,
+        viewPending: flights.some((f) => viewsheds?.[f.blockId] && !viewsheds[f.blockId].summary),
       }
     })
 }

@@ -22,6 +22,22 @@
  *    ponto do bloco visível só porque o raio atravessou buracos do MDT fica
  *    como `unknown`, para o painel o poder dizer.
  *
+ * Rádio (opcional, `fresnel`): o comando perde a ligação muito antes de o
+ * operador deixar de ver o drone quando o relevo (ou a vegetação) entra na
+ * primeira zona de Fresnel. Um ponto fica com o rádio em risco quando, em
+ * alguma amostra, a folga da linha antena → drone é menor do que
+ * `fraction · √(λ·d₁·d₂/D)` (60 % da primeira zona, a 2,4 GHz por
+ * omissão: a banda mais exigente do OcuSync do M300). Com `fresnel` o raio
+ * é lido até ao fim (o veredicto do rádio e o sítio da pior intrusão), e o
+ * visual continua a ser o do primeiro obstáculo. As distâncias são
+ * horizontais (d₁ + d₂ = D); a inclinação da linha muda o raio em menos de
+ * 1 % a estas alturas.
+ *
+ * Vegetação e obstáculos (opcional, `obstacleM`): metros somados ao relevo
+ * nas amostras a mais de `obstacleClearM` do olho (o operador está numa
+ * clareira), para um MDT ou o relevo global, que não têm árvores. Nunca na
+ * cota dos pés do operador nem na do drone.
+ *
  * Atenção ao modelo de relevo: um MDS (o último voo da equipa) inclui
  * escombreiras, edifícios e vegetação, e é ele que diz o que o operador vê;
  * um MDT (DGT) ou o MDT global de ~30 m só têm o chão, e a bacia sai
@@ -41,6 +57,16 @@ export const DEFAULT_GRID_STEP_M = 25
 export const DEFAULT_LOS_STEP_M = 10
 /** Coeficiente de refracção atmosférica normal. */
 export const REFRACTION_K = 0.13
+/** Frequência do rádio para a zona de Fresnel (GHz): 2,4 GHz, a banda mais exigente do OcuSync. */
+export const RADIO_FREQ_GHZ = 2.4
+/** Fracção da primeira zona de Fresnel que tem de ficar livre (60 %, a regra habitual). */
+export const FRESNEL_FRACTION = 0.6
+/** Altura da antena do comando acima do chão na base (m). */
+export const DEFAULT_ANTENNA_HEIGHT_M = 1.5
+/** Raio à volta do olho sem vegetação somada (m): a clareira onde o operador está. */
+export const DEFAULT_OBSTACLE_CLEAR_M = 30
+/** Velocidade da luz (m/s), para λ = c / f. */
+const LIGHT_SPEED = 299792458
 /** Raio da Terra para a curvatura (m). */
 const EARTH_RADIUS_M = 6371000
 /** Descida da linha de vista por metro² de distância: (1 − k) / (2R). */
@@ -61,7 +87,26 @@ const EPS_M = 1e-6
  *   mínimo até ao 1.º obstáculo, inclusive
  * @property {number} samples  amostras com relevo
  * @property {number} skipped  amostras sem relevo (saltadas: não tapam)
+ * @property {boolean} [radioOk] só com `fresnel`: a fracção pedida da 1.ª zona de Fresnel
+ *   fica livre em todas as amostras
+ * @property {number|null} [radioWorstAtM] só com `fresnel`: distância ao olho da amostra com
+ *   a menor folga face à zona pedida (a pior intrusão; null sem amostras)
+ * @property {number|null} [radioMarginM] só com `fresnel`: essa folga (m); negativa = intrusão
  */
+
+/**
+ * @typedef {object} FresnelOpts
+ * @property {number} [freqGHz]    frequência (GHz), por omissão RADIO_FREQ_GHZ
+ * @property {number} [fraction]   fracção da 1.ª zona que tem de ficar livre, por omissão 0,6
+ * @property {number} [originElev] cota absoluta da antena (lineOfSight; por omissão a do olho)
+ */
+
+/** λ (m) e fracção de um FresnelOpts. */
+function fresnelParams(f) {
+  const ghz = positive(f?.freqGHz, RADIO_FREQ_GHZ)
+  const fraction = Number.isFinite(f?.fraction) && f.fraction >= 0 ? f.fraction : FRESNEL_FRACTION
+  return { lambda: LIGHT_SPEED / (ghz * 1e9), fraction }
+}
 
 /**
  * @typedef {object} BlockVisibility
@@ -74,6 +119,10 @@ const EPS_M = 1e-6
  *   relevo desconhecido, ou não há cota do drone nesse ponto
  * @property {number} gridStepM
  * @property {number} eyeElev cota absoluta dos olhos do operador (m)
+ * @property {number} [radioFail] só com `fresnel`: pontos com o rádio em risco (também os tapados)
+ * @property {Array<{point: number[], atM: number|null}>} [radioRisk] só com `fresnel`: pontos À
+ *   VISTA com o rádio em risco, e a distância ao olho da pior intrusão na zona de Fresnel
+ * @property {number} [antennaElev] só com `fresnel`: cota absoluta da antena do comando
  */
 
 const isPoint = (p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1])
@@ -93,30 +142,69 @@ function sampling(stepM, resolutionM) {
 
 /**
  * Núcleo da linha de vista, no plano local do olho: o alvo está a (x, y)
- * metros do olho, à cota zT; o olho em (lon0, lat0) à cota zEye.
+ * metros do olho, à cota zT; o olho em (lon0, lat0) à cota zEye. `extra`:
+ * `radio` ({zAnt, lambda, fraction}: lê o raio até ao fim e dá o veredicto
+ * do rádio), `obstacleM` e `clearM` (vegetação somada ao relevo a mais de
+ * clearM do olho).
  * @returns {SightResult}
  */
-function traceRay(lon0, lat0, mLon, zEye, x, y, zT, elevationAt, step, skip, curv) {
+function traceRay(lon0, lat0, mLon, zEye, x, y, zT, elevationAt, step, skip, curv, extra = null) {
   const D = Math.hypot(x, y)
+  const radio = extra?.radio ?? null
+  const obstacleM = extra?.obstacleM > 0 ? extra.obstacleM : 0
+  const clearM = extra?.clearM > 0 ? extra.clearM : 0
   let worst = null
+  let blockedAt = null
   let samples = 0
   let skipped = 0
+  let rWorst = null
+  let rWorstAt = null
   const dz = zT - zEye
+  const dzA = radio ? zT - radio.zAnt : 0
   for (let d = skip; d <= D - skip + EPS_M; d += step) {
     const t = d / D
-    const g = elevationAt(lon0 + (x * t) / mLon, lat0 + (y * t) / M_PER_DEG_LAT)
+    let g = elevationAt(lon0 + (x * t) / mLon, lat0 + (y * t) / M_PER_DEG_LAT)
     if (!Number.isFinite(g)) {
       skipped++
       continue
     }
+    if (obstacleM > 0 && d > clearM) g += obstacleM
     samples++
     // linha recta olho → alvo com ambas as pontas descidas pela curvatura:
     // face ao relevo descido em d, a linha fica curv·d·(D − d) mais baixa
-    const margin = zEye + dz * t - g - curv * d * (D - d)
-    if (worst === null || margin < worst) worst = margin
-    if (margin < 0) return { visible: false, blockedAtM: d, worstMarginM: margin, samples, skipped }
+    const drop = curv * d * (D - d)
+    if (blockedAt === null) {
+      const margin = zEye + dz * t - g - drop
+      if (worst === null || margin < worst) worst = margin
+      if (margin < 0) {
+        blockedAt = d
+        if (!radio) return { visible: false, blockedAtM: d, worstMarginM: margin, samples, skipped }
+      }
+    }
+    if (radio) {
+      // folga da linha antena → drone menos a fracção pedida do raio da 1.ª zona
+      const need = radio.fraction * Math.sqrt((radio.lambda * d * (D - d)) / D)
+      const rm = radio.zAnt + dzA * t - g - drop - need
+      if (rWorst === null || rm < rWorst) {
+        rWorst = rm
+        rWorstAt = d
+      }
+    }
   }
-  return { visible: true, blockedAtM: null, worstMarginM: worst, samples, skipped }
+  const out = {
+    visible: blockedAt === null,
+    blockedAtM: blockedAt,
+    worstMarginM: worst,
+    samples,
+    skipped,
+  }
+  if (!radio) return out
+  return {
+    ...out,
+    radioOk: rWorst === null || rWorst >= 0,
+    radioWorstAtM: rWorstAt,
+    radioMarginM: rWorst,
+  }
 }
 
 /**
@@ -124,18 +212,31 @@ function traceRay(lon0, lat0, mLon, zEye, x, y, zT, elevationAt, step, skip, cur
  *
  * Lê o relevo de `stepM` em `stepM` ao longo do segmento, sem o primeiro e
  * o último ~stepM (as células das pontas), e pára no primeiro obstáculo.
- * Com `curvature` aplica a curvatura da Terra com refracção normal.
+ * Com `curvature` aplica a curvatura da Terra com refracção normal. Com
+ * `fresnel` lê o raio até ao fim e diz também se o rádio passa (`radioOk`,
+ * a partir da antena em `fresnel.originElev`, por omissão o olho) e onde é
+ * a pior intrusão; com `obstacleM` soma a vegetação ao relevo a mais de
+ * `obstacleClearM` do olho.
  *
  * @param {{lon: number, lat: number, elev: number}} eye olho (cota absoluta, m)
  * @param {{lon: number, lat: number, elev: number}} target alvo (cota absoluta, m)
  * @param {{elevationAt: ElevationFn, stepM?: number, resolutionM?: number,
- *   curvature?: boolean}} opts `resolutionM`: resolução do MDT (m); o passo desce até ela
+ *   curvature?: boolean, fresnel?: FresnelOpts|null, obstacleM?: number,
+ *   obstacleClearM?: number}} opts `resolutionM`: resolução do MDT (m); o passo desce até ela
  * @returns {SightResult}
  */
 export function lineOfSight(
   eye,
   target,
-  { elevationAt, stepM = DEFAULT_LOS_STEP_M, resolutionM, curvature = true },
+  {
+    elevationAt,
+    stepM = DEFAULT_LOS_STEP_M,
+    resolutionM,
+    curvature = true,
+    fresnel = null,
+    obstacleM = 0,
+    obstacleClearM = DEFAULT_OBSTACLE_CLEAR_M,
+  },
 ) {
   const { step, skip } = sampling(stepM, resolutionM)
   const mLon = metersPerDegLonSafe(eye.lat)
@@ -153,6 +254,16 @@ export function lineOfSight(
     step,
     skip,
     curvature ? CURV_PER_M2 : 0,
+    {
+      radio: fresnel
+        ? {
+            zAnt: Number.isFinite(fresnel.originElev) ? fresnel.originElev : eye.elev,
+            ...fresnelParams(fresnel),
+          }
+        : null,
+      obstacleM,
+      clearM: obstacleClearM,
+    },
   )
 }
 
@@ -187,27 +298,23 @@ function gridAxis(a, b, g) {
 }
 
 /**
- * Bacia de visão de um bloco a partir de uma base.
- *
- * Os olhos ficam à cota do relevo no ponto da base + `heightM`. O bloco é
- * amostrado numa grelha regular de `gridStepM` (centros das células que
- * cobrem o rectângulo envolvente, centrada nele; só os pontos dentro do
- * anel; se nenhum cai dentro, o centróide dos vértices). Em cada ponto o drone está a
- * `droneElevAt(lon, lat)` — o chamador decide: com seguimento de terreno é
- * relevo + AGL, sem ele refElev + altura relativa.
- *
- * @param {object} args
- * @param {{point: number[], heightM?: number}} args.eye base [lon, lat] e altura dos olhos
- * @param {number[][]} args.blockRing anel do bloco [[lon, lat], ...] (sem buracos)
- * @param {ElevationFn} args.droneElevAt cota absoluta do drone em cada ponto (null: desconhecida)
- * @param {ElevationFn} args.elevationAt relevo
- * @param {number} [args.gridStepM]
- * @param {number} [args.stepM] passo ao longo das linhas de vista
- * @param {number} [args.resolutionM] resolução do MDT (m), opcional
- * @param {boolean} [args.curvature]
- * @returns {BlockVisibility|{error: 'no-terrain'}}
+ * @typedef {object} BlockVisibilityStepper
+ * @property {number} total pontos da grelha a avaliar
+ * @property {() => boolean} next avalia o ponto seguinte; true quando já não há mais
+ * @property {() => BlockVisibility} result o resultado (com os pontos avaliados até aqui)
  */
-export function blockVisibility({
+
+/**
+ * Bacia de visão de um bloco ponto a ponto, para quem a quer partir em
+ * fatias (a interface não pode prender o browser mais de ~50 ms seguidos):
+ * prepara a grelha e devolve `next()`, que avalia um ponto de cada vez, e
+ * `result()`. Mesmos argumentos e mesmo resultado de blockVisibility, que é
+ * este passo repetido até ao fim.
+ *
+ * @param {Parameters<typeof blockVisibility>[0]} args
+ * @returns {BlockVisibilityStepper|{error: 'no-terrain'}}
+ */
+export function blockVisibilityStepper({
   eye,
   blockRing,
   droneElevAt,
@@ -216,6 +323,9 @@ export function blockVisibility({
   stepM = DEFAULT_LOS_STEP_M,
   resolutionM,
   curvature = true,
+  fresnel = null,
+  obstacleM = 0,
+  obstacleClearM = DEFAULT_OBSTACLE_CLEAR_M,
 }) {
   if (typeof elevationAt !== 'function' || !isPoint(eye?.point)) return { error: 'no-terrain' }
   const [lon0, lat0] = eye.point
@@ -226,6 +336,14 @@ export function blockVisibility({
   const { step, skip } = sampling(stepM, resolutionM)
   const curv = curvature ? CURV_PER_M2 : 0
   const mLon = metersPerDegLonSafe(lat0)
+  // rádio a partir da antena do comando, e a vegetação somada ao relevo
+  const antElev =
+    z0 + (Number.isFinite(eye.antennaHeightM) ? eye.antennaHeightM : DEFAULT_ANTENNA_HEIGHT_M)
+  const extra = {
+    radio: fresnel ? { zAnt: antElev, ...fresnelParams(fresnel) } : null,
+    obstacleM,
+    clearM: obstacleClearM,
+  }
 
   // anel no plano local do olho
   const ring = openRing(blockRing)
@@ -255,28 +373,89 @@ export function blockVisibility({
   }
 
   const hidden = []
+  const radioRisk = []
+  let radioFail = 0
   let unknown = 0
-  for (const [x, y] of pts) {
-    const lon = lon0 + x / mLon
-    const lat = lat0 + y / M_PER_DEG_LAT
-    const zT = droneElevAt(lon, lat)
-    if (!Number.isFinite(zT)) {
-      unknown++
-      continue
-    }
-    const r = traceRay(lon0, lat0, mLon, eyeElev, x, y, zT, elevationAt, step, skip, curv)
-    if (!r.visible) hidden.push({ point: [lon, lat], blockedAtM: r.blockedAtM })
-    else if (r.skipped > 0) unknown++
-  }
+  let i = 0
   const total = pts.length
   return {
-    visibleFrac: total > 0 ? (total - hidden.length) / total : null,
     total,
-    hidden,
-    unknown,
-    gridStepM: g,
-    eyeElev,
+    next() {
+      if (i >= total) return true
+      const [x, y] = pts[i++]
+      const lon = lon0 + x / mLon
+      const lat = lat0 + y / M_PER_DEG_LAT
+      const zT = droneElevAt(lon, lat)
+      if (!Number.isFinite(zT)) unknown++
+      else {
+        const r = traceRay(
+          lon0,
+          lat0,
+          mLon,
+          eyeElev,
+          x,
+          y,
+          zT,
+          elevationAt,
+          step,
+          skip,
+          curv,
+          extra,
+        )
+        if (!r.visible) hidden.push({ point: [lon, lat], blockedAtM: r.blockedAtM })
+        else if (r.skipped > 0) unknown++
+        if (fresnel && !r.radioOk) {
+          radioFail++
+          if (r.visible) radioRisk.push({ point: [lon, lat], atM: r.radioWorstAtM })
+        }
+      }
+      return i >= total
+    },
+    result: () => {
+      const out = {
+        visibleFrac: total > 0 ? (total - hidden.length) / total : null,
+        total,
+        hidden: hidden.slice(),
+        unknown,
+        gridStepM: g,
+        eyeElev,
+      }
+      if (!fresnel) return out
+      return { ...out, radioFail, radioRisk: radioRisk.slice(), antennaElev: antElev }
+    },
   }
+}
+
+/**
+ * Bacia de visão de um bloco a partir de uma base.
+ *
+ * Os olhos ficam à cota do relevo no ponto da base + `heightM`. O bloco é
+ * amostrado numa grelha regular de `gridStepM` (centros das células que
+ * cobrem o rectângulo envolvente, centrada nele; só os pontos dentro do
+ * anel; se nenhum cai dentro, o centróide dos vértices). Em cada ponto o drone está a
+ * `droneElevAt(lon, lat)` — o chamador decide: com seguimento de terreno é
+ * relevo + AGL, sem ele refElev + altura relativa.
+ *
+ * @param {object} args
+ * @param {{point: number[], heightM?: number, antennaHeightM?: number}} args.eye base [lon, lat],
+ *   altura dos olhos e da antena do comando (esta só com `fresnel`)
+ * @param {number[][]} args.blockRing anel do bloco [[lon, lat], ...] (sem buracos)
+ * @param {ElevationFn} args.droneElevAt cota absoluta do drone em cada ponto (null: desconhecida)
+ * @param {ElevationFn} args.elevationAt relevo
+ * @param {number} [args.gridStepM]
+ * @param {number} [args.stepM] passo ao longo das linhas de vista
+ * @param {number} [args.resolutionM] resolução do MDT (m), opcional
+ * @param {boolean} [args.curvature]
+ * @param {FresnelOpts|null} [args.fresnel] também o rádio (zona de Fresnel), da antena
+ * @param {number} [args.obstacleM] vegetação e obstáculos somados ao relevo (m)
+ * @param {number} [args.obstacleClearM] raio à volta do olho sem eles (m)
+ * @returns {BlockVisibility|{error: 'no-terrain'}}
+ */
+export function blockVisibility(args) {
+  const s = blockVisibilityStepper(args)
+  if ('error' in s) return s
+  while (!s.next());
+  return s.result()
 }
 
 /**
@@ -300,6 +479,9 @@ export function blockVisibility({
  * @param {number} [args.eyeHeightM]
  * @param {number} [args.stepM]
  * @param {number} [args.resolutionM]
+ * @param {FresnelOpts|null} [args.fresnel] também o rádio (blockVisibility)
+ * @param {number} [args.antennaHeightM]
+ * @param {number} [args.obstacleM]
  * @returns {Record<string, BlockVisibility|{error: 'no-terrain'}>}
  */
 export function baseViewsheds({
@@ -312,6 +494,9 @@ export function baseViewsheds({
   eyeHeightM = DEFAULT_EYE_HEIGHT_M,
   stepM = DEFAULT_LOS_STEP_M,
   resolutionM,
+  fresnel = null,
+  antennaHeightM = DEFAULT_ANTENNA_HEIGHT_M,
+  obstacleM = 0,
 }) {
   /** @type {Record<string, BlockVisibility|{error: 'no-terrain'}>} */
   const out = {}
@@ -324,13 +509,15 @@ export function baseViewsheds({
     const droneElevAt = droneElevAtFor(block, base)
     if (typeof droneElevAt !== 'function') continue
     out[block.id] = blockVisibility({
-      eye: { point: base.point, heightM: eyeHeightM },
+      eye: { point: base.point, heightM: eyeHeightM, antennaHeightM },
       blockRing: Array.isArray(block.ring) ? block.ring : hullOfBlock(block),
       droneElevAt,
       elevationAt,
       gridStepM,
       stepM,
       resolutionM,
+      fresnel,
+      obstacleM,
     })
   }
   return out

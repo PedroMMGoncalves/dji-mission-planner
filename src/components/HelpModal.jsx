@@ -164,10 +164,22 @@ function InstrucoesPt() {
           por outra (menos de metade em comum) nada passa.
         </Li>
         <Li>
+          <strong>Bacias de visão</strong> — com bases, blocos e relevo, cada bloco é visto do{' '}
+          <strong>ponto</strong> da sua base (à altura dos olhos da Configuração; o resto da zona
+          não é varrido) numa grelha de 25 m, à cota a que o drone lá passa. Laranja: atrás do
+          relevo; amarelo tracejado: à vista, mas o relevo entra em 60 % da zona de Fresnel do rádio
+          (2,4 GHz, da antena do comando) e a ligação pode cair. O preflight avisa por voo a partir
+          de 5 % do bloco («Voo A-3: 18 % do bloco fica atrás do relevo visto da base A, tapado a
+          ~420 m», ou «sinal de rádio em risco»). Um MDT e o relevo global não têm árvores,
+          edifícios nem escombreiras: some-os em «Vegetação e obstáculos» (por missão, a mais de 30
+          m da base) ou importe o MDS da equipa e marque «Este ficheiro é: MDS». A camada liga-se no
+          painel das bases ou no controlo de camadas do mapa e fica lembrada neste aparelho.
+        </Li>
+        <Li>
           <strong>Configuração</strong> (roda dentada no cabeçalho) — por aeronave, o alcance visual
           e os tipos de bateria com o tempo útil por conjunto e quantos conjuntos tem a equipa (para
-          avisar quando a missão precisa de mais voos); guardada no browser, exporta-se e importa-se
-          em ficheiro.
+          avisar quando a missão precisa de mais voos); a altura dos olhos (1,7 m) e do comando (1,5
+          m) para as bacias de visão; guardada no browser, exporta-se e importa-se em ficheiro.
         </Li>
         <Li>
           <strong>Mosaico</strong> — quadrados de lado manual sobre o polígono, paralelos às faixas
@@ -379,9 +391,21 @@ function InstrucoesEn() {
           common), nothing carries over.
         </Li>
         <Li>
+          <strong>Viewsheds</strong> — with bases, blocks and terrain, each block is seen from its
+          base <strong>point</strong> (at the eye height in Settings; the rest of the zone is not
+          swept) on a 25 m grid, at the height the aircraft flies there. Orange: behind the terrain;
+          yellow hatch: in sight, but the terrain enters 60 % of the radio Fresnel zone (2.4 GHz,
+          from the controller antenna) and the link may drop. Preflight warns per flight from 5 % of
+          the block. A DTM and the global terrain have no trees, buildings or spoil heaps: add them
+          in “Vegetation and obstacles” (per mission, beyond 30 m from the base) or import the
+          team’s DSM and mark “This file is: DSM”. The layer is switched in the bases panel or the
+          map’s layer control and remembered on this device.
+        </Li>
+        <Li>
           <strong>Settings</strong> (gear in the header) — per aircraft, the visual range and the
           battery types with the useful time per set and how many sets the team has (to flag
-          missions that need more flights); stored in the browser, exported and imported as a file.
+          missions that need more flights); the eye (1.7 m) and controller (1.5 m) heights for the
+          viewsheds; stored in the browser, exported and imported as a file.
         </Li>
         <Li>
           <strong>Mosaic</strong> — squares of manual size over the polygon, parallel to the flight

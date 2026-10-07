@@ -430,6 +430,14 @@ export default {
     en: 'DGT LiDAR DTM (50 cm / 2 m) downloaded from the Centro de Dados Geográficos — only the area window is read, even in multi-GB files',
   },
   'cp.terrain.localDem': { pt: 'MDT local:', en: 'Local DTM:' },
+  'cp.terrain.localDsm': { pt: 'MDS local:', en: 'Local DSM:' },
+  'cp.terrain.surface': { pt: 'Este ficheiro é:', en: 'This file is:' },
+  'cp.terrain.surfaceDtm': { pt: 'MDT', en: 'DTM' },
+  'cp.terrain.surfaceDsm': { pt: 'MDS', en: 'DSM' },
+  'cp.terrain.surfaceHint': {
+    pt: 'MDT: só o chão (ex. LiDAR da DGT). MDS: com a vegetação, as construções e as escombreiras (ex. o último voo da equipa). As bacias de visão somam a vegetação e os obstáculos da missão só a um MDT.',
+    en: 'DTM: bare ground (e.g. DGT LiDAR). DSM: with vegetation, buildings and spoil heaps (e.g. the team’s last flight). The viewsheds add the mission’s vegetation and obstacle height only to a DTM.',
+  },
   'cp.terrain.demGrid': {
     pt: '({crs}, grelha ~{res} m)',
     en: '({crs}, ~{res} m grid)',

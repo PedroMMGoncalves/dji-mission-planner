@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import { useLang, useT } from '../i18n.jsx'
+import { hiddenStrips, radioStrips, ringLabelPoint } from '../mission/viewshedPlan.js'
 
 /**
  * Mapa Leaflet com camadas imperativas sincronizadas com o estado React:
@@ -10,6 +11,10 @@ import { useLang, useT } from '../i18n.jsx'
  *  - área com buffer, linhas de voo em serpentina e waypoints
  *  - bases de descolagem (A, B, ...) arrastáveis, a zona da seleccionada, e
  *    os blocos na cor da sua base com o número do voo
+ *  - bacias de visão (camada do controlo, desligada por omissão): as partes
+ *    de cada bloco atrás do relevo vistas da base, a laranja; as à vista mas
+ *    com o rádio em risco (zona de Fresnel), a amarelo tracejado; e a
+ *    percentagem visível de cada bloco
  */
 
 const toLatLng = ([lon, lat]) => [lat, lon]
@@ -53,6 +58,9 @@ export default function MapView({
   onAreaMove,
   onBaseDrag,
   onFinishDraw,
+  viewsheds = null,
+  viewshedLayerOn = false,
+  onViewshedLayer,
 }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
@@ -82,6 +90,7 @@ export default function MapView({
       onTileToggle,
       onInspectDrag,
       onOrbitPoiDrag,
+      onViewshedLayer,
     }
   })
 
@@ -196,8 +205,17 @@ export default function MapView({
       orbit: L.layerGroup().addTo(map),
       circular: L.layerGroup().addTo(map),
       bases: L.layerGroup().addTo(map),
+      // bacias de visão: só no mapa quando ligada (controlo de camadas ou painel)
+      viewshed: L.layerGroup(),
       canvas: L.canvas({ padding: 0.3 }),
     }
+    const viewshedLayer = layersRef.current.viewshed
+    map.on('overlayadd', (e) => {
+      if (e.layer === viewshedLayer) stateRef.current.onViewshedLayer?.(true)
+    })
+    map.on('overlayremove', (e) => {
+      if (e.layer === viewshedLayer) stateRef.current.onViewshedLayer?.(false)
+    })
 
     map.on('click', (e) => {
       const s = stateRef.current
@@ -254,6 +272,7 @@ export default function MapView({
         {
           [t('map.municipalities')]: refs.caopOverlays.municipios,
           [t('map.parishes')]: refs.caopOverlays.freguesias,
+          [t('map.viewsheds')]: refs.viewshed,
         },
         { position: 'topright' },
       )
@@ -335,6 +354,71 @@ export default function MapView({
       })
     }
   }, [bases, selectedBaseId, baseTitle])
+
+  // Bacias de visão: a camada segue o estado (painel ou controlo de camadas)
+  useEffect(() => {
+    const map = mapRef.current
+    const g = layersRef.current?.viewshed
+    if (!map || !g) return
+    if (viewshedLayerOn && !map.hasLayer(g)) g.addTo(map)
+    if (!viewshedLayerOn && map.hasLayer(g)) g.remove()
+  }, [viewshedLayerOn])
+
+  const radioLabel = t('map.viewshedRadio', { vis: '{vis}', pct: '{pct}' })
+  // Bacias de visão: faixas de quadrados tapados (gridStepM de lado) e a
+  // percentagem visível de cada bloco no seu centro; só com a camada ligada
+  useEffect(() => {
+    const g = layersRef.current?.viewshed
+    if (!g) return
+    g.clearLayers()
+    if (!viewshedLayerOn || !viewsheds) return
+    for (const v of Object.values(viewsheds)) {
+      const res = v.result && !v.result.error ? v.result : null
+      if (res) {
+        for (const bounds of hiddenStrips(res))
+          L.rectangle(bounds, {
+            stroke: false,
+            fillColor: '#f97316',
+            fillOpacity: 0.45,
+            interactive: false,
+            className: 'viewshed-hidden',
+          }).addTo(g)
+        // à vista, mas com o rádio em risco: mais claro e tracejado
+        for (const bounds of radioStrips(res))
+          L.rectangle(bounds, {
+            color: '#facc15',
+            weight: 1,
+            dashArray: '3 3',
+            fillColor: '#fde047',
+            fillOpacity: 0.2,
+            interactive: false,
+            className: 'viewshed-radio',
+          }).addTo(g)
+      }
+      const at = ringLabelPoint(v.ring)
+      if (!at) continue
+      const s = v.summary
+      const text =
+        s?.status === 'ok'
+          ? s.radioOnly > 0
+            ? radioLabel
+                .replace('{vis}', String(s.visiblePct))
+                .replace('{pct}', String(s.radioOnlyPct))
+            : `${s.visiblePct} %`
+          : s
+            ? '?'
+            : '…'
+      L.marker(toLatLng(at), {
+        icon: L.divIcon({
+          className: `viewshed-label${s?.hidden > 0 || s?.radioOnly > 0 ? ' some-hidden' : ''}`,
+          html: `<span data-block-id="${v.blockId}">${text}</span>`,
+          iconSize: null,
+        }),
+        interactive: false,
+        zIndexOffset: 300,
+      }).addTo(g)
+    }
+  }, [viewsheds, viewshedLayerOn, radioLabel])
 
   // Rascunho durante o desenho livre
   useEffect(() => {

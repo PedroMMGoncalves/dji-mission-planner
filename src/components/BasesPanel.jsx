@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useT } from '../i18n.jsx'
 import { IconDownload, IconTrash } from './Icons.jsx'
 import { exportChoices, flightsArchiveName } from '../mission/flightFiles.js'
+import { viewCaveatText, viewTerrainText } from './BaseFieldSheets.jsx'
 
 /**
  * Lista das bases de descolagem do modo área: por base, os seus voos, a
@@ -14,6 +15,10 @@ import { exportChoices, flightsArchiveName } from '../mission/flightFiles.js'
  * Refeito o mosaico, as atribuições manuais passam para os blocos novos por
  * sobreposição; as que não passaram são contadas (`carryLost`) e ditas aqui,
  * até o operador as dispensar ou o mosaico mudar de novo.
+ *
+ * Bacias de visão (`viewshed`, de useViewsheds): por voo a parte do bloco
+ * que se vê do ponto da base e, quando tapada, a que distância; o relevo
+ * usado com a ressalva do MDT, e a camada do mapa.
  *
  * Com a área dividida em voos, a exportação por voo (`exportFlights`):
  * todos os voos, os de uma base («estou na base B») ou um só, atrás do
@@ -37,6 +42,7 @@ export default function BasesPanel({
   maxFlightsPerBase = 0,
   showClickMode = true,
   exportFlights = null,
+  viewshed = null,
 }) {
   const t = useT()
   return (
@@ -152,9 +158,12 @@ export default function BasesPanel({
             onRemove={onRemove}
             onRadius={onRadius}
             defaultRadiusM={defaultRadiusM}
+            views={viewshed?.byBlock ?? null}
           />
         ))}
       </ul>
+
+      {viewshed && rows.length > 0 && hasBlocks && <ViewshedBox {...viewshed} />}
 
       {exportFlights && exportFlights.files.length > 1 && (
         <FlightExports {...exportFlights} rows={rows} />
@@ -268,11 +277,90 @@ function FlightExports({ files, baseName, rows, canExport, blocked, onExport, on
   )
 }
 
+/**
+ * Bacias de visão: a camada do mapa (lembrada neste aparelho), o relevo
+ * usado e a ressalva — um MDT não tem árvores, edifícios nem escombreiras,
+ * e a vista é a do ponto da base, não de toda a zona.
+ */
+function ViewshedBox({ terrain, running, layerOn, onLayer, obstacleM = 0, onObstacle = null }) {
+  const t = useT()
+  // rascunho do campo enquanto se escreve
+  const [draft, setDraft] = useState(null)
+  const dsm = terrain?.surface === 'dsm'
+  return (
+    <div data-testid="viewshed-box" className="mt-2 border-t border-slate-800 pt-2">
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          {t('bases.view.title')}
+        </span>
+        <label
+          className="flex items-center gap-1.5 text-[11px] text-slate-300"
+          title={t('bases.view.layerTitle')}
+        >
+          <input
+            type="checkbox"
+            data-testid="viewshed-toggle"
+            checked={layerOn}
+            onChange={(e) => onLayer(e.target.checked)}
+            className="accent-orange-500"
+          />
+          {t('bases.view.layer')}
+        </label>
+      </div>
+      {onObstacle && (
+        <label
+          className="mb-1 flex items-center gap-1.5 text-[11px] text-slate-400"
+          title={t('bases.view.obstacleTitle')}
+        >
+          <span className="flex-1">{t('bases.view.obstacle')}</span>
+          <input
+            type="number"
+            min={0}
+            max={60}
+            step={1}
+            data-testid="viewshed-obstacle"
+            value={draft ?? String(obstacleM)}
+            disabled={dsm}
+            onFocus={() => setDraft(String(obstacleM))}
+            onBlur={() => setDraft(null)}
+            onChange={(e) => {
+              const text = e.target.value
+              setDraft(text)
+              const n = text.trim() === '' ? 0 : Number(text)
+              if (Number.isFinite(n) && n >= 0 && n <= 60) onObstacle(n)
+            }}
+            className="w-14 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right text-[11px] text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-40"
+          />
+          <span>m</span>
+        </label>
+      )}
+      {!terrain ? (
+        <p className="text-[11px] leading-relaxed text-slate-500">{t('bases.view.noTerrain')}</p>
+      ) : (
+        <p data-testid="viewshed-terrain" className="text-[11px] leading-relaxed text-slate-400">
+          {t('bases.view.model', { model: viewTerrainText(t, terrain) })}
+          {running ? ` ${t('bases.view.pending')}` : ''}{' '}
+          <span className="text-slate-500">
+            {viewCaveatText(t, terrain)} {t('bases.view.point')} {t('bases.view.radioRule')}
+          </span>
+        </p>
+      )}
+    </div>
+  )
+}
+
 /** Contador das edições do raio (uma por foco no campo), para o Ctrl+Z. */
 let radiusEdits = 0
 
-function BaseRow({ row: b, selected, onSelect, onRemove, onRadius, defaultRadiusM }) {
+function BaseRow({ row: b, selected, onSelect, onRemove, onRadius, defaultRadiusM, views }) {
   const t = useT()
+  // parte de cada voo vista do ponto da base (só os já calculados)
+  const seen = views
+    ? b.blockIds
+        .map((id) => views[id])
+        .filter((v) => v?.summary?.status === 'ok')
+        .map((v) => ({ flight: v.flightLabel, ...v.summary }))
+    : []
   // rascunho do raio enquanto se escreve (vazio = o da Configuração)
   const [draft, setDraft] = useState(null)
   // cada vez que o campo ganha o foco é uma edição: tudo o que se escreve
@@ -360,6 +448,34 @@ function BaseRow({ row: b, selected, onSelect, onRemove, onRadius, defaultRadius
           ? t('bases.flights', { list: b.flights.join(', ') })
           : t('bases.noFlights')}
       </p>
+      {seen.length > 0 && (
+        <p
+          data-testid="base-view"
+          data-view={seen.map((v) => `${v.flight}:${v.visiblePct}`).join(',')}
+          data-radio={seen.map((v) => `${v.flight}:${v.radioOnlyPct}`).join(',')}
+          className={`font-mono text-[11px] leading-relaxed ${
+            seen.some((v) => v.hidden > 0 || v.radioOnly > 0) ? 'text-amber-300' : 'text-slate-400'
+          }`}
+        >
+          {t('bases.view.flights', {
+            list: seen
+              .map((v) => {
+                const seen =
+                  v.hidden > 0
+                    ? t('bases.view.hidden', {
+                        flight: v.flight,
+                        pct: v.visiblePct,
+                        m: v.blockedAtM,
+                      })
+                    : t('bases.view.visible', { flight: v.flight, pct: v.visiblePct })
+                return v.radioOnly > 0
+                  ? `${seen} ${t('bases.view.radio', { pct: v.radioOnlyPct, m: v.radioAtM })}`
+                  : seen
+              })
+              .join(', '),
+          })}
+        </p>
+      )}
       <p
         className={`text-[11px] leading-relaxed ${
           b.noTerrain ? 'text-red-300' : b.reduced ? 'text-amber-300' : 'text-slate-500'

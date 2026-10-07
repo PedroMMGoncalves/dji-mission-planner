@@ -22,7 +22,7 @@ import { chromium } from 'playwright'
 import Ajv2020 from 'ajv/dist/2020.js'
 import JSZip from 'jszip'
 import * as turf from '@turf/turf'
-import { HILL, ground, hillGround, makeFixtures, rectRing, toLL, toM } from './fixtures.mjs'
+import { HILL, RIDGE, ground, hillGround, makeFixtures, rectRing, toLL, toM } from './fixtures.mjs'
 import { analyseRoute, readRoutes } from './kmz.mjs'
 
 const PORT = Number(process.env.E2E_PORT ?? 4173)
@@ -2042,6 +2042,351 @@ await scenario('propor-bases-evita-cabeco', async () => {
     `${routes.length} rotas, mínimo ${minRel.toFixed(1)} m`,
   )
   check('cabeço: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Bacias de visão: uma cumeada entre a base A (na planície a oeste) e o
+// bloco de leste. O preflight diz que voo e que base, a camada do mapa
+// pinta os quadrados tapados (só para lá da sombra da cumeada), a ficha de
+// campo dá a percentagem visível e o relevo usado; com a base no alto da
+// cumeada tudo se vê. O rádio: o bloco de oeste vê-se todo, mas na orla
+// junto da sombra a cumeada entra na zona de Fresnel (60 % a 2,4 GHz) — à
+// vista e com o sinal de rádio em risco. A vegetação somada a um MDT
+// alarga a sombra; com o ficheiro marcado como MDS não se soma.
+/**
+ * Posição no ecrã de um ponto [lon, lat], calibrada com dois marcadores de
+ * posição conhecida: em Web Mercator a escala é a mesma nos dois eixos, e
+ * a algumas centenas de metros é linear.
+ */
+async function mapProjector(page, a, b) {
+  const centre = async (loc) => {
+    const box = await loc.boundingBox()
+    return [box.x + box.width / 2, box.y + box.height / 2]
+  }
+  const merc = (lat) => (Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) * 180) / Math.PI
+  const [pa, pb] = [await centre(a.locator), await centre(b.locator)]
+  const k = (pb[0] - pa[0]) / (b.lonlat[0] - a.lonlat[0])
+  return ([lon, lat]) => [
+    pa[0] + k * (lon - a.lonlat[0]),
+    pa[1] - k * (merc(lat) - merc(a.lonlat[1])),
+  ]
+}
+const VIEWSHED_LAYER_KEY = 'dji-mission-planner:viewshedLayer'
+/** Vista por voo no painel das bases: { "A-1": 100, "A-2": 34 } (percentagem visível). */
+const panelViews = async (page, attrName = 'data-view') => {
+  const attr = await page
+    .locator('[data-testid="base-row"][data-base-label="A"] [data-testid="base-view"]')
+    .getAttribute(attrName, { timeout: 15000 })
+  return Object.fromEntries(
+    (attr ?? '').split(',').map((x) => {
+      const [f, v] = x.split(':')
+      return [f, Number(v)]
+    }),
+  )
+}
+await scenario('bacias-visao-cumeada', async () => {
+  const { page, errors } = await openMission({ area: fx.hill, demFile: fx.demRidge })
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await configure(page, { split: 'Mosaico' })
+  const nBlocks = await page.getByTestId('block-row').count()
+  check('cumeada: dois blocos de 250 m', nBlocks === 2, `${nBlocks} blocos`)
+  check(
+    'cumeada: a camada «Bacias de visão» começa desligada',
+    (await page.evaluate((k) => localStorage.getItem(k), VIEWSHED_LAYER_KEY)) !== '1' &&
+      (await page.locator('.viewshed-hidden').count()) === 0,
+  )
+
+  // a base: um clique no mapa, e depois arrastada para a planície a oeste
+  // da cumeada (mapa calibrado com a base e a pega do centro da área)
+  await page.locator('.leaflet-control-zoom-out').click()
+  await page.waitForTimeout(800)
+  await page.getByRole('button', { name: /Marcar base|Set base/ }).click()
+  await clickMap(page, -250, 0)
+  await page.waitForTimeout(1200)
+  const centreLL = toLL(1250, 1125)
+  const project = async () =>
+    mapProjector(
+      page,
+      { locator: basePin(page, 'A'), lonlat: (await savedBase(page, 'A')).point },
+      { locator: page.locator('.anchor-handle'), lonlat: centreLL },
+    )
+  const moveBaseTo = async (x) => {
+    const proj = await project()
+    const box = await basePin(page, 'A').boundingBox()
+    const [tx, ty] = proj(toLL(x, 1125))
+    await dragMarker(
+      page,
+      basePin(page, 'A'),
+      tx - box.x - box.width / 2,
+      ty - box.y - box.height / 2,
+    )
+    return toM(...(await savedBase(page, 'A')).point)
+  }
+  const at = await moveBaseTo(RIDGE.baseX)
+  check(
+    'cumeada: base A na planície a oeste da cumeada',
+    Math.abs(at[0] - RIDGE.baseX) < 15 && Math.abs(at[1] - 1125) < 15,
+    `(${at[0].toFixed(0)}, ${at[1].toFixed(0)}) m`,
+  )
+
+  // painel: percentagem visível por voo, depois da pausa e do cálculo
+  await page.waitForFunction(
+    () => document.querySelector('[data-testid="base-view"]')?.dataset.view?.split(',').length >= 2,
+    null,
+    { timeout: 15000 },
+  )
+  const views = await panelViews(page)
+  const flights = Object.keys(views)
+  const hiddenFlights = flights.filter((f) => views[f] < 95)
+  check(
+    'cumeada: o painel dá a vista de cada voo; um bloco tapado em parte, o outro visível',
+    flights.length === 2 && hiddenFlights.length === 1 && flights.some((f) => views[f] === 100),
+    JSON.stringify(views),
+  )
+  const hf = hiddenFlights[0]
+  const vf = flights.find((f) => views[f] === 100)
+  const radio = await panelViews(page, 'data-radio')
+  check(
+    `cumeada: o voo ${vf} vê-se todo mas tem parte com o rádio em risco (zona de Fresnel)`,
+    views[vf] === 100 && radio[vf] >= 5,
+    `rádio em risco à vista: ${JSON.stringify(radio)}`,
+  )
+  const panelText = await page.getByTestId('bases-panel').innerText()
+  check(
+    'cumeada: o painel diz a distância a que fica tapado e o relevo usado (com a ressalva do MDT)',
+    new RegExp(`${hf} \\d+ % \\(tapado a ~\\d+ m da base\\)`).test(panelText) &&
+      /Relevo: MDT importado «cumeada\.tif»/.test(panelText) &&
+      /MDS/.test(panelText),
+    panelText.replace(/\s+/g, ' ').slice(0, 400),
+  )
+
+  // preflight: aviso com o voo e a base
+  await page.getByTestId('preflight-pill').click()
+  let lista = await page.getByTestId('preflight-list').innerText()
+  const warn = new RegExp(
+    `Voo ${hf}: \\d+ % do bloco fica atrás do relevo visto da base A, tapado a ~(\\d+) m`,
+  ).exec(lista)
+  // a cumeada está a 250 m da base: o raio tapado (mediana) passa-a
+  check(
+    `cumeada: o preflight avisa «Voo ${hf}: N % do bloco fica atrás do relevo visto da base A»`,
+    Boolean(warn) && Number(warn[1]) >= 200 && Number(warn[1]) <= 300,
+    lista
+      .split('\n')
+      .filter((l) => /relevo visto/.test(l))
+      .join(' | ')
+      .slice(0, 300),
+  )
+  check(
+    'cumeada: é um aviso (não bloqueia)',
+    (await page
+      .getByTestId('preflight-list')
+      .locator('li[data-level="warn"]', { hasText: 'atrás do relevo' })
+      .count()) === 1,
+  )
+  const radioWarn = new RegExp(
+    `Voo ${vf}: \\d+ % do bloco com o sinal de rádio em risco visto da base A: à vista, mas o relevo entra na zona de Fresnel \\(60 % a 2,4 GHz\\) a ~(\\d+) m`,
+  ).exec(lista)
+  check(
+    `cumeada: o preflight avisa «Voo ${vf}: … sinal de rádio em risco» (à vista, causa rádio)`,
+    Boolean(radioWarn) &&
+      Number(radioWarn[1]) >= 200 &&
+      Number(radioWarn[1]) <= 300 &&
+      !new RegExp(`Voo ${vf}: \\d+ % do bloco fica atrás do relevo`).test(lista) &&
+      (await page
+        .getByTestId('preflight-list')
+        .locator('li[data-level="warn"]', { hasText: `Voo ${vf}:` })
+        .count()) === 1,
+    lista
+      .split('\n')
+      .filter((l) => /rádio/.test(l))
+      .join(' | ')
+      .slice(0, 300),
+  )
+  await page.getByTestId('preflight-pill').click()
+
+  // camada do mapa: ligada no painel, pinta os quadrados tapados e a
+  // percentagem de cada bloco, e fica lembrada neste aparelho
+  await page.getByTestId('viewshed-toggle').check()
+  await page.waitForTimeout(500)
+  const squares = await page.locator('.viewshed-hidden').count()
+  const labels = await page.locator('.viewshed-label span').allInnerTexts()
+  check(
+    'cumeada: a camada pinta os quadrados tapados e a percentagem de cada bloco',
+    squares > 0 &&
+      labels.length === nBlocks &&
+      labels.every((l) => /^\d+ %( · rádio −\d+ %)?$/.test(l)),
+    `${squares} faixas; ${labels.join(' / ')}`,
+  )
+  const proj = await project()
+  const shadowX = proj(toLL(1150, 1125))[0]
+  const boxes = await page
+    .locator('.viewshed-hidden')
+    .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().left))
+  check(
+    'cumeada: os quadrados tapados ficam só na sombra da cumeada (a mais de ~500 m da base)',
+    boxes.every((x) => x > shadowX),
+    `mais a oeste ${Math.min(...boxes).toFixed(0)} px, limite ${shadowX.toFixed(0)} px`,
+  )
+  // rádio em risco à vista: faixas mais claras, na orla da sombra (a
+  // oeste dela, até um quadrado de 25 m)
+  const radioBoxes = await page
+    .locator('.viewshed-radio')
+    .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().right))
+  const pxPerM = Math.abs(proj(toLL(1250, 1125))[0] - proj(toLL(1150, 1125))[0]) / 100
+  check(
+    'cumeada: a camada pinta à parte o rádio em risco, junto da sombra da cumeada',
+    radioBoxes.length > 0 &&
+      Math.max(...radioBoxes) <= Math.min(...boxes) + 25 * pxPerM + 2 &&
+      Math.min(...radioBoxes) > shadowX,
+    `${radioBoxes.length} faixas de rádio; até ${Math.max(...radioBoxes).toFixed(0)} px, sombra desde ${Math.min(...boxes).toFixed(0)} px`,
+  )
+  check(
+    'cumeada: a camada fica ligada neste aparelho, também no controlo de camadas',
+    (await page.evaluate((k) => localStorage.getItem(k), VIEWSHED_LAYER_KEY)) === '1' &&
+      (await page
+        .locator('.leaflet-control-layers-overlays label', { hasText: 'Bacias de visão' })
+        .locator('input')
+        .isChecked()),
+  )
+
+  // vegetação e obstáculos (por missão): 10 m somados ao MDT alargam a
+  // sombra ao bloco de oeste; marcado o ficheiro como MDS, não se somam
+  await page.getByTestId('viewshed-obstacle').fill('10')
+  await page.waitForFunction(
+    (f) =>
+      document
+        .querySelector('[data-testid="base-view"]')
+        ?.dataset.view?.split(',')
+        .some((x) => x.startsWith(`${f}:`) && Number(x.split(':')[1]) < 100),
+    vf,
+    { timeout: 15000 },
+  )
+  const veg = await panelViews(page)
+  const vegText = await page.getByTestId('viewshed-terrain').innerText()
+  check(
+    `cumeada: com 10 m de vegetação o voo ${vf} fica em parte atrás do relevo, e o painel di-lo`,
+    veg[vf] < 100 &&
+      veg[hf] <= views[hf] &&
+      /MDT importado «cumeada\.tif» \(\d+\.\d m\) \+ 10 m de vegetação e obstáculos/.test(vegText),
+    `${JSON.stringify(veg)}; ${vegText.slice(0, 160)}`,
+  )
+  await page.waitForTimeout(800)
+  check(
+    'cumeada: a vegetação fica no projecto (por missão)',
+    (await savedProject(page))?.obstacleHeightM === 10,
+  )
+  await page.getByTestId('dem-surface-dsm').click()
+  await page.waitForFunction(
+    (f) =>
+      document
+        .querySelector('[data-testid="base-view"]')
+        ?.dataset.view?.split(',')
+        .includes(`${f}:100`),
+    vf,
+    { timeout: 15000 },
+  )
+  const dsmText = await page.getByTestId('viewshed-terrain').innerText()
+  check(
+    'cumeada: marcado como MDS, a vegetação não se soma (o campo fica desligado) e o painel diz MDS',
+    (await page.getByTestId('viewshed-obstacle').isDisabled()) &&
+      /MDS importado «cumeada\.tif»/.test(dsmText) &&
+      !/vegetação e obstáculos/.test(dsmText.split('.')[0]),
+    dsmText.slice(0, 200),
+  )
+  await page.getByTestId('dem-surface-dtm').click()
+  await page.getByTestId('viewshed-obstacle').fill('0')
+  await page.waitForFunction(
+    (f) =>
+      document
+        .querySelector('[data-testid="base-view"]')
+        ?.dataset.view?.split(',')
+        .includes(`${f}:100`),
+    vf,
+    { timeout: 15000 },
+  )
+
+  // a base no alto da cumeada: tudo à vista
+  const top = await moveBaseTo(RIDGE.x)
+  check(
+    'cumeada: base A no alto da cumeada',
+    Math.abs(top[0] - RIDGE.x) < 8,
+    `x = ${top[0].toFixed(1)} m`,
+  )
+  await page.waitForFunction(
+    () => {
+      const v = document.querySelector('[data-testid="base-view"]')?.dataset.view ?? ''
+      return v.split(',').length >= 2 && v.split(',').every((x) => x.endsWith(':100'))
+    },
+    null,
+    { timeout: 15000 },
+  )
+  await page.getByTestId('preflight-pill').click()
+  lista = await page.getByTestId('preflight-list').innerText()
+  check(
+    'cumeada: do alto da cumeada os avisos desaparecem (relevo e rádio)',
+    !/atrás do relevo/.test(lista) && !/rádio em risco/.test(lista),
+    lista
+      .split('\n')
+      .filter((l) => /relevo visto/.test(l))
+      .join(' | '),
+  )
+  await page.getByTestId('preflight-pill').click()
+  check(
+    'cumeada: … e a camada fica sem quadrados tapados, com 100 % em cada bloco',
+    (await page.locator('.viewshed-hidden').count()) === 0 &&
+      (await page.locator('.viewshed-radio').count()) === 0 &&
+      (await page.locator('.viewshed-label span').allInnerTexts()).every((l) => l === '100 %'),
+  )
+  // Ctrl+Z: a base volta à planície, e a bacia já calculada volta logo
+  await undo(page)
+  check(
+    'cumeada: Ctrl+Z repõe a base na planície e o bloco tapado',
+    Math.abs(toM(...(await savedBase(page, 'A')).point)[0] - RIDGE.baseX) < 15 &&
+      (await panelViews(page))[hf] === views[hf],
+    JSON.stringify(await panelViews(page)),
+  )
+
+  // ficha de campo da base A: percentagem por voo e o relevo usado
+  await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
+  const sheet = page.getByTestId('checklist-bases').getByTestId('base-sheet').first()
+  await sheet.waitFor({ timeout: 10000 })
+  const sheetText = await sheet.innerText()
+  const cellText = await sheet
+    .locator(
+      `[data-testid="base-sheet-flight"][data-flight="${hf}"] [data-testid="base-sheet-view"]`,
+    )
+    .innerText()
+  check(
+    `cumeada: a ficha da base A dá «N % visível — tapado a ~X m da base» no voo ${hf}`,
+    new RegExp(
+      `^${views[hf]} % visível — tapado a ~\\d+ m da base( — rádio em risco em \\d+ % \\(Fresnel a ~\\d+ m\\))?$`,
+    ).test(cellText.trim()),
+    cellText,
+  )
+  const vfCell = await sheet
+    .locator(
+      `[data-testid="base-sheet-flight"][data-flight="${vf}"] [data-testid="base-sheet-view"]`,
+    )
+    .innerText()
+  check(
+    `cumeada: e no voo ${vf} «100 % visível — rádio em risco em N % (Fresnel a ~X m)»`,
+    /^100 % visível — rádio em risco em \d+ % \(Fresnel a ~\d+ m\)$/.test(vfCell.trim()),
+    vfCell,
+  )
+  check(
+    'cumeada: a ficha diz o relevo usado e a ressalva do MDT',
+    /bacias de visão/i.test(sheetText) &&
+      /MDT importado «cumeada\.tif»/.test(sheetText) &&
+      /árvores, edifícios nem escombreiras/.test(sheetText),
+    sheetText.replace(/\s+/g, ' ').slice(0, 300),
+  )
+
+  check('cumeada: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

@@ -17,6 +17,12 @@ export const BASE_FAR_M = 2000
 export const CLEARANCE_WARN_M = 15
 /** Sem base, um desnível da área acima disto faz da cota assumida um aviso e não um lembrete. */
 export const NO_BASE_RELIEF_WARN_M = 10
+/**
+ * Fracção de um bloco atrás do relevo, vista da base — ou à vista mas com o
+ * rádio em risco (zona de Fresnel) — a partir da qual o preflight avisa
+ * (abaixo dela, e acima de zero, é uma nota).
+ */
+export const VIEWSHED_WARN_FRAC = 0.05
 
 const item = (level, code, params = {}) => ({ level, code, params })
 const wpCount = (x) => (Array.isArray(x?.waypoints) ? x.waypoints.length : 0)
@@ -222,6 +228,40 @@ function blockBaseItems(c, usable) {
 }
 
 /**
+ * Bacias de visão, bloco a bloco (`c.viewsheds`, de viewshedsByBlock em
+ * src/mission/viewshedPlan.js), por causa: a parte do bloco em que o drone
+ * fica atrás do relevo visto dos olhos do operador no ponto da base
+ * (`block-viewshed`), e a parte À VISTA em que o relevo entra na zona de
+ * Fresnel do rádio (`block-radio`; os pontos tapados já contam na outra).
+ * Aviso a partir de VIEWSHED_WARN_FRAC, nota abaixo; nada sem pontos (também
+ * quando só há pontos sem veredicto, com relevo em falta), nada enquanto se
+ * calcula, e nada com a base fora do relevo (já bloqueia acima).
+ */
+function viewshedItems(c) {
+  const L = c.baseLayout
+  const V = c.viewsheds
+  if (!L?.hasBases || !V) return []
+  const out = []
+  for (const id of L.order) {
+    const v = V[id]
+    const s = v?.summary
+    if (!s || s.status !== 'ok') continue
+    const who = { flight: v.flightLabel, id, base: v.baseLabel }
+    if (s.hidden > 0) {
+      const params = { ...who, pct: s.hiddenPct, m: s.blockedAtM ?? 0 }
+      if (s.hiddenFrac >= VIEWSHED_WARN_FRAC) out.push(item('warn', 'block-viewshed', params))
+      else out.push(item('info', 'block-viewshed-minor', params))
+    }
+    if (s.radioOnly > 0) {
+      const params = { ...who, pct: s.radioOnlyPct, m: s.radioAtM ?? 0 }
+      if (s.radioOnlyFrac >= VIEWSHED_WARN_FRAC) out.push(item('warn', 'block-radio', params))
+      else out.push(item('info', 'block-radio-minor', params))
+    }
+  }
+  return out
+}
+
+/**
  * Minutos úteis por voo; null sem bateria. A missão passa o tempo útil do
  * equipamento (já sem a reserva de aterragem) com reservePct 0 — a reserva
  * por omissão é 0 para nunca ser descontada duas vezes.
@@ -260,6 +300,7 @@ export function usableBatteryMin(batteryMin, reservePct = 0) {
  * @param {any} [c.baseLayout] bases múltiplas: layoutBlocks (src/mission/baseLayout.js)
  * @param {number} [c.vlosM] alcance visual da aeronave (m), para a mensagem
  * @param {{label: string, zone: any}|null} [c.refZone] rota única com bases: a zona da base de referência
+ * @param {Record<string, any>|null} [c.viewsheds] bacias de visão por bloco (viewshedsByBlock)
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
@@ -338,8 +379,10 @@ export function preflightArea(c) {
 
   const usable = usableBatteryMin(c.batteryMin, c.reservePct)
   if (c.baseLayout?.hasBases && blocks) {
-    // bases múltiplas: bateria, alcance visual e zona bloco a bloco
+    // bases múltiplas: bateria, alcance visual e zona bloco a bloco, e o
+    // relevo entre o operador e o drone
     out.push(...blockBaseItems(c, usable))
+    out.push(...viewshedItems(c))
   } else if (c.refZone?.zone?.reduced) {
     // rota única: a zona da base de referência
     const z = c.refZone.zone

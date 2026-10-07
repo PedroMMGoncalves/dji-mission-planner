@@ -72,6 +72,24 @@ body,
   pointer-events: none;
 }
 
+/* Bacias de visão: percentagem visível de cada bloco, vista da base */
+.viewshed-label span {
+  display: inline-block;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.viewshed-label.some-hidden span {
+  color: #fdba74;
+  border: 1px solid #f97316;
+}
+
 /* Alvos GCP planeados */
 .gcp-target {
   width: 18px;

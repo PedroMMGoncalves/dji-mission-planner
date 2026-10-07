@@ -6,6 +6,39 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Acrescentado (bacias de visão e ligação rádio)
+
+- **Bacias de visão por voo.** Com a área dividida em blocos, bases e
+  relevo, cada bloco é visto do **ponto** da sua base, à altura dos olhos,
+  numa grelha de 25 m, à cota a que o drone lá passa (cota da zona + altura,
+  ou relevo + AGL com seguir terreno), com curvatura da Terra e refracção. A
+  zona de descolagem não é varrida: fica-se no ponto. No painel das bases e
+  na ficha de campo, por voo, «82 % visível — tapado a ~420 m da base», e o
+  relevo usado («relevo global ~30 m», «MDT importado «ficheiro»», «MDS
+  importado …») com a ressalva de que um MDT não tem árvores, edifícios nem
+  escombreiras.
+- **Rádio (zona de Fresnel).** Cada ponto também com a ligação do comando:
+  em risco quando o relevo entra em 60 % da primeira zona de Fresnel a
+  2,4 GHz, a partir da antena do comando. Um bloco pode ver-se todo e ter o
+  rádio em risco na orla de uma crista (o caso de um cabeço com árvores, onde
+  o sinal caiu com o drone à vista).
+- **Preflight por voo e por causa**: «Voo A-3: 18 % do bloco fica atrás do
+  relevo visto da base A, tapado a ~420 m» e «… com o sinal de rádio em
+  risco …», aviso a partir de 5 % do bloco, nota abaixo; nunca bloqueia.
+- **Camada «Bacias de visão»** no mapa (painel das bases ou controlo de
+  camadas; desligada por omissão, lembrada neste aparelho): atrás do relevo
+  a laranja, à vista com o rádio em risco a amarelo tracejado, e a
+  percentagem visível de cada bloco.
+- **Vegetação e obstáculos** a somar ao relevo, por missão (no projecto,
+  0-60 m), a mais de 30 m da base, só com um MDT ou o relevo global. Ao
+  importar um ficheiro de relevo, «Este ficheiro é: MDT / MDS» (MDT por
+  omissão); com MDS nada se soma.
+- **Configuração**: altura dos olhos (1,7 m) e do comando (1,5 m), 1-5 m.
+- Cálculo sem prender a interface: depois de 350 ms sem edições, em fatias
+  de 12 ms, só para os blocos cujo resultado mudou (mover a base A refaz os
+  blocos de A; Ctrl+Z reaproveita). 192 blocos no browser sem tarefas acima
+  de 50 ms. METODOS §4.3.
+
 ### Corrigido (bases: Ctrl+Z, mosaico refeito e proposta em relevo)
 
 - **Ctrl+Z também nas bases.** Marcar, arrastar e retirar uma base, o raio

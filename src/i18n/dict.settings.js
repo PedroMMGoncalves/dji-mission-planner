@@ -61,6 +61,17 @@ export default {
     pt: 'Limite de blocos que a proposta de bases dá a cada base (0 = sem limite, só o alcance visual). As escolhas manuais não são limitadas.',
     en: 'How many blocks the base proposal gives each base (0 = no limit, only the visual range). Manual choices are not limited.',
   },
+  'set.operatorTitle': { pt: 'Operador', en: 'Operator' },
+  'set.eyeHeight': { pt: 'Altura dos olhos', en: 'Eye height' },
+  'set.eyeHeightHint': {
+    pt: 'Altura dos olhos do operador acima do chão no ponto da base (1-5 m; 1,7 m de pé). Usada nas bacias de visão: que partes de cada bloco ficam atrás do relevo vistas da base.',
+    en: 'Height of the operator’s eyes above the ground at the base point (1-5 m; 1.7 m standing). Used in the viewsheds: which parts of each block are behind the terrain seen from the base.',
+  },
+  'set.antennaHeight': { pt: 'Altura do comando (antena)', en: 'Controller (antenna) height' },
+  'set.antennaHeightHint': {
+    pt: 'Altura das antenas do comando acima do chão no ponto da base (1-5 m; 1,5 m nas mãos). Usada no rádio das bacias de visão: 60 % da primeira zona de Fresnel a 2,4 GHz livre de relevo.',
+    en: 'Height of the controller antennas above the ground at the base point (1-5 m; 1.5 m hand-held). Used for the radio check of the viewsheds: 60 % of the first Fresnel zone at 2.4 GHz clear of terrain.',
+  },
   'set.fileTitle': { pt: 'Ficheiro', en: 'File' },
   'set.export': { pt: 'Exportar', en: 'Export' },
   'set.exportTitle': {
