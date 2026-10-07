@@ -6,6 +6,14 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Corrigido (perfil de elevação com bases)
+
+- Em «Tudo», com várias bases, o perfil ligava o fim de cada voo ao início
+  do seguinte e media a folga e o percurso nesses saltos, que não se voam:
+  a folga mínima podia cair a ~20 m num voo a 120 m AGL, e o percurso
+  vinha inflacionado. Agora cada voo é um troço à parte, os saltos ficam
+  como falhas e não contam. O preflight já os ignorava; os KMZ não mudam.
+
 ### Corrigido (proposta de bases: um sítio, uma base)
 
 - **«Propor bases» podia pôr duas bases no mesmo ponto.** Um bloco sem

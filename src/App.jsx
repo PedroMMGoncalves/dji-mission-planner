@@ -2502,6 +2502,7 @@ function AppInner({ lang, setLang }) {
           <ElevationProfile
             terrain={terrain.data}
             waypoints={view3d.waypoints}
+            breaks={view3d.breaks ?? null}
             refElev={view3d.refElev ?? 0}
             reference={
               missionMode === 'area'

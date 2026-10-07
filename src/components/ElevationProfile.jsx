@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import * as turf from '@turf/turf'
 import { useLang } from '../i18n.jsx'
+import { buildProfile } from '../mission/elevationProfile.js'
 
 /* ------------------------------------------------------------------ *
  * PERFIL DE ELEVAÇÃO DO VOO
@@ -63,8 +63,8 @@ const TXT = {
     'No terrain data — only the flight line is shown.',
   ),
   gaps: bi(
-    'As zonas sem dados de relevo aparecem como falhas no perfil do terreno.',
-    'Areas without terrain data appear as gaps in the terrain profile.',
+    'As zonas sem dados de relevo e as passagens de um voo para o seguinte aparecem como falhas no perfil.',
+    'Areas without terrain data and the jumps from one flight to the next appear as gaps in the profile.',
   ),
   empty: bi(
     'São precisos pelo menos dois waypoints para traçar o perfil.',
@@ -82,152 +82,9 @@ const PW = VB_W - PAD.left - PAD.right
 const PH = VB_H - PAD.top - PAD.bottom
 const BASE_Y = PAD.top + PH
 
-/* ---------------- Amostragem ---------------- */
-
-const STEP_M = 25 // passo alvo de amostragem do terreno
-const MAX_SAMPLES = 2000 // trava de performance: o passo cresce se preciso
 const MAX_NODE_DOTS = 400 // acima disto, os pontos dos waypoints não se desenham
 const CLEAR_OK_M = 30 // folga confortável
 const CLEAR_WARN_M = 15 // folga no limite
-
-/** Mediana de uma lista de números (assume-se não vazia). */
-function median(values) {
-  const s = [...values].sort((a, b) => a - b)
-  const mid = s.length >> 1
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
-}
-
-/**
- * Constrói o perfil da seleção.
- *
- * Devolve `{ ok, samples, nodes, totalM, hasTerrain, gMin, gMax, aglMin,
- * aglMax, worst, yMin, yMax, wpCount }`, onde `samples` são as amostras do
- * terreno (`ground` pode ser `null`) e `nodes` os vértices da linha de voo.
- */
-function buildProfile(wps, terrain, refElev) {
-  const empty = {
-    ok: false,
-    samples: [],
-    nodes: [],
-    totalM: 0,
-    hasTerrain: false,
-    gMin: null,
-    gMax: null,
-    aglMin: null,
-    aglMax: null,
-    worst: null,
-    yMin: 0,
-    yMax: 1,
-    wpCount: 0,
-  }
-
-  const pts = (Array.isArray(wps) ? wps : []).filter(
-    (p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]),
-  )
-  if (pts.length < 2) return empty
-
-  // Alturas relativas: as que faltam herdam a mediana das existentes (voo
-  // plano) ou 100 m se nenhum waypoint trouxer altura.
-  const given = pts.map((p) => p[2]).filter(Number.isFinite)
-  const fallback = given.length > 0 ? median(given) : 100
-  const ref = Number.isFinite(refElev) ? refElev : 0
-  const alt = pts.map((p) => ref + (Number.isFinite(p[2]) ? p[2] : fallback))
-
-  // Comprimento de cada segmento e percurso total
-  const segLen = []
-  let totalM = 0
-  for (let i = 1; i < pts.length; i++) {
-    const d = turf.distance([pts[i - 1][0], pts[i - 1][1]], [pts[i][0], pts[i][1]], {
-      units: 'meters',
-    })
-    const len = Number.isFinite(d) ? d : 0
-    segLen.push(len)
-    totalM += len
-  }
-
-  // Passo efetivo: nunca abaixo de STEP_M e sempre dentro do orçamento de
-  // amostras (cada segmento gasta pelo menos uma).
-  const budget = Math.max(2, MAX_SAMPLES - segLen.length)
-  const step = Math.max(STEP_M, totalM / budget)
-
-  // O receiver é preservado (algumas fontes de relevo usam closures/estado).
-  const sample =
-    typeof terrain?.elevationAt === 'function' ? (lon, lat) => terrain.elevationAt(lon, lat) : null
-
-  const samples = []
-  const nodes = [{ d: 0, alt: alt[0] }]
-
-  const push = (d, lon, lat, a) => {
-    const g = sample ? sample(lon, lat) : null
-    samples.push({ d, alt: a, ground: Number.isFinite(g) ? g : null })
-  }
-
-  push(0, pts[0][0], pts[0][1], alt[0])
-
-  let acc = 0
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1]
-    const b = pts[i]
-    const len = segLen[i - 1]
-    const n = len > 0 ? Math.max(1, Math.ceil(len / step)) : 1
-    for (let k = 1; k <= n; k++) {
-      const t = k / n
-      push(
-        acc + len * t,
-        a[0] + (b[0] - a[0]) * t,
-        a[1] + (b[1] - a[1]) * t,
-        alt[i - 1] + (alt[i] - alt[i - 1]) * t,
-      )
-    }
-    acc += len
-    nodes.push({ d: acc, alt: alt[i] })
-  }
-
-  // Estatísticas: terreno, AGL real e pior folga (com a distância onde ocorre)
-  let gMin = Infinity
-  let gMax = -Infinity
-  let aglMin = Infinity
-  let aglMax = -Infinity
-  let worst = null
-  for (const s of samples) {
-    if (s.ground == null) continue
-    if (s.ground < gMin) gMin = s.ground
-    if (s.ground > gMax) gMax = s.ground
-    const agl = s.alt - s.ground
-    if (agl > aglMax) aglMax = agl
-    if (agl < aglMin) {
-      aglMin = agl
-      worst = { d: s.d, alt: s.alt, ground: s.ground, agl }
-    }
-  }
-  const hasTerrain = worst != null
-
-  // Domínio vertical com margem
-  let lo = Math.min(...alt)
-  let hi = Math.max(...alt)
-  if (hasTerrain) {
-    lo = Math.min(lo, gMin)
-    hi = Math.max(hi, gMax)
-  }
-  const span = hi - lo
-  const pad = Math.max(5, span * 0.1)
-
-  return {
-    ok: true,
-    samples,
-    nodes,
-    totalM,
-    hasTerrain,
-    gMin: hasTerrain ? gMin : null,
-    gMax: hasTerrain ? gMax : null,
-    aglMin: hasTerrain ? aglMin : null,
-    aglMax: hasTerrain ? aglMax : null,
-    worst,
-    yMin: lo - pad,
-    yMax: hi + pad,
-    wpCount: pts.length,
-  }
-}
 
 /* ---------------- Eixos ---------------- */
 
@@ -317,6 +174,7 @@ function Swatch({ color, dashed = false, children }) {
 export default function ElevationProfile({
   terrain,
   waypoints,
+  breaks = null,
   refElev,
   reference = null,
   blocks,
@@ -354,7 +212,9 @@ export default function ElevationProfile({
   const ref = Number.isFinite(selected?.refElev) ? selected.refElev : refElev
   const shownRef = selected?.reference ?? reference
 
-  const p = useMemo(() => buildProfile(wps, terrain, ref), [wps, terrain, ref])
+  // a rota inteira com bases tem saltos entre voos; um bloco só, não
+  const wpBreaks = selected ? null : breaks
+  const p = useMemo(() => buildProfile(wps, terrain, ref, wpBreaks), [wps, terrain, ref, wpBreaks])
 
   // Escalas
   const xMax = p.totalM > 0 ? p.totalM : 1
@@ -386,7 +246,12 @@ export default function ElevationProfile({
   }, [p.samples])
 
   const tone = clearanceTone(p.aglMin)
-  const flightPts = p.nodes.map((n) => `${X(n.d).toFixed(1)},${Y(n.alt).toFixed(1)}`).join(' ')
+  // um troço por voo: os saltos entre blocos não se desenham
+  const flightPieces = []
+  for (const n of p.nodes) {
+    if (n.gap || flightPieces.length === 0) flightPieces.push([])
+    flightPieces[flightPieces.length - 1].push(`${X(n.d).toFixed(1)},${Y(n.alt).toFixed(1)}`)
+  }
 
   return (
     <div
@@ -566,14 +431,17 @@ export default function ElevationProfile({
                   )}
 
                   {/* Linha de voo */}
-                  <polyline
-                    points={flightPts}
-                    fill="none"
-                    stroke="#22d3ee"
-                    strokeWidth="2"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                  />
+                  {flightPieces.map((pts, i) => (
+                    <polyline
+                      key={`f${i}`}
+                      points={pts.join(' ')}
+                      fill="none"
+                      stroke="#22d3ee"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                    />
+                  ))}
                   {p.nodes.length <= MAX_NODE_DOTS &&
                     p.nodes.map((n, i) => (
                       <circle
