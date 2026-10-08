@@ -38,8 +38,6 @@ export default function BasesPanel({
   onRemove,
   onRadius,
   onPropose,
-  onGather = null,
-  gathered = null,
   hasBlocks,
   proposal,
   proposing = null,
@@ -118,34 +116,6 @@ export default function BasesPanel({
         </p>
       )}
 
-      {gathered && (
-        <p
-          data-testid="bases-gathered"
-          data-joined={gathered.joined}
-          data-too-far={gathered.tooFar}
-          className="mb-1.5 text-[11px] leading-relaxed text-sky-200"
-        >
-          {t('bases.gathered', {
-            label: gathered.label,
-            n: gathered.joined + gathered.kept,
-            kept: gathered.kept,
-          })}
-          {gathered.removed.length > 0 && (
-            <> {t('bases.gatheredRemoved', { list: gathered.removed.join(', ') })}</>
-          )}
-          {gathered.tooFar > 0 && (
-            <span className="text-amber-300">
-              {' '}
-              {t('bases.gatheredFar', {
-                n: gathered.tooFar,
-                m: vlosM,
-                near: Math.round(gathered.nearestFarM ?? 0),
-              })}
-            </span>
-          )}
-        </p>
-      )}
-
       {carryLost > 0 && (
         <div
           data-testid="bases-carry-lost"
@@ -198,8 +168,7 @@ export default function BasesPanel({
             onSelect={onSelect}
             onRemove={onRemove}
             onRadius={onRadius}
-            onGather={hasBlocks ? onGather : null}
-            vlosM={vlosM}
+            canGather={hasBlocks}
             defaultRadiusM={defaultRadiusM}
             views={viewshed?.byBlock ?? null}
           />
@@ -408,8 +377,7 @@ function BaseRow({
   onSelect,
   onRemove,
   onRadius,
-  onGather,
-  vlosM,
+  canGather,
   defaultRadiusM,
   views,
 }) {
@@ -508,17 +476,35 @@ function BaseRow({
           ? t('bases.flights', { list: b.flights.join(', ') })
           : t('bases.noFlights')}
       </p>
-      {selected && onGather && (
-        <button
-          type="button"
-          data-testid="base-gather"
-          onClick={() => onGather(b.id)}
-          title={t('bases.gatherTitle', { label: b.label, m: vlosM })}
-          className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-[11px] font-medium text-sky-200 transition-colors hover:bg-slate-700"
-        >
-          {t('bases.gather')}
-        </button>
-      )}
+      {/* juntar blocos à mão: a base fica seleccionada e cada clique num
+          bloco do mapa passa-o para ela, até «Terminar» ou Esc */}
+      {canGather &&
+        (selected ? (
+          <div
+            data-testid="base-gather-on"
+            className="mt-1 flex items-center gap-1.5 rounded bg-sky-950/70 px-2 py-1 text-[11px] leading-relaxed text-sky-200"
+          >
+            <span className="flex-1">{t('bases.gatherOn', { label: b.label })}</span>
+            <button
+              type="button"
+              data-testid="base-gather-done"
+              onClick={() => onSelect(null)}
+              className="shrink-0 rounded bg-slate-800 px-2 py-0.5 font-medium text-slate-200 transition-colors hover:bg-slate-700"
+            >
+              {t('bases.gatherDone')}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            data-testid="base-gather"
+            onClick={() => onSelect(b.id)}
+            title={t('bases.gatherTitle', { label: b.label })}
+            className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-[11px] font-medium text-sky-200 transition-colors hover:bg-slate-700"
+          >
+            {t('bases.gather')}
+          </button>
+        ))}
       {seen.length > 0 && (
         <p
           data-testid="base-view"

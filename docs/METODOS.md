@@ -300,19 +300,16 @@ pela ordem do primeiro bloco que servem, e os seus blocos ficam-lhes
 atribuídos. Voos: base a base pela ordem dos
 rótulos e, em cada base, pela ordem do mosaico: A-1, A-2, B-3.
 
-«Juntar a esta base» (`gatherToBase`, no painel com a base seleccionada):
-todos os blocos que a base vê inteiros dentro do VLOS no pior caso (com o
-raio efectivo da sua zona) passam a ela por atribuição manual, mesmo os de
-outras bases; os que passam o VLOS ficam e são contados, com o pior caso
-do mais perto. As bases que ficam sem voos por causa disto saem (as que já
-não tinham voos ficam). O limite de voos por base da proposta não se aplica
-(é decisão do operador), e o rádio e a vista continuam nas bacias de visão
-e no preflight. Um passo do Ctrl+Z desfaz tudo. Serve o caso de um alto com
-vista sobre a área (um vértice geodésico, por exemplo): o operador escolhe
-o sítio e evita mudar de base. Com blocos grandes o limite é geométrico: um
-bloco de lado L só cabe se o vértice mais afastado + `r` ≤ VLOS; com a base
-no canto comum de quatro blocos, L·√2 + `r` ≤ VLOS (com 1000 m e `r` =
-100 m, L ≤ 636 m).
+«Juntar blocos a esta base» é manual: o botão da base (ou o clique no seu
+pino) selecciona-a, e cada clique num bloco do mapa (o rótulo, a célula do
+mosaico ou, nas faixas, o contorno do bloco) passa-o para ela por
+atribuição manual (`blockClickTarget`: um bloco que já é dela fica). Nada
+muda sozinho; um bloco para lá do alcance visual da base passa na mesma e o
+preflight avisa voo a voo. «Terminar», Esc ou um novo clique no pino
+desseleccionam; cada clique é um passo do Ctrl+Z. Com blocos por bateria o
+limite é geométrico: um bloco de lado L só fica todo dentro do VLOS de uma
+base se o vértice mais afastado + `r` ≤ VLOS; com a base no canto comum de
+quatro blocos, L·√2 + `r` ≤ VLOS (com 1000 m e `r` = 100 m, L ≤ 636 m).
 
 Bons sítios na proposta (`src/mission/baseSites.js`, com relevo sobre a
 área, com ou sem seguimento de terreno). A prática da equipa é descolar de

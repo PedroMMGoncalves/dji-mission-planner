@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import { useLang, useT } from '../i18n.jsx'
 import { hiddenStrips, radioStrips, ringLabelPoint } from '../mission/viewshedPlan.js'
+import { blockRing } from '../mission/baseLayout.js'
 
 /**
  * Mapa Leaflet com camadas imperativas sincronizadas com o estado React:
@@ -584,6 +585,12 @@ export default function MapView({
     const icon = L.divIcon({ className: 'anchor-handle', iconSize: [16, 16] })
     const marker = L.marker(at, { icon, draggable: true, zIndexOffset: 400 }).addTo(map)
     marker.bindTooltip(moveHint, { direction: 'top', offset: [0, -10] })
+    // a pega fica no centro da área: num modo de marcar (base, ponto de
+    // inspecção, POI) o clique nela é um clique no mapa nesse ponto
+    marker.on('click', (e) => {
+      const s = stateRef.current
+      if (MAP_CLICK_MODES.has(s.mode)) s.onMapClick([e.latlng.lng, e.latlng.lat])
+    })
     const origin = L.latLng(at)
     marker.on('dragend', () => {
       const p = marker.getLatLng()
@@ -633,6 +640,8 @@ export default function MapView({
       '#60a5fa',
     ]
     const assign = assignMode && Boolean(baseLayout?.hasBases)
+    // há células clicáveis (mosaico ou grelha)? senão, o contorno de cada bloco
+    const hasCells = Boolean(tiles?.length || gridCells?.length)
     if (blocks && (blocks.length > 1 || baseLayout?.hasBases)) {
       blocks.forEach((block, i) => {
         // com bases: a cor da base do bloco; sem elas, uma cor por bloco
@@ -664,6 +673,20 @@ export default function MapView({
           zIndexOffset: assign ? 650 : 0,
         }).addTo(layers.lines)
         if (assign) m.on('click', () => stateRef.current.onBlockClick?.(block.id))
+        // blocos sem célula (divisão por faixas): o contorno do bloco é o
+        // alvo do clique, invisível, para «clicar na área do bloco» servir
+        if (assign && !hasCells) {
+          const ring = blockRing(block)
+          if (ring.length >= 3) {
+            const area = L.polygon(ring.map(toLatLng), {
+              stroke: false,
+              fillOpacity: 0,
+              bubblingMouseEvents: false,
+              className: `block-cell block-cell-${block.id}`,
+            }).addTo(layers.lines)
+            area.on('click', () => stateRef.current.onBlockClick?.(block.id))
+          }
+        }
       })
     } else {
       plan.lines.forEach((seg) => {
@@ -690,7 +713,7 @@ export default function MapView({
         renderer: layers.canvas,
       }).addTo(layers.lines)
     })
-  }, [plan, blocks, baseLayout, assignMode])
+  }, [plan, blocks, baseLayout, assignMode, tiles, gridCells])
 
   // Alvos GCP planeados (xadrez amarelo, com etiqueta)
   useEffect(() => {

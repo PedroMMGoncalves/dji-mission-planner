@@ -48,7 +48,7 @@ import {
   removeBase as removeBaseFrom,
   setBaseRadius,
 } from './mission/bases.js'
-import { blockRing, blocksViewRoute, gatherToBase, summarizeBases } from './mission/baseLayout.js'
+import { blockRing, blocksViewRoute, summarizeBases } from './mission/baseLayout.js'
 import { baseFieldSheets } from './mission/fieldSheet.js'
 import { buildBasesKML } from './mission/basesKml.js'
 import {
@@ -255,8 +255,6 @@ function AppInner({ lang, setLang }) {
   )
   // a última proposta: {added, outOfVlos, poorSites} ou {cancelled: true}
   const [baseProposal, setBaseProposal] = useState(null)
-  // o último «Juntar a esta base»: {label, joined, kept, tooFar, nearestFarM, removed}
-  const [baseGathered, setBaseGathered] = useState(null)
   const [exportError, setExportError] = useState(null)
 
   /**
@@ -1688,7 +1686,6 @@ function AppInner({ lang, setLang }) {
       setBlockBaseState({ key: null, map: n.blockBase ?? {}, cells: null, ring: null, lost: 0 })
       setSelectedBaseId(null)
       setBaseProposal(null)
-      setBaseGathered(null)
       if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
       if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
       setObstacleM(n.obstacleHeightM ?? 0)
@@ -1856,7 +1853,6 @@ function AppInner({ lang, setLang }) {
         })
       : null
     setBaseProposal(null)
-    setBaseGathered(null)
     startProposal(
       {
         blocks,
@@ -1901,41 +1897,6 @@ function AppInner({ lang, setLang }) {
     params.altitude,
     startProposal,
   ])
-  // "Juntar a esta base": os blocos que a base vê inteiros dentro do VLOS
-  // passam para ela (src/mission/baseLayout.js, gatherToBase)
-  const gatherToBaseById = useCallback(
-    (id) => {
-      if (!blocks?.length) return
-      const res = gatherToBase({
-        blocks,
-        bases,
-        zones,
-        manual: blockBaseEffective,
-        vlosM,
-        defaultRadiusM: equipment.zoneRadiusM,
-        baseId: id,
-      })
-      if (!res) return
-      const label = bases.find((b) => b.id === id)?.label ?? ''
-      if (res.joined > 0 || res.removed.length > 0) {
-        pushHistory()
-        setBases(res.bases)
-        setManualBlockBase(res.blockBase)
-      }
-      setBaseProposal(null)
-      setBaseGathered({ label, ...res })
-    },
-    [
-      blocks,
-      bases,
-      zones,
-      blockBaseEffective,
-      vlosM,
-      equipment.zoneRadiusM,
-      pushHistory,
-      setManualBlockBase,
-    ],
-  )
   const cancelProposal = useCallback(() => {
     if (cancelProposalRun()) setBaseProposal({ cancelled: true })
   }, [cancelProposalRun])
@@ -2442,8 +2403,6 @@ function AppInner({ lang, setLang }) {
                   onRemove: removeBaseById,
                   onRadius: setBaseRadiusById,
                   onPropose: proposeBasesForBlocks,
-                  onGather: gatherToBaseById,
-                  gathered: baseGathered,
                   // proposta em curso: progresso e cancelar
                   proposing: proposing
                     ? { progress: proposeProgress, onCancel: cancelProposal }

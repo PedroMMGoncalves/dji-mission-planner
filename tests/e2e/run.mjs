@@ -1958,9 +1958,9 @@ await scenario('bases-desfazer', async () => {
   return { page }
 })
 
-// «Juntar a esta base»: a base seleccionada fica com todos os blocos que vê
-// inteiros dentro do VLOS (os outros ficam de fora e são contados), as bases
-// que ficam sem voos saem, e um Ctrl+Z desfaz tudo.
+// «Juntar blocos a esta base», à mão: o botão da base entra no modo de juntar
+// sem mexer em nada; cada clique num bloco passa-o para a base, e só esse;
+// «Terminar» sai, e o Ctrl+Z desfaz um clique de cada vez.
 await scenario('juntar-a-esta-base', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
   await page
@@ -1972,43 +1972,56 @@ await scenario('juntar-a-esta-base', async () => {
   await proposeAndWait(page)
   const rows0 = await baseRows(page)
   const layout0 = rows0.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ')
-  const total = rows0.reduce((n, r) => n + r.blocks.length, 0)
   check('juntar: a proposta dá pelo menos duas bases', rows0.length >= 2, layout0)
   const A = rows0[0]
+  // «Juntar blocos a esta base» na linha de A: entra no modo de juntar à mão
+  // (não mexe em nada sozinho)
+  const rowA = page.locator(`[data-testid="base-row"][data-base-label="${A.label}"]`)
+  await rowA.getByTestId('base-gather').click()
+  await page.waitForTimeout(400)
   check(
-    'juntar: sem base seleccionada o botão não aparece',
-    (await page.getByTestId('base-gather').count()) === 0,
+    'juntar: o botão entra no modo de juntar à mão e não mexe em nada sozinho',
+    (await rowA.getByTestId('base-gather-on').count()) === 1 &&
+      (await page.getByTestId('bases-click-hint').getAttribute('data-assign')) === 'on' &&
+      (await baseRows(page)).map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ') === layout0,
   )
-  await page
-    .locator(`[data-testid="base-row"][data-base-label="${A.label}"]`)
-    .getByTitle(new RegExp(`Seleccionar a base ${A.label}`))
-    .click()
-  await page.getByTestId('base-gather').click()
-  await page.waitForTimeout(1200)
-  const msg = page.getByTestId('bases-gathered')
-  check('juntar: o painel diz o que fez', (await msg.count()) === 1)
-  const joined = Number(await msg.getAttribute('data-joined'))
-  const tooFar = Number(await msg.getAttribute('data-too-far'))
+  // clicar em blocos de outras bases: o rótulo de um, a célula de outro
+  const others = rows0.filter((r) => r.label !== A.label && r.blocks.length)
+  const pick1 = others[0].blocks[0]
+  const pick2 = (others[1] ?? others[0]).blocks.at(-1)
+  await page.locator(`.block-label [data-block-id="${pick1}"]`).click()
+  await page.waitForTimeout(600)
+  if (pick2 !== pick1) {
+    const cell = await page.locator(`path.block-cell-${pick2}`).boundingBox()
+    await page.mouse.click(cell.x + cell.width * 0.25, cell.y + cell.height * 0.75)
+    await page.waitForTimeout(600)
+  }
   const rows = await baseRows(page)
   const mine = rows.find((r) => r.label === A.label)
+  const moved = new Set([pick1, pick2])
   check(
-    'juntar: a base fica com mais voos e os de fora são os que sobram',
-    mine &&
-      mine.blocks.length === A.blocks.length + joined &&
-      mine.blocks.length + tooFar === total,
-    `${A.label}: ${A.blocks.length} -> ${mine?.blocks.length}; de fora ${tooFar}; total ${total}`,
-  )
-  check(
-    'juntar: nenhuma base fica sem voos',
-    rows.every((r) => r.blocks.length > 0),
+    'juntar: os blocos clicados passam para a base, e só esses',
+    [...moved].every((b) => mine.blocks.includes(b)) &&
+      mine.blocks.length === A.blocks.length + moved.size &&
+      rows0.every((r) =>
+        r.blocks
+          .filter((b) => !moved.has(b))
+          .every((b) => rows.find((x) => x.label === r.label)?.blocks.includes(b)),
+      ),
     rows.map((r) => `${r.label}:${r.blocks.join('.')}`).join(' '),
   )
-  check('juntar: houve blocos juntos ou nada a fazer', joined > 0 || rows0.length === rows.length)
-  if (joined > 0) {
-    await undo(page)
-    const back = (await baseRows(page)).map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ')
-    check('juntar: um Ctrl+Z repõe as bases e os voos', back === layout0, back)
-  }
+  // «Terminar» sai do modo
+  await rowA.getByTestId('base-gather-done').click()
+  await page.waitForTimeout(300)
+  check(
+    'juntar: «Terminar» sai do modo de juntar',
+    (await page.getByTestId('bases-click-hint').getAttribute('data-assign')) === 'off' &&
+      (await rowA.getByTestId('base-gather-on').count()) === 0,
+  )
+  // Ctrl+Z desfaz um bloco de cada vez
+  for (let i = 0; i < moved.size; i++) await undo(page)
+  const back = (await baseRows(page)).map((r) => `${r.label}:${r.blocks.join('.')}`).join(' ')
+  check('juntar: Ctrl+Z repõe os blocos, um passo por clique', back === layout0, back)
   // vista 3D com bases: cada voo na cor da sua base, sem erros
   await page.getByRole('button', { name: /Vista 3D|3D View/ }).click()
   await page.waitForSelector('canvas', { timeout: 15000 })
@@ -2041,7 +2054,7 @@ await scenario('atribuir-bloco-a-base', async () => {
     check(
       `${split}: sem base seleccionada, o painel diz como passar blocos`,
       (await hint.getAttribute('data-assign')) === 'off' &&
-        /seleccione-a/.test(await hint.innerText()),
+        /Juntar blocos a esta base/.test(await hint.innerText()),
     )
     await basePin(page, B.label).click()
     check(
@@ -2070,8 +2083,12 @@ await scenario('atribuir-bloco-a-base', async () => {
     )
     // a célula (fora do rótulo) também serve: um ponto dentro dela, longe
     // do centro (onde a proposta costuma pôr os pinos)
-    const blk2 = A.blocks[A.blocks.length - 1]
-    if (blk2 !== blk) {
+    // (um bloco de outra base que não B; nas faixas, o contorno do bloco)
+    const blk2 = (await baseRows(page))
+      .filter((r) => r.label !== B.label)
+      .flatMap((r) => r.blocks)
+      .find((x) => x !== blk)
+    if (blk2 != null) {
       const cell = await page.locator(`path.block-cell-${blk2}`).boundingBox()
       await page.mouse.click(cell.x + cell.width * 0.25, cell.y + cell.height * 0.75)
       await page.waitForTimeout(800)
@@ -2126,6 +2143,21 @@ await scenario('atribuir-bloco-a-base', async () => {
         'Bateria: um ponto de inspecção dentro de uma célula cria o ponto (não desactiva a célula)',
         ip1 === ip0 + 1 && blocks1 === blocks0,
         `pontos ${ip0} -> ${ip1}; blocos ${blocks0} -> ${blocks1}`,
+      )
+      // «Marcar base» em cima da pega de mover a área (no centro dela)
+      await openDrawer(page, 'extras')
+      await page
+        .getByRole('button', { name: /Marcar pontos no mapa|Place points on the map/ })
+        .click()
+      await closeDrawer(page)
+      const nb0 = (await baseRows(page)).length
+      await page.getByRole('button', { name: /Marcar base|Set base/ }).click()
+      await page.locator('.anchor-handle').first().click()
+      await page.waitForTimeout(800)
+      check(
+        'Bateria: «Marcar base» com o clique na pega do centro da área cria a base',
+        (await baseRows(page)).length === nb0 + 1,
+        `${nb0} -> ${(await baseRows(page)).length}`,
       )
     }
     check(`${split}: sem erros de página`, errors.length === 0, errors.join(' | '))

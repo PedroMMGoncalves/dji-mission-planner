@@ -185,13 +185,12 @@ function InstrucoesPt() {
           substituída por outra (menos de metade em comum) nada passa.
         </Li>
         <Li>
-          <strong>Juntar a esta base</strong> — para descolar de um alto e não mudar de sítio:
-          seleccione a base (o pino no mapa ou o rótulo na lista) e carregue em «Juntar a esta base»
-          na linha dela. Todos os blocos que ela vê inteiros dentro do alcance visual (no pior caso,
-          com o raio da zona) passam a ela, mesmo os de outras bases; as bases que ficam sem voos
-          saem, e o painel diz quantos juntou e quantos ficam de fora. Blocos soltos passam-se com a
-          base seleccionada e um clique no bloco. O rádio e a vista continuam no preflight; Ctrl+Z
-          desfaz.
+          <strong>Juntar blocos a esta base</strong> — à mão: carregue em «Juntar blocos a esta
+          base» na linha da base (ou clique no pino dela no mapa) e clique no mapa nos blocos que
+          quer passar para ela, um a um (o rótulo ou a área do bloco); um clique num bloco que já é
+          dela deixa-o lá. «Terminar» ou Esc acaba. Nada muda sozinho: só os blocos clicados. Um
+          bloco fora do alcance visual da base passa na mesma, e o preflight avisa. Ctrl+Z desfaz um
+          clique de cada vez.
         </Li>
         <Li>
           <strong>Bacias de visão</strong> — com bases, blocos e relevo, cada bloco é visto do{' '}
@@ -454,12 +453,12 @@ function InstrucoesEn() {
           area is replaced by another (less than half in common), nothing carries over.
         </Li>
         <Li>
-          <strong>Gather to this base</strong> — to take off from a high point and not move: select
-          the base (its pin on the map or its label in the list) and press “Gather to this base” in
-          its row. Every block it sees entirely within visual range (worst case, with the zone
-          radius) moves to it, even other bases’ ones; bases left without flights are removed, and
-          the panel says how many joined and how many stay out. Single blocks are moved by selecting
-          the base and clicking the block. Radio and sight stay in the preflight; Ctrl+Z undoes it.
+          <strong>Gather blocks to this base</strong> — by hand: press “Gather blocks to this base”
+          in the base’s row (or click its pin on the map) and click on the map the blocks you want
+          to move to it, one by one (their label or their area); clicking a block that is already
+          its own leaves it there. “Done” or Esc ends. Nothing changes by itself: only the clicked
+          blocks. A block beyond the base’s visual range moves anyway, and the preflight warns.
+          Ctrl+Z undoes one click at a time.
         </Li>
         <Li>
           <strong>Viewsheds</strong> — with bases, blocks and terrain, each block is seen from the{' '}

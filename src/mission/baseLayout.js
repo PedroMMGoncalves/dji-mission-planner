@@ -20,12 +20,11 @@
 import { squareSideForBattery, stopCostS, turnCostS } from '../utils/geo.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from '../utils/units.js'
 import { terrainRangeAlong } from './clearance.js'
-import { addBase, baseColor, removeBase, sortedBases } from './bases.js'
+import { addBase, baseColor, sortedBases } from './bases.js'
 import {
   DEFAULT_ZONE_RADIUS_M,
   assignBlocksToBases,
   blockWorstTransitM,
-  blockWorstVlosM,
   computeTakeoffZone,
   proposeBases,
 } from './takeoffZones.js'
@@ -387,88 +386,6 @@ export function applyProposal({ bases = [], manual = {}, proposal }) {
     added: list.length,
     outOfVlos: list.filter((p) => p.outOfVlos).length,
     poorSites: list.filter((p) => !p.siteOk).length,
-  }
-}
-
-/**
- * «Juntar a esta base»: todos os blocos que a base `baseId` vê inteiros
- * dentro do VLOS (no pior caso, com o raio da sua zona) passam a ela, à mão,
- * mesmo os que estavam noutra base — o operador escolheu o sítio (um alto
- * com vista sobre a área) e não quer mudar de sítio. O limite de voos por
- * base da proposta não se aplica (é uma decisão do operador); o rádio e a
- * vista continuam a ser verificados nas bacias de visão e no preflight. As
- * bases que ficam sem voos por causa disto saem (um passo do Ctrl+Z desfaz
- * tudo); as que já não tinham voos ficam.
- *
- * @param {object} args
- * @param {any[]} args.blocks blocos do plano (id, waypoints, cellRing?)
- * @param {any[]} args.bases
- * @param {Record<string, any>} [args.zones] computeZones
- * @param {Record<string, string>} [args.manual] atribuições manuais
- * @param {number} args.vlosM
- * @param {number} [args.defaultRadiusM]
- * @param {string} args.baseId
- * @returns {null | {bases: any[], blockBase: Record<string, string>, joined: number,
- *   kept: number, tooFar: number, nearestFarM: number|null, removed: string[]}}
- *   `joined`: blocos que mudaram para a base; `kept`: os que já eram dela;
- *   `tooFar`: os que ficam de fora por passarem o VLOS (`nearestFarM`, o
- *   pior caso do mais perto deles); `removed`: rótulos das bases retiradas
- */
-export function gatherToBase({
-  blocks,
-  bases,
-  zones = {},
-  manual = {},
-  vlosM,
-  defaultRadiusM = DEFAULT_ZONE_RADIUS_M,
-  baseId,
-}) {
-  const base = (bases ?? []).find((b) => b.id === baseId)
-  if (!base || !isPoint(base.point) || !Array.isArray(blocks) || !(vlosM > 0)) return null
-  const z = zones?.[base.id]
-  const radiusM =
-    z && !z.error ? z.radiusM : Number.isFinite(base.radiusM) ? base.radiusM : defaultRadiusM
-  const before = layoutBlocks({ blocks, bases, zones, manual, vlosM, defaultRadiusM })
-  const map = { ...(manual ?? {}) }
-  let joined = 0
-  let kept = 0
-  let tooFar = 0
-  let nearestFarM = null
-  for (const b of blocks) {
-    const ring = blockRing(b)
-    if (!Array.isArray(ring) || ring.length < 3) continue
-    const worst = blockWorstVlosM({ point: base.point, radiusM }, ring)
-    if (worst > vlosM + 1e-6) {
-      tooFar += 1
-      if (nearestFarM == null || worst < nearestFarM) nearestFarM = worst
-      continue
-    }
-    if (before?.byBlock[b.id]?.baseId === base.id) kept += 1
-    else joined += 1
-    map[String(b.id)] = base.id
-  }
-  // bases que ficaram sem voos por causa disto saem (com as atribuições que
-  // apontavam para elas); uma que já não tinha voos fica
-  const had = new Set((before?.bases ?? []).filter((r) => r.blockIds.length > 0).map((r) => r.id))
-  const after = layoutBlocks({ blocks, bases, zones, manual: map, vlosM, defaultRadiusM })
-  let nextBases = bases
-  let nextMap = map
-  const removed = []
-  for (const row of after?.bases ?? []) {
-    if (row.id === base.id || row.blockIds.length > 0 || !had.has(row.id)) continue
-    const res = removeBase(nextBases, nextMap, row.id)
-    nextBases = res.bases
-    nextMap = res.blockBase
-    removed.push(row.label)
-  }
-  return {
-    bases: nextBases,
-    blockBase: nextMap,
-    joined,
-    kept,
-    tooFar,
-    nearestFarM,
-    removed,
   }
 }
 

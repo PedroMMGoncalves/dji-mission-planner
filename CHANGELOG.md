@@ -15,6 +15,23 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   rótulo na lista), que leva todos os blocos ao alcance. A exportação por
   base em pastas e os dois ZIP do cabeçalho ficam.
 
+### Alterado («Juntar blocos a esta base» passa a manual)
+
+- O botão já não junta nada sozinho. Antes levava todos os blocos ao
+  alcance visual (no pior caso) e retirava as bases que ficavam vazias; com
+  blocos por bateria quase nunca cabia nenhum («6 ficam de fora»), e os
+  cliques que o operador fazia a seguir vinham depois desse passo
+  automático. Agora, «Juntar blocos a esta base» (na linha da base, ou o
+  clique no pino) entra no modo de juntar e cada clique num bloco do mapa
+  passa-o para ela; «Terminar» ou Esc acaba. Um bloco fora do alcance
+  passa na mesma e o preflight avisa. Sai a agregação automática
+  (`gatherToBase`).
+- Na divisão por faixas os blocos não têm quadrado: o contorno de cada
+  bloco passa a ser a área clicável, e clicar «na área do bloco» funciona
+  como nas outras divisões.
+- Com «Marcar base», o clique na pega de mover a área (no centro dela)
+  cria a base.
+
 ### Corrigido (passar um bloco a uma base)
 
 - **A base seleccionada é o destino dos blocos.** Antes, com a base B

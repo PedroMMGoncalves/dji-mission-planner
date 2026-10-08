@@ -253,12 +253,11 @@ tablet real):
   dentro de uma célula criam a base e o ponto (a célula não se desactiva).
   Com uma gaveta aberta, o primeiro Esc fecha a gaveta e a base continua
   seleccionada.
-- ☐ Seleccionar uma base num alto (o pino no mapa ou o rótulo na lista) →
-  **Juntar a esta base**.
-  **Esperado:** a base fica com todos os voos que vê inteiros dentro do
-  alcance visual; o painel diz quantos juntou, quantos ficam de fora e a
-  que distância está o mais perto deles (pior caso); as bases sem voos
-  saem; **Ctrl+Z** repõe tudo.
+- ☐ Na linha da base A, **Juntar blocos a esta base**; clicar na área de dois
+  blocos de outras bases (um na divisão por faixas, onde não há quadrados).
+  **Esperado:** nada muda ao carregar no botão; a linha diz «A juntar blocos
+  à base A…»; cada bloco clicado passa para A e só esses; **Terminar** sai do
+  modo; dois **Ctrl+Z** repõem os blocos.
 
 ## 14. Bacias de visão e rádio — verificação no campo (~2 min + campo)
 

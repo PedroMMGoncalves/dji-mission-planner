@@ -51,8 +51,8 @@ export default {
     en: 'at most {n} flights per base',
   },
   'bases.clickAssignOff': {
-    pt: 'Clique num bloco no mapa: activa / desactiva. Para passar blocos a uma base, seleccione-a (o pino no mapa ou o rótulo abaixo) e clique nos blocos.',
-    en: 'Click a block on the map: enable / disable. To move blocks to a base, select it (its pin on the map or its label below) and click the blocks.',
+    pt: 'Clique num bloco no mapa: activa / desactiva. Para passar blocos a uma base, carregue em «Juntar blocos a esta base» (ou no pino dela) e clique nos blocos.',
+    en: 'Click a block on the map: enable / disable. To move blocks to a base, press “Gather blocks to this base” (or its pin) and click the blocks.',
   },
   'bases.clickAssignOn': {
     pt: 'Base {label} seleccionada: clique num bloco para o passar para {label}. Esc (ou um clique no pino) desselecciona.',
@@ -60,23 +60,16 @@ export default {
   },
   'bases.label': { pt: 'Base {label}', en: 'Base {label}' },
   'bases.noFlights': { pt: 'sem voos', en: 'no flights' },
-  'bases.gather': { pt: 'Juntar a esta base', en: 'Gather to this base' },
+  'bases.gather': { pt: 'Juntar blocos a esta base', en: 'Gather blocks to this base' },
   'bases.gatherTitle': {
-    pt: 'Passa para a base {label} todos os blocos que ela vê inteiros dentro do alcance visual ({m} m no pior caso), mesmo os de outras bases: menos deslocações. As bases que ficarem sem voos saem. O rádio e a vista continuam no preflight. Ctrl+Z desfaz.',
-    en: 'Moves to base {label} every block it sees entirely within visual range ({m} m worst case), even those of other bases: fewer moves. Bases left without flights are removed. Radio and sight stay in the preflight. Ctrl+Z undoes.',
+    pt: 'Depois clique no mapa nos blocos que quer passar para a base {label} (o rótulo ou o quadrado), um a um. Um clique num bloco que já é dela deixa-o lá. «Terminar» ou Esc acaba.',
+    en: 'Then click on the map the blocks you want to move to base {label} (their label or square), one by one. Clicking a block that is already its own leaves it there. “Done” or Esc ends.',
   },
-  'bases.gathered': {
-    pt: 'Base {label}: {n} voo(s) juntos ({kept} já eram dela).',
-    en: 'Base {label}: {n} flight(s) gathered ({kept} were already its own).',
+  'bases.gatherOn': {
+    pt: 'A juntar blocos à base {label}: clique nos blocos no mapa.',
+    en: 'Gathering blocks to base {label}: click the blocks on the map.',
   },
-  'bases.gatheredFar': {
-    pt: '{n} bloco(s) ficam de fora: passam os {m} m de alcance visual (o mais perto a {near} m no pior caso, com o raio da zona).',
-    en: '{n} block(s) left out: beyond the {m} m visual range (the nearest at {near} m worst case, zone radius included).',
-  },
-  'bases.gatheredRemoved': {
-    pt: 'Bases retiradas, sem voos: {list}.',
-    en: 'Bases removed, left without flights: {list}.',
-  },
+  'bases.gatherDone': { pt: 'Terminar', en: 'Done' },
   'bases.flights': { pt: 'voos {list}', en: 'flights {list}' },
   'bases.zone': { pt: 'zona {r} m', en: 'zone {r} m' },
   'bases.zoneReduced': {
