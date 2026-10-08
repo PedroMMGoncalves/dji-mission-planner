@@ -130,10 +130,12 @@ function InstrucoesPt() {
           <Kbd>Clique</Kbd> — adiciona um vértice.
         </Li>
         <Li>
-          <Kbd>Clique num vértice</Kbd> ou <Kbd>Backspace</Kbd> — remove-o.
+          <Kbd>Backspace</Kbd> ou <Kbd>Ctrl+Z</Kbd> — remove o último vértice (também na linha de
+          base da fachada e no eixo do corredor).
         </Li>
         <Li>
-          <Kbd>Duplo clique</Kbd> (esquerdo ou direito) — fecha o polígono.
+          <Kbd>Clique no primeiro vértice</Kbd> (com 3 ou mais) ou <Kbd>Duplo clique</Kbd> (esquerdo
+          ou direito) — fecha o polígono.
         </Li>
         <Li>
           <Kbd>Esc</Kbd> — cancela o desenho.
@@ -399,10 +401,12 @@ function InstrucoesEn() {
           <Kbd>Click</Kbd> — adds a vertex.
         </Li>
         <Li>
-          <Kbd>Click a vertex</Kbd> or <Kbd>Backspace</Kbd> — removes it.
+          <Kbd>Backspace</Kbd> or <Kbd>Ctrl+Z</Kbd> — removes the last vertex (also on the face
+          baseline and the corridor centreline).
         </Li>
         <Li>
-          <Kbd>Double click</Kbd> (left or right) — closes the polygon.
+          <Kbd>Click the first vertex</Kbd> (with 3 or more) or <Kbd>Double click</Kbd> (left or
+          right) — closes the polygon.
         </Li>
         <Li>
           <Kbd>Esc</Kbd> — cancels drawing.

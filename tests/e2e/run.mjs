@@ -519,6 +519,74 @@ await scenario('corredor-desenhado', async () => {
   return { page }
 })
 
+// Desenho: Backspace e Ctrl+Z anulam o último vértice (o Ctrl+Z não desfaz
+// edições da área por baixo), o clique noutro vértice não faz nada e o
+// clique no primeiro, com 3 ou mais, fecha o polígono. No eixo do corredor
+// as mesmas teclas, e o Esc cancela.
+await scenario('desenho-teclas-primeiro-vertice', async () => {
+  const { page, errors } = await openMission({})
+  const draft = page.locator('path.draft-vertex')
+  const closer = page.locator('path.draft-close')
+  const handles = page.locator('.vertex-handle')
+  await page.getByRole('button', { name: /^Polígono$|^Polygon$/ }).click()
+  const pts = [
+    [60, -120],
+    [260, -120],
+    [260, 80],
+    [60, 80],
+  ]
+  for (const [dx, dy] of pts) await clickMap(page, dx, dy)
+  check(
+    'desenho: 4 vértices e o primeiro a fechar',
+    (await draft.count()) === 4 && (await closer.count()) === 1,
+  )
+  await page.keyboard.press('Backspace')
+  const afterBack = await draft.count()
+  await page.keyboard.press('Control+z')
+  const afterUndo = await draft.count()
+  check(
+    'desenho: Backspace e Ctrl+Z anulam um vértice cada',
+    afterBack === 3 && afterUndo === 2 && (await closer.count()) === 0,
+    `${afterBack} e ${afterUndo}`,
+  )
+  for (const [dx, dy] of pts.slice(2)) await clickMap(page, dx, dy)
+  await draft.nth(1).click()
+  await page.waitForTimeout(250)
+  check('desenho: o clique noutro vértice não o remove', (await draft.count()) === 4)
+  await closer.click()
+  await page.waitForTimeout(400)
+  check(
+    'desenho: o clique no primeiro vértice fecha o polígono',
+    (await draft.count()) === 0 && (await handles.count()) === 4,
+    `${await handles.count()} vértices editáveis`,
+  )
+  // depois de fechar, o Ctrl+Z volta a desfazer as edições da área
+  await page.keyboard.press('Control+z')
+  await page.waitForTimeout(300)
+  check('desenho: Ctrl+Z depois de fechar desfaz a área', (await handles.count()) === 0)
+
+  await modo(page, /^Corredor$|^Corridor$/)
+  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  for (const [dx, dy] of pts.slice(0, 3)) await clickMap(page, dx, dy)
+  await page.keyboard.press('Backspace')
+  const axBack = await draft.count()
+  await page.keyboard.press('Control+z')
+  const axUndo = await draft.count()
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(250)
+  check(
+    'corredor: Backspace e Ctrl+Z anulam pontos do eixo, Esc cancela',
+    axBack === 2 &&
+      axUndo === 1 &&
+      (await draft.count()) === 0 &&
+      (await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).count()) === 1,
+    `${axBack} e ${axUndo}`,
+  )
+  check('desenho: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 await scenario('circular-sobre-a-area', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Circular$|^Circular$/)

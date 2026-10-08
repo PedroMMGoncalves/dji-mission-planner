@@ -404,8 +404,11 @@ export function useAreaGeometry({
     setTileSel({ key: mosaicKey || null, cells: mosaicCellRefs, ring, disabled: new Set() })
   }, [pushHistory, mosaicKey, mosaicCellRefs, ring])
 
-  // Ctrl+Z desfaz a última edição (vértices, área ou células)
+  // Ctrl+Z desfaz a última edição (vértices, área ou células); durante um
+  // desenho anula antes o último ponto do rascunho (o teclado do desenho)
+  const drawing = mode === 'draw' || mode === 'face' || mode === 'corridor'
   useEffect(() => {
+    if (drawing) return
     const onKey = (e) => {
       if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 'z') return
       const tag = e.target?.tagName
@@ -417,7 +420,7 @@ export function useAreaGeometry({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undoEdit])
+  }, [undoEdit, drawing])
 
   // Células ativas: grelha da âncora, ou mosaico sem as células removidas,
   // com o id estável de cada uma (o do mosaico: desactivar uma célula não

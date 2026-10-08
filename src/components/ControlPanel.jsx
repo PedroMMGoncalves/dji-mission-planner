@@ -508,7 +508,9 @@ export default function ControlPanel({
             <div className="mt-2 space-y-2">
               <p className="text-xs leading-relaxed text-slate-400">
                 {t('cp.area.drawHintA', { n: draftCount })}{' '}
-                <strong className="text-slate-300">Backspace</strong> {t('cp.area.drawHintB')}{' '}
+                <strong className="text-slate-300">Backspace</strong> /{' '}
+                <strong className="text-slate-300">Ctrl+Z</strong> {t('cp.area.drawHintB')}{' '}
+                <strong className="text-slate-300">{t('cp.area.drawHintFirst')}</strong>,{' '}
                 <strong className="text-slate-300">{t('cp.area.drawHintDblClick')}</strong>{' '}
                 {t('cp.area.drawHintC')}
               </p>

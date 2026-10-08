@@ -4,6 +4,21 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); versões
 [SemVer](https://semver.org/lang/pt-BR/). A etiqueta git `vX.Y.Z` é a
 versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
+## Por publicar
+
+### Alterado (desenho)
+
+- **O clique no primeiro vértice fecha o polígono** (com 3 ou mais
+  vértices), como o duplo clique ou «Concluir». Enquanto se desenha, o
+  primeiro vértice aparece maior e branco, com a dica «Clique para fechar
+  o polígono». Antes, o clique no primeiro vértice removia-o.
+- **Backspace e Ctrl+Z removem o último vértice** em qualquer desenho: o
+  polígono da área (e o da missão circular), a linha de base da fachada e
+  o eixo do corredor; no corredor passam também a valer o Backspace e o
+  Esc. O clique num vértice do rascunho já não o remove. Antes, o Ctrl+Z
+  durante o desenho desfazia a última edição da área por baixo dele, e não
+  o último ponto.
+
 ## 1.4.1 — 2026-10-08
 
 ### Alterado («Juntar blocos a esta base», à mão)

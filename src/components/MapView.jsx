@@ -59,7 +59,6 @@ export default function MapView({
   onVertexDrag,
   onVertexInsert,
   onVertexDelete,
-  onDraftVertexRemove,
   onAreaMove,
   onBaseDrag,
   onFinishDraw,
@@ -87,7 +86,6 @@ export default function MapView({
       onVertexDrag,
       onVertexInsert,
       onVertexDelete,
-      onDraftVertexRemove,
       onAreaMove,
       onBaseDrag,
       onBaseSelect,
@@ -251,6 +249,7 @@ export default function MapView({
   const t = useT()
   const lang = useLang()
   const moveHint = t('map.moveArea')
+  const closeHint = t('map.closePolygon')
   useEffect(() => {
     const map = mapRef.current
     const refs = layersRef.current
@@ -430,19 +429,29 @@ export default function MapView({
         dashArray: '6 4',
       }).addTo(g)
     }
+    // com 3 ou mais vértices o primeiro do polígono fecha-o (como o duplo
+    // clique); a linha de base e o eixo do corredor não fecham. O clique nos
+    // outros vértices não faz nada (não acrescenta um ponto em cima de outro):
+    // o último ponto anula-se com Backspace, Ctrl+Z ou «Anular último»
+    const closable = mode === 'draw' && draftVertices.length >= 3
     draftVertices.forEach((v, i) => {
+      const closer = closable && i === 0
       const m = L.circleMarker(toLatLng(v), {
-        radius: 6,
+        radius: closer ? 9 : 6,
         color: '#0f172a',
         weight: 2,
-        fillColor: '#38bdf8',
+        fillColor: closer ? '#f8fafc' : '#38bdf8',
         fillOpacity: 1,
+        className: closer ? 'draft-vertex draft-close' : 'draft-vertex',
         bubblingMouseEvents: false, // o clique no vértice não chega ao mapa
       }).addTo(g)
-      // clicar num vértice do rascunho remove-o
-      m.on('click', () => stateRef.current.onDraftVertexRemove(i))
+      if (closer) m.bindTooltip(closeHint, { direction: 'top', offset: [0, -10] })
+      // sem um ouvinte de clique o Leaflet passaria o clique ao mapa
+      m.on('click', () => {
+        if (closer) stateRef.current.onFinishDraw()
+      })
     })
-  }, [draftVertices, mode])
+  }, [draftVertices, mode, closeHint])
 
   // Polígono da área + vértices editáveis + auto-interseções (kinks)
   useEffect(() => {

@@ -124,6 +124,10 @@ const BASE_DICT = {
     pt: 'Arrastar para mover a área inteira (a base fica no sítio)',
     en: 'Drag to move the whole area (the home point stays)',
   },
+  'map.closePolygon': {
+    pt: 'Clique para fechar o polígono',
+    en: 'Click to close the polygon',
+  },
   'app.exportKmlTitle': {
     pt: 'Só o polígono da área, para definir o levantamento no DJI Pilot 2',
     en: 'The area polygon only, to set the survey up in DJI Pilot 2',

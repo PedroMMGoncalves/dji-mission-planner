@@ -278,9 +278,10 @@ export default {
     en: 'Click on the map to add vertices ({n}).',
   },
   'cp.area.drawHintB': {
-    pt: 'ou clique num vértice para o remover ·',
-    en: 'or click a vertex to remove it ·',
+    pt: 'removem o último vértice ·',
+    en: 'remove the last vertex ·',
   },
+  'cp.area.drawHintFirst': { pt: 'clique no primeiro vértice', en: 'click the first vertex' },
   'cp.area.drawHintDblClick': { pt: 'duplo clique', en: 'double-click' },
   'cp.area.drawHintC': {
     pt: '(esquerdo ou direito) ou «Concluir» para fechar · Esc cancela.',

@@ -1170,22 +1170,21 @@ function AppInner({ lang, setLang }) {
     else handleFinishDraw()
   }, [mode, handleFinishFace, handleFinishCorridor, handleFinishDraw])
 
-  const removeDraftVertex = useCallback((index) => {
-    setDraftVertices((d) => d.filter((_, i) => i !== index))
-  }, [])
-
   const removeLastDraftVertex = useCallback(() => {
     setDraftVertices((d) => d.slice(0, -1))
   }, [])
 
-  // Teclado no modo de desenho: Backspace/Delete anula o último ponto,
-  // Escape cancela o desenho (ignorado quando o foco está num input)
+  // Teclado nos desenhos (polígono, linha de base, eixo): Backspace/Delete
+  // ou Ctrl+Z anulam o último ponto (o Ctrl+Z das edições da área fica de
+  // fora enquanto se desenha), Escape cancela o desenho (ignorado quando o
+  // foco está num input)
   useEffect(() => {
-    if (mode !== 'draw' && mode !== 'face') return
+    if (mode !== 'draw' && mode !== 'face' && mode !== 'corridor') return
     const onKey = (e) => {
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
-      if (e.key === 'Backspace' || e.key === 'Delete') {
+      const undo = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'
+      if (e.key === 'Backspace' || e.key === 'Delete' || undo) {
         e.preventDefault()
         removeLastDraftVertex()
       } else if (e.key === 'Escape') {
@@ -2481,7 +2480,6 @@ function AppInner({ lang, setLang }) {
             onVertexDrag={handleVertexDrag}
             onVertexInsert={handleVertexInsert}
             onVertexDelete={handleVertexDelete}
-            onDraftVertexRemove={removeDraftVertex}
             onAreaMove={handleAreaMove}
             onBaseDrag={handleBaseDrag}
             onFinishDraw={handleFinishAny}

@@ -290,8 +290,8 @@ export default {
   'ci.area.undo': { pt: 'Anular ponto', en: 'Undo point' },
   'ci.area.clear': { pt: 'Limpar', en: 'Clear' },
   'ci.area.hint': {
-    pt: '{n} vértice(s). Clique no mapa para desenhar o polígono; duplo clique ou Concluir para fechar.',
-    en: '{n} vertex(es). Click the map to draw the polygon; double-click or Finish to close it.',
+    pt: '{n} vértice(s). Clique no mapa para desenhar o polígono; clique no primeiro vértice, duplo clique ou Concluir para fechar.',
+    en: '{n} vertex(es). Click the map to draw the polygon; click the first vertex, double-click or Finish to close it.',
   },
   'ci.area.none': {
     pt: 'Desenhe a área no mapa, ou importe-a no separador Área: o polígono é o mesmo.',
