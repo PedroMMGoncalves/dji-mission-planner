@@ -4,54 +4,41 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); versões
 [SemVer](https://semver.org/lang/pt-BR/). A etiqueta git `vX.Y.Z` é a
 versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
-## Por publicar
+## 1.4.1 — 2026-10-08
 
-### Alterado («Juntar a esta base» volta ao desenho anterior)
+### Alterado («Juntar blocos a esta base», à mão)
 
-- Sai a versão da 1.4.0 com o botão «Juntar aqui (+N voos)» em todas as
-  bases, a pré-visualização no mapa e a barra por cima do mapa: tirava a
-  sensação de escolha e misturava-se com o «Atribuir base». Volta o botão
-  «Juntar a esta base» na linha da base seleccionada (o pino no mapa ou o
-  rótulo na lista), que leva todos os blocos ao alcance. A exportação por
-  base em pastas e os dois ZIP do cabeçalho ficam.
+- **Sai o «Juntar aqui (+N voos)» da 1.4.0**: a agregação automática de
+  todos os blocos ao alcance visual (no pior caso), com a pré-visualização
+  e a barra por cima do mapa, que retirava as bases que ficavam vazias.
+  Com blocos por bateria quase nunca cabia nenhum bloco vizinho («6 ficam
+  de fora, o mais perto a 1068 m»), e misturava-se com o «Atribuir base».
+- **«Juntar blocos a esta base»**, em cada linha de base (ou o clique no
+  pino da base), entra no modo de juntar sem mexer em nada: cada clique
+  num bloco do mapa — o rótulo ou a área do bloco — passa-o para essa
+  base, e só esse; um segundo clique deixa-o lá. «Terminar», Esc ou um
+  novo clique no pino acabam. Um bloco fora do alcance visual passa na
+  mesma e o preflight avisa. Ctrl+Z desfaz um clique de cada vez.
+- **Sem base seleccionada, o clique num bloco activa ou desactiva a
+  célula**, como antes. Saem os botões «Activar / desactivar» e «Atribuir
+  base» do cartão 5, que passa a dizer em que estado está. Antes, com a
+  base B seleccionada, clicar no bloco A-1 desactivava-o (o clique só
+  passava o bloco no modo «Atribuir base», escondido no cartão 5), e nesse
+  modo um segundo clique passava-o à base seguinte.
 
-### Alterado («Juntar blocos a esta base» passa a manual)
+### Corrigido (cliques no mapa)
 
-- O botão já não junta nada sozinho. Antes levava todos os blocos ao
-  alcance visual (no pior caso) e retirava as bases que ficavam vazias; com
-  blocos por bateria quase nunca cabia nenhum («6 ficam de fora»), e os
-  cliques que o operador fazia a seguir vinham depois desse passo
-  automático. Agora, «Juntar blocos a esta base» (na linha da base, ou o
-  clique no pino) entra no modo de juntar e cada clique num bloco do mapa
-  passa-o para ela; «Terminar» ou Esc acaba. Um bloco fora do alcance
-  passa na mesma e o preflight avisa. Sai a agregação automática
-  (`gatherToBase`).
-- Na divisão por faixas os blocos não têm quadrado: o contorno de cada
-  bloco passa a ser a área clicável, e clicar «na área do bloco» funciona
-  como nas outras divisões.
-- Com «Marcar base», o clique na pega de mover a área (no centro dela)
-  cria a base.
-
-### Corrigido (passar um bloco a uma base)
-
-- **A base seleccionada é o destino dos blocos.** Antes, com a base B
-  seleccionada, clicar no bloco A-1 desactivava-o (o clique só passava o
-  bloco à base no modo «Atribuir base», escondido no cartão 5). Agora,
-  com uma base seleccionada (o pino no mapa ou o rótulo na lista), clicar
-  num bloco — o rótulo ou qualquer ponto da célula — passa-o para ela; um
-  segundo clique deixa-o lá (antes passava-o à base seguinte). Esc ou um
-  novo clique no pino desselecciona, e sem base seleccionada o clique
-  volta a activar ou desactivar a célula. O cartão 5 diz em que estado
-  está; os botões «Activar / desactivar» e «Atribuir base» saem.
-- Na divisão por faixas os pinos das bases ficavam em cima dos rótulos e
-  não havia onde clicar: as células passam a ser alvos, e com uma base
-  seleccionada os rótulos ficam por cima dos pinos das outras bases.
-- Os traços das faixas e os waypoints deixam de apanhar o clique, que
-  chega à célula por baixo.
+- **Divisão por faixas**: os blocos não têm quadrado e os pinos das bases
+  ficavam em cima dos rótulos, sem onde clicar. Com uma base seleccionada,
+  o contorno de cada bloco é a área clicável e os rótulos ficam por cima
+  dos pinos das outras bases.
+- Os traços das faixas, o caminho e os waypoints deixam de apanhar o
+  clique, que chega à célula por baixo.
 - Com o mosaico à vista, um clique dentro de uma célula ia sempre para a
   célula: «Marcar base», um ponto de inspecção, o POI da órbita ou o eixo
-  do corredor dentro de um quadrado desactivavam o quadrado em vez de fazer
-  a acção. Nos modos de marcar ou desenhar o clique passa para o mapa.
+  do corredor dentro de um quadrado desactivavam o quadrado em vez de
+  fazer a acção. Nos modos de marcar ou desenhar o clique passa para o
+  mapa, também na pega de mover a área (no centro dela).
 - O Esc fecha primeiro o que está por cima: com uma gaveta ou uma janela
   aberta (3D, perfil, ajuda, relatório, configuração), fecha-a e a base
   continua seleccionada.
