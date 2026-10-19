@@ -92,7 +92,8 @@ export function useInspection({
   }, [])
 
   const handleExportInspection = useCallback(() => {
-    if (inspectPoints.length === 0) return
+    // o Pilot 2 exige dois pontos numa rota de waypoints
+    if (inspectPoints.length < 2) return
     runExport(() =>
       exportWPMLKmz(
         inspectionExportParams({

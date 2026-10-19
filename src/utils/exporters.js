@@ -63,8 +63,17 @@ const MIN_TRIGGER_PARAM = 0.1
 const floorToParam = (v) => Math.floor(v * TRIGGER_PARAM_SCALE + 1e-9) / TRIGGER_PARAM_SCALE
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v)
+/**
+ * Decimal como texto, sem notação científica nem zeros à direita: a
+ * especificação pede graus decimais, e `Number(x.toFixed(8))` interpolado
+ * dava `4e-7` a menos de 11 cm do meridiano de Greenwich ou do equador.
+ */
+const fmtDec = (v, places) => {
+  const s = v.toFixed(places).replace(/\.?0+$/, '')
+  return s === '-0' ? '0' : s
+}
 /** Distância (m) ou duração (s) com duas casas, sem zeros à direita. */
-const fmtStat = (v) => String(Number(v.toFixed(2)))
+const fmtStat = (v) => fmtDec(v, 2)
 
 /** Um waypoint é [lon, lat] ou [lon, lat, altura]; valida domínio e finitude. */
 function checkWaypoint(wp, i) {
@@ -96,6 +105,11 @@ export function validateExportParams(params) {
     throw new MissionExportError('too-many-waypoints', String(waypoints.length))
   }
   waypoints.forEach(checkWaypoint)
+  // a especificação não fixa um mínimo, mas o editor do Pilot 2 exige dois
+  // pontos numa rota de waypoints: um só ponto (pontos de inspecção) não voa
+  if (waypoints.length < 2) {
+    throw new MissionExportError('too-few-waypoints', String(waypoints.length))
+  }
   // A altitude global é o valor de recurso de cada waypoint sem altura
   // própria, por isso tem de ser finita mesmo quando todos a trazem. Tem
   // também de ser positiva: um valor nulo ou negativo é aceite por qualquer
@@ -245,7 +259,7 @@ export function validateExportParams(params) {
 }
 
 function fmtCoord(v) {
-  return Number(v.toFixed(8))
+  return fmtDec(v, 8)
 }
 
 /**
@@ -257,14 +271,27 @@ function fmtCoord(v) {
  * `part` é o sufixo de bloco/nível. Sem extensão — o chamador acrescenta.
  */
 export function buildExportName(missionName, type, { variant = null, part = null } = {}) {
-  const safe = (s) =>
-    String(s ?? '')
-      .trim()
-      .replace(/[^\w-]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'missao'
   const variants = (Array.isArray(variant) ? variant : [variant]).filter(Boolean)
   const typeBit = [type, ...variants].filter(Boolean).join('-')
-  return [safe(missionName), typeBit, part].filter(Boolean).join('_')
+  return [safeFileStem(missionName), typeBit, part].filter(Boolean).join('_')
+}
+
+/**
+ * Raiz de um nome de ficheiro: sem diacríticos (NFD), só `[A-Za-z0-9_-]`,
+ * traços colapsados e aparados; vazio dá `missao`. Uma só regra para o KML
+ * da área, o dos GCPs e os KMZ — havia duas, e «Évora» dava `-vora.kml`
+ * ao lado de `vora_area.kmz`.
+ */
+export function safeFileStem(s) {
+  return (
+    String(s ?? '')
+      .normalize('NFD')
+      .replace(/\p{M}+/gu, '')
+      .trim()
+      .replace(/[^\w-]+/g, '-')
+      .replace(/-{2,}/g, '-')
+      .replace(/^-+|-+$/g, '') || 'missao'
+  )
 }
 
 export function downloadBlob(blob, filename) {
@@ -309,8 +336,13 @@ export function buildAreaKML(ring, name, opts = {}) {
   if (basePoint) checkWaypoint(basePoint, -1)
   gcps?.forEach((g, i) => checkWaypoint(g.point, i))
   lines?.forEach((seg) => seg.forEach(checkWaypoint))
+  // fecha o anel; um anel que já venha fechado não repete o último vértice
+  const closed = (r) =>
+    r.length > 3 && r[0][0] === r[r.length - 1][0] && r[0][1] === r[r.length - 1][1]
   const ringCoords = (r) =>
-    [...r, r[0]].map(([lon, lat]) => `${fmtCoord(lon)},${fmtCoord(lat)},0`).join(' ')
+    [...(closed(r) ? r.slice(0, -1) : r), r[0]]
+      .map(([lon, lat]) => `${fmtCoord(lon)},${fmtCoord(lat)},0`)
+      .join(' ')
   const coords = ringCoords(ring)
   // anéis interiores (buracos) importados com a área
   const innerRings = (holes ?? [])
@@ -467,7 +499,14 @@ export const FINISH_ACTIONS = ['goHome', 'noAction', 'autoLand', 'gotoFirstWaypo
 export const RC_LOST_MODES = ['executeLostAction', 'goContinue']
 export const RC_LOST_ACTIONS = ['goBack', 'landing', 'hover']
 
-const pick = (value, allowed) => (allowed.includes(value) ? value : allowed[0])
+// Em falta, a omissão; inválido, erro — como o resto da fronteira (antes
+// trocava-se em silêncio pelo primeiro valor da lista)
+const pick = (value, allowed, key) => {
+  if (value == null) return allowed[0]
+  if (!allowed.includes(value))
+    throw new MissionExportError('param-out-of-range', `${key}=${value}`)
+  return value
+}
 
 /**
  * Parâmetros de viragem coerentes com o modo, conforme a especificação
@@ -523,9 +562,9 @@ function payloadParamXml(wpml) {
 }
 
 function missionConfigXml({ wpml, speed, altitude, ...opts }) {
-  const finishAction = pick(opts.finishAction, FINISH_ACTIONS)
-  const exitOnRCLost = pick(opts.exitOnRCLost, RC_LOST_MODES)
-  const rcLostAction = pick(opts.executeRCLostAction, RC_LOST_ACTIONS)
+  const finishAction = pick(opts.finishAction, FINISH_ACTIONS, 'finishAction')
+  const exitOnRCLost = pick(opts.exitOnRCLost, RC_LOST_MODES, 'exitOnRCLost')
+  const rcLostAction = pick(opts.executeRCLostAction, RC_LOST_ACTIONS, 'executeRCLostAction')
   const takeOffSecurityHeight = opts.takeOffSecurityHeightM ?? 30
   // `wpml:globalRTHHeight` é obrigatório em waylines.wpml. O regresso é
   // planeado acima do tecto da missão (mínimo 100 m, o valor por omissão do
@@ -646,7 +685,6 @@ ${missionConfigXml(params)}
     </wpml:waylineCoordinateSysParam>${payloadParamXml(params.wpml)}
     <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
     <wpml:globalHeight>${altitude}</wpml:globalHeight>
-    <wpml:caliFlightEnable>0</wpml:caliFlightEnable>
     <wpml:gimbalPitchMode>manual</wpml:gimbalPitchMode>
     <wpml:globalWaypointHeadingParam>
       <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>
@@ -731,6 +769,8 @@ export function buildWaylinesWPML(params) {
 
   // Waypoint-0 action groups. A LiDAR payload (e.g. YellowScan on a Skyport
   // mount) has no gimbal the WPML can rotate, so the gimbalRotate group is
+  // (gimbalHeadingYawBase: `north` é o único valor do enum, common-element.md;
+  // escrevia-se `aircraft`, sem efeito porque o yaw do gimbal fica desligado)
   // omitted for sensorType 'lidar'; the takePhoto group is omitted whenever
   // photoIntervalM is null/0. Group ids stay consecutive from 0, and with
   // both groups absent waypoint 0 carries no actions at all.
@@ -749,7 +789,7 @@ export function buildWaylinesWPML(params) {
             <wpml:actionId>0</wpml:actionId>
             <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
               <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
               <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
               <wpml:gimbalPitchRotateAngle>${gimbalPitch}</wpml:gimbalPitchRotateAngle>
@@ -817,7 +857,7 @@ ${triggerXml}
             <wpml:actionId>${actions.length}</wpml:actionId>
             <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>aircraft</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
               <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
               <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
               <wpml:gimbalPitchRotateAngle>${pitchOf(pw.gimbalPitch)}</wpml:gimbalPitchRotateAngle>
@@ -989,7 +1029,7 @@ export async function buildBlocksZip(params, blocks, { folderOf = null } = {}) {
     // com `folderOf`, cada KMZ vai para a pasta que ela der (ex.: a da base)
     const folder = typeof folderOf === 'function' ? folderOf(block) : null
     const file = folder ? `${folder}/${p.name}.kmz` : `${p.name}.kmz`
-    if (seen.has(file)) throw new MissionExportError('param-out-of-range', `name=${file}`)
+    if (seen.has(file)) throw new MissionExportError('duplicate-file-name', file)
     seen.add(file)
     master.file(file, await buildKmz(p, 'arraybuffer'))
   }

@@ -2724,19 +2724,34 @@ check(
         tag(custom, 'executeRCLostAction') === 'hover' &&
         tag(custom, 'globalRTHHeight') === '123',
     )
-    const bogus = buildWaylinesWPML({
-      ...wpmlParams,
-      finishAction: 'hover',
-      executeRCLostAction: 'zzz',
-      exitOnRCLost: 'zzz',
-    })
     // 'hover' é válido para RC-lost mas NÃO para finishAction; um valor fora
-    // do enum tem de cair no seguro, nunca ser escrito tal e qual.
+    // do enum é erro de exportação (antes caía em silêncio no primeiro da
+    // lista), e um valor em falta leva a omissão
+    const recusaSeg = (extra) => {
+      try {
+        buildWaylinesWPML({ ...wpmlParams, ...extra })
+        return false
+      } catch (e) {
+        return e instanceof MissionExportError && e.code === 'param-out-of-range'
+      }
+    }
     check(
-      'missionConfig: enum inválido cai no valor por omissão',
-      tag(bogus, 'finishAction') === 'goHome' &&
-        tag(bogus, 'executeRCLostAction') === 'goBack' &&
-        tag(bogus, 'exitOnRCLost') === 'executeLostAction',
+      'missionConfig: enum inválido é erro, nunca escrito nem substituído',
+      recusaSeg({ finishAction: 'hover' }) &&
+        recusaSeg({ executeRCLostAction: 'zzz' }) &&
+        recusaSeg({ exitOnRCLost: 'zzz' }),
+    )
+    const omisso = buildWaylinesWPML({
+      ...wpmlParams,
+      finishAction: undefined,
+      executeRCLostAction: undefined,
+      exitOnRCLost: undefined,
+    })
+    check(
+      'missionConfig: em falta, a omissão (goHome, goBack, executeLostAction)',
+      tag(omisso, 'finishAction') === 'goHome' &&
+        tag(omisso, 'executeRCLostAction') === 'goBack' &&
+        tag(omisso, 'exitOnRCLost') === 'executeLostAction',
     )
     check(
       'missionConfig: enums declarados batem com a especificação',
@@ -3202,10 +3217,15 @@ check(
     'nome: orbita com niveis',
     buildExportName('silo', 'orbit', { part: 'n3' }) === 'silo_orbit_n3',
   )
+  // uma so regra de nome (safeFileStem): sem diacriticos, tracos colapsados e
+  // aparados; antes «Évora» dava «-vora.kml» ao lado de «vora_area.kmz»
   check(
     'nome: caracteres estranhos e vazio caem no seguro',
-    buildExportName('  á/b?  ', 'inspect') === 'b_inspect' &&
-      buildExportName('', 'area') === 'missao_area',
+    buildExportName('  á/b?  ', 'inspect') === 'a-b_inspect' &&
+      buildExportName('', 'area') === 'missao_area' &&
+      buildExportName('Évora', 'area') === 'Evora_area' &&
+      buildExportName('Corta Norte (2026)', 'area') === 'Corta-Norte-2026_area' &&
+      buildExportName('Quinta da Conceição', 'area') === 'Quinta-da-Conceicao_area',
   )
 }
 

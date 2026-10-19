@@ -24,6 +24,7 @@ import {
   exportBlocksZip,
   exportAreaKML,
   exportWPMLKmz,
+  safeFileStem,
 } from '../utils/exporters.js'
 import { stripRouteStats } from '../utils/geo.js'
 import { referenceElevation } from '../mission/reference.js'
@@ -322,7 +323,7 @@ export function useAreaMission({
   const planRouteOk = planRoute && !planRoute.error ? planRoute : null
 
   /* --------------------------- Exportação ---------------------------- */
-  const safeName = missionName.trim().replace(/[^\w-]+/g, '-') || 'missao'
+  const safeName = safeFileStem(missionName)
   const canExportKML = Boolean(ring && validation.valid)
   // B: seguir terreno + foto por waypoint é um erro explícito, não uma
   // exportação com alturas planas

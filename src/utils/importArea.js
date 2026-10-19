@@ -106,13 +106,28 @@ function collectPolygons(geojson, out = []) {
 
 const cleanRing = (r) => dropClosingVertex(r.map((c) => [c[0], c[1]]))
 
+/** O anel `hole` está dentro de `ring` (fronteira incluída)? */
+function holeWithin(hole, ring) {
+  try {
+    const close = (r) => [...r, r[0]].map(([lon, lat]) => [lon, lat])
+    return turf.booleanWithin(turf.polygon([close(hole)]), turf.polygon([close(ring)]))
+  } catch {
+    return false
+  }
+}
+
 /** Polígonos em bruto → partes limpas ({ring, holes}), por ordem decrescente de área. */
 function toParts(polys) {
   return polys
-    .map((p) => ({
-      ring: cleanRing(p.ring),
-      holes: (p.holes ?? []).map(cleanRing).filter((h) => h.length >= 3),
-    }))
+    .map((p) => {
+      const ring = cleanRing(p.ring)
+      // um «buraco» fora do anel exterior não é um buraco (sairia como um
+      // polígono inválido): fica de fora
+      const holes = (p.holes ?? [])
+        .map(cleanRing)
+        .filter((h) => h.length >= 3 && ring.length >= 3 && holeWithin(h, ring))
+      return { ring, holes }
+    })
     .filter((p) => p.ring.length >= 3)
     .sort((a, b) => planarArea(b.ring) - planarArea(a.ring))
 }

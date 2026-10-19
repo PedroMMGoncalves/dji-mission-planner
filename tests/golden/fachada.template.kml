@@ -32,7 +32,6 @@
     </wpml:waylineCoordinateSysParam>
     <wpml:autoFlightSpeed>3</wpml:autoFlightSpeed>
     <wpml:globalHeight>40</wpml:globalHeight>
-    <wpml:caliFlightEnable>0</wpml:caliFlightEnable>
     <wpml:gimbalPitchMode>manual</wpml:gimbalPitchMode>
     <wpml:globalWaypointHeadingParam>
       <wpml:waypointHeadingMode>followWayline</wpml:waypointHeadingMode>

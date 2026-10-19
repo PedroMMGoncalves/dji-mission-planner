@@ -1051,11 +1051,12 @@ missão dentro do KMZ (`<name>` da pasta do `template.kml`). Por isso:
   rótulo continua `A-1`. Nomes repetidos não acontecem (o número do voo é
   único); se acontecessem, o segundo leva `-b<id>`, e o ZIP recusa dois
   ficheiros com o mesmo nome em vez de escrever um por cima do outro.
-- **Escolhas** (painel das bases, atrás do mesmo preflight do botão do
-  cabeçalho): «Todos os voos (ZIP)» = `<missão>_<tipo>[-variantes]_voos.zip`
-  (é também o que o botão do cabeçalho exporta); «Voos da base B (ZIP)» =
-  `..._base-B.zip`, só os voos dessa base; «Um voo (KMZ)» = o KMZ desse voo
-  sozinho. Dentro de um ZIP, os KMZ vão pela ordem de voo (base a base,
+- **Escolhas** (cartão «Resumo e exportar», atrás do mesmo preflight do
+  botão do cabeçalho): «Todos os voos (ZIP)» = `<missão>_<tipo>[-variantes]_voos.zip`,
+  todos soltos; «Todos os voos por base (ZIP)» = `..._voos-por-base.zip`,
+  uma pasta por base (`base-A/`, `base-B/`…) com os voos dessa base; «Um voo
+  (KMZ)» = o KMZ desse voo sozinho. Com bases, o botão do cabeçalho descarrega
+  os dois ZIP. Dentro de um ZIP, os KMZ vão pela ordem de voo (base a base,
   pela ordem dos rótulos, e em cada base pela ordem do mosaico).
 - As alturas de cada KMZ são as do seu bloco (cota da zona da sua base,
   §4.1), qualquer que seja a escolha: exportar só a base B dá exactamente

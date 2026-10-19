@@ -26,6 +26,37 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - O KMZ do M4T foi aceite e voado pelo Pilot 2: os enums `99/1/89` ficam
   confirmados num comando real (`docs/VALIDACAO.md`, matriz).
 
+### Corrigido (revisão da exportação contra a especificação, pacote A)
+
+Revisão completa da exportação KML e KMZ contra a especificação WPML
+oficial (`docs/REVISAO-EXPORTACAO-2026-10.md`). As correcções pequenas:
+
+- **Uma rota de um só waypoint é recusada** (`too-few-waypoints`): o
+  Pilot 2 exige dois pontos numa rota; os pontos de inspecção só exportam
+  com dois ou mais.
+- **`gimbalHeadingYawBase` passa a `north`**, o único valor do enum;
+  escrevia-se `aircraft`, sem efeito em voo (o yaw do gimbal fica
+  desligado).
+- **Sai o `caliFlightEnable`** do `template.kml`: só existe nos templates
+  de mapeamento, e só para M300/M350.
+- **Coordenadas, distância e duração sempre em decimal**, nunca em notação
+  científica (`4e-7` a menos de 11 cm do meridiano de Greenwich ou do
+  equador).
+- **Uma acção de segurança inválida é erro de exportação**, em vez de ser
+  trocada em silêncio pela primeira da lista.
+- **Um só higienizador de nomes de ficheiro** para o KML da área, o dos
+  GCPs e os KMZ: sem diacríticos, traços colapsados e aparados. Os nomes
+  mudam: «Évora» dava `-vora.kml` ao lado de `vora_area.kmz`, «Corta Norte
+  (2026)» dava `Corta-Norte-2026-.kml`; passam a `Evora.kml` e
+  `Corta-Norte-2026.kml`.
+- **Um anel já fechado não repete o último vértice** no KML; **um «buraco»
+  fora do anel exterior** fica de fora na importação; **dois ficheiros com
+  o mesmo nome num ZIP** dão o erro próprio (`duplicate-file-name`).
+- Teste de ida e volta do KML da área (exportar e voltar a ler); ajuda,
+  README (tabela das exportações, com o KML de bases e blocos), METODOS
+  (exportação por base) e VALIDACAO (`finishAction`, enum PSDK)
+  actualizados.
+
 ## 1.4.2 — 2026-10-08
 
 ### Alterado (desenho)

@@ -51,7 +51,7 @@ const { parseAreaFile, reprojectRing, simplifyRingIfNeeded, CRS_OPTIONS } =
 const { parseWpmlKmz } = await import('./src/utils/importWpml.js')
 const { loadDemFromFile, projectBox, resolveRasterCrs } = await import('./src/utils/demFile.js')
 const { makeFloatTiff } = await import('./tests/lib/geotiff.mjs')
-const { blockExportParams, buildBlocksZip, buildTemplateKML, buildWaylinesWPML } =
+const { blockExportParams, buildAreaKML, buildBlocksZip, buildTemplateKML, buildWaylinesWPML } =
   await import('./src/utils/exporters.js')
 
 let failures = 0
@@ -314,6 +314,49 @@ const polygonKml = (coords, tag = 'Polygon') =>
   )
   globalThis.DOMParser = real
   check('XML: <parsererror> (convencao dos browsers) tambem da erro', caught === null)
+}
+
+/* ---- ida e volta do KML da area: o que exportamos volta a ler-se ---- */
+{
+  const ring = [
+    [-8.5, 39.5],
+    [-8.49, 39.5],
+    [-8.49, 39.51],
+    [-8.5, 39.51],
+  ]
+  const hole = [
+    [-8.497, 39.503],
+    [-8.493, 39.503],
+    [-8.493, 39.507],
+    [-8.497, 39.507],
+  ]
+  const kml = buildAreaKML(ring, 'ida-e-volta', { holes: [hole] })
+  const r = await parseAreaFile(fakeFile('ida-e-volta.kml', kml))
+  const igual = (a, b) =>
+    a.length === b.length &&
+    a.every((p, i) => Math.abs(p[0] - b[i][0]) < 1e-8 && Math.abs(p[1] - b[i][1]) < 1e-8)
+  check(
+    'KML: ida e volta recupera o anel e o buraco',
+    igual(r.ring, ring) && r.holes.length === 1 && igual(r.holes[0], hole) && !r.needsCrs,
+    `${r.ring.length} vertices, ${r.holes.length} buracos`,
+  )
+  // um anel ja fechado nao repete o ultimo vertice (K-M1)
+  const fechado = buildAreaKML([...ring, ring[0]], 'fechado')
+  check(
+    'KML: anel ja fechado sai com um so vertice de fecho',
+    (fechado.match(/-8\.5,39\.5,0/g) || []).length === 2,
+  )
+  // um buraco fora do anel fica de fora na importacao (K-M3)
+  const fora = [
+    [-8.6, 39.6],
+    [-8.59, 39.6],
+    [-8.59, 39.61],
+    [-8.6, 39.61],
+  ]
+  const rFora = await parseAreaFile(
+    fakeFile('fora.kml', buildAreaKML(ring, 'fora', { holes: [hole, fora] })),
+  )
+  check('KML: buraco fora do anel exterior fica de fora', rFora.holes.length === 1)
 }
 
 /* ================================================================== */

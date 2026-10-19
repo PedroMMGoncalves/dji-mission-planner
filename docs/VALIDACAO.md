@@ -32,7 +32,7 @@ para o local real na interface e guardar o projecto com o mesmo nome.
 | R1 | Rectângulo 400 × 250 m, nadir, 80 m, 80/70 %, M3E | caso base: GSD, intervalo, espaçamento, sobreposições, fotos, duração |
 | R2 | Polígono em U 600 × 500 m com entalhe, seguimento de terreno (5 m), dupla grelha + passagem nadir, gimbal −60°, 100 m | ligações amostradas no relevo, disparo suspenso nas ligações, marcador do gimbal nadir, alturas relativas |
 | R3 | Rectângulo 900 × 700 m a 60 m, faixas a 45°, blocos por bateria (tempo útil por voo da bateria escolhida) | um KMZ por bloco, arranque de cada bloco na base, tempo por bloco vs bateria real |
-| L1 | Rectângulo 500 × 300 m, M300 RTK + YellowScan Mapper+, 80 m, 5 m/s, 50 % lateral, fiada de amarração | swath e densidade LiDAR, enum PSDK 65534, fiada perpendicular |
+| L1 | Rectângulo 500 × 300 m, M300 RTK + YellowScan Mapper+, 80 m, 5 m/s, 50 % lateral, fiada de amarração | swath e densidade LiDAR, enum PSDK 65535 (o que o comando escreve), fiada perpendicular |
 
 Cada missão voa-se **duas vezes** no mesmo dia (repetibilidade) e, se o
 tempo permitir, R1 também com RTK activo.
@@ -131,7 +131,7 @@ continua por preencher e só um voo a fecha.
 | `heightMode` | relativeToStartPoint (EGM96) | relativeToStartPoint | subconjunto |
 | `templateType` | mapping2d (×81) | waypoint | por desenho |
 | `xmlns:wpml` | 1.0.3 (×81) | 1.0.2 | difere, ver §11 dos métodos |
-| `finishAction` | goHome (×80), noAction (×1) | — | não escrito |
+| `finishAction` | goHome (×80), noAction (×1) | goHome por omissão; escolha no painel | igual |
 | `distance` / `duration` (waylines) | escritos (×81) | escritos | corrigido a partir daqui |
 
 Duas verificações independentes do motor saíram do mesmo corpus, e estão

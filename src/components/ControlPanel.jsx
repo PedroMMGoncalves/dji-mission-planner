@@ -1921,7 +1921,7 @@ export default function ControlPanel({
                 </button>
                 <button
                   onClick={onExportInspection}
-                  disabled={!inspectTerrainOk}
+                  disabled={!inspectTerrainOk || inspectPoints.length < 2}
                   className="flex items-center justify-center gap-1.5 rounded bg-sky-600 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <IconDownload /> {t('cp.inspect.export')}

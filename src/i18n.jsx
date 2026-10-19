@@ -54,6 +54,14 @@ const BASE_DICT = {
     en: 'Export cancelled: the plan has invalid values and no file was written.',
   },
   'export.err.no-waypoints': { pt: 'O plano não tem waypoints.', en: 'The plan has no waypoints.' },
+  'export.err.too-few-waypoints': {
+    pt: 'Uma rota precisa de pelo menos dois waypoints: o Pilot 2 não aceita um só.',
+    en: 'A route needs at least two waypoints: Pilot 2 does not accept a single one.',
+  },
+  'export.err.duplicate-file-name': {
+    pt: 'Dois ficheiros com o mesmo nome no ZIP.',
+    en: 'Two files with the same name in the ZIP.',
+  },
   'export.err.too-many-waypoints': {
     pt: 'O plano excede os 65536 waypoints que uma rota WPML admite.',
     en: 'The plan exceeds the 65536 waypoints a WPML route allows.',
