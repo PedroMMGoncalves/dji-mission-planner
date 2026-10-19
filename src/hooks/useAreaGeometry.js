@@ -554,12 +554,22 @@ export function useAreaGeometry({
     [mode, setDraftVertices],
   )
 
+  // Uma edição à mão solta a âncora (M3-C2): com o centro ainda posto, o
+  // efeito acima regenerava o rectângulo ao recarregar, ao mover a área ou
+  // ao abrir o projecto, e o vértice que o operador tinha acertado perdia-se
+  // em silêncio — e era o rectângulo puro que voava
+  const releaseAnchor = useCallback(() => {
+    setAnchor((a) => (a.center ? { ...a, center: null } : a))
+    setAreaOrigin('draw')
+  }, [])
+
   const handleVertexDrag = useCallback(
     (index, lonlat) => {
       pushHistory()
       setRing((r) => (r ? r.map((v, i) => (i === index ? lonlat : v)) : r))
+      releaseAnchor()
     },
-    [pushHistory],
+    [pushHistory, releaseAnchor],
   )
 
   const handleVertexInsert = useCallback(
@@ -571,17 +581,18 @@ export function useAreaGeometry({
         next.splice(index, 0, lonlat)
         return next
       })
-      setAreaOrigin('draw') // deixou de ser um retângulo perfeito
+      releaseAnchor() // deixou de ser um rectângulo perfeito
     },
-    [pushHistory],
+    [pushHistory, releaseAnchor],
   )
 
   const handleVertexDelete = useCallback(
     (index) => {
       pushHistory()
       setRing((r) => (r && r.length > 3 ? r.filter((_, i) => i !== index) : r))
+      releaseAnchor()
     },
-    [pushHistory],
+    [pushHistory, releaseAnchor],
   )
 
   /**
@@ -712,18 +723,43 @@ export function useAreaGeometry({
     setImportWarning(null)
   }, [])
 
-  /** Reposição da geometria a partir de um projecto normalizado (mission/project.js). */
-  const applyProjectGeometry = useCallback((n) => {
-    if (n.split) setSplit((prev) => ({ ...prev, ...n.split }))
-    if (n.anchor) setAnchor((prev) => ({ ...prev, ...n.anchor }))
-    if (n.ring) setRing(n.ring)
-    setHoles(Array.isArray(n.holes) ? n.holes : [])
-    setAreaOrigin(n.areaOrigin)
-    // as células desactivadas do projecto valem para o mosaico com que ele
-    // reabre (key null = adoptar)
-    setTileSel({ key: null, cells: null, ring: null, disabled: n.disabledTiles ?? new Set() })
-    setPendingLegacy(n.legacyMosaic ?? null)
-  }, [])
+  /**
+   * Reposição da geometria a partir de um projecto normalizado
+   * (mission/project.js). Um projecto aberto substitui a SESSÃO INTEIRA
+   * (M3-C1): o anel, os buracos, as células, as partes importadas, os avisos
+   * e o histórico de desfazer partem do ficheiro ou do nada — antes só o anel
+   * era posto `if (n.ring)`, e com a grelha da âncora aberta o KMZ saía com a
+   * geometria da sessão anterior e o nome do projecto novo.
+   */
+  const applyProjectGeometry = useCallback(
+    (n) => {
+      setMode('idle')
+      setDraftVertices([])
+      editHistoryRef.current = []
+      setImportState(null)
+      setImportError(null)
+      setImportWarning(null)
+      setImportParts(null)
+      setSplit({ ...DEFAULT_SPLIT, ...(n.split ?? {}) })
+      // a âncora só manda numa área que veio dela (M3-C2): noutra origem o
+      // centro fica nulo e vale o anel gravado, que o operador pode ter editado
+      const fromAnchor = n.areaOrigin === 'anchor'
+      const anchorNext = { ...DEFAULT_ANCHOR, ...(n.anchor ?? {}) }
+      if (!fromAnchor) anchorNext.center = null
+      setAnchor(anchorNext)
+      setRing(n.ring ?? null)
+      setHoles(Array.isArray(n.holes) ? n.holes : [])
+      // as células gravadas (partes de uma importação); as da âncora
+      // regeneram-se do centro gravado
+      setGridCells(!fromAnchor && Array.isArray(n.cells) && n.cells.length ? n.cells : null)
+      setAreaOrigin(n.areaOrigin ?? null)
+      // as células desactivadas do projecto valem para o mosaico com que ele
+      // reabre (key null = adoptar)
+      setTileSel({ key: null, cells: null, ring: null, disabled: n.disabledTiles ?? new Set() })
+      setPendingLegacy(n.legacyMosaic ?? null)
+    },
+    [setMode, setDraftVertices],
+  )
 
   return {
     ring,

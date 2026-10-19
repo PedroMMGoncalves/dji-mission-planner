@@ -16,6 +16,24 @@ import BaseFieldSheets from './BaseFieldSheets.jsx'
 const STORAGE_KEY = 'dji-mission-planner:checklist:v1'
 const SAVE_DELAY_MS = 400
 
+/**
+ * Chave do armazenamento POR MISSÃO (M3-U5): uma só checklist para todos os
+ * projectos abria a missão de hoje com a missão, a plataforma e os itens
+ * críticos de outra já marcados — e é o registo que se exporta e imprime.
+ * A chave antiga (sem missão) é a de quem actualizou: lê-se uma vez.
+ */
+export function checklistStorageKey(missionName) {
+  const slug = String(missionName ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+  return `${STORAGE_KEY}:${slug || 'missao'}`
+}
+
 /** Par bilingue PT/EN. */
 const bi = (pt, en) => ({ pt, en })
 
@@ -34,15 +52,30 @@ const tr = (v, lang) => {
  * que custava um render extra e deixava uma janela em que a gravação podia
  * escrever por cima da leitura (era o que o `hidratado` guardava).
  */
-function lerGuardado() {
+function lerChave(chave) {
   try {
-    const bruto = window.localStorage.getItem(STORAGE_KEY)
+    const bruto = window.localStorage.getItem(chave)
     const g = bruto ? JSON.parse(bruto) : null
-    return g && typeof g === 'object' ? g : {}
+    return g && typeof g === 'object' ? g : null
   } catch {
     /* armazenamento indisponível ou dados corrompidos */
-    return {}
+    return null
   }
+}
+
+/**
+ * O que está gravado para esta missão: `dados` (a checklist desta missão,
+ * ou vazia) e `outra` (a checklist antiga, sem chave de missão, quando é de
+ * outra missão e ainda não se decidiu o que lhe fazer).
+ */
+function lerGuardado(missionName) {
+  const propria = lerChave(checklistStorageKey(missionName))
+  if (propria) return { dados: propria, outra: null }
+  const antiga = lerChave(STORAGE_KEY)
+  if (!antiga) return { dados: {}, outra: null }
+  const nome = antiga.missionName ?? antiga.missao?.missao ?? ''
+  if (!nome || nome === missionName) return { dados: antiga, outra: null }
+  return { dados: {}, outra: { ...antiga, nome } }
 }
 
 function useL() {
@@ -793,6 +826,12 @@ const UI = {
   printFilled: bi('Imprimir preenchido', 'Print filled in'),
   printBlank: bi('Imprimir em branco', 'Print blank'),
   clear: bi('Limpar', 'Clear'),
+  otherMission: bi(
+    'Há uma checklist de outra missão, «{m}» ({d}). Esta missão começa com a sua própria.',
+    'There is a checklist from another mission, “{m}” ({d}). This mission starts its own.',
+  ),
+  startNew: bi('Começar uma nova', 'Start a new one'),
+  continueOld: bi('Continuar com a de «{m}»', 'Continue with the one from “{m}”'),
   clearConfirm: bi(
     'Limpar toda a checklist, tabelas e notas? Esta acção não pode ser anulada.',
     'Clear the whole checklist, tables and notes? This action cannot be undone.',
@@ -1169,7 +1208,9 @@ export default function ChecklistPage({
   const L = (v) => tr(v, lang)
 
   // O estado gravado é lido UMA vez e semeia todos os átomos abaixo
-  const [guardado] = useState(lerGuardado)
+  const [{ dados: guardado, outra: guardadoDeOutra }] = useState(() => lerGuardado(missionName))
+  // a checklist antiga de outra missão, à espera de «Começar uma nova» ou «Continuar com esta»
+  const [outraMissao, setOutraMissao] = useState(guardadoDeOutra)
   const [checked, setChecked] = useState(() =>
     guardado.checked && typeof guardado.checked === 'object' ? guardado.checked : {},
   )
@@ -1210,15 +1251,44 @@ export default function ChecklistPage({
     const t = setTimeout(() => {
       try {
         window.localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ checked, missao, voos, gcps, notas }),
+          checklistStorageKey(missionName),
+          JSON.stringify({ missionName, savedAt: hoje(), checked, missao, voos, gcps, notas }),
         )
       } catch {
         /* quota excedida ou modo privado — ignorar */
       }
     }, SAVE_DELAY_MS)
     return () => clearTimeout(t)
-  }, [checked, missao, voos, gcps, notas])
+  }, [missionName, checked, missao, voos, gcps, notas])
+
+  /** Continuar com a checklist antiga de outra missão: os dados passam para esta missão. */
+  const continuarOutra = () => {
+    if (!outraMissao) return
+    const g = outraMissao
+    if (g.checked && typeof g.checked === 'object') setChecked(g.checked)
+    setMissao((m) => ({
+      ...m,
+      ...(g.missao && typeof g.missao === 'object' ? g.missao : {}),
+      missao: missionName || '',
+      plataforma: droneLabel || '',
+    }))
+    if (Array.isArray(g.voos))
+      setVoos(g.voos.map((l) => ({ ...linhaVazia(COLS_VOO), ...l, _id: uid() })))
+    if (Array.isArray(g.gcps))
+      setGcps(g.gcps.map((l) => ({ ...linhaVazia(COLS_GCP), ...l, _id: uid() })))
+    if (g.notas && typeof g.notas === 'object') setNotas((n) => ({ ...n, ...g.notas }))
+    esquecerOutra()
+  }
+
+  /** A checklist antiga fica esquecida: a desta missão começa do zero. */
+  const esquecerOutra = () => {
+    setOutraMissao(null)
+    try {
+      window.localStorage.removeItem(STORAGE_KEY)
+    } catch {
+      /* ignorar */
+    }
+  }
 
   /* ------------------------------ Acções ------------------------------ */
   const toggle = (k) => setChecked((c) => ({ ...c, [k]: !c[k] }))
@@ -1315,7 +1385,7 @@ export default function ChecklistPage({
     setGcps(Array.from({ length: 5 }, () => linhaVazia(COLS_GCP)))
     setNotas({ anomalias: '', qualidade: '', condicoes: '', seguimento: '' })
     try {
-      window.localStorage.removeItem(STORAGE_KEY)
+      window.localStorage.removeItem(checklistStorageKey(missionName))
     } catch {
       /* ignorar */
     }
@@ -1377,6 +1447,24 @@ export default function ChecklistPage({
             </button>
           </div>
 
+          {outraMissao && (
+            <div
+              data-testid="checklist-other-mission"
+              className="no-print mb-3 flex flex-wrap items-center gap-2 rounded border border-amber-700/60 bg-amber-950/40 px-3 py-2 text-[13px] text-amber-100"
+            >
+              <span>
+                {L(UI.otherMission)
+                  .replace('{m}', outraMissao.nome)
+                  .replace('{d}', outraMissao.savedAt ?? outraMissao.missao?.data ?? '—')}
+              </span>
+              <Botao onClick={esquecerOutra} tom="primario">
+                {L(UI.startNew)}
+              </Botao>
+              <Botao onClick={continuarOutra}>
+                {L(UI.continueOld).replace('{m}', outraMissao.nome)}
+              </Botao>
+            </div>
+          )}
           <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-4">
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-slate-100">{L(UI.title)}</h1>

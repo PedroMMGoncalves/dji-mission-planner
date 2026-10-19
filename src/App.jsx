@@ -10,6 +10,7 @@ import ProjectSummary from './components/ProjectSummary.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
 import ChecklistPage from './components/ChecklistPage.jsx'
 import HelpModal from './components/HelpModal.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 import SettingsModal from './components/SettingsModal.jsx'
 import DisclaimerModal, {
   acceptDisclaimer,
@@ -85,7 +86,16 @@ import { useProject } from './hooks/useProject.js'
 import { terrainIdentity, useViewsheds } from './hooks/useViewsheds.js'
 import { useBaseProposal } from './hooks/useBaseProposal.js'
 import { viewshedJobs, viewshedTerrainModel } from './mission/viewshedPlan.js'
-import { DEFAULT_PARAMS } from './mission/defaults.js'
+import {
+  DEFAULT_GCP_CONFIG,
+  DEFAULT_MISSION_NAME,
+  DEFAULT_PARAMS,
+  DEFAULT_TERRAIN_FOLLOW,
+} from './mission/defaults.js'
+import { DEFAULT_FACE_CONFIG } from './utils/faceMode.js'
+import { DEFAULT_ORBIT_CONFIG } from './utils/orbit.js'
+import { DEFAULT_CORRIDOR_CONFIG } from './utils/corridor.js'
+import { DEFAULT_CIRCULAR_CONFIG } from './utils/circular.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
 import { routeClearance, terrainHolesAlong, transitClearance } from './mission/clearance.js'
 import { blockWorstTransitM, blockWorstVlosM } from './mission/takeoffZones.js'
@@ -149,7 +159,16 @@ function basePointsNear(bases, ring) {
 }
 
 export default function App() {
-  const [lang, setLang] = useState(() => localStorage.getItem('dji-mission-planner:lang') ?? 'pt')
+  // a língua gravada, lida com guarda (M3-C6): com o armazenamento recusado
+  // o getter lança e a página ficava em branco; um valor desconhecido cai em pt
+  const [lang, setLang] = useState(() => {
+    try {
+      const v = window.localStorage.getItem('dji-mission-planner:lang')
+      return LANGS.some((l) => l.code === v) ? v : 'pt'
+    } catch {
+      return 'pt'
+    }
+  })
   useEffect(() => {
     try {
       localStorage.setItem('dji-mission-planner:lang', lang)
@@ -178,7 +197,7 @@ function AppInner({ lang, setLang }) {
       history.replaceState(null, '', window.location.pathname + window.location.search + hash)
     }
   }, [view])
-  const [missionName, setMissionName] = useState('missao-drone')
+  const [missionName, setMissionName] = useState(DEFAULT_MISSION_NAME)
   // acções de segurança (fim da missão, sinal perdido) de todos os modos
   const [safety, setSafety] = useState(() => ({ ...DEFAULT_SAFETY }))
   // seleção de hardware: aeronave + payload (T1.1)
@@ -1974,43 +1993,43 @@ function AppInner({ lang, setLang }) {
   // leitura e migração (v1/v2) em src/mission/project.js e mecânica de
   // gravação/ficheiro em hooks/useProject.js; aqui só se distribui o
   // projecto normalizado pelo estado, porque é o App que tem os setters
+  // Um projecto aberto parte das OMISSÕES e escreve todos os campos, presentes
+  // ou não (M3-C1): antes fundia-se no estado corrente (`{...prev, ...n.x}`),
+  // e um projecto v1 aberto por cima de uma sessão herdava o prolongamento, a
+  // fiada, a margem e o seguir terreno que nunca teve
   const applyNormalized = useCallback(
     (n) => {
-      if (n.missionName != null) setMissionName(n.missionName)
-      if (n.drone) setDrone(n.drone)
-      if (n.custom) setCustom((c) => ({ ...c, ...n.custom }))
-      if (n.payloadTuning) setPayloadTuning(n.payloadTuning)
-      if (n.params) {
+      setMissionName(n.missionName || DEFAULT_MISSION_NAME)
+      setDrone(n.drone ?? { ...DEFAULT_SELECTION })
+      setCustom({ ...DEFAULT_CUSTOM_SENSOR, ...(n.custom ?? {}) })
+      setPayloadTuning(n.payloadTuning ?? {})
+      setParams({
+        ...DEFAULT_PARAMS,
+        ...(n.params ?? {}),
         // triggerMode desconhecido (ou ausente) carrega como distância
-        setParams((prev) => ({
-          ...prev,
-          ...n.params,
-          triggerMode: normalizeTriggerMode(n.params.triggerMode ?? prev.triggerMode),
-          // projectos anteriores ao parâmetro abrem com paragem só nos cantos
-          waypointStops: normalizeWaypointStops(n.params.waypointStops),
-        }))
-      }
+        triggerMode: normalizeTriggerMode(n.params?.triggerMode),
+        // projectos anteriores ao parâmetro abrem com paragem só nos cantos
+        waypointStops: normalizeWaypointStops(n.params?.waypointStops),
+      })
       // bateria da missão (os projectos antigos já vêm convertidos em tempo
       // útil, project.js): igual ao do equipamento, passa a segui-lo
       if (n.battery) setMissionBattery(followBatteryIfEqual(equipment, n.battery))
-      if (n.missionMode) setMissionMode(n.missionMode)
-      if (n.faceConfig) setFaceConfig(n.faceConfig)
-      if (n.orbitConfig) setOrbitConfig(n.orbitConfig)
-      if (n.corridorConfig) setCorridorConfig(n.corridorConfig)
-      if (n.circularConfig) setCircularConfig(n.circularConfig)
-      if (n.inspectPoints) {
-        setInspectPoints(n.inspectPoints)
-        inspectSeqRef.current = n.nextInspectId
-      }
-      applyProjectGeometry(n) // split, anchor, ring, origem e células desactivadas
+      setMissionMode(n.missionMode ?? 'area')
+      setFaceConfig(n.faceConfig ?? { ...DEFAULT_FACE_CONFIG })
+      setOrbitConfig(n.orbitConfig ?? { ...DEFAULT_ORBIT_CONFIG })
+      setCorridorConfig(n.corridorConfig ?? { ...DEFAULT_CORRIDOR_CONFIG })
+      setCircularConfig(n.circularConfig ?? { ...DEFAULT_CIRCULAR_CONFIG })
+      setInspectPoints(n.inspectPoints ?? [])
+      inspectSeqRef.current = n.nextInspectId ?? 1
+      applyProjectGeometry(n) // split, anchor, ring, células, origem e células desactivadas
       // bases (a base única antiga abre como A) e as atribuições manuais,
       // que valem para a disposição de blocos que o projecto reabre
       setBases(n.bases ?? [])
       setBlockBaseState({ key: null, map: n.blockBase ?? {}, cells: null, ring: null, lost: 0 })
       setSelectedBaseId(null)
       setBaseProposal(null)
-      if (n.terrainFollow) setTerrainFollow((t) => ({ ...t, ...n.terrainFollow }))
-      if (n.gcpConfig) setGcpConfig((g) => ({ ...g, ...n.gcpConfig }))
+      setTerrainFollow({ ...DEFAULT_TERRAIN_FOLLOW, ...(n.terrainFollow ?? {}) })
+      setGcpConfig({ ...DEFAULT_GCP_CONFIG, ...(n.gcpConfig ?? {}) })
       setObstacleM(n.obstacleHeightM ?? 0)
       setDemMemory(n.demFile ?? null)
       // projectos anteriores às acções de segurança abrem com as omissões
@@ -2063,6 +2082,8 @@ function AppInner({ lang, setLang }) {
       anchor,
       ring,
       holes,
+      // as células de uma importação em partes (project.js deixa de fora as da âncora)
+      cells: gridCells,
       areaOrigin,
       bases,
       // só as atribuições que valem para os blocos de agora
@@ -2093,6 +2114,7 @@ function AppInner({ lang, setLang }) {
       anchor,
       ring,
       holes,
+      gridCells,
       areaOrigin,
       bases,
       blockBaseEffective,
@@ -2112,7 +2134,22 @@ function AppInner({ lang, setLang }) {
     applyNormalized,
     onLoaded: fitToArea,
     setImportError,
+    t,
   })
+
+  // Os blocos sob demanda (vista 3D, relatório, perfil) pedem-se depois do
+  // arranque, para ficarem na cache do browser antes de se ir para o campo
+  // sem rede (M3-C4); uma falha aqui não é erro: a janela volta a pedi-los
+  useEffect(() => {
+    const idle = window.requestIdleCallback ?? ((f) => setTimeout(f, 3000))
+    const cancel = window.cancelIdleCallback ?? clearTimeout
+    const id = idle(() => {
+      import('./components/Map3D.jsx').catch(() => {})
+      import('./components/MissionReport.jsx').catch(() => {})
+      import('./components/ElevationProfile.jsx').catch(() => {})
+    })
+    return () => cancel(id)
+  }, [])
 
   const startBase = useCallback(() => {
     setMode((m) => (m === 'base' ? 'idle' : 'base'))
@@ -2867,126 +2904,132 @@ function AppInner({ lang, setLang }) {
       )}
 
       {showProfile && terrain.status === 'ready' && view3d && (
-        <Suspense fallback={null}>
-          <ElevationProfile
-            terrain={terrain.data}
-            waypoints={view3d.waypoints}
-            breaks={view3d.breaks ?? null}
-            refElev={view3d.refElev ?? 0}
-            reference={
-              missionMode === 'area'
-                ? reference
-                : missionMode === 'corridor'
-                  ? corridorReference
-                  : missionMode === 'circular'
-                    ? circularReference
-                    : null
-            }
-            blocks={
-              // os blocos são da área; nos outros modos não se desenham. Com
-              // bases, cada bloco com o número do voo e a cota da sua zona
-              missionMode !== 'area'
-                ? null
-                : blockRefs && blocks?.length
-                  ? (terrainResult && !terrainResult.error && terrainResult.blocks3
-                      ? terrainResult.blocks3
-                      : blocks
-                    ).map((b, i) => {
-                      const info = baseLayout?.byBlock[b.id]
-                      const r = blockRefs.refs[i] ?? blockRefs.common
-                      return {
-                        id: b.id,
-                        label: info?.flightLabel || `B${String(b.id).padStart(2, '0')}`,
-                        refElev: r,
-                        reference: { elev: r, source: 'zone', base: info?.baseLabel ?? '' },
-                        waypoints: b.waypoints.map(([lon, lat, h]) => [
-                          lon,
-                          lat,
-                          Number.isFinite(h) ? h : params.altitude,
-                        ]),
-                      }
-                    })
-                  : terrainResult && !terrainResult.error && terrainResult.blocks3
-                    ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
-                    : (blocks?.map((b) => ({
-                        id: b.id,
-                        waypoints: b.waypoints.map(([lon, lat]) => [lon, lat, params.altitude]),
-                      })) ?? null)
-            }
-            onClose={() => setShowProfile(false)}
-          />
-        </Suspense>
+        <ErrorBoundary onClose={() => setShowProfile(false)}>
+          <Suspense fallback={null}>
+            <ElevationProfile
+              terrain={terrain.data}
+              waypoints={view3d.waypoints}
+              breaks={view3d.breaks ?? null}
+              refElev={view3d.refElev ?? 0}
+              reference={
+                missionMode === 'area'
+                  ? reference
+                  : missionMode === 'corridor'
+                    ? corridorReference
+                    : missionMode === 'circular'
+                      ? circularReference
+                      : null
+              }
+              blocks={
+                // os blocos são da área; nos outros modos não se desenham. Com
+                // bases, cada bloco com o número do voo e a cota da sua zona
+                missionMode !== 'area'
+                  ? null
+                  : blockRefs && blocks?.length
+                    ? (terrainResult && !terrainResult.error && terrainResult.blocks3
+                        ? terrainResult.blocks3
+                        : blocks
+                      ).map((b, i) => {
+                        const info = baseLayout?.byBlock[b.id]
+                        const r = blockRefs.refs[i] ?? blockRefs.common
+                        return {
+                          id: b.id,
+                          label: info?.flightLabel || `B${String(b.id).padStart(2, '0')}`,
+                          refElev: r,
+                          reference: { elev: r, source: 'zone', base: info?.baseLabel ?? '' },
+                          waypoints: b.waypoints.map(([lon, lat, h]) => [
+                            lon,
+                            lat,
+                            Number.isFinite(h) ? h : params.altitude,
+                          ]),
+                        }
+                      })
+                    : terrainResult && !terrainResult.error && terrainResult.blocks3
+                      ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
+                      : (blocks?.map((b) => ({
+                          id: b.id,
+                          waypoints: b.waypoints.map(([lon, lat]) => [lon, lat, params.altitude]),
+                        })) ?? null)
+              }
+              onClose={() => setShowProfile(false)}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {showReport && planOk && (
-        <Suspense
-          fallback={
-            <div className="fixed inset-0 z-[2500] flex items-center justify-center bg-slate-950/90 text-sm text-slate-300">
-              {t('app.loadingReport')}
-            </div>
-          }
-        >
-          <MissionReport
-            missionName={missionName}
-            droneLabel={hardwareLabel}
-            inspectPoints={inspectPoints}
-            // a mesma velocidade limitada que entra no plano e no ficheiro
-            params={params.speed === speed ? params : { ...params, speed }}
-            spacing={spacing}
-            interval={interval}
-            gsd={gsd}
-            stats={planOk.stats}
-            blocks={blocks}
-            ring={ring}
-            basePoints={bases.map((b) => b.point)}
-            baseSheets={missionMode === 'area' ? fieldSheets : []}
-            gcps={gcps}
-            lines={planOk.lines}
-            reproducibility={{
-              version: import.meta.env.APP_VERSION,
-              projectJson: JSON.stringify(serializeProject(projectState)),
-              uncertainty,
-              blur,
-              terrainDatum: terrain.data?.verticalDatum ?? null,
-              preflight,
-            }}
-            onClose={() => setShowReport(false)}
-          />
-        </Suspense>
+        <ErrorBoundary onClose={() => setShowReport(false)}>
+          <Suspense
+            fallback={
+              <div className="fixed inset-0 z-[2500] flex items-center justify-center bg-slate-950/90 text-sm text-slate-300">
+                {t('app.loadingReport')}
+              </div>
+            }
+          >
+            <MissionReport
+              missionName={missionName}
+              droneLabel={hardwareLabel}
+              inspectPoints={inspectPoints}
+              // a mesma velocidade limitada que entra no plano e no ficheiro
+              params={params.speed === speed ? params : { ...params, speed }}
+              spacing={spacing}
+              interval={interval}
+              gsd={gsd}
+              stats={planOk.stats}
+              blocks={blocks}
+              ring={ring}
+              basePoints={bases.map((b) => b.point)}
+              baseSheets={missionMode === 'area' ? fieldSheets : []}
+              gcps={gcps}
+              lines={planOk.lines}
+              reproducibility={{
+                version: import.meta.env.APP_VERSION,
+                projectJson: JSON.stringify(serializeProject(projectState)),
+                uncertainty,
+                blur,
+                terrainDatum: terrain.data?.verticalDatum ?? null,
+                preflight,
+              }}
+              onClose={() => setShowReport(false)}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {show3d && terrain.status === 'ready' && view3d && (
-        <Suspense
-          fallback={
-            <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/90 text-sm text-slate-300">
-              {t('app.loading3d')}
-            </div>
-          }
-        >
-          <Map3D
-            terrain={terrain.data}
-            ring={
-              missionMode === 'area' || missionMode === 'circular'
-                ? ring
-                : missionMode === 'corridor'
-                  ? (corridorPreview?.buffer ?? null)
-                  : null
+        <ErrorBoundary onClose={() => setShow3d(false)}>
+          <Suspense
+            fallback={
+              <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/90 text-sm text-slate-300">
+                {t('app.loading3d')}
+              </div>
             }
-            waypoints={view3d.waypoints}
-            refElev={view3d.refElev}
-            breaks={view3d.breaks ?? null}
-            pieceColors={view3dColors?.pieces ?? null}
-            blocks3d={view3dColors?.blocks ?? null}
-            bases3d={baseRows.map((b) => ({
-              point: b.point,
-              label: b.label,
-              color: b.color,
-              radiusM: b.radiusM,
-            }))}
-            gcps={missionMode === 'area' ? gcps : null}
-            onClose={() => setShow3d(false)}
-          />
-        </Suspense>
+          >
+            <Map3D
+              terrain={terrain.data}
+              ring={
+                missionMode === 'area' || missionMode === 'circular'
+                  ? ring
+                  : missionMode === 'corridor'
+                    ? (corridorPreview?.buffer ?? null)
+                    : null
+              }
+              waypoints={view3d.waypoints}
+              refElev={view3d.refElev}
+              breaks={view3d.breaks ?? null}
+              pieceColors={view3dColors?.pieces ?? null}
+              blocks3d={view3dColors?.blocks ?? null}
+              bases3d={baseRows.map((b) => ({
+                point: b.point,
+                label: b.label,
+                color: b.color,
+                radiusM: b.radiusM,
+              }))}
+              gcps={missionMode === 'area' ? gcps : null}
+              onClose={() => setShow3d(false)}
+            />
+          </Suspense>
+        </ErrorBoundary>
       )}
     </div>
   )

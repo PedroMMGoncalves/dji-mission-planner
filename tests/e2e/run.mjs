@@ -153,17 +153,29 @@ async function openMission({
   demFile = null,
   globalTerrain = true,
   disclaimer = true,
+  // corre antes da página (p. ex. um localStorage que recusa, um projecto gravado)
+  initScript = null,
+  // pedidos locais a abortar (um bloco sob demanda que «não chega»)
+  abort = null,
 }) {
   const page = await browser.newPage({ viewport, acceptDownloads: true })
+  if (initScript) await page.addInitScript(initScript)
   // aviso antes de usar já aceite neste "aparelho" (o cenário do aviso testa-o)
   if (disclaimer)
-    await page.addInitScript(() => localStorage.setItem('dji-mission-planner:disclaimer', '2'))
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('dji-mission-planner:disclaimer', '2')
+      } catch {
+        /* armazenamento recusado: o cenário trata do aviso */
+      }
+    })
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message.slice(0, 300)))
   // só a build local: mapas e fontes externas ficam de fora; o relevo global
   // é um chão plano a 0 m servido aqui (não há exportação sem relevo)
   await page.route('**/*', (route) => {
     const url = route.request().url()
+    if (abort && abort.test(url)) return route.abort()
     if (url.startsWith(`http://127.0.0.1:${PORT}/`)) return route.continue()
     if (globalTerrain && /elevation-tiles-prod\/terrarium\//.test(url))
       return route.fulfill({ status: 200, contentType: 'image/png', body: FLAT_TILE })
@@ -3602,6 +3614,385 @@ await scenario('tablet-cartoes-gaveta', async () => {
   await page.waitForTimeout(200)
   check('tablet: Escape fecha a gaveta', (await gavetasAbertas(page)) === 0)
   check('tablet: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+/* ---- pacote R-A: projecto e dados (docs/REVISAO-CODIGO-2026-10.md) ------- */
+// Coordenadas dos waypoints de um waylines.wpml, [lon, lat].
+const wpCoords = (wpml) =>
+  [...wpml.matchAll(/<coordinates>\s*(-?[\d.]+),(-?[\d.]+)/g)].map((m) => [
+    Number(m[1]),
+    Number(m[2]),
+  ])
+const esperaArea = async (page) => {
+  await page
+    .locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
+    .waitFor({ state: 'attached', timeout: 20000 })
+  await page.waitForTimeout(800)
+}
+const mesmoAnel = (a, b, tolM = 0.5) =>
+  a.length === b.length &&
+  a.every((p, i) => {
+    const q = toM(p[0], p[1])
+    const r = toM(b[i][0], b[i][1])
+    return Math.hypot(q[0] - r[0], q[1] - r[1]) < tolM
+  })
+const lados = (fechado) => {
+  const ring =
+    fechado.length > 1 &&
+    fechado[0][0] === fechado[fechado.length - 1][0] &&
+    fechado[0][1] === fechado[fechado.length - 1][1]
+      ? fechado.slice(0, -1)
+      : fechado
+  return ring.map((p, i) => {
+    const q = toM(p[0], p[1])
+    const r = toM(ring[(i + 1) % ring.length][0], ring[(i + 1) % ring.length][1])
+    return Math.hypot(q[0] - r[0], q[1] - r[1])
+  })
+}
+
+// M3-C1: abrir um projecto por cima de uma sessão substituía só o anel «if
+// (n.ring)»: com o rectângulo da âncora aberto, o KMZ saía com a geometria
+// da sessão anterior e o nome do projecto novo.
+await scenario('projecto-por-cima-da-sessao', async () => {
+  const { page, errors } = await openMission({ dem: false })
+  // a sessão: a grelha 2×2 da âncora (quatro células, quatro voos)
+  const grelha = join(OUT, 'sessao-grelha.json')
+  writeFileSync(
+    grelha,
+    JSON.stringify({
+      version: 2,
+      missionName: 'sessao-grelha',
+      anchor: {
+        center: toLL(1000, 1000),
+        length: 500,
+        width: 300,
+        orientation: 90,
+        shape: 'rect',
+        cols: 2,
+        rows: 2,
+      },
+      ring: [toLL(500, 700), toLL(1500, 700), toLL(1500, 1300), toLL(500, 1300)],
+      areaOrigin: 'anchor',
+    }),
+  )
+  await page.locator('input[accept=".json"]').setInputFiles(grelha)
+  await page.waitForTimeout(1000)
+  await exportReady(page)
+  const sessao = await readRoutes(await exportKmz(page, join(OUT, 'por-cima-sessao.zip')))
+  check(
+    'projecto por cima: a sessão voa a grelha da âncora em 4 voos',
+    sessao.length === 4,
+    `${sessao.length} voos`,
+  )
+  // um projecto desenhado 3,6 km a nordeste da origem dos fixtures, como
+  // «Guardar projecto» o escreveria
+  const anel = [toLL(3600, 3600), toLL(3900, 3600), toLL(3900, 3900), toLL(3600, 3900)]
+  const file = join(OUT, 'p2-desenhada.json')
+  writeFileSync(
+    file,
+    JSON.stringify({
+      version: 2,
+      missionName: 'p2-desenhada',
+      ring: anel,
+      areaOrigin: 'draw',
+      params: { altitude: 80 },
+    }),
+  )
+  await page.locator('input[accept=".json"]').setInputFiles(file)
+  await page.waitForTimeout(1000)
+  await exportReady(page)
+  const nameInput = page.getByPlaceholder(/nome-da-missao|mission-name/)
+  check(
+    'projecto por cima: o nome é o do ficheiro',
+    (await nameInput.inputValue()) === 'p2-desenhada',
+  )
+  const depois = await readRoutes(await exportKmz(page, join(OUT, 'por-cima-p2.kmz')))
+  const poly = turf.buffer(turf.polygon([[...anel, anel[0]]]), 60, { units: 'meters' })
+  const wps = depois.flatMap((r) => wpCoords(r.wpml))
+  const dentro = wps.filter((q) => turf.booleanPointInPolygon(turf.point(q), poly)).length
+  check(
+    'projecto por cima: um só voo, com todos os waypoints na área do projecto aberto',
+    depois.length === 1 && wps.length > 0 && dentro === wps.length,
+    `${depois.length} voos, ${dentro}/${wps.length} dentro`,
+  )
+  check(
+    'projecto por cima: a altitude é a do ficheiro (80 m), não a da sessão',
+    /<wpml:executeHeight>80</.test(depois[0].wpml),
+  )
+  // Ctrl+Z não sai do projecto aberto: a área continua a ser a de p2
+  await page.keyboard.press('Control+z')
+  await page.waitForTimeout(600)
+  const kml = kmlRing(
+    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'por-cima-undo.kml')),
+  )
+  check(
+    'projecto por cima: Ctrl+Z não repõe a área da sessão anterior',
+    turf.booleanPointInPolygon(turf.point(centro(kml)), poly),
+  )
+  check('projecto por cima: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// M3-C2: um vértice arrastado num rectângulo da âncora perdia-se ao
+// recarregar (a âncora regenerava o anel) e ao mover a área.
+await scenario('ancora-editada-sobrevive', async () => {
+  const { page, errors } = await openMission({ dem: false })
+  // o rectângulo da âncora vem de um projecto, para o mapa o enquadrar (com
+  // o mapa afastado os quatro vértices e a pega central caem no mesmo píxel)
+  const ficheiroRect = join(OUT, 'ancora-rect.json')
+  writeFileSync(
+    ficheiroRect,
+    JSON.stringify({
+      version: 2,
+      missionName: 'ancora-rect',
+      anchor: {
+        center: toLL(1000, 1000),
+        length: 500,
+        width: 300,
+        orientation: 90,
+        shape: 'rect',
+        cols: 1,
+        rows: 1,
+      },
+      ring: [toLL(750, 850), toLL(1250, 850), toLL(1250, 1150), toLL(750, 1150)],
+      areaOrigin: 'anchor',
+    }),
+  )
+  await page.locator('input[accept=".json"]').setInputFiles(ficheiroRect)
+  await page.waitForTimeout(1000)
+  const handles = page.locator('.vertex-handle')
+  check('âncora editada: o rectângulo tem 4 vértices editáveis', (await handles.count()) === 4)
+  await dragMarker(page, handles.first(), 60, 40)
+  const editado = kmlRing(
+    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'ancora-editado.kml')),
+  )
+  const rect = [...lados(editado)]
+  check(
+    'âncora editada: o anel deixou de ser um rectângulo (um vértice mexeu)',
+    rect.length === 4 && Math.abs(rect[0] - rect[2]) > 20,
+    rect.map((v) => v.toFixed(0)).join(' '),
+  )
+  await page.waitForTimeout(1200) // autosave
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await esperaArea(page)
+  const recarregado = kmlRing(
+    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'ancora-recarregado.kml')),
+  )
+  check(
+    'âncora editada: o vértice arrastado sobrevive ao recarregar',
+    mesmoAnel(editado, recarregado),
+    `${editado.length} vs ${recarregado.length} vértices`,
+  )
+  // mover a área inteira mantém a forma editada
+  await configure(page, { split: 'Mosaico' })
+  const pega = page.locator('.anchor-handle')
+  check('âncora editada: há pega central', (await pega.count()) === 1)
+  await dragMarker(page, pega, 100, 50)
+  const movido = kmlRing(
+    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'ancora-movido.kml')),
+  )
+  const l1 = lados(recarregado)
+  const l2 = lados(movido)
+  check(
+    'âncora editada: mover a área mantém a forma editada',
+    movido.length === recarregado.length && l1.every((v, i) => Math.abs(v - l2[i]) < 1),
+    `${l1.map((v) => v.toFixed(0)).join(' ')} vs ${l2.map((v) => v.toFixed(0)).join(' ')}`,
+  )
+  check('âncora editada: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// M3-C3: «Usar todas as partes como células» não era gravado: ao recarregar
+// ficava só a maior parte, e a parte pequena saía do plano sem aviso.
+await scenario('partes-como-celulas-sobrevivem', async () => {
+  const { page, errors } = await openMission({ area: fx.multi, dem: false })
+  await page.getByRole('button', { name: /Usar todas as partes|Use all parts/ }).click()
+  await page.waitForTimeout(1500) // autosave
+  await exportReady(page)
+  const antes = await readRoutes(await exportKmz(page, join(OUT, 'partes-antes.zip')))
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await esperaArea(page)
+  await exportReady(page)
+  const depois = await readRoutes(await exportKmz(page, join(OUT, 'partes-depois.zip')))
+  check(
+    'partes como células: depois de recarregar continuam 3 voos',
+    antes.length === 3 && depois.length === 3,
+    `${antes.length} → ${depois.length}`,
+  )
+  check(
+    'partes como células: o botão das partes não volta a aparecer',
+    (await page.getByRole('button', { name: /Usar todas as partes|Use all parts/ }).count()) === 0,
+  )
+  check('partes como células: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// M3-C6: com o armazenamento recusado (dados de sites bloqueados) a página
+// ficava em branco ao ler a língua.
+await scenario('armazenamento-recusado-abre', async () => {
+  const { page, errors } = await openMission({
+    disclaimer: false,
+    initScript: () => {
+      Object.defineProperty(window, 'localStorage', {
+        configurable: true,
+        get() {
+          throw new DOMException('blocked', 'SecurityError')
+        },
+      })
+    },
+  })
+  await page.waitForTimeout(2000)
+  const filhos = await page.locator('#root').evaluate((r) => r.childElementCount)
+  check(
+    'armazenamento recusado: a aplicação abre',
+    filhos > 0 && /DJI Mission Planner/.test(await bodyText(page)),
+  )
+  check('armazenamento recusado: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// M3-C4: sem rede, o bloco do relatório que não chega apagava a aplicação
+// inteira; agora a janela diz que não abriu e «Fechar» repõe o planeador.
+await scenario('relatorio-sem-bloco-nao-apaga-a-app', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false, abort: /MissionReport-/ })
+  await exportReady(page)
+  await page
+    .getByRole('button', { name: /Relatório|Report/ })
+    .first()
+    .click()
+  const boundary = page.getByTestId('error-boundary-window')
+  await boundary.waitFor({ state: 'visible', timeout: 20000 })
+  check(
+    'bloco em falta: a fronteira de erro diz que a janela não abriu',
+    /não abriu|could not open/.test(await boundary.innerText()),
+  )
+  await boundary.getByRole('button', { name: /^Fechar$|^Close$/ }).click()
+  await page.waitForTimeout(500)
+  check(
+    'bloco em falta: o planeador continua, com o botão de exportar',
+    (await page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).count()) ===
+      1 && (await page.getByTestId('error-boundary-window').count()) === 0,
+  )
+  // o único erro admissível é o do próprio bloco que não chegou
+  const outros = errors.filter((e) => !/dynamically imported module|Failed to fetch/i.test(e))
+  check('bloco em falta: sem outros erros de página', outros.length === 0, outros.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// M3-C5/C7: um projecto gravado com coordenadas que não são números
+// deixava a página em branco em todos os arranques; agora é recusado, fica
+// numa cópia datada e a aplicação diz porquê.
+await scenario('projecto-gravado-malformado', async () => {
+  const { page, errors } = await openMission({
+    dem: false,
+    initScript: () =>
+      localStorage.setItem(
+        'dji-mission-planner:project:v1',
+        JSON.stringify({
+          version: 2,
+          missionName: 'mau',
+          ring: [
+            ['a', 'b'],
+            ['c', 'd'],
+            ['e', 'f'],
+          ],
+        }),
+      ),
+  })
+  await page.waitForTimeout(1500)
+  const filhos = await page.locator('#root').evaluate((r) => r.childElementCount)
+  check('projecto malformado: a aplicação abre', filhos > 0)
+  check(
+    'projecto malformado: diz que o projecto gravado não foi lido e ficou em cópia',
+    /não foi lido|could not be read/.test(await bodyText(page)),
+  )
+  const chaves = await page.evaluate(() =>
+    Object.keys(localStorage).filter((k) => k.includes(':recusado:')),
+  )
+  check('projecto malformado: a cópia datada existe', chaves.length === 1, chaves.join(','))
+  check('projecto malformado: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// M3-U5: a checklist de campo era uma para todos os projectos e abria com a
+// missão, a plataforma e os itens críticos da missão anterior.
+await scenario('checklist-por-projecto', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  const nameInput = page.getByPlaceholder(/nome-da-missao|mission-name/)
+  const abrir = async () => {
+    await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
+    await page.waitForTimeout(500)
+  }
+  const voltar = async () => {
+    await page.getByRole('button', { name: /Voltar ao planeador|Back to planner/ }).click()
+    await page.waitForTimeout(300)
+  }
+  const campoMissao = () =>
+    page
+      .locator('label', { hasText: /Missão|Mission/ })
+      .locator('input')
+      .first()
+  await nameInput.fill('corta-norte')
+  await abrir()
+  const item = page.locator('button.chk-item').first()
+  await item.click()
+  check('checklist: o item fica marcado', (await item.getAttribute('aria-pressed')) === 'true')
+  check(
+    'checklist: o campo da missão vem do planeador',
+    (await campoMissao().inputValue()) === 'corta-norte',
+  )
+  await page.waitForTimeout(700) // gravação
+  await voltar()
+  await nameInput.fill('corta-sul')
+  await abrir()
+  check(
+    'checklist: outra missão abre com a sua própria checklist, por marcar',
+    (await page.locator('button.chk-item').first().getAttribute('aria-pressed')) === 'false' &&
+      (await campoMissao().inputValue()) === 'corta-sul',
+  )
+  check(
+    'checklist: sem faixa de outra missão (a chave é por missão)',
+    (await page.getByTestId('checklist-other-mission').count()) === 0,
+  )
+  await voltar()
+  await nameInput.fill('corta-norte')
+  await abrir()
+  check(
+    'checklist: ao voltar à primeira missão os itens marcados voltam',
+    (await page.locator('button.chk-item').first().getAttribute('aria-pressed')) === 'true',
+  )
+  await voltar()
+  // a checklist antiga (versão anterior, sem chave de missão) é anunciada
+  await page.evaluate(() =>
+    localStorage.setItem(
+      'dji-mission-planner:checklist:v1',
+      JSON.stringify({
+        missao: { missao: 'antiga-2026', data: '2026-10-14' },
+        checked: { x: true },
+      }),
+    ),
+  )
+  await nameInput.fill('corta-este')
+  await abrir()
+  const faixa = page.getByTestId('checklist-other-mission')
+  check(
+    'checklist: a checklist antiga de outra missão é anunciada',
+    (await faixa.count()) === 1 && /antiga-2026/.test(await faixa.innerText()),
+  )
+  await faixa.getByRole('button', { name: /Começar uma nova|Start a new one/ }).click()
+  check(
+    'checklist: começar uma nova esquece a antiga',
+    (await page.getByTestId('checklist-other-mission').count()) === 0,
+  )
+  check('checklist: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

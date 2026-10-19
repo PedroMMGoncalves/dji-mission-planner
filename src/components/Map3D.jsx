@@ -227,6 +227,8 @@ export default function Map3D({
 
   const [exag, setExag] = useState(1)
   const [imagery, setImagery] = useState('loading') // 'loading' | 'ok' | 'fallback'
+  // um browser sem WebGL: a mensagem fica na janela, o planeador continua (M3-C4)
+  const [glError, setGlError] = useState(null)
 
   // Escrito num efeito e não durante o render: mutar um ref no corpo do
   // componente é inseguro com renderização concorrente (React pode repetir
@@ -690,10 +692,19 @@ export default function Map3D({
     )
     camera.up.set(0, 0, 1) // mundo com Z para cima
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      powerPreference: 'high-performance',
-    })
+    let renderer
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: 'high-performance',
+      })
+    } catch (err) {
+      // fora do corpo do efeito (a regra react-hooks/set-state-in-effect):
+      // a falha vem de um sistema externo, o WebGL, e é dita no próximo tique
+      const msg = String(err?.message ?? err).slice(0, 200)
+      queueMicrotask(() => setGlError(msg))
+      return undefined
+    }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     renderer.setSize(width0, height0)
     renderer.domElement.style.display = 'block'
@@ -886,7 +897,14 @@ export default function Map3D({
 
       <div className="relative min-h-0 flex-1">
         <div ref={hostRef} className="absolute inset-0" />
-        {hasTerrain ? (
+        {glError ? (
+          <div
+            data-testid="map3d-error"
+            className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-amber-300"
+          >
+            {t('map3d.noWebgl', { msg: glError })}
+          </div>
+        ) : hasTerrain ? (
           <div className="pointer-events-none absolute bottom-2 left-3 text-xs text-slate-500">
             Arrastar: rodar · Roda do rato: zoom · Botão direito: deslocar · Esc: fechar
           </div>

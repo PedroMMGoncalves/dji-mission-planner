@@ -1348,13 +1348,79 @@ vezes). Coordenadas projectadas detectadas por magnitude (|x| > 180 ou
 metros locais 0–5000 passava por WGS84) pedem um CRS de `CRS_OPTIONS`; o
 membro `crs` de um GeoJSON, quando declara um EPSG da lista, é aplicado
 sem perguntar, e quando declara outro fica como pista no pedido de CRS.
-`+towgs84` de 3 ou 7 parâmetros, sem grelhas de transformação.
+`+towgs84` de 3 ou 7 parâmetros, sem grelhas de transformação. As
+definições são as do registo EPSG e têm pontos de controlo em teste
+(`tests/unit/crs-controlo.test.mjs`: Militar = Hayford-Gauss 73 +
+(200 000, 300 000) a menos de 1 m em quatro cidades; as origens das grelhas
+em Melriça; os meridianos centrais) — até Outubro de 2026 o EPSG:20790 tinha
+`+lon_0=1,065 417` em vez de `+lon_0=1` e uma área ou um MDT nesse sistema
+entravam 5,4–5,8 km a leste sem erro (M3-T1 da revisão do código).
 
 `src/utils/importWpml.js`: reimportação de um KMZ (desta aplicação ou do
 Pilot 2): rota pela ordem de `wpml:index`, altura por `executeHeight` →
 `height` → `ellipsoidHeight` (valor único, ou mediana), velocidade por
 `autoFlightSpeed` ou mediana por waypoint, área reconstruída pelo
 invólucro convexo (ou rectângulo com 20 m de margem quando degenerado).
+
+### 13.1 Ficheiro de projecto e sessão
+
+`src/mission/project.js` (lógica pura) e `src/hooks/useProject.js`
+(gravação automática em `localStorage` com 500 ms de espera, ficheiro
+`.json`, hidratação única no arranque). O que se guarda são os campos de
+`PROJECT_KEYS` — os mesmos que o App junta em `projectState`, que
+`serializeProject` escreve, que `normalizeProject` lê e que o esquema
+publicado (`public/schema/project-v2.schema.json`) conhece; o teste de ida
+e volta (`tests/unit/projecto-ida-volta.test.mjs`) percorre-os todos num
+estado fora da omissão, para um campo esquecido num dos sítios não
+desaparecer em silêncio (M3-T4). Entre eles, `cells`: as células de uma
+área importada em partes («Usar todas as partes como células»), que não
+eram gravadas e deixavam a parte pequena fora do plano ao reabrir (M3-C3);
+as células de uma área da âncora não se gravam, regeneram-se dela.
+
+Ler um projecto: a geometria é validada à entrada — anel, buracos e
+células com vértices `[lon, lat]` de números finitos e pelo menos 3, pontos
+de inspecção com coordenadas e ids inteiros, âncora com centro ponto ou
+nulo e dimensões positivas, parâmetros só com as chaves e os tipos da
+omissão; um ficheiro com coordenadas que não são números é recusado
+(`null`), não aberto a meio, porque deixava a página em branco — e, vindo
+do armazenamento, em todos os arranques (M3-C5). Um projecto gravado que
+não se consiga ler (JSON inválido, versão desconhecida, coordenadas
+inválidas) fica numa cópia datada
+(`dji-mission-planner:project:v1:recusado:<data>`) antes de a gravação
+automática escrever o estado vazio por cima, e a aplicação di-lo
+(M3-C7).
+
+Abrir um projecto substitui a **sessão inteira**: o anel, os buracos, as
+células, as partes importadas, os avisos e o histórico de desfazer partem
+do ficheiro ou do nada, e os parâmetros, o sensor próprio, o seguimento de
+terreno e os GCPs partem das omissões e recebem o que o ficheiro traz —
+antes só o anel era posto `if (n.ring)` e o resto fundia-se no estado
+corrente: com a grelha da âncora aberta, o KMZ saía com a geometria da
+sessão anterior e o nome do projecto novo, e um projecto v1 herdava o
+prolongamento, a fiada e a margem que nunca teve (M3-C1). A âncora só
+manda numa área com `areaOrigin 'anchor'`; qualquer edição à mão de um
+vértice (arrastar, inserir, apagar) solta-a (`center: null`, origem
+`draw`), porque com o centro posto o efeito regenerava o rectângulo ao
+recarregar, ao mover a área ou ao abrir o projecto, e o vértice acertado
+pelo operador perdia-se em silêncio (M3-C2). O «click» que o browser
+dispara a seguir ao arrasto de um marcador cai no mapa (o marcador foi
+redesenhado entretanto) e é ignorado durante 400 ms, para num modo de
+clique (âncora, base, pontos) não contar como um clique do operador.
+
+Robustez do arranque e das janelas (M3-C4, M3-C6): a língua gravada lê-se
+com guarda (um browser que recusa o armazenamento deixava a página em
+branco); uma fronteira de erro no topo (`ErrorBoundary`, `scope="app"`:
+«Recarregar», ou guardar uma cópia do projecto gravado e recarregar sem
+ele) e uma à volta de cada janela carregada sob demanda — relatório, vista
+3D, perfil — que mostra a mensagem dentro da janela e cujo «Fechar» repõe
+o planeador; sem rede, o bloco do relatório que não chegava apagava a
+aplicação inteira. Os três blocos pedem-se depois do arranque
+(`requestIdleCallback`), para estarem na cache do browser antes de se ir
+para o campo; um `WebGLRenderer` que não nasce fica como mensagem na vista
+3D. A checklist de campo guarda-se **por missão**
+(`dji-mission-planner:checklist:v1:<nome>`); a checklist antiga, sem
+chave de missão, é anunciada como de outra missão, com «Começar uma nova»
+ou «Continuar com a de …» (M3-U5).
 
 ## 14. Preflight
 

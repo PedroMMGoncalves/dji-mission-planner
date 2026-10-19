@@ -26,16 +26,19 @@ export function useLang() {
   return useContext(LangContext)
 }
 
+/** Tradução pura: a mesma de `useT`, para quem não pode usar hooks (fronteiras de erro). */
+export function translate(lang, key, vars) {
+  const entry = DICT[key]
+  let s = entry ? (entry[lang] ?? entry.pt) : key
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v))
+  }
+  return s
+}
+
 export function useT() {
   const lang = useContext(LangContext)
-  return (key, vars) => {
-    const entry = DICT[key]
-    let s = entry ? (entry[lang] ?? entry.pt) : key
-    if (vars) {
-      for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, String(v))
-    }
-    return s
-  }
+  return (key, vars) => translate(lang, key, vars)
 }
 
 const BASE_DICT = {
@@ -172,6 +175,29 @@ const BASE_DICT = {
     en: 'Printable mission plan report (map, parameters, blocks, GCPs)',
   },
   'app.loadingReport': { pt: 'A preparar o relatório…', en: 'Preparing the report…' },
+  /* ---- Fronteiras de erro (M3-C4) ---- */
+  'app.errTitle': { pt: 'Algo correu mal', en: 'Something went wrong' },
+  'app.errWindow': { pt: 'Esta janela não abriu: {msg}', en: 'This window could not open: {msg}' },
+  'app.errApp': { pt: 'A aplicação parou: {msg}', en: 'The application stopped: {msg}' },
+  'app.errOffline': {
+    pt: 'Sem rede, uma janela que ainda não tinha sido aberta nesta sessão pode não carregar; o planeador e o projecto continuam como estavam.',
+    en: 'Without a network, a window not yet opened in this session may fail to load; the planner and the project are unchanged.',
+  },
+  'app.errClose': { pt: 'Fechar', en: 'Close' },
+  'app.errReload': { pt: 'Recarregar a página', en: 'Reload the page' },
+  'app.errClearProject': {
+    pt: 'Guardar uma cópia do projecto gravado e recarregar sem ele',
+    en: 'Keep a copy of the stored project and reload without it',
+  },
+  /* ---- Ficheiro de projecto ---- */
+  'project.err.invalid': {
+    pt: 'Este ficheiro não é um projecto do planeador (um .json guardado com «Guardar projecto»), ou tem coordenadas inválidas.',
+    en: 'This file is not a planner project (a .json saved with “Save project”), or it has invalid coordinates.',
+  },
+  'project.err.rejected': {
+    pt: 'O projecto gravado neste browser não foi lido (de outra versão, ou danificado). Ficou guardado numa cópia ({key}) e não foi substituído.',
+    en: 'The project stored in this browser could not be read (another version, or damaged). It was kept as a copy ({key}) and not overwritten.',
+  },
 
   /* ---- Painel de métricas ---- */
   'stats.gsd': { pt: 'GSD', en: 'GSD' },
@@ -247,6 +273,10 @@ const BASE_DICT = {
   'map3d.exaggeration': { pt: 'Exagero', en: 'Exaggeration' },
   'map3d.reset': { pt: '↺ Repor vista', en: '↺ Reset view' },
   'map3d.close': { pt: '✕ Fechar', en: '✕ Close' },
+  'map3d.noWebgl': {
+    pt: 'A vista 3D não abre neste browser (sem WebGL): {msg}. O planeador continua; feche esta janela.',
+    en: 'The 3D view cannot open in this browser (no WebGL): {msg}. The planner carries on; close this window.',
+  },
 
   /* ---- Ajuda ---- */
   'help.instructions': { pt: 'Instruções', en: 'Instructions' },

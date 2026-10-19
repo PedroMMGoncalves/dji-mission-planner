@@ -14,6 +14,11 @@ import {
 } from '../mission/project.js'
 import { downloadBlob } from '../utils/exporters.js'
 
+/** Chave da cópia de um projecto gravado que não se conseguiu ler (M3-C7). */
+export function rejectedProjectKey(now = new Date()) {
+  return `${PROJECT_STORAGE_KEY}:recusado:${now.toISOString().slice(0, 19).replace(/[:T]/g, '-')}`
+}
+
 /**
  * @param {object} args
  * @param {object} args.state tudo o que o projecto guarda (memoizado pelo App)
@@ -21,8 +26,9 @@ import { downloadBlob } from '../utils/exporters.js'
  * @param {(n: object) => void} args.applyNormalized distribui um projecto normalizado pelo estado
  * @param {() => void} args.onLoaded chamado quando um projecto com área foi carregado (enquadrar o mapa)
  * @param {(msg: string|null) => void} args.setImportError
+ * @param {(key: string, vars?: object) => string} args.t
  */
-export function useProject({ state, missionName, applyNormalized, onLoaded, setImportError }) {
+export function useProject({ state, missionName, applyNormalized, onLoaded, setImportError, t }) {
   const hydratedRef = useRef(false)
 
   /** Lê e aplica um projecto (v1 ou v2); devolve false se não for um projecto. */
@@ -41,14 +47,33 @@ export function useProject({ state, missionName, applyNormalized, onLoaded, setI
   // inicializadores preguiçosos de useState não é um acerto local. Custa um
   // render extra, uma só vez.
   useEffect(() => {
+    let raw = null
     try {
-      const raw = localStorage.getItem(PROJECT_STORAGE_KEY)
-      if (raw) {
-        const p = JSON.parse(raw)
-        if (applyProject(p) && p.ring) onLoaded()
-      }
+      raw = localStorage.getItem(PROJECT_STORAGE_KEY)
     } catch {
-      /* projeto corrompido: ignora */
+      /* armazenamento recusado: começa-se vazio */
+    }
+    if (raw) {
+      let ok = false
+      try {
+        const p = JSON.parse(raw)
+        ok = applyProject(p)
+        if (ok && p.ring) onLoaded()
+      } catch {
+        ok = false
+      }
+      if (!ok) {
+        // O projecto gravado não se leu (JSON inválido, versão desconhecida,
+        // coordenadas inválidas): fica numa cópia datada antes de a gravação
+        // automática escrever o estado vazio por cima (M3-C7), e diz-se
+        const key = rejectedProjectKey()
+        try {
+          localStorage.setItem(key, raw)
+        } catch {
+          /* sem espaço: a cópia não fica, o aviso sim */
+        }
+        setImportError(t('project.err.rejected', { key }))
+      }
     }
     hydratedRef.current = true
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -80,15 +105,15 @@ export function useProject({ state, missionName, applyNormalized, onLoaded, setI
       try {
         const p = JSON.parse(await file.text())
         if (!applyProject(p)) {
-          setImportError('Ficheiro de projeto inválido')
+          setImportError(t('project.err.invalid'))
           return
         }
         if (p.ring) onLoaded()
       } catch {
-        setImportError('Ficheiro de projeto inválido')
+        setImportError(t('project.err.invalid'))
       }
     },
-    [applyProject, setImportError, onLoaded],
+    [applyProject, setImportError, onLoaded, t],
   )
 
   return { applyProject, exportProject, importProject }

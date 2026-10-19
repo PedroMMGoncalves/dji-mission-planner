@@ -37,8 +37,44 @@ import { normalizeCircularConfig } from '../utils/circular.js'
 import { legacyBases, normalizeBases, normalizeBlockBase } from './bases.js'
 import { normalizeObstacleM } from './viewshedPlan.js'
 import { normalizeSafety } from './safety.js'
+import { DEFAULT_ANCHOR, DEFAULT_PARAMS } from './defaults.js'
 
 export const PROJECT_VERSION = 2
+/**
+ * Os campos do estado que o projecto guarda (serializeProject) e devolve
+ * (normalizeProject), pela ordem do ficheiro. O App monta `projectState` com
+ * estes nomes e o teste de ida e volta percorre-os todos: um campo novo
+ * esquecido num dos sítios (estado, gravação, leitura, aplicação, esquema)
+ * deixava de ir e vir sem nenhum teste o dizer (M3-T4).
+ */
+export const PROJECT_KEYS = [
+  'missionName',
+  'drone',
+  'custom',
+  'payloadTuning',
+  'battery',
+  'inspectPoints',
+  'missionMode',
+  'faceConfig',
+  'corridorConfig',
+  'orbitConfig',
+  'circularConfig',
+  'params',
+  'split',
+  'anchor',
+  'ring',
+  'holes',
+  'cells',
+  'areaOrigin',
+  'bases',
+  'blockBase',
+  'disabledTiles',
+  'terrainFollow',
+  'gcpConfig',
+  'obstacleHeightM',
+  'safety',
+  'demFile',
+]
 /** Esquema JSON (draft 2020-12) do ficheiro v2, servido com a aplicação: public/schema/. */
 export const PROJECT_SCHEMA_URL =
   'https://pedrommgoncalves.github.io/dji-mission-planner/schema/project-v2.schema.json'
@@ -66,6 +102,7 @@ export function serializeProject(state) {
     anchor,
     ring,
     holes,
+    cells,
     areaOrigin,
     bases,
     blockBase,
@@ -99,6 +136,10 @@ export function serializeProject(state) {
     anchor,
     ring,
     holes,
+    // as células de uma área importada em partes («Usar todas as partes como
+    // células»): sem elas o projecto reabria só com a maior parte (M3-C3).
+    // Com a área vinda da âncora as células regeneram-se dela e não se gravam
+    cells: areaOrigin !== 'anchor' && Array.isArray(cells) && cells.length ? cells : undefined,
     areaOrigin,
     bases: (bases ?? []).map((b) => ({
       id: b.id,
@@ -168,12 +209,22 @@ export function projectFileName(missionName) {
  */
 export function normalizeProject(p) {
   if (!p || (p.version !== 1 && p.version !== 2)) return null
+  // Geometria validada à entrada (M3-C5): um anel, um buraco, uma célula ou
+  // um centro com coordenadas que não são números deixavam a página em
+  // branco — e, vindos do localStorage, em todos os arranques. Um ficheiro
+  // assim é recusado (null), não aberto a meio
+  const ring = p.ring == null ? null : Array.isArray(p.ring) ? p.ring : undefined
+  if (ring === undefined || (ring && !validRing(ring))) return null
+  const holes = Array.isArray(p.holes) ? p.holes : []
+  if (!holes.every((h) => validRing(h))) return null
+  const cells = Array.isArray(p.cells) ? p.cells : null
+  if (cells && !cells.every((c) => validRing(c))) return null
   const out = {}
-  if (typeof p.missionName === 'string') out.missionName = p.missionName
+  if (typeof p.missionName === 'string') out.missionName = p.missionName.trim().slice(0, 200)
   if (p.drone || p.droneId) out.drone = migrateDroneSelection(p.drone ?? p.droneId)
-  if (p.custom) out.custom = p.custom
-  if (p.payloadTuning && typeof p.payloadTuning === 'object') out.payloadTuning = p.payloadTuning
-  if (p.params) out.params = p.params
+  if (isObject(p.custom)) out.custom = p.custom
+  if (isObject(p.payloadTuning)) out.payloadTuning = p.payloadTuning
+  if (isObject(p.params)) out.params = normalizeParams(p.params)
   const { batteryMin: _v1BatteryMin, ...restSplit } = isObject(p.split) ? p.split : {}
   out.battery = readMissionBattery(p, out.drone ?? DEFAULT_SELECTION)
   // a reserva já está no tempo útil: os consumidores (blocos, lado do
@@ -191,13 +242,17 @@ export function normalizeProject(p) {
   if (out.circularConfig && p.circularConfig.enabled === undefined && p.missionMode === 'circular')
     out.circularConfig.enabled = true
   if (Array.isArray(p.inspectPoints)) {
-    out.inspectPoints = p.inspectPoints.filter((q) => q && Array.isArray(q.point))
-    out.nextInspectId = out.inspectPoints.reduce((mx, q) => Math.max(mx, (q.id ?? 0) + 1), 1)
+    // só pontos com coordenadas; um id que não seja inteiro é refeito
+    const pts = p.inspectPoints.filter((q) => isObject(q) && isPoint(q.point))
+    let next = pts.reduce((mx, q) => (Number.isInteger(q.id) ? Math.max(mx, q.id + 1) : mx), 1)
+    out.inspectPoints = pts.map((q) => (Number.isInteger(q.id) ? q : { ...q, id: next++ }))
+    out.nextInspectId = next
   }
-  if (p.anchor) out.anchor = p.anchor
-  if (Array.isArray(p.ring)) out.ring = p.ring
-  out.holes = Array.isArray(p.holes) ? p.holes.filter((h) => Array.isArray(h) && h.length >= 3) : []
-  out.areaOrigin = p.areaOrigin ?? null
+  if (isObject(p.anchor)) out.anchor = normalizeAnchor(p.anchor)
+  if (ring) out.ring = ring
+  out.holes = holes
+  if (cells && cells.length) out.cells = cells
+  out.areaOrigin = p.areaOrigin === 'draw' || p.areaOrigin === 'anchor' ? p.areaOrigin : null
   out.bases = Array.isArray(p.bases) ? normalizeBases(p.bases) : legacyBases(p.basePoint)
   out.blockBase = normalizeBlockBase(p.blockBase, out.bases)
   const disabled = new Set(
@@ -218,8 +273,8 @@ export function normalizeProject(p) {
     out.disabledTiles = new Set()
   } else out.disabledTiles = disabled
   out.split.mosaic = MOSAIC_VERSION
-  if (p.terrainFollow) out.terrainFollow = p.terrainFollow
-  if (p.gcpConfig) out.gcpConfig = p.gcpConfig
+  if (isObject(p.terrainFollow)) out.terrainFollow = p.terrainFollow
+  if (isObject(p.gcpConfig)) out.gcpConfig = p.gcpConfig
   out.obstacleHeightM = normalizeObstacleM(p.obstacleHeightM)
   out.demFile = normalizeDemFile(p.demFile)
   out.safety = normalizeSafety(p.safety)
@@ -228,6 +283,58 @@ export function normalizeProject(p) {
 
 function isObject(v) {
   return v !== null && typeof v === 'object' && !Array.isArray(v)
+}
+
+/** [lon, lat] (ou [lon, lat, h]) com números finitos. */
+export function isPoint(v) {
+  return (
+    Array.isArray(v) &&
+    (v.length === 2 || v.length === 3) &&
+    v.every((c) => typeof c === 'number' && Number.isFinite(c))
+  )
+}
+
+/** Anel com pelo menos 3 vértices, todos pontos válidos. */
+export function validRing(r) {
+  return Array.isArray(r) && r.length >= 3 && r.every(isPoint)
+}
+
+/**
+ * Âncora lida de um ficheiro: o centro é um ponto ou null, as dimensões são
+ * números positivos, a forma é conhecida, colunas e linhas são inteiros;
+ * o que não cumprir cai para a omissão (não vale a pena recusar o projecto
+ * por uma âncora mal escrita — o anel gravado é o que conta).
+ */
+export function normalizeAnchor(a) {
+  const out = { ...DEFAULT_ANCHOR }
+  if (!isObject(a)) return out
+  out.center = isPoint(a.center) ? a.center : null
+  for (const k of ['length', 'width']) if (positive(a[k])) out[k] = a[k]
+  if (typeof a.orientation === 'number' && Number.isFinite(a.orientation))
+    out.orientation = ((a.orientation % 360) + 360) % 360
+  if (a.shape === 'rect' || a.shape === 'square') out.shape = a.shape
+  for (const k of ['cols', 'rows']) if (Number.isInteger(a[k]) && a[k] >= 1) out[k] = a[k]
+  return out
+}
+
+/**
+ * Parâmetros de voo lidos de um ficheiro: só as chaves que existem na
+ * omissão, cada uma com o tipo da omissão (números finitos, booleanos,
+ * texto); o resto fica de fora e o App preenche com DEFAULT_PARAMS.
+ */
+export function normalizeParams(params) {
+  const out = {}
+  if (!isObject(params)) return out
+  for (const [k, def] of Object.entries(DEFAULT_PARAMS)) {
+    const v = params[k]
+    if (v === undefined) continue
+    if (typeof def === 'number') {
+      if (typeof v === 'number' && Number.isFinite(v)) out[k] = v
+    } else if (typeof def === 'boolean') {
+      if (typeof v === 'boolean') out[k] = v
+    } else if (typeof v === typeof def) out[k] = v
+  }
+  return out
 }
 
 /** Número finito positivo, ou null. */

@@ -73,6 +73,12 @@ export default function MapView({
   // As callbacks/modo vivem num ref para os handlers Leaflet (registados uma
   // única vez) lerem sempre a versão atual sem re-registos.
   const stateRef = useRef({})
+  // instante do fim do último arrasto de um marcador (vértice, ponto
+  // intermédio, base): o «click» que o browser dispara a seguir ao mouseup
+  // cai no mapa, porque o marcador foi redesenhado entretanto, e num modo de
+  // clique (âncora, base, pontos) era tratado como um clique do operador — a
+  // âncora voltava a centrar o rectângulo no sítio do vértice arrastado
+  const dragEndRef = useRef(0)
   // Escrito num efeito e não durante o render: mutar um ref no corpo do
   // componente é inseguro com renderização concorrente (React pode repetir
   // ou descartar o render). Os handlers imperativos abaixo só disparam por
@@ -222,6 +228,7 @@ export default function MapView({
 
     map.on('click', (e) => {
       const s = stateRef.current
+      if (performance.now() - dragEndRef.current < 400) return
       if (MAP_CLICK_MODES.has(s.mode)) s.onMapClick([e.latlng.lng, e.latlng.lat])
     })
     map.on('dblclick', () => {
@@ -474,6 +481,7 @@ export default function MapView({
       ring.forEach((v, i) => {
         const m = L.marker(toLatLng(v), { icon, draggable: true }).addTo(g)
         m.on('dragend', () => {
+          dragEndRef.current = performance.now()
           const p = m.getLatLng()
           stateRef.current.onVertexDrag(i, [p.lng, p.lat])
         })
@@ -491,6 +499,7 @@ export default function MapView({
         const mid = [(v[0] + next[0]) / 2, (v[1] + next[1]) / 2]
         const mm = L.marker(toLatLng(mid), { icon: midIcon, draggable: true }).addTo(g)
         mm.on('dragend', () => {
+          dragEndRef.current = performance.now()
           const p = mm.getLatLng()
           stateRef.current.onVertexInsert(i + 1, [p.lng, p.lat])
         })

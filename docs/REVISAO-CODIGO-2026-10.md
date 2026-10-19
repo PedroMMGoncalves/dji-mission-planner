@@ -7,9 +7,11 @@ desta vaga: **o código de aplicação é sólido (projecto, estado, erros), a
 suite de testes apanha o que importa antes do campo, e a interface diz ao
 operador o que ele precisa de saber para voar?**
 
-**Estado (2026-10-19):** relatório escrito; pacotes R-A a R-D propostos
-(secção 5), por aprovar. Os achados das duas primeiras vagas não se repetem
-aqui.
+**Estado (2026-10-19):** pacotes R-A a R-D aprovados, pela ordem R-A, R-C,
+R-B, R-D. R-A (projecto e dados: C1, C2, C3, C4, C5, C6, C7, T1, T4, U5)
+aplicado, com `tests/unit/projecto-ida-volta.test.mjs`,
+`tests/unit/crs-controlo.test.mjs` e sete cenários E2E novos; os outros a
+seguir. Os achados das duas primeiras vagas não se repetem aqui.
 
 ## 1. Método
 

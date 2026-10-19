@@ -4,6 +4,9 @@
  * partirem da mesma forma.
  */
 
+/** Nome da missão com que um projecto novo nasce. */
+export const DEFAULT_MISSION_NAME = 'missao-drone'
+
 /** Parâmetros de voo da missão de área. */
 export const DEFAULT_PARAMS = {
   altitude: 100,

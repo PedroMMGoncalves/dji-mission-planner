@@ -293,6 +293,58 @@ que bloqueavam:
   bacias de visão. Por fechar com dados de campo: a focal real do M3E
   (EXIF de uma foto do próximo voo) e o tempo útil por payload no M300.
 
+### Corrigido (revisão do código, pacote R-A: projecto e dados)
+
+Terceira vaga da revisão completa — código, testes e usabilidade
+(`docs/REVISAO-CODIGO-2026-10.md`, 54 achados). O primeiro pacote fecha os
+dez que bloqueiam no ciclo de vida do projecto e nos dados:
+
+- **Abrir um projecto substitui a sessão inteira** (M3-C1): com a grelha da
+  âncora aberta, abrir um projecto desenhado exportava um ZIP com todos os
+  waypoints na grelha da sessão anterior e o nome do projecto novo; o
+  Ctrl+Z repunha o anel da sessão anterior; um projecto antigo herdava o
+  prolongamento, a fiada, a margem e o seguir terreno da sessão. Agora o
+  anel, os buracos, as células, as partes importadas, os avisos e o
+  histórico partem do ficheiro ou do nada, e os parâmetros das omissões.
+- **Um vértice editado num rectângulo da âncora sobrevive** (M3-C2): a
+  edição à mão solta a âncora; antes o rectângulo era regenerado ao
+  recarregar ou ao mover a área e o vértice acertado perdia-se — e era o
+  rectângulo puro que voava. O «click» que o browser dispara a seguir ao
+  arrasto de um vértice deixa de contar como clique no mapa (a âncora
+  voltava a centrar o rectângulo no sítio do vértice).
+- **«Usar todas as partes como células» fica no projecto** (M3-C3): o campo
+  `cells` no ficheiro e no esquema; ao recarregar continuam os voos de todas
+  as partes (antes ficava só a maior, sem aviso).
+- **Fronteiras de erro** (M3-C4): sem rede, abrir o relatório com o bloco
+  ainda por carregar apagava a aplicação inteira (idem a vista 3D sem
+  WebGL); agora a janela diz que não abriu e «Fechar» repõe o planeador; no
+  topo, «Recarregar» ou guardar uma cópia do projecto e recarregar sem ele.
+  Os blocos do relatório, da vista 3D e do perfil são pedidos depois do
+  arranque, para estarem na cache antes de se ir para o campo.
+- **Projecto com coordenadas inválidas** (M3-C5): deixava a página em branco
+  em todos os arranques; é recusado com uma mensagem, e a geometria, os
+  pontos de inspecção, a âncora e os parâmetros são validados à entrada.
+- **Armazenamento recusado** (M3-C6): a leitura da língua deixava a página
+  em branco; abre em português.
+- **Projecto gravado que não se lê** (M3-C7): era substituído em silêncio
+  pelo projecto vazio 500 ms depois; fica numa cópia datada e a aplicação
+  di-lo.
+- **EPSG:20790 (Hayford-Gauss Militar)** (M3-T1): o meridiano central estava
+  0,065° a leste do do registo EPSG — uma área ou um MDT nesse sistema
+  entravam 5,4–5,8 km a leste, sem erro. Pontos de controlo em teste para
+  todas as definições.
+- **Ida e volta do projecto** (M3-T4): `PROJECT_KEYS` e um teste que percorre
+  todos os campos fora da omissão; retirar `holes`, `terrainFollow`,
+  `anchor` ou `gcpConfig` da gravação ou da leitura passava em tudo.
+- **Checklist de campo por missão** (M3-U5): era uma para todos os projectos
+  e abria com a missão, a plataforma e os itens críticos da missão
+  anterior já marcados; cada missão tem a sua, e a antiga é anunciada.
+- Testes: `tests/unit/projecto-ida-volta.test.mjs`,
+  `tests/unit/crs-controlo.test.mjs`; E2E «projecto-por-cima-da-sessao»,
+  «ancora-editada-sobrevive», «partes-como-celulas-sobrevivem»,
+  «armazenamento-recusado-abre», «relatorio-sem-bloco-nao-apaga-a-app»,
+  «projecto-gravado-malformado», «checklist-por-projecto».
+
 ### Corrigido (faixa da borda cortada a meio)
 
 - **Faixa na aresta da área com metade do comprimento.** Com as faixas

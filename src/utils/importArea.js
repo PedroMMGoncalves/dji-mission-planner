@@ -42,7 +42,9 @@ export const CRS_OPTIONS = [
   {
     code: 'EPSG:20790',
     label: 'Lisboa / Hayford-Gauss Militar (EPSG:20790)',
-    def: '+proj=tmerc +lat_0=39.6666666666667 +lon_0=1.06541666666667 +k=1 +x_0=200000 +y_0=300000 +ellps=intl +pm=lisbon +towgs84=-304.046,-60.576,103.64 +units=m +no_defs',
+    // +lon_0=1 a leste do meridiano de Lisboa (−9,131 906°), como no registo
+    // EPSG: com 1,065 417 (M3-T1) a área ou o MDT entravam 5,4–5,8 km a leste
+    def: '+proj=tmerc +lat_0=39.6666666666667 +lon_0=1 +k=1 +x_0=200000 +y_0=300000 +ellps=intl +pm=lisbon +towgs84=-304.046,-60.576,103.64 +units=m +no_defs',
   },
 ]
 
