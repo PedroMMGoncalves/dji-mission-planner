@@ -160,6 +160,7 @@ Editing gestures: click adds vertices (while drawing, Backspace or Ctrl+Z remove
 | WPML (KMZ) — Inspection | Individual points with heading/pitch/photo, `_inspect_nN` | Directed inspection |
 | GCPs KML | Numbered GCP points | RTK rover / field |
 | Bases and blocks KML | Base points with their field sheet, take-off zones and block outlines labelled with the flight | Google Earth, phone, field |
+| Blocks by base (KML, ZIP) | One folder per base with one KML per block (the polygon only, for a Pilot 2 mapping mission) and `mapa/` with the base, zone and blocks | Letting Pilot 2 plan each block itself, base by base |
 | Project JSON | Full planner state; documented by the published [JSON Schema](public/schema/project-v2.schema.json) (`$schema` in the file) | Archive, sharing |
 | Checklist JSON / print | Field record | Operations log |
 | Mission report (print) | Map, parameters, blocks, GCPs, inspection points, signatures | Field folder / annexes |

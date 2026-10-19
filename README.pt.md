@@ -158,6 +158,7 @@ Gestos de edição: clique acrescenta vértices (durante o desenho, Backspace ou
 | WPML (KMZ) — Inspecção | Pontos avulsos com rumo/pitch/foto, `_inspect_nN` | Inspecção dirigida |
 | KML de GCPs | Pontos numerados | Rover RTK / campo |
 | KML de bases e blocos | Pontos das bases com a ficha, zonas de descolagem e contornos dos blocos com o rótulo do voo | Google Earth, telemóvel, campo |
+| Blocos por base (KML, ZIP) | Uma pasta por base com um KML por bloco (só o polígono, para a missão de mapeamento do Pilot 2) e `mapa/` com a base, a zona e os blocos | Deixar o Pilot 2 planear cada bloco, base a base |
 | JSON do projecto | Estado completo do planeador; documentado pelo [esquema JSON](public/schema/project-v2.schema.json) publicado (`$schema` no ficheiro) | Arquivo, partilha |
 | Checklist JSON / impressão | Registo de campo | Diário de operações |
 | Relatório de missão (impressão) | Mapa, parâmetros, blocos, GCPs, pontos de inspecção, assinaturas | Pasta de campo / anexos |

@@ -1113,6 +1113,24 @@ export async function buildBlocksZip(params, blocks, { folderOf = null } = {}) {
 }
 
 /**
+ * ZIP de ficheiros de texto já construídos (o KML por base,
+ * src/mission/blocksKml.js): `entries` { path, text } pela ordem dada; um
+ * caminho repetido é recusado (`duplicate-file-name`), como em buildBlocksZip.
+ * @param {Array<{path: string, text: string}>} entries
+ * @returns {Promise<Blob>}
+ */
+export async function buildFilesZip(entries) {
+  const zip = new JSZip()
+  const seen = new Set()
+  for (const e of entries) {
+    if (seen.has(e.path)) throw new MissionExportError('duplicate-file-name', e.path)
+    seen.add(e.path)
+    zip.file(e.path, e.text)
+  }
+  return zip.generateAsync({ type: 'blob' })
+}
+
+/**
  * Descarrega o ZIP dos blocos como `<zipName>.zip` (por omissão
  * `<missao>_blocos.zip`; os voos da área usam `_voos` e `_base-B`).
  */

@@ -1752,6 +1752,56 @@ await scenario('bases-exportar-por-base', async () => {
     ),
     titles.join(' '),
   )
+  // KML por base: uma pasta por base com um KML por voo (só o polígono, para
+  // a missão de mapeamento do Pilot 2) e mapa/ com a base
+  const [zipKml, fileKml] = await download(
+    page,
+    panel.getByTestId('export-kml-by-base'),
+    join(OUT, 'kml-por-base.zip'),
+  )
+  const kmlZip = await JSZip.loadAsync(readFileSync(fileKml))
+  const kmlEntries = Object.keys(kmlZip.files).filter((n) => n.endsWith('.kml'))
+  const polys = kmlEntries.filter((n) => !n.includes('/mapa/'))
+  const stem = prefix.replace(/_area.*$/, '')
+  check(
+    'kml por base: ZIP «…_kml-por-base.zip», com o prefixo do ZIP dos voos',
+    zipKml === `${prefix}_kml-por-base.zip`,
+    zipKml,
+  )
+  check(
+    'kml por base: um KML por voo na pasta da sua base, pela ordem de voo, e mapa/ por base',
+    polys.map((n) => flightOfFile(n.replace(/\.kml$/, '.kmz'))).join(',') === order.join(',') &&
+      polys.every((n) => {
+        const m = /^base-([A-Z]+)\/[^/]+_poligono_([A-Z]+)-\d+\.kml$/.exec(n)
+        return m && m[1] === m[2]
+      }) &&
+      withFlights.every((r) =>
+        kmlEntries.includes(`base-${r.label}/mapa/${stem}_mapa_base-${r.label}.kml`),
+      ),
+    kmlEntries.join(' '),
+  )
+  const polyTexts = await Promise.all(polys.map((n) => kmlZip.file(n).async('string')))
+  check(
+    'kml por base: cada KML de bloco tem um só Placemark com um só Polygon fechado, sem buracos, e o nome do ficheiro',
+    polyTexts.every((txt, i) => {
+      const name = polys[i]
+        .split('/')
+        .pop()
+        .replace(/\.kml$/, '')
+      const coords = (/<coordinates>([^<]*)<\/coordinates>/.exec(txt)?.[1] ?? '')
+        .trim()
+        .split(/\s+/)
+      return (
+        (txt.match(/<Placemark>/g) || []).length === 1 &&
+        (txt.match(/<Polygon>/g) || []).length === 1 &&
+        !txt.includes('innerBoundaryIs') &&
+        txt.includes(`<name>${name}</name>`) &&
+        coords.length >= 4 &&
+        coords[0] === coords[coords.length - 1]
+      )
+    }),
+    polys.join(' '),
+  )
   const routesB = (await readRoutes(fileByBase)).filter((x) =>
     x.name.startsWith(`base-${B.label}/`),
   )
@@ -3083,6 +3133,7 @@ const INVENTARIO_BATERIA = [
   ['resumo', 'escolher um voo', inv.id('export-flight-select')],
   ['resumo', 'exportar um voo', inv.id('export-one-flight')],
   ['resumo', 'KML das bases e blocos', inv.id('export-bases-kml')],
+  ['resumo', 'KML dos blocos por base', inv.id('export-kml-by-base')],
 ]
 const INVENTARIO_EXTRAS = [
   ['extras', 'número de GCPs', inv.field(/Número de GCPs/)],

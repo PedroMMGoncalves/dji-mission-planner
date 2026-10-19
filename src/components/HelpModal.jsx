@@ -257,6 +257,11 @@ function InstrucoesPt() {
           botão avisa); os GCPs têm o seu KML, e as bases, zonas e blocos o «Bases e blocos (KML)».
         </Li>
         <Li>
+          <strong>Blocos por base (KML, ZIP)</strong> — uma pasta por base com um KML por bloco, só
+          o polígono, para a missão de mapeamento do Pilot 2 (o comando planeia a rota: confirme
+          altura, ângulo e tempo), e mapa/ com a base, a zona e os blocos.
+        </Li>
+        <Li>
           <strong>WPML (KMZ)</strong> — missão executável com waypoints e disparo automático; com
           blocos activos gera um ZIP com um KMZ por voo, cada um com o nome do voo
           (missao_area-tf_A-1.kmz, que é o que o Pilot 2 mostra), pela ordem de voo.
@@ -526,6 +531,11 @@ function InstrucoesEn() {
           <strong>Area KML</strong> — the outer ring of the polygon only, to draw the mission in
           Pilot 2: holes, secondary parts and disabled cells are left out (the button says so); GCPs
           have their own KML, and bases, zones and blocks the “Bases and blocks (KML)”.
+        </Li>
+        <Li>
+          <strong>Blocks by base (KML, ZIP)</strong> — one folder per base with one KML per block,
+          the polygon only, for a Pilot 2 mapping mission (the controller plans the route: check
+          height, angle and time), plus mapa/ with the base, the zone and the blocks.
         </Li>
         <Li>
           <strong>WPML (KMZ)</strong> — executable mission with waypoints and automatic camera

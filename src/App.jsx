@@ -51,6 +51,7 @@ import {
 import { blockRing, blocksViewRoute, summarizeBases } from './mission/baseLayout.js'
 import { baseFieldSheets } from './mission/fieldSheet.js'
 import { buildBasesKML } from './mission/basesKml.js'
+import { blocksKmlByBase } from './mission/blocksKml.js'
 import {
   aggregatePlans,
   normalizeTriggerMode,
@@ -64,7 +65,7 @@ import {
   photoInterval,
   resolveSensor,
 } from './utils/geo.js'
-import { MissionExportError, downloadBlob } from './utils/exporters.js'
+import { MissionExportError, downloadBlob, buildFilesZip } from './utils/exporters.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission, useCorridorRoute } from './hooks/useCorridorMission.js'
@@ -1084,6 +1085,42 @@ function AppInner({ lang, setLang }) {
     ring,
     holes,
     t,
+  ])
+
+  // KML por base (secção 7 da revisão da exportação): um ZIP com uma pasta
+  // por base, um KML por bloco só com o polígono (a missão de mapeamento do
+  // Pilot 2, que calcula a rota dele) e mapa/ com a base; sem preflight,
+  // como os outros KML
+  const handleExportKmlByBase = useCallback(() => {
+    if (!fieldSheets.length || !blocks?.length) return
+    runExport(async () => {
+      const { entries } = blocksKmlByBase(
+        {
+          missionName: missionName.trim() || areaSafeName,
+          blocks,
+          layout: baseLayout,
+          sheets: fieldSheets,
+          files: flightFiles,
+          spacingM: spacing,
+          area: ring ? { ring, holes } : null,
+        },
+        t,
+      )
+      downloadBlob(await buildFilesZip(entries), `${exportBaseName}_kml-por-base.zip`)
+    })
+  }, [
+    fieldSheets,
+    blocks,
+    runExport,
+    missionName,
+    areaSafeName,
+    baseLayout,
+    flightFiles,
+    spacing,
+    ring,
+    holes,
+    t,
+    exportBaseName,
   ])
 
   // tipos de bateria da aeronave (selector da missão) e voos contra os
@@ -2454,6 +2491,7 @@ function AppInner({ lang, setLang }) {
                     blocked: exportBlocked,
                     onExport: (sel) => gated(() => handleExportFlights(sel))(),
                     onExportKml: fieldSheets.length ? handleExportBasesKml : null,
+                    onExportKmlByBase: fieldSheets.length ? handleExportKmlByBase : null,
                   },
                   // bacias de visão: por voo no painel, relevo usado e camada do mapa
                   viewshed: perBlockBases

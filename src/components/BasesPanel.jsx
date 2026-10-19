@@ -197,6 +197,7 @@ export function FlightExports({
   blocked,
   onExport,
   onExportKml,
+  onExportKmlByBase = null,
 }) {
   const t = useT()
   const { bases } = exportChoices(files, rows)
@@ -282,6 +283,17 @@ export function FlightExports({
             className={`${btn} bg-emerald-700 text-white hover:bg-emerald-600`}
           >
             <IconDownload /> {t('bases.export.kml')}
+          </button>
+        )}
+        {onExportKmlByBase && (
+          <button
+            type="button"
+            data-testid="export-kml-by-base"
+            onClick={onExportKmlByBase}
+            title={t('bases.export.kmlByBaseTitle', { file: `${baseName}_kml-por-base.zip` })}
+            className={`${btn} bg-emerald-800 text-white hover:bg-emerald-700`}
+          >
+            <IconDownload /> {t('bases.export.kmlByBase')}
           </button>
         )}
       </div>

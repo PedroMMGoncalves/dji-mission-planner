@@ -1122,6 +1122,25 @@ nem linhas, o invólucro convexo, como antes. Cores das bases do mapa
 (`aabbggrr`). As descrições são HTML: cada valor é escapado como HTML (a
 ligação como `<a href>`) e a descrição inteira como XML.
 
+**KML por base** (`blocksKmlByBase`, `src/mission/blocksKml.js`;
+`<missão>_area[-variantes]_kml-por-base.zip`, o prefixo do ZIP dos voos
+por base), cartão 7, «Blocos por base (KML, ZIP)», com bases e mais de um
+voo: uma pasta por base (`base-A/`, …; `sem-base/` para um bloco sem base)
+e, em cada uma, um KML por bloco com o polígono e nada mais — o ficheiro
+que o Pilot 2 aceita para definir uma missão de mapeamento, que o comando
+planeia (altura, ângulo, margens e tempo são os dele; a app refere cada
+bloco à cota mínima da zona da base e o KML não leva altura) —, mais
+`mapa/` com o KML «Bases e blocos» só dessa base. Nomes por `flightFiles`
+com o tipo `poligono` (`corta-norte_poligono_A-1.kml`: a mesma ordem, os
+mesmos zeros e o mesmo desempate dos KMZ, e um nome que não se confunde
+com a rota WPML do mesmo voo na biblioteca do Pilot 2); o nome é o mesmo
+no ficheiro, no `Document` e no `Placemark`. Um bloco de faixas com mais
+de uma peça (um U) dá um KML por peça, `_A-1a.kml`, `_A-1b.kml`. Sem
+buracos (K-B1): um bloco com buracos interiores fica nos avisos da
+função; os recortados na fronteira já fazem parte do contorno. Um caminho
+repetido dentro do ZIP é recusado (`duplicate-file-name`,
+`buildFilesZip`).
+
 ## 12. Datums verticais tal como estão implementados
 
 Módulo `src/utils/verticalDatum.js`. Cada fonte de relevo declara o seu

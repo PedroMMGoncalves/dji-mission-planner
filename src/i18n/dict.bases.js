@@ -141,6 +141,11 @@ export default {
     pt: 'Para o Google Earth ou o telemóvel: bases com a ficha, zonas de descolagem e blocos com o rótulo do voo. Não é para o Pilot 2.',
     en: 'For Google Earth or a phone: bases with their sheet, take-off zones and blocks labelled with their flight. Not for Pilot 2.',
   },
+  'bases.export.kmlByBase': { pt: 'Blocos por base (KML, ZIP)', en: 'Blocks by base (KML, ZIP)' },
+  'bases.export.kmlByBaseTitle': {
+    pt: 'Um ZIP com uma pasta por base e, em cada uma, um KML por bloco — só o polígono, para a missão de mapeamento do Pilot 2, que calcula a rota dele (confirme no comando a altura, o ângulo e o tempo) — e mapa/ com a base, a zona e os blocos, para o Google Earth ou o telemóvel. Os buracos ficam de fora. {file}',
+    en: 'One ZIP with a folder per base and, in each, one KML per block — the polygon only, for the Pilot 2 mapping mission, which plans its own route (check height, angle and time on the controller) — plus mapa/ with the base, the zone and the blocks, for Google Earth or a phone. Holes are left out. {file}',
+  },
   'bases.kml.noBaseFolder': { pt: 'Blocos sem base', en: 'Blocks without a base' },
   'bases.kml.navigate': { pt: 'Abrir no Google Maps', en: 'Open in Google Maps' },
   'bases.kml.zone': {

@@ -102,6 +102,20 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - No ZIP por base, um voo sem base vai para `sem-base/` em vez da raiz
   (K-M10).
 
+### Adicionado (KML por base)
+
+- **«Blocos por base (KML, ZIP)»** no cartão «Resumo e exportar», com bases
+  e mais de um voo: `<missão>_area[-variantes]_kml-por-base.zip` com uma
+  pasta por base (`base-A/`…, `sem-base/`) e, em cada uma, um KML por bloco
+  com o polígono e nada mais — o ficheiro que o Pilot 2 aceita para definir
+  uma missão de mapeamento, que o comando planeia (altura, ângulo, margens
+  e tempo são os dele) —, mais `mapa/` com o KML «Bases e blocos» só dessa
+  base. Nomes como os dos KMZ (`corta-norte_poligono_A-1.kml`, com o tipo
+  `poligono` para não se confundir com a rota WPML do mesmo voo), um KML
+  por peça num bloco de faixas em U (`_A-1a`, `_A-1b`), sem buracos. **Por
+  confirmar no Pilot 2** (QA, secção 13): o nome mostrado e o polígono ao
+  importar um KML de bloco.
+
 ### Corrigido (revisão da exportação contra a especificação, pacote A)
 
 Revisão completa da exportação KML e KMZ contra a especificação WPML

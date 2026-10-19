@@ -243,6 +243,14 @@ tablet real):
 - ☐ **Bases e blocos (KML)** aberto no Google Earth (ou no telemóvel).
   **Esperado:** pontos «Base A» e «Base B» com a ficha ao clicar, círculos
   das zonas, contornos dos blocos com o rótulo do voo.
+- ☐ **Blocos por base (KML, ZIP)**; abrir o ZIP.
+  **Esperado:** `<missão>_area[-variantes]_kml-por-base.zip` com `base-A/`,
+  `base-B/`…, cada uma com um KML por voo (`<missão>_poligono_B-3.kml`,
+  pela ordem de voo) e `mapa/<missão>_mapa_base-B.kml`; cada KML de bloco
+  abre no Google Earth como um só polígono com o nome do ficheiro. **No
+  Pilot 2** (M3E/M4T e M300 com P1): importar um KML de bloco como área
+  de uma missão de mapeamento e ver o nome mostrado e o polígono; registar
+  em `docs/VALIDACAO.md`.
 - ☐ **Checklist de campo** e **Relatório**, e imprimir.
   **Esperado:** uma ficha por base: coordenadas (6 casas) que abrem nos
   mapas, zona (reduzida e porquê), cota de referência, voos com tempo
