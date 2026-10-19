@@ -7,6 +7,13 @@ problema de exportação só aparecia no campo (M3E, Setembro: `distance` e
 `duration` em falta; paragem em cada foto). Objectivo desta revisão: que
 nenhum elemento fora da especificação volte a chegar ao campo.
 
+**Estado (2026-10-19):** pacote A aplicado (commit «Exportacao: pacote A»);
+pacote C aplicado (T1, T2, T3, T4, T7 e a matriz T10: `npm run spec:wpml`,
+`tests/lib/wpml-conformidade.mjs`, `tests/unit/wpml-conformidade.test.mjs`);
+pacotes B e D a seguir. As excepções do validador, com as provas, estão em
+`ALLOW` no próprio validador: T5, T6, T8 e T9 ficam para quando houver
+ficheiros reais e as correcções B2/M2/M3.
+
 ## 1. Método e fontes
 
 - **Especificação oficial**, clonada do repositório público da DJI

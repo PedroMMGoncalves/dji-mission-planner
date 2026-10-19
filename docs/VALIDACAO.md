@@ -170,6 +170,14 @@ gerado pelo comando da secção 3, a matriz da secção 5 e os valores
 calibrados (tempo de viragem, autonomia por combinação, velocidade em
 faixa) com o commit que os aplicou.
 
+## 7.1 Conformidade automática com a especificação
+
+Desde Outubro de 2026, `npm run test:unit` valida cada ficheiro gerado
+contra o dicionário da especificação (`tests/spec/wpml-spec.json`; ver
+METODOS §11.2): o que a app escreve fora das tabelas da DJI está na lista
+de excepções do validador com a prova respectiva. A matriz da secção 5
+continua a ser a única prova de que o comando aceita e voa o ficheiro.
+
 ## 8. Ensaio a seco
 
 `node tools/ensaio-seco.mjs` gera, para R1 e L1, um voo sintético a partir

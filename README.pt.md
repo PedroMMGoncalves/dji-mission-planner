@@ -181,6 +181,7 @@ npm run test               # as duas suites (correm também no CI antes de cada 
 npm run test:unit          # só os testes por propriedades (Vitest + fast-check, tests/unit/)
 npm run test:coverage      # suites sob c8 com limiares de cobertura em src/utils/
 npm run test:update-golden # regenerar tests/golden/ após alteração intencional
+npm run spec:wpml          # regenerar tests/spec/wpml-spec.json a partir de um clone de dji-sdk/cloud-api-doc
 npm run test:e2e           # E2E no browser sobre a build de produção (precisa de npm run build; Chromium via Playwright)
 npm run build              # build de produção em dist/
 npm run size               # orçamento do pacote (exige build)
@@ -188,7 +189,7 @@ npm run size               # orçamento do pacote (exige build)
 
 O [.github/workflows/ci.yml](.github/workflows/ci.yml) corre lint, suite, build de produção, orçamento do pacote e `npm audit` em cada push e em cada pull request; o workflow de publicação repete-os antes de publicar, pelo que o `main` não pode publicar em vermelho. O [codeql.yml](.github/workflows/codeql.yml) corre a análise estática do GitHub no `main`, em pull request e semanalmente, e o Dependabot mantém os pacotes npm e as acções dos workflows actualizados. Todas as acções estão fixadas ao SHA e ambos os workflows declaram `contents: read` — o job de publicação é o único com permissão de escrita.
 
-Os documentos exportados são comparados com ficheiros de referência em `tests/golden/`, pelo que qualquer alteração ao WPML aparece como diferença revisível. Quando é intencional, regenerar com `npm run test:update-golden` e incluir a diferença no commit. A cada release corre-se além disso o protocolo manual de ~15 minutos em [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (interface no browser, incluindo verificação em tablet), registando a passagem na tabela do fim.
+Os documentos exportados são comparados com ficheiros de referência em `tests/golden/`, pelo que qualquer alteração ao WPML aparece como diferença revisível. Quando é intencional, regenerar com `npm run test:update-golden` e incluir a diferença no commit. A cada release corre-se além disso o protocolo manual de ~15 minutos em [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (interface no browser, incluindo verificação em tablet), registando a passagem na tabela do fim. Cada ficheiro gerado é ainda validado contra um dicionário JSON da especificação WPML (`tests/spec/wpml-spec.json`, construído a partir das tabelas da documentação oficial da DJI): elementos, enums, intervalos, obrigatórios, suporte por aeronave, ordem dos filhos, coerência template ↔ waylines e empacotamento do KMZ, sobre uma matriz de 35 casos modos × aeronaves e os ficheiros dourados; cada desvio das tabelas está listado com a sua prova em `tests/lib/wpml-conformidade.mjs`.
 
 ## Publicação
 

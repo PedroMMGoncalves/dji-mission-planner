@@ -20,6 +20,8 @@
     "format:check": "prettier --check \"src/**/*.{js,jsx}\" \"tests/**/*.mjs\" \"scripts/*.mjs\" \"tools/*.mjs\" \"*.mjs\" \"*.json\" tsconfig.json",
     "test": "npm run test:smoke && npm run test:unit",
     "test:update-golden": "UPDATE_GOLDEN=1 node smoke-test.mjs",
+    "spec:wpml": "node tools/wpml-spec.mjs",
+    "spec:wpml:check": "node tools/wpml-spec.mjs --check",
     "size": "node scripts/check-bundle-size.mjs",
     "preview": "vite preview",
     "test:e2e": "node tests/e2e/run.mjs",

@@ -1032,6 +1032,21 @@ verificação do troço) não é alcançável pela interface. A especificação 
 fixa uma distância mínima entre waypoints; os 0,5 m do preflight são o
 mínimo do SDK da DJI.
 
+**Conformidade automática (Outubro de 2026).** `tools/wpml-spec.mjs` lê as
+tabelas Markdown da documentação oficial (`dji-sdk/cloud-api-doc`,
+`docs/en/60.api-reference/00.dji-wpml/`) e grava
+`tests/spec/wpml-spec.json`: por elemento e pai, tipo, enum, intervalo,
+obrigatoriedade (com os «obrigatório se…»), aeronaves suportadas, e a ordem
+dos filhos nos exemplos. `tests/lib/wpml-conformidade.mjs` valida cada
+`template.kml` e `waylines.wpml` gerados — a matriz modos × aeronaves de
+`tests/lib/wpml-matriz.mjs` e os ficheiros dourados — contra esse
+dicionário: pares pai→filho, enums, booleanos, numéricos em decimal,
+intervalos, obrigatórios, «obrigatório se…» codificados à mão, suporte por
+aeronave (o M4, 99, valida-se como a classe M3E), ordem dos filhos,
+coerência entre os dois ficheiros e empacotamento do KMZ. Tudo o que a app
+escreve fora das tabelas está na lista `ALLOW` do validador com a prova
+(81 KMZ reais, voos): um elemento novo sem prova faz o teste falhar.
+
 ### 11.3 Voos de uma área dividida: nomes e exportação por base
 
 Módulos `src/mission/flightFiles.js`, `src/mission/areaExport.js`,

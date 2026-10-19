@@ -183,6 +183,7 @@ npm run test               # smoke suites + property-based unit tests (also run 
 npm run test:unit          # property-based tests only (Vitest + fast-check, tests/unit/)
 npm run test:coverage      # smoke suites under c8 with coverage thresholds on src/utils/
 npm run test:update-golden # regenerate tests/golden/ after an intended export change
+npm run spec:wpml          # regenerate tests/spec/wpml-spec.json from a clone of dji-sdk/cloud-api-doc
 npm run test:e2e           # browser E2E on the production build (needs npm run build; Chromium via Playwright)
 npm run build              # production build in dist/
 npm run size               # bundle budget check (needs a build first)
@@ -190,7 +191,7 @@ npm run size               # bundle budget check (needs a build first)
 
 [.github/workflows/ci.yml](.github/workflows/ci.yml) runs lint, the suite, a production build, the bundle budget and `npm audit` on every push and every pull request; the deploy workflow repeats them before publishing, so `main` cannot publish red. [codeql.yml](.github/workflows/codeql.yml) runs GitHub's static analysis on `main`, on pull requests and weekly, and Dependabot keeps npm packages and the workflow actions current. Every action is pinned to a commit SHA, and both workflows declare `contents: read` — the deploy job is the only place with write scope.
 
-Exported documents are compared against reference files in `tests/golden/`, so any change to the WPML output appears as a reviewable diff. When the change is intended, regenerate with `npm run test:update-golden` and include the diff in the commit.
+Exported documents are compared against reference files in `tests/golden/`, so any change to the WPML output appears as a reviewable diff. When the change is intended, regenerate with `npm run test:update-golden` and include the diff in the commit. Every generated file is also validated against a JSON dictionary of the WPML specification (`tests/spec/wpml-spec.json`, built from the tables of DJI's official documentation): elements, enums, ranges, required fields, per-aircraft support, child order, template ↔ waylines coherence and KMZ packaging, over a matrix of 35 mode × aircraft cases and the golden files; every deviation from the tables is listed with its proof in `tests/lib/wpml-conformidade.mjs`.
 
 On top of that, each release runs the ~15-minute manual protocol in [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (browser UI, including a tablet check), recording the run in the table at the end.
 

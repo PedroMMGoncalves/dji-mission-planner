@@ -1,0 +1,6523 @@
+{
+  "source": {
+    "repo": "https://github.com/dji-sdk/cloud-api-doc",
+    "path": "docs/en/60.api-reference/00.dji-wpml",
+    "commit": "4ec6b0c",
+    "files": [
+      "20.template-kml.md",
+      "30.waylines-wpml.md",
+      "40.common-element.md"
+    ]
+  },
+  "elements": {
+    "Document/author": {
+      "element": "author",
+      "parent": "Document",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 149,
+          "description": "Author",
+          "type": "String",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "no",
+          "note": "None, not required",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Document/createTime": {
+      "element": "createTime",
+      "parent": "Document",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 150,
+          "description": "File creation time (Unix Timestamp)",
+          "type": "Integer",
+          "unit": "ms",
+          "values": null,
+          "range": null,
+          "required": "no",
+          "note": "None, not required",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Document/updateTime": {
+      "element": "updateTime",
+      "parent": "Document",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 151,
+          "description": "File update time (Unix Timestamp)",
+          "type": "Integer",
+          "unit": "ms",
+          "values": null,
+          "range": null,
+          "required": "no",
+          "note": "None, not required",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/flyToWaylineMode": {
+      "element": "flyToWaylineMode",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 157,
+          "description": "Fly to first waypoint mode",
+          "type": "string enumerate",
+          "unit": "-",
+          "values": [
+            "safely",
+            "pointToPoint"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 129,
+          "description": "Fly to first point mode",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "safely",
+            "pointToPoint"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/finishAction": {
+      "element": "finishAction",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 158,
+          "description": "The action when finish mission",
+          "type": "string enumerate",
+          "unit": "-",
+          "values": [
+            "goHome",
+            "noAction",
+            "autoLand",
+            "gotoFirstWaypoint",
+            "Note"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 130,
+          "description": "finish action",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "goHome",
+            "noAction",
+            "autoLand",
+            "gotoFirstWaypoint",
+            "Note"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/exitOnRCLost": {
+      "element": "exitOnRCLost",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 159,
+          "description": "Whether to continue to execute the route out of control",
+          "type": "string enumerate",
+          "unit": "-",
+          "values": [
+            "goContinue",
+            "executeLostAction"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 131,
+          "description": "Whether to continue the waylines if out of control",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "goContinue",
+            "executeLostAction"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/executeRCLostAction": {
+      "element": "executeRCLostAction",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 160,
+          "description": "Type of disconnect action",
+          "type": "string enumerate",
+          "unit": "-",
+          "values": [
+            "goBack",
+            "landing",
+            "hover"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "None. When the `wpml:exitOnRCLost` is `executeLostAction`, it is required.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 132,
+          "description": "Type of runaway action",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "goBack",
+            "landing",
+            "hover"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "None. When the wpml:exitOnRCLost is executeLostAction, it is required.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/takeOffSecurityHeight": {
+      "element": "takeOffSecurityHeight",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 161,
+          "description": "Safe takeoff altitude",
+          "type": "Float",
+          "unit": "m",
+          "values": null,
+          "range": {
+            "min": 1.2,
+            "minOpen": false,
+            "max": 1500,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 133,
+          "description": "Safe take-off height",
+          "type": "float",
+          "unit": "m",
+          "values": null,
+          "range": {
+            "min": 1.2,
+            "minOpen": false,
+            "max": 1500,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/globalTransitionalSpeed": {
+      "element": "globalTransitionalSpeed",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 162,
+          "description": "Global route transition speed",
+          "type": "Float",
+          "unit": "m/s",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 134,
+          "description": "global transitional speed",
+          "type": "float",
+          "unit": "m/s",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 15,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/takeOffRefPoint": {
+      "element": "takeOffRefPoint",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 163,
+          "description": "reference take-off point",
+          "type": "Float",
+          "unit": "°,  °,  m",
+          "values": null,
+          "range": {
+            "min": -90,
+            "minOpen": false,
+            "max": 90,
+            "maxOpen": false
+          },
+          "required": "no",
+          "note": "None, Not Required",
+          "support": [
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/takeOffRefPointAGLHeight": {
+      "element": "takeOffRefPointAGLHeight",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 164,
+          "description": "The altitude of the reference take-off point",
+          "type": "Float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "no",
+          "note": "None, Not Required",
+          "support": [
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/droneInfo": {
+      "element": "droneInfo",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 165,
+          "description": "Aircraft type information",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 136,
+          "description": "drone information",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/payloadInfo": {
+      "element": "payloadInfo",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 166,
+          "description": "Payload information",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 137,
+          "description": "payload information",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/autoRerouteInfo": {
+      "element": "autoRerouteInfo",
+      "parent": "missionConfig",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 167,
+          "description": "Wayline reroute information",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 138,
+          "description": "Wayline reroute information",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Folder/templateType": {
+      "element": "templateType",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 177,
+          "description": "Predefined Template Type\nNote: Templates provide users with a solution for quickly generating routes. The user fills in the template Element and then imports th",
+          "type": "string enumerate",
+          "unit": "-",
+          "values": [
+            "waypoint",
+            "mapping2d",
+            "mapping3d",
+            "mappingStrip"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Folder/templateId": {
+      "element": "templateId",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 178,
+          "description": "Template ID\nNote: This ID is unique within a kmz file. It is recommended to start monotonically and continuously increase from 0. In the template.kml and waylin",
+          "type": "Integer",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 65535,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 145,
+          "description": "template id\nNote: The ID is unique within a kmz file. It is recommended to increment it monotonically and continuously from 0. This id will be used in the templ",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 65535,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Folder/autoFlightSpeed": {
+      "element": "autoFlightSpeed",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 179,
+          "description": "Global flight speed",
+          "type": "Float",
+          "unit": "m/s",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 147,
+          "description": "Global waylines flight speed",
+          "type": "float",
+          "unit": "m/s",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Folder/waylineCoordinateSysParam": {
+      "element": "waylineCoordinateSysParam",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 180,
+          "description": "Coordinate system parameters",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Folder/payloadParam": {
+      "element": "payloadParam",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 181,
+          "description": "Payload parameters",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "payloadParam/payloadPositionIndex": {
+      "element": "payloadPositionIndex",
+      "parent": "payloadParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 187,
+          "description": "payload position index",
+          "type": "int",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "40.common-element.md": {
+          "line": 28,
+          "description": "payload position index",
+          "type": "int",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "payloadParam/focusMode": {
+      "element": "focusMode",
+      "parent": "payloadParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 188,
+          "description": "payload focus mode",
+          "type": "enum_string",
+          "unit": "-",
+          "values": [
+            "firstPoint",
+            "custom"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        },
+        "40.common-element.md": {
+          "line": 29,
+          "description": "payload focus mode",
+          "type": "enum_string",
+          "unit": "-",
+          "values": [
+            "firstPoint",
+            "custom"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "payloadParam/meteringMode": {
+      "element": "meteringMode",
+      "parent": "payloadParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 189,
+          "description": "payload metering mode",
+          "type": "enum_string",
+          "unit": "-",
+          "values": [
+            "average",
+            "spot"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        },
+        "40.common-element.md": {
+          "line": 30,
+          "description": "payload metering mode",
+          "type": "enum_string",
+          "unit": "-",
+          "values": [
+            "average",
+            "spot"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "payloadParam/dewarpingEnable": {
+      "element": "dewarpingEnable",
+      "parent": "payloadParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 190,
+          "description": "dewarping enable",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        },
+        "40.common-element.md": {
+          "line": 31,
+          "description": "dewarping enable",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "payloadParam/returnMode": {
+      "element": "returnMode",
+      "parent": "payloadParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 191,
+          "description": "LiDAR return mode",
+          "type": "enum_string",
+          "unit": "-",
+          "values": [
+            "singleReturnStrongest",
+            "dualReturn",
+            "tripleReturn"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        },
+        "40.common-element.md": {
+          "line": 32,
+          "description": "LiDAR return mode",
+          "type": "enum_string",
+          "unit": "-",
+          "values": [
+            "singleReturnStrongest",
+            "dualReturn",
+            "tripleReturn"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "payloadParam/samplingRate": {
+      "element": "samplingRate",
+      "parent": "payloadParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 192,
+          "description": "sampling rate",
+          "type": "int",
+          "unit": "Hz",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        },
+        "40.common-element.md": {
+          "line": 33,
+          "description": "sampling rate",
+          "type": "int",
+          "unit": "Hz",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "payloadParam/scanningMode": {
+      "element": "scanningMode",
+      "parent": "payloadParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 193,
+          "description": "scanning mode",
+          "type": "enum_string",
+          "unit": "-",
+          "values": [
+            "repetitive",
+            "nonRepetitive"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        },
+        "40.common-element.md": {
+          "line": 34,
+          "description": "scanning mode",
+          "type": "enum_string",
+          "unit": "-",
+          "values": [
+            "repetitive",
+            "nonRepetitive"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "payloadParam/modelColoringEnable": {
+      "element": "modelColoringEnable",
+      "parent": "payloadParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 194,
+          "description": "model coloring enable",
+          "type": "bool",
+          "unit": null,
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        },
+        "40.common-element.md": {
+          "line": 35,
+          "description": "model coloring enable",
+          "type": "bool",
+          "unit": null,
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "payloadParam/imageFormat": {
+      "element": "imageFormat",
+      "parent": "payloadParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 195,
+          "description": "image format list",
+          "type": "enum_string",
+          "unit": null,
+          "values": [
+            "wide",
+            "zoom",
+            "ir",
+            "narrow_band",
+            "visible",
+            "Note"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "40.common-element.md": {
+          "line": 36,
+          "description": "image format list",
+          "type": "enum_string",
+          "unit": null,
+          "values": [
+            "wide",
+            "zoom",
+            "ir",
+            "narrow_band",
+            "visible",
+            "Note"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Folder/globalWaypointTurnMode#waypoint": {
+      "element": "globalWaypointTurnMode",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 202,
+          "description": "Global Waypoint Type (Global Waypoint Turn Mode)",
+          "type": "string enumerate",
+          "unit": "-",
+          "values": [
+            "coordinateTurn",
+            "toPointAndStopWithDiscontinuityCurvature",
+            "toPointAndStopWithContinuityCurvature",
+            "toPointAndPassWithContinuityCurvature"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "waypoint"
+    },
+    "Folder/globalUseStraightLine#waypoint": {
+      "element": "globalUseStraightLine",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 203,
+          "description": "Whether the global segment trajectory is as close to a straight line as possible",
+          "type": "Boolean",
+          "unit": null,
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "Required if and only if \"wpml:globalWaypointTurnMode\" is set to \"toPointAndStopWithContinuityCurvature\" or \"toPointAndPassWithContinuityCurvature\". If the Element of a waypoint is additionally defined, the local definition will override the global definition.",
+          "support": [
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "waypoint"
+    },
+    "Folder/gimbalPitchMode#waypoint": {
+      "element": "gimbalPitchMode",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 204,
+          "description": "Gimbal Pitch Control Mode",
+          "type": "string enumerate",
+          "unit": "-",
+          "values": [
+            "manual",
+            "usePointSetting"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "waypoint"
+    },
+    "Folder/globalHeight#waypoint": {
+      "element": "globalHeight",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 205,
+          "description": "Global height of flight route(related to the height of takeoff point)",
+          "type": "float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "waypoint"
+    },
+    "Folder/globalWaypointHeadingParam#waypoint": {
+      "element": "globalWaypointHeadingParam",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 206,
+          "description": "Global yaw angle mode parameters",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "waypoint"
+    },
+    "Folder/Placemark#waypoint": {
+      "element": "Placemark",
+      "parent": "Folder",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 207,
+          "description": "Waypoint information (including waypoint latitude, longitude and altitude, etc.)",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "waypoint"
+    },
+    "Placemark/caliFlightEnable#mapping2d": {
+      "element": "caliFlightEnable",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 213,
+          "description": "Whether to enable calibration flight\n Note: only applicable to M300 RTK and M350 RTK models",
+          "type": "Boolean",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/elevationOptimizeEnable#mapping2d": {
+      "element": "elevationOptimizeEnable",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 214,
+          "description": "Whether to enable elevation optimization",
+          "type": "Boolean",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/smartObliqueEnable#mapping2d": {
+      "element": "smartObliqueEnable",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 215,
+          "description": "Whether to enable Smart Posing\nNote: M300 RTK and M350 RTK models only support P1 camera",
+          "type": "Boolean",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/smartObliqueGimbalPitch#mapping2d": {
+      "element": "smartObliqueGimbalPitch",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 216,
+          "description": "Smart Pose Capturing Pitch Angle\nNote: M300 RTK and M350 RTK models only support P1 camera",
+          "type": "Integer",
+          "unit": "°",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/shootType#mapping2d": {
+      "element": "shootType",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 217,
+          "description": "Photo mode (timed or fixed distance)",
+          "type": "string enumerate",
+          "unit": "-",
+          "values": [
+            "time",
+            "distance",
+            "Note"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/direction#mapping2d": {
+      "element": "direction",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 218,
+          "description": "route direction",
+          "type": "Integer",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 360,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/margin#mapping2d": {
+      "element": "margin",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 219,
+          "description": "Expansion distance outside the survey area",
+          "type": "Integer",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/overlap#mapping2d": {
+      "element": "overlap",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 220,
+          "description": "Overlap rate parameter",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/ellipsoidHeight#mapping2d": {
+      "element": "ellipsoidHeight",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 221,
+          "description": "Global route height (ellipsoid height)\nNote: This Element is used in conjunction with \"wpml:height\", which are expressions of different elevation reference plan",
+          "type": "Float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/height#mapping2d": {
+      "element": "height",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 222,
+          "description": "Global route height (EGM96 altitude/relative take-off point height/AGL relative ground height)\nNote: This Element is used in conjunction with \"wpml:ellipsoidHei",
+          "type": "Float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/facadeWaylineEnable#mapping2d": {
+      "element": "facadeWaylineEnable",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 223,
+          "description": "Whether to enable slope\n Note: This parameter should be used with \"LinearRing\". After enabling, the height value will be read in ellipsoid.",
+          "type": "Boolean",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M3E/M3T/M3M"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/Polygon#mapping2d": {
+      "element": "Polygon",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 224,
+          "description": "Measurement Polygon\n Note: The format is `    longitude,latitude,height longitude,latitude,height longitude,latitude,height    `\n Note: When wpml:facadeWaylineE",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/mappingHeadingParam#mapping2d": {
+      "element": "mappingHeadingParam",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 225,
+          "description": "Heading parameter of drone in mapping",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M3E/M3T/M3M"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/gimbalPitchMode#mapping2d": {
+      "element": "gimbalPitchMode",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 226,
+          "description": "Gimbal pitch angle mode",
+          "type": "Enum-string",
+          "unit": "-",
+          "values": [
+            "manual",
+            "fixed"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M3E/M3T/M3M"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/gimbalPitchAngle#mapping2d": {
+      "element": "gimbalPitchAngle",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 227,
+          "description": "Gimbal pitch angle",
+          "type": "°",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": -90,
+            "minOpen": false,
+            "max": -30,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "when wpml:gimbalPitchMode is fixed, this value is required element.",
+          "support": [
+            "M3E/M3T/M3M"
+          ]
+        }
+      },
+      "template": "mapping2d"
+    },
+    "Placemark/caliFlightEnable#mapping3d": {
+      "element": "caliFlightEnable",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 233,
+          "description": "Whether to enable calibration flight\nNote: only applicable to M300 RTK and M350 RTK models",
+          "type": "Boolean",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      },
+      "template": "mapping3d"
+    },
+    "Placemark/inclinedGimbalPitch#mapping3d": {
+      "element": "inclinedGimbalPitch",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 234,
+          "description": "Gimbal pitch angle (tilt)",
+          "type": "Integer",
+          "unit": "°",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping3d"
+    },
+    "Placemark/inclinedFlightSpeed#mapping3d": {
+      "element": "inclinedFlightSpeed",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 235,
+          "description": "route flight speed (tilt)",
+          "type": "Float",
+          "unit": "m/s",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping3d"
+    },
+    "Placemark/shootType#mapping3d": {
+      "element": "shootType",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 236,
+          "description": "Photo mode (timed or fixed distance)",
+          "type": "string enumerate",
+          "unit": "-",
+          "values": [
+            "time",
+            "distance",
+            "Note"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping3d"
+    },
+    "Placemark/direction#mapping3d": {
+      "element": "direction",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 237,
+          "description": "route direction",
+          "type": "Integer",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 360,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping3d"
+    },
+    "Placemark/margin#mapping3d": {
+      "element": "margin",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 238,
+          "description": "Expansion distance outside the survey area",
+          "type": "Integer",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping3d"
+    },
+    "Placemark/overlap#mapping3d": {
+      "element": "overlap",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 239,
+          "description": "Overlap rate parameter",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping3d"
+    },
+    "Placemark/ellipsoidHeight#mapping3d": {
+      "element": "ellipsoidHeight",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 240,
+          "description": "Global route height (ellipsoid height)\nNote: This Element is used in conjunction with \"wpml:height\", which are expressions of different elevation reference plan",
+          "type": "Float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping3d"
+    },
+    "Placemark/height#mapping3d": {
+      "element": "height",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 241,
+          "description": "Global route height (EGM96 altitude/relative take-off point height/AGL relative ground height)\nNote: This Element is used in conjunction with \"wpml:ellipsoidHei",
+          "type": "Float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping3d"
+    },
+    "Placemark/Polygon#mapping3d": {
+      "element": "Polygon",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 242,
+          "description": "Survey area polygon\nNote: The format here is \"`    longitude,latitude,0 longitude,latitude,0 longitude,latitude,0    `”",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mapping3d"
+    },
+    "Placemark/caliFlightEnable#mappingStrip": {
+      "element": "caliFlightEnable",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 248,
+          "description": "Whether to enable calibration flight",
+          "type": "Boolean",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/shootType#mappingStrip": {
+      "element": "shootType",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 249,
+          "description": "Photo mode (timed or fixed distance)",
+          "type": "string enumerate",
+          "unit": "-",
+          "values": [
+            "time",
+            "distance"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/direction#mappingStrip": {
+      "element": "direction",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 250,
+          "description": "route direction",
+          "type": "Integer",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 360,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/margin#mappingStrip": {
+      "element": "margin",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 251,
+          "description": "Expansion distance outside the survey area",
+          "type": "Float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/singleLineEnable#mappingStrip": {
+      "element": "singleLineEnable",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 252,
+          "description": "Whether to enable single route flight",
+          "type": "Boolean",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/cuttingDistance#mappingStrip": {
+      "element": "cuttingDistance",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 253,
+          "description": "Route length of each sub strip",
+          "type": "Float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/boundaryOptimEnable#mappingStrip": {
+      "element": "boundaryOptimEnable",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 254,
+          "description": "Whether to enable edge optimization",
+          "type": "Boolean",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/leftExtend#mappingStrip": {
+      "element": "leftExtend",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 255,
+          "description": "Extending distance on the left side of the waypoint segment flight",
+          "type": "Integer",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/rightExtend#mappingStrip": {
+      "element": "rightExtend",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 256,
+          "description": "Extending distance on the right side of the waypoint segment flight",
+          "type": "Integer",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/includeCenterEnable#mappingStrip": {
+      "element": "includeCenterEnable",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 257,
+          "description": "whether to include centerline",
+          "type": "Boolean",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/overlap#mappingStrip": {
+      "element": "overlap",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 258,
+          "description": "Overlap rate parameter",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/ellipsoidHeight#mappingStrip": {
+      "element": "ellipsoidHeight",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 259,
+          "description": "Global route height (ellipsoid height)\nNote: This Element is used in conjunction with \"wpml:height\", which are expressions of different elevation reference plan",
+          "type": "Float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/height#mappingStrip": {
+      "element": "height",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 260,
+          "description": "Global route height (EGM96 altitude/relative take-off point height/AGL relative ground height)\nNote: This Element is used in conjunction with \"wpml:ellipsoidHei",
+          "type": "Float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/stripUseTemplateAltitude#mappingStrip": {
+      "element": "stripUseTemplateAltitude",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 261,
+          "description": "Whether to open linear flight\n Note: This element should be used with \"LineString\". When it is opened, the value of height will be converted to ellipsoid height",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/LineString#mappingStrip": {
+      "element": "LineString",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 262,
+          "description": "Waypoint information\n Note: The format is \"`  longitude, latitude, height  longitude, latitude, height  longitude, latitude, height `\". The value of height will",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "template": "mappingStrip"
+    },
+    "Placemark/isRisky": {
+      "element": "isRisky",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 267,
+          "description": "Whether is risky point",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M30/M30T",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 155,
+          "description": "Whether is risky point",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M30/M30T",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/Point": {
+      "element": "Point",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 268,
+          "description": "The format is as follows.`  Longitude, Latitude  `",
+          "type": "float",
+          "unit": "°,°",
+          "values": null,
+          "range": {
+            "min": -180,
+            "minOpen": false,
+            "max": 180,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 156,
+          "description": "The format is as follows.`  Longitude, Latitude  `",
+          "type": "float",
+          "unit": "°,°",
+          "values": null,
+          "range": {
+            "min": -180,
+            "minOpen": false,
+            "max": 180,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/index": {
+      "element": "index",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 269,
+          "description": "Waypoint number.\nNote: This ID is unique within a route. The sequence number must be monotonously and continuously increasing from 0.",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 65535,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 157,
+          "description": "Waypoint number.\nNote: This ID is unique within a route. The sequence number must be monotonously and continuously increasing from 0.",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 65535,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/useGlobalHeight": {
+      "element": "useGlobalHeight",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 270,
+          "description": "Whether to use global height",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/ellipsoidHeight": {
+      "element": "ellipsoidHeight",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 271,
+          "description": "Waypoint height (WGS84 ellipsoid height)\nNote: This element is used in conjunction with \"WPML:height\", which is an expression of the reference plane at the same",
+          "type": "float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "Required if and only if \"wpml:useGlobalHeight\" is 0.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/height": {
+      "element": "height",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 272,
+          "description": "Waypoint height(EGM96 altitude/relative to take-off /AGL relative to ground)\nNote: This element is used in conjunction with \"wpml:ellipsoidHeight\", which is an ",
+          "type": "float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "Required if and only if \"wpml:useGlobalHeight\" is 0.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/useGlobalSpeed": {
+      "element": "useGlobalSpeed",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 273,
+          "description": "Whether to use global flight speed\nNote: The global flight speed is \"wpml:autoFlightSpeed\".",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/waypointSpeed": {
+      "element": "waypointSpeed",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 274,
+          "description": "Waypoint flight speed",
+          "type": "float",
+          "unit": "m/s",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "Required if \"wpml:useGlobalSpeed\" is 0.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 159,
+          "description": "Waypoint flight speed. Speed of drone flying from current waypoint to the next waypoint.",
+          "type": "float",
+          "unit": "m/s",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "Required if \"wpml:useGlobalSpeed\" is 0.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/useGlobalHeadingParam": {
+      "element": "useGlobalHeadingParam",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 275,
+          "description": "Whether to use the global yaw mode parameter",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/waypointHeadingParam": {
+      "element": "waypointHeadingParam",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 276,
+          "description": "waypoint heading param",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "Required if “wpml:useGlobalHeadingParam” is 0.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 160,
+          "description": "waypoint heading param",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "Required if “wpml:useGlobalHeadingParam” is 0.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/useGlobalTurnParam": {
+      "element": "useGlobalTurnParam",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 277,
+          "description": "Whether to use global waypoint type (Global waypoint turn mode)",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/waypointTurnParam": {
+      "element": "waypointTurnParam",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 278,
+          "description": "waypoint turn param",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "Required if “wpml:useGlobalTurnParam” is 0.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 161,
+          "description": "waypoint turn param",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/useStraightLine": {
+      "element": "useStraightLine",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 279,
+          "description": "Whether the segment fits a straight line",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "Required if \"waypointTurnMode\" in \"wpml:waypointTurnParam\" is set to \"toPointAndStopWithContinuityCurvature\" or \"toPointAndPassWithContinuityCurvature\". If this element is set, local definitions override global definitions.",
+          "support": [
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        },
+        "30.waylines-wpml.md": {
+          "line": 162,
+          "description": "Whether the segment fits a straight line",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "Required if \"waypointTurnMode\" in \"wpml:waypointTurnParam\" is set to \"toPointAndStopWithContinuityCurvature\" or \"toPointAndPassWithContinuityCurvature\". If this element is set, local definitions override global definitions.",
+          "support": [
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/gimbalPitchAngle": {
+      "element": "gimbalPitchAngle",
+      "parent": "Placemark",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 280,
+          "description": "gimbal pitch angle",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "Required if “wpml:gimbalPitchMode” is “usePointSetting”.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waylineCoordinateSysParam/coordinateMode": {
+      "element": "coordinateMode",
+      "parent": "waylineCoordinateSysParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 286,
+          "description": "Latitude and longitude coordinate system",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "WGS84"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waylineCoordinateSysParam/heightMode": {
+      "element": "heightMode",
+      "parent": "waylineCoordinateSysParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 287,
+          "description": "Reference plane for waypoint elevation",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "EGM96",
+            "relativeToStartPoint",
+            "aboveGroundLevel",
+            "realTimeFollowSurface"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waylineCoordinateSysParam/positioningType": {
+      "element": "positioningType",
+      "parent": "waylineCoordinateSysParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 288,
+          "description": "Latitude and longitude and altitude data sources",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "GPS",
+            "RTKBaseStation",
+            "QianXun",
+            "Custom"
+          ],
+          "range": null,
+          "required": "no",
+          "note": "No\nNote:This element is only used to mark the source of the location data and does not affect the actual route execution.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waylineCoordinateSysParam/globalShootHeight": {
+      "element": "globalShootHeight",
+      "parent": "waylineCoordinateSysParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 289,
+          "description": "Height of the aircraft above the subject surface (relative to ground height)\nNote: Only available for template types mapping2d, mapping3d, mappingStrip.",
+          "type": "float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waylineCoordinateSysParam/surfaceFollowModeEnable": {
+      "element": "surfaceFollowModeEnable",
+      "parent": "waylineCoordinateSysParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 290,
+          "description": "Whether or not to start the surface following mode flight.\nNote: Only available for template types mapping2d, mapping3d, mappingStrip.",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waylineCoordinateSysParam/surfaceRelativeHeight": {
+      "element": "surfaceRelativeHeight",
+      "parent": "waylineCoordinateSysParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 291,
+          "description": "Surface following mode flight height above the ground (high relative to the ground).\nNote: Only available for template types mapping2d, mapping3d, mappingStrip.",
+          "type": "float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "Required if wpml:surfaceFollowModeEnable is 1.",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "overlap/orthoLidarOverlapH": {
+      "element": "orthoLidarOverlapH",
+      "parent": "overlap",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 298,
+          "description": "Forward Overlap (LiDAR/Ortho)",
+          "type": "Integer",
+          "unit": "Percentage",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 100,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "overlap/orthoLidarOverlapW": {
+      "element": "orthoLidarOverlapW",
+      "parent": "overlap",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 299,
+          "description": "Side Overlap (LiDAR/Ortho)",
+          "type": "Integer",
+          "unit": "Percentage",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 100,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "overlap/orthoCameraOverlapH": {
+      "element": "orthoCameraOverlapH",
+      "parent": "overlap",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 300,
+          "description": "Forward Overlap (Visible/Ortho)",
+          "type": "Integer",
+          "unit": "Percentage",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 100,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "overlap/orthoCameraOverlapW": {
+      "element": "orthoCameraOverlapW",
+      "parent": "overlap",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 301,
+          "description": "Side Overlap (Visible/Ortho)",
+          "type": "Integer",
+          "unit": "Percentage",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 100,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "overlap/inclinedLidarOverlapH": {
+      "element": "inclinedLidarOverlapH",
+      "parent": "overlap",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 302,
+          "description": "Forward Overlap (LiDAR/Oblique)",
+          "type": "Integer",
+          "unit": "Percentage",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 100,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "overlap/inclinedLidarOverlapW": {
+      "element": "inclinedLidarOverlapW",
+      "parent": "overlap",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 303,
+          "description": "Side Overlap (LiDAR/Oblique)",
+          "type": "Integer",
+          "unit": "Percentage",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 100,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      }
+    },
+    "overlap/inclinedCameraOverlapH": {
+      "element": "inclinedCameraOverlapH",
+      "parent": "overlap",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 304,
+          "description": "Forward Overlap (Visible/Oblique)",
+          "type": "Integer",
+          "unit": "Percentage",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 100,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "overlap/inclinedCameraOverlapW": {
+      "element": "inclinedCameraOverlapW",
+      "parent": "overlap",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 305,
+          "description": "Side Overlap (Visible/Oblique)",
+          "type": "Integer",
+          "unit": "Percentage",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 100,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "mappingHeadingParam/mappingHeadingMode": {
+      "element": "mappingHeadingMode",
+      "parent": "mappingHeadingParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 311,
+          "description": "Yaw angle mode of drone",
+          "type": "Enum-string",
+          "unit": "-",
+          "values": [
+            "fixed",
+            "followWayline"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "mappingHeadingParam/mappingHeadingAngle": {
+      "element": "mappingHeadingAngle",
+      "parent": "mappingHeadingParam",
+      "docs": {
+        "20.template-kml.md": {
+          "line": 312,
+          "description": "Yaw angle of drone",
+          "type": "Integer",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 360,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "when wpml:mappingHeadingMode is fixed, this value is required.",
+          "support": [
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "missionConfig/globalRTHHeight": {
+      "element": "globalRTHHeight",
+      "parent": "missionConfig",
+      "docs": {
+        "30.waylines-wpml.md": {
+          "line": 135,
+          "description": "global RTH height",
+          "type": "float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Folder/waylineId": {
+      "element": "waylineId",
+      "parent": "Folder",
+      "docs": {
+        "30.waylines-wpml.md": {
+          "line": 146,
+          "description": "waylines ID\nNote: The ID is unique within a kmz file. It is recommended to increment it monotonically and continuously from 0.",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 65535,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Folder/executeHeightMode": {
+      "element": "executeHeightMode",
+      "parent": "Folder",
+      "docs": {
+        "30.waylines-wpml.md": {
+          "line": 148,
+          "description": "Execute height mode\nNote: This element is only used in waylines.wpml.",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "WGS84",
+            "relativeToStartPoint",
+            "realTimeFollowSurface"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Folder/Placemark": {
+      "element": "Placemark",
+      "parent": "Folder",
+      "docs": {
+        "30.waylines-wpml.md": {
+          "line": 149,
+          "description": "Waypoint information (including waypoint latitude, longitude, altitude, etc.)",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Folder/startActionGroup": {
+      "element": "startActionGroup",
+      "parent": "Folder",
+      "docs": {
+        "30.waylines-wpml.md": {
+          "line": 150,
+          "description": "Wayline initial action\nNote: This element is used to plan a series of initial actions, which is executed before the wayline starts. When the interruption of way",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "Placemark/executeHeight": {
+      "element": "executeHeight",
+      "parent": "Placemark",
+      "docs": {
+        "30.waylines-wpml.md": {
+          "line": 158,
+          "description": "Execution altitude of waypoint.\nNote: This element is only used in waylines.wpml. The specific elevation reference plane is declared in \"wpml:executeHeightMode\"",
+          "type": "float",
+          "unit": "m",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "droneInfo/droneEnumValue": {
+      "element": "droneEnumValue",
+      "parent": "droneInfo",
+      "docs": {
+        "40.common-element.md": {
+          "line": 14,
+          "description": "drone type",
+          "type": "int",
+          "unit": "-",
+          "values": [
+            "89",
+            "60",
+            "67",
+            "77",
+            "91"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "droneInfo/droneSubEnumValue": {
+      "element": "droneSubEnumValue",
+      "parent": "droneInfo",
+      "docs": {
+        "40.common-element.md": {
+          "line": 15,
+          "description": "drone sub type",
+          "type": "int",
+          "unit": "-",
+          "values": [
+            "67",
+            "0",
+            "1",
+            "77",
+            "2",
+            "91"
+          ],
+          "range": null,
+          "required": "conditional",
+          "note": "This element is required when droneEnumValue is 67(M30/M30T).",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "payloadInfo/payloadEnumValue": {
+      "element": "payloadEnumValue",
+      "parent": "payloadInfo",
+      "docs": {
+        "40.common-element.md": {
+          "line": 21,
+          "description": "payload type",
+          "type": "int",
+          "unit": "-",
+          "values": [
+            "42",
+            "43",
+            "52",
+            "53",
+            "61",
+            "66",
+            "67",
+            "68",
+            "80",
+            "81",
+            "65534",
+            "82",
+            "83"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "payloadInfo/payloadPositionIndex": {
+      "element": "payloadPositionIndex",
+      "parent": "payloadInfo",
+      "docs": {
+        "40.common-element.md": {
+          "line": 22,
+          "description": "The position where the payload is mounted",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waypointHeadingParam/waypointHeadingMode": {
+      "element": "waypointHeadingMode",
+      "parent": "waypointHeadingParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 42,
+          "description": "Heading mode",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "followWayline",
+            "manually",
+            "fixed",
+            "smoothTransition",
+            "towardPOI"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "globalWaypointHeadingParam/waypointHeadingMode": {
+      "element": "waypointHeadingMode",
+      "parent": "globalWaypointHeadingParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 42,
+          "description": "Heading mode",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "followWayline",
+            "manually",
+            "fixed",
+            "smoothTransition",
+            "towardPOI"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waypointHeadingParam/waypointHeadingAngle": {
+      "element": "waypointHeadingAngle",
+      "parent": "waypointHeadingParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 43,
+          "description": "Yaw Angle of aircraft",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": -180,
+            "minOpen": false,
+            "max": 180,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "Required if  \"wpml:waypointHeadingMode\" is \"smoothTransition\".",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "globalWaypointHeadingParam/waypointHeadingAngle": {
+      "element": "waypointHeadingAngle",
+      "parent": "globalWaypointHeadingParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 43,
+          "description": "Yaw Angle of aircraft",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": -180,
+            "minOpen": false,
+            "max": 180,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "Required if  \"wpml:waypointHeadingMode\" is \"smoothTransition\".",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waypointHeadingParam/waypointPoiPoint": {
+      "element": "waypointPoiPoint",
+      "parent": "waypointHeadingParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 44,
+          "description": "Point of interest",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "Required if  \"wpml:waypointHeadingMode\" is \"towardPOI\".",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "globalWaypointHeadingParam/waypointPoiPoint": {
+      "element": "waypointPoiPoint",
+      "parent": "globalWaypointHeadingParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 44,
+          "description": "Point of interest",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "Required if  \"wpml:waypointHeadingMode\" is \"towardPOI\".",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waypointHeadingParam/waypointHeadingPathMode": {
+      "element": "waypointHeadingPathMode",
+      "parent": "waypointHeadingParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 45,
+          "description": "Direction of rotation of the aircraft yaw angle",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "clockwise",
+            "counterClockwise",
+            "followBadArc"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "globalWaypointHeadingParam/waypointHeadingPathMode": {
+      "element": "waypointHeadingPathMode",
+      "parent": "globalWaypointHeadingParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 45,
+          "description": "Direction of rotation of the aircraft yaw angle",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "clockwise",
+            "counterClockwise",
+            "followBadArc"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waypointTurnParam/waypointTurnMode": {
+      "element": "waypointTurnMode",
+      "parent": "waypointTurnParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 51,
+          "description": "waypoint turn mode",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "coordinateTurn",
+            "toPointAndStopWithDiscontinuityCurvature",
+            "toPointAndStopWithContinuityCurvature",
+            "toPointAndPassWithContinuityCurvature",
+            "Note"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "waypointTurnParam/waypointTurnDampingDist": {
+      "element": "waypointTurnDampingDist",
+      "parent": "waypointTurnParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 52,
+          "description": "waypoint turn damping distance",
+          "type": "float",
+          "unit": "m",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "Required if  \"wpml:waypointTurnMode\" is \"coordinateTurn\", \"wpml:waypointTurnMode\" is \"toPointAndPassWithContinuityCurvature\" and \"wpml:useStraightLine\" is 1",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "autoRerouteInfo/missionAutoRerouteMode": {
+      "element": "missionAutoRerouteMode",
+      "parent": "autoRerouteInfo",
+      "docs": {
+        "40.common-element.md": {
+          "line": 58,
+          "description": "mission auto reroute mode",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "autoRerouteInfo/transitionalAutoRerouteMode": {
+      "element": "transitionalAutoRerouteMode",
+      "parent": "autoRerouteInfo",
+      "docs": {
+        "40.common-element.md": {
+          "line": 59,
+          "description": "transitional auto reroute mode",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "actionGroup/actionGroupId": {
+      "element": "actionGroupId",
+      "parent": "actionGroup",
+      "docs": {
+        "40.common-element.md": {
+          "line": 65,
+          "description": "action group Id\nNote: The ID is unique within a kmz file. It is recommended that it be monotonically and continuously incremented from 0.",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 65535,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "actionGroup/actionGroupStartIndex": {
+      "element": "actionGroupStartIndex",
+      "parent": "actionGroup",
+      "docs": {
+        "40.common-element.md": {
+          "line": 66,
+          "description": "Waypoints where the action group starts to take effect.",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 65535,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "actionGroup/actionGroupEndIndex": {
+      "element": "actionGroupEndIndex",
+      "parent": "actionGroup",
+      "docs": {
+        "40.common-element.md": {
+          "line": 67,
+          "description": "Waypoints where the action group stops to take effect.\n Note: When the actionGroupStartIndex is the same as the actionGroupEndIndex, it means that the action gr",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 65535,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "actionGroup/actionGroupMode": {
+      "element": "actionGroupMode",
+      "parent": "actionGroup",
+      "docs": {
+        "40.common-element.md": {
+          "line": 68,
+          "description": "action group mode",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "sequence"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "actionGroup/actionTrigger": {
+      "element": "actionTrigger",
+      "parent": "actionGroup",
+      "docs": {
+        "40.common-element.md": {
+          "line": 69,
+          "description": "action trigger",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "actionGroup/action": {
+      "element": "action",
+      "parent": "actionGroup",
+      "docs": {
+        "40.common-element.md": {
+          "line": 70,
+          "description": "action list",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "actionTrigger/actionTriggerType": {
+      "element": "actionTriggerType",
+      "parent": "actionTrigger",
+      "docs": {
+        "40.common-element.md": {
+          "line": 76,
+          "description": "trigger type",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "reachPoint",
+            "betweenAdjacentPoints",
+            "multipleTiming",
+            "multipleDistance",
+            "Note"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "actionTrigger/actionTriggerParam": {
+      "element": "actionTriggerParam",
+      "parent": "actionTrigger",
+      "docs": {
+        "40.common-element.md": {
+          "line": 77,
+          "description": "trigger param",
+          "type": "float",
+          "unit": "s or m",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "action/actionId": {
+      "element": "actionId",
+      "parent": "action",
+      "docs": {
+        "40.common-element.md": {
+          "line": 83,
+          "description": "action id\nNote:The ID is unique within an action group. It is recommended that it be monotonically and continuously incremented from 0.",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 65535,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "action/actionActuatorFunc": {
+      "element": "actionActuatorFunc",
+      "parent": "action",
+      "docs": {
+        "40.common-element.md": {
+          "line": 84,
+          "description": "action type",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "takePhoto",
+            "startRecord",
+            "stopRecord",
+            "focus",
+            "zoom",
+            "customDirName",
+            "gimbalRotate",
+            "rotateYaw",
+            "hover",
+            "gimbalEvenlyRotate",
+            "accurateShoot",
+            "orientedShoot",
+            "panoShot"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "action/actionActuatorFuncParam": {
+      "element": "actionActuatorFuncParam",
+      "parent": "action",
+      "docs": {
+        "40.common-element.md": {
+          "line": 85,
+          "description": "action param",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "conditional",
+          "note": "-",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      }
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@takePhoto": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 93,
+          "description": "The position where the payload is mounted",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "takePhoto"
+    },
+    "actionActuatorFuncParam/fileSuffix@takePhoto": {
+      "element": "fileSuffix",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 94,
+          "description": "The file suffix",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK and M350 RTK(H20/H20T/H20N/H30/H30T)",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "takePhoto"
+    },
+    "actionActuatorFuncParam/payloadLensIndex@takePhoto": {
+      "element": "payloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 95,
+          "description": "Storage type of photo",
+          "type": "List of photo format",
+          "unit": "enum-string (list)",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "takePhoto"
+    },
+    "actionActuatorFuncParam/useGlobalPayloadLensIndex@takePhoto": {
+      "element": "useGlobalPayloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 96,
+          "description": "Whether use the global storage type",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "takePhoto"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@startRecord": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 102,
+          "description": "The position where the payload is mounted",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "startRecord"
+    },
+    "actionActuatorFuncParam/fileSuffix@startRecord": {
+      "element": "fileSuffix",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 103,
+          "description": "The file suffix",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK and M350 RTK (H20/H20T/H20N/H30/H30T)",
+            "M30/M30T",
+            "M3E/M3T/M3M"
+          ]
+        }
+      },
+      "action": "startRecord"
+    },
+    "actionActuatorFuncParam/payloadLensIndex@startRecord": {
+      "element": "payloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 104,
+          "description": "Storage type of video",
+          "type": "List of video format",
+          "unit": "enum-string(list)",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "startRecord"
+    },
+    "actionActuatorFuncParam/useGlobalPayloadLensIndex@startRecord": {
+      "element": "useGlobalPayloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 105,
+          "description": "Whether use the global storage type",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "startRecord"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@stopRecord": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 111,
+          "description": "The position where the payload is mounted",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "stopRecord"
+    },
+    "actionActuatorFuncParam/payloadLensIndex@stopRecord": {
+      "element": "payloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 112,
+          "description": "Storage type of video",
+          "type": "List of video format",
+          "unit": "enum-string(list)",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "stopRecord"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@focus": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 118,
+          "description": "The position where the payload is mounted",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "focus"
+    },
+    "actionActuatorFuncParam/isPointFocus@focus": {
+      "element": "isPointFocus",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 119,
+          "description": "Whether to focus",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "focus"
+    },
+    "actionActuatorFuncParam/focusX@focus": {
+      "element": "focusX",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 120,
+          "description": "Focal position",
+          "type": "float",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 1,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "focus"
+    },
+    "actionActuatorFuncParam/focusY@focus": {
+      "element": "focusY",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 121,
+          "description": "Focal position",
+          "type": "float",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 1,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "focus"
+    },
+    "actionActuatorFuncParam/focusRegionWidth@focus": {
+      "element": "focusRegionWidth",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 122,
+          "description": "Focusing region width ratio",
+          "type": "float",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 1,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "Required if \"isPointFocus\" is \"0\" (area focus).",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "focus"
+    },
+    "actionActuatorFuncParam/focusRegionHeight@focus": {
+      "element": "focusRegionHeight",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 123,
+          "description": "Focusing region height ratio",
+          "type": "float",
+          "unit": "-",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 1,
+            "maxOpen": false
+          },
+          "required": "conditional",
+          "note": "Required if \"isPointFocus\" is \"0\" (area focus).",
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "focus"
+    },
+    "actionActuatorFuncParam/isInfiniteFocus@focus": {
+      "element": "isInfiniteFocus",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 124,
+          "description": "Whether infinite focus",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "focus"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@zoom": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 130,
+          "description": "The position where the payload is mounted",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "zoom"
+    },
+    "actionActuatorFuncParam/focalLength@zoom": {
+      "element": "focalLength",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 131,
+          "description": "focal length",
+          "type": "float",
+          "unit": "mm",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "zoom"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@customDirName": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 137,
+          "description": "The position where the payload is mounted",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "customDirName"
+    },
+    "actionActuatorFuncParam/directoryName@customDirName": {
+      "element": "directoryName",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 138,
+          "description": "The name of the new folder",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "customDirName"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@gimbalRotate": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 144,
+          "description": "The position where the payload is mounted",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalHeadingYawBase@gimbalRotate": {
+      "element": "gimbalHeadingYawBase",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 145,
+          "description": "gimbal yaw angle rotation coordinate system",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "north"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalRotateMode@gimbalRotate": {
+      "element": "gimbalRotateMode",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 146,
+          "description": "gimbal rotation mode",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "absoluteAngle"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalPitchRotateEnable@gimbalRotate": {
+      "element": "gimbalPitchRotateEnable",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 147,
+          "description": "Whether to enable pitch rotation of the gimbal.",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalPitchRotateAngle@gimbalRotate": {
+      "element": "gimbalPitchRotateAngle",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 148,
+          "description": "Pitch rotation angle",
+          "type": "float",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalRollRotateEnable@gimbalRotate": {
+      "element": "gimbalRollRotateEnable",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 149,
+          "description": "Whether to enable roll rotation of the gimbal.",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalRollRotateAngle@gimbalRotate": {
+      "element": "gimbalRollRotateAngle",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 150,
+          "description": "roll rotation angle",
+          "type": "float",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalYawRotateEnable@gimbalRotate": {
+      "element": "gimbalYawRotateEnable",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 151,
+          "description": "Whether to enable yaw rotation of the gimbal.",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalYawRotateAngle@gimbalRotate": {
+      "element": "gimbalYawRotateAngle",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 152,
+          "description": "yaw rotation angle",
+          "type": "float",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalRotateTimeEnable@gimbalRotate": {
+      "element": "gimbalRotateTimeEnable",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 153,
+          "description": "Whether to turn on the gimbal rotation time",
+          "type": "bool",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalRotateTime@gimbalRotate": {
+      "element": "gimbalRotateTime",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 154,
+          "description": "Time to complete rotation of the gimbal.",
+          "type": "float",
+          "unit": "s",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalRotate"
+    },
+    "actionActuatorFuncParam/gimbalPitchRotateAngle@gimbalEvenlyRotate": {
+      "element": "gimbalPitchRotateAngle",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 160,
+          "description": "Pitch rotation angle",
+          "type": "float",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalEvenlyRotate"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@gimbalEvenlyRotate": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 161,
+          "description": "The position where the payload is mounted",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "gimbalEvenlyRotate"
+    },
+    "actionActuatorFuncParam/aircraftHeading@rotateYaw": {
+      "element": "aircraftHeading",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 171,
+          "description": "Drone target yaw angle (relative to geographic north)",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": -180,
+            "minOpen": false,
+            "max": 180,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "rotateYaw"
+    },
+    "actionActuatorFuncParam/aircraftPathMode@rotateYaw": {
+      "element": "aircraftPathMode",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 172,
+          "description": "Yaw rotation mode of drone",
+          "type": "enum",
+          "unit": "-",
+          "values": [
+            "clockwise",
+            "counterClockwise"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      },
+      "action": "rotateYaw"
+    },
+    "actionActuatorFuncParam/hoverTime@hover": {
+      "element": "hoverTime",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 178,
+          "description": "hover time",
+          "type": "float",
+          "unit": "s",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T",
+            "M3E/M3T/M3M",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "hover"
+    },
+    "actionActuatorFuncParam/gimbalPitchRotateAngle@accurateShoot": {
+      "element": "gimbalPitchRotateAngle",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 186,
+          "description": "Pitch rotation angle",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": -120,
+            "minOpen": false,
+            "max": 45,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/gimbalYawRotateAngle@accurateShoot": {
+      "element": "gimbalYawRotateAngle",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 187,
+          "description": "yaw rotation angle",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": -180,
+            "minOpen": false,
+            "max": 180,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/focusX@accurateShoot": {
+      "element": "focusX",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 188,
+          "description": "Horizontal coordinate of the target region center",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": 960,
+            "maxOpen": true
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/focusY@accurateShoot": {
+      "element": "focusY",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 189,
+          "description": "Vertical coordinate of the target region center",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": 720,
+            "maxOpen": true
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/focusRegionWidth@accurateShoot": {
+      "element": "focusRegionWidth",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 190,
+          "description": "Focusing region width ratio",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": 960,
+            "maxOpen": true
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/focusRegionHeight@accurateShoot": {
+      "element": "focusRegionHeight",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 191,
+          "description": "Focusing region height ratio",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": 720,
+            "maxOpen": true
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/focalLength@accurateShoot": {
+      "element": "focalLength",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 192,
+          "description": "Focal length",
+          "type": "float",
+          "unit": "mm",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/aircraftHeading@accurateShoot": {
+      "element": "aircraftHeading",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 193,
+          "description": "Yaw angle of drone target (relative to the true north)",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": -180,
+            "minOpen": false,
+            "max": 180,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/accurateFrameValid@accurateShoot": {
+      "element": "accurateFrameValid",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 194,
+          "description": "Whether select the target of AI Spot-Check",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "1",
+            "0"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@accurateShoot": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 195,
+          "description": "Payload mounting location",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/payloadLensIndex@accurateShoot": {
+      "element": "payloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 196,
+          "description": "Image capturing storage type",
+          "type": "-",
+          "unit": "enum-string",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/useGlobalPayloadLensIndex@accurateShoot": {
+      "element": "useGlobalPayloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 197,
+          "description": "Whether use the global storage type",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/targetAngle@accurateShoot": {
+      "element": "targetAngle",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 198,
+          "description": "Angle of target box",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 360,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/imageWidth@accurateShoot": {
+      "element": "imageWidth",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 199,
+          "description": "Width of picture",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/imageHeight@accurateShoot": {
+      "element": "imageHeight",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 200,
+          "description": "Height of picture",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/AFPos@accurateShoot": {
+      "element": "AFPos",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 201,
+          "description": "AF motor location",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/gimbalPort@accurateShoot": {
+      "element": "gimbalPort",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 202,
+          "description": "Gimbal port number",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/accurateCameraType@accurateShoot": {
+      "element": "accurateCameraType",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 203,
+          "description": "Camera type",
+          "type": "int",
+          "unit": "-",
+          "values": [
+            "52",
+            "53",
+            "42",
+            "43",
+            "82",
+            "83"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/accurateFilePath@accurateShoot": {
+      "element": "accurateFilePath",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 204,
+          "description": "File path of picture",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/accurateFileMD5@accurateShoot": {
+      "element": "accurateFileMD5",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 205,
+          "description": "File MD5 of picture",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/accurateFileSize@accurateShoot": {
+      "element": "accurateFileSize",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 206,
+          "description": "File size of picture",
+          "type": "int",
+          "unit": "Byte",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/accurateFileSuffix@accurateShoot": {
+      "element": "accurateFileSuffix",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 207,
+          "description": "File suffix of picture",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK",
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/accurateCameraApertue@accurateShoot": {
+      "element": "accurateCameraApertue",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 208,
+          "description": "Aperture size",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/accurateCameraLuminance@accurateShoot": {
+      "element": "accurateCameraLuminance",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 209,
+          "description": "Environment luminance",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/accurateCameraShutterTime@accurateShoot": {
+      "element": "accurateCameraShutterTime",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 210,
+          "description": "Shutter time",
+          "type": "float",
+          "unit": "second",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/accurateCameraISO@accurateShoot": {
+      "element": "accurateCameraISO",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 211,
+          "description": "ISO",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "accurateShoot"
+    },
+    "actionActuatorFuncParam/gimbalPitchRotateAngle@orientedShoot": {
+      "element": "gimbalPitchRotateAngle",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 217,
+          "description": "Pitch rotation angle",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": -120,
+            "minOpen": false,
+            "max": 45,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/gimbalYawRotateAngle@orientedShoot": {
+      "element": "gimbalYawRotateAngle",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 218,
+          "description": "yaw rotation angle",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": -180,
+            "minOpen": false,
+            "max": 180,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/focusX@orientedShoot": {
+      "element": "focusX",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 219,
+          "description": "Horizontal coordinate of the target region center",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": 960,
+            "maxOpen": true
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/focusY@orientedShoot": {
+      "element": "focusY",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 220,
+          "description": "Vertical coordinate of the target region center",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": 720,
+            "maxOpen": true
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/focusRegionWidth@orientedShoot": {
+      "element": "focusRegionWidth",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 221,
+          "description": "Width of the target width",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": 960,
+            "maxOpen": true
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/focusRegionHeight@orientedShoot": {
+      "element": "focusRegionHeight",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 222,
+          "description": "Height of the target region",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": 720,
+            "maxOpen": true
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/focalLength@orientedShoot": {
+      "element": "focalLength",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 223,
+          "description": "Zoom focal length",
+          "type": "float",
+          "unit": "mm",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": true,
+            "max": null,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/aircraftHeading@orientedShoot": {
+      "element": "aircraftHeading",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 224,
+          "description": "Yaw angle of drone target (relative to the true north)",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": -180,
+            "minOpen": false,
+            "max": 180,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/accurateFrameValid@orientedShoot": {
+      "element": "accurateFrameValid",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 225,
+          "description": "Whether select the target of AI Spot-Check",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "1",
+            "0"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@orientedShoot": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 226,
+          "description": "The position where the payload is mounted",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/payloadLensIndex@orientedShoot": {
+      "element": "payloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 227,
+          "description": "Image capturing storage type",
+          "type": "-",
+          "unit": "enum-string",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/useGlobalPayloadLensIndex@orientedShoot": {
+      "element": "useGlobalPayloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 228,
+          "description": "Whether use the global storage type",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/targetAngle@orientedShoot": {
+      "element": "targetAngle",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 229,
+          "description": "Angle of target box",
+          "type": "float",
+          "unit": "°",
+          "values": null,
+          "range": {
+            "min": 0,
+            "minOpen": false,
+            "max": 360,
+            "maxOpen": false
+          },
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/actionUUID@orientedShoot": {
+      "element": "actionUUID",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 230,
+          "description": "Action UUID",
+          "type": "-",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/imageWidth@orientedShoot": {
+      "element": "imageWidth",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 231,
+          "description": "Image width",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/imageHeight@orientedShoot": {
+      "element": "imageHeight",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 232,
+          "description": "Image height",
+          "type": "int",
+          "unit": "px",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/AFPos@orientedShoot": {
+      "element": "AFPos",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 233,
+          "description": "AF motor location",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/gimbalPort@orientedShoot": {
+      "element": "gimbalPort",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 234,
+          "description": "Gimbal port number",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/orientedCameraType@orientedShoot": {
+      "element": "orientedCameraType",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 235,
+          "description": "Camera type",
+          "type": "int",
+          "unit": "-",
+          "values": [
+            "52",
+            "53"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/orientedFilePath@orientedShoot": {
+      "element": "orientedFilePath",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 236,
+          "description": "Image file path",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/orientedFileMD5@orientedShoot": {
+      "element": "orientedFileMD5",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 237,
+          "description": "Image file MD5",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/orientedFileSize@orientedShoot": {
+      "element": "orientedFileSize",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 238,
+          "description": "Image file size",
+          "type": "int",
+          "unit": "Byte",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/orientedFileSuffix@orientedShoot": {
+      "element": "orientedFileSuffix",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 239,
+          "description": "Image file suffix",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/orientedCameraApertue@orientedShoot": {
+      "element": "orientedCameraApertue",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 240,
+          "description": "Aperture size",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/orientedCameraLuminance@orientedShoot": {
+      "element": "orientedCameraLuminance",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 241,
+          "description": "Environment luminance",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/orientedCameraShutterTime@orientedShoot": {
+      "element": "orientedCameraShutterTime",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 242,
+          "description": "Shutter time",
+          "type": "float",
+          "unit": "second",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/orientedCameraISO@orientedShoot": {
+      "element": "orientedCameraISO",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 243,
+          "description": "ISO",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/orientedPhotoMode@orientedShoot": {
+      "element": "orientedPhotoMode",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 244,
+          "description": "Capturing mode",
+          "type": "enum-string",
+          "unit": "-",
+          "values": [
+            "normalPhoto",
+            "lowLightSmartShooting"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "orientedShoot"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@panoShot": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 250,
+          "description": "Payload mounting location",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "panoShot"
+    },
+    "actionActuatorFuncParam/payloadLensIndex@panoShot": {
+      "element": "payloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 251,
+          "description": "Storage type of photo",
+          "type": "List of photo format",
+          "unit": "enum-string (list)",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T"
+          ]
+        }
+      },
+      "action": "panoShot"
+    },
+    "actionActuatorFuncParam/useGlobalPayloadLensIndex@panoShot": {
+      "element": "useGlobalPayloadLensIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 252,
+          "description": "Whether use the global storage type",
+          "type": "bool",
+          "unit": "-",
+          "values": [
+            "0",
+            "1"
+          ],
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3E/M3T"
+          ]
+        }
+      },
+      "action": "panoShot"
+    },
+    "actionActuatorFuncParam/panoShotSubMode@panoShot": {
+      "element": "panoShotSubMode",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 253,
+          "description": "Panorama photo mode",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M30/M30T",
+            "M3D/M3TD"
+          ]
+        }
+      },
+      "action": "panoShot"
+    },
+    "actionActuatorFuncParam/payloadPositionIndex@recordPointCloud": {
+      "element": "payloadPositionIndex",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 259,
+          "description": "Payload mounting location",
+          "type": "int",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      },
+      "action": "recordPointCloud"
+    },
+    "actionActuatorFuncParam/recordPointCloudOperate@recordPointCloud": {
+      "element": "recordPointCloudOperate",
+      "parent": "actionActuatorFuncParam",
+      "docs": {
+        "40.common-element.md": {
+          "line": 260,
+          "description": "Point Cloud Operation",
+          "type": "string",
+          "unit": "-",
+          "values": null,
+          "range": null,
+          "required": "yes",
+          "note": null,
+          "support": [
+            "M300 RTK",
+            "M350 RTK"
+          ]
+        }
+      },
+      "action": "recordPointCloud"
+    }
+  },
+  "examples": {
+    "template.kml": {
+      "kml": [
+        "Document"
+      ],
+      "Document": [
+        "author",
+        "createTime",
+        "updateTime",
+        "missionConfig",
+        "Folder"
+      ],
+      "missionConfig": [
+        "flyToWaylineMode",
+        "finishAction",
+        "exitOnRCLost",
+        "executeRCLostAction",
+        "takeOffSecurityHeight",
+        "takeOffRefPoint",
+        "takeOffRefPointAGLHeight",
+        "globalTransitionalSpeed",
+        "droneInfo",
+        "payloadInfo"
+      ],
+      "droneInfo": [
+        "droneEnumValue",
+        "droneSubEnumValue"
+      ],
+      "payloadInfo": [
+        "payloadEnumValue",
+        "payloadPositionIndex"
+      ],
+      "Folder": [
+        "templateType",
+        "templateId",
+        "waylineCoordinateSysParam",
+        "autoFlightSpeed",
+        "gimbalPitchMode",
+        "globalWaypointHeadingParam",
+        "globalWaypointTurnMode",
+        "globalUseStraightLine",
+        "Placemark"
+      ],
+      "waylineCoordinateSysParam": [
+        "coordinateMode",
+        "heightMode",
+        "globalShootHeight",
+        "positioningType",
+        "surfaceFollowModeEnable",
+        "surfaceRelativeHeight"
+      ],
+      "globalWaypointHeadingParam": [
+        "waypointHeadingMode",
+        "waypointHeadingAngle",
+        "waypointPoiPoint",
+        "waypointHeadingPathMode"
+      ],
+      "Placemark": [
+        "Point",
+        "index",
+        "ellipsoidHeight",
+        "height",
+        "useGlobalHeight",
+        "useGlobalSpeed",
+        "useGlobalHeadingParam",
+        "useGlobalTurnParam",
+        "gimbalPitchAngle",
+        "actionGroup"
+      ],
+      "Point": [
+        "coordinates"
+      ],
+      "actionGroup": [
+        "actionGroupId",
+        "actionGroupStartIndex",
+        "actionGroupEndIndex",
+        "actionGroupMode",
+        "actionTrigger",
+        "action"
+      ],
+      "actionTrigger": [
+        "actionTriggerType"
+      ],
+      "action": [
+        "actionId",
+        "actionActuatorFunc",
+        "actionActuatorFuncParam"
+      ],
+      "actionActuatorFuncParam": [
+        "gimbalRotateMode",
+        "gimbalPitchRotateEnable",
+        "gimbalPitchRotateAngle",
+        "gimbalRollRotateEnable",
+        "gimbalRollRotateAngle",
+        "gimbalYawRotateEnable",
+        "gimbalYawRotateAngle",
+        "gimbalRotateTimeEnable",
+        "gimbalRotateTime",
+        "payloadPositionIndex",
+        "fileSuffix"
+      ]
+    },
+    "waylines.wpml": {
+      "kml": [
+        "Document"
+      ],
+      "Document": [
+        "missionConfig",
+        "Folder"
+      ],
+      "missionConfig": [
+        "flyToWaylineMode",
+        "finishAction",
+        "exitOnRCLost",
+        "executeRCLostAction",
+        "takeOffSecurityHeight",
+        "globalTransitionalSpeed",
+        "droneInfo",
+        "payloadInfo"
+      ],
+      "droneInfo": [
+        "droneEnumValue",
+        "droneSubEnumValue"
+      ],
+      "payloadInfo": [
+        "payloadEnumValue",
+        "payloadPositionIndex"
+      ],
+      "Folder": [
+        "templateId",
+        "executeHeightMode",
+        "waylineId",
+        "autoFlightSpeed",
+        "Placemark"
+      ],
+      "Placemark": [
+        "Point",
+        "index",
+        "executeHeight",
+        "waypointSpeed",
+        "waypointHeadingParam",
+        "waypointTurnParam",
+        "actionGroup"
+      ],
+      "Point": [
+        "coordinates"
+      ],
+      "waypointHeadingParam": [
+        "waypointHeadingMode"
+      ],
+      "waypointTurnParam": [
+        "waypointTurnMode",
+        "waypointTurnDampingDist"
+      ],
+      "actionGroup": [
+        "actionGroupId",
+        "actionGroupStartIndex",
+        "actionGroupEndIndex",
+        "actionGroupMode",
+        "actionTrigger",
+        "action"
+      ],
+      "actionTrigger": [
+        "actionTriggerType"
+      ],
+      "action": [
+        "actionId",
+        "actionActuatorFunc",
+        "actionActuatorFuncParam"
+      ],
+      "actionActuatorFuncParam": [
+        "gimbalRotateMode",
+        "gimbalPitchRotateEnable",
+        "gimbalPitchRotateAngle",
+        "gimbalRollRotateEnable",
+        "gimbalRollRotateAngle",
+        "gimbalYawRotateEnable",
+        "gimbalYawRotateAngle",
+        "gimbalRotateTimeEnable",
+        "gimbalRotateTime",
+        "payloadPositionIndex",
+        "fileSuffix"
+      ]
+    }
+  }
+}

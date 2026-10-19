@@ -26,6 +26,25 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - O KMZ do M4T foi aceite e voado pelo Pilot 2: os enums `99/1/89` ficam
   confirmados num comando real (`docs/VALIDACAO.md`, matriz).
 
+### Adicionado (conformidade WPML automática — «nunca mais no campo»)
+
+- **Dicionário da especificação WPML em JSON** (`tests/spec/wpml-spec.json`,
+  gerado por `npm run spec:wpml` a partir das tabelas Markdown da
+  documentação oficial da DJI, `dji-sdk/cloud-api-doc`): por elemento e pai,
+  tipo, valores do enum, intervalo, obrigatoriedade (incluindo «obrigatório
+  se…»), aeronaves suportadas e a ordem dos filhos dos exemplos.
+- **Validador de conformidade** (`tests/lib/wpml-conformidade.mjs`) sobre
+  uma matriz de 35 casos modos × aeronaves (área por distância, tempo e
+  waypoint, com terreno, LiDAR; corredor; fachada; órbita em foto, por nível
+  e em vídeo; circular; pontos de inspecção; em M3E, M4T grande-angular e
+  térmica, M300 RTK com P1 e Mapper+, custom) e sobre os ficheiros
+  dourados: cada par pai→filho existe na especificação ou numa lista de
+  excepções com a prova (ficheiros reais do Pilot 2, voos); enums, booleanos,
+  numéricos em decimal, intervalos, obrigatórios e «obrigatório se…»,
+  suporte por aeronave, ordem dos filhos, coerência template ↔ waylines e
+  empacotamento do KMZ. Apanha sozinho o `parallel` do M4T, o `aircraft`
+  e o `caliFlightEnable` desta revisão.
+
 ### Corrigido (revisão da exportação contra a especificação, pacote A)
 
 Revisão completa da exportação KML e KMZ contra a especificação WPML
