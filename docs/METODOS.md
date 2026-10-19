@@ -174,6 +174,15 @@ Passos:
    a célula), daí a escolha por faixa.
 6. Rotação inversa.
 
+Filas na aresta: uma fila a menos de ~1 m (`EDGE_BAND_DEG` = 1e-5°) da
+aresta de cima ou de baixo da área rodada é fixada imediatamente para
+dentro de todos os vértices dessa banda. A rotação esférica do Turf deixa
+uma aresta «horizontal» com as pontas a alturas diferentes (1 mm num
+quadrado de 200 m, 28 cm num de 3 km) e uma fila nessa banda cortava a
+aresta a meio: com as faixas paralelas a uma aresta e a altura um múltiplo
+exacto do espaçamento (quadrado de 200 m a 20 m), as duas faixas da borda
+saíam com 100 m em vez de 200, meia faixa por cobrir num canto.
+
 Prolongamento (overshoot): cada faixa é estendida nos dois extremos, na
 direcção de voo já escolhida, em `overshootM`; as viragens caem fora da
 área. Fiada de amarração (LiDAR): uma passagem perpendicular a meio do
@@ -1422,6 +1431,7 @@ base fora do relevo ou só com pontos desconhecidos.
 | Metros por grau de latitude / longitude | 2π·6371008,8/360 = 111194,93 (a esfera do Turf) / ×cos(lat) | units.js |
 | Faixas máximas por plano | 2500 | geo.js |
 | Troço mínimo de faixa | 1 m | geo.js |
+| Fila na aresta: banda / recuo para dentro | 1e-5° (~1 m) / 1e-8° | geo.js |
 | Aceleração de viragem | 1,7 m/s² → custo `v/1,7` por inversão | geo.js |
 | Células máximas do mosaico | 400 | geo.js |
 | Lado mínimo do mosaico | 10 m | geo.js |

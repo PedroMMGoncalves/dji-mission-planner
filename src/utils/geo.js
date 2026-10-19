@@ -771,6 +771,26 @@ export function generateFlightLines(ring, options) {
   }
   if (ys.length > MAX_LINES) return { error: 'too-many-lines', nLines: ys.length }
 
+  // 3b) Uma fila a menos de ~1 m da aresta de cima ou de baixo da área
+  //     rodada é fixada imediatamente para dentro de TODOS os vértices dessa
+  //     banda. A rotação esférica do turf deixa uma aresta «horizontal» com
+  //     as pontas a alturas diferentes (1 mm num quadrado de 200 m, 28 cm
+  //     num de 3 km), e uma fila que caísse nessa banda cortava a aresta a
+  //     meio: num quadrado de 200 m a 20 m, com as faixas paralelas às
+  //     arestas, as duas faixas da borda saíam com 100 m em vez de 200 e
+  //     deixavam meia faixa por cobrir em cada canto.
+  const EDGE_BAND_DEG = 1e-5
+  const vertexAllYs = []
+  turf.coordEach(rotated, (c) => vertexAllYs.push(c[1]))
+  const topYs = vertexAllYs.filter((v) => v >= maxY - EDGE_BAND_DEG)
+  const bottomYs = vertexAllYs.filter((v) => v <= minY + EDGE_BAND_DEG)
+  ys = ys.map((y) => {
+    if (y >= maxY - EDGE_BAND_DEG && topYs.length) return Math.min(y, Math.min(...topYs) - 1e-8)
+    if (y <= minY + EDGE_BAND_DEG && bottomYs.length)
+      return Math.max(y, Math.max(...bottomYs) + 1e-8)
+    return y
+  })
+
   const padX = (maxX - minX) * 0.1 + 1e-6
 
   // 4) Interseção e emparelhamento dos cruzamentos. Cada linha vira

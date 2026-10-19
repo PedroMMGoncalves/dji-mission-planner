@@ -293,6 +293,28 @@ que bloqueavam:
   bacias de visão. Por fechar com dados de campo: a focal real do M3E
   (EXIF de uma foto do próximo voo) e o tempo útil por payload no M300.
 
+### Corrigido (faixa da borda cortada a meio)
+
+- **Faixa na aresta da área com metade do comprimento.** Com as faixas
+  paralelas a uma aresta e a altura da área um múltiplo exacto do
+  espaçamento (um quadrado de 200 m a 20 m, uma âncora de 500 m a 50 m), as
+  faixas que caíam exactamente na aresta de cima e na de baixo saíam com
+  metade do comprimento: a rotação esférica do Turf deixa uma aresta
+  «horizontal» com as pontas a alturas diferentes (1 mm num quadrado de
+  200 m, 28 cm num de 3 km) e a fila cortava-a a meio, deixando meia faixa
+  por cobrir num canto. As filas a menos de 1 m da aresta ficam agora
+  imediatamente para dentro dos vértices dessa banda. Apanhado pela
+  propriedade nova de `tests/unit/area.test.mjs` (faixas paralelas a uma
+  aresta: sentido alternado e ligações de um espaçamento).
+- **Teste de propriedade da serpentina.** A alternância estrita de sentido
+  deixou de ser exigida em todos os rectângulos: com as faixas a cortar as
+  arestas compridas num ângulo raso, as cordas deslocam-se centenas de
+  metros de fila para fila e a rota mais curta (M2-G3) repete o sentido
+  numa fila, com o mesmo total de ligações; a propriedade passa a ser «as
+  ligações nunca somam mais do que a serpentina simples», e a alternância
+  estrita fica para as faixas paralelas a uma aresta. A CI apanhou um caso
+  destes.
+
 ### Adicionado (KML por base)
 
 - **«Blocos por base (KML, ZIP)»** no cartão «Resumo e exportar», com bases
