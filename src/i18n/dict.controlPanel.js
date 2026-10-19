@@ -463,6 +463,23 @@ export default {
     pt: 'Seguir terreno não é compatível com o disparo por waypoint: a densificação do terreno reindexaria as fotos. Escolha disparo por distância/tempo ou desligue o seguimento — a exportação WPML fica bloqueada entretanto.',
     en: 'Follow terrain is not compatible with the per-waypoint trigger: terrain densification would re-index the photos. Choose the distance/time trigger or disable following — the WPML export stays blocked meanwhile.',
   },
+  /* ---- erros do seguimento de terreno, por código (M3-C8) ---- */
+  'cp.terrain.err.photo-waypoint': {
+    pt: 'Seguir terreno não é compatível com o disparo por waypoint: a densificação do terreno reindexaria as fotos. Escolha disparo por distância/tempo ou desligue o seguimento — a exportação WPML fica bloqueada entretanto.',
+    en: 'Follow terrain is not compatible with the per-waypoint trigger: terrain densification would re-index the photos. Choose the distance/time trigger or disable following — the WPML export stays blocked meanwhile.',
+  },
+  'cp.terrain.err.ref-outside-terrain': {
+    pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado.',
+    en: 'No reference elevation: neither the base nor the route lies on the loaded terrain.',
+  },
+  'cp.terrain.err.no-plan': {
+    pt: 'Sem plano: não há faixas para seguir o terreno.',
+    en: 'No plan: there are no strips to follow the terrain with.',
+  },
+  'cp.terrain.err.terrain-failed': {
+    pt: 'Falha no cálculo do terreno: {msg}',
+    en: 'Terrain computation failed: {msg}',
+  },
   'cp.terrain.result': {
     pt: 'Terreno {min}–{max} m · {n} waypoints com altura própria (ref. {ref} m).',
     en: 'Terrain {min}–{max} m · {n} waypoints with individual heights (ref. {ref} m).',

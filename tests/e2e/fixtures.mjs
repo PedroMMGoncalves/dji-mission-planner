@@ -69,6 +69,9 @@ export const mesasGround = (x, y) =>
     mesa(x, y, MESAS.east),
   )
 
+/** Disco sem dados do MDT `demHole`, em metros locais, debaixo do rectângulo. */
+export const HOLE = { x: 1450, y: 1050, r: 150 }
+
 const feature = (rings, type = 'Polygon') =>
   JSON.stringify({ type: 'Feature', properties: {}, geometry: { type, coordinates: rings } })
 
@@ -184,7 +187,23 @@ export async function makeFixtures(dir) {
       return 150 + 0.25 * x
     },
   })
+  // o MDT do rectângulo com um disco de 150 m sem dados (nodata) debaixo da
+  // rota, a meio da área: um tile em falta ou uma zona sem dados (M2-T1)
+  const holeTif = makeFloatTiff({
+    width,
+    height,
+    originX,
+    originY,
+    scale,
+    nodata: -9999,
+    geoKeys: { GTModelTypeGeoKey: 2, GeographicTypeGeoKey: 4326 },
+    valueAt: (px, py) => {
+      const [x, y] = toM(originX + (px + 0.5) * scale, originY - (py + 0.5) * scale)
+      return Math.hypot(x - HOLE.x, y - HOLE.y) <= HOLE.r ? -9999 : ground(x, y)
+    },
+  })
   const paths = {
+    demHole: join(dir, 'buraco.tif'),
     demSteep: join(dir, 'encosta.tif'),
     projected: join(dir, 'projectada.geojson'),
     demMesas: join(dir, 'mesas.tif'),
@@ -198,6 +217,7 @@ export async function makeFixtures(dir) {
   }
   writeFileSync(paths.dem, Buffer.from(await tif.arrayBuffer()))
   writeFileSync(paths.demSteep, Buffer.from(await steepTif.arrayBuffer()))
+  writeFileSync(paths.demHole, Buffer.from(await holeTif.arrayBuffer()))
   // coordenadas em metros (PT-TM06) sem CRS declarado: a importação pergunta o sistema
   writeFileSync(
     paths.projected,

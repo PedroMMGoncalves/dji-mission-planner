@@ -14,6 +14,7 @@ import {
   worstDistanceM,
 } from '../../src/mission/takeoffZones.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../../src/utils/units.js'
+import { expectFast } from '../lib/perf.mjs'
 
 const lon0 = -8.0
 const lat0 = 37.95
@@ -223,7 +224,7 @@ describe('proposeBases', () => {
     const t0 = performance.now()
     const bases = proposeBases(many, { vlosM: 1000, radiusM: 100 })
     const dt = performance.now() - t0
-    expect(dt).toBeLessThan(2000)
+    expectFast(dt, 2000, 'proposeBases 150 blocos')
     expect(new Set(bases.flatMap((b) => b.blockIds)).size).toBe(150)
     expect(bases.every((b) => !b.outOfVlos)).toBe(true)
   })

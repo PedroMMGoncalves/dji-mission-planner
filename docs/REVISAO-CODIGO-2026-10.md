@@ -10,8 +10,12 @@ operador o que ele precisa de saber para voar?**
 **Estado (2026-10-19):** pacotes R-A a R-D aprovados, pela ordem R-A, R-C,
 R-B, R-D. R-A (projecto e dados: C1, C2, C3, C4, C5, C6, C7, T1, T4, U5)
 aplicado, com `tests/unit/projecto-ida-volta.test.mjs`,
-`tests/unit/crs-controlo.test.mjs` e sete cenários E2E novos; os outros a
-seguir. Os achados das duas primeiras vagas não se repetem aqui.
+`tests/unit/crs-controlo.test.mjs` e sete cenários E2E novos. R-C
+(desempenho e portão de testes: C8, C9, T2, T3, T7, T8, T13, T14)
+aplicado, com `tests/unit/i18n.test.mjs`,
+`tests/unit/ligacao-app-seguranca.test.mjs`, o workflow nocturno e quatro
+cenários E2E novos; R-B e R-D a seguir. Os achados das duas primeiras
+vagas não se repetem aqui.
 
 ## 1. Método
 

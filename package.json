@@ -27,7 +27,8 @@
     "test:e2e": "node tests/e2e/run.mjs",
     "test:smoke": "node smoke-test.mjs && node smoke-test-io.mjs",
     "test:unit": "vitest run",
-    "test:coverage": "c8 --include \"src/utils/**\" --reporter=text-summary --reporter=text --check-coverage --lines 92 --functions 90 --branches 82 npm run test:smoke"
+    "test:perf": "PERF=1 vitest run",
+    "test:coverage": "c8 --all --include \"src/utils/**\" --include \"src/mission/**\" --reporter=text-summary --reporter=text --check-coverage --lines 94 --functions 94 --branches 80 sh -c \"node smoke-test.mjs && node smoke-test-io.mjs && npx vitest run\""
   },
   "dependencies": {
     "@turf/turf": "^7.2.0",

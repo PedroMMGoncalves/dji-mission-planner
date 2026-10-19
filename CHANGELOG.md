@@ -414,6 +414,64 @@ oficial (`docs/REVISAO-EXPORTACAO-2026-10.md`). As correcções pequenas:
   (exportação por base) e VALIDACAO (`finishAction`, enum PSDK)
   actualizados.
 
+### Corrigido (revisão do código, pacote R-C: desempenho e portão de testes)
+
+O segundo pacote da terceira vaga: o que tornava a interface lenta a
+escrever e o que o portão de testes deixava passar.
+
+- **Escrever no painel deixa de recalcular tudo** (M3-C8): `useT` devolve
+  a mesma função enquanto a língua não muda — antes cada render criava uma
+  nova, e o seguimento de terreno e as fichas das bases, que a tinham como
+  dependência, recalculavam-se a cada tecla no nome da missão; o resultado
+  do seguimento de terreno passa a trazer códigos (`photo-waypoint`,
+  `ref-outside-terrain`, `no-plan`, `terrain-failed` com o detalhe) que os
+  painéis e o preflight traduzem; os blocos do perfil de elevação são
+  memorizados.
+- **Os campos numéricos confirmam o valor inteiro** (M3-C9): guardam um
+  rascunho e só o confirmam no blur, no Enter ou 400 ms depois da última
+  tecla — escrever «120» na altitude planeava a 1 m (1882 faixas) e a
+  12 m pelo caminho; e recortam ao intervalo do parâmetro (`PARAM_LIMITS`:
+  altitude 5-1500 m, sobreposições 10-95 %, ângulo 0-359°, margem 0-50 %,
+  espaçamento manual 1-2000 m, prolongamento 0-300 m, gimbal −90..45°),
+  que `min`/`max` não aplicavam ao que se escrevia.
+- **A ligação do App às verificações de segurança tem teste** (M3-T3):
+  as pernas de trânsito base ↔ rota (`src/mission/transitLegs.js`) e os
+  campos WPML da missão (`src/mission/missionWpml.js`) são funções puras,
+  usadas pelo App e por `tests/unit/ligacao-app-seguranca.test.mjs`;
+  quatro cenários E2E novos: um MDT com um disco sem dados debaixo da
+  rota bloqueia (`terrain-holes`, com a contagem e o ponto), uma base na
+  planície atrás da cumeada das mesas bloqueia o trânsito
+  (`transit-collision`, com o voo e os metros) e a 150 m deixa de
+  bloquear, a M4T térmica exporta todas as fotos com a lente `ir` (a
+  larga com `wide`), e a divisão por bateria com prolongamento de 30 m,
+  fiada e margem de 10 % dá mais blocos e cada KMZ cabe no tempo útil com
+  o trânsito do canto.
+- **Publicar e lançar só com o CI verde** (M3-T2): `deploy.yml` e
+  `release.yml` correm depois de o workflow `CI` concluir com sucesso no
+  `main` (`workflow_run`), sobre o mesmo commit; antes corriam em paralelo
+  com o CI, só com lint, testes e build, e um push com o E2E ou a cobertura
+  vermelhos publicava o site na mesma.
+- **Semente fixa nas propriedades e exploração nocturna** (M3-T7): os
+  testes com fast-check correm no portão com a semente 20261019 (`FC_SEED`
+  escolhe outra); as asserções de tempo (`expectFast`) só valem com
+  `PERF=1` (`npm run test:perf`), no portão ficam registadas; o workflow
+  `Nocturno` (03:17 UTC) corre as propriedades com uma semente aleatória e
+  os tempos a valer — um contra-exemplo da noite passa a teste fixo.
+- **Cobertura sobre as três suites** (M3-T8): `npm run test:coverage` mede
+  smoke, E/S e unitários juntos, sobre todos os ficheiros de `src/utils` e
+  `src/mission` (também os que nenhum teste importa), com limiares de 94 %
+  de linhas e funções e 80 % de ramos; antes só o smoke e a E/S contavam
+  (os unitários davam 0 % com `pool: 'forks'`) e `src/mission` não tinha
+  limiar.
+- **Teste dos dicionários** (M3-T13): cada `t('chave')` do código existe,
+  PT e EN não vazios e com as mesmas variáveis, sem chaves repetidas entre
+  ficheiros, os códigos do preflight têm texto e as famílias das acções de
+  segurança estão completas.
+- **Portão do E2E** (M3-T14): um `E2E_ONLY` com um nome que não existe
+  falha (antes corria 0 cenários e passava), uma corrida sem verificações
+  falha, e um cenário que lança guarda a captura da página aberta e
+  fecha-a.
+
 ## 1.4.2 — 2026-10-08
 
 ### Alterado (desenho)

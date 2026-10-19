@@ -15,6 +15,7 @@ import {
 import { buildSquareMosaic } from '../../src/mission/squareMosaic.js'
 import { ringToPolygon } from '../../src/utils/geo.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../../src/utils/units.js'
+import { expectFast } from '../lib/perf.mjs'
 
 const lon0 = -8.0
 const lat0 = 37.95
@@ -236,7 +237,7 @@ describe('células novas herdam da antiga que cobre metade delas', () => {
     const manual = Object.fromEntries(oldCells.map((c) => [String(c.id), 'b1']))
     const t0 = performance.now()
     const res = carryOverCells({ oldRing: ring, newRing: ring, oldCells, newCells, manual })
-    expect(performance.now() - t0).toBeLessThan(500)
+    expectFast(performance.now() - t0, 500, 'carryOverCells 150 celulas')
     expect(Object.keys(res.manual).length).toBeGreaterThan(newCells.length / 2)
   })
 })

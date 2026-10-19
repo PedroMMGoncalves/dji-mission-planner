@@ -12,6 +12,7 @@ import {
   lineOfSight,
 } from '../../src/mission/viewshed.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../../src/utils/units.js'
+import { expectFast } from '../lib/perf.mjs'
 
 const lon0 = -8.0
 const lat0 = 37.95
@@ -227,7 +228,7 @@ describe('blockVisibility', () => {
     const ms = performance.now() - t0
     expect(v.total).toBeGreaterThan(650)
     expect(v.visibleFrac).toBe(1) // sem saida antecipada: o pior caso
-    expect(ms).toBeLessThan(100)
+    expectFast(ms, 100, 'blockVisibility')
   })
 })
 

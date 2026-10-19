@@ -81,7 +81,6 @@ export function useAreaMission({
   terrainFollow,
   terrainCovers,
   runExport,
-  t,
 }) {
   const [gcpConfig, setGcpConfig] = useState(() => ({ ...DEFAULT_GCP_CONFIG }))
 
@@ -285,8 +284,9 @@ export function useAreaMission({
     // B: com foto por waypoint, a densificação do seguimento de terreno
     // reindexaria as acções de foto — erro explícito (e exportação bloqueada)
     // em vez de uma missão parcial com alturas planas ou fotos perdidas
-    if (terrainFollow.enabled && photoMode === 'waypoint')
-      return { error: t('cp.terrain.photoWaypoint') }
+    // códigos, não texto: o painel e o preflight traduzem (M3-C8: `t` como
+    // dependência refazia o seguimento de terreno a cada render do App)
+    if (terrainFollow.enabled && photoMode === 'waypoint') return { error: 'photo-waypoint' }
     if (!terrainFollow.enabled || !terrainCovers || !planOk?.lines?.length) return null
     try {
       const res = planTerrainFollow(terrain.data, planOk, {
@@ -297,15 +297,12 @@ export function useAreaMission({
         // cada bloco com a cota da zona da sua base
         blockRefs: blockRefs?.refs ?? null,
       })
-      if (res.error === 'ref-outside-terrain')
-        return { error: 'Referência fora do terreno carregado' }
       return res
     } catch (err) {
-      return { error: err?.message ?? 'Falha no cálculo do terreno' }
+      return { error: 'terrain-failed', detail: err?.message ?? '' }
     }
   }, [
     photoMode,
-    t,
     terrainFollow,
     terrainCovers,
     terrain.data,

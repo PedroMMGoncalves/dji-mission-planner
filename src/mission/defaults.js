@@ -26,6 +26,29 @@ export const DEFAULT_PARAMS = {
   waypointStops: 'corners', // 'corners' | 'all': paragem só nos cantos das faixas, ou em todos os waypoints
 }
 
+/**
+ * Limites dos parâmetros numéricos de voo (M3-C9): o campo recorta o que se
+ * escreve e `setParam` é o guarda de fundo. A velocidade tem os limites da
+ * aeronave (App).
+ */
+export const PARAM_LIMITS = {
+  altitude: [5, 1500],
+  frontOverlap: [10, 95],
+  sideOverlap: [10, 95],
+  angle: [0, 359],
+  bufferPct: [0, 50],
+  manualSpacing: [1, 2000],
+  overshoot: [0, 300],
+  gimbalPitch: [-90, 45],
+}
+
+/** Valor de um parâmetro dentro dos seus limites (sem limites, tal como veio). */
+export function clampParam(key, value) {
+  const lim = PARAM_LIMITS[key]
+  if (!lim || typeof value !== 'number' || !Number.isFinite(value)) return value
+  return Math.min(lim[1], Math.max(lim[0], value))
+}
+
 /** Divisão da missão em blocos. */
 export const DEFAULT_SPLIT = {
   mode: 'none', // 'none' | 'area' | 'battery' | 'tiles'

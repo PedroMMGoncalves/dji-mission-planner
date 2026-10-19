@@ -23,7 +23,8 @@ npm run lint           # ESLint (regras react-hooks incluídas)
 npm run typecheck      # tsc --checkJs sobre os tipos JSDoc
 npm run format:check   # Prettier (npm run format corrige)
 npm test               # smoke + E/S + propriedades (Vitest + fast-check)
-npm run test:coverage  # smoke sob c8 com limiares (só podem subir)
+npm run test:coverage  # as três suites sob c8 com limiares (só podem subir)
+npm run test:perf      # unitários com as asserções de tempo a valer (PERF=1)
 npm run build          # build de produção em dist/
 npm run size           # orçamento de tamanho dos chunks
 npm run test:e2e       # E2E em Chromium sobre dist/ (precisa do build)
@@ -31,7 +32,15 @@ npm run test:e2e       # E2E em Chromium sobre dist/ (precisa do build)
 
 O CI corre tudo isto em cada push. Um commit só está pronto quando estes
 comandos passam localmente; um vermelho no `main` custa um ciclo a quem
-vier a seguir.
+vier a seguir. O site (`deploy.yml`) e a release (`release.yml`) só se
+publicam depois de o workflow `CI` ficar verde nesse commit
+(`workflow_run`): um push vermelho não chega ao ar.
+
+Os testes por propriedades correm com uma semente fixa (20261019;
+`FC_SEED=<n> npm run test:unit` escolhe outra) e as asserções de tempo só
+falham com `PERF=1` — no portão registam-se. O workflow `Nocturno` corre
+de madrugada os unitários com uma semente aleatória e os tempos a valer;
+um contra-exemplo que apareça aí passa a teste fixo.
 
 ## As camadas de teste e o que cada uma garante
 
@@ -41,6 +50,7 @@ vier a seguir.
 | E/S | `smoke-test-io.mjs` | leitores de KML/GeoJSON/WPML/GeoTIFF, entradas malformadas, ida e volta |
 | Propriedades | `tests/unit/*.test.mjs` | invariantes sob entradas aleatórias (corredor, terrain follow, disparo, grelha) e os módulos de `src/mission/` |
 | Esquema | `tests/unit/esquema.test.mjs` | o ficheiro de projecto cumpre `public/schema/project-v2.schema.json` |
+| Dicionários | `tests/unit/i18n.test.mjs` | cada `t('chave')` do código existe, PT e EN com as mesmas variáveis, sem chaves repetidas; os códigos do preflight têm texto |
 | E2E | `tests/e2e/` | o percurso do operador no browser e o ficheiro que sairia para o comando |
 | Manual | `docs/QA_MANUAL.md` | o que nenhuma das anteriores cobre; uma passagem por release |
 
@@ -85,7 +95,8 @@ e não misturar formatação com comportamento.
 
 Subir a versão em `package.json` e acrescentar a secção `## <versão>` no
 `CHANGELOG.md` (movendo o que está em "Por publicar") é o gesto que
-publica: no push a `main`, o workflow `release.yml` corre as verificações,
+publica: no push a `main`, depois de o CI ficar verde nesse commit, o
+workflow `release.yml` corre as verificações,
 cria a etiqueta `v<versão>`, publica a GitHub Release com o zip da build,
 o SBOM (CycloneDX) e a atestação de proveniência, e o Zenodo arquiva a
 release com um DOI de versão.

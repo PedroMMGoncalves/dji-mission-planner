@@ -28,6 +28,7 @@ import {
 import { blockVisibility } from '../../src/mission/viewshed.js'
 import { RADIO_CHECK } from '../../src/mission/viewshedPlan.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../../src/utils/units.js'
+import { expectFast } from '../lib/perf.mjs'
 
 const lon0 = -8.0
 const lat0 = 37.95
@@ -515,8 +516,8 @@ describe('createBaseProposalRun: bons sítios para as bases', () => {
         if (done) break
       }
       // fatias de 12 ms: nenhum passo indivisível passa os 50 ms de uma tarefa
-      expect(longest).toBeLessThan(50)
-      expect(total).toBeLessThan(blocks.length > 100 ? 4000 : 1000)
+      expectFast(longest, 50, 'passo mais longo')
+      expectFast(total, blocks.length > 100 ? 4000 : 1000, 'total')
       const res = run.result()
       expect(Object.keys(res.blockBase)).toHaveLength(blocks.length)
       const L = layoutBlocks({ blocks, bases: res.bases, manual: res.blockBase, vlosM: 1000 })

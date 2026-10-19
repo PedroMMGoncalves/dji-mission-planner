@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AIRCRAFT, PAYLOADS } from '../data/drones.js'
 import { CRS_OPTIONS } from '../utils/importArea.js'
 import { useLang, useT } from '../i18n.jsx'
@@ -28,18 +28,54 @@ function Field({ label, suffix, children }) {
   )
 }
 
+/** Erro do seguimento de terreno (código de useAreaMission) na língua da interface. */
+function terrainErrorText(res, t) {
+  const key = `cp.terrain.err.${res.error}`
+  const msg = t(key, { msg: res.detail ?? '' })
+  return msg === key ? String(res.error) : msg
+}
+
+/**
+ * Campo numérico com rascunho local (M3-C9): o valor só chega ao estado no
+ * blur, no Enter ou 400 ms depois da última tecla, já limitado a [min, max].
+ * Cada tecla era um plano novo — o «1» e o «12» a caminho de «120» na
+ * altitude davam um plano a 1 m com 1882 faixas e outro a 12 m —, o campo
+ * vazio valia 0 e os limites do campo não se aplicavam ao que se escrevia.
+ */
 function NumberInput({ value, onChange, min, max, step = 1, wide, testId, label }) {
+  const [draft, setDraft] = useState(null)
+  const timer = useRef(null)
+  const commit = (raw) => {
+    clearTimeout(timer.current)
+    setDraft(null)
+    const n = Number(raw)
+    if (raw === '' || raw == null || !Number.isFinite(n)) return
+    let v = n
+    if (Number.isFinite(min)) v = Math.max(min, v)
+    if (Number.isFinite(max)) v = Math.min(max, v)
+    if (v !== value) onChange(v)
+  }
+  useEffect(() => () => clearTimeout(timer.current), [])
   return (
     <input
       type="number"
       aria-label={label}
       data-testid={testId}
+      onBlur={() => draft != null && commit(draft)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && draft != null) commit(draft)
+      }}
       className={`${wide ? 'w-28' : 'w-20'} rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-sm text-slate-100 focus:border-sky-500 focus:outline-none`}
-      value={value}
+      value={draft ?? value}
       min={min}
       max={max}
       step={step}
-      onChange={(e) => onChange(Number(e.target.value))}
+      onChange={(e) => {
+        const raw = e.target.value
+        setDraft(raw)
+        clearTimeout(timer.current)
+        timer.current = setTimeout(() => commit(raw), 400)
+      }}
     />
   )
 }
@@ -917,7 +953,7 @@ export default function ControlPanel({
             )}
             {terrainFollow.enabled && terrainResult?.error && (
               <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
-                ⚠ {terrainResult.error}
+                ⚠ {terrainErrorText(terrainResult, t)}
               </p>
             )}
           </div>

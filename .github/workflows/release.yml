@@ -9,9 +9,14 @@ name: Release
 # CHANGELOG) é o gesto que publica. Também aceita uma etiqueta empurrada à
 # mão ou o disparo manual. A etiqueta é criada pela própria release, no
 # commit em que corre, e tem sempre de ser a versão do package.json.
+# No push a main, só depois de o CI ter passado nesse commit (M3-T2); uma
+# etiqueta empurrada à mão e o disparo manual continuam a entrar directamente.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
+  push:
     tags: ['v*']
   workflow_dispatch:
     inputs:
@@ -30,6 +35,7 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     timeout-minutes: 15
     permissions:
       contents: write # só este job cria a etiqueta e a release
@@ -37,6 +43,8 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22

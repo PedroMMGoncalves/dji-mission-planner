@@ -1439,9 +1439,14 @@ ponto válido e a folga saltava a amostra, M2-T1); trânsito entre a base e
 a rota que entra no relevo (`transit-collision`, `transitClearance`: a ida
 à altura do 1.º waypoint ou à de segurança da descolagem, 30 m, a maior; o
 regresso à maior entre a altura do último waypoint e a de RTH; por voo com
-bases, M2-T3); seguir terreno com
+bases, M2-T3; as pernas são `transitLegs`/`worstTransit` em
+`src/mission/transitLegs.js`, funções puras que o App usa e os testes
+importam, M3-T3); seguir terreno com
 foto por waypoint; seguir terreno ligado sem relevo a cobrir a área; erro
-do cálculo do terreno; mais de 65535 waypoints numa rota (a maior, com
+do cálculo do terreno (o resultado do seguimento traz um código —
+`photo-waypoint`, `ref-outside-terrain`, `no-plan`, `terrain-failed` com
+o detalhe — que os painéis e o preflight traduzem, M3-C8); mais de 65535
+waypoints numa rota (a maior, com
 blocos); waypoints consecutivos a menos de 0,5 m em 3D na rota exportada (o mínimo
 que a DJI aceita), em todos os modos — as verificações de rota corriam só
 na área; é o mínimo do SDK da DJI, a especificação WPML não fixa um. Nota (não é aviso): rota acima de 120 m do solo, o máximo da categoria aberta. Avisos: rota acima de 2000 waypoints; tecto AGL do
@@ -1520,6 +1525,8 @@ base fora do relevo ou só com pontos desconhecidos.
 | Bacias de visão no preflight: aviso / nota | ≥ 5 % do bloco / > 0 (atrás do relevo; rádio em risco à vista) | preflight.js |
 | Bacias de visão: espera / fatia | 350 ms / 12 ms | useViewsheds.js |
 | Histórico de edição (Ctrl+Z) | 100 passos (área, células, bases, atribuições) | useAreaGeometry.js |
+| Limites dos parâmetros (recorte ao escrever, `PARAM_LIMITS`) | altitude 5-1500 m; sobreposições 10-95 %; ângulo 0-359°; margem 0-50 %; espaçamento manual 1-2000 m; prolongamento 0-300 m; gimbal −90..45° | defaults.js |
+| Campos numéricos: confirmação do rascunho | blur, Enter ou 400 ms depois da última tecla | ControlPanel.jsx |
 | Zona de descolagem: raio / desnível máximo | 100 m / 10 m (Configuração; raio próprio por base 0-500 m) | equipment.js, bases.js |
 | Zona: amostragem | anéis a 10 m, 16 azimutes; cota = mínima; ganho = máx − mín | takeoffZones.js |
 | Alcance visual (VLOS) | M300 RTK 1000 m; M3E, M4T, outras 500 m | equipment.js |

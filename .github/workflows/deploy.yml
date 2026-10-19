@@ -1,7 +1,13 @@
 name: Deploy to GitHub Pages
 
+# Só depois de o CI (ci.yml: lint, typecheck, Prettier, cobertura, unitários,
+# build, orçamento, auditoria e E2E) ter passado nesse commit (M3-T2): até
+# Outubro de 2026 o deploy corria a cada push em paralelo com o CI, com uma
+# verificação mais curta, e publicou um commit com o CI vermelho.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -16,12 +22,16 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # o commit que o CI verificou (num disparo manual, o HEAD do ramo)
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22

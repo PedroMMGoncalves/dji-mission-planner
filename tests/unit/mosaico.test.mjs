@@ -13,6 +13,7 @@ import {
   tilePolygonWithSquares,
 } from '../../src/utils/geo.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../../src/utils/units.js'
+import { expectFast } from '../lib/perf.mjs'
 
 const lat0 = 38.7
 // o referencial local da app (units.js), para os lados pedidos ao mosaico
@@ -347,6 +348,6 @@ describe('buildSquareMosaic', () => {
     const ms = performance.now() - t0
     expect(r.error).toBeUndefined()
     expect(r.trials).toBe(17)
-    expect(ms).toBeLessThan(300)
+    expectFast(ms, 300, 'buildSquareMosaic 10 km2')
   })
 })

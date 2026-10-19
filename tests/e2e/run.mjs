@@ -22,7 +22,17 @@ import { chromium } from 'playwright'
 import Ajv2020 from 'ajv/dist/2020.js'
 import JSZip from 'jszip'
 import * as turf from '@turf/turf'
-import { MESAS, RIDGE, ground, makeFixtures, rectRing, toLL, toM } from './fixtures.mjs'
+import {
+  HOLE,
+  MESAS,
+  RIDGE,
+  ground,
+  hillRing,
+  makeFixtures,
+  rectRing,
+  toLL,
+  toM,
+} from './fixtures.mjs'
 import { analyseRoute, readRoutes } from './kmz.mjs'
 
 const PORT = Number(process.env.E2E_PORT ?? 4173)
@@ -159,6 +169,7 @@ async function openMission({
   abort = null,
 }) {
   const page = await browser.newPage({ viewport, acceptDownloads: true })
+  currentPage = page
   if (initScript) await page.addInitScript(initScript)
   // aviso antes de usar já aceite neste "aparelho" (o cenário do aviso testa-o)
   if (disclaimer)
@@ -251,7 +262,14 @@ async function exportKmz(page, file) {
 const bodyText = (page) => page.evaluate(() => document.body.innerText)
 
 const ONLY = process.env.E2E_ONLY ? process.env.E2E_ONLY.split(',') : null
+// os nomes registados, para um E2E_ONLY com um nome que não existe não
+// «passar» com 0 cenários (M3-T14)
+const SCENARIOS = []
+// a última página aberta por openMission: quando um cenário lança, o seu
+// `ctx` nunca chega a existir e a captura em falha não acontecia (M3-T14)
+let currentPage = null
 async function scenario(name, fn) {
+  SCENARIOS.push(name)
   if (ONLY && !ONLY.includes(name)) return
   console.log(`\n## ${name}`)
   let ctx = null
@@ -260,7 +278,11 @@ async function scenario(name, fn) {
   } catch (err) {
     fails += 1
     console.log(`FAIL  ${name}: ${err.message.split('\n')[0]}`)
-    if (ctx?.page) await ctx.page.screenshot({ path: join(OUT, `${name}.png`) }).catch(() => {})
+    const page = ctx?.page ?? currentPage
+    if (page && !page.isClosed()) {
+      await page.screenshot({ path: join(OUT, `${name}.png`) }).catch(() => {})
+      await page.close().catch(() => {})
+    }
   }
 }
 
@@ -1344,8 +1366,10 @@ await scenario('configuracao-equipamento', async () => {
     tb65Stored?.usefulMin === 30 && tb65Stored?.count === 3 && tb65Stored?.estimated === false,
   )
 
-  // acerto do dia na missão e volta ao valor da bateria
+  // acerto do dia na missão e volta ao valor da bateria (o campo confirma o
+  // rascunho ao sair dele, no Enter ou 400 ms depois da última tecla)
   await useful.fill('26')
+  await useful.press('Tab')
   await page.waitForTimeout(300)
   const reset = page.getByTestId('mission-useful-reset')
   check('equipamento: tempo útil acertado à mão mostra a reposição', await reset.isVisible())
@@ -3997,9 +4021,284 @@ await scenario('checklist-por-projecto', async () => {
   return { page }
 })
 
+/* ---- M3-T3: a ligação do App às verificações de segurança -------------- */
+/** Importa um MDT pela interface e espera que o relevo fique carregado. */
+async function importDem(page, file) {
+  await page.waitForFunction(
+    () => {
+      const b = [...document.querySelectorAll('button')].find((b) =>
+        /Importar MDT|Import DTM/.test(b.textContent),
+      )
+      return b && !b.disabled
+    },
+    null,
+    { timeout: 15000 },
+  )
+  await page.locator('input[accept=".tif,.tiff"]').setInputFiles(file)
+  await page.waitForFunction(
+    () => {
+      const l = [...document.querySelectorAll('label')].find((l) =>
+        /Seguir terreno|Follow terrain/.test(l.textContent),
+      )
+      const i = l?.querySelector('input')
+      return i && !i.disabled
+    },
+    null,
+    { timeout: 20000 },
+  )
+}
+const pillText = async (page) => (await page.getByTestId('preflight-pill').innerText()).trim()
+const semBloqueio = (txt) => /Pronto a exportar|Ready to export|0 bloqueios|0 blockers/.test(txt)
+
+// um MDT com um disco de 150 m sem dados debaixo da rota: o preflight
+// bloqueia (terrain-holes), diz quantos pontos e onde, e o KMZ fica
+// desactivado; com o MDT íntegro o bloqueio desaparece
+await scenario('preflight-bloqueia-buracos-no-mdt', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, demFile: fx.demHole })
+  // a seguir o terreno (a rota plana entrava nas colinas): o único bloqueio
+  // é o dos buracos
+  await configure(page, { tf: true })
+  await page.waitForTimeout(1500)
+  const pill = page.getByTestId('preflight-pill')
+  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  check(
+    'buracos: um disco sem dados debaixo da rota é um bloqueio e o KMZ fica desactivado',
+    (await pill.count()) === 1 &&
+      /1 bloqueio|1 blocker/.test(await pillText(page)) &&
+      !(await exportBtn.isEnabled()),
+    await pillText(page),
+  )
+  await pill.click()
+  const txt = await page.getByTestId('preflight-list').innerText()
+  const m = /Sem relevo em (\d+) de (\d+) pontos|No elevation data at (\d+) of (\d+)/.exec(txt)
+  const n = Number(m?.[1] ?? m?.[3])
+  const total = Number(m?.[2] ?? m?.[4])
+  check(
+    'buracos: a lista diz quantos pontos da rota ficam sem relevo e o primeiro onde',
+    Boolean(m) && /38\.7\d+, -9\.1\d+/.test(txt),
+    txt.replace(/\s+/g, ' ').slice(0, 220),
+  )
+  // o disco é uma pequena parte da rota, não a rota toda (nem um só ponto)
+  check(
+    'buracos: são os pontos do disco, uma pequena parte da rota',
+    n >= 5 && n < total * 0.2,
+    `${n} de ${total}`,
+  )
+  // o primeiro ponto sem dados está no disco
+  const at = /(38\.7\d+), (-9\.1\d+)/.exec(txt)
+  const [ax, ay] = at ? toM(Number(at[2]), Number(at[1])) : [NaN, NaN]
+  check(
+    'buracos: o ponto anunciado está dentro do disco (±1 passo de 40 m)',
+    Math.hypot(ax - HOLE.x, ay - HOLE.y) <= HOLE.r + 45,
+    `(${ax.toFixed(0)}, ${ay.toFixed(0)}) m, disco em (${HOLE.x}, ${HOLE.y}) r ${HOLE.r}`,
+  )
+  await importDem(page, fx.dem)
+  await exportReady(page)
+  check(
+    'buracos: com o MDT íntegro o bloqueio desaparece',
+    semBloqueio(await pillText(page)),
+    await pillText(page),
+  )
+  check('buracos: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// a base na planície (150 m) a oeste da cumeada estreita das MESAS (95 m, em
+// x = 850), fora do alto de oeste: o trânsito «safely» faz-se à altura do
+// 1.º waypoint (40 m sobre a cota da zona) e entra na cumeada — bloqueio
+// transit-collision, com o voo; a 150 m passa por cima e o bloqueio desaparece
+await scenario('preflight-bloqueia-transito-atras-da-cumeada', async () => {
+  const { page, errors } = await openMission({ dem: false })
+  const ficheiro = join(OUT, 'transito-cumeada.json')
+  writeFileSync(
+    ficheiro,
+    JSON.stringify({
+      version: 2,
+      missionName: 'transito-cumeada',
+      ring: hillRing.slice(0, 4),
+      params: { altitude: 40 },
+      bases: [{ id: 'base-a', label: 'A', point: toLL(650, 850) }],
+    }),
+  )
+  await page.locator('input[accept=".json"]').setInputFiles(ficheiro)
+  await page.waitForTimeout(1000)
+  await importDem(page, fx.demMesas)
+  await configure(page, { split: 'Mosaico' })
+  const nBlocks = await page.getByTestId('block-row').count()
+  check('trânsito: dois blocos de 250 m, com a base A', nBlocks === 2, `${nBlocks} blocos`)
+  await page.waitForTimeout(1500)
+  const pill = page.getByTestId('preflight-pill')
+  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  check(
+    'trânsito: a 40 m atrás da cumeada é um bloqueio e o KMZ fica desactivado',
+    (await pill.count()) === 1 &&
+      /1 bloqueio|1 blocker/.test(await pillText(page)) &&
+      !(await exportBtn.isEnabled()),
+    await pillText(page),
+  )
+  await pill.click()
+  const txt = await page.getByTestId('preflight-list').innerText()
+  const m =
+    /trânsito entre a base e a rota \(voo (A-\d)\) entra no relevo: (\d+(?:\.\d)?) m abaixo do solo a (\d+) m acima da base|transit between the home point and the route \(flight (A-\d)\) goes into the terrain: (\d+(?:\.\d)?) m below ground at (\d+) m above the home point/.exec(
+      txt,
+    )
+  const abaixo = Number(m?.[2] ?? m?.[5])
+  const altura = Number(m?.[3] ?? m?.[6])
+  check(
+    'trânsito: a lista nomeia o voo, quanto entra no relevo e a altura do trânsito',
+    Boolean(m) && altura === 40,
+    txt.replace(/\s+/g, ' ').slice(0, 260),
+  )
+  // a cumeada tem 95 m sobre a planície: a 40 m, ~55 m abaixo do topo
+  check(
+    'trânsito: entra ~55 m no relevo (cumeada de 95 m a 40 m de altura)',
+    abaixo >= 45 && abaixo <= 60,
+    `${abaixo} m`,
+  )
+  const alt = page.locator('label', { hasText: /Altitude \(AGL\)/ }).locator('input')
+  await alt.fill('150')
+  await alt.press('Tab')
+  await page.waitForTimeout(1500)
+  check(
+    'trânsito: a 150 m passa por cima da cumeada e o bloqueio desaparece',
+    semBloqueio(await pillText(page)),
+    await pillText(page),
+  )
+  check('trânsito: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// M4T térmica: cada acção de foto do KMZ leva a lente ir (payloadLensIndex);
+// a larga leva wide; os enums da aeronave e do payload são os do M4T
+await scenario('m4t-termica-exporta-lente-ir', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  const sel = (v) =>
+    page
+      .locator('select')
+      .filter({ has: page.locator(`option[value="${v}"]`) })
+      .first()
+  await sel('M4T').selectOption('M4T')
+  await openDrawer(page, 'missao')
+  await sel('M4T_THERMAL').selectOption('M4T_THERMAL')
+  await closeDrawer(page)
+  await exportReady(page)
+  const lentes = (w) => {
+    const fotos = (w.match(/<wpml:actionActuatorFunc>takePhoto</g) ?? []).length
+    const ir = (w.match(/<wpml:payloadLensIndex>ir</g) ?? []).length
+    const wide = (w.match(/<wpml:payloadLensIndex>wide</g) ?? []).length
+    return { fotos, ir, wide }
+  }
+  const termica = await readRoutes(await exportKmz(page, join(OUT, 'm4t-termica.kmz')))
+  const t = lentes(termica[0].wpml)
+  check(
+    'M4T térmica: todas as acções de foto levam a lente ir',
+    t.fotos > 0 && t.ir === t.fotos && t.wide === 0,
+    `${t.ir} ir, ${t.wide} wide, ${t.fotos} fotos`,
+  )
+  check(
+    'M4T térmica: enums da aeronave (99) e do payload (89) no KMZ',
+    /<wpml:droneEnumValue>99</.test(termica[0].wpml) &&
+      /<wpml:payloadEnumValue>89</.test(termica[0].wpml),
+  )
+  await openDrawer(page, 'missao')
+  await sel('M4T_WIDE').selectOption('M4T_WIDE')
+  await closeDrawer(page)
+  await exportReady(page)
+  const larga = await readRoutes(await exportKmz(page, join(OUT, 'm4t-larga.kmz')))
+  const l = lentes(larga[0].wpml)
+  check(
+    'M4T larga: todas as acções de foto levam a lente wide',
+    l.fotos > 0 && l.wide === l.fotos && l.ir === 0,
+    `${l.wide} wide, ${l.ir} ir, ${l.fotos} fotos`,
+  )
+  check('M4T: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// divisão por bateria com prolongamento de 30 m, fiada de amarração e margem
+// de 10 %: o que cada célula voa além do quadrado conta no lado (M2-G1) — a
+// duração de cada KMZ, com o trânsito de uma base no canto, cabe no tempo
+// útil, e há mais blocos do que sem estes extras
+await scenario('bateria-com-prolongamento-fiada-e-margem', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  await configure(page, { tf: true, split: 'Bateria' })
+  const useful = Number(await page.getByTestId('mission-useful').inputValue())
+  await exportReady(page)
+  const base = await readRoutes(await exportKmz(page, join(OUT, 'bateria-simples.zip')))
+  await openDrawer(page, 'voo')
+  const over = page
+    .locator('label', { hasText: /Overshoot por faixa|Per-line overshoot/ })
+    .locator('input')
+  await over.fill('30')
+  await over.press('Tab')
+  await label(page, /Fiada de amarração|Perpendicular tie line/).check()
+  await page.getByRole('button', { name: '10%', exact: true }).click()
+  await closeDrawer(page)
+  await page.waitForTimeout(1500)
+  await exportReady(page)
+  const routes = await readRoutes(await exportKmz(page, join(OUT, 'bateria-extras.zip')))
+  check(
+    'bateria: com prolongamento, fiada e margem há mais blocos do que sem',
+    routes.length > base.length && base.length >= 2,
+    `${routes.length} vs ${base.length}`,
+  )
+  // o modelo do lado (squareSideWithBaseTransit): uma base num canto da célula
+  // com a zona de 100 m, trânsito (2·100 + (1+√2)·L)/v; o lado L do mosaico é
+  // a extensão através das faixas menos a margem (10 % de √área / 2 de cada
+  // lado); a margem em metros do rectângulo de 2,5 × 1,8 km
+  const bufferM = 0.05 * Math.sqrt(2500 * 1800)
+  const medidas = routes.map((r) => {
+    const wps = [...r.wpml.matchAll(/<coordinates>\s*([-\d.]+),([-\d.]+)/g)].map((m) =>
+      toM(Number(m[1]), Number(m[2])),
+    )
+    const xs = wps.map((w) => w[0])
+    const ys = wps.map((w) => w[1])
+    const ext = Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys))
+    const v = Number(/<wpml:autoFlightSpeed>([\d.]+)</.exec(r.wpml)?.[1])
+    const dur = Number(/<wpml:duration>([\d.]+)</.exec(r.wpml)?.[1])
+    const L = Math.max(0, ext - 2 * bufferM)
+    return { name: r.name, dur, transit: (2 * 100 + (1 + Math.SQRT2) * L) / v, L }
+  })
+  const pior = medidas.reduce((a, b) => (a.dur + a.transit > b.dur + b.transit ? a : b))
+  check(
+    'bateria: a duração de cada KMZ, com o trânsito do canto, cabe no tempo útil',
+    medidas.every((m) => Number.isFinite(m.dur) && m.dur + m.transit <= useful * 60),
+    `pior ${pior.name}: ${pior.dur.toFixed(0)} s + ${pior.transit.toFixed(0)} s de trânsito, útil ${useful * 60} s (L ≈ ${pior.L.toFixed(0)} m)`,
+  )
+  // e os blocos não são minúsculos: o maior usa pelo menos metade do útil
+  check(
+    'bateria: o bloco mais longo usa pelo menos metade do tempo útil',
+    pior.dur + pior.transit >= useful * 30,
+    `${(pior.dur + pior.transit).toFixed(0)} s de ${useful * 60}`,
+  )
+  check(
+    'bateria: no painel o voo mais longo não fica a vermelho',
+    (await page.getByTestId('stats-longest').locator('[data-tone]').getAttribute('data-tone')) !==
+      'over',
+    await page.getByTestId('stats-longest').innerText(),
+  )
+  check('bateria: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 /* ---- fim ----------------------------------------------------------------- */
 await browser.close()
 stopServer()
+if (ONLY) {
+  const desconhecidos = ONLY.filter((n) => !SCENARIOS.includes(n))
+  if (desconhecidos.length) {
+    fails += 1
+    console.log(`FAIL  E2E_ONLY com cenários que não existem: ${desconhecidos.join(', ')}`)
+  }
+}
+if (passes + fails === 0) {
+  fails += 1
+  console.log('FAIL  nenhuma verificação correu')
+}
 console.log(`\n${passes} PASS, ${fails} FAIL`)
 if (fails > 0) {
   console.log(`capturas e ficheiros em ${OUT}`)

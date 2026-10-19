@@ -66,13 +66,7 @@ import {
   photoInterval,
   resolveSensor,
 } from './utils/geo.js'
-import {
-  DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
-  MissionExportError,
-  buildFilesZip,
-  defaultRthHeightM,
-  downloadBlob,
-} from './utils/exporters.js'
+import { MissionExportError, buildFilesZip, downloadBlob } from './utils/exporters.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission, useCorridorRoute } from './hooks/useCorridorMission.js'
@@ -91,13 +85,16 @@ import {
   DEFAULT_MISSION_NAME,
   DEFAULT_PARAMS,
   DEFAULT_TERRAIN_FOLLOW,
+  clampParam,
 } from './mission/defaults.js'
 import { DEFAULT_FACE_CONFIG } from './utils/faceMode.js'
 import { DEFAULT_ORBIT_CONFIG } from './utils/orbit.js'
 import { DEFAULT_CORRIDOR_CONFIG } from './utils/corridor.js'
 import { DEFAULT_CIRCULAR_CONFIG } from './utils/circular.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
-import { routeClearance, terrainHolesAlong, transitClearance } from './mission/clearance.js'
+import { routeClearance, terrainHolesAlong } from './mission/clearance.js'
+import { transitLegs, worstTransit } from './mission/transitLegs.js'
+import { missionWpml } from './mission/missionWpml.js'
 import { blockWorstTransitM, blockWorstVlosM } from './mission/takeoffZones.js'
 import { checkFaceClearance } from './utils/faceMode.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from './utils/units.js'
@@ -322,7 +319,8 @@ function AppInner({ lang, setLang }) {
         const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
         value = Math.min(r.max, Math.max(r.min, value))
       }
-      return { ...p, [key]: value }
+      // os outros parâmetros numéricos dentro dos seus limites (M3-C9)
+      return { ...p, [key]: clampParam(key, value) }
     })
   }, [])
 
@@ -417,21 +415,7 @@ function AppInner({ lang, setLang }) {
   // Enums WPML: aeronave + payload; o editor custom substitui o enum do
   // payload sempre, e o da aeronave apenas quando a aeronave é CUSTOM
   // (num M300 com payload custom o droneEnumValue continua a ser o do M300)
-  const wpml = useMemo(() => {
-    const merged = {
-      ...aircraft.wpml,
-      ...payload.wpml,
-      // limites do gimbal e lente do payload: a exportacao recorta o pitch ao
-      // intervalo e o template nomeia a lente nos payloads multi-lente
-      gimbalPitchRange: payload.gimbalPitch ?? null,
-      imageFormat: payload.imageFormat ?? null,
-    }
-    if (payload.type === 'custom') {
-      merged.payloadEnumValue = custom.payloadEnumValue
-      if (aircraft.id === 'CUSTOM') merged.droneEnumValue = custom.droneEnumValue
-    }
-    return merged
-  }, [aircraft, payload, custom])
+  const wpml = useMemo(() => missionWpml(aircraft, payload, custom), [aircraft, payload, custom])
 
   const footprint = useMemo(
     () => computeFootprint(sensor, params.altitude),
@@ -891,7 +875,6 @@ function AppInner({ lang, setLang }) {
     terrainFollow,
     terrainCovers,
     runExport,
-    t,
   })
 
   // Disposição de blocos nova: as atribuições lidas de um projecto adoptam-na
@@ -1565,54 +1548,25 @@ function AppInner({ lang, setLang }) {
   const transitClearanceInfo = useMemo(() => {
     const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
     if (!elevationAt || !view3d?.waypoints?.length || !Number.isFinite(view3d.refElev)) return null
-    const legs = []
-    if (missionMode === 'area' && perBlockBases && view3d.refSource === 'bases' && blocks?.length) {
-      const tfOk = terrainResult && !terrainResult.error
-      const src = tfOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
-      const starts = [0, ...(view3d.breaks ?? [])]
-      let k = 0
-      src.forEach((b, i) => {
-        if (!(b.waypoints?.length > 0)) return
-        const start = starts[k]
-        const end = starts[k + 1] ?? view3d.waypoints.length
-        k += 1
-        const info = baseLayout?.byBlock?.[b.id]
-        const base = bases.find((x) => x.id === info?.baseId)
-        const refElev = blockRefs?.refs?.[i]
-        if (!base || !Number.isFinite(refElev)) return
-        // alturas na cota da zona deste voo, como no seu KMZ
-        const dh = view3d.refElev - refElev
-        legs.push({
-          basePoint: base.point,
-          refElev,
-          flight: info.flightLabel,
-          waypoints: view3d.waypoints.slice(start, end).map((w) => [w[0], w[1], (w[2] ?? 0) + dh]),
-        })
-      })
-    } else {
-      const basePoint =
-        missionMode === 'area'
-          ? areaBasePoint
-          : missionMode === 'corridor'
-            ? (corridorBase?.point ?? null)
-            : missionMode === 'circular'
-              ? (circularBase?.point ?? null)
-              : null
-      if (basePoint)
-        legs.push({ basePoint, refElev: view3d.refElev, flight: null, waypoints: view3d.waypoints })
-    }
-    let worst = null
-    for (const leg of legs) {
-      const tecto = Math.max(0, ...leg.waypoints.map((w) => (Number.isFinite(w[2]) ? w[2] : 0)))
-      const r = transitClearance(leg.basePoint, leg.waypoints, {
-        elevationAt,
-        refElev: leg.refElev,
-        takeOffSecurityHeightM: DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
-        rthHeightM: defaultRthHeightM(tecto),
-      })
-      if (r && (!worst || r.minM < worst.minM)) worst = { ...r, flight: leg.flight }
-    }
-    return worst
+    const tfOk = terrainResult && !terrainResult.error
+    const basePoint =
+      missionMode === 'area'
+        ? areaBasePoint
+        : missionMode === 'corridor'
+          ? (corridorBase?.point ?? null)
+          : missionMode === 'circular'
+            ? (circularBase?.point ?? null)
+            : null
+    const legs = transitLegs({
+      view3d,
+      perBlock: missionMode === 'area' && perBlockBases && view3d.refSource === 'bases',
+      blocks: tfOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks,
+      baseLayout,
+      bases,
+      blockRefs,
+      basePoint,
+    })
+    return worstTransit(legs, { elevationAt })
   }, [
     terrain,
     view3d,
@@ -1797,9 +1751,48 @@ function AppInner({ lang, setLang }) {
     return avisoIntervalo(2 * s.radiusM * Math.sin(Math.PI / s.pointsPerOrbit), orbitConfig.speedMS)
   }, [orbitPlan, orbitConfig.speedMS, avisoIntervalo])
 
+  // blocos do perfil de elevação, memorizados (M3-C8): mapeados no render
+  // eram um objecto novo em cada render do App e o perfil refazia-se sempre
+  const profileBlocks = useMemo(() => {
+    if (missionMode !== 'area') return null
+    const tf3 = terrainResult && !terrainResult.error && terrainResult.blocks3
+    if (blockRefs && blocks?.length) {
+      return (tf3 || blocks).map((b, i) => {
+        const info = baseLayout?.byBlock[b.id]
+        const r = blockRefs.refs[i] ?? blockRefs.common
+        return {
+          id: b.id,
+          label: info?.flightLabel || `B${String(b.id).padStart(2, '0')}`,
+          refElev: r,
+          reference: { elev: r, source: 'zone', base: info?.baseLabel ?? '' },
+          waypoints: b.waypoints.map(([lon, lat, h]) => [
+            lon,
+            lat,
+            Number.isFinite(h) ? h : params.altitude,
+          ]),
+        }
+      })
+    }
+    if (tf3) return tf3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
+    return (
+      blocks?.map((b) => ({
+        id: b.id,
+        waypoints: b.waypoints.map(([lon, lat]) => [lon, lat, params.altitude]),
+      })) ?? null
+    )
+  }, [missionMode, terrainResult, blockRefs, blocks, baseLayout, params.altitude])
+
   /* ----------------------------- Preflight ---------------------------- */
   // Uma só lista, calculada a partir do mesmo estado que a exportação usa
   // (src/mission/preflight.js). Os bloqueios desactivam o botão do KMZ.
+  // o erro do seguimento de terreno é um código (M3-C8); o preflight mostra-o
+  // na língua da interface
+  const terrainResultForPreflight = useMemo(() => {
+    if (!terrainResult?.error) return terrainResult
+    const key = `cp.terrain.err.${terrainResult.error}`
+    const msg = t(key, { msg: terrainResult.detail ?? '' })
+    return { ...terrainResult, error: msg === key ? String(terrainResult.error) : msg }
+  }, [terrainResult, t])
   const preflight = useMemo(() => {
     if (missionMode === 'area') {
       return preflightArea({
@@ -1809,7 +1802,7 @@ function AppInner({ lang, setLang }) {
         waypointStops: params.waypointStops,
         terrainFollow,
         terrainCovers,
-        terrainResult,
+        terrainResult: terrainResultForPreflight,
         basePoint: areaBasePoint,
         // com blocos e bases, o alcance e o trânsito vão bloco a bloco
         baseDistance: perBlockBases ? null : areaBaseDistance,
@@ -1905,7 +1898,7 @@ function AppInner({ lang, setLang }) {
     corridorConfig.waypointStops,
     terrainFollow,
     terrainCovers,
-    terrainResult,
+    terrainResultForPreflight,
     areaBasePoint,
     areaBaseDistance,
     perBlockBases,
@@ -2920,37 +2913,7 @@ function AppInner({ lang, setLang }) {
                       ? circularReference
                       : null
               }
-              blocks={
-                // os blocos são da área; nos outros modos não se desenham. Com
-                // bases, cada bloco com o número do voo e a cota da sua zona
-                missionMode !== 'area'
-                  ? null
-                  : blockRefs && blocks?.length
-                    ? (terrainResult && !terrainResult.error && terrainResult.blocks3
-                        ? terrainResult.blocks3
-                        : blocks
-                      ).map((b, i) => {
-                        const info = baseLayout?.byBlock[b.id]
-                        const r = blockRefs.refs[i] ?? blockRefs.common
-                        return {
-                          id: b.id,
-                          label: info?.flightLabel || `B${String(b.id).padStart(2, '0')}`,
-                          refElev: r,
-                          reference: { elev: r, source: 'zone', base: info?.baseLabel ?? '' },
-                          waypoints: b.waypoints.map(([lon, lat, h]) => [
-                            lon,
-                            lat,
-                            Number.isFinite(h) ? h : params.altitude,
-                          ]),
-                        }
-                      })
-                    : terrainResult && !terrainResult.error && terrainResult.blocks3
-                      ? terrainResult.blocks3.map((b) => ({ id: b.id, waypoints: b.waypoints }))
-                      : (blocks?.map((b) => ({
-                          id: b.id,
-                          waypoints: b.waypoints.map(([lon, lat]) => [lon, lat, params.altitude]),
-                        })) ?? null)
-              }
+              blocks={profileBlocks}
               onClose={() => setShowProfile(false)}
             />
           </Suspense>
