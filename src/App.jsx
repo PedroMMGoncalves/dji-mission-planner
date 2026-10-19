@@ -1036,6 +1036,21 @@ function AppInner({ lang, setLang }) {
       t,
     ],
   )
+  // avisos do KML da área (K-B1, K-E1 e K-M8 da revisão da exportação): o
+  // ficheiro para o Pilot 2 leva só o anel exterior da maior parte, com as
+  // células desactivadas dentro; vão no título dos dois botões e no cartão 7
+  const areaKmlNotes = useMemo(() => {
+    const notes = []
+    const nHoles = holes?.length ?? 0
+    if (nHoles) notes.push(t(nHoles === 1 ? 'app.kmlHoleNote' : 'app.kmlHolesNote', { n: nHoles }))
+    const parts = gridCells?.length > 1 ? gridCells.length : (importParts?.length ?? 0)
+    if (parts > 1) notes.push(t('app.kmlPartsNote', { n: parts }))
+    const off = disabledTiles?.size ?? 0
+    if (off) notes.push(t(off === 1 ? 'app.kmlCellNote' : 'app.kmlCellsNote', { n: off }))
+    return notes
+  }, [holes, gridCells, importParts, disabledTiles, t])
+  const exportKmlTitle = [t('app.exportKmlTitle'), ...areaKmlNotes].join(' ')
+
   const handleExportBasesKml = useCallback(() => {
     if (!fieldSheets.length) return
     runExport(() => {
@@ -1046,6 +1061,9 @@ function AppInner({ lang, setLang }) {
           blocks,
           layout: baseLayout,
           files: flightFiles,
+          // contornos exactos dos blocos de faixas: área ∩ faixa das linhas
+          spacingM: spacing,
+          area: ring ? { ring, holes } : null,
         },
         t,
       )
@@ -1054,7 +1072,19 @@ function AppInner({ lang, setLang }) {
         `${areaSafeName}_bases.kml`,
       )
     })
-  }, [fieldSheets, runExport, missionName, areaSafeName, blocks, baseLayout, flightFiles, t])
+  }, [
+    fieldSheets,
+    runExport,
+    missionName,
+    areaSafeName,
+    blocks,
+    baseLayout,
+    flightFiles,
+    spacing,
+    ring,
+    holes,
+    t,
+  ])
 
   // tipos de bateria da aeronave (selector da missão) e voos contra os
   // conjuntos que a equipa tem — o aviso só aparece com a contagem conhecida
@@ -2087,7 +2117,7 @@ function AppInner({ lang, setLang }) {
           <button
             onClick={handleExportKML}
             disabled={!canExportKML}
-            title={t('app.exportKmlTitle')}
+            title={exportKmlTitle}
             className="flex items-center gap-1.5 whitespace-nowrap rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('app.exportKml')}
@@ -2395,6 +2425,7 @@ function AppInner({ lang, setLang }) {
                 canExportMission={canExportKMZ && !exportBlocked}
                 onExportArea={handleExportKML}
                 canExportArea={canExportKML}
+                exportAreaNotes={areaKmlNotes}
                 basesPanel={{
                   rows: baseRows,
                   selectedBaseId,

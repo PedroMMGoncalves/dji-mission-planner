@@ -82,6 +82,25 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - **Velocidade de transição em [1, 15]** (M9): a versão chinesa da
   especificação dá [1, 15] a `globalTransitionalSpeed`; abaixo de 1 m/s
   saía o valor pedido.
+- **O KML da área para o Pilot 2 vai sem buracos** (K-B1): a missão de
+  mapeamento do Pilot 2 não tem zonas de exclusão, e um `innerBoundaryIs`
+  no ficheiro era recusado ou voado por cima. Os buracos continuam a valer
+  para os KMZ, que os contornam, e vão no KML «Bases e blocos». Os dois
+  botões do KML avisam (título, e nota no cartão «Resumo e exportar»)
+  quando ficam buracos de fora, quando a área tem várias partes e o KML
+  leva só a maior (K-E1) e quando há células desactivadas dentro do
+  polígono (K-M8).
+- **KML «Bases e blocos»**: uma pasta por base, com o ponto, a zona e os
+  blocos dela, e os blocos sem base numa pasta própria (K-M4); a descrição
+  da base leva a ligação do Google Maps da ficha de campo (K-M5); o rótulo
+  do bloco fica dentro do contorno, também numa célula côncava (K-M6); as
+  células do mosaico levam os seus buracos (K-M7); no corte por faixas o
+  contorno de cada bloco é a área ∩ a faixa de ±espaçamento/2 à volta das
+  suas linhas, em vez do invólucro convexo da rota, que deixava 32 % de um
+  rectângulo fora de qualquer bloco e sobrepunha blocos num U (K-E2); um
+  bloco em U pode dar mais de uma peça.
+- No ZIP por base, um voo sem base vai para `sem-base/` em vez da raiz
+  (K-M10).
 
 ### Corrigido (revisão da exportação contra a especificação, pacote A)
 

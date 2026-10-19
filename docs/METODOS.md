@@ -991,14 +991,21 @@ testado num comando real (ver `README`).
 ### 11.1 KML da área
 
 O KML que a aplicação exporta tem um só `Document`, um só `Placemark` e um
-só `Polygon`, fechado, com `tessellate` e `altitudeMode clampToGround`, mais
-os `innerBoundaryIs` dos buracos. Não leva estilos, pastas, ponto de base
-nem GCPs: o parser de KML do DJI Pilot 2 é estrito e um ficheiro com várias
-geometrias é recusado ou importado em branco. O caso de uso é exportar a
-área e fazer o resto das configurações no comando.
+só `Polygon`, fechado, com `tessellate` e `altitudeMode clampToGround`, e
+só o anel exterior. Não leva estilos, pastas, ponto de base nem GCPs: o
+parser de KML do DJI Pilot 2 é estrito e um ficheiro com várias geometrias
+é recusado ou importado em branco. Também não leva os buracos (K-B1 da
+revisão da exportação): a missão de mapeamento do Pilot 2 não tem zonas de
+exclusão, e um `innerBoundaryIs` é recusado ou voado por cima; os buracos
+continuam a valer para os KMZ, que os contornam, e vão no KML «Bases e
+blocos». Numa área em várias partes vai só a maior (as outras são células,
+que o KMZ voa); as células desactivadas ficam dentro do polígono. Os dois
+botões avisam destes três casos (título e nota no cartão 7). O caso de uso
+é exportar a área e fazer o resto das configurações no comando.
 
-O construtor (`buildAreaKML`) aceita extras — base, GCPs e uma pasta com as
-faixas — que servem para inspecção em SIG e nunca para levar ao comando.
+O construtor (`buildAreaKML`) aceita extras — buracos, base, GCPs e uma
+pasta com as faixas — que servem para inspecção em SIG e para o teste de
+ida e volta, nunca para levar ao comando.
 
 ### 11.2 Conformidade com a especificação WPML
 
@@ -1097,14 +1104,23 @@ conjuntos de baterias que a base pede (um por voo) contra os da equipa
 (`flightsVsSets`); alcance visual da aeronave e o pior caso dos voos.
 
 **KML «Bases e blocos»** (`buildBasesKML`, `<missão>_bases.kml`), para o
-Google Earth ou a navegação no telemóvel — nunca para o Pilot 2: pasta
-«Bases» (um ponto por base, com a ficha na descrição), pasta «Zonas de
-descolagem» (círculo de 72 lados com o raio efectivo), pasta «Blocos
-(voos)» (contorno de cada bloco — a célula do mosaico, ou o invólucro da
-rota no corte por área — numa `MultiGeometry` com um ponto no centro, que
-é onde o Google Earth escreve o rótulo do voo). Cores das bases do mapa
-(`aabbggrr`). As descrições são HTML: cada valor é escapado como HTML e a
-descrição inteira como XML.
+Google Earth ou a navegação no telemóvel — nunca para o Pilot 2: uma pasta
+por base, como as pastas do ZIP por base, com o ponto da base (a ficha na
+descrição, mais a ligação do Google Maps da ficha de campo), a zona de
+descolagem (círculo de 72 lados com o raio efectivo) e os blocos dela, pela
+ordem de voo; os blocos sem base ficam na pasta «Blocos sem base». O
+contorno de cada bloco é a célula do mosaico, com os seus buracos em
+`innerBoundaryIs`, ou, no corte da serpentina por faixas, a área ∩ a faixa
+de ±espaçamento/2 à volta das linhas do bloco (`blockOutlines`: `buffer` de
+cada linha, união, intersecção com a área, turf) — o invólucro convexo da
+rota, que se usava, deixava 32 % de um rectângulo fora de qualquer bloco e
+sobrepunha blocos num U; num U um bloco pode dar mais de uma peça, cada
+uma o seu `Placemark`. O rótulo do voo vai num ponto dentro do contorno
+(`pointOnFeature`, também numa célula côncava), na maior peça, numa
+`MultiGeometry` — é onde o Google Earth escreve o nome. Sem espaçamento
+nem linhas, o invólucro convexo, como antes. Cores das bases do mapa
+(`aabbggrr`). As descrições são HTML: cada valor é escapado como HTML (a
+ligação como `<a href>`) e a descrição inteira como XML.
 
 ## 12. Datums verticais tal como estão implementados
 

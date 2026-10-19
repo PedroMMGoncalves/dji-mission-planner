@@ -141,9 +141,8 @@ export default {
     pt: 'Para o Google Earth ou o telemóvel: bases com a ficha, zonas de descolagem e blocos com o rótulo do voo. Não é para o Pilot 2.',
     en: 'For Google Earth or a phone: bases with their sheet, take-off zones and blocks labelled with their flight. Not for Pilot 2.',
   },
-  'bases.kml.basesFolder': { pt: 'Bases', en: 'Bases' },
-  'bases.kml.zonesFolder': { pt: 'Zonas de descolagem', en: 'Take-off zones' },
-  'bases.kml.blocksFolder': { pt: 'Blocos (voos)', en: 'Blocks (flights)' },
+  'bases.kml.noBaseFolder': { pt: 'Blocos sem base', en: 'Blocks without a base' },
+  'bases.kml.navigate': { pt: 'Abrir no Google Maps', en: 'Open in Google Maps' },
   'bases.kml.zone': {
     pt: 'descolar até {r} m do ponto',
     en: 'take off within {r} m of the point',

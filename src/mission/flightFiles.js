@@ -151,10 +151,11 @@ export function flightsArchiveName(baseName, sel, baseLabel = null) {
   return `${baseName}_voos`
 }
 
-/** Pasta de uma base dentro do ZIP dos voos por base: `base-A`. */
+/** Pasta de uma base dentro do ZIP dos voos por base: `base-A`; sem base, `sem-base`. */
 export function baseFolder(label) {
   const clean = String(label ?? '').replace(/[^\w-]+/g, '')
-  return clean ? `base-${clean}` : null
+  // um bloco sem base não cai na raiz do ZIP (K-M10): fica em sem-base/
+  return clean ? `base-${clean}` : 'sem-base'
 }
 
 /**

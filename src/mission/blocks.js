@@ -7,7 +7,7 @@ import { nadirLineLocalPerBlock, splitIntoBlocks } from '../utils/geo.js'
 
 /**
  * @param {any} plan plano de área válido (generateFlightPlan / composeCellPlans)
- * @param {{activeCells?: any[]|null, cellIds?: number[]|null,
+ * @param {{activeCells?: any[]|null, cellIds?: number[]|null, cellHoles?: any[]|null,
  *   split: {mode: string, maxAreaHa?: number, reservePct?: number},
  *   batteryMin?: number, speed?: number, spacingM?: number, basePoint?: number[]|null,
  *   waypointStops?: string}} opts `cellIds`: id estável de cada célula activa (o
@@ -19,6 +19,8 @@ export function planBlocks(
   {
     activeCells = null,
     cellIds = null,
+    // buracos de cada célula activa (mosaico), para o contorno no KML de campo
+    cellHoles = null,
     split,
     batteryMin,
     speed,
@@ -33,6 +35,7 @@ export function planBlocks(
       id: Number.isInteger(cellIds?.[i]) ? cellIds[i] : i + 1,
       // contorno da célula: alcance visual e proposta de bases
       cellRing: activeCells[i] ?? null,
+      cellHoles: cellHoles?.[i] ?? null,
       lines: p.lines,
       waypoints: p.waypoints,
       areaHa: p.stats.areaHa,

@@ -252,8 +252,9 @@ function InstrucoesPt() {
       <H>Exportação</H>
       <ul className="list-none">
         <Li>
-          <strong>KML da área</strong> — só o polígono, para desenhar a missão no Pilot 2; os GCPs
-          têm o seu KML, e as bases, zonas e blocos o «Bases e blocos (KML)».
+          <strong>KML da área</strong> — só o anel exterior do polígono, para desenhar a missão no
+          Pilot 2: os buracos, as partes secundárias e as células desactivadas ficam de fora (o
+          botão avisa); os GCPs têm o seu KML, e as bases, zonas e blocos o «Bases e blocos (KML)».
         </Li>
         <Li>
           <strong>WPML (KMZ)</strong> — missão executável com waypoints e disparo automático; com
@@ -522,8 +523,9 @@ function InstrucoesEn() {
       <H>Export</H>
       <ul className="list-none">
         <Li>
-          <strong>Area KML</strong> — the polygon only, to draw the mission in Pilot 2; GCPs have
-          their own KML, and bases, zones and blocks the “Bases and blocks (KML)”.
+          <strong>Area KML</strong> — the outer ring of the polygon only, to draw the mission in
+          Pilot 2: holes, secondary parts and disabled cells are left out (the button says so); GCPs
+          have their own KML, and bases, zones and blocks the “Bases and blocks (KML)”.
         </Li>
         <Li>
           <strong>WPML (KMZ)</strong> — executable mission with waypoints and automatic camera

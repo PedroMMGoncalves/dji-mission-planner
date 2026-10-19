@@ -273,7 +273,18 @@ describe('exportação dos voos (buildAreaExport + ZIP)', () => {
     expect(flightsArchiveName('m_area-tf', { kind: 'byBase' })).toBe('m_area-tf_voos-por-base')
     expect(flightsArchiveName('m_area-tf', { kind: 'both' })).toBe('m_area-tf_voos')
     expect(baseFolder('AB')).toBe('base-AB')
-    expect(baseFolder('')).toBeNull()
+    // um voo sem base não cai na raiz do ZIP (K-M10): vai para sem-base/
+    expect(baseFolder('')).toBe('sem-base')
+    const semBase = await JSZip.loadAsync(
+      await (
+        await buildBlocksZip(params, [{ ...chosen[0], baseLabel: null }], {
+          folderOf: (b) => baseFolder(b.baseLabel),
+        })
+      ).arrayBuffer(),
+    )
+    const soltos = Object.keys(semBase.files).filter((n) => n.endsWith('.kmz'))
+    expect(soltos).toHaveLength(1)
+    expect(soltos[0]).toMatch(/^sem-base\/[^/]+\.kmz$/)
   })
 
   test('nomes repetidos dentro do ZIP são recusados', async () => {
@@ -342,41 +353,53 @@ describe('KML «Bases e blocos»', () => {
     }
   }
 
-  test('XML bem formado, nome escapado, três pastas', () => {
+  // um bloco que nenhuma base tem, para a pasta «Blocos sem base»
+  const solto = { id: 9, waypoints: [em(0, -300), em(400, -300), em(400, -100)] }
+
+  test('XML bem formado, nome escapado, uma pasta por base e a dos blocos sem base', () => {
     const { kml } = build()
     expect(XMLValidator.validate(kml)).toBe(true)
     const doc = new DOMParser().parseFromString(kml, 'application/xml')
     const document = findAll(doc.documentElement, 'Document')[0]
     expect(textOf(childNamed(document, 'name'))).toBe('Corta <Norte> & "Sul"')
-    const folders = findAll(doc.documentElement, 'Folder').map((f) => textOf(childNamed(f, 'name')))
-    expect(folders).toEqual(['Bases', 'Zonas de descolagem', 'Blocos (voos)'])
+    const folders = (k) =>
+      findAll(new DOMParser().parseFromString(k, 'application/xml').documentElement, 'Folder')
+    const names = (k) => folders(k).map((f) => textOf(childNamed(f, 'name')))
+    // como as pastas do ZIP por base (K-M4); sem blocos soltos não há pasta vazia
+    expect(names(kml)).toEqual(['Base A', 'Base B'])
+    const { kml: comSolto, blocks } = build({ blocks: [...fixture().blocks, solto] })
+    expect(blocks).toHaveLength(4)
+    expect(names(comSolto)).toEqual(['Base A', 'Base B', 'Blocos sem base'])
+    const ultima = folders(comSolto)[2]
+    expect(findAll(ultima, 'Placemark').map((p) => textOf(childNamed(p, 'name')))).toEqual(['9'])
   })
 
-  test('bases com o rótulo e a ficha; zonas com o raio efectivo; blocos com o voo', () => {
+  test('cada base com o ponto e a ficha, a zona com o raio efectivo e os blocos do voo', () => {
     const { kml, sheets } = build()
     const doc = new DOMParser().parseFromString(kml, 'application/xml')
-    const [basesF, zonesF, blocksF] = findAll(doc.documentElement, 'Folder')
+    const [folderA, folderB] = findAll(doc.documentElement, 'Folder')
     const pm = (f) => findAll(f, 'Placemark')
-    expect(pm(basesF).map((p) => textOf(childNamed(p, 'name')))).toEqual(['Base A', 'Base B'])
+    const names = (f) => pm(f).map((p) => textOf(childNamed(p, 'name')))
+    // o ponto, a zona e os blocos pela ordem de voo
+    expect(names(folderA)).toEqual(['Base A', 'Zona A (100 m)', 'A-1', 'A-2'])
+    expect(names(folderB)).toEqual(['Base B', 'Zona B (100 m)', 'B-3', 'B-4'])
     // a descrição é HTML: depois de lida como XML fica com <br/> e o texto
-    const descB = textOf(childNamed(pm(basesF)[1], 'description'))
+    const descB = textOf(childNamed(pm(folderB)[0], 'description'))
     expect(descB).toContain('descolar até 100 m do ponto')
     expect(descB).toContain('cota de referência 30 m')
     expect(descB).toContain('m_area_B-3.kmz')
     expect(descB).toContain('<br/>')
+    // a ligação de navegação da ficha de campo, como <a> dentro do HTML (K-M5)
+    expect(descB).toContain(
+      `<a href="${sheets[1].links.https.replace(/&/g, '&amp;')}">Abrir no Google Maps</a>`,
+    )
     // zona: círculo à volta da base com o raio efectivo
-    expect(pm(zonesF).map((p) => textOf(childNamed(p, 'name')))).toEqual([
-      'Zona A (100 m)',
-      'Zona B (100 m)',
-    ])
-    const ring = textOf(findAll(pm(zonesF)[1], 'coordinates')[0])
+    const ring = textOf(findAll(pm(folderB)[1], 'coordinates')[0])
       .split(/\s+/)
       .map((c) => c.split(',').map(Number))
     for (const p of ring) expect(distanceM(sheets[1].point, p)).toBeCloseTo(100, -0.5)
-    // blocos pela ordem de voo, com o rótulo num ponto e o contorno
-    const blocks = pm(blocksF)
-    expect(blocks.map((p) => textOf(childNamed(p, 'name')))).toEqual(['A-1', 'A-2', 'B-3', 'B-4'])
-    for (const p of blocks) {
+    // blocos com o rótulo num ponto e o contorno
+    for (const p of [...pm(folderA).slice(2), ...pm(folderB).slice(2)]) {
       const geoms = findAll(p, 'MultiGeometry')[0]
       expect(geoms).toBeTruthy()
       const kinds = [...findAll(geoms, 'Point'), ...findAll(geoms, 'Polygon')].map(localNameOf)
@@ -404,9 +427,9 @@ describe('KML «Bases e blocos»', () => {
   test('tradutor da interface (EN) passa para o ficheiro', () => {
     const { blocks, layout, rows } = fixture()
     const sheets = baseFieldSheets({ rows, layout, blocks, vlosM: 1000 })
-    const kml = buildBasesKML({ name: 'm', sheets, blocks, layout }, (k, v) =>
-      k === 'bases.kml.basesFolder' ? 'Bases (EN)' : defaultBasesT(k, v),
+    const kml = buildBasesKML({ name: 'm', sheets, blocks: [...blocks, solto], layout }, (k, v) =>
+      k === 'bases.kml.noBaseFolder' ? 'No base (EN)' : defaultBasesT(k, v),
     )
-    expect(kml).toContain('<name>Bases (EN)</name>')
+    expect(kml).toContain('<name>No base (EN)</name>')
   })
 })

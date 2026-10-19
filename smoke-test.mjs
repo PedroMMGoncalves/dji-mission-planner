@@ -2022,7 +2022,7 @@ check(
   const buraco = rectangleFromAnchor(center, 80, 60, 90)
   const holed = buildAreaKML(rectNS, 'teste', { holes: [buraco] })
   check(
-    'KML do Pilot 2: buracos entram como innerBoundaryIs',
+    'buildAreaKML com holes: buracos como innerBoundaryIs (SIG e ida e volta; o botao do Pilot 2 nao os passa)',
     countOf(holed, '<innerBoundaryIs>') === 1 && countOf(holed, '<Placemark>') === 1,
   )
   const anotado = buildAreaKML(rectNS, 'teste', {

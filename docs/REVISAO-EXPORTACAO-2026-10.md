@@ -10,9 +10,12 @@ nenhum elemento fora da especificação volte a chegar ao campo.
 **Estado (2026-10-19):** pacote A aplicado (commit «Exportacao: pacote A»);
 pacote C aplicado (T1, T2, T3, T4, T7 e a matriz T10: `npm run spec:wpml`,
 `tests/lib/wpml-conformidade.mjs`, `tests/unit/wpml-conformidade.test.mjs`);
-pacotes B e D a seguir. As excepções do validador, com as provas, estão em
-`ALLOW` no próprio validador: T5, T6, T8 e T9 ficam para quando houver
-ficheiros reais e as correcções B2/M2/M3.
+pacote B aplicado por inteiro (B2, M2, M3, M7, M8, M9, K-B1, K-E1, K-E2,
+K-M4 a K-M10; o CHANGELOG «Por publicar» descreve cada um), com B2 e M3
+por confirmar em voo (contar os `_T` do primeiro voo térmico do M4T; o
+M300 nas dobras do corredor); pacote D (KML por base) a seguir. As
+excepções do validador, com as provas, estão em `ALLOW` no próprio
+validador: T5, T6, T8 e T9 ficam para quando houver ficheiros reais.
 
 ## 1. Método e fontes
 

@@ -140,6 +140,26 @@ const BASE_DICT = {
     pt: 'Só o polígono da área, para definir o levantamento no DJI Pilot 2',
     en: 'The area polygon only, to set the survey up in DJI Pilot 2',
   },
+  'app.kmlHoleNote': {
+    pt: 'O buraco fica de fora do KML (o Pilot 2 não tem zonas de exclusão): a missão do Pilot 2 vai cobri-lo.',
+    en: 'The hole is left out of the KML (Pilot 2 has no exclusion zones): the Pilot 2 mission will cover it.',
+  },
+  'app.kmlHolesNote': {
+    pt: 'Os {n} buracos ficam de fora do KML (o Pilot 2 não tem zonas de exclusão): a missão do Pilot 2 vai cobri-los.',
+    en: 'The {n} holes are left out of the KML (Pilot 2 has no exclusion zones): the Pilot 2 mission will cover them.',
+  },
+  'app.kmlPartsNote': {
+    pt: 'A área tem {n} partes: o KML leva só a maior.',
+    en: 'The area has {n} parts: the KML carries only the largest.',
+  },
+  'app.kmlCellNote': {
+    pt: 'A célula desactivada fica dentro do polígono do KML.',
+    en: 'The disabled cell stays inside the KML polygon.',
+  },
+  'app.kmlCellsNote': {
+    pt: 'As {n} células desactivadas ficam dentro do polígono do KML.',
+    en: 'The {n} disabled cells stay inside the KML polygon.',
+  },
   'app.exportWpml': { pt: 'Exportar WPML Avançado (KMZ)', en: 'Export Advanced WPML (KMZ)' },
   'app.exportWpmlTitle': {
     pt: 'Missão completa DJI (wpmz/template.kml + waylines.wpml)',

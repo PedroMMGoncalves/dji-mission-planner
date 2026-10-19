@@ -229,6 +229,9 @@ export default function ControlPanel({
   canExportMission = false,
   onExportArea = null,
   canExportArea = false,
+  // avisos do KML da área: buracos, partes e células desactivadas que ficam
+  // de fora ou dentro do polígono (K-B1, K-E1, K-M8 da revisão)
+  exportAreaNotes = [],
 }) {
   const t = useT()
   const lang = useLang()
@@ -1201,13 +1204,21 @@ export default function ControlPanel({
                 data-testid="summary-export-area"
                 onClick={onExportArea}
                 disabled={!canExportArea}
-                title={t('cards.summary.exportAreaTitle')}
+                title={[t('cards.summary.exportAreaTitle'), ...exportAreaNotes].join(' ')}
                 className="flex min-h-[44px] items-center justify-center gap-1.5 rounded bg-slate-800 px-2 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <IconDownload /> {t('cards.summary.exportArea')}
               </button>
             )}
           </div>
+          {exportAreaNotes.length > 0 && (
+            <p
+              data-testid="summary-export-area-notes"
+              className="mt-2 text-[11px] leading-relaxed text-amber-300/90"
+            >
+              {exportAreaNotes.join(' ')}
+            </p>
+          )}
         </Card>
       </CardColumn>
 

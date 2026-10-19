@@ -141,13 +141,24 @@ export function useAreaMission({
       planBlocks(planOk, {
         activeCells,
         cellIds: activeCellIds,
+        cellHoles: activeCellHoles,
         split,
         batteryMin,
         speed,
         spacingM: spacing,
         waypointStops: params.waypointStops,
       }),
-    [planOk, activeCells, activeCellIds, split, batteryMin, speed, spacing, params.waypointStops],
+    [
+      planOk,
+      activeCells,
+      activeCellIds,
+      activeCellHoles,
+      split,
+      batteryMin,
+      speed,
+      spacing,
+      params.waypointStops,
+    ],
   )
 
   /* ---------------- Bases: zonas, atribuição, voos -------------------- */
@@ -334,10 +345,13 @@ export function useAreaMission({
   const handleExportKML = useCallback(() => {
     if (canExportKML)
       // Area-only: e o ficheiro que o Pilot 2 aceita para definir a area, e
-      // e esse o caso de uso. O ponto de base, os GCPs e as faixas ficam de
-      // fora de proposito (os GCPs tem exportacao propria).
-      runExport(() => exportAreaKML(ring, safeName, { holes }))
-  }, [canExportKML, runExport, ring, holes, safeName])
+      // e esse o caso de uso. O ponto de base, os GCPs, as faixas e os
+      // buracos ficam de fora de proposito (K-B1 da revisao: a missao de
+      // mapeamento do Pilot 2 nao tem zonas de exclusao e um KML com
+      // innerBoundaryIs nao e aceite; o botao avisa que os buracos ficam de
+      // fora; os GCPs tem exportacao propria).
+      runExport(() => exportAreaKML(ring, safeName))
+  }, [canExportKML, runExport, ring, safeName])
 
   const handleExportGcps = useCallback(() => {
     if (!gcps || gcps.length === 0) return

@@ -515,8 +515,8 @@ export default {
   },
   'cp.gcp.export': { pt: 'Exportar GCPs (KML)', en: 'Export GCPs (KML)' },
   'cp.gcp.hint': {
-    pt: 'Heurística bordo + centro (distribuição de erro mínimo na literatura fotogramétrica). Os GCPs também vão no KML simples da área.',
-    en: 'Edge + center heuristic (minimum-error distribution in the photogrammetric literature). The GCPs are also included in the simple area KML.',
+    pt: 'Heurística bordo + centro (distribuição de erro mínimo na literatura fotogramétrica).',
+    en: 'Edge + center heuristic (minimum-error distribution in the photogrammetric literature).',
   },
 
   'cp.terrain.auto': {
