@@ -673,16 +673,21 @@ Seguimento de terreno (`terrainFollowLines`): cada faixa **e cada ligação
 entre faixas** é densificada a passos ≤ 40 m e ≤ meia resolução do relevo
 (15 m no Terrarium, meio píxel num MDT importado, mínimo 1 m; interpolação
 linear em lon/lat, ≤ 20000 pontos por segmento), amostrada no relevo e simplificada
-por Douglas-Peucker sobre o desvio **vertical**: mantém-se o conjunto
-mínimo de pontos tal que a interpolação linear entre eles nunca se afasta
-mais de `tolerância` (5 m por omissão, mínimo 1 m) do perfil amostrado. A
-altura exportada de cada ponto é
+por Douglas-Peucker sobre o desvio **vertical**: mantém-se um conjunto
+reduzido de pontos (o que o Douglas-Peucker escolhe, que não é o mínimo)
+tal que a interpolação linear entre eles nunca se afasta mais de
+`tolerância` (5 m por omissão, mínimo 1 m) do perfil amostrado. A altura
+exportada de cada ponto é
 
 ```
-rel = round10( AGL + (elev(ponto) − elev(referência)) )
+rel = round10( AGL + (elev_corredor(ponto) − elev(referência)) )
 ```
 
-com a referência = base marcada com relevo, senão a cota **mínima** do
+com `elev_corredor` o ponto mais alto entre o eixo e as amostras a ±15 e
+±30 m de cada lado (`CORRIDOR_HALF_WIDTH_M` = 30 m; amostras sem dados
+ignoradas) — a protecção lateral que §9 descreve para o corredor vale para
+todas as faixas (M2-T11: §5 só falava do eixo) — e a referência = base
+marcada com relevo, senão a cota **mínima** do
 relevo debaixo da rota (`src/mission/reference.js`), a mesma cota que o
 perfil, o 3D e a folga ao solo usam. Na missão de área com bases (secção
 4.1) a referência é a cota mínima da ZONA: numa rota única, a da base de
@@ -708,7 +713,8 @@ do modelo é bloqueada pelo preflight (`terrain-holes`, §14: a cobertura
 media-se só pela caixa dos tiles, e um tile falhado dentro dela — até 20 %
 são tolerados — era um buraco de ~7,5 km de lado que passava sem aviso;
 um tile falhado é agora pedido outra vez antes de o relevo ficar pronto).
-Aviso (não bloqueio) se a altura relativa mínima for inferior a 20 m.
+Aviso no painel do relevo (não no preflight; não bloqueia) se a altura
+relativa mínima for inferior a 20 m (`MIN_SAFE_REL_M`).
 
 Limites: a garantia da tolerância vale nos pontos amostrados, a meia
 resolução do relevo; um acidente mais estreito do que o píxel é invisível
@@ -1298,7 +1304,7 @@ desconhecido, modelo, código EPSG, se é assumido, unidade):
   ortométrico EGM96 (é o que os dados de origem, na maior parte, são) e o
   painel diz "assumido".
 - MDT local: lidas as GeoKeys `VerticalCSTypeGeoKey` (5773 EGM96, 3855
-  EGM2008, 5714 MSL, 5782 Cascais, 5730/5621 EVRF; outros códigos
+  EGM2008, 5714 MSL, 5780 Cascais, 5782 Alicante, 5730/5621 EVRF; outros códigos
   assumidos ortométricos), `VerticalDatumGeoKey` e `VerticalUnitsGeoKey`
   (9001 m, 9002 pés, 9003 pés US); os valores da banda passam a metros na
   leitura. Sem GeoKeys verticais o datum fica "desconhecido (assumido
@@ -1450,8 +1456,9 @@ base fora do relevo ou só com pontos desconhecidos.
 | Limiar de GSD (|pitch|) | 20° | geo.js |
 | Zoom / tiles / falhas do Terrarium | 12 / 600 / 20 % | terrain.js |
 | Filtro de picos | 150 m, 2 vizinhos em 8 (orla dos tiles vizinhos; ≥ ¼ nos bordos do mosaico) | terrain.js |
-| Seguimento de terreno: passo / tolerância / mínimo | 40 m / 5 m (≥1) / 20000 pts | terrain.js |
-| Altura relativa mínima (aviso) | 20 m | terrain.js |
+| Seguimento de terreno: passo / tolerância / mínimo | min(40 m, resolução/2) / 5 m (≥1) / 20000 pts | terrain.js |
+| Seguimento de terreno: corredor lateral | ±15 e ±30 m (`CORRIDOR_HALF_WIDTH_M`), ponto mais alto | terrain.js |
+| Altura relativa mínima (aviso no painel do relevo) | 20 m | terrain.js |
 | MDT local: janela / margem / lado máximo | 1.º IFD / 500 m / 2048 (≤8192) px | demFile.js |
 | Plano de encosta: grelha / declive mínimo | 12×12 na caixa, só nós dentro do contorno / 8° | terrain.js |
 | Velocidade de subida / descida (verificação de rota) | M3E 6/6, M4T 6/6, M300 5/4, custom 4/4 m/s | drones.js, uncertainty.js |
@@ -1485,7 +1492,8 @@ fora da folga da fachada; conversão entre datums verticais (só a
 declaração); retornos múltiplos e padrão de varrimento do LiDAR; a
 distribuição estatística dos erros (a incerteza é propagada por
 intervalos, com os extremos das fichas técnicas). Nas bacias de visão: a
-zona de descolagem não é varrida (só o ponto da base); vegetação e
+zona de descolagem é varrida com 37 pontos de vista (o centro e 3 anéis de
+12 direcções, `zoneEyePoints`), não à resolução do MDT; vegetação e
 construções só como altura uniforme ou pelo MDS; o rádio é só a geometria da
 zona de Fresnel (sem diagrama das antenas, potência, interferência nem
 multipercurso), à frequência mais exigente.

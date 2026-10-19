@@ -9,7 +9,11 @@ certo com o `METODOS.md` e aguenta os casos-limite?**
 **Estado (2026-10-19):** pacotes M-A a M-D aprovados. M-A (os seis que
 bloqueiam), M-B (os números que mentiam) e M-C (modelos e melhorias)
 aplicados, com testes (`tests/unit/matematica-mb.test.mjs`,
-`matematica-mc.test.mjs`); M-D a seguir. Em M-C, G8 foi além do proposto:
+`matematica-mc.test.mjs`); M-D aplicado em T10 (EPSG 5780 Cascais / 5782
+Alicante) e T11 (§5, §15 e §16 do METODOS postos de acordo com o código);
+G13 (focal do M3E) e G14 (tempo útil por payload) ficam à espera de dados
+de campo — o EXIF de uma foto do próximo voo do M3E e os tempos úteis
+medidos por payload no M300. Em M-C, G8 foi além do proposto:
 as constantes de `units.js` passaram para a esfera do Turf (a que mede
 todas as distâncias da app), não para o elipsóide — assim o que se pede
 é o que se mede, e o erro face ao WGS84 (≤ 0,25 %) é o do próprio Turf.

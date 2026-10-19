@@ -19,7 +19,9 @@ describe('datum vertical', () => {
       unitFactor: 1,
     })
     expect(describeVerticalDatum({ VerticalCSTypeGeoKey: 3855 }).model).toBe('EGM2008')
-    expect(describeVerticalDatum({ VerticalCSTypeGeoKey: 5782 }).model).toContain('Cascais')
+    // EPSG:5780 = Cascais height; 5782 = Alicante height (M2-T10)
+    expect(describeVerticalDatum({ VerticalCSTypeGeoKey: 5780 }).model).toContain('Cascais')
+    expect(describeVerticalDatum({ VerticalCSTypeGeoKey: 5782 }).model).toContain('Alicante')
   })
 
   test('pes convertem para metros; unidade desconhecida fica em 1 com etiqueta', () => {

@@ -12,7 +12,10 @@ const VERTICAL_CS = {
   5773: { kind: 'orthometric', model: 'EGM96' },
   3855: { kind: 'orthometric', model: 'EGM2008' },
   5714: { kind: 'orthometric', model: 'MSL' },
-  5782: { kind: 'orthometric', model: 'Cascais (Portugal continental)' },
+  // EPSG:5780 é «Cascais height»; 5782 é «Alicante height» (M2-T10: até
+  // Outubro de 2026 o 5782 vinha etiquetado como Cascais)
+  5780: { kind: 'orthometric', model: 'Cascais (Portugal continental)' },
+  5782: { kind: 'orthometric', model: 'Alicante (Espanha)' },
   5730: { kind: 'orthometric', model: 'EVRF2000' },
   5621: { kind: 'orthometric', model: 'EVRF2007' },
   4979: { kind: 'ellipsoidal', model: 'WGS84' },

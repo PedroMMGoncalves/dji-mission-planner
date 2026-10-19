@@ -279,6 +279,20 @@ que bloqueavam:
   regenerados (referencial, pontas do corredor, cantos da fachada, fotos
   das ligações).
 
+### Corrigido (revisão da matemática da missão, pacote M-D: documentação e fichas)
+
+- **EPSG do datum vertical de Cascais** (M2-T10): o código 5782 vinha
+  etiquetado «Cascais»; 5782 é «Alicante height» (Espanha) e Cascais é
+  **5780**. Um MDT da DGT com o datum de Cascais passa a ser reconhecido
+  pelo código certo, e um MDT espanhol deixa de ser rotulado como Cascais.
+- **METODOS posto de acordo com o código** (M2-T11): a altura exportada com
+  seguimento de terreno conta o ponto mais alto a ±15 e ±30 m de cada lado
+  do eixo, não só o eixo; o Douglas-Peucker não dá o conjunto mínimo de
+  pontos; o aviso dos 20 m de altura relativa é do painel do relevo, não
+  do preflight; a zona de descolagem é varrida com 37 pontos de vista nas
+  bacias de visão. Por fechar com dados de campo: a focal real do M3E
+  (EXIF de uma foto do próximo voo) e o tempo útil por payload no M300.
+
 ### Adicionado (KML por base)
 
 - **«Blocos por base (KML, ZIP)»** no cartão «Resumo e exportar», com bases
