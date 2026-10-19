@@ -45,6 +45,20 @@ nenhum elemento fora da especificação volte a chegar ao campo.
 | M10 | `pick()` troca em silêncio uma acção de segurança inválida | Melhoria | lançar erro, como o resto da fronteira | não |
 | M11 | documentação desactualizada (VALIDACAO 5.1: `finishAction`, enum PSDK; comentário do M4T em drones.js) | Melhoria | corrigir | não |
 | T | testes que impedem cada classe de erro (secção 5) | — | T2, T3, T4, T7 primeiro; T1 como base; T6 quando houver ficheiros reais | T6 sim |
+| K-B1 | o KML da área leva buracos (`innerBoundaryIs`) para o Pilot 2, que não tem zonas de exclusão: recusa o ficheiro ou voa por cima deles | Bloqueia (áreas com buracos) | KML para o Pilot 2 sem buracos, com aviso «N buracos não vão no KML» | sim, ideal (ensaio de importação) |
+| K-E1 | área em várias partes («usar todas as partes como células»): o KML da área leva só a maior, sem aviso | Errado mas funciona | aviso; um KML por parte vem com o KML por base | não |
+| K-E2 | divisão por Faixas: o contorno de cada bloco no KML «Bases e blocos» é o invólucro convexo da rota (32 % da área fora de qualquer bloco num rectângulo; sobreposições num U) | Errado mas funciona | contorno = área ∩ faixa de ±espaçamento/2 à volta das linhas do bloco | não (medido) |
+| K-E3 | dois higienizadores de nome: `Corta-Norte-2026-.kml` vs `Corta-Norte-2026_area_A-1.kmz`; «Évora» → `-vora.kml` | Errado mas funciona | uma só função (NFD sem diacríticos, `-` colapsados e aparados); nomes mudam → CHANGELOG | não |
+| K-E4 | ajuda e METODOS desactualizados (KML «+ base + GCPs»; ZIP por base que já não existe; cabeçalho) | Melhoria | corrigir | não |
+| K-M | 14 melhorias do KML/ZIP (secção 6.3): anel já fechado repetido, orientação dos anéis, buraco fora da área, pastas por base no KML de campo, ligação de navegação, rótulo em células côncavas, buracos das células nos blocos, títulos dos botões, `sem-base/`, nome repetido com código próprio, linha do KML de campo no README, teste de ida e volta | Melhoria | fazer as pequenas (M1, M3, M13, M14, M12); as outras com o KML por base | não |
+| F | funcionalidade «KML por base» (secção 7) | — | ZIP com uma pasta por base, um KML por bloco (só o contorno) e `mapa/` com a base, a zona e os contornos; Faixas desactivado até K-E2 | sim (ensaio no Pilot 2) |
+
+### Pacotes, para aprovar
+
+- **Pacote A — pequeno, seguro, sem decisão difícil:** B1, E1, E3, M6, M10, M11, K-E3, K-E4, K-M1, K-M3, K-M12, K-M13, K-M14.
+- **Pacote B — correcções com impacto no ficheiro, por item:** B2 (lente do M4T), M2 (template com acções e rumos), M3 (M300: passagem só em pontos colineares), M7 (gimbal redundante), M8 (leitor: modo de altura), M9 (velocidades), K-B1 (buracos fora do KML do Pilot 2), K-E1 (aviso das partes), K-E2 (contornos das faixas), K-M4 a K-M10.
+- **Pacote C — testes «nunca mais no campo»:** T1 (dicionário) + T2, T3, T4, T7 primeiro; T5, T8, T9, T10 a seguir; T6 quando houver ficheiros reais.
+- **Pacote D — KML por base** (secção 7), com K-E2 antes, para a divisão por Faixas também poder sair.
 
 Mantidos de propósito (conformes ou com prova de voo): namespace
 `wpmz/1.0.2` (o da especificação; o 1.0.3 só aparece nos ficheiros reais);
@@ -260,5 +274,158 @@ empacotamento (M12).
 
 ## 6. Achados KML e ZIPs
 
-(Em curso: o segundo agente ainda está a rever. Esta secção é preenchida
-quando terminar.)
+### 6.1 Bloqueia
+
+**K-B1 — buracos no KML que vai para o Pilot 2.** `exportAreaKML(ring,
+name, { holes })` (`src/utils/exporters.js`, chamado em
+`src/hooks/useAreaMission.js`) escreve um `<innerBoundaryIs>` por buraco
+no ficheiro «para definir o levantamento no DJI Pilot 2». O KML 2.2 admite
+anéis interiores; a DJI não os documenta; a missão de mapeamento do Pilot 2
+não tem zonas de exclusão (conhecimento geral, não documento), e o projecto
+já registou que o leitor do Pilot 2 recusa, ou importa em branco, o que não
+for «um polígono e mais nada» (CHANGELOG 1.3.0). Consequência: o Pilot 2
+recusa o ficheiro, ou ignora os buracos e voa por cima do que a app tirou
+do plano. Correcção: KML do Pilot 2 só com o anel exterior; aviso «N
+buracos não vão no KML: a missão do Pilot 2 vai cobri-los»; os buracos
+ficam no KML de campo. Confiança média: resolve-se importando no Pilot 2
+um KML com `innerBoundaryIs` e registando o que faz.
+
+### 6.2 Errado mas funciona
+
+**K-E1 — área em várias partes.** «Usar todas as partes como células» só
+faz das partes células (`src/hooks/useAreaGeometry.js`); o `ring` continua
+a ser a maior parte. O KMZ voa todas; o KML da área define só a maior, sem
+aviso (e as partes secundárias perdem os buracos). Correcção: avisar «a
+área tem N partes; o KML leva só a maior»; um KML por parte sai com o KML
+por base (secção 7).
+
+**K-E2 — contornos dos blocos na divisão por Faixas.** `blockOutline`
+(`src/mission/basesKml.js`) cai no invólucro convexo da rota quando o
+bloco não tem `cellRing`. Medido (espaçamento 50 m, faixas E-O): num
+rectângulo de 1200 × 800 m com 6 blocos, os contornos somam 65,9 ha de
+96,4 — 32 % da área fora de qualquer bloco (falta meio espaçamento de cada
+lado); num U, o contorno do bloco 2 contém por inteiro o do bloco 1, cruza
+os blocos 3 e 4, e 26 % fica fora da área. O Google Earth abre; o mapa
+engana. Correcção: contorno = área ∩ rectângulos de ±espaçamento/2 à volta
+de cada linha do bloco, limitados a cada segmento (um bloco pode dar duas
+peças num U).
+
+**K-E3 — dois higienizadores de nome.** `safeName` em `useAreaMission.js`
+não apara `-` nem trata os acentos como `buildExportName` em
+`exporters.js`: «Corta Norte (2026)» dá `Corta-Norte-2026-.kml` e
+`Corta-Norte-2026_area_A-1.kmz`; «Évora» dá `-vora.kml`; «Quinta da
+Conceição» dá `Quinta-da-Concei-o`, também no `<name>`. Correcção: uma só
+função (NFD sem diacríticos, `[^\w-]+` → `-`, `-` colapsados e aparados).
+Os nomes mudam: CHANGELOG.
+
+**K-E4 — documentação.** A ajuda (PT e EN) diz «KML simples — polígono 2D
++ base + GCPs» (desde a 1.3.0 é só o polígono); o METODOS §11 descreve um
+ZIP «Voos da base B» que não tem botão desde a 1.4.0 e diz que o cabeçalho
+exporta um ZIP (com bases exporta os dois).
+
+### 6.3 Melhorias (K-M)
+
+M1 `buildAreaKML` acrescenta sempre `r[0]`: um anel já fechado sai com o
+último vértice repetido (pela interface não acontece; é armadilha para o
+KML por base, porque `blockOutline` devolve o anel fechado). M2 orientação
+dos anéis não normalizada (a referência KML pede o exterior em sentido
+anti-horário; o Google Earth tolera). M3 um buraco inteiro fora do anel
+passa `validateRing`. M4 no KML de campo as pastas são por tipo, não por
+base. M5 ligação de navegação (Google Maps) na descrição da base, que a
+ficha de campo já gera. M6 o rótulo do bloco vai para a média dos
+vértices, fora de uma célula côncava (`pointOnFeature`). M7 os blocos não
+levam `cellHoles`. M8 os botões não dizem que o KML da área inclui as
+células desactivadas. M9 o modo «ambos» faz dois downloads e gera cada KMZ
+duas vezes — não acrescentar um terceiro download ao cabeçalho. M10 um
+bloco sem base cai na raiz do ZIP (hoje inalcançável; `sem-base/` é mais
+seguro). M11 com mais de 26 bases, `AA-27` ordena-se entre A e B (só
+documentar). M12 falta a linha do KML «Bases e blocos» na tabela do README.
+M13 falta o teste de ida e volta KML da área → leitor (funciona, não está
+fixado). M14 um nome repetido dá `param-out-of-range`, genérico.
+
+### 6.4 Verificado e conforme (KML e ZIPs)
+
+KML da área: KML 2.2, filhos do `Polygon` na ordem do esquema, `lon,lat,0`
+a 8 casas, anel fechado, `clampToGround`, Document = Placemark = nome do
+ficheiro, sem estilos, pastas, Point, MultiGeometry nem ExtendedData,
+UTF-8, caracteres ilegais retirados, MIME correcto; polígono inteiro (não
+por bloco); ida e volta com o leitor recupera o anel e os buracos. KML
+«Bases e blocos»: XML bem formado, ordem conforme, cores `aabbggrr`,
+descrição HTML escapada, zona com 72 lados e o raio efectivo, blocos pela
+ordem de voo com o rótulo e o nome do KMZ; o Google Earth (computador e
+telemóvel) lê-o. ZIPs: `_voos.zip`, `_voos-por-base.zip` (`base-X/`) e um
+voo em `.kmz`; ordem de voo base a base; zeros a partir de 10 voos; só
+`[\w-]`; nome repetido ganha `-b<id>` e o ZIP recusa duplicados; nunca sai
+um ZIP vazio nem uma pasta sem voos; os nomes das fichas, do relatório e do
+KML de campo vêm da mesma `flightFiles`; o título dentro do KMZ é o nome do
+ficheiro. Leitor: um `.kmz` só é lido como WPML — o KML por base deve
+escrever `.kml`.
+
+## 7. Proposta: KML por base (pronta a implementar)
+
+**Âmbito.** Aparece com bases e pelo menos 2 voos (a condição de «Todos os
+voos por base»); activo quando todos os blocos têm contorno exacto
+(Bateria, Mosaico, grelha, partes); na divisão por Faixas fica desactivado,
+com a razão, até K-E2 dar o polígono de faixa. Não depende do preflight,
+como os outros KML.
+
+**Estrutura e nomes.**
+
+```
+Corta-Norte_area-tf_kml-por-base.zip     ← o prefixo de _voos-por-base.zip
+├── base-A/
+│   ├── Corta-Norte_poligono_A-1.kml     ← Pilot 2: um bloco, só o contorno
+│   ├── Corta-Norte_poligono_A-2.kml
+│   └── mapa/Corta-Norte_base-A.kml      ← Google Earth / telemóvel, não Pilot 2
+└── base-B/ …
+```
+
+- Nomes dos KML de bloco por `flightFiles` com o tipo `poligono` (a mesma
+  ordem, os mesmos zeros e o mesmo desempate dos KMZ; a missão de
+  mapeamento nunca fica com o nome da rota WPML do mesmo voo na biblioteca
+  do Pilot 2); pastas por `baseFolder`; um bloco sem base em `sem-base/`.
+- Cada KML de bloco: `buildAreaKML(cellRing, nome)` sem opções — o mesmo
+  ficheiro que já funciona —, nome igual no ficheiro, no Document e no
+  Placemark; sem buracos (K-B1; blocos com buracos interiores entram numa
+  lista de avisos; os recortados na fronteira já fazem parte do contorno);
+  sem base, zona, descrição, estilos; ASCII puro depois de K-E3.
+- `mapa/` à parte porque tem vários Placemarks e um polígono (a zona), que
+  uma versão do Pilot 2 poderia tomar por área: `buildBasesKML` com a ficha
+  da base, a zona e os contornos dos blocos da base (recomendo os contornos,
+  para o piloto saber qual é o A-2), mais a ligação de navegação (K-M5).
+
+**Interface.** Cartão 7, a seguir a «Bases e blocos (KML)»: «Blocos por base
+(KML, ZIP)», com o título a dizer que o Pilot 2 calcula a rota dele
+(confirmar altura, ângulo e tempo no comando), a razão quando está
+desactivado e o aviso de buracos. Cabeçalho sem alterações (um terceiro
+download esbarra na licença do browser).
+
+**Código.** Novo `src/mission/blocksKml.js` (lógica pura:
+`exactBlockRing`, `blocksKmlByBase` → `{ entries, warnings, error }`);
+`buildFilesZip(entries)` em `exporters.js` com a verificação de duplicados;
+tipo `kmlByBase` em `flightFiles.js`; `cellHoles` nos blocos (K-M7); textos
+em `dict.bases.js`. Reutiliza `buildAreaKML`, `buildExportName`,
+`downloadBlob`, `flightFiles`, `baseFolder`, `buildBasesKML`,
+`baseFieldSheets`.
+
+**Testes.** Unitários: caminhos e ordem; cada KML com 1 Document, 1
+Placemark, 1 Polygon e nada mais; nomes iguais ao ficheiro; vértices iguais
+ao `cellRing`; ida e volta com o leitor; união dos polígonos igual à área e
+sem sobreposições (U com buraco; mosaico de 300 m); buraco interior dá
+aviso; zeros com 10 voos, `base-AA/` com 27 bases, acentos em ASCII;
+Faixas dá `no-outline`; `sem-base/`; nomes repetidos recusados; o mapa só
+com a sua base. E2E: no cenário «bases-exportar-por-base», descarregar o
+ZIP, as mesmas pastas e voos pela mesma ordem, área de cada polígono igual
+ao contorno; cenário com Faixas: botão desactivado; inventário do cartão 7.
+Manual (QA §13, no Pilot 2): importar um KML de bloco no M3E/M4T e no M300
+com P1 e ver o nome mostrado; importar um KML com `innerBoundaryIs`;
+importar o ficheiro de `mapa/`.
+
+**Riscos.** Buracos (o Pilot 2 cobre-os); Faixas (fase 2, com um KML por
+peça); o Pilot 2 recalcula a rota (a app refere cada bloco à cota mínima da
+zona da base e o KML não leva altura; ângulo, margens e tempo são os do
+comando, e o tempo pode passar o da bateria para que o bloco foi
+dimensionado; os blocos encostam sem sobreposição — usar a margem do
+Pilot 2); Mapper+ (a missão de mapeamento pode não existir para PSDK); um
+import por ficheiro no Pilot 2 (40 blocos são 40 imports); partes usadas
+como células perdem os buracos que tinham.
