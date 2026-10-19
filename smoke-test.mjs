@@ -1211,12 +1211,15 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
   )
 }
 
-/* 8f3. Regua global exactamente na aresta partilhada (A1): a linha k=0 a
-   0 graus coincide com a aresta entre as duas celulas do 2x1 — voa-se UMA
-   vez (recuada 0.1 m para dentro da celula de cima), nunca duas */
+/* 8f3. Regua global exactamente na aresta partilhada (A1): com um numero
+   impar de faixas (largura 10 espacamentos + 1 m) a faixa do meio da regua
+   global — centrada no contorno, como o plano unico (M2-G2) — coincide com
+   a aresta entre as duas celulas do 2x1: voa-se UMA vez (recuada 0.1 m para
+   dentro da celula de cima), nunca duas */
 {
-  const outline2 = rectangleFromAnchor(center, 500, 250, 90)
-  const grid2b = gridFromAnchor(center, 250, 250, 90, 2, 1)
+  const w2 = 10 * sp + 1
+  const outline2 = rectangleFromAnchor(center, w2, 250, 90)
+  const grid2b = gridFromAnchor(center, w2 / 2, 250, 90, 2, 1)
   const align0 = computeAlignment(outline2, sp, 0)
   const pl = grid2b.cells.map((c) =>
     generateFlightLines(c, {

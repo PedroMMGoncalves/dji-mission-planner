@@ -137,8 +137,18 @@ Passos:
 5. Ordenação boustrophedon por decomposição celular (Choset & Pignon,
    1998; implementação derivada de `grid_route.py` do FlyPath, GPL-3.0):
    troços contíguos formam células percorridas em zig-zag; num polígono
-   convexo é a serpentina clássica, num côncavo as ligações nunca
-   atravessam os vãos.
+   convexo é a serpentina clássica. A direcção de cada faixa dentro de uma
+   célula sai de uma programação dinâmica sobre as ligações entre faixas
+   consecutivas (fim de uma → início da seguinte), com a ordem das faixas
+   da célula (primeira ou última primeiro) escolhida com um passo de
+   antecipação para a célula seguinte; uma ligação cujas amostras saiam do
+   polígono (com 1 m de folga, porque os extremos das faixas estão na
+   fronteira) é penalizada, pelo que num côncavo as ligações contornam o
+   vão pelo lado curto em vez de o atravessar (M2-G3 da revisão da
+   matemática: a alternância fixa mandava a ligação por cima do vão de um
+   U, até 300 m fora da área por concavidade). A decomposição só parte
+   células onde a conectividade muda (um vão aberto para um lado não parte
+   a célula), daí a escolha por faixa.
 6. Rotação inversa.
 
 Prolongamento (overshoot): cada faixa é estendida nos dois extremos, na
@@ -155,7 +165,11 @@ primeiro waypoint (marcador `nadirStartLine`/`nadirStartWaypoint`).
 
 Células (grelha da âncora ou mosaico): todas partilham o mesmo pivô e a
 mesma origem de múltiplos do espaçamento (`computeAlignment`), pelo que as
-faixas de células adjacentes são colineares; um múltiplo exactamente sobre
+faixas de células adjacentes são colineares; a origem é a das faixas do
+plano único (centradas na caixa do contorno, `n = floor(h/s) + 1`), para a
+faixa exterior ficar a menos de s/2 do contorno como no plano único — com
+a origem no centróide ficava a `(bordo − origem) mod s`, até um
+espaçamento inteiro (M2-G2); um múltiplo exactamente sobre
 a aresta comum pertence só à célula superior (intervalo semi-aberto); uma
 célula mais estreita do que o espaçamento recebe uma única faixa, o
 múltiplo mais próximo do centro, encostado para dentro em
@@ -192,9 +206,15 @@ constantes de antes só coincidem perto dos 5 m/s). Não são modelados:
 aceleração e desaceleração, raio de viragem, subida e descida, descolagem
 e aterragem, vento, pairagem.
 
-Trânsito: numa rota única, `2 · distância horizontal em linha recta / v`
-da base de referência à área (`distanceToArea`, distância à fronteira ou 0
-se a base está dentro). Com blocos e bases, cada bloco conta o da SUA base
+Trânsito: numa rota única, do pior ponto da zona da base de referência ao
+1.º waypoint e do último de volta, `(d(centro, 1.º) + r) + (d(centro,
+último) + r)`, a dividir por `v` (`blockWorstTransitM`, a mesma régua dos
+blocos; `routeOpsFor` no App). Era `2 · distância à fronteira da área`, 0
+com a base dentro — 1,7 km e 2,8 min por contar numa área de 1 × 1 km com
+a base no centro (M2-T4/G5); a distância à fronteira só serve ao aviso de
+base a mais de 2 km. O alcance visual da rota única é o vértice mais
+afastado do invólucro da rota, do pior ponto da zona (`blockWorstVlosM`),
+contra o VLOS da aeronave (`route-vlos`). Com blocos e bases, cada bloco conta o da SUA base
 no pior caso da zona: `(d(centro, 1.º waypoint) + r) + (d(centro, último
 waypoint) + r)`, a dividir por `v` (`blockWorstTransitM`). Entre células do
 mosaico o trânsito não é contado; entre as grelhas da dupla grelha é.
@@ -213,10 +233,14 @@ guardavam a duração nominal e a reserva à parte (30 % por omissão); ao
 abrir, `legacyUsefulMin` converte-as em tempo útil, `nominal · (1 −
 reserva/100)` arredondado ao meio minuto (55 min a 30 % → 38,5 min), e a
 reserva passa a 0, pelo que os blocos não mudam. Baterias do projecto
-(`aggregatePlans`): somadas por plano, `max(1, ceil(tempo / útil))` por
-cada plano, porque missões separadas não partilham uma bateria a meio. Com
-o número de conjuntos da equipa conhecido, a lista de blocos avisa quando
-há mais voos do que conjuntos (`flightsVsSets`).
+(`aggregatePlans`): por VOO, porque missões separadas não partilham uma
+bateria a meio — com blocos, `Σ max(1, ceil((tempo + trânsito) / útil))`
+por bloco, cada um com o trânsito da sua base; numa rota única, `max(1,
+ceil((tempo + trânsito) / útil))`. Contava-se `ceil(tempo / útil)` por
+plano, sem trânsito nem blocos: 5 conjuntos para 6 voos (M2-G6). Com o
+número de conjuntos da equipa conhecido, a lista de blocos avisa quando há
+mais voos do que conjuntos (`flightsVsSets`), também numa rota única acima
+do tempo útil.
 
 Divisão em blocos (`splitIntoBlocks`; modelo do UgCS "Large Projects" e do
 DroneDeploy multi-flight): a grelha global mantém-se e é cortada em grupos
@@ -433,8 +457,11 @@ outro, passam para ele pela mesma regra.
 Os modos de rota única (corredor, circular, fachada, órbita, inspecção, e
 a área sem blocos) usam uma base de referência: a mais próxima da sua rota
 ou geometria (`nearestBase`), a primeira pela ordem dos rótulos sem rota.
-Com uma só base é sempre ela. Na área sem blocos a cota é a mínima da zona
-dela; nos outros modos, como antes, a cota do ponto da base.
+Com uma só base é sempre ela. Na área sem blocos, no corredor e no
+circular a cota é a mínima da zona dela (`baseZoneFor`, com o raio e o
+desnível do equipamento): o corredor e o circular usavam a cota do PONTO
+da base, e descolar na mínima da zona baixava o voo até ao desnível da
+zona (M2-T6).
 
 ### 4.3 Bacias de visão e ligação rádio
 
@@ -608,8 +635,9 @@ Cobertura: teste de caixa envolvente da área dentro da caixa do relevo
 carregado (não é um teste por píxel).
 
 Seguimento de terreno (`terrainFollowLines`): cada faixa **e cada ligação
-entre faixas** é densificada a passos ≤ 40 m (interpolação linear em
-lon/lat, ≤ 20000 pontos por segmento), amostrada no relevo e simplificada
+entre faixas** é densificada a passos ≤ 40 m e ≤ meia resolução do relevo
+(15 m no Terrarium, meio píxel num MDT importado, mínimo 1 m; interpolação
+linear em lon/lat, ≤ 20000 pontos por segmento), amostrada no relevo e simplificada
 por Douglas-Peucker sobre o desvio **vertical**: mantém-se o conjunto
 mínimo de pontos tal que a interpolação linear entre eles nunca se afasta
 mais de `tolerância` (5 m por omissão, mínimo 1 m) do perfil amostrado. A
@@ -647,8 +675,11 @@ são tolerados — era um buraco de ~7,5 km de lado que passava sem aviso;
 um tile falhado é agora pedido outra vez antes de o relevo ficar pronto).
 Aviso (não bloqueio) se a altura relativa mínima for inferior a 20 m.
 
-Limites: a garantia da tolerância vale nos pontos amostrados, a 40 m; um
-acidente mais estreito do que o passo é invisível ao perfil. O Terrarium é
+Limites: a garantia da tolerância vale nos pontos amostrados, a meia
+resolução do relevo; um acidente mais estreito do que o píxel é invisível
+ao perfil (com os 40 m de antes, uma cumeada com flancos de 45° passava
+20 m abaixo do planeado entre duas amostras, M2-T2; a folga ao solo do
+preflight amostra à mesma resolução, com tecto de 10 m). O Terrarium é
 um modelo de superfície de origem mista (~30 m), sem vegetação nem
 edifícios modelados; a diferença de resolução entre fontes não é
 assinalada. Seguir terreno e foto por waypoint são mutuamente exclusivos
@@ -737,8 +768,11 @@ Folga (`checkFaceClearance`), só contra um DSM **local** (o Terrarium é
 inutilizável à escala de uma face): por waypoint, folga vertical =
 `cota do drone − DSM` e folga horizontal = distância, ao longo do rumo da
 câmara, à primeira amostra (a 1/4, 1/2 e 3/4 do standoff) cuja superfície
-chega à cota do drone; qualquer uma abaixo de `minClearance` (15 m por
-omissão) marca a passagem. Limites: três amostras por waypoint num só
+chega à cota do drone; a horizontal abaixo de `minClearance` (15 m por
+omissão) marca a passagem; a vertical abaixo de `min(minClearance, altura
+da passagem mais baixa − 0,5 m)` — o solo a subir acima do pé da face —,
+porque a passagem mais baixa fica em `max(imgH/2, piso)`, em regra abaixo
+dos 15 m, e em solo plano saía sempre a vermelho (M2-E4). Limites: três amostras por waypoint num só
 azimute; um obstáculo abaixo da cota do drone não é detectado. Sem DSM
 local o standoff fica "não verificado".
 
@@ -795,6 +829,11 @@ Captura, parâmetro `capture` da configuração da órbita:
 «Vídeo + fotografia» no mesmo anel não é possível pela razão acima; a
 alternativa anel a anel (uns a gravar, outros a fotografar) foi posta de
 parte por deixar os dois produtos a alturas diferentes.
+
+Obturador: a corda voada entre fotos, `2R · sin(π / nPts)`, a dividir pela
+velocidade, contra o intervalo mínimo do payload — o mesmo aviso do
+circular (§9A), no painel e no preflight (M2-E6: um M4T IV com a órbita por
+omissão disparava a cada 1,5 s com 2 s de mínimo, sem aviso).
 
 ## 9. Corredor
 
@@ -1278,9 +1317,14 @@ bateria), e bloqueio quando só o trânsito já o passa (como a base
 inalcançável); base fora do relevo carregado (bloqueio: a cota de
 referência dos seus voos é desconhecida); bloco sem base com bases no
 projecto (bloqueio; não devia acontecer); zona reduzida junto a um
-desnível, com o raio, o pedido, o desnível e onde (nota; também na rota
-única com bases). Com blocos e bases deixam de se aplicar o aviso de base
-a mais de 2 km da área e a bateria por bloco sem trânsito.
+desnível, com o raio, o pedido, o desnível e onde (`base-zone-reduced`,
+nota, quando o chão dentro do raio pedido não baixa o voo — uma corta a
+subir; `base-zone-drop`, aviso com quanto baixaria, quando descolar até ao
+raio pedido punha o voo mais baixo — uma corta a descer ou uma encosta,
+M2-T7; `base-zone-zero`, aviso, quando a zona fica sem raio; também na
+rota única com bases, no corredor e no circular). Com blocos e bases
+deixam de se aplicar o aviso de base a mais de 2 km da área, a bateria por
+bloco sem trânsito e o `route-vlos` da rota única.
 
 Bacias de visão (secção 4.3), por voo e por causa: parte do bloco atrás do
 relevo visto do ponto da base (aviso a partir de 5 %, nota abaixo,

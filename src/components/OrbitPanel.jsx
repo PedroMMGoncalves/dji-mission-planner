@@ -44,6 +44,8 @@ export default function OrbitPanel({
   onClearPoi,
   onExportSingle,
   onExportPerLevel,
+  // obturador: a corda entre fotos contra o intervalo mínimo do payload
+  triggerWarn = null,
   exportBlocked = false,
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
   safety = null,
@@ -183,6 +185,19 @@ export default function OrbitPanel({
             onChange={(v) => setOrbitParam('speedMS', Math.max(1, Math.min(10, v)))}
           />
         </Field>
+        {triggerWarn && (
+          <p
+            data-testid="orbit-trigger-warn"
+            className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200"
+          >
+            ⚠{' '}
+            {t('cp.flight.triggerFast', {
+              s: triggerWarn.actualS.toFixed(2),
+              min: triggerWarn.minS.toFixed(1),
+              vmax: triggerWarn.maxSpeed.toFixed(1),
+            })}
+          </p>
+        )}
         <label className="mt-1 flex items-center gap-2 text-sm text-slate-300">
           <input
             type="checkbox"

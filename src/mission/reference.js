@@ -21,6 +21,29 @@
  * desnível da área torna a diferença relevante.
  */
 import { terrainRangeAlong } from './clearance.js'
+import { computeTakeoffZone } from './takeoffZones.js'
+
+/**
+ * Zona de descolagem de uma base de referência das rotas únicas (corredor,
+ * circular), com o raio e o desnível do equipamento (`zoneConfig`) e o raio
+ * próprio da base quando o tem; null sem relevo, sem base ou com a base fora
+ * do relevo.
+ * @param {number[]|null|undefined} basePoint
+ * @param {{elevationAt?: ((lon: number, lat: number) => number|null)|null,
+ *   zoneConfig?: {radiusM: number, maxReliefM: number}|null, baseRadiusM?: number|null}} opts
+ * @returns {import('./takeoffZones.js').TakeoffZone|null}
+ */
+export function baseZoneFor(basePoint, { elevationAt, zoneConfig = null, baseRadiusM = null }) {
+  if (!zoneConfig || typeof elevationAt !== 'function') return null
+  if (!Array.isArray(basePoint) || !Number.isFinite(basePoint[0]) || !Number.isFinite(basePoint[1]))
+    return null
+  const z = computeTakeoffZone(basePoint, {
+    elevationAt,
+    radiusM: Number.isFinite(baseRadiusM) && baseRadiusM > 0 ? baseRadiusM : zoneConfig.radiusM,
+    maxReliefM: zoneConfig.maxReliefM,
+  })
+  return z && !('error' in z) ? z : null
+}
 
 /**
  * @param {{elevationAt?: ((lon: number, lat: number) => number|null)|null,

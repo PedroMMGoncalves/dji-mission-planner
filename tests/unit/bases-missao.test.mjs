@@ -267,10 +267,13 @@ describe('preflight bloco a bloco com bases', () => {
       elevationAt,
     })
     const out = items(L)
-    expect(out.find((i) => i.code === 'base-zone-reduced')).toMatchObject({
-      level: 'info',
-      params: { base: 'A', req: 100 },
+    // a corta desce 40 m: descolar até 100 m do ponto baixava o voo 40 m,
+    // por isso é aviso com o valor (M2-T7), não só nota
+    expect(out.find((i) => i.code === 'base-zone-drop')).toMatchObject({
+      level: 'warn',
+      params: { base: 'A', req: 100, drop: 40 },
     })
+    expect(out.find((i) => i.code === 'base-zone-reduced')).toBeUndefined()
     expect(out.find((i) => i.code === 'base-zone-no-terrain')).toMatchObject({
       level: 'block',
       params: { base: 'B', flights: 'B-2' },
@@ -288,6 +291,13 @@ describe('preflight bloco a bloco com bases', () => {
       'block-no-base',
       'base-zone-no-terrain',
       'base-zone-reduced',
+      'base-zone-drop',
+      'base-zone-zero',
+      'base-zone-partial',
+      'route-vlos',
+      'transit-collision',
+      'transit-low',
+      'terrain-holes',
     ]) {
       expect(preflightDict[`preflight.${code}`]?.pt, code).toBeTruthy()
       expect(preflightDict[`preflight.${code}`]?.en, code).toBeTruthy()

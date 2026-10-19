@@ -245,7 +245,7 @@ export function viewshedJobs({
     else if (fin(info.refElev)) drone = { mode: 'flat', elev: info.refElev + altitudeM }
     if (!drone) continue
     const ring = Array.isArray(block.ring) ? block.ring : blockRing(block)
-    if (!Array.isArray(ring) || ring.length < 3) continue
+    if (!Array.isArray(ring) || ring.length < 2) continue
     const droneKey = drone.mode === 'agl' ? `agl${drone.agl}` : `abs${drone.elev.toFixed(2)}`
     const z = zones?.[base.id]
     // com vegetação somada ao relevo o olho fica no ponto de descolagem: não

@@ -322,11 +322,17 @@ export function positioningError(aircraft, rtk = false) {
 export function aglCapWarning(
   payload,
   altitudeM,
-  { terrainFollowActive = false, toleranceM = 0 } = {},
+  { terrainFollowActive = false, toleranceM = 0, routeMaxAglM = null, gainM = 0 } = {},
 ) {
   const cap = payload?.maxAglM
   if (!cap || !Number.isFinite(altitudeM)) return null
-  const worstAgl = terrainFollowActive ? altitudeM + Math.max(0, toleranceM) : altitudeM
+  // o pior caso real: a subida que o corredor de ±30 m impõe com o terreno
+  // transversal (`routeMaxAglM`, a maior altura acima do solo da rota) e o
+  // ganho da zona de descolagem (M2-T8: com 30°/45° transversais um AGL de
+  // 80 m chegava a 97/110 m sem aviso)
+  const nominal = terrainFollowActive ? altitudeM + Math.max(0, toleranceM) : altitudeM
+  const route = Number.isFinite(routeMaxAglM) ? routeMaxAglM : 0
+  const worstAgl = Math.max(nominal, route) + Math.max(0, Number.isFinite(gainM) ? gainM : 0)
   return worstAgl > cap ? { cap, worstAgl } : null
 }
 

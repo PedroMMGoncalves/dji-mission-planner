@@ -512,7 +512,9 @@ export function findOptimalDirection(ring, spacingM) {
     const a1 = Math.max(...sv) + step
 
     let segCount = 0
-    for (let t = tMin + step / 2; t <= tMax; t += step) {
+    for (let t0 = tMin + step / 2; t0 <= tMax; t0 += step) {
+      // uma scanline exactamente num vértice (M2-G4): 1 mm ao lado
+      const t = nudgeAway([t0], tv, 1e-6, 1e-3)[0]
       const line = turf.lineString([
         [a0 * vx + t * ux, a0 * vy + t * uy],
         [a1 * vx + t * ux, a1 * vy + t * uy],
@@ -571,6 +573,48 @@ export function distanceToArea(point, ring) {
 }
 
 /**
+ * Vértices EXTREMOS de um Polygon ou MultiPolygon no eixo `axis` (0 = x,
+ * 1 = y): os dois vizinhos do mesmo lado. Uma linha de varrimento por um
+ * destes funde dois cruzamentos num só e quebra a paridade (a ponta de um
+ * entalhe em V); uma linha ao longo de uma aresta horizontal, ou por um
+ * canto com um vizinho nessa aresta, cruza nos dois extremos e não precisa
+ * de ser deslocada — e deslocá-la mudaria todas as grelhas cujas faixas
+ * caem nas arestas.
+ */
+function extremeVertices(feature, axis) {
+  const g = feature?.geometry
+  if (!g) return []
+  const polys = g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates]
+  const out = []
+  for (const rings of polys)
+    for (const ring of rings) {
+      const closed =
+        ring.length > 1 &&
+        ring[0][0] === ring[ring.length - 1][0] &&
+        ring[0][1] === ring[ring.length - 1][1]
+      const n = closed ? ring.length - 1 : ring.length
+      for (let i = 0; i < n; i++) {
+        const v = ring[i][axis]
+        const a = ring[(i + n - 1) % n][axis] - v
+        const b = ring[(i + 1) % n][axis] - v
+        if (a * b > 0) out.push(ring[i])
+      }
+    }
+  return out
+}
+
+/** Afasta cada valor de qualquer `avoid` a menos de `eps`, somando `delta`. */
+function nudgeAway(values, avoid, eps = 1e-9, delta = 1e-8) {
+  if (!avoid.length) return values
+  return values.map((v) => {
+    let out = v
+    for (let guard = 0; guard < 4 && avoid.some((a) => Math.abs(a - out) < eps); guard++)
+      out += delta
+    return out
+  })
+}
+
+/**
  * Expansão (buffer) exterior: a distância do buffer é uma percentagem da
  * dimensão característica da área, L = √área. Com pct = 10, cada lado avança
  * 5% de L para fora, ou seja, a largura total da zona cresce ~10%.
@@ -596,11 +640,16 @@ export function computeAlignment(outlineRing, spacingM, angleDeg) {
   const [minX, minY, , maxY] = turf.bbox(rotated)
   const heightM = turf.distance([minX, minY], [minX, maxY], { units: 'meters' })
   if (!(heightM > 0)) return null
-  return {
-    pivot,
-    latStep: ((maxY - minY) * spacingM) / heightM,
-    yRef: pivot[1], // o pivô é invariante na rotação
-  }
+  const latStep = ((maxY - minY) * spacingM) / heightM
+  // A régua global é a das faixas do plano único: centradas na caixa do
+  // contorno, n = floor(h/s) + 1, com a margem até ao contorno entre 0 e
+  // s/2. Com a referência no centróide (o pivô) a faixa exterior de uma
+  // célula ficava a (bordo − yRef) mod s do contorno, até um espaçamento
+  // inteiro — numa câmara a 70 % o bordo passava de 2 faixas para 1, e num
+  // LiDAR abaixo de 50 % ficava um vazio (M2-G2 da revisão da matemática).
+  const n = Math.max(1, Math.floor(heightM / spacingM) + 1)
+  const yRef = (minY + maxY) / 2 - ((n - 1) / 2) * latStep
+  return { pivot, latStep, yRef }
 }
 
 /**
@@ -717,8 +766,12 @@ export function generateFlightLines(ring, options) {
   // 4) Interseção e emparelhamento dos cruzamentos. Cada linha vira
   //    [y, [[xLo, xHi], ...]] — as linhas vazias também entram, porque um
   //    vão a toda a largura quebra a conectividade entre strips.
+  //    Uma linha que passe exactamente num vértice funde os dois
+  //    cruzamentos num só, quebra a paridade e o resto da fila desaparecia
+  //    sem erro (M2-G4): desloca-se 1e-8° (~1 mm).
+  const vertexYs = extremeVertices(rotated, 1).map((p) => p[1])
   const rows = []
-  for (const y of ys) {
+  for (const y of nudgeAway(ys, vertexYs)) {
     const scanline = turf.lineString([
       [minX - padX, y],
       [maxX + padX, y],
@@ -759,7 +812,13 @@ export function generateFlightLines(ring, options) {
     rows,
     STRIP_OVERLAP_EPS_M / metersPerDegLon(midLatRot),
   )
-  const routePts = orderCells(cells, adjacency, metersPerDegLon(midLatRot) / M_PER_DEG_LAT)
+  // as ligações entre células têm de ficar dentro da área (M2-G3); com 1 m
+  // de folga, porque os extremos das faixas estão exactamente na fronteira
+  // e uma ligação ao longo dela é legítima
+  const linkArea = turf.buffer(rotated, 1, { units: 'meters' }) ?? rotated
+  const routePts = orderCells(cells, adjacency, metersPerDegLon(midLatRot) / M_PER_DEG_LAT, (p) =>
+    turf.booleanPointInPolygon(turf.point(p), linkArea),
+  )
 
   // Overshoot (T2.2): cada passagem é prolongada nos dois extremos ao longo
   // da direção de voo, já com o sentido escolhido pela rota — as viragens
@@ -790,7 +849,10 @@ export function generateFlightLines(ring, options) {
   // voada em último lugar — cruza todas as fiadas para o ajuste de strips
   // LiDAR no pós-processamento. Recebe o mesmo overshoot das faixas.
   if (tieLine) {
-    const xMid = (minX + maxX) / 2
+    const xMid = nudgeAway(
+      [(minX + maxX) / 2],
+      extremeVertices(rotated, 0).map((p) => p[0]),
+    )[0]
     const padY = (maxY - minY) * 0.1 + 1e-6
     const vline = turf.lineString([
       [xMid, minY - padY],
@@ -1212,7 +1274,19 @@ export function aggregatePlans(
   for (const s of valid) {
     flightTimeS += s.flightTimeS
     photoCount += s.photoCount ?? 0
-    if (usefulS) batteries += Math.max(1, Math.ceil(s.flightTimeS / usefulS))
+    if (!usefulS) continue
+    // Baterias por voo, com o trânsito: missões separadas não partilham uma
+    // bateria a meio (§4), por isso cada bloco conta a sua, e uma rota única
+    // conta o trânsito de ida e volta (M2-G6: um mosaico de 6 blocos de
+    // 20,4 min mais 3 de trânsito dava 5 conjuntos para 6 voos).
+    const transitS = Number.isFinite(s.transitS) ? s.transitS : 0
+    if (Array.isArray(s.blocks) && s.blocks.length > 0) {
+      for (const b of s.blocks) {
+        const own = Number.isFinite(b.timeS) ? b.timeS : 0
+        const bt = Number.isFinite(b.transitS) ? b.transitS : 0
+        batteries += Math.max(1, Math.ceil((own + bt) / usefulS))
+      }
+    } else batteries += Math.max(1, Math.ceil((s.flightTimeS + transitS) / usefulS))
   }
   return {
     plans: valid.length,

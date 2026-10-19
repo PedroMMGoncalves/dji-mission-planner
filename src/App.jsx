@@ -48,7 +48,7 @@ import {
   removeBase as removeBaseFrom,
   setBaseRadius,
 } from './mission/bases.js'
-import { blockRing, blocksViewRoute, summarizeBases } from './mission/baseLayout.js'
+import { blockRing, blocksViewRoute, summarizeBases, convexHull } from './mission/baseLayout.js'
 import { baseFieldSheets } from './mission/fieldSheet.js'
 import { buildBasesKML } from './mission/basesKml.js'
 import { blocksKmlByBase } from './mission/blocksKml.js'
@@ -88,6 +88,7 @@ import { viewshedJobs, viewshedTerrainModel } from './mission/viewshedPlan.js'
 import { DEFAULT_PARAMS } from './mission/defaults.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
 import { routeClearance, terrainHolesAlong, transitClearance } from './mission/clearance.js'
+import { blockWorstTransitM, blockWorstVlosM } from './mission/takeoffZones.js'
 import { checkFaceClearance } from './utils/faceMode.js'
 import { gimbalRangeViolation } from './mission/gimbal.js'
 import {
@@ -795,6 +796,8 @@ function AppInner({ lang, setLang }) {
     terrain,
     terrainFollow,
     basePoint: corridorBase?.point ?? null,
+    zoneConfig,
+    baseRadiusM: corridorBase?.radiusM ?? null,
     altitude: params.altitude,
     interval,
     missionName,
@@ -923,6 +926,8 @@ function AppInner({ lang, setLang }) {
     terrain,
     terrainFollow,
     basePoint: circularBase?.point ?? null,
+    zoneConfig,
+    baseRadiusM: circularBase?.radiusM ?? null,
     batteryMin,
     reservePct: split.reservePct,
     missionMode,
@@ -937,6 +942,47 @@ function AppInner({ lang, setLang }) {
   const areaBaseDistance = useMemo(
     () => (areaBasePoint && ring ? distanceToArea(areaBasePoint, ring) : null),
     [areaBasePoint, ring],
+  )
+  // Trânsito e alcance visual das rotas únicas (M2-T4/G5): do pior ponto da
+  // zona da base de referência ao 1.º waypoint e do último de volta, e o
+  // vértice mais afastado da rota — a régua dos blocos; a distância à
+  // fronteira da área dava 0 com a base dentro e o VLOS não era verificado
+  const routeOpsFor = useCallback(
+    (base, waypoints, v) => {
+      if (!base || !Array.isArray(waypoints) || waypoints.length === 0) return null
+      const z = zones[base.id]
+      const zone =
+        z && !z.error ? z : { point: base.point, radiusM: base.radiusM ?? equipment.zoneRadiusM }
+      const transitM = blockWorstTransitM(zone, waypoints[0], waypoints[waypoints.length - 1])
+      return {
+        transitM,
+        transitS: v > 0 ? transitM / v : 0,
+        vlosWorstM: blockWorstVlosM(zone, convexHull(waypoints)),
+      }
+    },
+    [zones, equipment.zoneRadiusM],
+  )
+  const areaRouteOps = useMemo(
+    () => (perBlockBases ? null : routeOpsFor(refBase, planOk?.waypoints, speed)),
+    [perBlockBases, routeOpsFor, refBase, planOk, speed],
+  )
+  const corridorRouteOps = useMemo(
+    () =>
+      routeOpsFor(
+        corridorBase,
+        corridorPlan && !corridorPlan.error ? corridorPlan.waypoints : null,
+        corridorSpeed,
+      ),
+    [routeOpsFor, corridorBase, corridorPlan, corridorSpeed],
+  )
+  const circularRouteOps = useMemo(
+    () =>
+      routeOpsFor(
+        circularBase,
+        circularPlan && !circularPlan.error ? circularPlan.waypoints : null,
+        circularSpeed,
+      ),
+    [routeOpsFor, circularBase, circularPlan, circularSpeed],
   )
   const circularBaseDistance = useMemo(
     () => (circularBase && ring ? distanceToArea(circularBase.point, ring) : null),
@@ -1160,36 +1206,47 @@ function AppInner({ lang, setLang }) {
     const transit = (d, v) => (d > 0 && v > 0 ? (2 * d) / v : 0)
     const flightsOf = (n) =>
       flightsVsSets(equipment, drone.aircraftId, missionBatteryType.id, Math.max(1, n))
+    // uma rota única acima do tempo útil são vários voos (M2-G6: contava
+    // sempre 1 contra os conjuntos)
+    const usefulS = batteryMin > 0 ? batteryMin * 60 : null
+    const singleFlights = (timeS, transitS) =>
+      usefulS && Number.isFinite(timeS)
+        ? Math.max(1, Math.ceil((timeS + (transitS || 0)) / usefulS))
+        : 1
     if (missionMode === 'area') {
       const n = blocks?.length ?? 0
+      const transitS = areaRouteOps?.transitS ?? transit(areaBaseDistance, speed)
       return opsSummary({
         blocks: n ? blocks : null,
         byBlock: baseLayout?.byBlock ?? null,
         singleTimeS: planOk?.stats?.flightTimeS ?? null,
-        singleTransitS: transit(areaBaseDistance, speed),
+        singleTransitS: transitS,
         usefulMin: batteryMin,
         bases: bases.length,
-        sets: flightsOf(n),
+        sets: flightsOf(n || singleFlights(planOk?.stats?.flightTimeS, transitS)),
       })
     }
     if (missionMode === 'circular') {
       const n = circularBlocks?.length > 1 ? circularBlocks.length : 0
+      const transitS = circularRouteOps?.transitS ?? transit(circularBaseDistance, circularSpeed)
       return opsSummary({
         blocks: n
           ? circularBlocks.map((b, i) => ({ id: i + 1, timeS: b.timeS, transitS: b.transitS ?? 0 }))
           : null,
         singleTimeS: modeStats?.flightTimeS ?? null,
-        singleTransitS: transit(circularBaseDistance, circularSpeed),
+        singleTransitS: transitS,
         usefulMin: batteryMin,
         bases: bases.length,
-        sets: flightsOf(n),
+        sets: flightsOf(n || singleFlights(modeStats?.flightTimeS, transitS)),
       })
     }
+    const transitS = missionMode === 'corridor' ? (corridorRouteOps?.transitS ?? 0) : 0
     return opsSummary({
       singleTimeS: modeStats?.flightTimeS ?? null,
+      singleTransitS: transitS,
       usefulMin: batteryMin,
       bases: bases.length,
-      sets: flightsOf(1),
+      sets: flightsOf(singleFlights(modeStats?.flightTimeS, transitS)),
     })
   }, [
     missionMode,
@@ -1197,6 +1254,9 @@ function AppInner({ lang, setLang }) {
     baseLayout,
     planOk,
     areaBaseDistance,
+    areaRouteOps,
+    corridorRouteOps,
+    circularRouteOps,
     speed,
     batteryMin,
     bases.length,
@@ -1299,18 +1359,57 @@ function AppInner({ lang, setLang }) {
     () =>
       aggregatePlans(
         [
-          planOk?.stats,
+          // a área com os seus voos (cada bloco com o trânsito da sua base)
+          // ou o trânsito da rota única; as outras rotas únicas com o seu
+          // (M2-G6: as baterias eram contadas sem trânsito e sem blocos)
+          planOk?.stats
+            ? {
+                ...planOk.stats,
+                transitS: areaRouteOps?.transitS ?? 0,
+                blocks: blocks?.length
+                  ? blocks.map((b) => ({
+                      timeS: b.timeS,
+                      transitS: baseLayout?.byBlock?.[b.id]?.transitS ?? b.transitS ?? 0,
+                    }))
+                  : null,
+              }
+            : null,
           facePlan && !facePlan.error ? facePlan.stats : null,
           orbitPlan && !orbitPlan.error ? orbitPlan.stats : null,
           // O corredor entrou depois e ficou de fora desta lista: um projecto
           // com corredor mostrava menos planos, menos tempo e menos baterias
           // do que tem, e e daqui que sai o pack que vai para o campo.
-          corridorPlan && !corridorPlan.error ? corridorPlan.stats : null,
-          circularPlan && !circularPlan.error ? circularPlan.stats : null,
+          corridorPlan && !corridorPlan.error
+            ? { ...corridorPlan.stats, transitS: corridorRouteOps?.transitS ?? 0 }
+            : null,
+          circularPlan && !circularPlan.error
+            ? {
+                ...circularPlan.stats,
+                transitS: circularRouteOps?.transitS ?? 0,
+                blocks:
+                  circularBlocks?.length > 1
+                    ? circularBlocks.map((b) => ({ timeS: b.timeS, transitS: b.transitS ?? 0 }))
+                    : null,
+              }
+            : null,
         ],
         { batteryMin, reservePct: split.reservePct },
       ),
-    [planOk, facePlan, orbitPlan, corridorPlan, circularPlan, batteryMin, split.reservePct],
+    [
+      planOk,
+      blocks,
+      baseLayout,
+      areaRouteOps,
+      facePlan,
+      orbitPlan,
+      corridorPlan,
+      corridorRouteOps,
+      circularPlan,
+      circularRouteOps,
+      circularBlocks,
+      batteryMin,
+      split.reservePct,
+    ],
   )
 
   // E1.4: a vista 3D cobre o modo activo — grelha (com terrain follow),
@@ -1415,10 +1514,14 @@ function AppInner({ lang, setLang }) {
   const clearance = useMemo(() => {
     const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
     if (!elevationAt || !view3d?.waypoints?.length || !Number.isFinite(view3d.refElev)) return null
+    // a amostragem à resolução do relevo (≤ 10 m), não aos 40 m do perfil,
+    // que a folga validava contra si próprio (M2-T2)
+    const res = terrain.data?.resolutionM
     return routeClearance(view3d.waypoints, {
       elevationAt,
       refElev: view3d.refElev,
       breaks: view3d.breaks ?? null,
+      stepM: Math.min(10, Math.max(1, (Number.isFinite(res) && res > 0 ? res : 30) / 2)),
     })
   }, [terrain, view3d])
 
@@ -1503,10 +1606,22 @@ function AppInner({ lang, setLang }) {
     circularBase,
   ])
 
-  // Maior altura acima do solo da rota exportável, sobre o relevo. Só para a
-  // nota da categoria aberta (120 m): a altura é decisão do operador e nada
-  // é cortado nem bloqueado.
-  const aglMaxM = Number.isFinite(clearance?.maxM) ? clearance.maxM : null
+  // Ganho da zona de descolagem (§4.1): o voo real fica entre 0 e +ganho
+  // acima do planeado, e isso conta para o tecto AGL do payload e para a
+  // nota dos 120 m (M2-T8)
+  const zoneGainM = useMemo(() => {
+    const gainOf = (z) => (z && !z.error && Number.isFinite(z.gainM) ? z.gainM : 0)
+    if (missionMode === 'corridor') return gainOf(corridorReference?.zone)
+    if (missionMode === 'circular') return gainOf(circularReference?.zone)
+    if (missionMode !== 'area') return 0
+    if (perBlockBases) return Math.max(0, ...Object.values(zones ?? {}).map(gainOf))
+    return gainOf(refBase ? zones[refBase.id] : null)
+  }, [missionMode, corridorReference, circularReference, perBlockBases, zones, refBase])
+
+  // Maior altura acima do solo da rota exportável, sobre o relevo, com o
+  // ganho da zona. Só para a nota da categoria aberta (120 m): a altura é
+  // decisão do operador e nada é cortado nem bloqueado.
+  const aglMaxM = Number.isFinite(clearance?.maxM) ? clearance.maxM + zoneGainM : null
 
   // O relevo cobre a rota que sairia no KMZ do separador aberto? Sem isto
   // não há exportação: as alturas são relativas à descolagem e só o relevo
@@ -1570,8 +1685,11 @@ function AppInner({ lang, setLang }) {
           terrainFollow.enabled && terrainResult && !terrainResult.error,
         ),
         toleranceM: terrainFollow.tolerance,
+        // a subida do corredor com terreno transversal e o ganho da zona
+        routeMaxAglM: clearance?.maxM ?? null,
+        gainM: zoneGainM,
       }),
-    [payload, params.altitude, terrainFollow, terrainResult],
+    [payload, params.altitude, terrainFollow, terrainResult, clearance, zoneGainM],
   )
 
   /* ------------------------ Incerteza propagada ----------------------- */
@@ -1639,6 +1757,14 @@ function AppInner({ lang, setLang }) {
     })
   }, [view3d, missionMode, orbitConfig.speedMS, circularSpeed, speed, aircraft.maxClimbMS])
 
+  // Obturador na órbita (M2-E6): a corda voada entre fotos contra o
+  // intervalo mínimo do payload — o circular já avisava, a órbita não
+  const orbitTriggerWarn = useMemo(() => {
+    const s = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
+    if (!s || s.capture === 'video' || !(s.pointsPerOrbit > 0)) return null
+    return avisoIntervalo(2 * s.radiusM * Math.sin(Math.PI / s.pointsPerOrbit), orbitConfig.speedMS)
+  }, [orbitPlan, orbitConfig.speedMS, avisoIntervalo])
+
   /* ----------------------------- Preflight ---------------------------- */
   // Uma só lista, calculada a partir do mesmo estado que a exportação usa
   // (src/mission/preflight.js). Os bloqueios desactivam o botão do KMZ.
@@ -1655,6 +1781,8 @@ function AppInner({ lang, setLang }) {
         basePoint: areaBasePoint,
         // com blocos e bases, o alcance e o trânsito vão bloco a bloco
         baseDistance: perBlockBases ? null : areaBaseDistance,
+        baseTransitS: areaRouteOps?.transitS ?? null,
+        routeVlosM: areaRouteOps?.vlosWorstM ?? null,
         baseLayout: perBlockBases ? baseLayout : null,
         viewsheds: perBlockBases ? viewshedByBlock : null,
         refZone:
@@ -1705,6 +1833,12 @@ function AppInner({ lang, setLang }) {
         reference: corridorReference,
         basePoint: corridorBase?.point ?? null,
         baseDistance: corridorBaseDistance,
+        baseTransitS: corridorRouteOps?.transitS ?? null,
+        routeVlosM: corridorRouteOps?.vlosWorstM ?? null,
+        vlosM,
+        refZone: corridorReference?.zone
+          ? { label: corridorBase?.label ?? '', zone: corridorReference.zone }
+          : null,
         speed: corridorSpeed,
       })
     if (missionMode === 'circular')
@@ -1719,10 +1853,16 @@ function AppInner({ lang, setLang }) {
         reference: circularReference,
         basePoint: circularBase?.point ?? null,
         baseDistance: circularBaseDistance,
+        baseTransitS: circularRouteOps?.transitS ?? null,
+        routeVlosM: circularRouteOps?.vlosWorstM ?? null,
+        vlosM,
+        refZone: circularReference?.zone
+          ? { label: circularBase?.label ?? '', zone: circularReference.zone }
+          : null,
         speed: circularSpeed,
       })
     if (missionMode === 'face') return preflightPlan({ ...other, plan: facePlan })
-    return preflightPlan({ ...other, plan: orbitPlan })
+    return preflightPlan({ ...other, plan: orbitPlan, triggerWarn: orbitTriggerWarn })
   }, [
     missionMode,
     plan,
@@ -1776,6 +1916,10 @@ function AppInner({ lang, setLang }) {
     terrainRoute,
     terrainHoles,
     transitClearanceInfo,
+    orbitTriggerWarn,
+    areaRouteOps,
+    corridorRouteOps,
+    circularRouteOps,
   ])
   const exportBlocked = hasBlockers(preflight)
   // sem relevo sobre a rota, o próprio item do preflight descarrega o global
@@ -2373,6 +2517,7 @@ function AppInner({ lang, setLang }) {
                 onExportSingle={gated(handleExportOrbitSingle)}
                 onExportPerLevel={gated(handleExportOrbitPerLevel)}
                 exportBlocked={exportBlocked}
+                triggerWarn={orbitTriggerWarn}
               />
             )}
             {missionMode === 'corridor' && (

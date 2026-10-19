@@ -122,6 +122,18 @@ export default {
     pt: 'Zona da base {base} reduzida a {r} m (pedidos {req} m): {relief} m de desnível a {at} m da base. Descole a menos de {r} m do ponto marcado.',
     en: 'Zone of base {base} reduced to {r} m ({req} m requested): {relief} m of relief at {at} m from the base. Take off within {r} m of the marked point.',
   },
+  'preflight.base-zone-drop': {
+    pt: 'Zona da base {base} reduzida a {r} m (pedidos {req} m): {relief} m de desnível a {at} m da base. Descolar até {req} m do ponto pode pôr o voo {drop} m mais baixo do que o planeado: descole a menos de {r} m, ou mova a base para um sítio plano.',
+    en: 'Zone of base {base} reduced to {r} m ({req} m requested): {relief} m of relief at {at} m from the base. Taking off up to {req} m from the point may fly {drop} m lower than planned: take off within {r} m, or move the base to flat ground.',
+  },
+  'preflight.base-zone-zero': {
+    pt: 'A zona da base {base} ficou sem raio: já a {at} m do ponto há {relief} m de desnível, e descolar até {req} m pode pôr o voo {drop} m mais baixo. Descole no ponto marcado, ou mova a base para um sítio plano.',
+    en: 'The zone of base {base} has no radius left: {relief} m of relief already at {at} m from the point, and taking off up to {req} m away may fly {drop} m lower. Take off at the marked point, or move the base to flat ground.',
+  },
+  'preflight.route-vlos': {
+    pt: 'A rota chega a {m} m da base no pior ponto da zona, acima do alcance visual de {vlos} m da aeronave. Mova a base, divida a área em blocos com bases, ou voe com observadores.',
+    en: 'The route reaches {m} m from the base at the worst point of the zone, beyond the aircraft’s {vlos} m visual range. Move the base, split the area into blocks with bases, or fly with observers.',
+  },
   'preflight.terrain-datum-ellipsoidal': {
     pt: 'O MDT declara alturas elipsoidais ({model}): as alturas relativas continuam certas, mas não compare cotas deste ficheiro com fontes ortométricas.',
     en: 'The DTM declares ellipsoidal heights ({model}): relative heights are still right, but do not compare its elevations with orthometric sources.',

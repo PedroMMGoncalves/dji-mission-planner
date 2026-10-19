@@ -44,16 +44,28 @@ const photoPassUnverified = (c) =>
  * vistos no campo — perfil com o voo debaixo da terra e blocos de 80 m —
  * tinham a mesma causa (base a dezenas de km, fora do MDT) e nenhum aviso.
  */
+/**
+ * Trânsito de ida e volta (s) da rota única: o do pior ponto da zona da base
+ * ao 1.º waypoint e do último de volta (`baseTransitS`, blockWorstTransitM,
+ * como nos blocos), senão o dobro da distância à área. A distância à
+ * fronteira dava 0 com a base dentro da área: 1,7 km e 2,8 min por contar
+ * numa área de 1 × 1 km com a base no centro (M2-T4/G5).
+ */
+function routeTransitS(c) {
+  if (Number.isFinite(c.baseTransitS)) return Math.max(0, c.baseTransitS)
+  return c.basePoint && c.baseDistance > 0 && c.speed > 0 ? (2 * c.baseDistance) / c.speed : 0
+}
+
 function groundItems(c, usable) {
   const out = []
-  if (c.basePoint && c.baseDistance > BASE_FAR_M) {
-    const km = (c.baseDistance / 1000).toFixed(1)
-    const transitMin = c.speed > 0 ? (2 * c.baseDistance) / c.speed / 60 : null
-    if (usable != null && transitMin != null && transitMin >= usable)
+  if (c.basePoint) {
+    const km = ((c.baseDistance ?? 0) / 1000).toFixed(1)
+    const transitMin = routeTransitS(c) / 60
+    if (usable != null && transitMin >= usable)
       out.push(
         item('block', 'base-unreachable', { km, min: round1(transitMin), usable: round1(usable) }),
       )
-    else out.push(item('warn', 'base-far', { km }))
+    else if (c.baseDistance > BASE_FAR_M) out.push(item('warn', 'base-far', { km }))
   }
   if (c.reference?.baseOutside && c.reference.source === 'area-min')
     out.push(item('warn', 'base-no-terrain', { elev: Math.round(c.reference.elev) }))
@@ -87,16 +99,49 @@ function groundItems(c, usable) {
  * Bloqueio quando entram no relevo, aviso abaixo de 15 m.
  */
 function transitItems(c) {
+  const out = []
+  // rota única: o vértice mais afastado da rota, do pior ponto da zona,
+  // contra o alcance visual da aeronave (os blocos já o tinham por voo)
+  if (Number.isFinite(c.routeVlosM) && c.vlosM > 0 && c.routeVlosM > c.vlosM)
+    out.push(item('warn', 'route-vlos', { m: Math.round(c.routeVlosM), vlos: Math.round(c.vlosM) }))
   const t = c.transitClearance
-  if (!t || !Number.isFinite(t.minM)) return []
+  if (!t || !Number.isFinite(t.minM)) return out
   const params = {
     m: round1(Math.abs(t.minM)),
     flight: t.flight ?? '—',
     h: Math.round(t.at?.leg === 'back' ? t.backHeightM : t.outHeightM),
   }
-  if (t.minM < 0) return [item('block', 'transit-collision', params)]
-  if (t.minM < CLEARANCE_WARN_M) return [item('warn', 'transit-low', params)]
-  return []
+  if (t.minM < 0) out.push(item('block', 'transit-collision', params))
+  else if (t.minM < CLEARANCE_WARN_M) out.push(item('warn', 'transit-low', params))
+  return out
+}
+
+/**
+ * Zona de descolagem reduzida (computeTakeoffZone): nota quando o chão
+ * dentro do raio pedido não baixa o voo; aviso com quanto baixaria quando
+ * descolar até ao raio pedido punha o voo abaixo do planeado (M2-T7: numa
+ * encosta uniforme de 10° o raio cai a 20 m e descolar a 100 m baixava o
+ * voo 14 m, só com uma nota); aviso próprio quando a zona fica sem raio.
+ */
+function zoneItems(base, zone) {
+  if (!zone) return []
+  const out = []
+  if (zone.reduced) {
+    const drop = Math.round(zone.cause?.belowM ?? 0)
+    const params = {
+      base,
+      r: Math.round(zone.radiusM),
+      req: Math.round(zone.requestedRadiusM),
+      relief: Math.round(zone.cause?.reliefM ?? zone.reliefM),
+      at: Math.round(zone.cause?.atM ?? zone.radiusM),
+      drop,
+    }
+    if (!(zone.radiusM > 0)) out.push(item('warn', 'base-zone-zero', params))
+    else if (drop > 0) out.push(item('warn', 'base-zone-drop', params))
+    else out.push(item('info', 'base-zone-reduced', params))
+  }
+  if (zone.partial) out.push(item('warn', 'base-zone-partial', { base, n: zone.noData }))
+  return out
 }
 
 /**
@@ -247,18 +292,7 @@ function blockBaseItems(c, usable) {
           flights: base.flights.join(', '),
         }),
       )
-    else if (base.zone?.reduced)
-      out.push(
-        item('info', 'base-zone-reduced', {
-          base: base.label,
-          r: Math.round(base.zone.radiusM),
-          req: Math.round(base.zone.requestedRadiusM),
-          relief: Math.round(base.zone.cause?.reliefM ?? base.zone.reliefM),
-          at: Math.round(base.zone.cause?.atM ?? base.zone.radiusM),
-        }),
-      )
-    if (base.zone?.partial)
-      out.push(item('warn', 'base-zone-partial', { base: base.label, n: base.zone.noData }))
+    else out.push(...zoneItems(base.label, base.zone))
   }
   return out
 }
@@ -319,6 +353,8 @@ export function usableBatteryMin(batteryMin, reservePct = 0) {
  * @param {any} [c.terrainResult] resultado do terrain follow ({error} ou waypoints)
  * @param {number[]|null} [c.basePoint]
  * @param {number|null} [c.baseDistance] distância base → área (m)
+ * @param {number|null} [c.baseTransitS] trânsito de ida e volta da rota única, do pior ponto da zona (s)
+ * @param {number|null} [c.routeVlosM] vértice mais afastado da rota única, do pior ponto da zona (m)
  * @param {number} [c.speed] m/s
  * @param {number} [c.batteryMin]
  * @param {number} [c.reservePct]
@@ -423,19 +459,7 @@ export function preflightArea(c) {
     out.push(...viewshedItems(c))
   } else if (c.refZone?.zone) {
     // rota única: a zona da base de referência
-    const z = c.refZone.zone
-    if (z.reduced)
-      out.push(
-        item('info', 'base-zone-reduced', {
-          base: c.refZone.label,
-          r: Math.round(z.radiusM),
-          req: Math.round(z.requestedRadiusM),
-          relief: Math.round(z.cause?.reliefM ?? z.reliefM),
-          at: Math.round(z.cause?.atM ?? z.radiusM),
-        }),
-      )
-    if (z.partial)
-      out.push(item('warn', 'base-zone-partial', { base: c.refZone.label, n: z.noData }))
+    out.push(...zoneItems(c.refZone.label, c.refZone.zone))
   }
   if (c.baseLayout?.hasBases && blocks) {
     // (a bateria já foi vista bloco a bloco, com o trânsito de cada base)
@@ -449,8 +473,7 @@ export function preflightArea(c) {
           )
       }
     } else if (Number.isFinite(plan.stats?.flightTimeS)) {
-      const transitS = c.baseDistance > 0 && c.speed > 0 ? (2 * c.baseDistance) / c.speed : 0
-      const min = (plan.stats.flightTimeS + transitS) / 60
+      const min = (plan.stats.flightTimeS + routeTransitS(c)) / 60
       if (min > usable)
         out.push(item('warn', 'battery', { min: round1(min), usable: round1(usable) }))
     }
@@ -505,7 +528,9 @@ export function preflightPlan(c) {
   }
   const usable = usableBatteryMin(c.batteryMin, c.reservePct)
   if (usable != null && Number.isFinite(plan.stats?.flightTimeS)) {
-    const min = plan.stats.flightTimeS / 60
+    // com o trânsito de ida e volta, como a área (o corredor e o circular
+    // contavam só o voo)
+    const min = (plan.stats.flightTimeS + routeTransitS(c)) / 60
     if (min > usable)
       out.push(item('warn', 'battery', { min: round1(min), usable: round1(usable) }))
   }
@@ -516,6 +541,7 @@ export function preflightPlan(c) {
   // os modos com cota de referência própria (corredor, circular) dizem o que
   // se assume sem base, como a área
   if ('reference' in c) out.push(...noBaseItems(c))
+  if (c.refZone?.zone) out.push(...zoneItems(c.refZone.label, c.refZone.zone))
   out.push(...openCategoryItems(c))
   out.push(item('info', 'heights-relative'))
   return out

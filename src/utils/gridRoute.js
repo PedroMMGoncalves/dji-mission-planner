@@ -143,28 +143,112 @@ function visitOrder(turnlists, adjacency) {
   return order
 }
 
+/** Link penalty (in the frame's distance units) for a leg that leaves the area. */
+const OUTSIDE_PENALTY = 1e3
+
+/**
+ * Snake the rows of a cell, in the given row order, choosing the direction
+ * of every row by dynamic programming over the legs between consecutive
+ * rows (end of one row → start of the next): plain alternation is what the
+ * distance picks on a rectangle, but where the row extent changes — a notch
+ * open to one side — the cheapest legs are the ones along the short side,
+ * and a leg whose interior samples leave the area costs OUTSIDE_PENALTY on
+ * top (M2-G3: the fixed alternation sent the leg across the notch of a U,
+ * up to 300 m outside the area per concavity). Returns the points (two per
+ * row), the total leg cost and the end point.
+ */
+function snakeRows(rows, cur, legCost) {
+  const n = rows.length
+  const ends = rows.map(([y, xlo, xhi]) => [
+    // direction 0: lo → hi; direction 1: hi → lo
+    [
+      [xlo, y],
+      [xhi, y],
+    ],
+    [
+      [xhi, y],
+      [xlo, y],
+    ],
+  ])
+  const cost = Array.from({ length: n }, () => [Infinity, Infinity])
+  const from = Array.from({ length: n }, () => [0, 0])
+  // without an entry point the first row flies lo → hi, as the classic
+  // serpentine does (the tiny bias only breaks exact ties)
+  for (let d = 0; d < 2; d++) cost[0][d] = cur ? legCost(cur, ends[0][d][0]) : d * 1e-9
+  for (let k = 1; k < n; k++)
+    for (let d = 0; d < 2; d++) {
+      for (let e = 0; e < 2; e++) {
+        const c = cost[k - 1][e] + legCost(ends[k - 1][e][1], ends[k][d][0])
+        if (c < cost[k][d]) {
+          cost[k][d] = c
+          from[k][d] = e
+        }
+      }
+    }
+  let d = cost[n - 1][0] <= cost[n - 1][1] ? 0 : 1
+  const total = cost[n - 1][d]
+  const dirs = new Array(n)
+  for (let k = n - 1; k >= 0; k--) {
+    dirs[k] = d
+    d = from[k][d]
+  }
+  const points = []
+  for (let k = 0; k < n; k++) points.push(...ends[k][dirs[k]])
+  return { points, total, end: points[points.length - 1] }
+}
+
 /**
  * Concatenate the cells into one route in adjacency (graph) order, so the
  * legs between strips run along the survey area's spine and stay inside it.
- * Each cell is flown in whichever direction enters it closest to the
- * previous cell's exit (x weighed by `xToYRatio`, the local metres-per-degree
- * anisotropy of the rotated frame). Every pass itself lies within a single
- * strip. Returns a flat list of [x, y] points — two per pass.
+ * Each cell is flown first row first or last row first, whichever is
+ * cheaper with one step of lookahead to the next cell, and the direction of
+ * every row inside it comes from `snakeRows` (x weighed by `xToYRatio`, the
+ * local metres-per-degree anisotropy of the rotated frame; when
+ * `inside(point)` is given, a leg whose interior samples leave the polygon
+ * is penalised). Every pass itself lies within a single strip. Returns a
+ * flat list of [x, y] points — two per pass.
  */
-export function orderCells(cells, adjacency, xToYRatio = 1) {
-  const turnlists = cells.map((c) => cellTurns(c))
-  if (turnlists.length === 0) return []
+export function orderCells(cells, adjacency, xToYRatio = 1, inside = null) {
+  if (cells.length === 0) return []
+  const dist = (p, q) => Math.hypot((q[0] - p[0]) * xToYRatio, q[1] - p[1])
+  const leaves = (p, q) => {
+    if (typeof inside !== 'function') return false
+    for (let i = 1; i <= 5; i++) {
+      const t = i / 6
+      if (!inside([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t])) return true
+    }
+    return false
+  }
+  const legCost = (p, q) => dist(p, q) + (leaves(p, q) ? OUTSIDE_PENALTY : 0)
+  // the points a cell can be entered at: its first or last row, lo or hi side
+  const entries = (cell) => {
+    const [[y0, lo0, hi0], [y1, lo1, hi1]] = [cell[0], cell[cell.length - 1]]
+    return [
+      [lo0, y0],
+      [hi0, y0],
+      [lo1, y1],
+      [hi1, y1],
+    ]
+  }
+  const order = visitOrder(
+    cells.map((c) => cellTurns(c)),
+    adjacency,
+  )
   const route = []
   let cur = null
-  for (const k of visitOrder(turnlists, adjacency)) {
-    const t = turnlists[k]
-    let chosen = t
-    if (cur != null) {
-      const d2 = (p) => ((p[0] - cur[0]) * xToYRatio) ** 2 + (p[1] - cur[1]) ** 2
-      chosen = d2(t[0]) <= d2(t[t.length - 1]) ? t : t.slice().reverse()
+  order.forEach((k, idx) => {
+    const next = idx + 1 < order.length ? entries(cells[order[idx + 1]]) : null
+    let best = null
+    for (const rev of [false, true]) {
+      const rows = rev ? [...cells[k]].reverse() : cells[k]
+      const snake = snakeRows(rows, cur, legCost)
+      // one step of lookahead: the cheapest way into the next cell from here
+      const ahead = next ? Math.min(...next.map((q) => legCost(snake.end, q))) : 0
+      const cost = snake.total + ahead
+      if (!best || cost < best.cost - 1e-12) best = { cost, points: snake.points }
     }
-    route.push(...chosen)
+    route.push(...best.points)
     cur = route[route.length - 1]
-  }
+  })
   return route
 }

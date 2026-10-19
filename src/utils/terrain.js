@@ -533,7 +533,8 @@ function segmentLengthM(a, b) {
  * que índice de `waypoints` ficou o vértice j da linha i, para quem tem
  * acções presas aos vértices (a foto por waypoint do corredor) as reindexar.
  *
- * @param {{verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null}} terrain
+ * @param {{verticalDatum: object, elevationAt: (lon: number, lat: number) => number|null,
+ *   resolutionM?: number}} terrain
  * @param {Array<Array<[number, number]>>} lines segmentos ou polilinhas [[lon,lat], ...]
  * @param {{agl?: number, refElev?: number, toleranceM?: number, stepM?: number,
  *   corridorM?: number, aglCapM?: number}} [opts] `corridorM` 0 desliga o
@@ -580,10 +581,22 @@ export function terrainFollowLines(
   if (!Array.isArray(lines) || lines.length === 0) return empty
 
   const sampler = typeof terrain?.elevationAt === 'function' ? terrain.elevationAt : null
+  // Resolução do relevo (MDT importado) ou a do Terrarium (~30 m): o eixo
+  // é densificado a meia resolução (pelo menos 1 m), e não aos 40 m de
+  // antes, que deixavam a crista entre duas amostras 7/11/20 m abaixo do
+  // planeado numa cumeada com flancos de 20°/30°/45° (M2-T2). O
+  // Douglas-Peucker continua a reter só os pontos que a tolerância exige:
+  // em terreno plano ou uniforme o resultado é o mesmo; numa crista fica o
+  // ponto da crista.
+  const resolutionM =
+    Number.isFinite(terrain?.resolutionM) && terrain.resolutionM > 0 ? terrain.resolutionM : 30
   const ref = Number.isFinite(refElev) ? refElev : 0
   const height = Number.isFinite(agl) ? agl : 0
   const tol = Number.isFinite(toleranceM) && toleranceM > 0 ? toleranceM : 0
-  const step = Number.isFinite(stepM) && stepM > 0 ? Math.max(MIN_STEP_M, stepM) : 40
+  const step = Math.min(
+    Number.isFinite(stepM) && stepM > 0 ? Math.max(MIN_STEP_M, stepM) : 40,
+    Math.max(MIN_STEP_M, resolutionM / 2),
+  )
   // margem de subida que o tecto ainda consente sobre a altura pedida
   const riseAllowed = Number.isFinite(aglCapM) ? Math.max(0, aglCapM - height) : Infinity
   // deslocamentos laterais amostrados de cada lado do eixo

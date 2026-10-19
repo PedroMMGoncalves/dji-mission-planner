@@ -7,7 +7,8 @@ calcula está certo para o planeamento de voo fotogramétrico e LiDAR, bate
 certo com o `METODOS.md` e aguenta os casos-limite?**
 
 **Estado (2026-10-19):** pacotes M-A a M-D aprovados. M-A (os seis que
-bloqueiam) aplicado, com testes; M-B, M-C e M-D a seguir, por esta ordem.
+bloqueiam) e M-B (os números que mentiam) aplicados, com testes; M-C e M-D
+a seguir.
 
 ## 1. Método
 

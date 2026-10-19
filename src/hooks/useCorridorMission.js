@@ -16,7 +16,7 @@ import {
   bboxOfPoints,
   planCorridorTerrain,
 } from '../mission/corridorTerrain.js'
-import { referenceElevation } from '../mission/reference.js'
+import { baseZoneFor, referenceElevation } from '../mission/reference.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
 
 export function useCorridorMission({
@@ -139,6 +139,10 @@ export function useCorridorRoute({
   terrain,
   terrainFollow,
   basePoint,
+  // zona de descolagem da base (radius/maxRelief do equipamento): a cota de
+  // referência é a mínima da zona, como na área
+  zoneConfig = null,
+  baseRadiusM = null,
   altitude,
   interval,
   missionName,
@@ -164,8 +168,12 @@ export function useCorridorRoute({
   const corridorReference = useMemo(() => {
     const elevationAt = terrain.data?.elevationAt
     if (!corridorCovers || typeof elevationAt !== 'function') return null
-    return referenceElevation({ elevationAt, basePoint, waypoints: planOk.waypoints })
-  }, [corridorCovers, terrain.data, basePoint, planOk])
+    const ref = referenceElevation({ elevationAt, basePoint, waypoints: planOk.waypoints })
+    // a cota do PONTO da base baixava o voo até ao desnível da zona quando se
+    // descolava na mínima dela (M2-T6): a mínima da zona, como a área
+    const zone = baseZoneFor(basePoint, { elevationAt, zoneConfig, baseRadiusM })
+    return zone ? { ...ref, elev: zone.refElev, source: 'base', baseOutside: false, zone } : ref
+  }, [corridorCovers, terrain.data, basePoint, planOk, zoneConfig, baseRadiusM])
 
   const corridorTerrain = useMemo(() => {
     if (!terrainFollow?.enabled || !planOk) return null

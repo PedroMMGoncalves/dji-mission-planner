@@ -288,6 +288,14 @@ export function checkFaceClearance(plan, elevationAt, options = {}) {
   let minVertical = Infinity
   let minHorizontal = standoffM
   const flagged = new Set()
+  // A folga vertical compara-se com o que o plano pode cumprir: a passagem
+  // mais baixa fica em max(imgH/2, piso), em regra abaixo dos 15 m da folga
+  // horizontal, e em solo plano saía sempre a vermelho (M2-E4). Marca-se só
+  // quando o solo debaixo do drone sobe acima do pé da face (meio metro).
+  const lowestPass = plan.stats?.heights?.[0]
+  const verticalLimit = Number.isFinite(lowestPass)
+    ? Math.min(minClearanceM, Math.max(0, lowestPass - 0.5))
+    : minClearanceM
 
   plan.waypoints.forEach((w, i) => {
     const droneAbs = foot + (w[2] ?? 0)
@@ -298,7 +306,7 @@ export function checkFaceClearance(plan, elevationAt, options = {}) {
       sampled += 1
       const vertical = droneAbs - zHere
       if (vertical < minVertical) minVertical = vertical
-      if (vertical < minClearanceM) flagged.add(pass)
+      if (vertical < verticalLimit) flagged.add(pass)
     }
 
     const heading = plan.perWaypoint?.[i]?.heading

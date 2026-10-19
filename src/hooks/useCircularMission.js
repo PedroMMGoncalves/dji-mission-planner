@@ -17,7 +17,7 @@ import {
 } from '../utils/circular.js'
 import { circularExportParams } from '../mission/exportParams.js'
 import { bboxCovers, bboxOfPoints } from '../mission/corridorTerrain.js'
-import { referenceElevation } from '../mission/reference.js'
+import { baseZoneFor, referenceElevation } from '../mission/reference.js'
 import { usableBatteryMin } from '../mission/preflight.js'
 import { exportBlocksZip, exportWPMLKmz } from '../utils/exporters.js'
 
@@ -36,6 +36,9 @@ export function useCircularMission({
   terrain,
   terrainFollow,
   basePoint,
+  // zona de descolagem da base: a cota de referência é a mínima da zona
+  zoneConfig = null,
+  baseRadiusM = null,
   batteryMin,
   reservePct,
   missionMode,
@@ -124,8 +127,11 @@ export function useCircularMission({
   const circularReference = useMemo(() => {
     const elevationAt = terrain.data?.elevationAt
     if (typeof elevationAt !== 'function' || !planFlatOk) return null
-    return referenceElevation({ elevationAt, basePoint, waypoints: planFlatOk.waypoints })
-  }, [terrain.data, basePoint, planFlatOk])
+    const ref = referenceElevation({ elevationAt, basePoint, waypoints: planFlatOk.waypoints })
+    // a mínima da zona da base, como a área (M2-T6)
+    const zone = baseZoneFor(basePoint, { elevationAt, zoneConfig, baseRadiusM })
+    return zone ? { ...ref, elev: zone.refElev, source: 'base', baseOutside: false, zone } : ref
+  }, [terrain.data, basePoint, planFlatOk, zoneConfig, baseRadiusM])
 
   // Seguimento de terreno por ponto: os índices das acções não mudam. Pedido
   // e impossível é um ERRO (o preflight bloqueia), nunca alturas planas.

@@ -159,6 +159,58 @@ que bloqueavam:
   as três opções, a fachada com o pitch e as juntas, e os itens novos do
   preflight em §14.
 
+### Corrigido (revisão da matemática da missão, pacote M-B: os números que mentiam)
+
+- **Trânsito e alcance visual da rota única** (M2-T4/G5): o trânsito era
+  `2 × distância à fronteira da área` — 0 com a base dentro — e o alcance
+  visual não era verificado; passa a ser o do pior ponto da zona da base
+  ao 1.º waypoint e do último de volta, como nos blocos, e a rota além do
+  VLOS da aeronave avisa (`route-vlos`); também no corredor e no circular,
+  cuja bateria não contava trânsito nenhum.
+- **Baterias e conjuntos por voo, com o trânsito** (M2-G6): o resumo do
+  projecto contava `ceil(tempo/útil)` por plano, sem trânsito nem blocos
+  (5 conjuntos para 6 voos); e uma rota única acima do tempo útil contava
+  sempre 1 voo contra os conjuntos.
+- **Corredor e circular com a cota mínima da zona da base** (M2-T6), como
+  a área; usavam a cota do ponto, e descolar na mínima da zona baixava o
+  voo até ao desnível dela.
+- **Tecto AGL do payload com a subida do corredor e o ganho da zona**
+  (M2-T8): com 30°/45° transversais um AGL de 80 m chegava a 97/110 m sem
+  aviso (Mapper+, 100 m); a nota dos 120 m também conta o ganho.
+- **Obturador na órbita** (M2-E6): aviso no painel e no preflight, como o
+  circular (M4T IV por omissão: uma foto por 1,5 s com 2 s de mínimo).
+- **Fachada: a folga vertical deixa de ser um alarme permanente** (M2-E4):
+  comparava-se com os 15 m da folga horizontal, mas a passagem mais baixa
+  fica em ~13 m e em solo plano saía sempre a vermelho; marca só quando o
+  solo sobe acima do pé da face.
+- **Zona em encosta diz quanto baixa o voo** (M2-T7): a zona reduzida era
+  só uma nota, também numa encosta uniforme em que descolar até ao raio
+  pedido baixava o voo 6–33 m; passa a aviso com o valor (`base-zone-drop`)
+  quando o chão dentro do raio pedido fica abaixo da referência, e uma
+  zona sem raio avisa (`base-zone-zero`).
+- **Faixas das células alinhadas com as do plano único** (M2-G2): a régua
+  global tinha a origem no centróide e a faixa exterior de uma célula
+  ficava até um espaçamento inteiro do contorno (41 m com 42,5 de
+  espaçamento; o bordo passava de 2 faixas para 1); passa a ser a do plano
+  único, com a margem entre 0 e s/2.
+- **Ligações nos polígonos côncavos dentro da área** (M2-G3): a direcção
+  de cada faixa dentro de uma célula e a ordem das faixas escolhem-se por
+  programação dinâmica sobre as ligações, com um passo de antecipação e
+  penalização das ligações que saem do polígono — num U a ligação deixava
+  até 300 m fora da área, por cima do vão.
+- **Linha de varrimento num vértice reentrante** (M2-G4): a linha que
+  passava exactamente na ponta de um entalhe perdia o resto da fila sem
+  erro; desloca-se 1 mm (só nos vértices extremos: as linhas sobre arestas
+  não mudam).
+- **Perfil de terreno e folga ao solo à resolução do relevo** (M2-T2): a
+  densificação a 40 m deixava uma crista entre duas amostras 7–20 m abaixo
+  do planeado e a folga validava o perfil contra si próprio; o eixo é
+  densificado a meia resolução (15 m no Terrarium, meio píxel num MDT) e a
+  folga amostrada à mesma (tecto 10 m).
+- **Um bloco de uma só faixa tem base** (M2-T5): a cauda do corte por área
+  ficava «?-3», bloqueada, sem proposta e sem maneira de lhe dar uma base.
+- METODOS §3, §4, §4.1, §5, §7, §8 e §14 actualizados.
+
 ### Adicionado (KML por base)
 
 - **«Blocos por base (KML, ZIP)»** no cartão «Resumo e exportar», com bases

@@ -50,7 +50,7 @@ const EPS_M = 1e-6
 /**
  * @typedef {{point: number[], requestedRadiusM: number, radiusM: number,
  *   reduced: boolean, refElev: number, maxElev: number, reliefM: number,
- *   gainM: number, cause: {atM: number, reliefM: number}|null, noData: number,
+ *   gainM: number, cause: {atM: number, reliefM: number, belowM: number}|null, noData: number,
  *   partial: boolean}} TakeoffZone
  */
 
@@ -147,12 +147,28 @@ export function computeTakeoffZone(
       if (z > ringMax) ringMax = z
     }
     if (ringMax - ringMin > maxRelief + EPS_M) {
-      cause = { atM: r, reliefM: ringMax - ringMin }
+      cause = { atM: r, reliefM: ringMax - ringMin, belowM: 0 }
       break
     }
     minE = ringMin
     maxE = ringMax
     effR = r
+  }
+  // Com a zona reduzida, quanto baixaria o voo se o piloto descolasse
+  // dentro do raio PEDIDO (a premissa de §4.1): a cota mínima até esse raio
+  // contra a de referência (M2-T7: numa encosta uniforme de 10° o raio cai
+  // a 20 m e descolar a 100 m punha o voo 14 m mais baixo, só com uma nota)
+  if (cause) {
+    let minAll = minE
+    for (const r of ringRadii(requestedRadiusM, step)) {
+      if (r <= effR) continue
+      for (let k = 0; k < nDir; k++) {
+        const p = offsetPoint(point, r, (360 * k) / nDir)
+        const z = elevationAt(p[0], p[1])
+        if (Number.isFinite(z) && z < minAll) minAll = z
+      }
+    }
+    cause.belowM = Math.max(0, minE - minAll)
   }
   return {
     point: [point[0], point[1]],
@@ -379,7 +395,8 @@ export function proposalSetup(
   blocks,
   { vlosM, radiusM = DEFAULT_ZONE_RADIUS_M, maxBlocksPerBase = Infinity, extraPoints = [] },
 ) {
-  const valid = (blocks ?? []).filter((b) => Array.isArray(b?.ring) && b.ring.length >= 3)
+  // um bloco de uma só faixa tem um anel de 2 pontos (M2-T5): também conta
+  const valid = (blocks ?? []).filter((b) => Array.isArray(b?.ring) && b.ring.length >= 2)
   if (valid.length === 0 || !(vlosM > 0)) return null
   const prepared = prepareBlocks(valid)
   return {
@@ -751,7 +768,8 @@ export function assignBlocksToBases(
   const zones = usable.map((b) => ({ id: b.id, point: b.point, radiusM: zoneRadius(b, radiusM) }))
   const within = (d) => d <= vlosM + EPS_M
   for (const blk of blocks ?? []) {
-    if (!Array.isArray(blk?.ring) || blk.ring.length < 3) continue
+    // um bloco de uma só faixa (a cauda do corte por área) tem 2 pontos (M2-T5)
+    if (!Array.isArray(blk?.ring) || blk.ring.length < 2) continue
     const worst = zones.map((z) => blockWorstVlosM(z, blk.ring))
     const wanted = manual?.[blk.id]
     const mi = wanted == null ? -1 : zones.findIndex((z) => z.id === wanted)
