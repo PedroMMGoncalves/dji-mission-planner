@@ -311,7 +311,9 @@ dez que bloqueiam no ciclo de vida do projecto e nos dados:
   recarregar ou ao mover a área e o vértice acertado perdia-se — e era o
   rectângulo puro que voava. O «click» que o browser dispara a seguir ao
   arrasto de um vértice deixa de contar como clique no mapa (a âncora
-  voltava a centrar o rectângulo no sítio do vértice).
+  voltava a centrar o rectângulo no sítio do vértice). Essa guarda
+  começava a contar do abrir da página e, numa máquina rápida, engolia o
+  primeiro clique do desenho nos primeiros 400 ms: corrigido.
 - **«Usar todas as partes como células» fica no projecto** (M3-C3): o campo
   `cells` no ficheiro e no esquema; ao recarregar continuam os voos de todas
   as partes (antes ficava só a maior, sem aviso).

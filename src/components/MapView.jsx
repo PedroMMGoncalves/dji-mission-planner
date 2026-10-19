@@ -77,8 +77,11 @@ export default function MapView({
   // intermédio, base): o «click» que o browser dispara a seguir ao mouseup
   // cai no mapa, porque o marcador foi redesenhado entretanto, e num modo de
   // clique (âncora, base, pontos) era tratado como um clique do operador — a
-  // âncora voltava a centrar o rectângulo no sítio do vértice arrastado
-  const dragEndRef = useRef(0)
+  // âncora voltava a centrar o rectângulo no sítio do vértice arrastado.
+  // Começa em -Infinity: a zero, performance.now() nos primeiros 400 ms da
+  // página ficava «logo a seguir a um arrasto» e o primeiro clique do
+  // desenho perdia-se numa máquina rápida.
+  const dragEndRef = useRef(-Infinity)
   // Escrito num efeito e não durante o render: mutar um ref no corpo do
   // componente é inseguro com renderização concorrente (React pode repetir
   // ou descartar o render). Os handlers imperativos abaixo só disparam por
