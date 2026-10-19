@@ -75,13 +75,13 @@
           <wpml:actionGroupId>1</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>0</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>15</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
           <wpml:actionTrigger>
           <wpml:actionTriggerType>multipleDistance</wpml:actionTriggerType>
           <wpml:actionTriggerParam>20.0</wpml:actionTriggerParam>
           </wpml:actionTrigger>
           <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
+            <wpml:actionId>0</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>

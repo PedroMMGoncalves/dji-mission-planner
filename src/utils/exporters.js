@@ -665,8 +665,9 @@ ${placemarks}
 
 /**
  * waylines.wpml — a rota executável: waypoints 3D + ações de câmara.
- * O disparo automático usa um actionGroup que cobre toda a rota com trigger
- * multipleDistance (disparo a cada X metros) ou multipleTiming (a cada X s).
+ * O disparo automático usa um actionGroup que cobre toda a rota (ou cada
+ * intervalo de `triggerRanges`) com trigger multipleDistance (disparo a
+ * cada X metros) ou multipleTiming (a cada X s), em modo `sequence`.
  *
  * Teto de waypoints por wayline (T3.3/R2.3, decisão: NÃO implementar corte):
  * a especificação WPML documenta wpml:index com alcance [0, 65535]
@@ -773,16 +774,22 @@ export function buildWaylinesWPML(params) {
       ? triggerRanges
       : [[0, waypoints.length - 1]]
     : []
+  // `sequence` é o único modo de grupo da especificação (common-element.md).
+  // Escrevia-se `parallel`, que não existe, e nenhum voo o tinha testado:
+  // num M4T (Outubro de 2026) as fotos saíram só nos waypoints — os cantos
+  // das faixas —, como se o grupo disparasse ao chegar a cada waypoint do
+  // intervalo e não a cada X metros. O id da acção é único dentro do grupo
+  // e conta do 0, como a especificação recomenda.
   const photoGroupXml = (gid, [from, to]) => `        <wpml:actionGroup>
           <wpml:actionGroupId>${gid}</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>${from}</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>${to}</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>parallel</wpml:actionGroupMode>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
           <wpml:actionTrigger>
 ${triggerXml}
           </wpml:actionTrigger>
           <wpml:action>
-            <wpml:actionId>${gid}</wpml:actionId>
+            <wpml:actionId>0</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>

@@ -181,6 +181,17 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
   voltar a **Distância** reactiva ambos.
 - ☐ Abrir um projecto gravado antes desta versão.
   **Esperado:** carrega em **Distância** (nada muda no plano nem na exportação).
+- ☐ Em **Distância**, exportar WPML e abrir `waylines.wpml`.
+  **Esperado:** cada `actionGroup` de disparo com `multipleDistance`,
+  `actionGroupMode` **`sequence`** e `actionId` 0; nunca `parallel`.
+- ☐ **No campo** (M4T, e depois M300 RTK + P1): grelha pequena de 3–4
+  faixas em **Distância**, intervalo ≥ 20 m. Importar no Pilot 2, abrir a
+  rota e confirmar que a acção de disparo por distância aparece no
+  waypoint 0; voar e contar as fotos.
+  **Esperado:** fotos ao longo de cada faixa, `floor(len/intervalo) + 1`
+  por faixa (± 1), e não só nos cantos (foi o sintoma do M4T em Outubro de
+  2026, com os grupos em `parallel`). Registar Pilot 2, firmware e o
+  resultado na matriz do `docs/VALIDACAO.md`.
 
 ## 11. Verificação em tablet (~1 min)
 

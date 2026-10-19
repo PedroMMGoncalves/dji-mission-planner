@@ -655,10 +655,16 @@ início da seguinte excede `maxLinkM = max(2,5 · spacing, 60 m)`, deixando
 de fora os pontos que o seguimento de terreno inseriu nessa ligação. O
 exportador escreve um `actionGroup` por intervalo (disparo por distância,
 `multipleDistance`, ou por tempo, `multipleTiming` com
-`max(0,1 s, interval / v)`), no waypoint onde começa. Numa viragem normal o
-disparo continua; numa travessia de concavidade, entre grelhas ou entre
-células, pára. Contagem de fotos por distância: `floor(len/interval) + 1`
-por faixa (prolongamento incluído; `photoCountArea` desconta-o).
+`max(0,1 s, interval / v)`), no waypoint onde começa, em modo `sequence`
+— o único modo de grupo da especificação (common-element.md). Até Outubro
+de 2026 escrevia-se `parallel`, que não existe, e nenhum voo o tinha
+testado: num M4T as fotos saíram só nos waypoints (os cantos das faixas),
+como se o grupo disparasse ao chegar a cada waypoint do intervalo. Numa
+viragem normal o disparo continua; numa travessia de concavidade, entre
+grelhas ou entre células, pára. Contagem de fotos por distância:
+`floor(len/interval) + 1` por faixa (prolongamento incluído;
+`photoCountArea` desconta-o). O disparo por intervalo com `sequence` está
+**por confirmar em voo**.
 
 Modo foto por waypoint: cada faixa é densificada a passos iguais
 ≤ `interval` (`n = ceil(len/interval)`, extremos incluídos) e cada ponto

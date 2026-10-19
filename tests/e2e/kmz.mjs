@@ -51,7 +51,7 @@ export function analyseRoute(wpml, { toM, ground, aglNominalM = null }) {
   const agl = Number.isFinite(aglNominalM) ? aglNominalM : wps[0][2]
   const groups = [
     ...wpml.matchAll(
-      /<wpml:actionGroupStartIndex>(\d+)<\/wpml:actionGroupStartIndex>\s*<wpml:actionGroupEndIndex>(\d+)<\/wpml:actionGroupEndIndex>\s*<wpml:actionGroupMode>parallel/g,
+      /<wpml:actionGroupStartIndex>(\d+)<\/wpml:actionGroupStartIndex>\s*<wpml:actionGroupEndIndex>(\d+)<\/wpml:actionGroupEndIndex>\s*<wpml:actionGroupMode>sequence<\/wpml:actionGroupMode>\s*<wpml:actionTrigger>\s*<wpml:actionTriggerType>multiple/g,
     ),
   ].map((m) => [Number(m[1]), Number(m[2])])
   const inGroup = (i) => groups.some(([s, e]) => i - 1 >= s && i <= e)

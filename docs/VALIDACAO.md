@@ -110,6 +110,7 @@ ao de pontos de foto do plano, e o drone só pára nos cantos das faixas:
 | Aeronave | Payload | Pilot 2 | Firmware | KMZ aceite | Enums (drone/payload) | Alturas relativas | Grupos de disparo | Blocos | Observações |
 |---|---|---|---|---|---|---|---|---|---|
 | M3E | Wide RGB | 9.2.0.26 | 02.01.0322 | sim (2026-09) | 77/66 | | foto por waypoint dispara, mas pára em cada ponto | | 1.º voo: sem `distance`/`duration` no waylines, o comando mostrou 100 % e 00:00 a meio (corrigido) |
+| M4T | grande-angular | (a registar) | (a registar) | sim (2026-10) | 99/1/89 | | disparo por distância com `actionGroupMode` `parallel`: fotos **só nos waypoints** (cantos das faixas). Corrigido para `sequence`; por voar | | 2.º voo real; enums do M4T confirmados num comando real |
 | M300 RTK | Mapper+ | | | | 60/65535 | | | | |
 | M300 RTK | P1 | | | | 60/50/1 | | | | |
 

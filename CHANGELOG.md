@@ -4,6 +4,28 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); versões
 [SemVer](https://semver.org/lang/pt-BR/). A etiqueta git `vX.Y.Z` é a
 versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
+## Por publicar
+
+### Corrigido (M4T: fotos só nos cantos das faixas)
+
+- **Grupos de disparo por intervalo em `sequence`.** Voo real num M4T
+  (Outubro de 2026), grelha com disparo por distância: as fotos saíram só
+  nos waypoints, que numa grelha são os cantos das faixas. Os grupos de
+  disparo por distância e por tempo (`multipleDistance`, `multipleTiming`)
+  saíam com `actionGroupMode` `parallel`, que não existe na especificação —
+  o único modo de grupo é `sequence` (common-element.md) —, e nunca tinham
+  voado: o voo do M3E (Setembro) foi com foto por waypoint. O resultado é o
+  que se espera de um comando que, sem um modo válido, trata o grupo como
+  «disparar ao chegar a cada waypoint do intervalo» em vez de «a cada X
+  metros». Passam a `sequence`, com `actionId` 0, como a especificação
+  recomenda. **Por confirmar em voo**: conte as fotos no primeiro voo (QA,
+  secção 10). A estrutura da missão não muda: os waypoints ficam nos cantos
+  das faixas e o disparo é por distância ao longo delas, como nas missões
+  de mapeamento do próprio Pilot 2; a alternativa com um waypoint em cada
+  foto é o «Disparo por: Waypoint».
+- O KMZ do M4T foi aceite e voado pelo Pilot 2: os enums `99/1/89` ficam
+  confirmados num comando real (`docs/VALIDACAO.md`, matriz).
+
 ## 1.4.2 — 2026-10-08
 
 ### Alterado (desenho)
