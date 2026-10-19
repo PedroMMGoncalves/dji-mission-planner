@@ -50,9 +50,59 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-180</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>0</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>0</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>0</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
+              <wpml:gimbalPitchRotateAngle>-14</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
+              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>1</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>0</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>0</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -63,9 +113,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-164</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>2</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>1</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>1</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -76,9 +150,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-149</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>3</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>2</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>2</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -89,9 +187,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-133</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>4</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>3</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>3</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -102,9 +224,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-117</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>5</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>4</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>4</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -115,9 +261,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-102</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>6</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>5</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>5</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -128,9 +298,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-86</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>7</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>6</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>6</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -141,9 +335,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-70</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>8</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>7</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>7</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -154,9 +372,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-55</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>9</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>8</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>8</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -167,9 +409,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-39</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>10</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>9</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>9</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -180,9 +446,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-23</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>11</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>10</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>10</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -193,9 +483,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-8</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>12</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>11</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>11</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -206,9 +520,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>8</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>13</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>12</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>12</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -219,9 +557,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>23</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>14</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>13</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>13</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -232,9 +594,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>39</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>15</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>14</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>14</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -245,9 +631,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>55</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>16</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>15</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>15</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -258,9 +668,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>70</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>17</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>16</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>16</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -271,9 +705,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>86</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>18</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>17</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>17</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -284,9 +742,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>102</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>19</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>18</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>18</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -297,9 +779,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>117</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>20</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>19</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>19</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -310,9 +816,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>133</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>21</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>20</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>20</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -323,9 +853,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>149</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>22</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>21</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>21</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -336,9 +890,33 @@
         <wpml:height>30</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>164</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>23</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>22</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>22</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -349,9 +927,50 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-180</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>24</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>23</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>23</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
+              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
+              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
+              <wpml:gimbalPitchRotateAngle>-30</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
+              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
+              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
+              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
+              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
+              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+          <wpml:action>
+            <wpml:actionId>1</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -362,9 +981,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-164</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>25</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>24</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>24</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -375,9 +1018,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-149</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>26</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>25</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>25</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -388,9 +1055,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-133</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>27</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>26</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>26</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -401,9 +1092,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-117</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>28</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>27</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>27</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -414,9 +1129,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-102</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>29</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>28</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>28</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -427,9 +1166,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-86</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>30</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>29</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>29</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -440,9 +1203,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-70</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>31</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>30</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>30</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -453,9 +1240,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-55</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>32</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>31</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>31</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -466,9 +1277,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-39</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>33</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>32</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>32</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -479,9 +1314,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-23</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>34</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>33</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>33</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -492,9 +1351,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-8</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>35</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>34</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>34</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -505,9 +1388,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>8</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>36</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>35</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>35</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -518,9 +1425,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>23</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>37</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>36</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>36</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -531,9 +1462,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>39</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>38</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>37</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>37</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -544,9 +1499,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>55</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>39</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>38</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>38</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -557,9 +1536,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>70</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>40</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>39</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>39</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -570,9 +1573,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>86</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>41</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>40</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>40</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -583,9 +1610,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>102</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>42</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>41</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>41</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -596,9 +1647,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>117</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>43</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>42</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>42</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -609,9 +1684,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>133</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>44</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>43</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>43</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -622,9 +1721,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>149</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>45</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>44</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>44</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -635,9 +1758,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>164</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>46</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>45</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>45</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
@@ -648,9 +1795,33 @@
         <wpml:height>50</wpml:height>
         <wpml:useGlobalHeight>0</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>0</wpml:useGlobalHeadingParam>
+        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>smoothTransition</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>-180</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>1</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>0</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>47</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>46</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>46</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
   </Folder>
 </Document>

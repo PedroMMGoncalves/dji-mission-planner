@@ -4,7 +4,7 @@
  * pitch muda; M9 velocidade de transicao em [1, 15].
  */
 import { describe, expect, test } from 'vitest'
-import { buildWaylinesWPML } from '../../src/utils/exporters.js'
+import { buildTemplateKML, buildWaylinesWPML } from '../../src/utils/exporters.js'
 import { wpmlOf } from '../lib/wpml-matriz.mjs'
 
 const lat = 40.4
@@ -106,6 +106,105 @@ describe('M7: gimbalRotate por waypoint so quando o pitch muda', () => {
       perWaypoint: [{ gimbalPitch: -90 }, { gimbalPitch: -90 }, null, null],
     })
     expect(count(xml, /<wpml:actionActuatorFunc>gimbalRotate</g)).toBe(1)
+  })
+})
+
+describe('M2: o template.kml leva os mesmos grupos de accoes e rumos do waylines', () => {
+  const wpml = wpmlOf('M3E', 'M3E_WIDE')
+  const grupos = (xml) =>
+    xml
+      .split('<Placemark>')
+      .slice(1)
+      .map((p) =>
+        (p.match(/<wpml:actionGroup>[\s\S]*?<\/wpml:actionGroup>/g) ?? []).map((g) =>
+          g.replace(/\s+/g, ''),
+        ),
+      )
+  test('disparo por distancia: gimbal e grupo de disparo no waypoint 0 nos dois ficheiros', () => {
+    const p = { ...base, wpml }
+    const t = grupos(buildTemplateKML(p))
+    const w = grupos(buildWaylinesWPML(p))
+    expect(t).toEqual(w)
+    expect(t[0]).toHaveLength(2)
+    expect(t[1]).toHaveLength(0)
+  })
+  test('rumo e foto por waypoint: useGlobalHeadingParam 0 com o rumo proprio, e o grupo de foto', () => {
+    const p = {
+      ...base,
+      wpml,
+      photoIntervalM: 0,
+      perWaypoint: [
+        { heading: 270, actions: ['takePhoto'] },
+        null,
+        { heading: -45, gimbalPitch: -30, actions: ['takePhoto'] },
+        null,
+      ],
+    }
+    const tpl = buildTemplateKML(p)
+    const wl = buildWaylinesWPML(p)
+    expect(grupos(tpl)).toEqual(grupos(wl))
+    const pms = tpl.split('<Placemark>').slice(1)
+    expect(pms[0]).toMatch(
+      /<wpml:useGlobalHeadingParam>0<\/wpml:useGlobalHeadingParam>\s*<wpml:waypointHeadingParam>\s*<wpml:waypointHeadingMode>smoothTransition/,
+    )
+    expect(pms[0]).toMatch(/<wpml:waypointHeadingAngle>-90</)
+    expect(pms[1]).toMatch(/<wpml:useGlobalHeadingParam>1</)
+    expect(pms[1]).not.toMatch(/waypointHeadingParam/)
+    expect(pms[2]).toMatch(/<wpml:waypointHeadingAngle>-45</)
+    // o rumo do template e o do waylines sao o mesmo texto
+    // so os rumos dos Placemarks (o template tem tambem o global, a 0)
+    const angulos = (xml) =>
+      [
+        ...xml
+          .split('<Placemark>')
+          .slice(1)
+          .join('')
+          .matchAll(/<wpml:waypointHeadingAngle>([^<]+)</g),
+      ].map((m) => m[1])
+    expect(angulos(tpl)).toEqual(['-90', '-45'])
+    expect(angulos(wl)).toEqual(['-90', '0', '-45', '0'])
+  })
+  test('sem accoes nem rumos o template fica como antes (um so grupo de gimbal no 0)', () => {
+    const tpl = buildTemplateKML({ ...base, wpml, photoIntervalM: 0 })
+    expect((tpl.match(/<wpml:actionGroup>/g) ?? []).length).toBe(1)
+    expect(tpl).not.toMatch(/useGlobalHeadingParam>0</)
+  })
+})
+
+describe('M3: no M300/M350 so passam sem parar os pontos colineares', () => {
+  const PASS = 'toPointAndPassWithContinuityCurvature'
+  const STOP = 'toPointAndStopWithDiscontinuityCurvature'
+  const modos = (xml) => [...xml.matchAll(/<wpml:waypointTurnMode>([^<]+)</g)].map((m) => m[1])
+  // faixa recta com um vertice a meio (colinear) e uma dobra de 30 graus
+  const wps = [em(0, 0), em(50, 0), em(100, 0), em(150, 29), em(200, 58)]
+  const passThrough = [false, true, true, true, false]
+  const p = { ...base, waypoints: wps, photoIntervalM: 20, passThrough }
+  test('M300 RTK: o vertice colinear passa, a dobra para', () => {
+    // indice 1 colinear (passa), indice 2 dobra de 30 graus (para), indice 3
+    // colinear com a dobra ja feita (passa)
+    const m = modos(buildWaylinesWPML({ ...p, wpml: wpmlOf('M300RTK', 'P1') }))
+    expect(m).toEqual([STOP, PASS, STOP, PASS, STOP])
+  })
+  test('M3E e M4T: a dobra passa como antes (useStraightLine suportado)', () => {
+    expect(modos(buildWaylinesWPML({ ...p, wpml: wpmlOf('M3E', 'M3E_WIDE') }))).toEqual([
+      STOP,
+      PASS,
+      PASS,
+      PASS,
+      STOP,
+    ])
+    expect(modos(buildWaylinesWPML({ ...p, wpml: wpmlOf('M4T', 'M4T_WIDE') }))).toEqual([
+      STOP,
+      PASS,
+      PASS,
+      PASS,
+      STOP,
+    ])
+  })
+  test('template coerente no M300: so os pontos que passam levam viragem propria', () => {
+    const tpl = buildTemplateKML({ ...p, wpml: wpmlOf('M300RTK', 'P1') })
+    const globais = [...tpl.matchAll(/<wpml:useGlobalTurnParam>(\d)</g)].map((x) => x[1])
+    expect(globais).toEqual(['1', '0', '1', '0', '1'])
   })
 })
 

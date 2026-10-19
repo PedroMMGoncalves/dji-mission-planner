@@ -26,6 +26,12 @@ function parseMissionXml(text) {
   return parseXml(text, 'XML da missão ilegível — o ficheiro WPML está corrompido')
 }
 
+/** Nome do ficheiro sem a extensão, quando o objecto o traz (File/Blob com name). */
+function fileStem(file) {
+  const n = typeof file?.name === 'string' ? file.name.trim() : ''
+  return n ? n.replace(/\.(kmz|zip)$/i, '') || null : null
+}
+
 /** Primeiro dos nomes dados que exista sob `node` e contenha um número. */
 function numIn(node, ...names) {
   for (const name of names) {
@@ -106,6 +112,11 @@ function extractFromDoc(doc) {
   const payloadInfo = findFirst(root, 'payloadInfo')
 
   const name = textOf(childNamed(folder, 'name')) || textOf(childNamed(docEl, 'name')) || null
+  // M8 (revisão): o referencial das alturas — executeHeightMode no waylines,
+  // heightMode no template — decide se as alturas são relativas ao ponto de
+  // descolagem ou absolutas (WGS84/EGM96)
+  const heightMode =
+    textOf(findFirst(root, 'executeHeightMode')) || textOf(findFirst(root, 'heightMode')) || null
 
   return {
     waypoints: ordered.map((r) => r.point),
@@ -114,10 +125,13 @@ function extractFromDoc(doc) {
     speed: numIn(root, 'autoFlightSpeed'),
     globalHeight: numIn(root, 'globalHeight'),
     name,
+    heightMode,
     droneEnumValue: droneInfo ? numIn(droneInfo, 'droneEnumValue') : numIn(root, 'droneEnumValue'),
+    droneSubEnumValue: droneInfo ? numIn(droneInfo, 'droneSubEnumValue') : null,
     payloadEnumValue: payloadInfo
       ? numIn(payloadInfo, 'payloadEnumValue')
       : numIn(root, 'payloadEnumValue'),
+    payloadSubEnumValue: payloadInfo ? numIn(payloadInfo, 'payloadSubEnumValue') : null,
   }
 }
 
@@ -213,8 +227,10 @@ function pickEntry(zip, suffix) {
  *
  * @param {File|Blob|ArrayBuffer|Uint8Array} file ficheiro .kmz
  * @returns {Promise<{ring: number[][], waypoints: number[][], altitude: number|null,
- *   speed: number|null, name: string|null, droneEnumValue: number|null,
- *   payloadEnumValue: number|null, waypointCount: number}>}
+ *   speed: number|null, name: string|null, heightMode: string|null,
+ *   droneEnumValue: number|null, droneSubEnumValue: number|null,
+ *   payloadEnumValue: number|null, payloadSubEnumValue: number|null,
+ *   waypointCount: number}>}
  * @throws {Error} mensagem legível (KMZ ilegível, sem waylines/template, …)
  */
 export async function parseWpmlKmz(file) {
@@ -249,6 +265,16 @@ export async function parseWpmlKmz(file) {
 
   const waypoints = main.waypoints
 
+  // M8: um KMZ do comando com alturas absolutas (WGS84, EGM96) entraria
+  // como alturas relativas — 116 m acima da descolagem em vez de 116 m de
+  // cota. Só se importa o referencial que a app escreve.
+  const heightMode = main.heightMode ?? alt?.heightMode ?? null
+  if (heightMode && heightMode !== 'relativeToStartPoint') {
+    throw new Error(
+      `KMZ com alturas em ${heightMode} — só se importam missões com alturas relativas ao ponto de descolagem (relativeToStartPoint)`,
+    )
+  }
+
   // Altitude: única se todas as alturas coincidirem, senão mediana.
   const heights = main.heights.length ? main.heights : (alt?.heights ?? [])
   let altitude = null
@@ -272,9 +298,13 @@ export async function parseWpmlKmz(file) {
     waypoints,
     altitude: round1(altitude),
     speed: round1(speed),
-    name: template?.name ?? main.name ?? null,
+    // o Pilot 2 não escreve <name>: o nome da rota é o do ficheiro
+    name: template?.name ?? main.name ?? fileStem(file) ?? null,
+    heightMode,
     droneEnumValue: main.droneEnumValue ?? alt?.droneEnumValue ?? null,
+    droneSubEnumValue: main.droneSubEnumValue ?? alt?.droneSubEnumValue ?? null,
     payloadEnumValue: main.payloadEnumValue ?? alt?.payloadEnumValue ?? null,
+    payloadSubEnumValue: main.payloadSubEnumValue ?? alt?.payloadSubEnumValue ?? null,
     waypointCount: waypoints.length,
   }
 }

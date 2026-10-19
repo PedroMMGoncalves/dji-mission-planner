@@ -617,15 +617,42 @@ function missionConfigXml({ wpml, speed, altitude, ...opts }) {
  * amortecimento obrigatório). O amortecimento é o menor que serve, e nunca
  * mais de 0,45 do troço adjacente mais curto, para cada troço ser maior do
  * que a soma das curvas das suas pontas, como a DJI exige; abaixo de
- * PASS_MIN_DAMPING_M o ponto fica com paragem.
+ * PASS_MIN_DAMPING_M o ponto fica com paragem. No M300/M350, sem
+ * useStraightLine, só os pontos colineares passam (NO_STRAIGHT_LINE_DRONES).
  */
 export const PASS_DAMPING_M = 1
 export const PASS_MIN_DAMPING_M = 0.2
 const PASS_TURN_MODE = 'toPointAndPassWithContinuityCurvature'
+/**
+ * M3 (revisão): `useStraightLine` não é suportado no M300 RTK nem no M350
+ * RTK (waylines-wpml.md e template-kml.md: só M30, M3E/M3T/M3M e M3D/M3TD).
+ * Nessas aeronaves o ponto de passagem fica «voa em curva e não pára», e
+ * numa dobra o comando corta a curva com um raio que o ficheiro não
+ * controla (o amortecimento de 1 m só vale com useStraightLine 1). Só se
+ * deixa passar os pontos onde o rumo não muda mais do que isto.
+ */
+export const NO_STRAIGHT_LINE_DRONES = new Set([60, 89])
+export const PASS_COLLINEAR_DEG = 5
+
+/** Mudança de rumo (graus, 0–180) no waypoint i, numa aproximação métrica local. */
+function headingChangeDeg(waypoints, i) {
+  const [x0, y0] = waypoints[i - 1]
+  const [x1, y1] = waypoints[i]
+  const [x2, y2] = waypoints[i + 1]
+  const k = Math.cos((y1 * Math.PI) / 180)
+  const a = Math.atan2(y1 - y0, (x1 - x0) * k)
+  const b = Math.atan2(y2 - y1, (x2 - x1) * k)
+  let d = Math.abs(((b - a) * 180) / Math.PI) % 360
+  if (d > 180) d = 360 - d
+  return d
+}
 
 /** Viragem do waypoint i quando passa sem parar; null = a da missão. */
-function passTurnAt(waypoints, passThrough, i) {
+function passTurnAt(waypoints, passThrough, i, wpml = null) {
   if (!passThrough?.[i] || i === 0 || i === waypoints.length - 1) return null
+  if (NO_STRAIGHT_LINE_DRONES.has(Number(wpml?.droneEnumValue))) {
+    if (headingChangeDeg(waypoints, i) > PASS_COLLINEAR_DEG) return null
+  }
   const prev = routeLengthM([waypoints[i - 1], waypoints[i]])
   const next = routeLengthM([waypoints[i], waypoints[i + 1]])
   const damping = Math.min(PASS_DAMPING_M, 0.45 * Math.min(prev, next))
@@ -642,9 +669,14 @@ export function buildTemplateKML(params) {
   // determinísticas; em uso normal é o instante da exportação.
   const now = params.createTimeMs ?? Date.now()
 
+  // os mesmos rumos e grupos de acções do waylines.wpml (M2): o Pilot 2
+  // regenera o waylines a partir do template quando a missão é editada e
+  // gravada no comando, e sem eles aqui perdia fotos, rumos e gravação
+  const groupsByIndex = buildActionGroups(params)
   const placemarks = waypoints
     .map(([lon, lat, h], i) => {
-      const pass = passTurnAt(waypoints, params.passThrough, i)
+      const pw = params.perWaypoint?.[i] ?? null
+      const pass = passTurnAt(waypoints, params.passThrough, i, params.wpml)
       const passXml = pass
         ? `
         <wpml:waypointTurnParam>
@@ -652,6 +684,9 @@ export function buildTemplateKML(params) {
           <wpml:waypointTurnDampingDist>${pass.damping}</wpml:waypointTurnDampingDist>
         </wpml:waypointTurnParam>`
         : ''
+      const ownHeading = pw?.heading != null
+      const headingXml = ownHeading ? `\n${headingParamXml(pw)}` : ''
+      const groupsXml = groupsByIndex[i]
       return `      <Placemark>
         <Point>
           <coordinates>${fmtCoord(lon)},${fmtCoord(lat)}</coordinates>
@@ -661,9 +696,9 @@ export function buildTemplateKML(params) {
         <wpml:height>${h ?? altitude}</wpml:height>
         <wpml:useGlobalHeight>${h != null ? 0 : 1}</wpml:useGlobalHeight>
         <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalHeadingParam>${ownHeading ? 0 : 1}</wpml:useGlobalHeadingParam>${headingXml}
         <wpml:useGlobalTurnParam>${pass ? 0 : 1}</wpml:useGlobalTurnParam>${passXml}
-        <wpml:useStraightLine>${pass ? 1 : turn.straightLine}</wpml:useStraightLine>
+        <wpml:useStraightLine>${pass ? 1 : turn.straightLine}</wpml:useStraightLine>${groupsXml ? '\n' + groupsXml : ''}
       </Placemark>`
     })
     .join('\n')
@@ -702,56 +737,25 @@ ${placemarks}
 }
 
 /**
- * waylines.wpml — a rota executável: waypoints 3D + ações de câmara.
- * O disparo automático usa um actionGroup que cobre toda a rota (ou cada
- * intervalo de `triggerRanges`) com trigger multipleDistance (disparo a
- * cada X metros) ou multipleTiming (a cada X s), em modo `sequence`.
- *
- * Teto de waypoints por wayline (T3.3/R2.3, decisão: NÃO implementar corte):
- * a especificação WPML documenta wpml:index com alcance [0, 65535]
- * (dji-sdk/Cloud-API-Doc, waylines-wpml.md, verificado 2026-08-20) e nenhum
- * limite menor por wayline. O pior caso realista desta app — terrain follow
- * densificado (passo mínimo 40 m, simplificação Douglas-Peucker), teto de
- * segurança de 2500 faixas e blocos cortados por bateria — fica ordens de
- * grandeza abaixo de 65536, pelo que o padrão split_by_waypoint_count do
- * FlyPath não foi portado de propósito. Se um teste real no comando revelar
- * um limite prático menor do Pilot 2, reabrir a tarefa com essa evidência.
+ * Grupos de acções de cada waypoint (M2 da revisão): o gimbal no waypoint 0,
+ * os grupos de disparo por intervalo no waypoint onde começam e os grupos
+ * por waypoint (rumo/pitch/foto/gravação). Calculados uma vez por exportação
+ * e escritos nos DOIS ficheiros, porque o Pilot 2 regenera o waylines.wpml
+ * a partir do template.kml quando a missão é editada e gravada no comando
+ * — sem eles no template, uma reedição perdia fotos, rumos e gravação.
+ * Devolve, por índice, o XML dos grupos desse waypoint (string vazia sem).
  */
-export function buildWaylinesWPML(params) {
-  validateExportParams(params)
+function buildActionGroups(params) {
   const {
     waypoints,
-    altitude,
     speed,
     wpml,
     photoIntervalM,
     triggerMode,
     sensorType,
-    // T4.1: ações por waypoint — array paralelo a `waypoints` com entradas
-    // opcionais { gimbalPitch, heading, actions: ['takePhoto', ...] }.
-    // heading fixa o rumo nesse waypoint (waypointHeadingMode
-    // smoothTransition); sem entrada, o comportamento global mantém-se
-    // byte a byte (followWayline, sem grupos extra).
     perWaypoint = null,
-    // T5.1: modo de viragem (ex.: toPointAndPassWithContinuityCurvature
-    // para órbitas em voo curvo contínuo); por defeito o comportamento
-    // atual de parar em cada waypoint.
-    turnMode = 'toPointAndStopWithDiscontinuityCurvature',
-    // Distância de amortecimento da viragem (m). Só é escrita quando a
-    // especificação a exige — ver turnParams().
-    turnDampingDistM = 0,
-    // Intervalos [inicio, fim] de waypoints com disparo activo; null = a
-    // rota inteira. Ver triggerRangesForLines em geo.js.
     triggerRanges = null,
-    // Duração prevista da rota (s), a mesma que o painel mostra. Sem ela,
-    // distância / velocidade: por baixo, mas nunca zero.
-    durationS = null,
-    // Waypoints que passam sem parar (lista paralela); null = todos param
-    passThrough = null,
   } = params
-  const turn = turnParams(turnMode, turnDampingDistM)
-  // fora do intervalo do gimbal o comando recusa: recorta-se ao escrever (o
-  // preflight ja avisou do valor pedido)
   const pitchOf = (p) => clampGimbalPitch(p, wpml.gimbalPitchRange)
   const gimbalPitch = pitchOf(params.gimbalPitch ?? -90)
 
@@ -920,13 +924,76 @@ ${actions.join('\n')}
         </wpml:actionGroup>`
   }
 
+  return waypoints.map((_, i) => {
+    const pw = perWaypoint?.[i] ?? null
+    const pwGroup = pw ? perWaypointGroup(i, pw) : ''
+    return [...(globalGroupsAt.get(i) ?? []), pwGroup].filter(Boolean).join('\n')
+  })
+}
+
+/** `<wpml:waypointHeadingParam>` de um waypoint: rumo próprio (smoothTransition) ou o da rota. */
+function headingParamXml(pw) {
+  const hasHeading = pw?.heading != null
+  return `        <wpml:waypointHeadingParam>
+          <wpml:waypointHeadingMode>${hasHeading ? 'smoothTransition' : 'followWayline'}</wpml:waypointHeadingMode>
+          <wpml:waypointHeadingAngle>${hasHeading ? ((Math.round(pw.heading) + 540) % 360) - 180 : 0}</wpml:waypointHeadingAngle>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
+          <wpml:waypointHeadingAngleEnable>${hasHeading ? 1 : 0}</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
+        </wpml:waypointHeadingParam>`
+}
+
+/**
+ * waylines.wpml — a rota executável: waypoints 3D + ações de câmara.
+ * O disparo automático usa um actionGroup que cobre toda a rota (ou cada
+ * intervalo de `triggerRanges`) com trigger multipleDistance (disparo a
+ * cada X metros) ou multipleTiming (a cada X s), em modo `sequence`.
+ *
+ * Teto de waypoints por wayline (T3.3/R2.3, decisão: NÃO implementar corte):
+ * a especificação WPML documenta wpml:index com alcance [0, 65535]
+ * (dji-sdk/Cloud-API-Doc, waylines-wpml.md, verificado 2026-08-20) e nenhum
+ * limite menor por wayline. O pior caso realista desta app — terrain follow
+ * densificado (passo mínimo 40 m, simplificação Douglas-Peucker), teto de
+ * segurança de 2500 faixas e blocos cortados por bateria — fica ordens de
+ * grandeza abaixo de 65536, pelo que o padrão split_by_waypoint_count do
+ * FlyPath não foi portado de propósito. Se um teste real no comando revelar
+ * um limite prático menor do Pilot 2, reabrir a tarefa com essa evidência.
+ */
+export function buildWaylinesWPML(params) {
+  validateExportParams(params)
+  const {
+    waypoints,
+    altitude,
+    speed,
+    // T4.1: ações por waypoint — array paralelo a `waypoints` com entradas
+    // opcionais { gimbalPitch, heading, actions: ['takePhoto', ...] }.
+    // heading fixa o rumo nesse waypoint (waypointHeadingMode
+    // smoothTransition); sem entrada, o comportamento global mantém-se
+    // byte a byte (followWayline, sem grupos extra). Os grupos de acções
+    // (gimbal, disparo por intervalo em `triggerRanges`, acções por
+    // waypoint) vêm de buildActionGroups, partilhado com o template.
+    perWaypoint = null,
+    // T5.1: modo de viragem (ex.: toPointAndPassWithContinuityCurvature
+    // para órbitas em voo curvo contínuo); por defeito o comportamento
+    // atual de parar em cada waypoint.
+    turnMode = 'toPointAndStopWithDiscontinuityCurvature',
+    // Distância de amortecimento da viragem (m). Só é escrita quando a
+    // especificação a exige — ver turnParams().
+    turnDampingDistM = 0,
+    // Duração prevista da rota (s), a mesma que o painel mostra. Sem ela,
+    // distância / velocidade: por baixo, mas nunca zero.
+    durationS = null,
+    // Waypoints que passam sem parar (lista paralela); null = todos param
+    passThrough = null,
+  } = params
+  const turn = turnParams(turnMode, turnDampingDistM)
+  const groupsByIndex = buildActionGroups(params)
+
   const placemarks = waypoints
     .map(([lon, lat, h], i) => {
       const pw = perWaypoint?.[i] ?? null
-      const pass = passTurnAt(waypoints, passThrough, i)
-      const hasHeading = pw?.heading != null
-      const pwGroup = pw ? perWaypointGroup(i, pw) : ''
-      const groupsXml = [...(globalGroupsAt.get(i) ?? []), pwGroup].filter(Boolean).join('\n')
+      const pass = passTurnAt(waypoints, passThrough, i, params.wpml)
+      const groupsXml = groupsByIndex[i]
       return `      <Placemark>
         <Point>
           <coordinates>${fmtCoord(lon)},${fmtCoord(lat)}</coordinates>
@@ -934,13 +1001,7 @@ ${actions.join('\n')}
         <wpml:index>${i}</wpml:index>
         <wpml:executeHeight>${h ?? altitude}</wpml:executeHeight>
         <wpml:waypointSpeed>${speed}</wpml:waypointSpeed>
-        <wpml:waypointHeadingParam>
-          <wpml:waypointHeadingMode>${hasHeading ? 'smoothTransition' : 'followWayline'}</wpml:waypointHeadingMode>
-          <wpml:waypointHeadingAngle>${hasHeading ? ((Math.round(pw.heading) + 540) % 360) - 180 : 0}</wpml:waypointHeadingAngle>
-          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
-          <wpml:waypointHeadingAngleEnable>${hasHeading ? 1 : 0}</wpml:waypointHeadingAngleEnable>
-          <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
-        </wpml:waypointHeadingParam>
+${headingParamXml(pw)}
         <wpml:waypointTurnParam>
           <wpml:waypointTurnMode>${pass ? pass.mode : turnMode}</wpml:waypointTurnMode>
           <wpml:waypointTurnDampingDist>${pass ? pass.damping : turn.damping}</wpml:waypointTurnDampingDist>

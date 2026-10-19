@@ -55,6 +55,27 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   (uma lente) ficam como no ficheiro que voou. **Por confirmar no primeiro
   voo térmico** (contar os `_T`): a tabela da DJI só lista
   `payloadLensIndex` para M30 e M3D, e o M4 não está na documentação.
+- **O `template.kml` leva os mesmos grupos de acções e rumos do
+  `waylines.wpml`** (M2): o Pilot 2 regenera o `waylines` a partir do
+  template quando a missão é editada e gravada no comando, e sem eles no
+  template uma reedição perdia, em silêncio, as fotos por waypoint, os
+  rumos, o pitch por ponto e a gravação da órbita. Os waypoints com rumo
+  próprio levam `useGlobalHeadingParam` 0 e o seu `waypointHeadingParam`;
+  os grupos são calculados uma vez e escritos nos dois ficheiros, com os
+  mesmos ids. O validador de conformidade passa a exigir a igualdade.
+- **M300 RTK e M350 RTK: passagem sem parar só nos pontos colineares**
+  (M3): `useStraightLine` não é suportado nessas aeronaves (a tabela da
+  DJI só lista M30, M3E/M3T/M3M e M3D/M3TD), e o modo «vira antes do
+  waypoint, passa» depende dele; sem ele, numa dobra o comando corta a
+  curva com um raio que o ficheiro não controla. Nessas aeronaves só
+  passam sem parar os pontos em que o rumo muda menos de 5° (vértices do
+  terreno e fotos numa faixa recta); nas dobras do corredor a aeronave
+  pára. M3E e M4T ficam como estavam.
+- **O leitor de KMZ lê o referencial das alturas** (M8): um KMZ do comando
+  com alturas absolutas (`WGS84`, `EGM96`) entrava como alturas relativas
+  (116 m de cota viravam 116 m acima da descolagem); passa a ser recusado
+  com a razão. Lê também os sub-enums de aeronave e payload, e, sem
+  `<name>` (o Pilot 2 não o escreve), o nome da rota é o do ficheiro.
 - **`gimbalRotate` por waypoint só quando o pitch muda** (M7): a órbita e a
   missão circular repetiam-no em todos os pontos (391 grupos em 30
   círculos); o waypoint 0 compara com o grupo global.

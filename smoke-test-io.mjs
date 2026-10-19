@@ -428,6 +428,39 @@ const missionParams = (waypoints, extra = {}) => ({
     back.droneEnumValue === 77 && back.payloadEnumValue === 66,
     `${back.droneEnumValue}/${back.payloadEnumValue}`,
   )
+  // M8 da revisao: referencial das alturas e sub-enums lidos; alturas
+  // absolutas recusadas; sem <name>, o nome e o do ficheiro
+  check(
+    'WPML ida e volta: referencial das alturas e sub-enums',
+    back.heightMode === 'relativeToStartPoint' &&
+      back.droneSubEnumValue === 0 &&
+      back.payloadSubEnumValue === 0,
+    `${back.heightMode} ${back.droneSubEnumValue}/${back.payloadSubEnumValue}`,
+  )
+  const wgs84 = await makeKmz({
+    template: buildTemplateKML(params).replace(
+      '<wpml:heightMode>relativeToStartPoint</wpml:heightMode>',
+      '<wpml:heightMode>EGM96</wpml:heightMode>',
+    ),
+    waylines: buildWaylinesWPML(params).replace(
+      '<wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>',
+      '<wpml:executeHeightMode>WGS84</wpml:executeHeightMode>',
+    ),
+  })
+  check(
+    'WPML: alturas absolutas (WGS84) sao recusadas com mensagem legivel',
+    (await throwsWith(() => parseWpmlKmz(wgs84), 'WGS84')) === null,
+  )
+  const semNome = await makeKmz({
+    template: buildTemplateKML(params).replace(/<name>[^<]*<\/name>/, ''),
+    waylines: buildWaylinesWPML(params),
+  })
+  const comando = await parseWpmlKmz(fakeFile('rota-do-comando.kmz', semNome))
+  check(
+    'WPML: sem <name>, o nome da rota e o do ficheiro (como no Pilot 2)',
+    comando.name === 'rota-do-comando',
+    `"${comando.name}"`,
+  )
 
   // area reconstruida: involucro convexo que contem todos os waypoints
   check(

@@ -678,7 +678,10 @@ só os cantos param; com `all` param todos, e o tempo soma
 `stopCostS = n · turnCostS(v) / 2` pelas `n` paragens intermédias
 (`stripRouteStats`). Uma inversão são duas paragens, daí a metade; é um
 valor deduzido, não medido (secção 16). O corredor usa a mesma regra por
-troço de passagem, com as dobras como intermédios.
+troço de passagem, com as dobras como intermédios. No M300 RTK e no M350
+RTK, que não suportam `useStraightLine` (M3 da revisão da exportação), só
+passam sem parar os pontos em que o rumo muda menos de 5°
+(`PASS_COLLINEAR_DEG`); nas dobras a aeronave pára.
 
 ## 7. Fachada
 

@@ -92,7 +92,7 @@ export const ALLOW = {
     },
     'Placemark/useStraightLine': {
       'M300 RTK':
-        'escrito tambem no M300, onde a especificacao nao o suporta (ignorado); M3 pendente',
+        'escrito tambem no M300, onde a especificacao nao o suporta (ignorado): M3 aplicado — nessas aeronaves so passam sem parar os pontos colineares (exporters.js, NO_STRAIGHT_LINE_DRONES)',
       'M350 RTK': 'idem M300',
     },
     'Folder/globalUseStraightLine#waypoint': {
@@ -147,6 +147,13 @@ export const ALLOW = {
     {
       file: 'template',
       parent: 'Placemark',
+      name: 'waypointHeadingParam',
+      after: 'useGlobalHeadingParam',
+      why: 'tabela: obrigatorio se useGlobalHeadingParam 0; o exemplo nao o mostra',
+    },
+    {
+      file: 'template',
+      parent: 'Placemark',
       name: 'waypointTurnParam',
       after: 'useGlobalTurnParam',
       why: 'tabela: obrigatorio se useGlobalTurnParam 0; o exemplo nao o mostra',
@@ -155,7 +162,7 @@ export const ALLOW = {
       file: 'template',
       parent: 'Placemark',
       name: 'useStraightLine',
-      after: 'waypointTurnParam',
+      after: ['waypointTurnParam', 'useGlobalTurnParam'],
       why: 'tabela (a seguir aos parametros de viragem); o exemplo nao o mostra',
     },
     {
@@ -246,6 +253,11 @@ export function parseNodes(xml) {
 }
 
 const byName = (node, name) => node.children.find((c) => c.name === name)
+/** Texto canónico de um nó (nomes e textos, sem espaços), para comparar entre ficheiros. */
+const serialize = (node) =>
+  node.text != null
+    ? `${node.name}=${node.text}`
+    : `${node.name}(${node.children.map(serialize).join(',')})`
 const textOf = (node, name) => byName(node, name)?.text ?? null
 
 /* ---- dicionário ------------------------------------------------------- */
@@ -551,7 +563,9 @@ function orderRules(nodes, fileKind, errors) {
         const at = expected.indexOf(rule.before)
         expected.splice(at < 0 ? 0 : at, 0, name)
       } else {
-        const at = expected.indexOf(rule.after)
+        // `after` pode ser uma lista de âncoras: vale a primeira presente
+        const anchors = [].concat(rule.after)
+        const at = anchors.map((a) => expected.indexOf(a)).find((i) => i >= 0) ?? -1
         expected.splice(at < 0 ? expected.length : at + 1, 0, name)
       }
     }
@@ -621,6 +635,31 @@ function coherence(tpl, wl, errors) {
       errors.push({
         code: 'coherence',
         detail: `waypoint ${i}: ${mode} no waylines sem viragem própria no template (${gmode})`,
+      })
+  })
+  // M2: os grupos de acções e os rumos próprios são os mesmos nos dois ficheiros
+  const groupsOf = (p) =>
+    p.children
+      .filter((c) => c.name === 'actionGroup')
+      .map(serialize)
+      .join('|')
+  const headingOf = (p) => {
+    const h = byName(p, 'waypointHeadingParam')
+    return h ? serialize(h) : null
+  }
+  wp.forEach((p, i) => {
+    if (groupsOf(tp[i]) !== groupsOf(p))
+      errors.push({ code: 'coherence', detail: `grupos de acções diferentes no waypoint ${i}` })
+    const th = headingOf(tp[i])
+    if (th != null && th !== headingOf(p))
+      errors.push({ code: 'coherence', detail: `rumo diferente no waypoint ${i}` })
+    if (
+      th == null &&
+      textOf(byName(p, 'waypointHeadingParam'), 'waypointHeadingMode') === 'smoothTransition'
+    )
+      errors.push({
+        code: 'coherence',
+        detail: `waypoint ${i}: rumo proprio no waylines sem rumo no template`,
       })
   })
   const tm = tpl.find((n) => n.name === 'missionConfig')
