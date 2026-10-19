@@ -2,7 +2,9 @@
  * Modo órbita: POI, níveis, plano, pré-visualização e exportação (única ou
  * um KMZ por nível). A geometria está em utils/orbit.js.
  */
+import * as turf from '@turf/turf'
 import { useCallback, useMemo, useState } from 'react'
+import { nearestBase } from '../mission/bases.js'
 import { DEFAULT_ORBIT_CONFIG, generateOrbitPlan, orbitLevelsToBlocks } from '../utils/orbit.js'
 import { computeGSD } from '../utils/geo.js'
 import { headingTicks } from '../utils/preview.js'
@@ -16,10 +18,22 @@ export function useOrbitMission({
   wpml,
   // acções de segurança da missão (src/mission/safety.js)
   safety = null,
+  // bases do projecto: a órbita começa no rumo POI → base mais próxima
+  bases = [],
   setMode,
   runExport,
 }) {
   const [orbitConfig, setOrbitConfig] = useState(() => ({ ...DEFAULT_ORBIT_CONFIG }))
+
+  // A órbita começa no rumo do POI para a base mais próxima (M2-E13): com a
+  // aproximação «safely» (sobe e segue a direito até ao 1.º waypoint),
+  // começar sempre a norte punha a perna de aproximação a atravessar um
+  // alvo alto quando a base está a sul. Sem base, a norte, como antes.
+  const startBearingDeg = useMemo(() => {
+    const base = orbitConfig.poi ? nearestBase(bases, [orbitConfig.poi]) : null
+    if (!base?.point) return 0
+    return ((Math.round(turf.bearing(orbitConfig.poi, base.point)) % 360) + 360) % 360
+  }, [bases, orbitConfig.poi])
 
   const setOrbitParam = useCallback((key, value) => {
     setOrbitConfig((c) => ({ ...c, [key]: value }))
@@ -53,8 +67,9 @@ export function useOrbitMission({
       clockwise: orbitConfig.clockwise,
       speed: orbitConfig.speedMS,
       capture: orbitConfig.capture,
+      startBearingDeg,
     })
-  }, [orbitConfig, sensor])
+  }, [orbitConfig, sensor, startBearingDeg])
 
   const gsdAtRadius = useMemo(
     () => (sensor.type === 'camera' ? computeGSD(sensor, orbitConfig.radiusM) : null),

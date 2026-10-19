@@ -10,7 +10,7 @@ import { nadirLineLocalPerBlock, splitIntoBlocks } from '../utils/geo.js'
  * @param {{activeCells?: any[]|null, cellIds?: number[]|null, cellHoles?: any[]|null,
  *   split: {mode: string, maxAreaHa?: number, reservePct?: number},
  *   batteryMin?: number, speed?: number, spacingM?: number, basePoint?: number[]|null,
- *   waypointStops?: string}} opts `cellIds`: id estável de cada célula activa (o
+ *   waypointStops?: string, overshootM?: number}} opts `cellIds`: id estável de cada célula activa (o
  *   do mosaico, que não muda ao desactivar outra); sem ele, a posição + 1
  * @returns {Array<object>|null} lista de blocos ou null (sem divisão)
  */
@@ -27,6 +27,7 @@ export function planBlocks(
     spacingM,
     basePoint = null,
     waypointStops = 'corners',
+    overshootM = 0,
   },
 ) {
   if (!plan) return null
@@ -60,6 +61,7 @@ export function planBlocks(
     spacingM,
     basePoint,
     waypointStops,
+    overshootM,
   })
   if (!cut || plan.nadirStartLine == null) return cut
   // em que linha local de cada bloco começa a grelha nadir

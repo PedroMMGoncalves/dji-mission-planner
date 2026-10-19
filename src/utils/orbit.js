@@ -70,7 +70,8 @@ export function orbitLevelsToBlocks(plan) {
  * × (1 − sobreposição)), com mínimo de 8. Em cada waypoint o rumo aponta ao
  * POI e dispara-se uma foto; o gimbal de cada nível aponta à cota do centro
  * do alvo: pitch = −atan((h − poiHeightM)/R). A volta fecha no rumo inicial
- * e a subida para o nível seguinte é vertical, no mesmo ponto horizontal.
+ * e a subida para o nível seguinte é helicoidal, ao longo de uma corda
+ * (`transitionM`).
  * Pensado para exportar com waypointTurnMode
  * toPointAndPassWithContinuityCurvature (voo curvo contínuo).
  *
@@ -115,6 +116,10 @@ export function generateOrbitPlan(poi, options) {
     ? Math.max(1, fp.across * (1 - horizontalOverlapPct / 100))
     : (2 * Math.PI * radiusM) / 24
   const nPts = Math.min(120, Math.max(8, Math.ceil((2 * Math.PI * radiusM) / chordM)))
+  // a corda VOADA entre pontos (com o mínimo de 8 pontos pode ser muito
+  // menor do que a pedida: 46 m em vez de 85 m), que é o que o obturador e
+  // a transição entre níveis vêem (M2-E14)
+  const chordRealM = 2 * radiusM * Math.sin(Math.PI / nPts)
   const stepDeg = (clockwise ? 360 : -360) / nPts
 
   const poiPt = turf.point(poi)
@@ -215,15 +220,15 @@ export function generateOrbitPlan(poi, options) {
       turnCount: perLevel.length,
       pointsPerOrbit: nPts,
       waypointCount: waypoints.length,
-      photoCount: video ? 0 : waypoints.length,
-      chordM,
+      photoCount: video || sensor?.type !== 'camera' ? 0 : waypoints.length,
+      chordM: chordRealM,
       radiusM,
       gsdCm: sensor?.type === 'camera' ? computeGSD(sensor, radiusM) : null,
       heights,
       pathLengthM,
       flightTimeS: speed > 0 ? pathLengthM / speed : null,
       // ligação entre anéis: corda na horizontal, passo na vertical
-      transitionM: !video && heights.length > 1 ? chordM : null,
+      transitionM: !video && heights.length > 1 ? chordRealM : null,
     },
   }
 }

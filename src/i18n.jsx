@@ -192,8 +192,8 @@ const BASE_DICT = {
   },
   'stats.density': { pt: 'Densidade LiDAR', en: 'LiDAR density' },
   'stats.densityHint': {
-    pt: 'PRR ÷ (velocidade × faixa), com o PRR de retorno único — conservador, multi-eco aumenta. Entre parênteses: densidade na banda de sobreposição lateral (2 passagens).',
-    en: 'PRR ÷ (speed × swath), using the single-return PRR — conservative, multi-echo raises it. In parentheses: density in the side-overlap band (2 passes).',
+    pt: 'Média na área, PRR ÷ (velocidade × espaçamento), com o PRR de retorno único — conservador, multi-eco aumenta. Entre parênteses: o mínimo de uma só passagem, PRR ÷ (velocidade × faixa).',
+    en: 'Area mean, PRR ÷ (speed × line spacing), using the single-return PRR — conservative, multi-echo raises it. In parentheses: the single-pass minimum, PRR ÷ (speed × swath).',
   },
   'stats.footprint': { pt: 'Pegada no chão', en: 'Ground footprint' },
   'stats.swath': { pt: 'faixa {v} m', en: 'swath {v} m' },

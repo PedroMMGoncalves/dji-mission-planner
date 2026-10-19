@@ -90,6 +90,7 @@ import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.j
 import { routeClearance, terrainHolesAlong, transitClearance } from './mission/clearance.js'
 import { blockWorstTransitM, blockWorstVlosM } from './mission/takeoffZones.js'
 import { checkFaceClearance } from './utils/faceMode.js'
+import { M_PER_DEG_LAT, metersPerDegLonSafe } from './utils/units.js'
 import { gimbalRangeViolation } from './mission/gimbal.js'
 import {
   motionBlur,
@@ -134,10 +135,10 @@ function basePointsNear(bases, ring) {
     x1 = Math.max(x1, x)
     y1 = Math.max(y1, y)
   }
-  const dLat = 3000 / 110574
-  const dLon = 3000 / (111320 * Math.max(0.1, Math.cos(((y0 + y1) / 2) * (Math.PI / 180))))
+  const dLat = 3000 / M_PER_DEG_LAT
+  const dLon = 3000 / metersPerDegLonSafe((y0 + y1) / 2)
   // a zona (até 500 m) também tem de ficar dentro do relevo
-  const r = 500 / 110574
+  const r = 500 / M_PER_DEG_LAT
   const out = []
   for (const b of bases ?? []) {
     const [x, y] = b.point
@@ -444,9 +445,14 @@ function AppInner({ lang, setLang }) {
   const pointDensity = useMemo(
     () =>
       sensor.type === 'lidar' && payload.maxPrr
-        ? lidarPointDensity({ prr: payload.maxPrr, speed: speed, swathM: footprint.across })
+        ? lidarPointDensity({
+            prr: payload.maxPrr,
+            speed: speed,
+            swathM: footprint.across,
+            spacingM: spacing,
+          })
         : null,
-    [sensor.type, payload, speed, footprint],
+    [sensor.type, payload, speed, footprint, spacing],
   )
 
   // intervalo entre fotos abaixo do que o obturador consegue?
@@ -518,6 +524,7 @@ function AppInner({ lang, setLang }) {
     missionName,
     wpml,
     safety,
+    bases,
     setMode,
     runExport,
   })
@@ -1350,10 +1357,6 @@ function AppInner({ lang, setLang }) {
     if (slopeHint) setParams((p) => ({ ...p, angle: Math.round(slopeHint.contourAzimuthDeg) }))
   }, [slopeHint])
 
-  const applySlopeGimbal = useCallback(() => {
-    if (slopeHint) setParams((p) => ({ ...p, gimbalPitch: slopeHint.gimbal }))
-  }, [slopeHint])
-
   // E3.2: agregado do projecto quando coexistem varios planos
   const projectSummary = useMemo(
     () =>
@@ -1753,9 +1756,19 @@ function AppInner({ lang, setLang }) {
     return routeChecks(view3d.waypoints, {
       speed: v,
       maxClimbMS: aircraft.maxClimbMS ?? 5,
+      // as descidas contra a velocidade de descida da aeronave (M2-T13)
+      maxDescentMS: aircraft.maxDescentMS ?? aircraft.maxClimbMS ?? 5,
       breaks: view3d.breaks ?? null,
     })
-  }, [view3d, missionMode, orbitConfig.speedMS, circularSpeed, speed, aircraft.maxClimbMS])
+  }, [
+    view3d,
+    missionMode,
+    orbitConfig.speedMS,
+    circularSpeed,
+    speed,
+    aircraft.maxClimbMS,
+    aircraft.maxDescentMS,
+  ])
 
   // Obturador na órbita (M2-E6): a corda voada entre fotos contra o
   // intervalo mínimo do payload — o circular já avisava, a órbita não
@@ -2668,7 +2681,6 @@ function AppInner({ lang, setLang }) {
                 terrainResult={terrainResult}
                 slopeHint={slopeHint}
                 onApplySlopeAngle={applySlopeAngle}
-                onApplySlopeGimbal={applySlopeGimbal}
                 gcpConfig={gcpConfig}
                 setGcpConfig={setGcpConfig}
                 gcpAutoCount={gcpAutoCount}

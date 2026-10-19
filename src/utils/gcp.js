@@ -108,13 +108,31 @@ export function planGcps(ring, count, { insetM = null, holes = null } = {}) {
 
   const candidates = []
 
-  // (b) candidatos de bordo, recuados na direção do centróide
+  // (b) candidatos de bordo, recuados pela NORMAL interior da aresta local
+  // (M2-E8): o recuo em direcção ao centróide era quase paralelo à aresta
+  // longa de uma área alongada, e numa faixa de 3000 × 100 m dez dos onze
+  // GCPs ficavam quase colineares, sem nada a controlar o rolamento
+  // transversal (Martínez-Carricondo et al., 2018); o centróide fica como
+  // recurso quando a normal não dá um ponto dentro
   const perimeterM = turf.length(outline, { units: 'meters' })
   if (perimeterM > 0) {
     const stepM = perimeterM / BOUNDARY_SAMPLES
+    const at = (dM) =>
+      turf.along(outline, ((dM % perimeterM) + perimeterM) % perimeterM, { units: 'meters' })
+        .geometry.coordinates
     for (let i = 0; i < BOUNDARY_SAMPLES; i++) {
-      const sample = turf.along(outline, i * stepM, { units: 'meters' }).geometry.coordinates
-      const inward = turf.bearing(sample, pullTo)
+      const sample = at(i * stepM)
+      const tangent = turf.bearing(at(i * stepM - 1), at(i * stepM + 1))
+      let inward = null
+      for (const side of [90, -90]) {
+        const probe = turf.destination(sample, 1, tangent + side, { units: 'meters' }).geometry
+          .coordinates
+        if (isInside(probe)) {
+          inward = tangent + side
+          break
+        }
+      }
+      if (inward == null) inward = turf.bearing(sample, pullTo)
       if (!Number.isFinite(inward)) continue
       const moved = turf.destination(sample, inset, inward, { units: 'meters' })
       const p = moved.geometry.coordinates
@@ -185,10 +203,11 @@ export function planGcps(ring, count, { insetM = null, holes = null } = {}) {
  * @returns {{ count: number, areaHa: number, haPerGcp: number|null, minSpacingM: number }}
  *          `haPerGcp` é null sem GCPs; `minSpacingM` é Infinity com 0 ou 1 GCP.
  */
-export function gcpStats(ring, gcps) {
+export function gcpStats(ring, gcps, holes = null) {
   const list = Array.isArray(gcps) ? gcps : []
   const count = list.length
-  const areaHa = ring && ring.length >= 3 ? turf.area(ringToPolygon(ring)) / 10000 : 0
+  // a área sem os buracos, que planGcps já exclui (M2-E9)
+  const areaHa = ring && ring.length >= 3 ? turf.area(ringToPolygon(ring, holes)) / 10000 : 0
 
   let minSpacingM = Infinity
   for (let i = 0; i < count; i++) {

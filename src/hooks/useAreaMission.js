@@ -147,6 +147,7 @@ export function useAreaMission({
         speed,
         spacingM: spacing,
         waypointStops: params.waypointStops,
+        overshootM: Math.max(0, params.overshoot || 0),
       }),
     [
       planOk,
@@ -158,6 +159,7 @@ export function useAreaMission({
       speed,
       spacing,
       params.waypointStops,
+      params.overshoot,
     ],
   )
 
@@ -249,8 +251,8 @@ export function useAreaMission({
   }, [gcpConfig, ring, holes, validation.valid, gcpAutoCount])
 
   const gcpInfo = useMemo(
-    () => (gcps && gcps.length > 0 ? gcpStats(ring, gcps) : null),
-    [gcps, ring],
+    () => (gcps && gcps.length > 0 ? gcpStats(ring, gcps, holes) : null),
+    [gcps, ring, holes],
   )
 
   /* ------------- Cota de referencia das alturas relativas ------------- */

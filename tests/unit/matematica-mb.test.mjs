@@ -129,8 +129,9 @@ describe('M2-G4: uma linha que passe num vertice reentrante nao perde a fila', (
 
 describe('M2-T5: um bloco de uma so faixa tem base', () => {
   test('a cauda do corte por area (uma faixa) e atribuida a uma base', () => {
-    // 5 faixas de 1000 m (5 ha cada) com 12 ha por bloco: 2 + 2 + 1
-    const ring = [em(0, 0), em(1000, 0), em(1000, 200), em(0, 200)]
+    // 5 faixas de 1000 m (5 ha cada) com 12 ha por bloco: 2 + 2 + 1 (210 m
+    // de altura, para nenhuma faixa cair exactamente sobre o contorno)
+    const ring = [em(0, 0), em(1000, 0), em(1000, 210), em(0, 210)]
     const plan = generateFlightPlan(ring, { ...opts, spacingM: 50 })
     const blocks = splitIntoBlocks(plan, { mode: 'area', maxAreaHa: 12, speed: 8, spacingM: 50 })
     expect(blocks.map((b) => b.lines.length)).toEqual([2, 2, 1])

@@ -211,6 +211,74 @@ que bloqueavam:
   ficava «?-3», bloqueada, sem proposta e sem maneira de lhe dar uma base.
 - METODOS §3, §4, §4.1, §5, §7, §8 e §14 actualizados.
 
+### Corrigido (revisão da matemática da missão, pacote M-C: modelos e melhorias)
+
+- **Referencial local sobre a esfera do Turf** (M2-G8): o rectângulo da
+  âncora, a grelha de réplicas e o mosaico eram construídos com 110574
+  m/grau (o grau de meridiano no equador) e rodados com o `transformRotate`
+  esférico — um pedido de 500 × 500 m saía 498,7 × 504,1 m. As constantes
+  passam a ser as da esfera com que o Turf mede todas as distâncias da app
+  (111194,93 m/grau) e a rotação faz-se em metros no referencial local:
+  500 × 500 mede 500 × 500 nas estatísticas. Os ficheiros de referência
+  (`tests/golden`, `esperado.json`) mudam nas últimas casas decimais.
+- **Circular: fotos por círculo pelo bordo distante da pegada** (M2-E5): a
+  corda à distância do eixo óptico media o deslocamento do drone, não a
+  pegada, que roda em torno do centro — P1 a 60 m, −45°, R 30 e 80 %: 12
+  pontos e 66 % reais. Passa ao bordo distante (21 pontos a R 30, 15 a R
+  60); com a câmara demasiado rasa (|pitch| ≤ meia abertura vertical)
+  recusa com `pitch-too-shallow`; sem câmara, zero fotos.
+- **Circular: círculos que não vêem a área** (M2-E10): a grelha cobre a
+  caixa envolvente e num L ou num triângulo até 21 % dos círculos ficavam a
+  mais de 2R da área; descartam-se os centros a mais do que o alcance da
+  pegada do contorno (`discardedCount`), mantendo a serpentina.
+- **Órbita: corda voada e rumo inicial** (M2-E14, M2-E13): `chordM` e
+  `transitionM` passam a ser a corda real `2R·sin(π/n)` (com o mínimo de 8
+  pontos a pedida podia ser quase o dobro); a órbita começa no azimute da
+  base mais próxima; sem câmara, zero fotos.
+- **Fachada: cantos** (M2-E11): entre amostras cujo rumo salte mais do que
+  `HFOV·(1 − sobreposição)` inserem-se fotografias no mesmo ponto com rumos
+  intermédios, para a face junto a um canto côncavo não ficar vista só de
+  esguelha.
+- **Corredor: pontas** (M2-E12): cada passagem prolonga-se meia pegada
+  longitudinal nas duas pontas, com disparo; antes a primeira e a última
+  foto ficavam com metade da pegada fora do eixo.
+- **GCPs** (M2-E8, M2-E9): os candidatos da fronteira recuam pela normal
+  interior da aresta (numa faixa de 3000 × 100 m o recuo para o centróide
+  alinhava-os no eixo); a área por GCP desconta os buracos.
+- **Dupla grelha encadeada** (M2-G9): a segunda e a terceira grelha começam
+  pelo extremo mais perto do fim da anterior (num bloco de 500 m a ligação
+  entre grelhas passa de 685 m para ~490 m).
+- **Margem do contorno, com células** (M2-G10): a margem em % era de √área
+  de cada célula (24 m numa célula de 480 m contra 59 m no contorno) e a
+  margem exterior mudava ao ligar a divisão; passa a calcular-se uma vez
+  do contorno, em metros, para as células e para o lado por bateria.
+- **Densidade LiDAR média** (M2-G11): o painel mostrava a densidade de uma
+  passagem e, entre parênteses, a de duas (só certa a 50 %); mostra a média
+  na área, `PRR/(v·espaçamento)`, e, entre parênteses, o mínimo de uma
+  passagem.
+- **Fotos das ligações** (M2-G12): o disparo por distância continua nas
+  ligações curtas entre faixas; a contagem passa a ser contínua por grupo
+  de disparo, ligações incluídas (+3–5 %: 1 km² com o M3E a 100 m, 1172 em
+  vez de 1128).
+- **Blocos por área sem o prolongamento** (M2-G15): a área de cada faixa
+  contava o prolongamento (com 30 m os blocos saíam 12 % abaixo do
+  pedido); conta só o núcleo.
+- **Filtro de picos sobre o mosaico** (M2-T12): cada tile é filtrado com
+  uma orla de 1 píxel dos tiles vizinhos; tile a tile, uma crista de 1
+  píxel que cruzasse o bordo era rebaixada (300 → 100 m, para o lado
+  inseguro).
+- **Sugestão de gimbal na encosta retirada** (M2-T9): com o rumo a seguir a
+  rota a câmara oblíqua inclinava-se ao longo da curva de nível, não para
+  a encosta, e piorava a incidência (20° → 28°); fica a sugestão do ângulo
+  das linhas, e o plano da encosta amostra só dentro do contorno (num L a
+  caixa envolvente media encosta de fora).
+- **Descidas** (M2-T13): a verificação de rota compara as descidas com a
+  velocidade de descida da aeronave (M3E/M4T 6, M300 4, custom 4 m/s), não
+  só as subidas com a de subida.
+- Testes: `tests/unit/matematica-mc.test.mjs`; goldens e `esperado.json`
+  regenerados (referencial, pontas do corredor, cantos da fachada, fotos
+  das ligações).
+
 ### Adicionado (KML por base)
 
 - **«Blocos por base (KML, ZIP)»** no cartão «Resumo e exportar», com bases

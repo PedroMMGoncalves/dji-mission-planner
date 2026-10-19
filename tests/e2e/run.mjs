@@ -3097,8 +3097,8 @@ const INVENTARIO_AREA = [
   ['area', 'o ficheiro é MDS', inv.id('dem-surface-dsm')],
   ['area', 'reimportar MDT', inv.btn(/Importar MDT/)],
   ['area', 'relevo global (de novo)', inv.btn(DOWNLOAD_GLOBAL)],
+  // a sugestão de gimbal caiu (M2-T9): fica só a do ângulo das linhas
   ['area', 'declive: linhas', inv.btn(/^Linhas a \d+°$/)],
-  ['area', 'declive: gimbal', inv.btn(/^Gimbal -?\d+°$/)],
   ['voo', 'tolerância vertical', inv.field(/Tolerância vertical/)],
   ['voo', 'paragem nos waypoints', inv.field(/Paragem nos waypoints/)],
   ['voo', 'distância entre linhas', inv.field(/Distância entre linhas/)],

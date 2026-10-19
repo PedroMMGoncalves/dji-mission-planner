@@ -400,6 +400,10 @@ export default {
   },
   'ci.err.invalid-area': { pt: 'Polígono inválido.', en: 'Invalid polygon.' },
   'ci.err.invalid-radius': { pt: 'O raio tem de ser positivo.', en: 'Radius must be positive.' },
+  'ci.err.pitch-too-shallow': {
+    pt: 'Inclinação da câmara demasiado rasa: o topo da imagem seria céu. Incline mais a câmara.',
+    en: 'Camera pitch too shallow: the top of the image would be sky. Tilt the camera further down.',
+  },
   'ci.err.invalid-altitude': {
     pt: 'A altura tem de ser positiva.',
     en: 'Height must be positive.',

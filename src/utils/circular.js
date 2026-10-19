@@ -230,19 +230,50 @@ export function generateCircularPlan(ring, opts) {
   const grid = circularGrid(ring, { radiusM, overlapPct, angleDeg })
   if (grid.error) return grid
 
-  // Fotos por círculo: a pegada transversal à distância do eixo óptico
-  // (altura / sin|pitch|) vezes (1 - sobreposição frontal), como na órbita.
-  // Sem câmara, 24 por volta.
+  // Fotos por círculo pelo BORDO DISTANTE da pegada (M2-E5 da revisão da
+  // matemática): a câmara aponta ao centro e a pegada roda em torno dele —
+  // o bordo distante, à distância ρ_far do centro, é o que mais anda entre
+  // fotos. Com a meia-abertura vertical v = atan(sH/2f), o bordo distante
+  // toca o chão a D_far = H / tan(|p| − v) do ponto nadir, à distância
+  // oblíqua t_far = H / sin(|p| − v), com a largura w_far = t_far · sW / f;
+  // ρ_far = |D_far − R| e o passo angular é Δθ = (1 − o) · w_far / ρ_far. A
+  // corda à distância do eixo óptico media o deslocamento do drone e não a
+  // pegada: 12 pontos e 66 % reais para 80 % pedidos (P1 a 60 m, −45°, R
+  // 30). Com |p| ≤ v o topo da imagem é céu: recusa-se. Sem câmara, 24 por
+  // volta.
   const pitchRad = (Math.abs(num(gimbalPitch, -90, -20, -45)) * Math.PI) / 180
   const rangeM = altitude / Math.sin(pitchRad)
   const fp = sensor?.type === 'camera' ? computeFootprint(sensor, rangeM) : null
-  const chordM = fp
-    ? Math.max(1, fp.across * (1 - frontOverlapPct / 100))
-    : (2 * Math.PI * radiusM) / 24
-  const nPts = Math.min(
-    MAX_POINTS_PER_CIRCLE,
-    Math.max(MIN_POINTS_PER_CIRCLE, Math.ceil((2 * Math.PI * radiusM) / chordM)),
+  let nPts = 24
+  let reachM = 2 * radiusM
+  if (fp) {
+    const halfV = Math.atan(sensor.sensorHeight / (2 * sensor.focalLength))
+    if (pitchRad <= halfV + 1e-9) return { error: 'pitch-too-shallow' }
+    const dFar = altitude / Math.tan(pitchRad - halfV)
+    const tFar = altitude / Math.sin(pitchRad - halfV)
+    const wFar = (tFar * sensor.sensorWidth) / sensor.focalLength
+    const rhoFar = Math.max(1, Math.abs(dFar - radiusM))
+    const dTheta = Math.max(1e-6, ((1 - frontOverlapPct / 100) * wFar) / rhoFar)
+    nPts = Math.ceil((2 * Math.PI) / dTheta)
+    // até onde a pegada chega, medido do centro do círculo
+    reachM = Math.max(reachM, rhoFar + wFar / 2)
+  }
+  nPts = Math.min(MAX_POINTS_PER_CIRCLE, Math.max(MIN_POINTS_PER_CIRCLE, nPts))
+  // a corda voada entre fotos: o que o obturador tem de acompanhar
+  const chordM = 2 * radiusM * Math.sin(Math.PI / nPts)
+
+  // Círculos que não vêem a área (M2-E10): a grelha cobre a caixa alinhada
+  // com as fiadas e num L ou num triângulo até 21 % dos círculos ficavam a
+  // mais de 2R da área; descartam-se os centros a mais do que o alcance da
+  // pegada (e nunca menos de 2R) da área, mantendo a serpentina
+  const areaPoly = ringToPolygon(ring)
+  const outlineLine = turf.lineString([...ring, ring[0]])
+  const centres = grid.centres.filter(
+    (c) =>
+      turf.booleanPointInPolygon(turf.point(c.lonLat), areaPoly) ||
+      turf.pointToLineDistance(turf.point(c.lonLat), outlineLine, { units: 'meters' }) <= reachM,
   )
+  if (centres.length === 0) return { error: 'invalid-area' }
   const pitch = Math.round(num(gimbalPitch, -90, -20, -45))
   const h = Math.round(altitude * 10) / 10
 
@@ -250,13 +281,13 @@ export function generateCircularPlan(ring, opts) {
   const perWaypoint = []
   const circles = []
   const norm = (b) => ((b % 360) + 360) % 360
-  grid.centres.forEach((c, k) => {
+  centres.forEach((c, k) => {
     const centre = c.lonLat
     // entrada virada ao círculo anterior; o primeiro entra pelo lado oposto
     // ao segundo, para a ligação ao longo da fiada medir sempre um passo
     let entry = 0
-    if (k > 0) entry = turf.bearing(centre, grid.centres[k - 1].lonLat)
-    else if (grid.centres.length > 1) entry = turf.bearing(centre, grid.centres[1].lonLat) + 180
+    if (k > 0) entry = turf.bearing(centre, centres[k - 1].lonLat)
+    else if (centres.length > 1) entry = turf.bearing(centre, centres[1].lonLat) + 180
     const step = (c.clockwise ? 360 : -360) / nPts
     const start = waypoints.length
     for (let i = 0; i <= nPts; i++) {
@@ -302,7 +333,10 @@ export function generateCircularPlan(ring, opts) {
       rows: grid.rows,
       pointsPerCircle: nPts,
       waypointCount: waypoints.length,
-      photoCount: circles.length * nPts,
+      // sem câmara (LiDAR) não há fotografias
+      photoCount: sensor?.type === 'camera' ? circles.length * nPts : 0,
+      // círculos da grelha que não viam a área, descartados
+      discardedCount: grid.centres.length - circles.length,
       radiusM,
       overlapPct: num(overlapPct, 0, 90, 0),
       stepM: grid.stepM,

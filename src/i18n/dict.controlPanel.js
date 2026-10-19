@@ -92,11 +92,10 @@ export default {
     en: 'A mission of its own, independent of the grid: per-point heading and pitch, one photo per marked point. Heights are relative to the takeoff point.',
   },
   'cp.terrain.slopeHint': {
-    pt: 'Encosta média de {slope}° a descer para {az}°. Para encostas íngremes com terrain follow: linhas ao longo das curvas de nível ({lines}°) e câmara oblíqua ({gimbal}°).',
-    en: 'Mean slope of {slope}° descending toward {az}°. For steep slopes with terrain follow: lines along the contours ({lines}°) and an oblique camera ({gimbal}°).',
+    pt: 'Encosta média de {slope}° a descer para {az}°. Para encostas íngremes com terrain follow: linhas ao longo das curvas de nível ({lines}°). A câmara fica a nadir: com o rumo a seguir a rota, uma câmara oblíqua inclinava-se ao longo da curva de nível, não para a encosta.',
+    en: 'Mean slope of {slope}° descending toward {az}°. For steep slopes with terrain follow: lines along the contours ({lines}°). Keep the camera at nadir: with the heading following the route, an oblique camera tilted along the contour, not toward the slope.',
   },
   'cp.terrain.slopeApplyLines': { pt: 'Linhas a {lines}°', en: 'Lines at {lines}°' },
-  'cp.terrain.slopeApplyGimbal': { pt: 'Gimbal {gimbal}°', en: 'Gimbal {gimbal}°' },
   'cp.orientation.optimal': { pt: 'Óptima', en: 'Optimal' },
   'cp.orientation.optimalTitle': {
     pt: 'Procura a direcção com menos faixas dentro do polígono real (menos viragens, menos tempo)',

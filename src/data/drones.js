@@ -61,6 +61,7 @@ export const AIRCRAFT = {
       rtk: { verticalM: 0.03, horizontalM: 0.02 },
     },
     maxClimbMS: 6, // max ascent speed, normal mode (spec sheet)
+    maxDescentMS: 6, // max descent speed (spec sheet)
     wpml: { droneEnumValue: 77, droneSubEnumValue: 0 },
     payloads: ['M3E_WIDE'],
   },
@@ -77,6 +78,7 @@ export const AIRCRAFT = {
       rtk: { verticalM: 0.03, horizontalM: 0.02 },
     },
     maxClimbMS: 6,
+    maxDescentMS: 6, // max descent speed (spec sheet)
     wpml: { droneEnumValue: 99, droneSubEnumValue: 1 },
     // Wide RGB and the thermal camera share the same gimbal (payload enum 89);
     // the medium tele and tele cameras are not modelled (not used for mapping).
@@ -98,6 +100,7 @@ export const AIRCRAFT = {
       rtk: { verticalM: 0.03, horizontalM: 0.02 },
     },
     maxClimbMS: 5,
+    maxDescentMS: 4, // max descent speed, P mode (spec sheet; S mode 5)
     wpml: { droneEnumValue: 60, droneSubEnumValue: 0 },
     payloads: ['P1', 'MAPPER_PLUS', 'CUSTOM'],
   },
@@ -112,6 +115,7 @@ export const AIRCRAFT = {
       rtk: { verticalM: 0.05, horizontalM: 0.03 },
     },
     maxClimbMS: 4,
+    maxDescentMS: 4, // max descent speed (spec sheet)
     // Default enums, editable in the custom editor of the UI:
     wpml: { droneEnumValue: 60, droneSubEnumValue: 0 },
     payloads: ['CUSTOM'],

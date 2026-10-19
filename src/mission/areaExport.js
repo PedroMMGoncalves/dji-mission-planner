@@ -4,7 +4,12 @@
  * o marcador de gimbal da grelha nadir. Lógica pura, sem React, para ser
  * testada sem browser — vivia no handler de exportação do App.jsx.
  */
-import { passThroughFor, stripRouteStats, triggerRangesForLines } from '../utils/geo.js'
+import {
+  passThroughFor,
+  stripRouteStats,
+  triggerMaxLinkM,
+  triggerRangesForLines,
+} from '../utils/geo.js'
 import { areaExportName, flightFiles } from './flightFiles.js'
 import { safetyParams } from './safety.js'
 
@@ -109,7 +114,7 @@ export function buildAreaExport({
   // viragens normais continuam a disparar; as travessias de concavidades,
   // as ligações entre grelhas e entre células deixam de encher o cartão
   // com fotos fora da área. Índices locais a cada bloco.
-  const maxLinkM = Math.max(2.5 * spacingM, 60)
+  const maxLinkM = triggerMaxLinkM(spacingM)
   params.triggerRanges = triggerRangesForLines(
     plan.lines,
     terrainOk ? terrainResult.perLine : null,

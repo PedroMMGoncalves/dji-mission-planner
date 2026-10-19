@@ -12,10 +12,13 @@ import {
   ringToPolygon,
   tilePolygonWithSquares,
 } from '../../src/utils/geo.js'
+import { M_PER_DEG_LAT, metersPerDegLon } from '../../src/utils/units.js'
 
 const lat0 = 38.7
-const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
-const em = (x, y) => [-8.0 + x / mLon, lat0 + y / 110574]
+// o referencial local da app (units.js), para os lados pedidos ao mosaico
+// serem exactamente os medidos
+const mLon = metersPerDegLon(lat0)
+const em = (x, y) => [-8.0 + x / mLon, lat0 + y / M_PER_DEG_LAT]
 const S = 600
 
 /** Rectângulo w×h centrado na origem, com arestas no azimute `az`. */

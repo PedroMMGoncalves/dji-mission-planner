@@ -8,6 +8,7 @@
  */
 import * as turf from '@turf/turf'
 import {
+  bufferDistanceMeters,
   composeCellPlans,
   computeAlignment,
   generateFlightPlan,
@@ -44,9 +45,15 @@ export function planArea(ring, activeCells, opts) {
   }
   const cellHoles = Array.isArray(opts.cellHoles) ? opts.cellHoles : null
   const { cellHoles: _ignored, ...cellOpts } = opts
+  // a margem em metros vem do CONTORNO, uma vez, e não da área de cada
+  // célula (M2-G10: 10 % eram 59 m na área e 24 m numa célula de 480 m — a
+  // margem exterior mudava ao ligar a divisão)
+  const bufferM =
+    opts.bufferPct > 0 ? bufferDistanceMeters(ringToPolygon(ring, holes), opts.bufferPct) : 0
   const perCell = activeCells.map((cell, i) =>
     generateFlightPlan(cell, {
       ...cellOpts,
+      bufferM,
       align,
       align2,
       holes: cellHoles ? (cellHoles[i]?.length ? cellHoles[i] : null) : holesFor(cell),

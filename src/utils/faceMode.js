@@ -198,16 +198,40 @@ export function generateFacePlan(baseline, options) {
     return ((Math.round(toFace) % 360) + 360) % 360
   })
 
+  // Cantos (M2-E11): entre duas amostras cujo rumo salta mais do que a
+  // abertura horizontal útil, HFOV · (1 − sobreposição) — a esquadria de um
+  // canto côncavo, ou um arco apertado — inserem-se fotografias no mesmo
+  // ponto com o rumo a rodar em passos até esse limite, para a face junto
+  // ao vértice não ficar vista só de esguelha.
+  const hfovDeg = (2 * Math.atan(sensor.sensorWidth / (2 * sensor.focalLength)) * 180) / Math.PI
+  const maxStepDeg = Math.max(5, hfovDeg * (1 - horizontalOverlapPct / 100))
+  const samplePts = []
+  const sampleHeadings = []
+  for (let i = 0; i < nPts; i++) {
+    samplePts.push(pts[i])
+    sampleHeadings.push(headings[i])
+    if (i + 1 >= nPts) break
+    let delta = headings[i + 1] - headings[i]
+    while (delta > 180) delta -= 360
+    while (delta < -180) delta += 360
+    const steps = Math.ceil(Math.abs(delta) / maxStepDeg)
+    for (let k = 1; k < steps; k++) {
+      samplePts.push(pts[i + 1])
+      sampleHeadings.push(((Math.round(headings[i] + (delta * k) / steps) % 360) + 360) % 360)
+    }
+  }
+  const nPhotos = samplePts.length
+
   // serpentina vertical: cada passagem alterna o sentido; a subida entre
   // passagens acontece no mesmo ponto horizontal (viragem em altura)
   const waypoints = []
   const perWaypoint = []
   heights.forEach((h, k) => {
-    const order = Array.from({ length: nPts }, (_, i) => i)
+    const order = Array.from({ length: nPhotos }, (_, i) => i)
     if (k % 2 === 1) order.reverse()
     for (const i of order) {
-      waypoints.push([pts[i][0], pts[i][1], Math.round(h * 10) / 10])
-      perWaypoint.push({ heading: headings[i], gimbalPitch, actions: ['takePhoto'] })
+      waypoints.push([samplePts[i][0], samplePts[i][1], Math.round(h * 10) / 10])
+      perWaypoint.push({ heading: sampleHeadings[i], gimbalPitch, actions: ['takePhoto'] })
     }
   })
 
@@ -224,7 +248,9 @@ export function generateFacePlan(baseline, options) {
     offsetLine: pts,
     stats: {
       passCount: heights.length,
-      pointsPerPass: nPts,
+      pointsPerPass: nPhotos,
+      // amostras ao longo da linha (sem as fotografias extra dos cantos)
+      samplesPerPass: nPts,
       waypointCount: waypoints.length,
       photoCount: waypoints.length,
       vStepM: heights.length > 1 ? heights[1] - heights[0] : null,

@@ -159,7 +159,7 @@ function createCanvas(width, height) {
 }
 
 /** Descarrega um PNG e devolve { data, width, height } com os píxeis RGBA. */
-async function fetchTilePixels(url, doFetch) {
+async function fetchTilePixels(url, doFetch, despike = true) {
   const res = await doFetch(url)
   if (!res || !res.ok) throw new Error(`HTTP ${res ? res.status : '?'} em ${url}`)
   const blob = await res.blob()
@@ -184,7 +184,7 @@ async function fetchTilePixels(url, doFetch) {
     for (let i = 0, p = 0; p < elev.length; i += 4, p++) {
       elev[p] = decodeTerrarium(d[i], d[i + 1], d[i + 2])
     }
-    despikeElevations(elev, width, height)
+    if (despike) despikeElevations(elev, width, height)
     return { elev, width, height }
   } finally {
     if (typeof bitmap.close === 'function') bitmap.close()
@@ -210,22 +210,81 @@ export function despikeElevations(elev, width, height, thresholdM = 150) {
           const nx = x + dx
           if (nx < 0 || nx >= width) continue
           if (dx === 0 && dy === 0) continue
-          viz.push(orig[ny * width + nx])
+          const v = orig[ny * width + nx]
+          // uma orla sem dados (bordo do mosaico) não conta como vizinho
+          if (Number.isFinite(v)) viz.push(v)
         }
       }
       if (viz.length < 3) continue
       const i = y * width + x
-      // um valor real (crista, esporão) tem pelo menos 2 vizinhos ao seu
-      // nível; um erro pontual de descodificação não tem nenhum
+      if (!Number.isFinite(orig[i])) continue
+      // um valor real (crista, esporão) tem pelo menos 2 vizinhos em 8 ao
+      // seu nível — proporcional aos vizinhos que há; um erro pontual de
+      // descodificação não tem nenhum
       let suporte = 0
       for (const v of viz) if (Math.abs(v - orig[i]) <= thresholdM) suporte++
-      if (suporte >= 2) continue
+      if (suporte >= Math.max(1, Math.ceil(viz.length / 4))) continue
       viz.sort((a, b) => a - b)
       const mediana = viz[Math.floor(viz.length / 2)]
       if (Math.abs(orig[i] - mediana) > thresholdM) elev[i] = mediana
     }
   }
   return elev
+}
+
+/**
+ * Filtro de picos sobre o MOSAICO (M2-T12): cada tile é filtrado com uma
+ * orla de 1 píxel copiada dos tiles vizinhos, para a vizinhança 3×3 ser
+ * completa também nos bordos e cantos. Tile a tile, a ponta de um esporão
+ * ou uma crista de 1 píxel que cruzasse o bordo via só 3–5 vizinhos e era
+ * rebaixada (300 → 100 m, para o lado inseguro).
+ * @param {Map<string, {elev: Float32Array, width: number, height: number}>} tiles por «x/y»
+ */
+export function despikeMosaic(tiles) {
+  for (const [key, tile] of tiles) {
+    const [tx, ty] = key.split('/').map(Number)
+    const { width: w, height: h } = tile
+    const W = w + 2
+    const H = h + 2
+    const padded = new Float32Array(W * H).fill(NaN)
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) padded[(y + 1) * W + (x + 1)] = tile.elev[y * w + x]
+    const nb = (dx, dy) => {
+      const t = tiles.get(`${tx + dx}/${ty + dy}`)
+      return t && t.width === w && t.height === h ? t : null
+    }
+    const n = nb(0, -1)
+    const s = nb(0, 1)
+    const e = nb(1, 0)
+    const o = nb(-1, 0)
+    if (n) for (let x = 0; x < w; x++) padded[x + 1] = n.elev[(h - 1) * w + x]
+    if (s) for (let x = 0; x < w; x++) padded[(H - 1) * W + x + 1] = s.elev[x]
+    if (o) for (let y = 0; y < h; y++) padded[(y + 1) * W] = o.elev[y * w + (w - 1)]
+    if (e) for (let y = 0; y < h; y++) padded[(y + 1) * W + (W - 1)] = e.elev[y * w]
+    const no = nb(-1, -1)
+    const ne = nb(1, -1)
+    const so = nb(-1, 1)
+    const se = nb(1, 1)
+    if (no) padded[0] = no.elev[(h - 1) * w + (w - 1)]
+    if (ne) padded[W - 1] = ne.elev[(h - 1) * w]
+    if (so) padded[(H - 1) * W] = so.elev[w - 1]
+    if (se) padded[(H - 1) * W + (W - 1)] = se.elev[0]
+    despikeElevations(padded, W, H)
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) tile.elev[y * w + x] = padded[(y + 1) * W + (x + 1)]
+  }
+  return tiles
+}
+
+/** Ponto dentro de um anel (regra par-ímpar), em lon/lat. */
+function pointInRing(lon, lat, ring) {
+  let inside = false
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i]
+    const [xj, yj] = ring[j]
+    if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside
+  }
+  return inside
 }
 
 /**
@@ -329,7 +388,8 @@ export async function loadTerrain(bbox, opts = {}) {
     let timer
     try {
       const px = await Promise.race([
-        fetchTilePixels(url, fetchTile),
+        // os picos filtram-se depois, sobre o mosaico (despikeMosaic)
+        fetchTilePixels(url, fetchTile, false),
         new Promise((_, reject) => {
           timer = setTimeout(() => reject(new Error('tile timeout')), tileTimeoutMs)
         }),
@@ -358,6 +418,7 @@ export async function loadTerrain(bbox, opts = {}) {
   if (wanted.length === 0 || failed > wanted.length * MAX_FAIL_RATIO) {
     throw new Error('Falha ao descarregar o modelo de terreno')
   }
+  despikeMosaic(tiles)
 
   /** Elevação de um píxel global (inteiro), ou null se o tile não existir. */
   const samplePixel = (gx, gy) => {
@@ -827,6 +888,9 @@ export function fitSlopePlane(terrainData, ring, { n = 12 } = {}) {
     for (let j = 0; j < n; j++) {
       const lon = minX + ((i + 0.5) / n) * (maxX - minX)
       const lat = minY + ((j + 0.5) / n) * (maxY - minY)
+      // só dentro do anel: numa área em L ou diagonal a caixa envolvente
+      // media encosta de fora (M2-T9)
+      if (!pointInRing(lon, lat, ring)) continue
       const z = terrainData.elevationAt(lon, lat)
       if (!Number.isFinite(z)) continue
       const x = (lon - minX) * mLon

@@ -586,10 +586,16 @@ if (plan90 && !plan90.error) {
       po.stats.photoCountArea != null && po.stats.photoCountArea < po.stats.photoCount,
       `${po.stats.photoCountArea} < ${po.stats.photoCount}`,
     )
+    // fotos sobre a area = contagem faixa a faixa do plano sem overshoot; o
+    // total desse plano ja inclui as fotos das ligacoes curtas (M2-G12)
+    const porFaixa = plan90.lines.reduce(
+      (n, l) => n + Math.floor(turf.distance(l[0], l[1], { units: 'meters' }) / iv) + 1,
+      0,
+    )
     check(
-      'overshoot: fotos/area = fotos do plano sem overshoot',
-      po.stats.photoCountArea === plan90.stats.photoCount,
-      `${po.stats.photoCountArea} vs ${plan90.stats.photoCount}`,
+      'overshoot: fotos/area = fotos faixa a faixa do plano sem overshoot',
+      po.stats.photoCountArea === porFaixa && plan90.stats.photoCount > porFaixa,
+      `${po.stats.photoCountArea} vs ${porFaixa} (total ${plan90.stats.photoCount})`,
     )
     check('sem overshoot: photoCountArea null', plan90.stats.photoCountArea === null)
     check(
@@ -2225,11 +2231,20 @@ check(
       ...hits.map((f) => turf.distance([w[0], w[1]], f.geometry.coordinates, { units: 'meters' })),
     )
   })
-  const okFacing = facing.filter((d) => d != null && d > 22 && d < 28).length
+  // na esquina (M2-E11) ha waypoints no MESMO ponto com rumos intermedios:
+  // esses olham a esquina em diagonal, ate 25·sqrt(2) m; os outros ~25 m
+  const corner = fpL.waypoints.map(
+    (w, i) => i > 0 && turf.distance(w, fpL.waypoints[i - 1], { units: 'meters' }) < 0.01,
+  )
+  const okFacing = facing.filter((d, i) => !corner[i] && d != null && d > 22 && d < 28).length
+  const nSamples = corner.filter((c) => !c).length
+  const okCorner = facing.every(
+    (d, i) => !corner[i] || (d != null && d > 22 && d < 25 * Math.SQRT2 + 1),
+  )
   check(
     'fachada L: distancia a face segundo o rumo ~25 m',
-    okFacing >= facing.length - 2 && facing.every((d) => d == null || d < 36),
-    `${okFacing}/${facing.length} em [22,28]`,
+    okFacing >= nSamples - 2 && okCorner && facing.every((d) => d == null || d < 37),
+    `${okFacing}/${nSamples} em [22,28]; esquina ${corner.filter(Boolean).length} rumos`,
   )
   const dists = fpL.waypoints.map((w) =>
     turf.pointToLineDistance(turf.point([w[0], w[1]]), lLine, { units: 'meters' }),
@@ -4885,14 +4900,20 @@ check(
 /* U: conversoes geodesicas partilhadas (units.js) — viviam duplicadas por
    nove modulos; a variante Safe e a unica com semantica diferente */
 {
-  check('U: metro por grau de latitude', M_PER_DEG_LAT === 110574)
+  // a esfera do turf (M2-G8): um grau de latitude mede o mesmo que o turf mede
   check(
-    'U: metro por grau de longitude no equador = 111320',
-    Math.abs(metersPerDegLon(0) - 111320) < 1e-9,
+    'U: metro por grau de latitude = o do turf',
+    Math.abs(M_PER_DEG_LAT - turf.distance([0, 38], [0, 39], { units: 'meters' })) < 1e-6 &&
+      Math.abs(M_PER_DEG_LAT - (2 * Math.PI * 6371008.8) / 360) < 1e-9,
+    M_PER_DEG_LAT.toFixed(2),
+  )
+  check(
+    'U: metro por grau de longitude no equador = o de latitude',
+    Math.abs(metersPerDegLon(0) - M_PER_DEG_LAT) < 1e-9,
   )
   check(
     'U: encolhe com o cosseno da latitude (60 graus -> metade)',
-    Math.abs(metersPerDegLon(60) - 111320 / 2) < 1e-6,
+    Math.abs(metersPerDegLon(60) - M_PER_DEG_LAT / 2) < 1e-6,
     metersPerDegLon(60).toFixed(2),
   )
   check(

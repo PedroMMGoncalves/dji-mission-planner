@@ -231,10 +231,14 @@ export function lineSpacing(footprintAcross, sideOverlapPct) {
  * ground, doubling the density. Returns { single, overlap } or null when
  * any input is missing/non-positive.
  */
-export function lidarPointDensity({ prr, speed, swathM }) {
+export function lidarPointDensity({ prr, speed, swathM, spacingM = null }) {
   if (!(prr > 0) || !(speed > 0) || !(swathM > 0)) return null
   const single = prr / (speed * swathM)
-  return { single, overlap: 2 * single }
+  // a média da área é PRR / (v · espaçamento): cada ponto do chão é varrido
+  // por faixa/espaçamento passagens (M2-G11: a «dupla» entre parênteses só
+  // coincide com a média a 50 % de sobreposição)
+  const mean = Number.isFinite(spacingM) && spacingM > 0 ? prr / (speed * spacingM) : null
+  return { single, overlap: 2 * single, mean }
 }
 
 /** Distância entre disparos a partir da pegada longitudinal e da sobreposição frontal. */
@@ -267,20 +271,28 @@ export function validateRing(ring, holes = null) {
  * turf.transformRotate em torno do centro.
  */
 export function rectangleFromAnchor(center, lengthM, widthM, orientationDeg) {
+  return rotatedRect(center, -lengthM / 2, -widthM / 2, lengthM / 2, widthM / 2, orientationDeg)
+}
+
+/**
+ * Rectângulo [x0, y0]–[x1, y1] em metros à volta de `center` (x ao longo do
+ * azimute 90°, y para norte), rodado para o azimute `orientationDeg`, em
+ * lon/lat. A rotação é feita em METROS no referencial local: rodar em graus
+ * com o `transformRotate` esférico do turf, misturado com o referencial
+ * plano, dava 498,7 × 504,1 m a um pedido de 500 × 500 (M2-G8).
+ */
+function rotatedRect(center, x0, y0, x1, y1, orientationDeg) {
   const [lon, lat] = center
   const mLon = metersPerDegLon(lat)
-  const dx = lengthM / 2 / mLon
-  const dy = widthM / 2 / M_PER_DEG_LAT
-  // Retângulo não rodado: comprimento ao longo de Este-Oeste (azimute 90°)
-  const corners = [
-    [lon - dx, lat - dy],
-    [lon + dx, lat - dy],
-    [lon + dx, lat + dy],
-    [lon - dx, lat + dy],
-  ]
-  const poly = turf.polygon([[...corners, corners[0]]])
-  const rotated = turf.transformRotate(poly, orientationDeg - 90, { pivot: center })
-  return rotated.geometry.coordinates[0].slice(0, 4)
+  const phi = ((90 - orientationDeg) * Math.PI) / 180
+  const c = Math.cos(phi)
+  const s = Math.sin(phi)
+  return [
+    [x0, y0],
+    [x1, y0],
+    [x1, y1],
+    [x0, y1],
+  ].map(([x, y]) => [lon + (x * c - y * s) / mLon, lat + (x * s + y * c) / M_PER_DEG_LAT])
 }
 
 /**
@@ -293,22 +305,8 @@ export function rectangleFromAnchor(center, lengthM, widthM, orientationDeg) {
  * Devolve { outline, cells }: anel exterior + anéis das células, por ordem de voo.
  */
 export function gridFromAnchor(center, lengthM, widthM, orientationDeg, cols, rows) {
-  const [lon, lat] = center
-  const mLon = metersPerDegLon(lat)
   const totalL = lengthM * cols
   const totalW = widthM * rows
-
-  const toRing = (x0, y0, x1, y1) => [
-    [lon + x0 / mLon, lat + y0 / M_PER_DEG_LAT],
-    [lon + x1 / mLon, lat + y0 / M_PER_DEG_LAT],
-    [lon + x1 / mLon, lat + y1 / M_PER_DEG_LAT],
-    [lon + x0 / mLon, lat + y1 / M_PER_DEG_LAT],
-  ]
-  const rotateRing = (ring) => {
-    const poly = turf.polygon([[...ring, ring[0]]])
-    const rotated = turf.transformRotate(poly, orientationDeg - 90, { pivot: center })
-    return rotated.geometry.coordinates[0].slice(0, 4)
-  }
 
   const cells = []
   for (let r = 0; r < rows; r++) {
@@ -317,12 +315,12 @@ export function gridFromAnchor(center, lengthM, widthM, orientationDeg, cols, ro
     for (const c of colIdx) {
       const x0 = -totalL / 2 + c * lengthM
       const y0 = -totalW / 2 + r * widthM
-      cells.push(rotateRing(toRing(x0, y0, x0 + lengthM, y0 + widthM)))
+      cells.push(rotatedRect(center, x0, y0, x0 + lengthM, y0 + widthM, orientationDeg))
     }
   }
 
   return {
-    outline: rotateRing(toRing(-totalL / 2, -totalW / 2, totalL / 2, totalW / 2)),
+    outline: rotatedRect(center, -totalL / 2, -totalW / 2, totalL / 2, totalW / 2, orientationDeg),
     cells,
   }
 }
@@ -361,13 +359,17 @@ export function squareSideForBattery({
   overshootM = 0,
   tieLine = false,
   bufferPct = 0,
+  // margem em metros do contorno (planArea/useAreaGeometry): cada célula é
+  // alargada bufferM de cada lado; tem prioridade sobre bufferPct
+  bufferM = null,
 }) {
   const v = speed > 0 ? speed : 10
   const s = Math.max(1, spacingM)
   const k = Math.max(1, passes)
   const o = Number.isFinite(overshootM) && overshootM > 0 ? overshootM : 0
   // o lado voado L' é o do quadrado alargado pela margem; o lado do mosaico
-  // é L = L'/f
+  // é L = L' − 2·bufferM (ou L'/f com a margem em % do lado)
+  const bM = Number.isFinite(bufferM) && bufferM > 0 ? bufferM : null
   const f = 1 + (Number.isFinite(bufferPct) && bufferPct > 0 ? bufferPct : 0) / 100
   const useful = Math.max(60 * k, batteryMin * 60 * (1 - reservePct / 100) - transitS)
   const turnS = turnCostS(v)
@@ -383,7 +385,7 @@ export function squareSideForBattery({
   const B = k * b1 + bt
   const C = k * c1 + ct - useful
   const Lp = (-B + Math.sqrt(B * B - 4 * A * C)) / (2 * A)
-  const capped = Math.min(Lp / f, Math.max(100, maxSideM))
+  const capped = Math.min(bM != null ? Lp - 2 * bM : Lp / f, Math.max(100, maxSideM))
   return Math.max(50, Math.floor(capped / 10) * 10)
 }
 
@@ -677,6 +679,9 @@ export function generateFlightLines(ring, options) {
     spacingM,
     angleDeg,
     bufferPct,
+    // margem em metros, calculada uma vez do contorno (planArea): a mesma
+    // com e sem células; tem prioridade sobre bufferPct
+    bufferM = null,
     photoIntervalM,
     speed,
     align,
@@ -701,9 +706,14 @@ export function generateFlightLines(ring, options) {
 
   // 1) Buffer exterior (Polygon ou MultiPolygon, consoante o turf)
   let area = /** @type {any} */ (basePoly)
-  if (bufferPct > 0) {
-    const dist = bufferDistanceMeters(basePoly, bufferPct)
-    const buffered = turf.buffer(basePoly, dist, { units: 'meters' })
+  const bufferDistM =
+    Number.isFinite(bufferM) && bufferM > 0
+      ? bufferM
+      : bufferPct > 0
+        ? bufferDistanceMeters(basePoly, bufferPct)
+        : 0
+  if (bufferDistM > 0) {
+    const buffered = turf.buffer(basePoly, bufferDistM, { units: 'meters' })
     if (buffered) area = buffered
   }
 
@@ -953,15 +963,32 @@ export function generateFlightLines(ring, options) {
   let totalLineLengthM = 0
   let photoCount = 0
   let photoCountArea = 0
-  lines.forEach((seg) => {
+  // O disparo por distância corre CONTÍNUO dentro de cada grupo de disparo
+  // (faixas ligadas por ligações curtas, §6; o grupo só se quebra numa
+  // ligação acima de triggerMaxLinkM): fotos = ⌊comprimento do grupo /
+  // intervalo⌋ + 1, ligações incluídas (M2-G12: +3–5 % que não apareciam).
+  // photoCountArea continua a contar só o núcleo de cada faixa.
+  const countPhotos = photoIntervalM > 0 && !perWaypointPhotos
+  const maxLinkM = triggerMaxLinkM(spacingM)
+  let groupLenM = 0
+  lines.forEach((seg, i) => {
     const len = turf.distance(seg[0], seg[1], { units: 'meters' })
     totalLineLengthM += len
-    if (photoIntervalM > 0 && !perWaypointPhotos) {
-      photoCount += Math.floor(len / photoIntervalM) + 1
-      const core = Math.max(0, len - 2 * overshootM)
-      photoCountArea += Math.floor(core / photoIntervalM) + 1
+    if (!countPhotos) return
+    if (i > 0) {
+      const prev = lines[i - 1]
+      const d = turf.distance(prev[prev.length - 1], seg[0], { units: 'meters' })
+      if (d <= maxLinkM) groupLenM += d
+      else {
+        photoCount += Math.floor(groupLenM / photoIntervalM) + 1
+        groupLenM = 0
+      }
     }
+    groupLenM += len
+    const core = Math.max(0, len - 2 * overshootM)
+    photoCountArea += Math.floor(core / photoIntervalM) + 1
   })
+  if (countPhotos && lines.length > 0) photoCount += Math.floor(groupLenM / photoIntervalM) + 1
 
   // B: no modo foto-por-waypoint, fotos = marcadores takePhoto
   if (perWaypoint) photoCount = perWaypoint.reduce((n) => n + 1, 0)
@@ -1118,6 +1145,29 @@ export function composeCellPlans(
   }
 }
 
+/** O mesmo sub-plano voado ao contrário (faixas, waypoints e, se os houver, perLine/perWaypoint). */
+function reversePart(p) {
+  const out = {
+    ...p,
+    lines: [...p.lines].reverse().map((l) => [...l].reverse()),
+    waypoints: [...p.waypoints].reverse(),
+  }
+  if (Array.isArray(p.perLine)) out.perLine = [...p.perLine].reverse()
+  if (Array.isArray(p.perWaypoint)) out.perWaypoint = [...p.perWaypoint].reverse()
+  return out
+}
+
+/** `part` ou a sua inversa, a que começa mais perto do fim de `prev`. */
+function closerEnd(prev, part) {
+  const end = prev.waypoints[prev.waypoints.length - 1]
+  const first = part.waypoints[0]
+  const last = part.waypoints[part.waypoints.length - 1]
+  if (!end || !first || !last) return part
+  const dFirst = turf.distance(end, first, { units: 'meters' })
+  const dLast = turf.distance(end, last, { units: 'meters' })
+  return dLast < dFirst - 1e-6 ? reversePart(part) : part
+}
+
 /**
  * Dupla grelha (crosshatch) para reconstrução 3D: gera a grelha normal e uma
  * segunda perpendicular (+90°), voadas em sequência. `align2` é o alinhamento
@@ -1144,13 +1194,15 @@ export function generateFlightPlan(ring, options, generate = generateFlightLines
   if (!p2) return { error: 'crosshatch-failed' }
   if (p2.error) return p2
 
-  // a partir daqui todos os sub-planos sao validos (sem `error`)
-  const parts = /** @type {any[]} */ ([p1, p2])
+  // a partir daqui todos os sub-planos sao validos (sem `error`); cada
+  // grelha seguinte começa junto ao fim da anterior (M2-G9: a ligação entre
+  // grelhas num bloco de 500 m passava de 685 m para 508 m)
+  const parts = /** @type {any[]} */ ([p1, closerEnd(p1, p2)])
   if (options.includeNadir) {
     const p3 = generate(ring, { ...options, tieLine: false })
     if (!p3) return { error: 'nadir-failed' }
     if (p3.error) return p3
-    parts.push(p3)
+    parts.push(closerEnd(parts[1], p3))
   }
 
   const v = options.speed > 0 ? options.speed : 10
@@ -1187,6 +1239,11 @@ export function generateFlightPlan(ring, options, generate = generateFlightLines
       bufferedAreaHa: parts[0].stats.bufferedAreaHa,
     },
   }
+}
+
+/** Ligação entre faixas acima disto quebra o grupo de disparo (areaExport, contagem de fotos). */
+export function triggerMaxLinkM(spacingM) {
+  return Math.max(2.5 * (Number.isFinite(spacingM) ? spacingM : 0), 60)
 }
 
 /**
@@ -1328,6 +1385,8 @@ export function splitIntoBlocks(plan, options) {
     spacingM,
     basePoint,
     waypointStops = 'corners',
+    // prolongamento das faixas: a área de um bloco conta só o núcleo
+    overshootM = 0,
   } = options
   if (!plan || !plan.lines || plan.lines.length === 0 || mode === 'none') return null
 
@@ -1365,6 +1424,9 @@ export function splitIntoBlocks(plan, options) {
   let prevEnd = null
   plan.lines.forEach((seg, li) => {
     const lenM = turf.distance(seg[0], seg[1], { units: 'meters' })
+    // a área coberta pela faixa é a do núcleo, sem o prolongamento (M2-G15:
+    // com 30 m de prolongamento os blocos saíam 12 % abaixo do pedido)
+    const coreM = Math.max(0, lenM - 2 * Math.max(0, overshootM))
     const connM = prevEnd ? turf.distance(prevEnd, seg[0], { units: 'meters' }) : 0
     // Cost used by the fits-check below. The connection from the previous
     // line is deliberately excluded: if the line is evicted it opens a new
@@ -1372,7 +1434,7 @@ export function splitIntoBlocks(plan, options) {
     // extra hop (~spacing/v) is covered by the battery reserve. cur.cost does
     // accumulate flown connections, so the budget overshoot is bounded by one
     // connection per block.
-    const lineCost = mode === 'area' ? lenM * spacingM : lenM / v + turnCostS(v) + stopsS(li)
+    const lineCost = mode === 'area' ? coreM * spacingM : lenM / v + turnCostS(v) + stopsS(li)
 
     if (!cur) openBlock(seg[0], li)
     const fits =
@@ -1386,9 +1448,9 @@ export function splitIntoBlocks(plan, options) {
     cur.lines.push(seg)
     cur.cost +=
       mode === 'area'
-        ? lenM * spacingM
+        ? coreM * spacingM
         : lenM / v + turnCostS(v) + stopsS(li) + (cur.lines.length > 1 ? connM / v : 0)
-    cur.areaM2 += lenM * spacingM
+    cur.areaM2 += coreM * spacingM
     cur.lengthM += lenM
     prevEnd = seg[1]
   })

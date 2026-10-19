@@ -55,7 +55,7 @@ function InstrucoesPt() {
         <strong>7 Resumo e exportar</strong>. Cada cartão mostra o essencial; o resto abre em{' '}
         <strong>Mais opções ›</strong>, uma gaveta ao lado do painel, por cima do mapa (só uma de
         cada vez; fecha no ✕ ou com <Kbd>Esc</Kbd>). Ex.: preset de missão e sensor próprio (1);
-        grelha de réplicas, datum e sugestões de encosta (2); espaçamento manual, disparo, gimbal,
+        grelha de réplicas, datum e sugestão de encosta (2); espaçamento manual, disparo, gimbal,
         overshoot, expansão, dupla grelha (3); orientação do mosaico e células (4); bacias de visão
         (5); GCPs e pontos de inspecção (6). Os outros modos usam o mesmo aspecto.
       </p>

@@ -189,7 +189,6 @@ export default function ControlPanel({
   terrainResult,
   slopeHint,
   onApplySlopeAngle,
-  onApplySlopeGimbal,
   gcpConfig,
   setGcpConfig,
   gcpAutoCount,
@@ -1413,9 +1412,8 @@ export default function ControlPanel({
                   slope: Math.round(slopeHint.slopeDeg),
                   az: Math.round(slopeHint.downhillAzimuthDeg),
                   lines: Math.round(slopeHint.contourAzimuthDeg),
-                  gimbal: slopeHint.gimbal,
                 })}
-                <div className="mt-1.5 grid grid-cols-2 gap-2">
+                <div className="mt-1.5 grid grid-cols-1 gap-2">
                   <button
                     onClick={onApplySlopeAngle}
                     className="rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700"
@@ -1423,12 +1421,6 @@ export default function ControlPanel({
                     {t('cp.terrain.slopeApplyLines', {
                       lines: Math.round(slopeHint.contourAzimuthDeg),
                     })}
-                  </button>
-                  <button
-                    onClick={onApplySlopeGimbal}
-                    className="rounded bg-slate-800 px-2 py-1 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700"
-                  >
-                    {t('cp.terrain.slopeApplyGimbal', { gimbal: slopeHint.gimbal })}
                   </button>
                 </div>
               </div>

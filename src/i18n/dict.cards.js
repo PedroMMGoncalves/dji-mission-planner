@@ -29,8 +29,8 @@ export default {
   },
   'cards.slope': { pt: 'Encosta', en: 'Slope' },
   'cards.slopeAvailable': {
-    pt: 'Encosta média de {slope}°: há sugestões para as linhas e o gimbal em «Mais opções».',
-    en: 'Average slope of {slope}°: line and gimbal suggestions are under “More options”.',
+    pt: 'Encosta média de {slope}°: há uma sugestão para o ângulo das linhas em «Mais opções».',
+    en: 'Average slope of {slope}°: a line-angle suggestion is under “More options”.',
   },
   'cards.splitNone': {
     pt: 'Sem divisão: a missão sai num só voo. Escolhida uma divisão, as opções dela aparecem aqui.',

@@ -371,6 +371,23 @@ export function offsetRuns(axis, offset, sampleStep) {
   return runs.filter((r) => r.length >= 2 && polylineLength(r) >= MIN_RUN_M)
 }
 
+/** Prolonga os dois extremos de uma polilinha (metros) `dM` ao longo do troço de cada ponta. */
+export function extendRunEnds(run, dM) {
+  if (!Array.isArray(run) || run.length < 2 || !(dM > 0)) return run
+  const out = run.map((p) => [p[0], p[1]])
+  const ext = (a, b) => {
+    const dx = b[0] - a[0]
+    const dy = b[1] - a[1]
+    const len = Math.hypot(dx, dy)
+    return len > 0 ? [b[0] + (dx / len) * dM, b[1] + (dy / len) * dM] : null
+  }
+  const first = ext(out[1], out[0])
+  const last = ext(out[out.length - 2], out[out.length - 1])
+  if (first) out[0] = first
+  if (last) out[out.length - 1] = last
+  return out
+}
+
 /** Simplificação Douglas-Peucker no plano, preservando os extremos. */
 export function simplifyPolyline(pts, toleranceM) {
   const tol = Number(toleranceM) || 0
@@ -551,12 +568,21 @@ export function generateCorridorPlan(centreline, options) {
   }
   if (runsMetric.length === 0) return { error: 'no-coverage' }
 
+  // Pontas prolongadas meia pegada longitudinal, tangencialmente e com
+  // disparo (M2-E12): como o prolongamento da área, para a redundância nas
+  // pontas não cair a metade (M3E a 80 m, 80 %: de 5 imagens por ponto para
+  // 3) — a passagem acabava na perpendicular à ponta do eixo.
+  const endExtendM =
+    Number.isFinite(footprint.along) && footprint.along > 0 ? footprint.along / 2 : 0
+  const extendedRuns =
+    endExtendM > 0 ? runsMetric.map((r) => extendRunEnds(r, endExtendM)) : runsMetric
+
   const lines = []
   const waypoints = []
   const perWaypoint = perWaypointPhotos ? [] : null
   const perLine = perWaypointPhotos ? [] : null
 
-  for (const run of runsMetric) {
+  for (const run of extendedRuns) {
     const shaped = perWaypointPhotos
       ? sampleByArcLength(run, photoIntervalM)
       : simplifyPolyline(run, simplifyM)
@@ -596,6 +622,7 @@ export function generateCorridorPlan(centreline, options) {
     ...(perWaypoint ? { perWaypoint, perLine } : {}),
     stats: {
       corridorLengthM,
+      endExtendM,
       passCount: offsets.length,
       runCount: lines.length,
       splitPasses,

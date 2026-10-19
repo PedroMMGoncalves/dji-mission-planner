@@ -10,6 +10,7 @@
  * Puro; ver docs/METODOS.md, secção 2.
  */
 import { computeFootprint, computeGSD } from '../utils/geo.js'
+import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
 
 /** Sobreposições mínimas habituais em fotogrametria (aviso abaixo disto). */
 export const MIN_FRONT_OVERLAP_PCT = 60
@@ -145,31 +146,36 @@ export const MIN_WAYPOINT_DIST_M = 0.5
  * demasiado longos e taxa de subida acima da aeronave. Corre sobre a
  * geometria que sai no KMZ, em todos os modos.
  * @param {number[][]} waypoints [lon, lat, h?]
- * @param {{speed?: number, maxClimbMS?: number, maxSegmentM?: number,
- *   breaks?: number[]|null}} [opts] `breaks`: índices i cujo troço i−1 → i não se
- *   voa (cada bloco descola da sua base)
+ * @param {{speed?: number, maxClimbMS?: number, maxDescentMS?: number|null,
+ *   maxSegmentM?: number, breaks?: number[]|null}} [opts] `breaks`: índices i cujo
+ *   troço i−1 → i não se voa (cada bloco descola da sua base); `maxDescentMS`:
+ *   limite das descidas (sem ele, o de subida)
  */
 export function routeChecks(
   waypoints,
-  { speed = 0, maxClimbMS = 5, maxSegmentM = 5000, breaks = null } = {},
+  { speed = 0, maxClimbMS = 5, maxDescentMS = null, maxSegmentM = 5000, breaks = null } = {},
 ) {
+  // as descidas contra o próprio limite (M2-T13): o M300 desce mais devagar
+  // do que sobe
+  const descentLimit = Number.isFinite(maxDescentMS) && maxDescentMS > 0 ? maxDescentMS : maxClimbMS
   const out = { duplicates: [], longSegments: [], climb: [] }
   if (!Array.isArray(waypoints) || waypoints.length < 2) return out
-  const mLat = 110574
+  const mLat = M_PER_DEG_LAT
   // troços que não se voam: o início de cada bloco com base própria
   const skip = breaks ? new Set(breaks) : null
   for (let i = 1; i < waypoints.length; i++) {
     if (skip?.has(i)) continue
     const a = waypoints[i - 1]
     const b = waypoints[i]
-    const mLon = 111320 * Math.cos((((a[1] + b[1]) / 2) * Math.PI) / 180)
+    const mLon = metersPerDegLon((a[1] + b[1]) / 2)
     const d = Math.hypot((b[0] - a[0]) * mLon, (b[1] - a[1]) * mLat)
     if (Math.hypot(d, (b[2] ?? 0) - (a[2] ?? 0)) < MIN_WAYPOINT_DIST_M) out.duplicates.push(i)
     if (d > maxSegmentM) out.longSegments.push({ at: i, lengthM: d })
     if (a[2] != null && b[2] != null && speed > 0 && d > 0.05) {
       const dt = d / speed
       const rate = Math.abs(b[2] - a[2]) / dt
-      if (rate > maxClimbMS) out.climb.push({ at: i, rateMS: rate, dh: b[2] - a[2], lengthM: d })
+      const limit = b[2] >= a[2] ? maxClimbMS : descentLimit
+      if (rate > limit) out.climb.push({ at: i, rateMS: rate, dh: b[2] - a[2], lengthM: d })
     }
   }
   return out

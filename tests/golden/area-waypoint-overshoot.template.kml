@@ -43,7 +43,7 @@
     <wpml:globalUseStraightLine>1</wpml:globalUseStraightLine>
       <Placemark>
         <Point>
-          <coordinates>-8.00308508,39.49874095</coordinates>
+          <coordinates>-8.00308854,39.49874095</coordinates>
         </Point>
         <wpml:index>0</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -82,7 +82,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00291045,39.49874095</coordinates>
+          <coordinates>-8.00291372,39.49874095</coordinates>
         </Point>
         <wpml:index>1</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -112,7 +112,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00267762,39.49874095</coordinates>
+          <coordinates>-8.00268959,39.49874095</coordinates>
         </Point>
         <wpml:index>2</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -142,7 +142,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00244478,39.49874095</coordinates>
+          <coordinates>-8.00246546,39.49874095</coordinates>
         </Point>
         <wpml:index>3</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -172,7 +172,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00221195,39.49874095</coordinates>
+          <coordinates>-8.00224133,39.49874095</coordinates>
         </Point>
         <wpml:index>4</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -202,7 +202,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00197911,39.49874095</coordinates>
+          <coordinates>-8.00201719,39.49874095</coordinates>
         </Point>
         <wpml:index>5</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -232,7 +232,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00174627,39.49874095</coordinates>
+          <coordinates>-8.00179306,39.49874095</coordinates>
         </Point>
         <wpml:index>6</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -262,7 +262,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00151344,39.49874095</coordinates>
+          <coordinates>-8.00156893,39.49874095</coordinates>
         </Point>
         <wpml:index>7</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -292,7 +292,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.0012806,39.49874095</coordinates>
+          <coordinates>-8.0013448,39.49874095</coordinates>
         </Point>
         <wpml:index>8</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -322,7 +322,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00104776,39.49874095</coordinates>
+          <coordinates>-8.00112066,39.49874095</coordinates>
         </Point>
         <wpml:index>9</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -352,7 +352,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00081493,39.49874095</coordinates>
+          <coordinates>-8.00089653,39.49874095</coordinates>
         </Point>
         <wpml:index>10</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -382,7 +382,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00058209,39.49874095</coordinates>
+          <coordinates>-8.0006724,39.49874095</coordinates>
         </Point>
         <wpml:index>11</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -412,7 +412,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00034925,39.49874095</coordinates>
+          <coordinates>-8.00044827,39.49874095</coordinates>
         </Point>
         <wpml:index>12</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -442,7 +442,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00011642,39.49874095</coordinates>
+          <coordinates>-8.00022413,39.49874095</coordinates>
         </Point>
         <wpml:index>13</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -472,7 +472,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99988358,39.49874095</coordinates>
+          <coordinates>-8,39.49874095</coordinates>
         </Point>
         <wpml:index>14</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -502,7 +502,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99965075,39.49874095</coordinates>
+          <coordinates>-7.99977587,39.49874095</coordinates>
         </Point>
         <wpml:index>15</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -532,7 +532,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99941791,39.49874095</coordinates>
+          <coordinates>-7.99955173,39.49874095</coordinates>
         </Point>
         <wpml:index>16</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -562,7 +562,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99918507,39.49874095</coordinates>
+          <coordinates>-7.9993276,39.49874095</coordinates>
         </Point>
         <wpml:index>17</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -592,7 +592,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99895224,39.49874095</coordinates>
+          <coordinates>-7.99910347,39.49874095</coordinates>
         </Point>
         <wpml:index>18</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -622,7 +622,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.9987194,39.49874095</coordinates>
+          <coordinates>-7.99887934,39.49874095</coordinates>
         </Point>
         <wpml:index>19</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -652,7 +652,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99848656,39.49874095</coordinates>
+          <coordinates>-7.9986552,39.49874095</coordinates>
         </Point>
         <wpml:index>20</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -682,7 +682,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99825373,39.49874095</coordinates>
+          <coordinates>-7.99843107,39.49874095</coordinates>
         </Point>
         <wpml:index>21</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -712,7 +712,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99802089,39.49874095</coordinates>
+          <coordinates>-7.99820694,39.49874095</coordinates>
         </Point>
         <wpml:index>22</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -742,7 +742,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99778805,39.49874095</coordinates>
+          <coordinates>-7.99798281,39.49874095</coordinates>
         </Point>
         <wpml:index>23</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -772,7 +772,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99755522,39.49874095</coordinates>
+          <coordinates>-7.99775867,39.49874095</coordinates>
         </Point>
         <wpml:index>24</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -802,7 +802,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99732238,39.49874095</coordinates>
+          <coordinates>-7.99753454,39.49874095</coordinates>
         </Point>
         <wpml:index>25</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -832,7 +832,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99708955,39.49874095</coordinates>
+          <coordinates>-7.99731041,39.49874095</coordinates>
         </Point>
         <wpml:index>26</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -862,7 +862,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99691492,39.49874095</coordinates>
+          <coordinates>-7.99708628,39.49874095</coordinates>
         </Point>
         <wpml:index>27</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -872,36 +872,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-      </Placemark>
-      <Placemark>
-        <Point>
-          <coordinates>-7.99691492,39.49910068</coordinates>
-        </Point>
-        <wpml:index>28</wpml:index>
-        <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
-        <wpml:height>100</wpml:height>
-        <wpml:useGlobalHeight>1</wpml:useGlobalHeight>
-        <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
-        <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
-        <wpml:useStraightLine>1</wpml:useStraightLine>
-      </Placemark>
-      <Placemark>
-        <Point>
-          <coordinates>-7.99708955,39.49910068</coordinates>
-        </Point>
-        <wpml:index>29</wpml:index>
-        <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
-        <wpml:height>100</wpml:height>
-        <wpml:useGlobalHeight>1</wpml:useGlobalHeight>
-        <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
-        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
-        <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
-        <wpml:useStraightLine>1</wpml:useStraightLine>
         <wpml:actionGroup>
           <wpml:actionGroupId>27</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>29</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>29</wpml:actionGroupEndIndex>
+          <wpml:actionGroupStartIndex>27</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>27</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
           <wpml:actionTrigger>
             <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
@@ -918,7 +892,33 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99732238,39.49910068</coordinates>
+          <coordinates>-7.99691146,39.49874095</coordinates>
+        </Point>
+        <wpml:index>28</wpml:index>
+        <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
+        <wpml:height>100</wpml:height>
+        <wpml:useGlobalHeight>1</wpml:useGlobalHeight>
+        <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
+        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
+        <wpml:useStraightLine>1</wpml:useStraightLine>
+      </Placemark>
+      <Placemark>
+        <Point>
+          <coordinates>-7.99691146,39.49910068</coordinates>
+        </Point>
+        <wpml:index>29</wpml:index>
+        <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
+        <wpml:height>100</wpml:height>
+        <wpml:useGlobalHeight>1</wpml:useGlobalHeight>
+        <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
+        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
+        <wpml:useStraightLine>1</wpml:useStraightLine>
+      </Placemark>
+      <Placemark>
+        <Point>
+          <coordinates>-7.99708628,39.49910068</coordinates>
         </Point>
         <wpml:index>30</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -948,7 +948,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99755522,39.49910068</coordinates>
+          <coordinates>-7.99731041,39.49910068</coordinates>
         </Point>
         <wpml:index>31</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -978,7 +978,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99778805,39.49910068</coordinates>
+          <coordinates>-7.99753454,39.49910068</coordinates>
         </Point>
         <wpml:index>32</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1008,7 +1008,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99802089,39.49910068</coordinates>
+          <coordinates>-7.99775867,39.49910068</coordinates>
         </Point>
         <wpml:index>33</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1038,7 +1038,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99825373,39.49910068</coordinates>
+          <coordinates>-7.99798281,39.49910068</coordinates>
         </Point>
         <wpml:index>34</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1068,7 +1068,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99848656,39.49910068</coordinates>
+          <coordinates>-7.99820694,39.49910068</coordinates>
         </Point>
         <wpml:index>35</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1098,7 +1098,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.9987194,39.49910068</coordinates>
+          <coordinates>-7.99843107,39.49910068</coordinates>
         </Point>
         <wpml:index>36</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1128,7 +1128,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99895224,39.49910068</coordinates>
+          <coordinates>-7.9986552,39.49910068</coordinates>
         </Point>
         <wpml:index>37</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1158,7 +1158,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99918507,39.49910068</coordinates>
+          <coordinates>-7.99887934,39.49910068</coordinates>
         </Point>
         <wpml:index>38</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1188,7 +1188,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99941791,39.49910068</coordinates>
+          <coordinates>-7.99910347,39.49910068</coordinates>
         </Point>
         <wpml:index>39</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1218,7 +1218,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99965075,39.49910068</coordinates>
+          <coordinates>-7.9993276,39.49910068</coordinates>
         </Point>
         <wpml:index>40</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1248,7 +1248,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99988358,39.49910068</coordinates>
+          <coordinates>-7.99955173,39.49910068</coordinates>
         </Point>
         <wpml:index>41</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1278,7 +1278,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00011642,39.49910068</coordinates>
+          <coordinates>-7.99977587,39.49910068</coordinates>
         </Point>
         <wpml:index>42</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1308,7 +1308,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00034925,39.49910068</coordinates>
+          <coordinates>-8,39.49910068</coordinates>
         </Point>
         <wpml:index>43</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1338,7 +1338,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00058209,39.49910068</coordinates>
+          <coordinates>-8.00022413,39.49910068</coordinates>
         </Point>
         <wpml:index>44</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1368,7 +1368,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00081493,39.49910068</coordinates>
+          <coordinates>-8.00044827,39.49910068</coordinates>
         </Point>
         <wpml:index>45</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1398,7 +1398,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00104776,39.49910068</coordinates>
+          <coordinates>-8.0006724,39.49910068</coordinates>
         </Point>
         <wpml:index>46</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1428,7 +1428,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.0012806,39.49910068</coordinates>
+          <coordinates>-8.00089653,39.49910068</coordinates>
         </Point>
         <wpml:index>47</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1458,7 +1458,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00151344,39.49910068</coordinates>
+          <coordinates>-8.00112066,39.49910068</coordinates>
         </Point>
         <wpml:index>48</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1488,7 +1488,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00174627,39.49910068</coordinates>
+          <coordinates>-8.0013448,39.49910068</coordinates>
         </Point>
         <wpml:index>49</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1518,7 +1518,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00197911,39.49910068</coordinates>
+          <coordinates>-8.00156893,39.49910068</coordinates>
         </Point>
         <wpml:index>50</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1548,7 +1548,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00221195,39.49910068</coordinates>
+          <coordinates>-8.00179306,39.49910068</coordinates>
         </Point>
         <wpml:index>51</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1578,7 +1578,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00244478,39.49910068</coordinates>
+          <coordinates>-8.00201719,39.49910068</coordinates>
         </Point>
         <wpml:index>52</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1608,7 +1608,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00267762,39.49910068</coordinates>
+          <coordinates>-8.00224133,39.49910068</coordinates>
         </Point>
         <wpml:index>53</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1638,7 +1638,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00291045,39.49910068</coordinates>
+          <coordinates>-8.00246546,39.49910068</coordinates>
         </Point>
         <wpml:index>54</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1668,7 +1668,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00308508,39.49910068</coordinates>
+          <coordinates>-8.00268959,39.49910068</coordinates>
         </Point>
         <wpml:index>55</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1678,10 +1678,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>53</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>55</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>55</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00308508,39.49946041</coordinates>
+          <coordinates>-8.00291372,39.49910068</coordinates>
         </Point>
         <wpml:index>56</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1691,10 +1708,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>54</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>56</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>56</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00291045,39.49946041</coordinates>
+          <coordinates>-8.00308854,39.49910068</coordinates>
         </Point>
         <wpml:index>57</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1704,27 +1738,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>53</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>57</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>57</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00267762,39.49946041</coordinates>
+          <coordinates>-8.00308855,39.49946041</coordinates>
         </Point>
         <wpml:index>58</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1734,27 +1751,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>54</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>58</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>58</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00244478,39.49946041</coordinates>
+          <coordinates>-8.00291372,39.49946041</coordinates>
         </Point>
         <wpml:index>59</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1784,7 +1784,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00221195,39.49946041</coordinates>
+          <coordinates>-8.00268959,39.49946041</coordinates>
         </Point>
         <wpml:index>60</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1814,7 +1814,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00197911,39.49946041</coordinates>
+          <coordinates>-8.00246546,39.49946041</coordinates>
         </Point>
         <wpml:index>61</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1844,7 +1844,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00174627,39.49946041</coordinates>
+          <coordinates>-8.00224133,39.49946041</coordinates>
         </Point>
         <wpml:index>62</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1874,7 +1874,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00151344,39.49946041</coordinates>
+          <coordinates>-8.00201719,39.49946041</coordinates>
         </Point>
         <wpml:index>63</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1904,7 +1904,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.0012806,39.49946041</coordinates>
+          <coordinates>-8.00179306,39.49946041</coordinates>
         </Point>
         <wpml:index>64</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1934,7 +1934,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00104776,39.49946041</coordinates>
+          <coordinates>-8.00156893,39.49946041</coordinates>
         </Point>
         <wpml:index>65</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1964,7 +1964,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00081493,39.49946041</coordinates>
+          <coordinates>-8.0013448,39.49946041</coordinates>
         </Point>
         <wpml:index>66</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -1994,7 +1994,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00058209,39.49946041</coordinates>
+          <coordinates>-8.00112066,39.49946041</coordinates>
         </Point>
         <wpml:index>67</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2024,7 +2024,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00034925,39.49946041</coordinates>
+          <coordinates>-8.00089653,39.49946041</coordinates>
         </Point>
         <wpml:index>68</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2054,7 +2054,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00011642,39.49946041</coordinates>
+          <coordinates>-8.0006724,39.49946041</coordinates>
         </Point>
         <wpml:index>69</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2084,7 +2084,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99988358,39.49946041</coordinates>
+          <coordinates>-8.00044827,39.49946041</coordinates>
         </Point>
         <wpml:index>70</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2114,7 +2114,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99965075,39.49946041</coordinates>
+          <coordinates>-8.00022413,39.49946041</coordinates>
         </Point>
         <wpml:index>71</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2144,7 +2144,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99941791,39.49946041</coordinates>
+          <coordinates>-8,39.49946041</coordinates>
         </Point>
         <wpml:index>72</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2174,7 +2174,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99918507,39.49946041</coordinates>
+          <coordinates>-7.99977587,39.49946041</coordinates>
         </Point>
         <wpml:index>73</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2204,7 +2204,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99895224,39.49946041</coordinates>
+          <coordinates>-7.99955173,39.49946041</coordinates>
         </Point>
         <wpml:index>74</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2234,7 +2234,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.9987194,39.49946041</coordinates>
+          <coordinates>-7.9993276,39.49946041</coordinates>
         </Point>
         <wpml:index>75</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2264,7 +2264,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99848656,39.49946041</coordinates>
+          <coordinates>-7.99910347,39.49946041</coordinates>
         </Point>
         <wpml:index>76</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2294,7 +2294,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99825373,39.49946041</coordinates>
+          <coordinates>-7.99887934,39.49946041</coordinates>
         </Point>
         <wpml:index>77</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2324,7 +2324,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99802089,39.49946041</coordinates>
+          <coordinates>-7.9986552,39.49946041</coordinates>
         </Point>
         <wpml:index>78</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2354,7 +2354,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99778805,39.49946041</coordinates>
+          <coordinates>-7.99843107,39.49946041</coordinates>
         </Point>
         <wpml:index>79</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2384,7 +2384,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99755522,39.49946041</coordinates>
+          <coordinates>-7.99820694,39.49946041</coordinates>
         </Point>
         <wpml:index>80</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2414,7 +2414,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99732238,39.49946041</coordinates>
+          <coordinates>-7.99798281,39.49946041</coordinates>
         </Point>
         <wpml:index>81</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2444,7 +2444,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99708955,39.49946041</coordinates>
+          <coordinates>-7.99775867,39.49946041</coordinates>
         </Point>
         <wpml:index>82</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2474,7 +2474,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99691492,39.49946041</coordinates>
+          <coordinates>-7.99753454,39.49946041</coordinates>
         </Point>
         <wpml:index>83</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2484,10 +2484,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>79</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>83</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>83</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99691492,39.49982014</coordinates>
+          <coordinates>-7.99731041,39.49946041</coordinates>
         </Point>
         <wpml:index>84</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2497,10 +2514,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>80</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>84</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>84</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99708955,39.49982014</coordinates>
+          <coordinates>-7.99708628,39.49946041</coordinates>
         </Point>
         <wpml:index>85</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2511,7 +2545,7 @@
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
         <wpml:actionGroup>
-          <wpml:actionGroupId>79</wpml:actionGroupId>
+          <wpml:actionGroupId>81</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>85</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>85</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
@@ -2530,7 +2564,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99732238,39.49982014</coordinates>
+          <coordinates>-7.99691145,39.49946041</coordinates>
         </Point>
         <wpml:index>86</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2540,27 +2574,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>80</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>86</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>86</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99755522,39.49982014</coordinates>
+          <coordinates>-7.99691145,39.49982014</coordinates>
         </Point>
         <wpml:index>87</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2570,27 +2587,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>81</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>87</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>87</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99778805,39.49982014</coordinates>
+          <coordinates>-7.99708628,39.49982014</coordinates>
         </Point>
         <wpml:index>88</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2620,7 +2620,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99802089,39.49982014</coordinates>
+          <coordinates>-7.99731041,39.49982014</coordinates>
         </Point>
         <wpml:index>89</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2650,7 +2650,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99825373,39.49982014</coordinates>
+          <coordinates>-7.99753454,39.49982014</coordinates>
         </Point>
         <wpml:index>90</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2680,7 +2680,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99848656,39.49982014</coordinates>
+          <coordinates>-7.99775867,39.49982014</coordinates>
         </Point>
         <wpml:index>91</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2710,7 +2710,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.9987194,39.49982014</coordinates>
+          <coordinates>-7.99798281,39.49982014</coordinates>
         </Point>
         <wpml:index>92</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2740,7 +2740,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99895224,39.49982014</coordinates>
+          <coordinates>-7.99820694,39.49982014</coordinates>
         </Point>
         <wpml:index>93</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2770,7 +2770,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99918507,39.49982014</coordinates>
+          <coordinates>-7.99843107,39.49982014</coordinates>
         </Point>
         <wpml:index>94</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2800,7 +2800,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99941791,39.49982014</coordinates>
+          <coordinates>-7.9986552,39.49982014</coordinates>
         </Point>
         <wpml:index>95</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2830,7 +2830,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99965075,39.49982014</coordinates>
+          <coordinates>-7.99887934,39.49982014</coordinates>
         </Point>
         <wpml:index>96</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2860,7 +2860,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99988358,39.49982014</coordinates>
+          <coordinates>-7.99910347,39.49982014</coordinates>
         </Point>
         <wpml:index>97</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2890,7 +2890,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00011642,39.49982014</coordinates>
+          <coordinates>-7.9993276,39.49982014</coordinates>
         </Point>
         <wpml:index>98</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2920,7 +2920,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00034925,39.49982014</coordinates>
+          <coordinates>-7.99955173,39.49982014</coordinates>
         </Point>
         <wpml:index>99</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2950,7 +2950,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00058209,39.49982014</coordinates>
+          <coordinates>-7.99977587,39.49982014</coordinates>
         </Point>
         <wpml:index>100</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -2980,7 +2980,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00081493,39.49982014</coordinates>
+          <coordinates>-8,39.49982014</coordinates>
         </Point>
         <wpml:index>101</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3010,7 +3010,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00104776,39.49982014</coordinates>
+          <coordinates>-8.00022413,39.49982014</coordinates>
         </Point>
         <wpml:index>102</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3040,7 +3040,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.0012806,39.49982014</coordinates>
+          <coordinates>-8.00044827,39.49982014</coordinates>
         </Point>
         <wpml:index>103</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3070,7 +3070,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00151344,39.49982014</coordinates>
+          <coordinates>-8.0006724,39.49982014</coordinates>
         </Point>
         <wpml:index>104</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3100,7 +3100,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00174627,39.49982014</coordinates>
+          <coordinates>-8.00089653,39.49982014</coordinates>
         </Point>
         <wpml:index>105</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3130,7 +3130,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00197911,39.49982014</coordinates>
+          <coordinates>-8.00112066,39.49982014</coordinates>
         </Point>
         <wpml:index>106</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3160,7 +3160,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00221195,39.49982014</coordinates>
+          <coordinates>-8.0013448,39.49982014</coordinates>
         </Point>
         <wpml:index>107</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3190,7 +3190,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00244478,39.49982014</coordinates>
+          <coordinates>-8.00156893,39.49982014</coordinates>
         </Point>
         <wpml:index>108</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3220,7 +3220,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00267762,39.49982014</coordinates>
+          <coordinates>-8.00179306,39.49982014</coordinates>
         </Point>
         <wpml:index>109</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3250,7 +3250,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00291045,39.49982014</coordinates>
+          <coordinates>-8.00201719,39.49982014</coordinates>
         </Point>
         <wpml:index>110</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3280,7 +3280,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00308508,39.49982014</coordinates>
+          <coordinates>-8.00224133,39.49982014</coordinates>
         </Point>
         <wpml:index>111</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3290,10 +3290,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>105</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>111</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>111</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00308508,39.50017986</coordinates>
+          <coordinates>-8.00246546,39.49982014</coordinates>
         </Point>
         <wpml:index>112</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3303,10 +3320,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>106</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>112</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>112</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00291045,39.50017986</coordinates>
+          <coordinates>-8.00268959,39.49982014</coordinates>
         </Point>
         <wpml:index>113</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3317,7 +3351,7 @@
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
         <wpml:actionGroup>
-          <wpml:actionGroupId>105</wpml:actionGroupId>
+          <wpml:actionGroupId>107</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>113</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>113</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
@@ -3336,7 +3370,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00267762,39.50017986</coordinates>
+          <coordinates>-8.00291372,39.49982014</coordinates>
         </Point>
         <wpml:index>114</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3347,7 +3381,7 @@
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
         <wpml:actionGroup>
-          <wpml:actionGroupId>106</wpml:actionGroupId>
+          <wpml:actionGroupId>108</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>114</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>114</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
@@ -3366,7 +3400,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00244478,39.50017986</coordinates>
+          <coordinates>-8.00308855,39.49982014</coordinates>
         </Point>
         <wpml:index>115</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3376,27 +3410,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>107</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>115</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>115</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00221195,39.50017986</coordinates>
+          <coordinates>-8.00308855,39.50017986</coordinates>
         </Point>
         <wpml:index>116</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3406,27 +3423,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>108</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>116</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>116</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00197911,39.50017986</coordinates>
+          <coordinates>-8.00291372,39.50017986</coordinates>
         </Point>
         <wpml:index>117</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3456,7 +3456,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00174627,39.50017986</coordinates>
+          <coordinates>-8.00268063,39.50017986</coordinates>
         </Point>
         <wpml:index>118</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3486,7 +3486,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00151344,39.50017986</coordinates>
+          <coordinates>-8.00244753,39.50017986</coordinates>
         </Point>
         <wpml:index>119</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3516,7 +3516,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.0012806,39.50017986</coordinates>
+          <coordinates>-8.00221443,39.50017986</coordinates>
         </Point>
         <wpml:index>120</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3546,7 +3546,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00104776,39.50017986</coordinates>
+          <coordinates>-8.00198133,39.50017986</coordinates>
         </Point>
         <wpml:index>121</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3576,7 +3576,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00081493,39.50017986</coordinates>
+          <coordinates>-8.00174823,39.50017986</coordinates>
         </Point>
         <wpml:index>122</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3606,7 +3606,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00058209,39.50017986</coordinates>
+          <coordinates>-8.00151514,39.50017986</coordinates>
         </Point>
         <wpml:index>123</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3636,7 +3636,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00034925,39.50017986</coordinates>
+          <coordinates>-8.00128204,39.50017986</coordinates>
         </Point>
         <wpml:index>124</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3666,7 +3666,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00011642,39.50017986</coordinates>
+          <coordinates>-8.00104894,39.50017986</coordinates>
         </Point>
         <wpml:index>125</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3696,7 +3696,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99988358,39.50017986</coordinates>
+          <coordinates>-8.00081584,39.50017986</coordinates>
         </Point>
         <wpml:index>126</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3726,7 +3726,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99965075,39.50017986</coordinates>
+          <coordinates>-8.00058274,39.50017986</coordinates>
         </Point>
         <wpml:index>127</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3756,7 +3756,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99941791,39.50017986</coordinates>
+          <coordinates>-8.00034965,39.50017986</coordinates>
         </Point>
         <wpml:index>128</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3786,7 +3786,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99918507,39.50017986</coordinates>
+          <coordinates>-8.00011655,39.50017986</coordinates>
         </Point>
         <wpml:index>129</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3816,7 +3816,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99895224,39.50017986</coordinates>
+          <coordinates>-7.99988345,39.50017986</coordinates>
         </Point>
         <wpml:index>130</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3846,7 +3846,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.9987194,39.50017986</coordinates>
+          <coordinates>-7.99965035,39.50017986</coordinates>
         </Point>
         <wpml:index>131</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3876,7 +3876,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99848656,39.50017986</coordinates>
+          <coordinates>-7.99941726,39.50017986</coordinates>
         </Point>
         <wpml:index>132</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3906,7 +3906,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99825373,39.50017986</coordinates>
+          <coordinates>-7.99918416,39.50017986</coordinates>
         </Point>
         <wpml:index>133</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3936,7 +3936,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99802089,39.50017986</coordinates>
+          <coordinates>-7.99895106,39.50017986</coordinates>
         </Point>
         <wpml:index>134</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3966,7 +3966,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99778805,39.50017986</coordinates>
+          <coordinates>-7.99871796,39.50017986</coordinates>
         </Point>
         <wpml:index>135</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -3996,7 +3996,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99755522,39.50017986</coordinates>
+          <coordinates>-7.99848486,39.50017986</coordinates>
         </Point>
         <wpml:index>136</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4026,7 +4026,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99732238,39.50017986</coordinates>
+          <coordinates>-7.99825177,39.50017986</coordinates>
         </Point>
         <wpml:index>137</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4056,7 +4056,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99708955,39.50017986</coordinates>
+          <coordinates>-7.99801867,39.50017986</coordinates>
         </Point>
         <wpml:index>138</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4086,7 +4086,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99691492,39.50017986</coordinates>
+          <coordinates>-7.99778557,39.50017986</coordinates>
         </Point>
         <wpml:index>139</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4096,10 +4096,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>131</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>139</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>139</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99691492,39.50053959</coordinates>
+          <coordinates>-7.99755247,39.50017986</coordinates>
         </Point>
         <wpml:index>140</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4109,10 +4126,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>132</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>140</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>140</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99708955,39.50053959</coordinates>
+          <coordinates>-7.99731937,39.50017986</coordinates>
         </Point>
         <wpml:index>141</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4123,7 +4157,7 @@
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
         <wpml:actionGroup>
-          <wpml:actionGroupId>131</wpml:actionGroupId>
+          <wpml:actionGroupId>133</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>141</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>141</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
@@ -4142,7 +4176,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99732238,39.50053959</coordinates>
+          <coordinates>-7.99708628,39.50017986</coordinates>
         </Point>
         <wpml:index>142</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4153,7 +4187,7 @@
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
         <wpml:actionGroup>
-          <wpml:actionGroupId>132</wpml:actionGroupId>
+          <wpml:actionGroupId>134</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>142</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>142</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
@@ -4172,7 +4206,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99755522,39.50053959</coordinates>
+          <coordinates>-7.99691145,39.50017986</coordinates>
         </Point>
         <wpml:index>143</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4182,27 +4216,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>133</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>143</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>143</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99778805,39.50053959</coordinates>
+          <coordinates>-7.99691145,39.50053959</coordinates>
         </Point>
         <wpml:index>144</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4212,27 +4229,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>134</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>144</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>144</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99802089,39.50053959</coordinates>
+          <coordinates>-7.99708628,39.50053959</coordinates>
         </Point>
         <wpml:index>145</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4262,7 +4262,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99825373,39.50053959</coordinates>
+          <coordinates>-7.99731937,39.50053959</coordinates>
         </Point>
         <wpml:index>146</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4292,7 +4292,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99848656,39.50053959</coordinates>
+          <coordinates>-7.99755247,39.50053959</coordinates>
         </Point>
         <wpml:index>147</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4322,7 +4322,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.9987194,39.50053959</coordinates>
+          <coordinates>-7.99778557,39.50053959</coordinates>
         </Point>
         <wpml:index>148</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4352,7 +4352,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99895224,39.50053959</coordinates>
+          <coordinates>-7.99801867,39.50053959</coordinates>
         </Point>
         <wpml:index>149</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4382,7 +4382,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99918507,39.50053959</coordinates>
+          <coordinates>-7.99825177,39.50053959</coordinates>
         </Point>
         <wpml:index>150</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4412,7 +4412,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99941791,39.50053959</coordinates>
+          <coordinates>-7.99848486,39.50053959</coordinates>
         </Point>
         <wpml:index>151</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4442,7 +4442,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99965075,39.50053959</coordinates>
+          <coordinates>-7.99871796,39.50053959</coordinates>
         </Point>
         <wpml:index>152</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4472,7 +4472,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99988358,39.50053959</coordinates>
+          <coordinates>-7.99895106,39.50053959</coordinates>
         </Point>
         <wpml:index>153</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4502,7 +4502,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00011642,39.50053959</coordinates>
+          <coordinates>-7.99918416,39.50053959</coordinates>
         </Point>
         <wpml:index>154</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4532,7 +4532,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00034925,39.50053959</coordinates>
+          <coordinates>-7.99941726,39.50053959</coordinates>
         </Point>
         <wpml:index>155</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4562,7 +4562,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00058209,39.50053959</coordinates>
+          <coordinates>-7.99965035,39.50053959</coordinates>
         </Point>
         <wpml:index>156</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4592,7 +4592,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00081493,39.50053959</coordinates>
+          <coordinates>-7.99988345,39.50053959</coordinates>
         </Point>
         <wpml:index>157</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4622,7 +4622,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00104776,39.50053959</coordinates>
+          <coordinates>-8.00011655,39.50053959</coordinates>
         </Point>
         <wpml:index>158</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4652,7 +4652,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.0012806,39.50053959</coordinates>
+          <coordinates>-8.00034965,39.50053959</coordinates>
         </Point>
         <wpml:index>159</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4682,7 +4682,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00151344,39.50053959</coordinates>
+          <coordinates>-8.00058274,39.50053959</coordinates>
         </Point>
         <wpml:index>160</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4712,7 +4712,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00174627,39.50053959</coordinates>
+          <coordinates>-8.00081584,39.50053959</coordinates>
         </Point>
         <wpml:index>161</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4742,7 +4742,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00197911,39.50053959</coordinates>
+          <coordinates>-8.00104894,39.50053959</coordinates>
         </Point>
         <wpml:index>162</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4772,7 +4772,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00221195,39.50053959</coordinates>
+          <coordinates>-8.00128204,39.50053959</coordinates>
         </Point>
         <wpml:index>163</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4802,7 +4802,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00244478,39.50053959</coordinates>
+          <coordinates>-8.00151514,39.50053959</coordinates>
         </Point>
         <wpml:index>164</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4832,7 +4832,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00267762,39.50053959</coordinates>
+          <coordinates>-8.00174823,39.50053959</coordinates>
         </Point>
         <wpml:index>165</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4862,7 +4862,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00291045,39.50053959</coordinates>
+          <coordinates>-8.00198133,39.50053959</coordinates>
         </Point>
         <wpml:index>166</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4892,7 +4892,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00308508,39.50053959</coordinates>
+          <coordinates>-8.00221443,39.50053959</coordinates>
         </Point>
         <wpml:index>167</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4902,10 +4902,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>157</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>167</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>167</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00308508,39.50089932</coordinates>
+          <coordinates>-8.00244753,39.50053959</coordinates>
         </Point>
         <wpml:index>168</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4915,10 +4932,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>158</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>168</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>168</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00291045,39.50089932</coordinates>
+          <coordinates>-8.00268063,39.50053959</coordinates>
         </Point>
         <wpml:index>169</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4929,7 +4963,7 @@
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
         <wpml:actionGroup>
-          <wpml:actionGroupId>157</wpml:actionGroupId>
+          <wpml:actionGroupId>159</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>169</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>169</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
@@ -4948,7 +4982,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00267762,39.50089932</coordinates>
+          <coordinates>-8.00291372,39.50053959</coordinates>
         </Point>
         <wpml:index>170</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4959,7 +4993,7 @@
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
         <wpml:actionGroup>
-          <wpml:actionGroupId>158</wpml:actionGroupId>
+          <wpml:actionGroupId>160</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>170</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>170</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
@@ -4978,7 +5012,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00244478,39.50089932</coordinates>
+          <coordinates>-8.00308855,39.50053959</coordinates>
         </Point>
         <wpml:index>171</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -4988,27 +5022,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>159</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>171</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>171</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00221195,39.50089932</coordinates>
+          <coordinates>-8.00308855,39.50089932</coordinates>
         </Point>
         <wpml:index>172</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5018,27 +5035,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>160</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>172</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>172</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00197911,39.50089932</coordinates>
+          <coordinates>-8.00291372,39.50089932</coordinates>
         </Point>
         <wpml:index>173</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5068,7 +5068,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00174627,39.50089932</coordinates>
+          <coordinates>-8.00268063,39.50089932</coordinates>
         </Point>
         <wpml:index>174</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5098,7 +5098,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00151344,39.50089932</coordinates>
+          <coordinates>-8.00244753,39.50089932</coordinates>
         </Point>
         <wpml:index>175</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5128,7 +5128,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.0012806,39.50089932</coordinates>
+          <coordinates>-8.00221443,39.50089932</coordinates>
         </Point>
         <wpml:index>176</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5158,7 +5158,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00104776,39.50089932</coordinates>
+          <coordinates>-8.00198133,39.50089932</coordinates>
         </Point>
         <wpml:index>177</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5188,7 +5188,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00081493,39.50089932</coordinates>
+          <coordinates>-8.00174823,39.50089932</coordinates>
         </Point>
         <wpml:index>178</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5218,7 +5218,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00058209,39.50089932</coordinates>
+          <coordinates>-8.00151514,39.50089932</coordinates>
         </Point>
         <wpml:index>179</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5248,7 +5248,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00034925,39.50089932</coordinates>
+          <coordinates>-8.00128204,39.50089932</coordinates>
         </Point>
         <wpml:index>180</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5278,7 +5278,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00011642,39.50089932</coordinates>
+          <coordinates>-8.00104894,39.50089932</coordinates>
         </Point>
         <wpml:index>181</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5308,7 +5308,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99988358,39.50089932</coordinates>
+          <coordinates>-8.00081584,39.50089932</coordinates>
         </Point>
         <wpml:index>182</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5338,7 +5338,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99965075,39.50089932</coordinates>
+          <coordinates>-8.00058274,39.50089932</coordinates>
         </Point>
         <wpml:index>183</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5368,7 +5368,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99941791,39.50089932</coordinates>
+          <coordinates>-8.00034965,39.50089932</coordinates>
         </Point>
         <wpml:index>184</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5398,7 +5398,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99918507,39.50089932</coordinates>
+          <coordinates>-8.00011655,39.50089932</coordinates>
         </Point>
         <wpml:index>185</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5428,7 +5428,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99895224,39.50089932</coordinates>
+          <coordinates>-7.99988345,39.50089932</coordinates>
         </Point>
         <wpml:index>186</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5458,7 +5458,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.9987194,39.50089932</coordinates>
+          <coordinates>-7.99965035,39.50089932</coordinates>
         </Point>
         <wpml:index>187</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5488,7 +5488,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99848656,39.50089932</coordinates>
+          <coordinates>-7.99941726,39.50089932</coordinates>
         </Point>
         <wpml:index>188</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5518,7 +5518,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99825373,39.50089932</coordinates>
+          <coordinates>-7.99918416,39.50089932</coordinates>
         </Point>
         <wpml:index>189</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5548,7 +5548,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99802089,39.50089932</coordinates>
+          <coordinates>-7.99895106,39.50089932</coordinates>
         </Point>
         <wpml:index>190</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5578,7 +5578,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99778805,39.50089932</coordinates>
+          <coordinates>-7.99871796,39.50089932</coordinates>
         </Point>
         <wpml:index>191</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5608,7 +5608,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99755522,39.50089932</coordinates>
+          <coordinates>-7.99848486,39.50089932</coordinates>
         </Point>
         <wpml:index>192</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5638,7 +5638,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99732238,39.50089932</coordinates>
+          <coordinates>-7.99825177,39.50089932</coordinates>
         </Point>
         <wpml:index>193</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5668,7 +5668,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99708955,39.50089932</coordinates>
+          <coordinates>-7.99801867,39.50089932</coordinates>
         </Point>
         <wpml:index>194</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5698,7 +5698,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99691492,39.50089932</coordinates>
+          <coordinates>-7.99778557,39.50089932</coordinates>
         </Point>
         <wpml:index>195</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5708,10 +5708,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>183</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>195</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>195</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99691492,39.50125905</coordinates>
+          <coordinates>-7.99755247,39.50089932</coordinates>
         </Point>
         <wpml:index>196</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5721,10 +5738,27 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>184</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>196</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>196</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99708955,39.50125905</coordinates>
+          <coordinates>-7.99731937,39.50089932</coordinates>
         </Point>
         <wpml:index>197</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5735,7 +5769,7 @@
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
         <wpml:actionGroup>
-          <wpml:actionGroupId>183</wpml:actionGroupId>
+          <wpml:actionGroupId>185</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>197</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>197</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
@@ -5754,7 +5788,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99732238,39.50125905</coordinates>
+          <coordinates>-7.99708628,39.50089932</coordinates>
         </Point>
         <wpml:index>198</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5765,7 +5799,7 @@
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
         <wpml:actionGroup>
-          <wpml:actionGroupId>184</wpml:actionGroupId>
+          <wpml:actionGroupId>186</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>198</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>198</wpml:actionGroupEndIndex>
           <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
@@ -5784,7 +5818,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99755522,39.50125905</coordinates>
+          <coordinates>-7.99691145,39.50089932</coordinates>
         </Point>
         <wpml:index>199</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5794,27 +5828,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>185</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>199</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>199</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99778805,39.50125905</coordinates>
+          <coordinates>-7.99691145,39.50125905</coordinates>
         </Point>
         <wpml:index>200</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5824,27 +5841,10 @@
         <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
         <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
         <wpml:useStraightLine>1</wpml:useStraightLine>
-        <wpml:actionGroup>
-          <wpml:actionGroupId>186</wpml:actionGroupId>
-          <wpml:actionGroupStartIndex>200</wpml:actionGroupStartIndex>
-          <wpml:actionGroupEndIndex>200</wpml:actionGroupEndIndex>
-          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
-          <wpml:actionTrigger>
-            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
-          </wpml:actionTrigger>
-          <wpml:action>
-            <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-        </wpml:actionGroup>
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99802089,39.50125905</coordinates>
+          <coordinates>-7.99708628,39.50125905</coordinates>
         </Point>
         <wpml:index>201</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5874,7 +5874,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99825373,39.50125905</coordinates>
+          <coordinates>-7.99731937,39.50125905</coordinates>
         </Point>
         <wpml:index>202</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5904,7 +5904,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99848656,39.50125905</coordinates>
+          <coordinates>-7.99755247,39.50125905</coordinates>
         </Point>
         <wpml:index>203</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5934,7 +5934,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.9987194,39.50125905</coordinates>
+          <coordinates>-7.99778557,39.50125905</coordinates>
         </Point>
         <wpml:index>204</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5964,7 +5964,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99895224,39.50125905</coordinates>
+          <coordinates>-7.99801867,39.50125905</coordinates>
         </Point>
         <wpml:index>205</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -5994,7 +5994,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99918507,39.50125905</coordinates>
+          <coordinates>-7.99825177,39.50125905</coordinates>
         </Point>
         <wpml:index>206</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6024,7 +6024,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99941791,39.50125905</coordinates>
+          <coordinates>-7.99848486,39.50125905</coordinates>
         </Point>
         <wpml:index>207</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6054,7 +6054,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99965075,39.50125905</coordinates>
+          <coordinates>-7.99871796,39.50125905</coordinates>
         </Point>
         <wpml:index>208</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6084,7 +6084,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-7.99988358,39.50125905</coordinates>
+          <coordinates>-7.99895106,39.50125905</coordinates>
         </Point>
         <wpml:index>209</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6114,7 +6114,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00011642,39.50125905</coordinates>
+          <coordinates>-7.99918416,39.50125905</coordinates>
         </Point>
         <wpml:index>210</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6144,7 +6144,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00034925,39.50125905</coordinates>
+          <coordinates>-7.99941726,39.50125905</coordinates>
         </Point>
         <wpml:index>211</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6174,7 +6174,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00058209,39.50125905</coordinates>
+          <coordinates>-7.99965035,39.50125905</coordinates>
         </Point>
         <wpml:index>212</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6204,7 +6204,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00081493,39.50125905</coordinates>
+          <coordinates>-7.99988345,39.50125905</coordinates>
         </Point>
         <wpml:index>213</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6234,7 +6234,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00104776,39.50125905</coordinates>
+          <coordinates>-8.00011655,39.50125905</coordinates>
         </Point>
         <wpml:index>214</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6264,7 +6264,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.0012806,39.50125905</coordinates>
+          <coordinates>-8.00034965,39.50125905</coordinates>
         </Point>
         <wpml:index>215</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6294,7 +6294,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00151344,39.50125905</coordinates>
+          <coordinates>-8.00058274,39.50125905</coordinates>
         </Point>
         <wpml:index>216</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6324,7 +6324,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00174627,39.50125905</coordinates>
+          <coordinates>-8.00081584,39.50125905</coordinates>
         </Point>
         <wpml:index>217</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6354,7 +6354,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00197911,39.50125905</coordinates>
+          <coordinates>-8.00104894,39.50125905</coordinates>
         </Point>
         <wpml:index>218</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6384,7 +6384,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00221195,39.50125905</coordinates>
+          <coordinates>-8.00128204,39.50125905</coordinates>
         </Point>
         <wpml:index>219</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6414,7 +6414,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00244478,39.50125905</coordinates>
+          <coordinates>-8.00151514,39.50125905</coordinates>
         </Point>
         <wpml:index>220</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6444,7 +6444,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00267762,39.50125905</coordinates>
+          <coordinates>-8.00174823,39.50125905</coordinates>
         </Point>
         <wpml:index>221</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6474,7 +6474,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00291045,39.50125905</coordinates>
+          <coordinates>-8.00198133,39.50125905</coordinates>
         </Point>
         <wpml:index>222</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
@@ -6504,9 +6504,129 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-8.00308508,39.50125905</coordinates>
+          <coordinates>-8.00221443,39.50125905</coordinates>
         </Point>
         <wpml:index>223</wpml:index>
+        <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
+        <wpml:height>100</wpml:height>
+        <wpml:useGlobalHeight>1</wpml:useGlobalHeight>
+        <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
+        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
+        <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>209</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>223</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>223</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
+      </Placemark>
+      <Placemark>
+        <Point>
+          <coordinates>-8.00244753,39.50125905</coordinates>
+        </Point>
+        <wpml:index>224</wpml:index>
+        <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
+        <wpml:height>100</wpml:height>
+        <wpml:useGlobalHeight>1</wpml:useGlobalHeight>
+        <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
+        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
+        <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>210</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>224</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>224</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
+      </Placemark>
+      <Placemark>
+        <Point>
+          <coordinates>-8.00268063,39.50125905</coordinates>
+        </Point>
+        <wpml:index>225</wpml:index>
+        <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
+        <wpml:height>100</wpml:height>
+        <wpml:useGlobalHeight>1</wpml:useGlobalHeight>
+        <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
+        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
+        <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>211</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>225</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>225</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
+      </Placemark>
+      <Placemark>
+        <Point>
+          <coordinates>-8.00291372,39.50125905</coordinates>
+        </Point>
+        <wpml:index>226</wpml:index>
+        <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
+        <wpml:height>100</wpml:height>
+        <wpml:useGlobalHeight>1</wpml:useGlobalHeight>
+        <wpml:useGlobalSpeed>1</wpml:useGlobalSpeed>
+        <wpml:useGlobalHeadingParam>1</wpml:useGlobalHeadingParam>
+        <wpml:useGlobalTurnParam>1</wpml:useGlobalTurnParam>
+        <wpml:useStraightLine>1</wpml:useStraightLine>
+        <wpml:actionGroup>
+          <wpml:actionGroupId>212</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>226</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>226</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>reachPoint</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
+              <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>
+      </Placemark>
+      <Placemark>
+        <Point>
+          <coordinates>-8.00308855,39.50125905</coordinates>
+        </Point>
+        <wpml:index>227</wpml:index>
         <wpml:ellipsoidHeight>100</wpml:ellipsoidHeight>
         <wpml:height>100</wpml:height>
         <wpml:useGlobalHeight>1</wpml:useGlobalHeight>

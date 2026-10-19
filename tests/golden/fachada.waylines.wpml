@@ -28,7 +28,7 @@
     <wpml:autoFlightSpeed>3</wpml:autoFlightSpeed>
       <Placemark>
         <Point>
-          <coordinates>-9.14,38.70022609</coordinates>
+          <coordinates>-9.14,38.70022483</coordinates>
         </Point>
         <wpml:index>0</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -91,7 +91,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13988235,38.70022609</coordinates>
+          <coordinates>-9.13988235,38.70022483</coordinates>
         </Point>
         <wpml:index>1</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -128,7 +128,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13976471,38.70022609</coordinates>
+          <coordinates>-9.13976471,38.70022483</coordinates>
         </Point>
         <wpml:index>2</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -165,7 +165,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13964706,38.7002261</coordinates>
+          <coordinates>-9.13964706,38.70022483</coordinates>
         </Point>
         <wpml:index>3</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -202,7 +202,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13952941,38.7002261</coordinates>
+          <coordinates>-9.13952941,38.70022483</coordinates>
         </Point>
         <wpml:index>4</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -239,7 +239,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13941176,38.7002261</coordinates>
+          <coordinates>-9.13941176,38.70022483</coordinates>
         </Point>
         <wpml:index>5</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -276,7 +276,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13929412,38.7002261</coordinates>
+          <coordinates>-9.13929412,38.70022483</coordinates>
         </Point>
         <wpml:index>6</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -313,7 +313,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13917647,38.7002261</coordinates>
+          <coordinates>-9.13917647,38.70022483</coordinates>
         </Point>
         <wpml:index>7</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -350,7 +350,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13905882,38.7002261</coordinates>
+          <coordinates>-9.13905882,38.70022483</coordinates>
         </Point>
         <wpml:index>8</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -387,7 +387,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13894118,38.7002261</coordinates>
+          <coordinates>-9.13894118,38.70022483</coordinates>
         </Point>
         <wpml:index>9</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -424,7 +424,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13882353,38.7002261</coordinates>
+          <coordinates>-9.13882353,38.70022483</coordinates>
         </Point>
         <wpml:index>10</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -461,7 +461,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13870588,38.7002261</coordinates>
+          <coordinates>-9.13870588,38.70022483</coordinates>
         </Point>
         <wpml:index>11</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -498,7 +498,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13858824,38.7002261</coordinates>
+          <coordinates>-9.13858824,38.70022483</coordinates>
         </Point>
         <wpml:index>12</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -535,7 +535,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13847059,38.7002261</coordinates>
+          <coordinates>-9.13847059,38.70022483</coordinates>
         </Point>
         <wpml:index>13</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -572,7 +572,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13835294,38.7002261</coordinates>
+          <coordinates>-9.13835294,38.70022483</coordinates>
         </Point>
         <wpml:index>14</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -609,7 +609,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13823529,38.70022609</coordinates>
+          <coordinates>-9.13823529,38.70022483</coordinates>
         </Point>
         <wpml:index>15</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -646,7 +646,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13811765,38.70022609</coordinates>
+          <coordinates>-9.13811765,38.70022483</coordinates>
         </Point>
         <wpml:index>16</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -683,7 +683,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.138,38.70022609</coordinates>
+          <coordinates>-9.138,38.70022483</coordinates>
         </Point>
         <wpml:index>17</wpml:index>
         <wpml:executeHeight>13.3</wpml:executeHeight>
@@ -720,7 +720,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.138,38.70022609</coordinates>
+          <coordinates>-9.138,38.70022483</coordinates>
         </Point>
         <wpml:index>18</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -757,7 +757,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13811765,38.70022609</coordinates>
+          <coordinates>-9.13811765,38.70022483</coordinates>
         </Point>
         <wpml:index>19</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -794,7 +794,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13823529,38.70022609</coordinates>
+          <coordinates>-9.13823529,38.70022483</coordinates>
         </Point>
         <wpml:index>20</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -831,7 +831,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13835294,38.7002261</coordinates>
+          <coordinates>-9.13835294,38.70022483</coordinates>
         </Point>
         <wpml:index>21</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -868,7 +868,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13847059,38.7002261</coordinates>
+          <coordinates>-9.13847059,38.70022483</coordinates>
         </Point>
         <wpml:index>22</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -905,7 +905,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13858824,38.7002261</coordinates>
+          <coordinates>-9.13858824,38.70022483</coordinates>
         </Point>
         <wpml:index>23</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -942,7 +942,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13870588,38.7002261</coordinates>
+          <coordinates>-9.13870588,38.70022483</coordinates>
         </Point>
         <wpml:index>24</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -979,7 +979,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13882353,38.7002261</coordinates>
+          <coordinates>-9.13882353,38.70022483</coordinates>
         </Point>
         <wpml:index>25</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -1016,7 +1016,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13894118,38.7002261</coordinates>
+          <coordinates>-9.13894118,38.70022483</coordinates>
         </Point>
         <wpml:index>26</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -1053,7 +1053,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13905882,38.7002261</coordinates>
+          <coordinates>-9.13905882,38.70022483</coordinates>
         </Point>
         <wpml:index>27</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -1090,7 +1090,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13917647,38.7002261</coordinates>
+          <coordinates>-9.13917647,38.70022483</coordinates>
         </Point>
         <wpml:index>28</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -1127,7 +1127,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13929412,38.7002261</coordinates>
+          <coordinates>-9.13929412,38.70022483</coordinates>
         </Point>
         <wpml:index>29</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -1164,7 +1164,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13941176,38.7002261</coordinates>
+          <coordinates>-9.13941176,38.70022483</coordinates>
         </Point>
         <wpml:index>30</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -1201,7 +1201,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13952941,38.7002261</coordinates>
+          <coordinates>-9.13952941,38.70022483</coordinates>
         </Point>
         <wpml:index>31</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -1238,7 +1238,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13964706,38.7002261</coordinates>
+          <coordinates>-9.13964706,38.70022483</coordinates>
         </Point>
         <wpml:index>32</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -1275,7 +1275,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13976471,38.70022609</coordinates>
+          <coordinates>-9.13976471,38.70022483</coordinates>
         </Point>
         <wpml:index>33</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -1312,7 +1312,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.13988235,38.70022609</coordinates>
+          <coordinates>-9.13988235,38.70022483</coordinates>
         </Point>
         <wpml:index>34</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>
@@ -1349,7 +1349,7 @@
       </Placemark>
       <Placemark>
         <Point>
-          <coordinates>-9.14,38.70022609</coordinates>
+          <coordinates>-9.14,38.70022483</coordinates>
         </Point>
         <wpml:index>35</wpml:index>
         <wpml:executeHeight>16.7</wpml:executeHeight>

@@ -27,18 +27,28 @@ Não há projecção cartográfica. Coexistem dois modelos (`src/utils/units.js`
   6371008,8 m, para medir e rodar;
 - uma conversão local grau ↔ metro (equirectangular) para construir
   rectângulos, grelhas, mosaicos, desvios e o referencial plano da direcção
-  óptima:
+  óptima, sobre a **mesma** esfera:
 
 ```
-M_PER_DEG_LAT = 110574 m/grau
-metersPerDegLon(lat) = 111320 · cos(lat)
+M_PER_DEG_LAT = 2π · 6371008,8 / 360 = 111194,93 m/grau
+metersPerDegLon(lat) = M_PER_DEG_LAT · cos(lat)
 ```
 
 O coseno é avaliado uma vez por chamada, numa latitude de referência
 (centro da área, média dos vértices ou primeiro vértice, consoante o
 módulo). Hipótese declarada em `units.js`: à escala de um levantamento
 (poucos km) o erro face à geodésica fica muito abaixo da resolução de
-qualquer MDT usado aqui. A rotação das faixas usa `transformRotate` (esférica)
+qualquer MDT usado aqui. Até Outubro de 2026 as constantes eram 110574 (o
+grau de meridiano no equador, −0,4 % a 37–42° N) e `111320·cos(lat)`, e o
+rectângulo da âncora e a grelha de réplicas eram construídos nesse
+referencial e depois rodados com o `transformRotate` esférico: um pedido de
+500 × 500 m saía 498,7 × 504,1 m e os quadrados do mosaico 500,7 × 502,0
+(M2-G8 da revisão da matemática). Agora a conversão é a da esfera com que
+o Turf mede todas as distâncias da app, e o rectângulo e a grelha rodam em
+metros no referencial local (`rotatedRect`): o que se pede mede-se nas
+estatísticas. Face ao elipsóide WGS84, a 32–42° N a esfera erra ≤ 0,25 %
+no paralelo e ≤ 0,2 % no meridiano — o erro do próprio Turf em tudo o que
+a app mede. A rotação das faixas usa `transformRotate` (esférica)
 mas o passo em latitude entre faixas sai de uma escala linear da altura da
 caixa envolvente (`latStep = Δlat · spacing / heightM`), uma hipótese de
 linearidade local.
@@ -107,9 +117,16 @@ Densidade LiDAR (pontos/m²), com a PRR de retorno único como valor
 conservador e distribuição uniforme no swath:
 
 ```
-single  = PRR / (v · across)
-overlap = 2 · single        (banda de sobreposição de duas passagens)
+single  = PRR / (v · across)     mínimo: uma só passagem
+mean    = PRR / (v · spacing)    média na área (cada ponto do chão é
+                                 varrido por across/spacing passagens)
+overlap = 2 · single             banda de duas passagens (só coincide
+                                 com a média a 50 % de sobreposição)
 ```
+
+O painel mostra `mean (single)`. Até Outubro de 2026 mostrava `single
+(overlap)`: a 70 % de sobreposição o valor entre parênteses ficava 40 %
+abaixo da média real, e a 30 % acima dela (M2-G11).
 
 Não é modelado: retornos múltiplos, o afilamento da densidade nas bordas
 do padrão de varrimento, a dependência da sobreposição lateral real.
@@ -122,8 +139,14 @@ Módulo `src/utils/geo.js` (`generateFlightLines`, `generateFlightPlan`,
 Passos:
 
 1. Margem exterior opcional (`turf.buffer`) com distância
-   `d = (bufferPct/100) · √área / 2`: com 10 % cada lado avança 5 % da
-   dimensão característica.
+   `d = (bufferPct/100) · √área / 2` do **contorno**: com 10 % cada lado
+   avança 5 % da dimensão característica. Com células (grelha da âncora,
+   mosaico) a margem é a mesma, em metros, calculada uma vez do contorno
+   em `planArea` e passada a cada célula (`bufferM`, com prioridade sobre
+   `bufferPct`); até Outubro de 2026 cada célula calculava a sua da própria
+   área — 24 m numa célula de 480 m contra 59 m no contorno — e a margem
+   exterior mudava ao ligar a divisão (M2-G10). O lado por bateria (§4) usa
+   a mesma margem em metros.
 2. Rotação da área por `90° − ângulo` em torno do centróide, para as faixas
    ficarem horizontais no referencial rodado.
 3. Linhas de varrimento espaçadas de `spacing`, centradas na caixa
@@ -161,7 +184,11 @@ Dupla grelha: segunda grelha a `ângulo + 90°`, sem fiada de amarração;
 sem segunda grelha o plano é um erro explícito (`crosshatch-failed`), nunca
 uma grelha única silenciosa. Passagem nadir extra: terceira grelha na
 direcção da primeira, voada no fim, com o gimbal rodado para −90° no seu
-primeiro waypoint (marcador `nadirStartLine`/`nadirStartWaypoint`).
+primeiro waypoint (marcador `nadirStartLine`/`nadirStartWaypoint`). Cada
+grelha seguinte começa pelo extremo mais perto do fim da anterior (a
+grelha é invertida — faixas, waypoints e marcadores — quando o seu último
+waypoint fica mais perto): num bloco de 500 m a ligação entre grelhas
+passava de 685 m para ~490 m (M2-G9).
 
 Células (grelha da âncora ou mosaico): todas partilham o mesmo pivô e a
 mesma origem de múltiplos do espaçamento (`computeAlignment`), pelo que as
@@ -245,9 +272,11 @@ do tempo útil.
 Divisão em blocos (`splitIntoBlocks`; modelo do UgCS "Large Projects" e do
 DroneDeploy multi-flight): a grelha global mantém-se e é cortada em grupos
 de faixas contíguas pela ordem de voo. Orçamento por área
-`max(0,5 ha, maxAreaHa)`, com a área de cada faixa `≈ comprimento × spacing`;
-por bateria `max(60 s, útil)`, com o trânsito do bloco descontado em cada
-verificação. A ligação vinda da faixa anterior é deliberadamente excluída
+`max(0,5 ha, maxAreaHa)`, com a área de cada faixa `≈ núcleo × spacing`,
+sem o prolongamento (com 30 m de prolongamento os blocos saíam 12 % abaixo
+do pedido, M2-G15); por bateria `max(60 s, útil)`, com o trânsito do bloco
+descontado em cada verificação — ramo que só os testes usam: a divisão por
+bateria da interface é o mosaico de quadrados, abaixo. A ligação vinda da faixa anterior é deliberadamente excluída
 do teste de encaixe (se a faixa for despejada abre um bloco onde essa
 ligação nunca se voa); o excesso fica limitado a uma ligação por bloco.
 Como os blocos partilham faixas adjacentes da mesma grelha, a sobreposição
@@ -259,9 +288,9 @@ por passagem `(L'² + 2o·L')/(s·v) + 2L'/v + (L'/s) · v/1,7 + v/1,7` (as
 paragens intermédias entram no termo em `L'²`), vezes as passagens, mais a
 fiada de amarração uma só vez, `(1,5·L' + 2o)/v + v/1,7` (a faixa a meio e
 a ligação até ela), igualado a `max(60 s · passagens, útil − trânsito)` e
-resolvido como quadrática em `L'`; o lado do mosaico é `L = L'/(1 +
-margem/100)`, porque a margem alarga cada célula `margem/100 · L/2` de
-cada lado (`bufferDistanceMeters`). Sem contar o prolongamento, a fiada e
+resolvido como quadrática em `L'`; o lado do mosaico é `L = L' − 2·b`, com
+`b` a margem em metros do contorno (`bufferM`, §3; sem ela, `L'/(1 +
+margem/100)`), porque a margem alarga cada célula `b` de cada lado. Sem contar o prolongamento, a fiada e
 a margem, um bloco «cheio» voava 101–127 % do tempo útil (M2-G1 da revisão
 da matemática; com as três opções a 0 o modelo já dava 92–100 %). Limitado
 a `maxSide` (500 m por omissão, conforto VLOS, piso 100 m), arredondado
@@ -290,9 +319,9 @@ em 4 × 4 fracções do lado (2 × 2 acima de ~150 células, 1 × 1 acima de
 menos tiras (`fillFrac < 0,25`), depois menos área em tiras; cada tira
 funde-se no vizinho com mais fronteira comum se o conjunto couber numa
 bateria (`cellFitsBattery`: o mesmo modelo, com a área `A` e a maior
-extensão `W` da célula alargadas pela margem, `passagens · (A·a + W·b +
-v/1,7) + fiada + (2r + (1+√2)·W)/v ≤ útil`, com o prolongamento em `b`; no
-mosaico manual, `A ≤ 1,25 · L²`). Orientação: arestas paralelas
+extensão `W` da célula alargadas pela margem em metros, `(√A + 2·b)²` e
+`W + 2·b`, `passagens · (A·a + W·b + v/1,7) + fiada + (2r + (1+√2)·W)/v ≤
+útil`, com o prolongamento em `b`; no mosaico manual, `A ≤ 1,25 · L²`). Orientação: arestas paralelas
 às faixas do ângulo usado (também o «Óptimo», que escreve o ângulo),
 `mosaicOrientationForLines`; desligado, a orientação manual. Numeração em
 serpentina. O mosaico antigo (`tilePolygonWithSquares`) mantinha quadrados
@@ -616,8 +645,14 @@ erro diz que só as áreas já descarregadas estão disponíveis. Descodificaç�
 elev = R · 256 + G + B / 256 − 32768   (m)
 ```
 
-Filtro de picos: um píxel sem pelo menos 2 vizinhos a menos de 150 m é
-substituído pela mediana dos vizinhos (um erro de ±1 em R vale ±256 m).
+Filtro de picos, sobre o **mosaico** (`despikeMosaic`): cada tile é
+filtrado com uma orla de 1 píxel copiada dos tiles vizinhos, para a
+vizinhança 3×3 ser completa também nos bordos e cantos; um píxel sem pelo
+menos 2 vizinhos a menos de 150 m (nos bordos do mosaico, um quarto dos
+que tem) é substituído pela mediana dos vizinhos (um erro de ±1 em R vale
+±256 m). Tile a tile, a ponta de um esporão ou uma crista de 1 píxel que
+cruzasse o bordo via só 3–5 vizinhos e era rebaixada de 300 para 100 m,
+para o lado inseguro (M2-T12).
 Amostragem bilinear nos centros dos píxeis; tiles em falta são saltados e
 os pesos renormalizados.
 
@@ -686,10 +721,14 @@ assinalada. Seguir terreno e foto por waypoint são mutuamente exclusivos
 (a densificação reindexaria as acções).
 
 Sugestão para encostas: plano `z = ax + by + c` ajustado por mínimos
-quadrados a uma grelha 12×12 na área (≥ 8 amostras); declive
-`atan(√(a²+b²))`, azimute descendente `atan2(−a, −b)`, curvas de nível a
-+90°; só com declive ≥ 8°, gimbal sugerido `−round((90 − declive)/5)·5`
-em [−90, −45]. Só sugestões.
+quadrados a uma grelha 12×12 na caixa da área, só com os nós dentro do
+contorno (≥ 8 amostras; num L ou numa diagonal a caixa inteira media
+encosta de fora, M2-T9); declive `atan(√(a²+b²))`, azimute descendente
+`atan2(−a, −b)`, curvas de nível a +90°; só com declive ≥ 8°. Só a
+sugestão do ângulo das linhas: a de gimbal a `−(90 − declive)` caiu —
+com `followWayline` a câmara inclina-se para a frente, ao longo da curva
+de nível e em sentidos alternados na serpentina, não para a encosta, e
+aplicá-la piorava a incidência em relação a nadir (20° → 28°).
 
 ## 6. Disparo: intervalos, grupos e ligações longas
 
@@ -705,10 +744,13 @@ de 2026 escrevia-se `parallel`, que não existe, e nenhum voo o tinha
 testado: num M4T as fotos saíram só nos waypoints (os cantos das faixas),
 como se o grupo disparasse ao chegar a cada waypoint do intervalo. Numa
 viragem normal o disparo continua; numa travessia de concavidade, entre
-grelhas ou entre células, pára. Contagem de fotos por distância:
-`floor(len/interval) + 1` por faixa (prolongamento incluído;
-`photoCountArea` desconta-o). O disparo por intervalo com `sequence` está
-**por confirmar em voo**.
+grelhas ou entre células, pára. Contagem de fotos por distância: contínua
+por grupo de disparo, `floor(comprimento do grupo / interval) + 1`, com as
+ligações curtas incluídas — o disparo continua nelas (1 km² com o M3E a
+100 m, 80/70: 1172 fotos; faixa a faixa, sem ligações, contavam-se 1128,
+M2-G12); `photoCountArea` conta só o núcleo de cada faixa, sem o
+prolongamento. O disparo por intervalo com `sequence` está **por
+confirmar em voo**.
 
 Modo foto por waypoint: cada faixa é densificada a passos iguais
 ≤ `interval` (`n = ceil(len/interval)`, extremos incluídos) e cada ponto
@@ -759,7 +801,12 @@ afastamento permite, um U voado por dentro), o plano é recusado com
 `standoff-corner` (a mitra com bisel de antes punha o drone a 6–12 m de
 uma face a 25 m, M2-E3). Amostragem ao longo da linha desviada a passos ≤
 hStep, extremos incluídos; rumo por diferença central arredondado ao
-grau; um `takePhoto` por waypoint; pitch do gimbal constante em todas as
+grau. Nos cantos (M2-E11): entre duas amostras cujo rumo salte mais do que
+`HFOV · (1 − hOverlap)` (`HFOV = 2·atan(sW/2f)`; mínimo 5°) inserem-se
+fotografias no mesmo ponto com o rumo a rodar em passos até esse limite,
+para a face junto a um vértice côncavo não ficar vista só de esguelha
+(`pointsPerPass` fotos por passagem, `samplesPerPass` amostras). Um
+`takePhoto` por waypoint; pitch do gimbal constante em todas as
 passagens. Serpentina com subida no mesmo ponto horizontal. Tempo
 `L/v + 2 s · waypoints` (paragem e disparo). GSD ao longo do eixo óptico,
 `d / cos p`.
@@ -784,7 +831,15 @@ por volta a partir da sobreposição horizontal à distância `R`:
 ```
 corda = max(1 m, across(R) · (1 − hOverlap/100))    (sem câmara: 2πR/24)
 nPts  = clamp(ceil(2πR / corda), 8, 120)
+chordM = 2R · sin(π / nPts)                          (a corda voada)
 ```
+
+A corda **voada** (`chordM`, e `transitionM` da ligação entre anéis) é a
+de `nPts` pontos, nunca acima da pedida: com o mínimo de 8 pontos fica
+muito abaixo dela (46 m em vez de 85 m, M2-E14). O rumo inicial é o
+azimute do POI para a base mais próxima (`startBearingDeg`), para a órbita
+começar e acabar do lado da base (M2-E13); sem bases, norte. Sem câmara a
+órbita não conta fotos.
 
 Posições por `turf.destination` (círculo geodésico), `nPts` pontos por
 anel; só o último anel fecha a volta no rumo inicial (um waypoint a mais).
@@ -862,6 +917,10 @@ por eixo e por desvio (erro `corridor-too-long`, ~21 km a 30 m com 90 %
 de sobreposição). Passagens partidas e passagens perdidas contam-se em
 separado; a largura anunciada é a pedida, não a voada quando há perdidas.
 Serpentina invertendo a ordem e o sentido dos troços nas passagens ímpares.
+Cada passagem é prolongada nas duas pontas em meia pegada longitudinal
+(`endExtendM = along/2`), tangencialmente e com disparo: sem isso a
+primeira e a última foto ficavam com o centro na ponta do eixo e metade
+da pegada fora dele (M2-E12).
 
 Fotos: no modo por waypoint, posições por comprimento de arco **de cada
 passagem** (a interior é mais curta do que a exterior; projectar do eixo
@@ -926,12 +985,24 @@ em cada ponto, pitch fixo, `takePhoto` em cada ponto, `turnMode`
 `toPointAndPassWithContinuityCurvature` (`useStraightLine` 0), como a
 órbita.
 
-Fotos por círculo: a pegada transversal à distância do eixo óptico
-(`altura / sin|pitch|`) vezes `(1 − sobreposição frontal)` dá a corda;
-`nPts = clamp(⌈2πR / corda⌉, 12, 120)`; sem câmara, 24. No campo do
-artigo (P1 a 60 m, 80 %) dá 12 pontos por círculo; o UgCS usou cerca de
-20 (399 waypoints em 20 círculos), o que corresponde a ~86 % ao longo do
-círculo. Tempo: `L₃D/v + 2·(N − 1)·v/1,7`, uma inversão à saída e outra
+Fotos por círculo pelo **bordo distante** da pegada (M2-E5): a câmara
+aponta ao centro e a pegada roda em torno dele — o bordo distante, à
+distância `ρ_far` do centro, é o que mais anda entre fotos. Com a
+meia-abertura vertical `v = atan(sH/2f)`, o bordo distante toca o chão a
+`D_far = H / tan(|p| − v)` do ponto nadir, à distância oblíqua `t_far = H
+/ sin(|p| − v)`, com a largura `w_far = t_far · sW/f`; `ρ_far = |D_far −
+R|`, passo angular `Δθ = (1 − o) · w_far / ρ_far` e `nPts =
+clamp(⌈2π/Δθ⌉, 12, 120)`; sem câmara, 24. Com `|p| ≤ v` o topo da imagem
+é céu: recusa (`pitch-too-shallow`; com o pitch mínimo de −20° da
+interface só os sensores de grande angular lá chegam). No campo do artigo
+(P1 a 60 m, −45°, 80 %) dá 21 pontos a R 30 e 15 a R 60; a corda à
+distância do eixo óptico, de antes, dava 12 pontos e 66 % reais, e o UgCS
+usou cerca de 20 (399 waypoints em 20 círculos). Círculos que não vêem a
+área (M2-E10): a grelha cobre a caixa alinhada com as fiadas e num L ou
+num triângulo até 21 % dos círculos ficavam a mais de 2R da área;
+descartam-se os centros a mais do que o alcance da pegada (`ρ_far +
+w_far/2`, nunca menos de 2R) do contorno, mantendo a serpentina
+(`discardedCount`). Tempo: `L₃D/v + 2·(N − 1)·v/1,7`, uma inversão à saída e outra
 à entrada de cada ligação; estimativa por calibrar em voo. GSD no eixo
 óptico (`computeGSD` com o pitch).
 
@@ -985,11 +1056,15 @@ rota), pitch e foto.
 GCPs (`src/utils/gcp.js`), com base em Martínez-Carricondo et al. (2018)
 e Sanz-Ablanedo et al. (2018): número sugerido
 `clamp(5 + floor(ha/5), 5, 25)`; candidatos na fronteira (64 amostras,
-recuadas `max(15 m, 3 % · √área)` para o interior) e numa grelha interior
-(passo `max(50 m, √(área/n)/2)`, ≤ 2500 nós), todos a pelo menos metade
-do recuo da fronteira; selecção gulosa do ponto mais afastado, parando
-quando o melhor candidato fica a menos de 10 m dos já escolhidos (pode
-devolver menos do que o pedido).
+recuadas `max(15 m, 3 % · √área)` para o interior pela normal da aresta
+local — o lado em que um passo de 1 m fica dentro; o centróide só como
+recurso: numa faixa de 3000 × 100 m o recuo para o centróide alinhava os
+candidatos no eixo, M2-E8) e numa grelha interior (passo `max(50 m,
+√(área/n)/2)`, ≤ 2500 nós), todos a pelo menos metade do recuo da
+fronteira; selecção gulosa do ponto mais afastado, parando quando o
+melhor candidato fica a menos de 10 m dos já escolhidos (pode devolver
+menos do que o pedido). A área por GCP (`gcpStats`) desconta os buracos
+(M2-E9).
 
 ## 11. Exportação WPML
 
@@ -1292,8 +1367,9 @@ na área; é o mínimo do SDK da DJI, a especificação WPML não fixa um. Nota 
 payload (`altitude + tolerância` com seguimento de terreno); obturador;
 sobreposição no pior caso abaixo de 60/50 % (secção 2); arrastamento
 acima de 1 px a 1/500 s; MDT com alturas elipsoidais; taxa de subida
-exigida num segmento acima da velocidade de subida da aeronave
-(`Δh / (comprimento / v)`, M3E/M4T 6 m/s, M300 5 m/s); segmento acima de
+exigida num segmento acima da velocidade de subida da aeronave, e de
+descida acima da de descida (`Δh / (comprimento / v)`, subida/descida
+M3E/M4T 6/6 m/s, M300 5/4 m/s, M2-T13); segmento acima de
 5 km; tempo acima do útil de uma bateria (missão com trânsito de ida e
 volta, ou por bloco com `timeS + transitS`); foto por waypoint sem paragem
 («Só nos cantos»), por validar em voo (área e corredor); base a mais de
@@ -1337,7 +1413,7 @@ base fora do relevo ou só com pontos desconhecidos.
 
 | Grandeza | Valor | Módulo |
 |---|---|---|
-| Metros por grau de latitude / longitude | 110574 / 111320·cos(lat) | units.js |
+| Metros por grau de latitude / longitude | 2π·6371008,8/360 = 111194,93 (a esfera do Turf) / ×cos(lat) | units.js |
 | Faixas máximas por plano | 2500 | geo.js |
 | Troço mínimo de faixa | 1 m | geo.js |
 | Aceleração de viragem | 1,7 m/s² → custo `v/1,7` por inversão | geo.js |
@@ -1370,20 +1446,24 @@ base fora do relevo ou só com pontos desconhecidos.
 | Bases na caixa do relevo | a menos de 3 km da área, com 500 m à volta | App.jsx |
 | Reserva de bateria aplicada pelo motor | 0 % (já no tempo útil; projectos antigos: 30 % convertidos ao abrir) | equipment.js, project.js |
 | Tempo útil por conjunto, M300 RTK | TB60 25 min / TB65 28 min | equipment.js |
-| Quebra do disparo nas ligações | max(2,5·spacing, 60 m) | areaExport.js, exportParams.js |
+| Quebra do disparo nas ligações | max(2,5·spacing, 60 m) (`triggerMaxLinkM`) | geo.js, areaExport.js, exportParams.js |
 | Limiar de GSD (|pitch|) | 20° | geo.js |
 | Zoom / tiles / falhas do Terrarium | 12 / 600 / 20 % | terrain.js |
-| Filtro de picos | 150 m, 2 vizinhos | terrain.js |
+| Filtro de picos | 150 m, 2 vizinhos em 8 (orla dos tiles vizinhos; ≥ ¼ nos bordos do mosaico) | terrain.js |
 | Seguimento de terreno: passo / tolerância / mínimo | 40 m / 5 m (≥1) / 20000 pts | terrain.js |
 | Altura relativa mínima (aviso) | 20 m | terrain.js |
 | MDT local: janela / margem / lado máximo | 1.º IFD / 500 m / 2048 (≤8192) px | demFile.js |
-| Plano de encosta: grelha / declive mínimo | 12×12 / 8° | terrain.js |
+| Plano de encosta: grelha / declive mínimo | 12×12 na caixa, só nós dentro do contorno / 8° | terrain.js |
+| Velocidade de subida / descida (verificação de rota) | M3E 6/6, M4T 6/6, M300 5/4, custom 4/4 m/s | drones.js, uncertainty.js |
 | Fachada: standoff / altura / folga / piso | 25 m / 30 m / 15 m / 5 m | faceMode.js |
+| Fachada: passo máximo de rumo nos cantos | max(5°, HFOV·(1 − hOverlap)) | faceMode.js |
 | Órbita: pontos por volta / pitch | [8, 120] / [−90, +20] | orbit.js |
 | Corredor: passagens / amostras / troço mínimo / arco | 200 / 20000 / 5 m / 5° | corridor.js |
+| Corredor: prolongamento das pontas | along/2 | corridor.js |
 | Circular: círculos / pontos por círculo / pitch | 400 / [12, 120] / [−90, −20] | circular.js |
+| Circular: alcance da pegada (descarte de círculos) | max(2R, ρ_far + w_far/2) | circular.js |
 | Corredor: banda de validade | ±max(0,25 m, 1 %) | corridor.js |
-| GCPs: n / recuo / separação | [5, 25] / max(15 m, 3 %·√A) / 10 m | gcp.js |
+| GCPs: n / recuo (pela normal da aresta) / separação | [5, 25] / max(15 m, 3 %·√A) / 10 m | gcp.js |
 | WPML: waypoints / velocidade / RTH | 65536 / 30 m/s / 1500 m | exporters.js |
 | Preflight: waypoints (bloqueio / aviso) | 65535 / 2000 | preflight.js |
 | 3D: malha do terreno / passagens de preenchimento | 200×200 / até 201 | Map3D.jsx, terrainGrid.js |

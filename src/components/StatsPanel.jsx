@@ -102,7 +102,7 @@ export default function StatsPanel({
         {pointDensity != null ? (
           <Stat
             label={t('stats.density')}
-            value={`${Math.round(pointDensity.single)} (${Math.round(pointDensity.overlap)}) pts/m²`}
+            value={`${Math.round(pointDensity.mean ?? pointDensity.overlap)} (${Math.round(pointDensity.single)}) pts/m²`}
             hint={t('stats.densityHint')}
           />
         ) : gridMode ? (

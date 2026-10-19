@@ -7,8 +7,12 @@ calcula está certo para o planeamento de voo fotogramétrico e LiDAR, bate
 certo com o `METODOS.md` e aguenta os casos-limite?**
 
 **Estado (2026-10-19):** pacotes M-A a M-D aprovados. M-A (os seis que
-bloqueiam) e M-B (os números que mentiam) aplicados, com testes; M-C e M-D
-a seguir.
+bloqueiam), M-B (os números que mentiam) e M-C (modelos e melhorias)
+aplicados, com testes (`tests/unit/matematica-mb.test.mjs`,
+`matematica-mc.test.mjs`); M-D a seguir. Em M-C, G8 foi além do proposto:
+as constantes de `units.js` passaram para a esfera do Turf (a que mede
+todas as distâncias da app), não para o elipsóide — assim o que se pede
+é o que se mede, e o erro face ao WGS84 (≤ 0,25 %) é o do próprio Turf.
 
 ## 1. Método
 

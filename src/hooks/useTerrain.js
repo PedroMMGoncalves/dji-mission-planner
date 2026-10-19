@@ -245,15 +245,17 @@ export function useTerrain({
     onlineTick,
   ])
 
-  // Sugestões para encostas íngremes (T4.5): plano médio do terreno na área
-  // → linhas ao longo das curvas de nível e gimbal ≈ −(90 − inclinação).
-  // Só sugestões; nada é aplicado automaticamente.
+  // Sugestão para encostas íngremes (T4.5): plano médio do terreno na área
+  // → linhas ao longo das curvas de nível. Só sugestão; nada é aplicado
+  // automaticamente. A sugestão de gimbal a −(90 − inclinação) caiu (M2-T9):
+  // com `followWayline` a câmara inclina-se para a FRENTE, ao longo da curva
+  // de nível e em sentidos alternados na serpentina, não para a encosta —
+  // aplicá-la piorava a incidência em relação a nadir (20° → 28°).
   const slopeHint = useMemo(() => {
     if (terrain.status !== 'ready' || !terrainCovers || !ring || !ringValid) return null
     const fit = fitSlopePlane(terrain.data, ring)
     if (!fit || fit.slopeDeg < 8) return null
-    const gimbal = Math.max(-90, Math.min(-45, -Math.round((90 - fit.slopeDeg) / 5) * 5))
-    return { ...fit, gimbal }
+    return fit
   }, [terrain, terrainCovers, ring, ringValid])
 
   return {

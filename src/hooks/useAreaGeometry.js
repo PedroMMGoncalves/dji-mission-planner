@@ -9,9 +9,11 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  bufferDistanceMeters,
   gridFromAnchor,
   longestEdgeBearing,
   rectangleFromAnchor,
+  ringToPolygon,
   translateRing,
   validateRing,
 } from '../utils/geo.js'
@@ -192,6 +194,9 @@ export function useAreaGeometry({
     if (split.mode !== 'tiles' && split.mode !== 'battery') return null
     let side = split.tileSize
     let fits = null
+    // a margem em metros do contorno, a mesma que planArea aplica a cada
+    // célula (M2-G10)
+    const bufferM = bufferPct > 0 ? bufferDistanceMeters(ringToPolygon(ring, holes), bufferPct) : 0
     if (split.mode === 'battery') {
       const opts = {
         batteryMin,
@@ -210,6 +215,7 @@ export function useAreaGeometry({
         overshootM,
         tieLine,
         bufferPct,
+        bufferM,
       }
       side = squareSideWithBaseTransit(opts, { zoneRadiusM }).side
       // uma tira só se funde no vizinho se o conjunto ainda couber na bateria
@@ -224,6 +230,7 @@ export function useAreaGeometry({
         overshootM,
         tieLine,
         bufferPct,
+        bufferM,
       })
     }
     const mosaic = buildSquareMosaic(ring, {
