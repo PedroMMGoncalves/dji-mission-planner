@@ -30,7 +30,7 @@ export const MAX_WAYPOINTS_PER_ROUTE = 65536
 // Limiares de sanidade, não limites de modelo: apanham unidades trocadas e
 // campos em bruto antes de chegarem ao ficheiro.
 export const MAX_SPEED_MS = 30
-/** WPML: globalTransitionalSpeed vai de 0 a 15 m/s (waylines.wpml, tabela missionConfig). */
+/** WPML: globalTransitionalSpeed vai de 0 a 15 m/s (EN) ou de 1 a 15 (CN): escreve-se em [1, 15]. */
 export const MAX_TRANSITIONAL_SPEED_MS = 15
 /** WPML: takeOffSecurityHeight no comando vai de 1,2 a 1500 m. */
 export const MIN_TAKEOFF_SECURITY_HEIGHT_M = 1.2
@@ -591,7 +591,7 @@ function missionConfigXml({ wpml, speed, altitude, ...opts }) {
     <wpml:executeRCLostAction>${rcLostAction}</wpml:executeRCLostAction>
     <wpml:takeOffSecurityHeight>${takeOffSecurityHeight}</wpml:takeOffSecurityHeight>
     <wpml:globalRTHHeight>${rthHeight}</wpml:globalRTHHeight>
-    <wpml:globalTransitionalSpeed>${Math.min(speed, MAX_TRANSITIONAL_SPEED_MS)}</wpml:globalTransitionalSpeed>
+    <wpml:globalTransitionalSpeed>${Math.min(MAX_TRANSITIONAL_SPEED_MS, Math.max(1, speed))}</wpml:globalTransitionalSpeed>
     <wpml:droneInfo>
       <wpml:droneEnumValue>${wpml.droneEnumValue}</wpml:droneEnumValue>
       <wpml:droneSubEnumValue>${wpml.droneSubEnumValue ?? 0}</wpml:droneSubEnumValue>
@@ -755,6 +755,16 @@ export function buildWaylinesWPML(params) {
   const pitchOf = (p) => clampGimbalPitch(p, wpml.gimbalPitchRange)
   const gimbalPitch = pitchOf(params.gimbalPitch ?? -90)
 
+  // B2 (revisão da exportação): nos payloads multi-lente a lente vai em cada
+  // acção de câmara (`payloadLensIndex` = o `imageFormat` do template); com
+  // `useGlobalPayloadLensIndex` 0 e sem lista, a lente ficava ao critério
+  // do firmware — no M4T térmico ninguém sabia se saíam _T ou _V. Os
+  // payloads de uma lente (M3E, P1) ficam como no ficheiro que voou.
+  const lensXml =
+    typeof wpml.imageFormat === 'string' && /^[a-z_,]+$/.test(wpml.imageFormat)
+      ? `
+              <wpml:payloadLensIndex>${wpml.imageFormat}</wpml:payloadLensIndex>`
+      : ''
   const triggerXml = (() => {
     if (!photoIntervalM || photoIntervalM <= 0) return null
     if (triggerMode === 'time') {
@@ -832,7 +842,7 @@ ${triggerXml}
             <wpml:actionId>0</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>
+              <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>${lensXml}
               <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>
             </wpml:actionActuatorFuncParam>
           </wpml:action>
@@ -850,9 +860,14 @@ ${triggerXml}
   // T4.1: grupos de ações por waypoint, com ids consecutivos a seguir aos
   // grupos globais. Cada grupo dispara em reachPoint no próprio waypoint.
   let nextGroupId = photoGroupBase + ranges.length
+  // M7 (revisão): o gimbalRotate por waypoint só sai quando o pitch muda em
+  // relação ao ponto anterior (no waypoint 0, ao grupo global): a órbita e a
+  // circular repetiam-no em todos os pontos (391 grupos em 30 círculos)
+  let lastPitch = gimbalGroup ? gimbalPitch : null
   const perWaypointGroup = (i, pw) => {
     const actions = []
-    if (pw.gimbalPitch != null) {
+    if (pw.gimbalPitch != null && pitchOf(pw.gimbalPitch) !== lastPitch) {
+      lastPitch = pitchOf(pw.gimbalPitch)
       actions.push(`          <wpml:action>
             <wpml:actionId>${actions.length}</wpml:actionId>
             <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
@@ -880,7 +895,7 @@ ${triggerXml}
       const lens =
         act === 'stopRecord'
           ? ''
-          : `
+          : `${lensXml}
               <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>`
       actions.push(`          <wpml:action>
             <wpml:actionId>${actions.length}</wpml:actionId>

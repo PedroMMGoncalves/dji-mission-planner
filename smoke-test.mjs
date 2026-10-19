@@ -2945,7 +2945,20 @@ check(
     'orbita video: voo curvo continuo com rumo e gimbal em todos os pontos',
     cnt(/toPointAndPassWithContinuityCurvature/g) === vid.stats.waypointCount &&
       cnt(/smoothTransition/g) === vid.stats.waypointCount &&
-      cnt(/<wpml:actionActuatorFunc>gimbalRotate</g) === vid.stats.waypointCount + 1,
+      // o gimbal por waypoint so sai quando o pitch muda (M7 da revisao); o
+      // global, sem gimbalPitch nos parametros, e -90
+      cnt(/<wpml:actionActuatorFunc>gimbalRotate</g) ===
+        (() => {
+          let last = -90
+          let n = 1
+          for (const pw of vid.perWaypoint) {
+            if (pw.gimbalPitch !== last) {
+              n += 1
+              last = pw.gimbalPitch
+            }
+          }
+          return n
+        })(),
   )
 }
 

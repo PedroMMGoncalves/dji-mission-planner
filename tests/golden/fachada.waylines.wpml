@@ -81,23 +81,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -135,23 +118,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -189,23 +155,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -243,23 +192,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -297,23 +229,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -351,23 +266,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -405,23 +303,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -459,23 +340,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -513,23 +377,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -567,23 +414,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -621,23 +451,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -675,23 +488,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -729,23 +525,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -783,23 +562,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -837,23 +599,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -891,23 +636,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -945,23 +673,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -999,23 +710,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1053,23 +747,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1107,23 +784,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1161,23 +821,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1215,23 +858,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1269,23 +895,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1323,23 +932,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1377,23 +969,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1431,23 +1006,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1485,23 +1043,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1539,23 +1080,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1593,23 +1117,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1647,23 +1154,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1701,23 +1191,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1755,23 +1228,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1809,23 +1265,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1863,23 +1302,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1917,23 +1339,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
@@ -1971,23 +1376,6 @@
           </wpml:actionTrigger>
           <wpml:action>
             <wpml:actionId>0</wpml:actionId>
-            <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
-            <wpml:actionActuatorFuncParam>
-              <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
-              <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
-              <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>0</wpml:gimbalPitchRotateAngle>
-              <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
-              <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
-              <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
-              <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
-              <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
-              <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
-            </wpml:actionActuatorFuncParam>
-          </wpml:action>
-          <wpml:action>
-            <wpml:actionId>1</wpml:actionId>
             <wpml:actionActuatorFunc>takePhoto</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>

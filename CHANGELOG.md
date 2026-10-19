@@ -45,6 +45,23 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   empacotamento do KMZ. Apanha sozinho o `parallel` do M4T, o `aircraft`
   e o `caliFlightEnable` desta revisão.
 
+### Corrigido (revisão da exportação, pacote B — exportador)
+
+- **A lente vai em cada acção de câmara nos payloads multi-lente** (B2): no
+  M4T, `takePhoto` e `startRecord` levam `payloadLensIndex` com o
+  `imageFormat` do template (`wide` ou `ir`), antes de
+  `useGlobalPayloadLensIndex`. Com 0 e sem lista, a lente ficava ao critério
+  do firmware: no térmico ninguém sabia se saíam `_T` ou `_V`. M3E e P1
+  (uma lente) ficam como no ficheiro que voou. **Por confirmar no primeiro
+  voo térmico** (contar os `_T`): a tabela da DJI só lista
+  `payloadLensIndex` para M30 e M3D, e o M4 não está na documentação.
+- **`gimbalRotate` por waypoint só quando o pitch muda** (M7): a órbita e a
+  missão circular repetiam-no em todos os pontos (391 grupos em 30
+  círculos); o waypoint 0 compara com o grupo global.
+- **Velocidade de transição em [1, 15]** (M9): a versão chinesa da
+  especificação dá [1, 15] a `globalTransitionalSpeed`; abaixo de 1 m/s
+  saía o valor pedido.
+
 ### Corrigido (revisão da exportação contra a especificação, pacote A)
 
 Revisão completa da exportação KML e KMZ contra a especificação WPML

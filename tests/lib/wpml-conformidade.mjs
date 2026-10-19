@@ -83,6 +83,13 @@ export const ALLOW = {
   },
   // elementos escritos para aeronaves fora da coluna de suporte (M3 da revisão, pacote B)
   unsupported: {
+    'actionActuatorFuncParam/payloadLensIndex@takePhoto': {
+      'M3E/M3T/M3M':
+        'B2 da revisao: a lente por accao no M4T (classe M3E na validacao); a tabela so lista M30/M3D — a confirmar com um KMZ termico do Pilot 2 no M4T',
+    },
+    'actionActuatorFuncParam/payloadLensIndex@startRecord': {
+      'M3E/M3T/M3M': 'idem takePhoto',
+    },
     'Placemark/useStraightLine': {
       'M300 RTK':
         'escrito tambem no M300, onde a especificacao nao o suporta (ignorado); M3 pendente',
@@ -182,8 +189,15 @@ export const ALLOW = {
     {
       file: '*',
       parent: 'actionActuatorFuncParam',
-      name: 'useGlobalPayloadLensIndex',
+      name: 'payloadLensIndex',
       after: 'payloadPositionIndex',
+      why: 'tabela do takePhoto (payloadPositionIndex, fileSuffix, payloadLensIndex, useGlobalPayloadLensIndex); o exemplo nao o mostra',
+    },
+    {
+      file: '*',
+      parent: 'actionActuatorFuncParam',
+      name: 'useGlobalPayloadLensIndex',
+      after: 'payloadLensIndex',
       why: 'tabela do takePhoto (ultimo parametro); o exemplo nao o mostra',
     },
     {

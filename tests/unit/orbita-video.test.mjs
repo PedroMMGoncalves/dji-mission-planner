@@ -171,7 +171,12 @@ describe('exportacao da orbita em video', () => {
   })
 
   test('gimbal e rumo em todos os pontos, voo curvo continuo, altura executada a subir', () => {
-    expect(count(xml, /<wpml:actionActuatorFunc>gimbalRotate</g)).toBe(plan.stats.waypointCount + 1)
+    // o gimbal por waypoint so sai quando o pitch muda (M7 da revisao); o
+    // global no waypoint 0 vale o do primeiro nivel
+    const pitches = plan.perWaypoint.map((pw) => pw.gimbalPitch)
+    const mudancas = pitches.filter((p, i) => i > 0 && p !== pitches[i - 1]).length
+    expect(mudancas).toBeGreaterThan(0)
+    expect(count(xml, /<wpml:actionActuatorFunc>gimbalRotate</g)).toBe(1 + mudancas)
     expect(count(xml, /toPointAndPassWithContinuityCurvature/g)).toBe(plan.stats.waypointCount)
     const hs = [...xml.matchAll(/<wpml:executeHeight>([-\d.]+)</g)].map((m) => Number(m[1]))
     expect(hs[0]).toBe(20)
