@@ -25,6 +25,19 @@ const yOf = (lat) => (lat - lat0) * M_PER_DEG_LAT
 const base = em(0, 0)
 
 describe('computeTakeoffZone', () => {
+  it('M2-T1: pontos da zona sem relevo contam como parciais', () => {
+    const z = computeTakeoffZone(base, { elevationAt: () => 250 })
+    expect(z.partial).toBe(false)
+    expect(z.noData).toBe(0)
+    // sem dados a leste do ponto
+    const p = computeTakeoffZone(base, {
+      elevationAt: (lon) => (lon > lon0 + 1e-9 ? null : 250),
+    })
+    expect(p.partial).toBe(true)
+    expect(p.noData).toBeGreaterThan(10)
+    expect(p.refElev).toBe(250)
+  })
+
   it('terreno plano: raio completo, desnivel 0, ganho 0', () => {
     const z = computeTakeoffZone(base, { elevationAt: () => 250 })
     expect(z).toMatchObject({

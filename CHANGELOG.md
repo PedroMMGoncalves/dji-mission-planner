@@ -102,6 +102,63 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 - No ZIP por base, um voo sem base vai para `sem-base/` em vez da raiz
   (K-M10).
 
+### Corrigido (revisão da matemática da missão, pacote M-A)
+
+Revisão da matemática do planeamento contra o `METODOS.md` e a prática
+fotogramétrica (`docs/REVISAO-MATEMATICA-2026-10.md`, 42 achados). Os seis
+que bloqueavam:
+
+- **O lado do bloco por bateria conta o prolongamento, a fiada e a
+  margem** (M2-G1): o dimensionamento ignorava as três opções e um bloco
+  «cheio» com prolongamento de 30 m e fiada voava 112 % do tempo útil (127 %
+  com margem de 20 %); cada voo comia 2–7 min da reserva e o preflight
+  avisava em todos. Com as opções ligadas os quadrados do mosaico por
+  bateria ficam mais pequenos (ex.: Mapper+ a 60 m, 50 %, 5 m/s, 25 min:
+  360 → 320 m com prolongamento e fiada) e a célula planeada, com o
+  trânsito, fica em 92–95 % do útil. O mesmo modelo na fusão das tiras.
+- **Relevo em falta debaixo da rota bloqueia** (M2-T1): um tile falhado ou
+  uma zona sem dados do MDT dentro da caixa carregada contava como
+  coberto; o seguimento de terreno atravessava o buraco à cota do último
+  ponto válido e a folga ao solo saltava a amostra (uma colina de 80 m num
+  buraco de 250 m passava com «60 m» de folga e −10 m reais). A rota
+  exportável é amostrada a 40 m e qualquer ponto sem relevo bloqueia
+  (`terrain-holes`, com a fracção e o sítio); um tile falhado ou preso é
+  pedido outra vez antes de o relevo ficar pronto; uma zona de descolagem
+  com pontos sem relevo avisa.
+- **Os trânsitos base ↔ rota são verificados contra o relevo** (M2-T3):
+  com `flyToWaylineMode` «safely» a aeronave sobe à altura do 1.º waypoint
+  (ou à de segurança, 30 m) e voa a direito até ele, e no fim regressa à
+  altura de RTH; nenhum destes troços era amostrado — uma lomba entre a
+  base e a área era atravessada 20 m abaixo do topo sem nenhum número o
+  mostrar. Bloqueio quando entram no relevo, aviso abaixo de 15 m; por voo
+  com bases (às alturas da base de cada um) e na rota única, também no
+  corredor e no circular.
+- **Os blocos do circular cabem na bateria** (M2-E1): o encaixe de cada
+  círculo só contava o deslocamento, sem as duas inversões por círculo nem
+  o trânsito à base: a 8 m/s cada bloco durava 1591 s para 1200 úteis
+  (+33 %; +77 % a 12 m/s) e o painel dizia «N blocos por bateria». Passam a
+  contar as inversões e o trânsito de ida e volta, e cada bloco leva o seu
+  `transitS` para o resumo de operação.
+- **Fachada com a câmara inclinada** (M2-E2): a pegada, as alturas das
+  passagens e o GSD eram de câmara nivelada e o pitch ia só para o gimbal;
+  a −20° um M3E a 25 m deixava um terço do topo da face sem imagem com as
+  estatísticas a dizer «coberta». A banda vista na face passa a ser
+  `[h + d·tan(p − v), h + d·tan(p + v)]`, as passagens vão do pé ao topo
+  com essa banda, o GSD é ao longo do eixo óptico e uma inclinação que já
+  não vê a face é recusada (`pitch-too-steep`).
+- **Cantos da fachada ao afastamento pedido** (M2-E3): a linha desviada
+  usava mitra até 132° e, acima, um «bisel» que punha o drone a 6–12 m de
+  uma face a 25 m (cantos de 135–170°), e um troço curto num U voado por
+  dentro saía invertido, com o rumo a apontar para longe da face. Passa a
+  usar a junta do corredor (arco a `d` exactos do vértice do lado convexo,
+  com o rumo a apontar ao vértice; esquadria do lado côncavo) e o plano é
+  recusado (`standoff-corner`) quando alguma amostra da linha desviada
+  fica a menos de 95 % do afastamento da face.
+- METODOS: o modelo de tempo escrito com `v/1,7` por viragem em §4 e §9
+  (o código já o fazia; o texto ainda dizia 3 s), o lado por bateria com
+  as três opções, a fachada com o pitch e as juntas, e os itens novos do
+  preflight em §14.
+
 ### Adicionado (KML por base)
 
 - **«Blocos por base (KML, ZIP)»** no cartão «Resumo e exportar», com bases

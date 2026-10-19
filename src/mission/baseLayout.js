@@ -463,12 +463,18 @@ export function cellFitsBattery({
   stopEveryM = 0,
   lineAngleDeg = 0,
   zoneRadiusM = DEFAULT_ZONE_RADIUS_M,
+  // o que a célula voa além do seu contorno (squareSideForBattery)
+  overshootM = 0,
+  tieLine = false,
+  bufferPct = 0,
 }) {
   const v = speed > 0 ? speed : 10
   const s = Math.max(1, spacingM)
   const turnS = turnCostS(v)
+  const o = Number.isFinite(overshootM) && overshootM > 0 ? overshootM : 0
+  const f = 1 + (Number.isFinite(bufferPct) && bufferPct > 0 ? bufferPct : 0) / 100
   const a = 1 / (s * v) + (stopEveryM > 0 ? stopCostS(1, v) / (s * stopEveryM) : 0)
-  const b = 2 / v + turnS / s
+  const b = 2 / v + turnS / s + (2 * o) / (s * v)
   const th = (lineAngleDeg * Math.PI) / 180
   const r = Number.isFinite(zoneRadiusM) && zoneRadiusM > 0 ? zoneRadiusM : 0
   const k = Math.max(1, passes)
@@ -489,8 +495,11 @@ export function cellFitsBattery({
       minV = Math.min(minV, w)
       maxV = Math.max(maxV, w)
     }
-    const W = Math.max(maxU - minU, maxV - minV)
-    const flight = k * (areaM2 * a + W * b + turnS)
+    // com margem, a célula voada é a alargada
+    const W = Math.max(maxU - minU, maxV - minV) * f
+    const A = areaM2 * f * f
+    const tie = tieLine ? (1.5 * W + 2 * o) / v + turnS : 0
+    const flight = k * (A * a + W * b + turnS) + tie
     const transit = (2 * r + CORNER_TRANSIT_FACTOR * W) / v
     return flight + transit <= usableS
   }

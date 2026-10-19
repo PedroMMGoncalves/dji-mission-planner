@@ -170,6 +170,22 @@ export default {
     pt: 'Folga mínima ao solo de {m} m, abaixo de 15 m. Suba a altitude ou ligue seguir terreno.',
     en: 'Minimum ground clearance of {m} m, below 15 m. Raise the altitude or turn follow terrain on.',
   },
+  'preflight.terrain-holes': {
+    pt: 'Sem relevo em {n} de {total} pontos da rota ({pct} %), o primeiro em {lat}, {lon}: a rota atravessa um buraco do modelo (tile em falta ou zona sem dados do MDT), onde o seguimento de terreno e a folga ao solo não sabem a que altura do chão se voa. Volte a carregar o relevo ou importe um MDT que cubra a rota.',
+    en: 'No elevation data at {n} of {total} route points ({pct} %), the first at {lat}, {lon}: the route crosses a hole in the model (a missing tile or a no-data area of the DEM), where terrain following and ground clearance cannot know the height above ground. Reload the elevation data or import a DEM that covers the route.',
+  },
+  'preflight.transit-collision': {
+    pt: 'O trânsito entre a base e a rota (voo {flight}) entra no relevo: {m} m abaixo do solo a {h} m acima da base. A aeronave sobe na descolagem à altura do 1.º waypoint (ou à de segurança) e voa a direito até ele; no fim regressa à altura de RTH. Mova a base, suba a altura ou o RTH, ou comece a rota noutro ponto.',
+    en: 'The transit between the home point and the route (flight {flight}) goes into the terrain: {m} m below ground at {h} m above the home point. The aircraft climbs at take-off to the first waypoint’s height (or the safety height) and flies straight to it; at the end it returns at the RTH height. Move the home point, raise the altitude or the RTH, or start the route elsewhere.',
+  },
+  'preflight.transit-low': {
+    pt: 'Folga mínima de {m} m no trânsito entre a base e a rota (voo {flight}, a {h} m acima da base), abaixo de 15 m.',
+    en: 'Minimum clearance of {m} m on the transit between the home point and the route (flight {flight}, at {h} m above the home point), below 15 m.',
+  },
+  'preflight.base-zone-partial': {
+    pt: 'A zona da base {base} tem {n} pontos sem relevo: a cota mínima e o desnível só contam a parte com dados. Carregue relevo que cubra a zona inteira.',
+    en: 'The take-off zone of base {base} has {n} points without elevation data: the minimum elevation and relief only count the covered part. Load elevation data that covers the whole zone.',
+  },
   'preflight.gimbal-range': {
     pt: 'Inclinação do gimbal de {worst}° pedida fora do que o payload alcança ({min}° a {max}°): o KMZ sai recortado ao limite. Ajuste a inclinação.',
     en: 'Gimbal pitch of {worst}° requested outside what the payload reaches ({min}° to {max}°): the KMZ is clamped to the limit. Adjust the pitch.',

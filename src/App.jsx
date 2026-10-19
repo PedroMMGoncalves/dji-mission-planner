@@ -65,7 +65,13 @@ import {
   photoInterval,
   resolveSensor,
 } from './utils/geo.js'
-import { MissionExportError, downloadBlob, buildFilesZip } from './utils/exporters.js'
+import {
+  DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+  MissionExportError,
+  buildFilesZip,
+  defaultRthHeightM,
+  downloadBlob,
+} from './utils/exporters.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission, useCorridorRoute } from './hooks/useCorridorMission.js'
@@ -81,7 +87,7 @@ import { useBaseProposal } from './hooks/useBaseProposal.js'
 import { viewshedJobs, viewshedTerrainModel } from './mission/viewshedPlan.js'
 import { DEFAULT_PARAMS } from './mission/defaults.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
-import { routeClearance } from './mission/clearance.js'
+import { routeClearance, terrainHolesAlong, transitClearance } from './mission/clearance.js'
 import { checkFaceClearance } from './utils/faceMode.js'
 import { gimbalRangeViolation } from './mission/gimbal.js'
 import {
@@ -634,6 +640,11 @@ function AppInner({ lang, setLang }) {
     spacing,
     batteryMin,
     passes: params.crosshatch ? (params.includeNadir ? 3 : 2) : 1,
+    // prolongamento, fiada e margem: o lado por bateria conta o que a
+    // célula voa além do quadrado
+    overshootM: Math.max(0, params.overshoot || 0),
+    tieLine: Boolean(params.tieLine),
+    bufferPct: Math.max(0, params.bufferPct || 0),
     // foto por waypoint com paragem em todos: uma paragem a cada intervalo
     stopEveryM:
       params.waypointStops === 'all' &&
@@ -1164,7 +1175,9 @@ function AppInner({ lang, setLang }) {
     if (missionMode === 'circular') {
       const n = circularBlocks?.length > 1 ? circularBlocks.length : 0
       return opsSummary({
-        blocks: n ? circularBlocks.map((b, i) => ({ id: i + 1, timeS: b.timeS })) : null,
+        blocks: n
+          ? circularBlocks.map((b, i) => ({ id: i + 1, timeS: b.timeS, transitS: b.transitS ?? 0 }))
+          : null,
         singleTimeS: modeStats?.flightTimeS ?? null,
         singleTransitS: transit(circularBaseDistance, circularSpeed),
         usefulMin: batteryMin,
@@ -1409,6 +1422,87 @@ function AppInner({ lang, setLang }) {
     })
   }, [terrain, view3d])
 
+  // Buracos do relevo debaixo da rota exportável (M2-T1 da revisão da
+  // matemática): tiles em falta ou zonas sem dados do MDT dentro da caixa
+  // carregada, que o seguimento de terreno atravessava à cota do último
+  // ponto válido e a folga ao solo saltava. O preflight bloqueia.
+  const terrainHoles = useMemo(() => {
+    const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
+    if (!elevationAt || !view3d?.waypoints?.length) return null
+    return terrainHolesAlong(view3d.waypoints, { elevationAt, breaks: view3d.breaks ?? null })
+  }, [terrain, view3d])
+
+  // Folga ao solo dos trânsitos base ↔ rota (M2-T3): com `flyToWaylineMode`
+  // «safely» a aeronave sobe à altura do 1.º waypoint (ou à de segurança da
+  // descolagem) e voa a direito até ele; no fim regressa à altura de RTH.
+  // Com bases, cada voo descola da sua base, às alturas relativas à cota da
+  // zona dela (a rota do 3D está na cota comum); o pior voo manda.
+  const transitClearanceInfo = useMemo(() => {
+    const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
+    if (!elevationAt || !view3d?.waypoints?.length || !Number.isFinite(view3d.refElev)) return null
+    const legs = []
+    if (missionMode === 'area' && perBlockBases && view3d.refSource === 'bases' && blocks?.length) {
+      const tfOk = terrainResult && !terrainResult.error
+      const src = tfOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
+      const starts = [0, ...(view3d.breaks ?? [])]
+      let k = 0
+      src.forEach((b, i) => {
+        if (!(b.waypoints?.length > 0)) return
+        const start = starts[k]
+        const end = starts[k + 1] ?? view3d.waypoints.length
+        k += 1
+        const info = baseLayout?.byBlock?.[b.id]
+        const base = bases.find((x) => x.id === info?.baseId)
+        const refElev = blockRefs?.refs?.[i]
+        if (!base || !Number.isFinite(refElev)) return
+        // alturas na cota da zona deste voo, como no seu KMZ
+        const dh = view3d.refElev - refElev
+        legs.push({
+          basePoint: base.point,
+          refElev,
+          flight: info.flightLabel,
+          waypoints: view3d.waypoints.slice(start, end).map((w) => [w[0], w[1], (w[2] ?? 0) + dh]),
+        })
+      })
+    } else {
+      const basePoint =
+        missionMode === 'area'
+          ? areaBasePoint
+          : missionMode === 'corridor'
+            ? (corridorBase?.point ?? null)
+            : missionMode === 'circular'
+              ? (circularBase?.point ?? null)
+              : null
+      if (basePoint)
+        legs.push({ basePoint, refElev: view3d.refElev, flight: null, waypoints: view3d.waypoints })
+    }
+    let worst = null
+    for (const leg of legs) {
+      const tecto = Math.max(0, ...leg.waypoints.map((w) => (Number.isFinite(w[2]) ? w[2] : 0)))
+      const r = transitClearance(leg.basePoint, leg.waypoints, {
+        elevationAt,
+        refElev: leg.refElev,
+        takeOffSecurityHeightM: DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+        rthHeightM: defaultRthHeightM(tecto),
+      })
+      if (r && (!worst || r.minM < worst.minM)) worst = { ...r, flight: leg.flight }
+    }
+    return worst
+  }, [
+    terrain,
+    view3d,
+    missionMode,
+    perBlockBases,
+    blocks,
+    terrainResult,
+    baseLayout,
+    bases,
+    blockRefs,
+    areaBasePoint,
+    corridorBase,
+    circularBase,
+  ])
+
   // Maior altura acima do solo da rota exportável, sobre o relevo. Só para a
   // nota da categoria aberta (120 m): a altura é decisão do operador e nada
   // é cortado nem bloqueado.
@@ -1578,6 +1672,8 @@ function AppInner({ lang, setLang }) {
         blur,
         route,
         clearance,
+        terrainHoles,
+        transitClearance: transitClearanceInfo,
         reference,
         gimbal,
         aglMaxM,
@@ -1588,6 +1684,8 @@ function AppInner({ lang, setLang }) {
       batteryMin,
       reservePct: split.reservePct,
       clearance,
+      terrainHoles,
+      transitClearance: transitClearanceInfo,
       route,
       gimbal,
       aglMaxM,
@@ -1676,6 +1774,8 @@ function AppInner({ lang, setLang }) {
     route,
     aglMaxM,
     terrainRoute,
+    terrainHoles,
+    transitClearanceInfo,
   ])
   const exportBlocked = hasBlockers(preflight)
   // sem relevo sobre a rota, o próprio item do preflight descarrega o global

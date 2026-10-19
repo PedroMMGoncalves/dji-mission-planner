@@ -4,6 +4,7 @@ import { describe, it, expect } from 'vitest'
 import {
   TURN_ACCEL_MS2,
   generateFlightLines,
+  generateFlightPlan,
   resolveSensor,
   routeLengthM,
   routeStats,
@@ -14,6 +15,7 @@ import {
   turnCostS,
 } from '../../src/utils/geo.js'
 import { generateCorridorPlan } from '../../src/utils/corridor.js'
+import { squareSideWithBaseTransit } from '../../src/mission/baseLayout.js'
 import { DEFAULT_CUSTOM_SENSOR, PAYLOADS } from '../../src/data/drones.js'
 
 const lat0 = 38.7
@@ -93,6 +95,48 @@ describe('lado por bateria', () => {
     const paragens = (L * L * stopCostS(1, v)) / (s * 20)
     const t = (L * L) / (s * v) + L * (2 / v + turn / s) + turn + paragens
     expect(t).toBeLessThanOrEqual(12 * 60 * 0.7)
+  })
+
+  it('M2-G1: com prolongamento, fiada e margem o lado encolhe e a celula planeada cabe na bateria', () => {
+    const lat = 38.7
+    const mL = 111320 * Math.cos((lat * Math.PI) / 180)
+    const em2 = (x, y) => [-9.14 + x / mL, lat + y / 110574]
+    const sizing = { batteryMin: 25, reservePct: 0, speed: 5, spacingM: 25, maxSideM: 2000 }
+    const useful = 25 * 60
+    const sem = squareSideWithBaseTransit(sizing, { zoneRadiusM: 100 })
+    for (const o of [
+      { overshootM: 30, tieLine: false, bufferPct: 0 },
+      { overshootM: 30, tieLine: true, bufferPct: 0 },
+      { overshootM: 0, tieLine: false, bufferPct: 10 },
+      { overshootM: 30, tieLine: true, bufferPct: 10 },
+    ]) {
+      const { side, transitS } = squareSideWithBaseTransit(
+        { ...sizing, ...o },
+        { zoneRadiusM: 100 },
+      )
+      expect(side).toBeLessThan(sem.side)
+      // a celula do mosaico, planeada com as opcoes da missao, mais o transito
+      const ring = [em2(0, 0), em2(side, 0), em2(side, side), em2(0, side)]
+      const plan = generateFlightPlan(ring, {
+        spacingM: 25,
+        angleDeg: 90,
+        bufferPct: o.bufferPct,
+        photoIntervalM: 20,
+        speed: 5,
+        overshootM: o.overshootM,
+        tieLine: o.tieLine,
+        photoMode: 'distance',
+        crosshatch: false,
+        includeNadir: false,
+      })
+      expect(plan.stats.flightTimeS + transitS).toBeLessThanOrEqual(useful)
+      // e sem desperdicar: acima de 85 % do util
+      expect(plan.stats.flightTimeS + transitS).toBeGreaterThan(useful * 0.85)
+    }
+    // o lado sem opcoes nao muda
+    expect(squareSideForBattery({ ...sizing, overshootM: 0, tieLine: false, bufferPct: 0 })).toBe(
+      squareSideForBattery(sizing),
+    )
   })
 
   it('encolhe quando a viragem fica mais cara, ou seja com mais velocidade', () => {

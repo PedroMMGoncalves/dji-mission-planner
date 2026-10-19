@@ -44,6 +44,9 @@ import { DEFAULT_ANCHOR, DEFAULT_SPLIT } from '../mission/defaults.js'
  * @param {number} args.batteryMin tempo útil por voo (min, já com a reserva de aterragem; split.reservePct é 0)
  * @param {number} args.passes número de passagens (1, 2 ou 3 com nadir extra)
  * @param {number} [args.stopEveryM] paragem a cada X m ao longo da faixa (0 = só nos cantos)
+ * @param {number} [args.overshootM] prolongamento das faixas (o lado por bateria conta-o)
+ * @param {boolean} [args.tieLine] fiada de amarração (idem)
+ * @param {number} [args.bufferPct] margem em % de √área (idem)
  * @param {Function} args.onImportedMission reimportação de um WPML: recebe {name, altitude, speed}
  * @param {Function} args.t tradução
  * @param {{capture: () => any, restore: (snapshot: any) => void}} [args.history]
@@ -62,6 +65,10 @@ export function useAreaGeometry({
   batteryMin,
   passes,
   stopEveryM = 0,
+  // o que cada célula voa além do quadrado: o lado por bateria conta-o
+  overshootM = 0,
+  tieLine = false,
+  bufferPct = 0,
   onImportedMission,
   t,
   history = null,
@@ -200,6 +207,9 @@ export function useAreaGeometry({
         passes,
         // com paragem em cada foto, cada faixa custa mais e o lado encolhe
         stopEveryM,
+        overshootM,
+        tieLine,
+        bufferPct,
       }
       side = squareSideWithBaseTransit(opts, { zoneRadiusM }).side
       // uma tira só se funde no vizinho se o conjunto ainda couber na bateria
@@ -211,6 +221,9 @@ export function useAreaGeometry({
         stopEveryM,
         lineAngleDeg: lineAngle,
         zoneRadiusM,
+        overshootM,
+        tieLine,
+        bufferPct,
       })
     }
     const mosaic = buildSquareMosaic(ring, {
@@ -237,6 +250,9 @@ export function useAreaGeometry({
     stopEveryM,
     lineAngle,
     zoneRadiusM,
+    overshootM,
+    tieLine,
+    bufferPct,
   ])
 
   const mosaicCells = Array.isArray(tilesResult?.mosaic?.cells) ? tilesResult.mosaic.cells : null

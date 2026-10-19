@@ -4,7 +4,12 @@
 // nunca mais baixo, do que o planeado.
 import { describe, it, expect } from 'vitest'
 import { referenceElevation } from '../../src/mission/reference.js'
-import { routeClearance, terrainRangeAlong } from '../../src/mission/clearance.js'
+import {
+  routeClearance,
+  terrainHolesAlong,
+  terrainRangeAlong,
+  transitClearance,
+} from '../../src/mission/clearance.js'
 
 const lat0 = 38.7
 const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
@@ -95,5 +100,102 @@ describe('routeClearance', () => {
     expect(
       routeClearance(longa, { elevationAt, refElev: 100, maxSamples: 500 }).samples,
     ).toBeLessThanOrEqual(500)
+  })
+  it('M2-T1: conta as amostras sem relevo em vez de as saltar em silencio', () => {
+    // relevo so ate x = 500: a segunda metade da rota e um buraco
+    const r = routeClearance(wps, { elevationAt, refElev: 200 })
+    expect(r.noData).toBe(0)
+    const buraco = (lon, lat) => ((lon + 9.14) * mLon > 500 ? null : elevationAt(lon, lat))
+    const h = routeClearance(wps, { elevationAt: buraco, refElev: 200 })
+    expect(h.noData).toBeGreaterThan(5)
+    expect(h.samples).toBeGreaterThan(5)
+  })
+})
+
+describe('M2-T1: buracos do relevo debaixo da rota', () => {
+  const wps = [em(0, 0, 80), em(1000, 0, 80)]
+  it('sem buracos: so amostras com dados', () => {
+    const r = terrainHolesAlong(wps, { elevationAt })
+    expect(r.noData).toBe(0)
+    expect(r.at).toBeNull()
+    expect(r.samples).toBeGreaterThan(10)
+  })
+  it('um buraco a meio: conta-o e diz onde comeca', () => {
+    const buraco = (lon, lat) => {
+      const x = (lon + 9.14) * mLon
+      return x > 400 && x < 600 ? null : elevationAt(lon, lat)
+    }
+    const r = terrainHolesAlong(wps, { elevationAt: buraco })
+    expect(r.noData).toBeGreaterThan(2)
+    expect((r.at.lon + 9.14) * mLon).toBeGreaterThan(399)
+    expect((r.at.lon + 9.14) * mLon).toBeLessThan(620)
+    expect(r.at.index).toBe(1)
+  })
+  it('sem relevo ou sem rota devolve null', () => {
+    expect(terrainHolesAlong(wps, { elevationAt: null })).toBeNull()
+    expect(terrainHolesAlong([], { elevationAt })).toBeNull()
+  })
+})
+
+describe('M2-T3: folga dos transitos entre a base e a rota', () => {
+  // base a x = -400 (cota 100), lomba de 230 m em x = -200, area a x >= 0
+  // (cota 150); AGL 60 sobre a cota da area => 1.o waypoint a 110 m acima
+  // da base: o transito «safely» faz-se a 110 m, 20 m abaixo do topo
+  const lomba = (lon) => {
+    const x = (lon + 9.14) * mLon
+    if (x >= 0) return 150
+    if (x <= -400) return 100
+    const t = (x + 400) / 400
+    return 100 + 130 * Math.sin(Math.PI * t) + 50 * t
+  }
+  const elev = (lon) => lomba(lon)
+  const base = em(-400, 0)
+  const rota = [em(0, 0, 110), em(600, 0, 110)]
+  it('ida: a altura do 1.o waypoint (maior do que a de seguranca) e a lomba entra no relevo', () => {
+    const r = transitClearance(base, rota, {
+      elevationAt: elev,
+      refElev: 100,
+      takeOffSecurityHeightM: 30,
+      rthHeightM: 100,
+    })
+    expect(r.outHeightM).toBe(110)
+    expect(r.at.leg).toBe('out')
+    // cota maxima da lomba ~ 100 + 130 + 25 = 255 a meio: 210 - 255 < 0
+    expect(r.minM).toBeLessThan(-20)
+    expect(r.noData).toBe(0)
+  })
+  it('regresso: a maior entre a altura do ultimo waypoint e a de RTH', () => {
+    const alto = transitClearance(base, rota, {
+      elevationAt: elev,
+      refElev: 100,
+      takeOffSecurityHeightM: 30,
+      rthHeightM: 200,
+    })
+    expect(alto.backHeightM).toBe(200)
+    // a ida continua a mandar (110 m): o pior ponto e o da ida
+    expect(alto.at.leg).toBe('out')
+    const plano = transitClearance(base, rota, {
+      elevationAt: () => 100,
+      refElev: 100,
+      takeOffSecurityHeightM: 30,
+      rthHeightM: 100,
+    })
+    expect(plano.minM).toBeCloseTo(110, 6)
+  })
+  it('a altura de seguranca manda quando o 1.o waypoint e mais baixo', () => {
+    const baixa = [em(0, 0, 10), em(600, 0, 10)]
+    const r = transitClearance(base, baixa, {
+      elevationAt: () => 100,
+      refElev: 100,
+      takeOffSecurityHeightM: 30,
+      rthHeightM: 100,
+    })
+    expect(r.outHeightM).toBe(30)
+    expect(r.backHeightM).toBe(100)
+  })
+  it('sem base, sem rota ou sem relevo devolve null', () => {
+    expect(transitClearance(null, rota, { elevationAt: elev, refElev: 100 })).toBeNull()
+    expect(transitClearance(base, [], { elevationAt: elev, refElev: 100 })).toBeNull()
+    expect(transitClearance(base, rota, { elevationAt: () => null, refElev: 100 })).toBeNull()
   })
 })

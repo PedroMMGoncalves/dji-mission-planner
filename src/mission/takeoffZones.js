@@ -50,7 +50,8 @@ const EPS_M = 1e-6
 /**
  * @typedef {{point: number[], requestedRadiusM: number, radiusM: number,
  *   reduced: boolean, refElev: number, maxElev: number, reliefM: number,
- *   gainM: number, cause: {atM: number, reliefM: number}|null}} TakeoffZone
+ *   gainM: number, cause: {atM: number, reliefM: number}|null, noData: number,
+ *   partial: boolean}} TakeoffZone
  */
 
 /** Distância de grande círculo entre dois pontos [lon, lat] (m). */
@@ -130,13 +131,18 @@ export function computeTakeoffZone(
   let maxE = z0
   let effR = 0
   let cause = null
+  // amostras da zona sem relevo: a mínima só conta a parte com dados
+  let noData = 0
   for (const r of ringRadii(requestedRadiusM, step)) {
     let ringMin = minE
     let ringMax = maxE
     for (let k = 0; k < nDir; k++) {
       const p = offsetPoint(point, r, (360 * k) / nDir)
       const z = elevationAt(p[0], p[1])
-      if (!Number.isFinite(z)) continue
+      if (!Number.isFinite(z)) {
+        noData++
+        continue
+      }
       if (z < ringMin) ringMin = z
       if (z > ringMax) ringMax = z
     }
@@ -158,6 +164,8 @@ export function computeTakeoffZone(
     reliefM: maxE - minE,
     gainM: maxE - minE,
     cause,
+    noData,
+    partial: noData > 0,
   }
 }
 

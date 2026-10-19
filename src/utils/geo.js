@@ -352,20 +352,38 @@ export function squareSideForBattery({
   // Paragem a cada `stopEveryM` metros ao longo da faixa (foto por waypoint
   // com paragem em todos); 0 = só nos cantos
   stopEveryM = 0,
+  // O que a célula voa além do quadrado (M2-G1 da revisão da matemática):
+  // cada faixa prolongada `overshootM` para cada lado, a fiada de amarração
+  // (uma faixa a meio, perpendicular, só na primeira grelha, com a ligação
+  // de ~L/2) e a margem, que alarga a célula bufferPct/100·L/2 de cada lado
+  // (bufferDistanceMeters). Sem os contar, um bloco «cheio» com
+  // prolongamento de 30 m e fiada voava 112 % do tempo útil.
+  overshootM = 0,
+  tieLine = false,
+  bufferPct = 0,
 }) {
   const v = speed > 0 ? speed : 10
   const s = Math.max(1, spacingM)
-  const T = Math.max(
-    60,
-    (batteryMin * 60 * (1 - reservePct / 100) - transitS) / Math.max(1, passes),
-  )
+  const k = Math.max(1, passes)
+  const o = Number.isFinite(overshootM) && overshootM > 0 ? overshootM : 0
+  // o lado voado L' é o do quadrado alargado pela margem; o lado do mosaico
+  // é L = L'/f
+  const f = 1 + (Number.isFinite(bufferPct) && bufferPct > 0 ? bufferPct : 0) / 100
+  const useful = Math.max(60 * k, batteryMin * 60 * (1 - reservePct / 100) - transitS)
   const turnS = turnCostS(v)
-  // L/s faixas de L/e paragens cada: L²·custo/(s·e), que entra no termo em L²
-  const a = 1 / (s * v) + (stopEveryM > 0 ? stopCostS(1, v) / (s * stopEveryM) : 0)
-  const b = 2 / v + turnS / s
-  const c = turnS - T
-  const L = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a)
-  const capped = Math.min(L, Math.max(100, maxSideM))
+  // por passagem: L'/s faixas de L' + 2o com L'/e paragens cada (o termo em
+  // L'²), as ligações e as viragens (L'), mais uma viragem
+  const a1 = 1 / (s * v) + (stopEveryM > 0 ? stopCostS(1, v) / (s * stopEveryM) : 0)
+  const b1 = 2 / v + turnS / s + (2 * o) / (s * v)
+  const c1 = turnS
+  // a fiada, uma só vez: (1,5·L' + 2o)/v e uma viragem
+  const bt = tieLine ? 1.5 / v : 0
+  const ct = tieLine ? (2 * o) / v + turnS : 0
+  const A = k * a1
+  const B = k * b1 + bt
+  const C = k * c1 + ct - useful
+  const Lp = (-B + Math.sqrt(B * B - 4 * A * C)) / (2 * A)
+  const capped = Math.min(Lp / f, Math.max(100, maxSideM))
   return Math.max(50, Math.floor(capped / 10) * 10)
 }
 

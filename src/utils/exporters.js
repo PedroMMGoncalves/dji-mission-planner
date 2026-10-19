@@ -36,6 +36,17 @@ export const MAX_TRANSITIONAL_SPEED_MS = 15
 export const MIN_TAKEOFF_SECURITY_HEIGHT_M = 1.2
 export const MAX_TAKEOFF_SECURITY_HEIGHT_M = 1500
 export const MAX_RTH_HEIGHT_M = 1500
+/** Altura de segurança da descolagem escrita por omissão (m). */
+export const DEFAULT_TAKEOFF_SECURITY_HEIGHT_M = 30
+/**
+ * Altura de regresso (RTH) por omissão: acima do ponto mais alto da rota
+ * (`tectoM`, em metros acima da descolagem), com o mínimo de 100 m do Pilot
+ * 2, para o regresso não descer para dentro da área.
+ */
+export function defaultRthHeightM(tectoM) {
+  const t = Number.isFinite(tectoM) ? tectoM : 0
+  return Math.min(MAX_RTH_HEIGHT_M, Math.max(100, Math.ceil(t) + 20))
+}
 
 /*
  * PARÂMETRO DE DISPARO PERIÓDICO. O wpml:actionTriggerParam vai no ficheiro
@@ -565,7 +576,7 @@ function missionConfigXml({ wpml, speed, altitude, ...opts }) {
   const finishAction = pick(opts.finishAction, FINISH_ACTIONS, 'finishAction')
   const exitOnRCLost = pick(opts.exitOnRCLost, RC_LOST_MODES, 'exitOnRCLost')
   const rcLostAction = pick(opts.executeRCLostAction, RC_LOST_ACTIONS, 'executeRCLostAction')
-  const takeOffSecurityHeight = opts.takeOffSecurityHeightM ?? 30
+  const takeOffSecurityHeight = opts.takeOffSecurityHeightM ?? DEFAULT_TAKEOFF_SECURITY_HEIGHT_M
   // `wpml:globalRTHHeight` é obrigatório em waylines.wpml. O regresso é
   // planeado acima do tecto da missão (mínimo 100 m, o valor por omissão do
   // Pilot 2) para o trajecto de regresso não descer para dentro da área.
@@ -582,8 +593,7 @@ function missionConfigXml({ wpml, speed, altitude, ...opts }) {
     .map((w) => Number(w?.[2]))
     .filter((h) => Number.isFinite(h))
   const tectoM = Math.max(Number(altitude) || 0, ...(alturasRota.length ? alturasRota : [0]))
-  const rthHeight =
-    opts.rthHeightM ?? Math.min(MAX_RTH_HEIGHT_M, Math.max(100, Math.ceil(tectoM) + 20))
+  const rthHeight = opts.rthHeightM ?? defaultRthHeightM(tectoM)
   return `  <wpml:missionConfig>
     <wpml:flyToWaylineMode>safely</wpml:flyToWaylineMode>
     <wpml:finishAction>${finishAction}</wpml:finishAction>

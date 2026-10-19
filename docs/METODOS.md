@@ -182,15 +182,15 @@ envolvente rodada; mantém-se toda a célula que intersecta o polígono
 Modelo de tempo, igual em todo o motor:
 
 ```
-flightTimeS = pathLengthM / v + nLines · TURN_TIME_S,   TURN_TIME_S = 3 s
+flightTimeS = pathLengthM / v + (nLines − 1) · v / 1,7  (+ paragens, §6)
 ```
 
 com `pathLengthM` a soma das distâncias entre waypoints consecutivos
-(ligações incluídas). Não são modelados: aceleração e desaceleração,
-raio de viragem, subida e descida, descolagem e aterragem, vento,
-pairagem. O custo de 3 s por viragem e o factor de velocidade efectiva em
-faixa estão marcados no código para calibração com logs de voo
-(Setembro de 2026; ver secção 16).
+(ligações incluídas) e `v/1,7` o custo de uma inversão de sentido
+(`turnCostS`, calibrado contra a previsão do Pilot 2: §15 e §16; os 3 s
+constantes de antes só coincidem perto dos 5 m/s). Não são modelados:
+aceleração e desaceleração, raio de viragem, subida e descida, descolagem
+e aterragem, vento, pairagem.
 
 Trânsito: numa rota única, `2 · distância horizontal em linha recta / v`
 da base de referência à área (`distanceToArea`, distância à fronteira ou 0
@@ -230,10 +230,18 @@ Como os blocos partilham faixas adjacentes da mesma grelha, a sobreposição
 lateral entre blocos mantém-se sem margens extra.
 
 Lado do quadrado por bateria (`squareSideForBattery`): para um quadrado de
-lado `L`, `n ≈ L/s + 1` faixas, tempo `≈ (L²/s + 2L)/v + n · 3`, igualado
-ao tempo útil `T = max(60 s, (útil − trânsito) / passagens)` e resolvido
-como quadrática em `L`; limitado a `maxSide` (500 m por omissão, conforto
-VLOS, piso 100 m), arredondado para baixo à dezena, mínimo 50 m.
+lado voado `L'`, `L'/s` faixas de `L' + 2o` (`o` o prolongamento), tempo
+por passagem `(L'² + 2o·L')/(s·v) + 2L'/v + (L'/s) · v/1,7 + v/1,7` (as
+paragens intermédias entram no termo em `L'²`), vezes as passagens, mais a
+fiada de amarração uma só vez, `(1,5·L' + 2o)/v + v/1,7` (a faixa a meio e
+a ligação até ela), igualado a `max(60 s · passagens, útil − trânsito)` e
+resolvido como quadrática em `L'`; o lado do mosaico é `L = L'/(1 +
+margem/100)`, porque a margem alarga cada célula `margem/100 · L/2` de
+cada lado (`bufferDistanceMeters`). Sem contar o prolongamento, a fiada e
+a margem, um bloco «cheio» voava 101–127 % do tempo útil (M2-G1 da revisão
+da matemática; com as três opções a 0 o modelo já dava 92–100 %). Limitado
+a `maxSide` (500 m por omissão, conforto VLOS, piso 100 m), arredondado
+para baixo à dezena, mínimo 50 m.
 
 Trânsito no dimensionamento (`squareSideWithBaseTransit`,
 `src/mission/baseLayout.js`): o lado não pode depender de onde estão as
@@ -258,8 +266,9 @@ em 4 × 4 fracções do lado (2 × 2 acima de ~150 células, 1 × 1 acima de
 menos tiras (`fillFrac < 0,25`), depois menos área em tiras; cada tira
 funde-se no vizinho com mais fronteira comum se o conjunto couber numa
 bateria (`cellFitsBattery`: o mesmo modelo, com a área `A` e a maior
-extensão `W` da célula, `passagens · (A·a + W·b + 3 s) + (2r + (1+√2)·W)/v ≤
-útil`; no mosaico manual, `A ≤ 1,25 · L²`). Orientação: arestas paralelas
+extensão `W` da célula alargadas pela margem, `passagens · (A·a + W·b +
+v/1,7) + fiada + (2r + (1+√2)·W)/v ≤ útil`, com o prolongamento em `b`; no
+mosaico manual, `A ≤ 1,25 · L²`). Orientação: arestas paralelas
 às faixas do ângulo usado (também o «Óptimo», que escreve o ângulo),
 `mosaicOrientationForLines`; desligado, a orientação manual. Numeração em
 serpentina. O mosaico antigo (`tilePolygonWithSquares`) mantinha quadrados
@@ -631,8 +640,12 @@ descolagem é acima da mínima, e é a base marcada que o recupera. Os pontos
 inseridos numa ligação contam para a faixa a que conduzem (`perLine`) e
 ficam registados à parte (`perLink`); um bloco descarta os da ligação que
 antecede a sua primeira faixa, porque arranca da base. Sem dados numa
-amostra usa-se a última elevação válida (aviso). Aviso (não bloqueio) se a
-altura relativa mínima for inferior a 20 m.
+amostra usa-se a última elevação válida, e a rota que atravesse um buraco
+do modelo é bloqueada pelo preflight (`terrain-holes`, §14: a cobertura
+media-se só pela caixa dos tiles, e um tile falhado dentro dela — até 20 %
+são tolerados — era um buraco de ~7,5 km de lado que passava sem aviso;
+um tile falhado é agora pedido outra vez antes de o relevo ficar pronto).
+Aviso (não bloqueio) se a altura relativa mínima for inferior a 20 m.
 
 Limites: a garantia da tolerância vale nos pontos amostrados, a 40 m; um
 acidente mais estreito do que o passo é invisível ao perfil. O Terrarium é
@@ -690,21 +703,35 @@ horizontais empilhadas ao longo da linha desviada de `standoff` para o
 lado escolhido; rumo perpendicular ao segmento local, virado para a face;
 alturas relativas à descolagem (que deve estar à cota do pé da face).
 
-Pegada **na face**, à distância standoff (câmara nivelada):
-`imgW = standoff · sensorWidth / f`, `imgH = standoff · sensorHeight / f`;
-passos `vStep = imgH · (1 − vOverlap)`, `hStep = imgW · (1 − hOverlap)`
-(erro `overlap-too-high` abaixo de 0,1 m). Centros das imagens de
-`max(imgH/2, piso 5 m)` a `H − imgH/2`, com `n = ceil((último − primeiro)/vStep) + 1`
-passagens redistribuídas uniformemente (passo real ≤ vStep); o piso
-aplica-se ao intervalo inteiro; `uncoveredBottomM` é a banda que o piso
-deixa por fotografar. Desvio da linha de base num referencial métrico
-local (o `lineOffset` do Turf, em graus, encolhe os desvios E-O em
-cos(lat)), com mitra exacta até 2,5·d (`1 + n1·n2 > 0,32`) e bisel além;
-sem remoção de laços. Amostragem ao longo da linha desviada a passos
-≤ hStep, extremos incluídos; rumo por diferença central arredondado ao
+Pegada **na face**, à distância standoff `d`, com a câmara a `p` graus
+de inclinação e meia-abertura vertical `v = atan(sensorHeight/2f)`: a
+banda vista numa face vertical é `[h + d·tan(p − v), h + d·tan(p + v)]`
+(`bandBottomM`, `bandTopM`; nivelada, `±imgH/2` com `imgH = d ·
+sensorHeight / f`), `imgW = d · sensorWidth / f`; passos `vStep = imgH ·
+(1 − vOverlap)`, `hStep = imgW · (1 − hOverlap)` (erro `overlap-too-high`
+abaixo de 0,1 m; `pitch-too-steep` quando `|p| + v ≥ 90°`). Centros das
+imagens de `max(−bandBottom, piso 5 m)` a `H − bandTop` (a banda da
+primeira passagem começa no pé, a da última acaba no topo), com `n =
+ceil((último − primeiro)/vStep) + 1` passagens redistribuídas
+uniformemente (passo real ≤ vStep); o piso aplica-se ao intervalo inteiro;
+`uncoveredBottomM = max(0, primeiro + bandBottom)` é a banda que o piso
+deixa por fotografar. Antes a geometria era só a nivelada e o pitch ia
+apenas para o gimbal: a −20° um M3E a 25 m deixava um terço do topo sem
+imagem (M2-E2). Desvio da linha de base num referencial métrico local (o
+`lineOffset` do Turf, em graus, encolhe os desvios E-O em cos(lat)) com a
+junta do corredor (`offsetPolylineMiter`, §9): arco a `d` exactos do
+vértice do lado convexo — em que o rumo, perpendicular à tangente, aponta
+ao próprio vértice — e esquadria do lado côncavo. A linha desviada é
+amostrada a `d/10` e, se alguma amostra ficar a menos de `0,95·d` da linha
+de base (canto côncavo demasiado fechado, troço mais curto do que o
+afastamento permite, um U voado por dentro), o plano é recusado com
+`standoff-corner` (a mitra com bisel de antes punha o drone a 6–12 m de
+uma face a 25 m, M2-E3). Amostragem ao longo da linha desviada a passos ≤
+hStep, extremos incluídos; rumo por diferença central arredondado ao
 grau; um `takePhoto` por waypoint; pitch do gimbal constante em todas as
 passagens. Serpentina com subida no mesmo ponto horizontal. Tempo
-`L/v + 2 s · waypoints` (paragem e disparo). GSD ao standoff.
+`L/v + 2 s · waypoints` (paragem e disparo). GSD ao longo do eixo óptico,
+`d / cos p`.
 
 Folga (`checkFaceClearance`), só contra um DSM **local** (o Terrarium é
 inutilizável à escala de uma face): por waypoint, folga vertical =
@@ -802,7 +829,8 @@ passagem** (a interior é mais curta do que a exterior; projectar do eixo
 daria sobreposição a mais dentro e a menos fora); no modo distância, o
 traçado é simplificado por Douglas-Peucker (1 m) e o disparo é do drone,
 com os intervalos de disparo quebrados nas ligações longas. Sem rumo por
-waypoint (segue a rota), gimbal −90°. Tempo `L/v + 3 s · (troços − 1)`.
+waypoint (segue a rota), gimbal −90°. Tempo `L/v + (troços − 1) · v/1,7`
+(+ paragens com «Em todos», §6).
 
 Seguimento de terreno (`src/mission/corridorTerrain.js`): o motor da área
 (§5) aplicado às passagens. Cada passagem é uma polilinha com dobras;
@@ -876,8 +904,13 @@ alta do seu círculo, o que o põe mais alto e nunca mais baixo; um círculo
 sem relevo nenhum é erro, e sem cota de referência também: o preflight
 bloqueia, nunca saem alturas planas. A cobertura do relevo mede-se sobre
 os próprios círculos, que saem da área até um raio, e não sobre a área.
-Blocos por círculos inteiros: o bloco fecha quando o círculo seguinte não
-cabe no tempo útil da bateria.
+Blocos por círculos inteiros (`circularBlocks`): o bloco fecha quando o
+círculo seguinte não cabe no tempo útil da bateria, contando o
+deslocamento, duas inversões (`v/1,7`) por círculo que se junta — o fim do
+anterior e a entrada neste — e o trânsito de ida e volta entre a base e o
+primeiro ponto do bloco (`transitS`, que o resumo de operação usa). Só com
+o deslocamento cada bloco passava o tempo útil em 11–77 % consoante a
+velocidade (M2-E1).
 
 Obturador: a distância entre fotos ao longo do círculo é a corda
 `2R · sin(π / nPts)`; o aviso compara-a, a dividir pela velocidade, com o
@@ -1203,7 +1236,15 @@ separador aberto, e os de cada painel. Antes só o do cabeçalho estava
 ligado ao preflight, e exportava a área qualquer que fosse o separador.
 Bloqueios (desactivam o KMZ): sem plano; plano com erro; relevo que não
 cobre a rota exportada, em todos os modos (a descarregar, descarga
-falhada, MDT importado curto, ou nenhum: secção 5); seguir terreno com
+falhada, MDT importado curto, ou nenhum: secção 5); relevo em falta
+debaixo da rota dentro da caixa carregada (`terrain-holes`: um tile em
+falta ou uma zona sem dados do MDT, amostrada a 40 m com a fracção e o
+primeiro ponto — o seguimento de terreno atravessava-o à cota do último
+ponto válido e a folga saltava a amostra, M2-T1); trânsito entre a base e
+a rota que entra no relevo (`transit-collision`, `transitClearance`: a ida
+à altura do 1.º waypoint ou à de segurança da descolagem, 30 m, a maior; o
+regresso à maior entre a altura do último waypoint e a de RTH; por voo com
+bases, M2-T3); seguir terreno com
 foto por waypoint; seguir terreno ligado sem relevo a cobrir a área; erro
 do cálculo do terreno; mais de 65535 waypoints numa rota (a maior, com
 blocos); waypoints consecutivos a menos de 0,5 m em 3D na rota exportada (o mínimo
@@ -1219,7 +1260,10 @@ volta, ou por bloco com `timeS + transitS`); foto por waypoint sem paragem
 («Só nos cantos»), por validar em voo (área e corredor); base a mais de
 2 km da área; base fora do relevo carregado (assumida a cota mínima da
 área); sem base numa área com mais de 10 m de desnível (cota assumida e
-desnível na mensagem); folga mínima ao solo abaixo de 15 m. Bloqueios
+desnível na mensagem); folga mínima ao solo abaixo de 15 m; folga do
+trânsito base ↔ rota abaixo de 15 m (`transit-low`); zona de descolagem
+com pontos sem relevo (`base-zone-partial`: a cota mínima só conta a parte
+com dados). Bloqueios
 acrescentados: rota que entra no relevo (folga negativa, amostrada a 40 m
 sobre o relevo carregado, em todos os modos); base a uma distância cujo
 trânsito de ida e volta excede o tempo útil de uma bateria. Lembretes: sem

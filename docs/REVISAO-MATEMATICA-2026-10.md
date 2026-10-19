@@ -6,8 +6,8 @@ KML/KMZ contra a especificação WPML da DJI, está em
 calcula está certo para o planeamento de voo fotogramétrico e LiDAR, bate
 certo com o `METODOS.md` e aguenta os casos-limite?**
 
-**Estado (2026-10-19):** relatório entregue; nenhuma correcção aplicada
-ainda — os pacotes da secção 5 aguardam aprovação.
+**Estado (2026-10-19):** pacotes M-A a M-D aprovados. M-A (os seis que
+bloqueiam) aplicado, com testes; M-B, M-C e M-D a seguir, por esta ordem.
 
 ## 1. Método
 

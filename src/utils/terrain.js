@@ -318,9 +318,10 @@ export async function loadTerrain(bbox, opts = {}) {
 
   const tiles = new Map()
   let failed = 0
+  let failedTiles = []
   let tileSize = DEFAULT_TILE_SIZE
 
-  await runPool(wanted, MAX_CONCURRENT_FETCHES, async ({ x, y }) => {
+  const fetchOne = async ({ x, y }) => {
     const url = urlTemplate
       .replace('{z}', String(z))
       .replace('{x}', String(x))
@@ -337,10 +338,22 @@ export async function loadTerrain(bbox, opts = {}) {
       if (px.width > 0) tileSize = px.width
     } catch {
       failed++ // tile isolado em falta (ou preso): a zona fica sem dados
+      failedTiles.push({ x, y })
     } finally {
       clearTimeout(timer)
     }
-  })
+  }
+  await runPool(wanted, MAX_CONCURRENT_FETCHES, fetchOne)
+  // Um tile falhado (ou preso) é um buraco de ~7,5 km de lado a zoom 12
+  // que a caixa dava como coberto (M2-T1 da revisão da matemática): pede-se
+  // outra vez cada um antes de dar o relevo como pronto; o que falhar à
+  // segunda fica sem dados e o preflight bloqueia a rota que o atravesse.
+  if (failedTiles.length > 0) {
+    const again = failedTiles
+    failedTiles = []
+    failed = 0
+    await runPool(again, MAX_CONCURRENT_FETCHES, fetchOne)
+  }
 
   if (wanted.length === 0 || failed > wanted.length * MAX_FAIL_RATIO) {
     throw new Error('Falha ao descarregar o modelo de terreno')
@@ -528,7 +541,7 @@ function segmentLengthM(a, b) {
  * @returns {{waypoints: Array<[number, number, number]>, perLine: number[],
  *   perLink: number[], vertexIndex: number[][], elevMin: number|null, elevMax: number|null,
  *   corridorM: number, corridorRiseMaxM: number, clearanceMinM: number|null,
- *   cappedCount: number, warnings: string[]}}
+ *   cappedCount: number, noDataCount: number, sampleCount: number, warnings: string[]}}
  */
 export function terrainFollowLines(
   terrain,
@@ -560,6 +573,8 @@ export function terrainFollowLines(
     corridorRiseMaxM: 0,
     clearanceMinM: null,
     cappedCount: 0,
+    noDataCount: 0,
+    sampleCount: 0,
     warnings,
   }
   if (!Array.isArray(lines) || lines.length === 0) return empty
@@ -737,6 +752,10 @@ export function terrainFollowLines(
     corridorRiseMaxM,
     clearanceMinM: Number.isFinite(clearanceMinM) ? clearanceMinM : null,
     cappedCount,
+    // amostras do eixo sem relevo (herdaram a última cota válida): o
+    // preflight bloqueia a rota que atravesse um buraco do modelo
+    noDataCount,
+    sampleCount,
     warnings,
   }
 }

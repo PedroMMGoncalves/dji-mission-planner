@@ -62,7 +62,41 @@ function groundItems(c, usable) {
     if (minM < 0) out.push(item('block', 'terrain-collision', { m: round1(-minM) }))
     else if (minM < CLEARANCE_WARN_M) out.push(item('warn', 'clearance-low', { m: round1(minM) }))
   }
+  // buracos do relevo debaixo da rota (tile em falta, zona sem dados do
+  // MDT) dentro da caixa que se dava como coberta: bloqueio (M2-T1)
+  const holes = c.terrainHoles
+  if (holes && holes.noData > 0 && c.terrainRoute?.covered) {
+    const total = holes.noData + holes.samples
+    out.push(
+      item('block', 'terrain-holes', {
+        n: holes.noData,
+        total,
+        pct: Math.round((100 * holes.noData) / total),
+        lat: holes.at ? holes.at.lat.toFixed(5) : '',
+        lon: holes.at ? holes.at.lon.toFixed(5) : '',
+      }),
+    )
+  }
   return out
+}
+
+/**
+ * Trânsitos entre a base e a rota (transitClearance): a aeronave voa-os
+ * sozinha, à altura do 1.º waypoint (ou à de segurança da descolagem) e, no
+ * regresso, à de RTH — nenhum número do planeador os mostrava (M2-T3).
+ * Bloqueio quando entram no relevo, aviso abaixo de 15 m.
+ */
+function transitItems(c) {
+  const t = c.transitClearance
+  if (!t || !Number.isFinite(t.minM)) return []
+  const params = {
+    m: round1(Math.abs(t.minM)),
+    flight: t.flight ?? '—',
+    h: Math.round(t.at?.leg === 'back' ? t.backHeightM : t.outHeightM),
+  }
+  if (t.minM < 0) return [item('block', 'transit-collision', params)]
+  if (t.minM < CLEARANCE_WARN_M) return [item('warn', 'transit-low', params)]
+  return []
 }
 
 /**
@@ -223,6 +257,8 @@ function blockBaseItems(c, usable) {
           at: Math.round(base.zone.cause?.atM ?? base.zone.radiusM),
         }),
       )
+    if (base.zone?.partial)
+      out.push(item('warn', 'base-zone-partial', { base: base.label, n: base.zone.noData }))
   }
   return out
 }
@@ -293,6 +329,8 @@ export function usableBatteryMin(batteryMin, reservePct = 0) {
  * @param {Array<{exposureS: number, blurCm: number, blurPx: number|null}>|null} [c.blur] arrastamento por exposição
  * @param {{duplicates: number[], longSegments: any[], climb: any[]}|null} [c.route] routeChecks da rota exportada
  * @param {{minM: number}|null} [c.clearance] pior folga ao solo da rota exportável (routeClearance)
+ * @param {{samples: number, noData: number, at: {lon: number, lat: number}|null}|null} [c.terrainHoles] amostras da rota sem relevo (terrainHolesAlong)
+ * @param {{minM: number, at: {leg: string}, outHeightM: number, backHeightM: number, flight?: string|null}|null} [c.transitClearance] folga dos trânsitos base ↔ rota (transitClearance), o pior voo
  * @param {{elev: number|null, source: string|null, baseOutside: boolean, reliefM: number|null}|null} [c.reference] cota de referência (referenceElevation)
  * @param {{worst: number, min: number, max: number}|null} [c.gimbal] inclinação pedida fora do intervalo do payload (gimbalRangeViolation)
  * @param {number|null} [c.aglMaxM] maior altura acima do solo da rota (nota da categoria aberta)
@@ -383,18 +421,21 @@ export function preflightArea(c) {
     // relevo entre o operador e o drone
     out.push(...blockBaseItems(c, usable))
     out.push(...viewshedItems(c))
-  } else if (c.refZone?.zone?.reduced) {
+  } else if (c.refZone?.zone) {
     // rota única: a zona da base de referência
     const z = c.refZone.zone
-    out.push(
-      item('info', 'base-zone-reduced', {
-        base: c.refZone.label,
-        r: Math.round(z.radiusM),
-        req: Math.round(z.requestedRadiusM),
-        relief: Math.round(z.cause?.reliefM ?? z.reliefM),
-        at: Math.round(z.cause?.atM ?? z.radiusM),
-      }),
-    )
+    if (z.reduced)
+      out.push(
+        item('info', 'base-zone-reduced', {
+          base: c.refZone.label,
+          r: Math.round(z.radiusM),
+          req: Math.round(z.requestedRadiusM),
+          relief: Math.round(z.cause?.reliefM ?? z.reliefM),
+          at: Math.round(z.cause?.atM ?? z.radiusM),
+        }),
+      )
+    if (z.partial)
+      out.push(item('warn', 'base-zone-partial', { base: c.refZone.label, n: z.noData }))
   }
   if (c.baseLayout?.hasBases && blocks) {
     // (a bateria já foi vista bloco a bloco, com o trânsito de cada base)
@@ -416,6 +457,7 @@ export function preflightArea(c) {
   }
 
   out.push(...groundItems(c, usable))
+  out.push(...transitItems(c))
   out.push(...noBaseItems(c))
   out.push(...openCategoryItems(c))
   out.push(item('info', 'heights-relative'))
@@ -470,6 +512,7 @@ export function preflightPlan(c) {
   out.push(...photoPassUnverified(c))
   out.push(...routeItems(c))
   out.push(...groundItems(c, usable))
+  out.push(...transitItems(c))
   // os modos com cota de referência própria (corredor, circular) dizem o que
   // se assume sem base, como a área
   if ('reference' in c) out.push(...noBaseItems(c))

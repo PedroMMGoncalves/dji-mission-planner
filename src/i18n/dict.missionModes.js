@@ -200,6 +200,14 @@ export default {
     pt: 'Sobreposição demasiado alta para a pegada a esta distância.',
     en: 'Overlap too high for the footprint at this distance.',
   },
+  'fp.error.pitch-too-steep': {
+    pt: 'Inclinação da câmara demasiado íngreme para ver a face a esta distância.',
+    en: 'Camera pitch too steep to see the face at this distance.',
+  },
+  'fp.error.standoff-corner': {
+    pt: 'Num canto o drone ficaria a menos do afastamento pedido da face (canto demasiado fechado ou troço mais curto do que o afastamento permite). Abra o canto, reduza o afastamento ou parta a linha em duas fachadas.',
+    en: 'At a corner the drone would be closer to the face than the requested standoff (corner too tight, or a segment shorter than the standoff allows). Open the corner, reduce the standoff or split the line into two facades.',
+  },
   'fp.export': { pt: 'Exportar WPML (KMZ)', en: 'Export WPML (KMZ)' },
   'fp.exportHint': {
     pt: 'Alturas relativas ao ponto de descolagem: descole à cota do pé da face, ou ajuste as alturas. Rumo fixo e uma foto em cada waypoint.',

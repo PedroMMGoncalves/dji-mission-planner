@@ -5,6 +5,7 @@ import {
   longestEdgeBearing,
   ringToPolygon,
   routeStats,
+  turnCostS,
 } from './geo.js'
 
 /**
@@ -367,12 +368,30 @@ export function applyCircularTerrain(plan, { elevationAt, refElev, agl, speed })
 /**
  * Blocos por círculos inteiros: o bloco fecha quando o círculo seguinte
  * não cabe no tempo útil da bateria. Cada bloco leva os waypoints e o
- * perWaypoint da sua fatia, e a duração própria. Sem tempo útil, um bloco.
+ * perWaypoint da sua fatia, a duração própria e o trânsito. Sem tempo
+ * útil, um bloco.
+ *
+ * O encaixe usa o mesmo modelo de §9A que o tempo do bloco: o deslocamento
+ * mais duas inversões (`v/1,7`) por círculo que se junta — o fim do
+ * círculo anterior e a entrada neste —, mais o trânsito de ida e volta
+ * entre a base e o primeiro ponto do bloco (M2-E1 da revisão da
+ * matemática: só com o deslocamento, cada bloco passava o tempo útil em
+ * 11–77 % consoante a velocidade, e o painel dizia «N blocos por bateria»).
+ * @param {any} plan generateCircularPlan
+ * @param {number[][]|null} waypoints os do plano (ou os 3D do seguimento de terreno)
+ * @param {{usableS?: number|null, speed: number, basePoint?: number[]|null}} opts
  */
-export function circularBlocks(plan, waypoints, { usableS = null, speed }) {
+export function circularBlocks(plan, waypoints, { usableS = null, speed, basePoint = null }) {
   if (!plan?.circles?.length) return []
   const wps = waypoints ?? plan.waypoints
   const timeOf = (from, to) => routeStats(wps.slice(from, to), { speed, turns: 0 }).flightTimeS ?? 0
+  const turnS = turnCostS(speed)
+  const hasBase =
+    Array.isArray(basePoint) && Number.isFinite(basePoint[0]) && Number.isFinite(basePoint[1])
+  const transitOf = (start) =>
+    hasBase && speed > 0
+      ? (2 * turf.distance(basePoint, [wps[start][0], wps[start][1]], { units: 'meters' })) / speed
+      : 0
   const blocks = []
   let cur = null
   const close = () => {
@@ -387,15 +406,24 @@ export function circularBlocks(plan, waypoints, { usableS = null, speed }) {
       lengthM: r.pathLengthM,
       timeS: r.flightTimeS ?? 0,
       durationS: r.flightTimeS ?? null,
+      transitS: cur.transitS,
     })
     cur = null
   }
   for (const c of plan.circles) {
     const end = c.start + c.count
-    // tempo do círculo mais a ligação que o precede quando já há bloco aberto
-    const addS = cur ? timeOf(cur.end - 1, end) : timeOf(c.start, end)
-    if (cur && usableS != null && cur.timeS + addS > usableS) close()
-    if (!cur) cur = { start: c.start, end, circles: [c.index], timeS: timeOf(c.start, end) }
+    // tempo do círculo mais, com bloco aberto, a ligação que o precede e as
+    // duas inversões
+    const addS = cur ? timeOf(cur.end - 1, end) + 2 * turnS : timeOf(c.start, end)
+    if (cur && usableS != null && cur.timeS + cur.transitS + addS > usableS) close()
+    if (!cur)
+      cur = {
+        start: c.start,
+        end,
+        circles: [c.index],
+        timeS: timeOf(c.start, end),
+        transitS: transitOf(c.start),
+      }
     else {
       cur.end = end
       cur.circles.push(c.index)

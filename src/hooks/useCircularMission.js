@@ -177,9 +177,11 @@ export function useCircularMission({
         ? circularBlocks(circularPlanOk, circularPlanOk.waypoints, {
             usableS: usableMin != null ? usableMin * 60 : null,
             speed: circularSpeed,
+            // o trânsito de cada bloco conta para o encaixe na bateria
+            basePoint,
           })
         : [],
-    [circularPlanOk, usableMin, circularSpeed],
+    [circularPlanOk, usableMin, circularSpeed, basePoint],
   )
 
   const circularPreview = useMemo(() => {

@@ -229,6 +229,19 @@ describe('terreno, blocos e exportacao', () => {
     for (const x of b) {
       expect(x.perWaypoint).toHaveLength(x.waypoints.length)
       expect(x.durationS).toBeGreaterThan(0)
+      // M2-E1: o encaixe conta as inversoes; um bloco com mais de um circulo
+      // nunca passa o tempo util (um circulo sozinho pode)
+      if (x.circles.length > 1) expect(x.timeS + x.transitS).toBeLessThanOrEqual(240)
+      expect(x.transitS).toBe(0)
+    }
+    // com a base a 500 m, o transito de ida e volta entra no orcamento
+    const w0 = plan.waypoints[0]
+    const base = [w0[0] - 500 / (111320 * Math.cos((w0[1] * Math.PI) / 180)), w0[1]]
+    const bb = circularBlocks(plan, null, { usableS: 240, speed: 8.2, basePoint: base })
+    expect(bb.length).toBeGreaterThanOrEqual(b.length)
+    for (const x of bb) {
+      expect(x.transitS).toBeGreaterThan(2 * (500 / 8.2) * 0.9)
+      if (x.circles.length > 1) expect(x.timeS + x.transitS).toBeLessThanOrEqual(240)
     }
     expect(circularBlocks(plan, null, { usableS: null, speed: 8 })).toHaveLength(1)
     expect(circularBlocks(null, null, { usableS: 100, speed: 8 })).toEqual([])

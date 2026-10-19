@@ -1,43 +1,42 @@
 import * as turf from '@turf/turf'
+import { offsetPolylineMiter, pointPolylineDistance, resamplePolyline } from './corridor.js'
 import { computeFootprint, computeGSD } from './geo.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 
+/** Fracção do afastamento abaixo da qual a linha afastada é recusada (M2-E3). */
+export const STANDOFF_MIN_FRAC = 0.95
+
 /**
- * Offsets a lon/lat polyline sideways by dM metres (positive = LEFT of the
- * walking direction), with mitred joins clamped at sharp corners. Done in a
- * local metric frame — turf.lineOffset works in degree space and shrinks
- * east-west offsets by cos(lat), which at ~40° means 25 m become ~19 m.
+ * Linha afastada de dM metros (positivo = à ESQUERDA do sentido do desenho)
+ * de uma polilinha lon/lat, num referencial métrico local — turf.lineOffset
+ * trabalha em graus e encolhe os desvios E-O por cos(lat), que a ~40° faz
+ * de 25 m uns 19 m.
+ *
+ * A junta é a do corredor (offsetPolylineMiter): arco a |dM| exactos do
+ * vértice do lado convexo, em que o rumo perpendicular à tangente aponta
+ * ao próprio vértice, e esquadria do lado côncavo. A mitra de antes
+ * disparava para 2,5·d e, acima de 132° de deflexão, caía num «bisel» que
+ * punha o drone a 6–12 m de uma face a 25 m (M2-E3 da revisão da
+ * matemática). O afastamento é o parâmetro de segurança: se alguma amostra
+ * da linha afastada ficar a menos de STANDOFF_MIN_FRAC·|dM| da linha de
+ * base — canto côncavo demasiado fechado, troço mais curto do que o
+ * afastamento permite (um U voado por dentro) — devolve-se `null` e o
+ * plano é recusado com `standoff-corner`.
+ * @returns {number[][]|null} pontos lon/lat, ou null quando o afastamento não se garante
  */
 function offsetPolyline(coords, dM) {
   const lat0 = coords.reduce((s, c) => s + c[1], 0) / coords.length
   const kx = metersPerDegLon(lat0)
   const ky = M_PER_DEG_LAT
   const P = coords.map(([lon, lat]) => [lon * kx, lat * ky])
-  const nSeg = []
-  for (let i = 0; i < P.length - 1; i++) {
-    const dx = P[i + 1][0] - P[i][0]
-    const dy = P[i + 1][1] - P[i][1]
-    const len = Math.hypot(dx, dy) || 1
-    nSeg.push([-dy / len, dx / len]) // normal à esquerda do sentido
+  const off = offsetPolylineMiter(P, dM)
+  if (off.length < 2) return null
+  const dense = resamplePolyline(off, Math.max(0.5, Math.abs(dM) / 10))
+  if (!dense.truncated) {
+    const limit = Math.abs(dM) * STANDOFF_MIN_FRAC
+    for (const q of dense) if (pointPolylineDistance(q, P) < limit) return null
   }
-  return P.map((p, i) => {
-    const n1 = nSeg[Math.max(0, i - 1)]
-    const n2 = nSeg[Math.min(nSeg.length - 1, i)]
-    const denom = 1 + n1[0] * n2[0] + n1[1] * n2[1]
-    let ox
-    let oy
-    if (denom > 0.32) {
-      // mitra exata: |offset| = d / cos(θ/2), até ~2.5d
-      ox = ((n1[0] + n2[0]) / denom) * dM
-      oy = ((n1[1] + n2[1]) / denom) * dM
-    } else {
-      // canto demasiado agudo: normal média com |offset| = d (bisel)
-      const ul = Math.hypot(n1[0] + n2[0], n1[1] + n2[1]) || 1
-      ox = ((n1[0] + n2[0]) / ul) * dM
-      oy = ((n1[1] + n2[1]) / ul) * dM
-    }
-    return [(p[0] + ox) / kx, (p[1] + oy) / ky]
-  })
+  return off.map(([x, y]) => [x / kx, y / ky])
 }
 
 /** Valores iniciais da configuração de fachada (E1.1). */
@@ -122,17 +121,30 @@ export function generateFacePlan(baseline, options) {
     return { error: 'camera-required' }
   }
 
-  // pegada da imagem NA FACE à distância standoff (pin-hole, câmara nivelada)
+  // pegada da imagem NA FACE à distância standoff (pin-hole). Com a câmara a
+  // `gimbalPitch` (p) e meia-abertura vertical v = atan(sH/2f), a banda que
+  // a imagem vê numa face vertical à distância d é
+  // [h + d·tan(p − v), h + d·tan(p + v)]; nivelada, ±d·tan v = ±imgH/2. A
+  // geometria era só a nivelada e o pitch ia apenas para o gimbal: a −20°
+  // um M3E a 25 m deixava um terço do topo sem imagem com as estatísticas a
+  // dizer «coberta» (M2-E2 da revisão da matemática).
   const fp = computeFootprint(sensor, standoffM)
   const imgW = fp.across
-  const imgH = fp.along
+  const halfV = Math.atan(sensor.sensorHeight / (2 * sensor.focalLength))
+  const pitchRad = (gimbalPitch * Math.PI) / 180
+  if (Math.abs(pitchRad) + halfV >= Math.PI / 2 - 1e-9) return { error: 'pitch-too-steep' }
+  // bordos da banda, em metros acima do centro da imagem (bottom < 0 < top)
+  const bandBottom = standoffM * Math.tan(pitchRad - halfV)
+  const bandTop = standoffM * Math.tan(pitchRad + halfV)
+  const imgH = bandTop - bandBottom
   const vStep = imgH * (1 - verticalOverlapPct / 100)
   const hStep = imgW * (1 - horizontalOverlapPct / 100)
   if (!(vStep > 0.1) || !(hStep > 0.1)) return { error: 'overlap-too-high' }
 
-  // alturas das passagens: centros de imagem de imgH/2 até H − imgH/2,
-  // distribuídos uniformemente com passo ≤ vStep; passagem única centrada
-  // quando a face cabe numa imagem.
+  // alturas das passagens: centros de imagem tais que a banda vá do pé da
+  // face (h + bandBottom = 0) ao topo (h + bandTop = H), distribuídos
+  // uniformemente com passo ≤ vStep; passagem única centrada quando a face
+  // cabe numa imagem.
   //
   // O piso de segurança `minHeightM` entra no INÍCIO do intervalo, não como
   // correcção da passagem mais baixa depois de a grelha estar feita: com
@@ -144,10 +156,10 @@ export function generateFacePlan(baseline, options) {
   const floorM = Math.max(0, minHeightM)
   let heights
   if (faceHeightM <= imgH) {
-    heights = [Math.max(floorM, faceHeightM / 2)]
+    heights = [Math.max(floorM, faceHeightM / 2 - (bandBottom + bandTop) / 2)]
   } else {
-    const first = Math.max(imgH / 2, floorM)
-    const last = faceHeightM - imgH / 2
+    const first = Math.max(-bandBottom, floorM)
+    const last = faceHeightM - bandTop
     if (last <= first) {
       // o piso já está acima do centro da passagem de topo: uma só passagem
       heights = [first]
@@ -158,10 +170,13 @@ export function generateFacePlan(baseline, options) {
     }
   }
   // faixa no pé da face que nenhuma imagem apanha por causa do piso
-  const uncoveredBottomM = Math.max(0, heights[0] - imgH / 2)
+  const uncoveredBottomM = Math.max(0, heights[0] + bandBottom)
 
-  // linha afastada: standoff para o lado escolhido, em métrica local
-  const offset = turf.lineString(offsetPolyline(baseline, side === 'left' ? standoffM : -standoffM))
+  // linha afastada: standoff para o lado escolhido, em métrica local; null
+  // quando um canto ou um troço curto não deixam manter o afastamento
+  const offsetPts = offsetPolyline(baseline, side === 'left' ? standoffM : -standoffM)
+  if (!offsetPts) return { error: 'standoff-corner' }
+  const offset = turf.lineString(offsetPts)
   const offLenM = turf.length(offset, { units: 'meters' })
   if (!(offLenM > 0)) return null
 
@@ -215,10 +230,14 @@ export function generateFacePlan(baseline, options) {
       vStepM: heights.length > 1 ? heights[1] - heights[0] : null,
       hStepM: stepM,
       imageWidthM: imgW,
+      // altura da banda vista na face (com a inclinação pedida)
       imageHeightM: imgH,
+      bandBottomM: bandBottom,
+      bandTopM: bandTop,
       minHeightM: floorM,
       uncoveredBottomM,
-      gsdCm: computeGSD(sensor, standoffM),
+      // GSD no centro da imagem: a distância ao longo do eixo óptico
+      gsdCm: computeGSD(sensor, standoffM / Math.cos(pitchRad)),
       standoffM,
       heights,
       pathLengthM,

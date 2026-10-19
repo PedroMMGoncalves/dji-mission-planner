@@ -51,6 +51,53 @@ const base = () => ({
 })
 
 describe('preflightArea', () => {
+  test('M2-T1: um buraco do relevo debaixo da rota bloqueia, com a fracção e o sítio', () => {
+    const c = {
+      ...base(),
+      terrainRoute: { covered: true, status: 'ready', source: 'global', error: null },
+      terrainHoles: { samples: 95, noData: 5, at: { lon: -9.14, lat: 38.7, index: 3 } },
+    }
+    const it = preflightArea(c).find((i) => i.code === 'terrain-holes')
+    expect(it?.level).toBe('block')
+    expect(it.params).toMatchObject({ n: 5, total: 100, pct: 5 })
+    // sem buracos nada; com o relevo a não cobrir a rota já bloqueia o outro item
+    expect(
+      codes(preflightArea({ ...c, terrainHoles: { samples: 100, noData: 0, at: null } })),
+    ).not.toContain('terrain-holes')
+    expect(
+      codes(preflightArea({ ...c, terrainRoute: { ...c.terrainRoute, covered: false } })),
+    ).not.toContain('terrain-holes')
+  })
+
+  test('M2-T3: o trânsito base ↔ rota que entra no relevo bloqueia; abaixo de 15 m avisa', () => {
+    const t = { minM: -12.3, at: { leg: 'out' }, outHeightM: 110, backHeightM: 130, flight: 'B-3' }
+    const bl = preflightArea({ ...base(), transitClearance: t }).find(
+      (i) => i.code === 'transit-collision',
+    )
+    expect(bl?.level).toBe('block')
+    expect(bl.params).toMatchObject({ m: 12.3, flight: 'B-3', h: 110 })
+    const w = preflightArea({
+      ...base(),
+      transitClearance: { ...t, minM: 9, at: { leg: 'back' }, flight: null },
+    }).find((i) => i.code === 'transit-low')
+    expect(w?.level).toBe('warn')
+    expect(w.params).toMatchObject({ m: 9, flight: '—', h: 130 })
+    expect(codes(preflightArea({ ...base(), transitClearance: { ...t, minM: 40 } }))).not.toContain(
+      'transit-low',
+    )
+    // também nos outros modos
+    expect(codes(preflightPlan({ plan, transitClearance: t }))).toContain('transit-collision')
+  })
+
+  test('M2-T1: a zona da base de referência com pontos sem relevo avisa', () => {
+    const zone = { radiusM: 100, requestedRadiusM: 100, reduced: false, partial: true, noData: 7 }
+    const it = preflightArea({ ...base(), refZone: { label: 'A', zone } }).find(
+      (i) => i.code === 'base-zone-partial',
+    )
+    expect(it?.level).toBe('warn')
+    expect(it.params).toEqual({ base: 'A', n: 7 })
+  })
+
   test('plano válido, curto e com base: só o lembrete das alturas', () => {
     expect(plan.error).toBeUndefined()
     const items = preflightArea(base())

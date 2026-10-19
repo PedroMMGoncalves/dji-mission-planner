@@ -50,15 +50,30 @@ describe('descarga do relevo global', () => {
     expect(t.elevationAt(e - 0.001, n - 0.001)).toBeCloseTo(0, 5)
   })
 
-  test('um tile preso conta como falhado; a descarga termina na mesma', async () => {
+  test('M2-T1: um tile preso uma vez e pedido outra vez e entra', async () => {
     let calls = 0
     const oneHangs = (url) => {
       calls += 1
       return calls === 1 ? new Promise(() => {}) : ok(url)
     }
     const t = await loadTerrain(box, { fetchImpl: oneHangs, cacheStorage: null, tileTimeoutMs: 50 })
-    expect(t.failedCount).toBe(1)
+    expect(t.failedCount).toBe(0)
+    // todos os tiles pedidos entraram: o preso foi pedido de novo (calls − 1)
     expect(t.tileCount).toBe(calls - 1)
+  })
+
+  test('um tile sempre preso conta como falhado; a descarga termina na mesma', async () => {
+    let first = null
+    const sameHangs = (url) => {
+      if (first === null) first = url
+      return url === first ? new Promise(() => {}) : ok(url)
+    }
+    const t = await loadTerrain(box, {
+      fetchImpl: sameHangs,
+      cacheStorage: null,
+      tileTimeoutMs: 50,
+    })
+    expect(t.failedCount).toBe(1)
   })
 
   test('todos presos: erro, e nao uma espera sem fim', async () => {
