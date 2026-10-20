@@ -99,7 +99,7 @@ rotas de waypoints guardam. A sobreposição lateral não entra no intervalo
 (é o espaçamento), e a velocidade só entra na conversão para segundos e no
 aviso do obturador.
 
-Aviso de obturador (`App.jsx`): `interval / v < minTriggerS` (0,7 s por
+Aviso de obturador (`src/hooks/useAreaParams.js`): `interval / v < minTriggerS` (0,7 s por
 omissão) marca o intervalo como impossível à velocidade `v` e sugere
 `vmax = interval / minTriggerS`.
 

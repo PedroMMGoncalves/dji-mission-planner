@@ -13,7 +13,11 @@ de trazer para ser integrado. O texto está em português europeu
   o relevo global vem do Terrarium/AWS e os mapas de fontes públicas.
 - Leia o `README.pt.md` (ou `README.md`) para a arquitectura: o motor de
   planeamento vive em `src/utils/` e `src/mission/` como funções puras; o
-  estado por modo vive em `src/hooks/`; `src/App.jsx` só compõe.
+  estado por modo vive em `src/hooks/`, tal como o que liga os modos
+  (aeronave e bateria, bases, rota activa, verificações de segurança e
+  preflight, fichas de campo); `src/App.jsx` só compõe, e o cabeçalho, a
+  área do mapa e as janelas são componentes (`AppHeader`, `MapPane`,
+  `AppOverlays`).
 
 ## Ciclo de desenvolvimento
 
@@ -53,7 +57,13 @@ um contra-exemplo que apareça aí passa a teste fixo.
 | Ficheiros reais | `tests/fixtures/`, `tests/unit/ficheiros-reais.test.mjs` | KML do Google Earth, GeoJSON e shapefile do QGIS (CRS84 e PT-TM06), MDT em PT-TM06 e projectos das versões 1.0.1, 1.3.0 e 1.4.2 lidos pelas funções da interface; `node tests/lib/fixtures-reais.mjs` regenera-os byte a byte |
 | Dicionários | `tests/unit/i18n.test.mjs` | cada `t('chave')` do código existe, PT e EN com as mesmas variáveis, sem chaves repetidas; os códigos do preflight têm texto |
 | E2E | `tests/e2e/` | o percurso do operador no browser e o ficheiro que sairia para o comando |
+| Impressões digitais | `tests/e2e/impressoes.mjs`, `tests/e2e/impressoes.json` | um projecto fixo por modo exportado pela interface: o resumo de cada ficheiro (sem datas, números a 5 casas) e o texto do preflight, das métricas, das bases e dos blocos têm de sair iguais aos de referência; uma mudança de sítio no `App.jsx` que altere o comportamento muda uma impressão |
 | Manual | `docs/QA_MANUAL.md` | o que nenhuma das anteriores cobre; uma passagem por release |
+
+Uma alteração intencional ao que a interface mostra ou exporta muda as
+impressões digitais: corra `E2E_IMPRESSOES=gravar npm run test:e2e` (ou só
+os cenários `impressao-*` com `E2E_ONLY`), leia o diff de
+`tests/e2e/impressoes.json` e explique-o na mensagem de commit.
 
 Uma alteração intencional à exportação muda os goldens: corra
 `npm run test:update-golden`, leia o diff dos ficheiros em `tests/golden/`

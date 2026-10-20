@@ -4,6 +4,32 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); versões
 [SemVer](https://semver.org/lang/pt-BR/). A etiqueta git `vX.Y.Z` é a
 versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
+## Por publicar
+
+### Interno (repartição do `App.jsx`)
+
+- **O `App.jsx` passa de 3422 para 1640 linhas**, sem mudar o que a
+  aplicação faz: o que ligava os modos sai, tal como estava, para hooks em
+  `src/hooks/` — aeronave, payload e bateria (`useHardware`), parâmetros de
+  voo da área (`useAreaParams`), bases (`useBasesState`,
+  `useBaseActions`), trânsitos, baterias e métricas (`useMissionOps`),
+  rota activa, vista 3D e fotos (`useActiveRoute`), verificações de
+  segurança e preflight (`useRouteChecks`, `usePreflight`), fichas de
+  campo e KML das bases (`useFieldSheets`), bacias de visão, mapa e
+  atalhos da área (`useBaseViewsheds`, `useMapInteractions`,
+  `useAreaTools`) —, e o cabeçalho, a área do mapa e as janelas passam a
+  componentes (`AppHeader`, `MapPane`, `AppOverlays`). A coluna dos
+  painéis fica no App: reparti-la pede agrupar as props por domínio.
+- **Impressões digitais no E2E**: um projecto fixo por modo (área com
+  bases, área simples, corredor partido, face, órbita em vídeo e com várias
+  inclinações, circular, inspecção) exportado pela interface; o resumo de
+  cada ficheiro e o texto do preflight, das métricas, das bases e dos
+  blocos têm de sair iguais aos de referência. Cada passo da repartição as
+  reproduziu.
+- **O lint falha com avisos** (`--max-warnings 0`): a regra das
+  dependências dos hooks só avisava, e um memo mudado de sítio com uma
+  dependência a menos passava a cadeia.
+
 ## 1.5.0 — 2026-10-20
 
 ### Adicionado (órbita e face: aeronave no painel, várias inclinações, vídeo sem degraus)
