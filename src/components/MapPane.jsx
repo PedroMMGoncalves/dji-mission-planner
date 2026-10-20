@@ -3,11 +3,14 @@
  * bases, fotos, pré-visualizações dos modos, bacias de visão) e o painel de
  * métricas do separador aberto.
  */
+import { useMemo } from 'react'
 import ProjectSummary from './ProjectSummary.jsx'
 import MapView from './MapView.jsx'
 import StatsPanel from './StatsPanel.jsx'
+import { qualityStatsFor } from '../mission/qualityStats.js'
 
 export default function MapPane({
+  hw,
   basesState,
   areaParams,
   corridor,
@@ -30,6 +33,7 @@ export default function MapPane({
   viewshedLayerOn,
   setViewshedLayerOn,
 }) {
+  const { sensor, payload } = hw
   const { bases, selectedBaseId } = basesState
   const {
     gsd,
@@ -43,7 +47,7 @@ export default function MapPane({
     speed,
     triggerWarn,
   } = areaParams
-  const { corridorPreview, corridorTriggerWarn } = corridor
+  const { corridorPreview, corridorTriggerWarn, corridorFlight, corridorSpeed } = corridor
   const { orbitPreview, handleOrbitPoiDrag } = orbit
   const { facePreview } = face
   const { inspectPoints, handleInspectDrag } = inspect
@@ -63,7 +67,14 @@ export default function MapPane({
     handleAreaMove,
   } = geom
   const { baseLayout, planOk, blocks, gcps } = area
-  const { circularPreview, circularTriggerWarn } = circular
+  const {
+    circularPreview,
+    circularTriggerWarn,
+    circularFlight,
+    circularSpeed,
+    circularPlan,
+    circularConfig,
+  } = circular
   const { projectSummary, modeStats, statsOps, areaBaseDistance } = ops
   const { viewshedByBlock } = viewshedState
   const {
@@ -77,6 +88,58 @@ export default function MapPane({
   const { handleMapClick, handleFinishAny } = mapActions
   const { mapPhotoPoints } = routeView
   const { uncertainty } = preflightState
+  // o grupo «Qualidade» das métricas é o do separador aberto: o corredor e
+  // o circular mostravam o GSD, a pegada, o espaçamento e o intervalo da
+  // grelha da área, com o intervalo da incerteza dela
+  const circularAltitude = circularFlight.altitude
+  const circularPitch = circularConfig.gimbalPitch
+  const quality = useMemo(
+    () =>
+      qualityStatsFor(missionMode, {
+        area: {
+          gsd,
+          gsdPitch,
+          uncertainty,
+          footprint,
+          spacing,
+          interval,
+          intervalS: trigger.seconds,
+          intervalManual: trigger.manual,
+          triggerMode: params.triggerMode,
+          speed,
+          pointDensity,
+        },
+        sensor,
+        payload,
+        corridorFlight,
+        corridorSpeed,
+        circularFlight: { altitude: circularAltitude },
+        circularPitch,
+        circularStats: circularPlan && !circularPlan.error ? circularPlan.stats : null,
+        circularSpeed,
+      }),
+    [
+      missionMode,
+      gsd,
+      gsdPitch,
+      uncertainty,
+      footprint,
+      spacing,
+      interval,
+      trigger,
+      params.triggerMode,
+      speed,
+      pointDensity,
+      sensor,
+      payload,
+      corridorFlight,
+      corridorSpeed,
+      circularAltitude,
+      circularPitch,
+      circularPlan,
+      circularSpeed,
+    ],
+  )
   return (
     <>
       <main className="relative min-w-0 flex-1">
@@ -127,17 +190,17 @@ export default function MapPane({
           onViewshedLayer={setViewshedLayerOn}
         />
         <StatsPanel
-          uncertainty={uncertainty}
-          gsd={gsd}
-          gimbalPitch={gsdPitch}
-          footprint={footprint}
-          spacing={spacing}
-          pointDensity={pointDensity}
-          interval={interval}
-          intervalS={trigger.seconds}
-          intervalManual={trigger.manual}
-          triggerMode={params.triggerMode}
-          speed={speed}
+          uncertainty={quality.uncertainty}
+          gsd={quality.gsd}
+          gimbalPitch={quality.gimbalPitch}
+          footprint={quality.footprint}
+          spacing={quality.spacing}
+          pointDensity={quality.pointDensity}
+          interval={quality.interval}
+          intervalS={quality.intervalS}
+          intervalManual={quality.intervalManual}
+          triggerMode={quality.triggerMode}
+          speed={quality.speed}
           missionMode={missionMode}
           stats={modeStats}
           ops={statsOps}

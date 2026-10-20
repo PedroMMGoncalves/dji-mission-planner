@@ -1054,6 +1054,7 @@ function AppInner({ lang, setLang }) {
         </div>
 
         <MapPane
+          hw={hw}
           basesState={basesState}
           areaParams={areaParams}
           corridor={corridor}

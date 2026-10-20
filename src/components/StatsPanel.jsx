@@ -107,6 +107,10 @@ export default function StatsPanel({
   // a pegada, o espaçamento e o intervalo das grelhas não se aplicam
   const gridMode =
     missionMode === 'area' || missionMode === 'circular' || missionMode === 'corridor'
+  // os valores são os do separador aberto (src/mission/qualityStats.js): uma
+  // métrica que o modo não tem fica de fora, em vez de «—» ou do número da
+  // área; na área mostra-se tudo, como sempre
+  const omit = (v) => missionMode !== 'area' && v == null
   const count = countOf(missionMode, stats)
   // recolhível (M3-U23): 16 mosaicos tapam ~450 px do mapa num tablet
   const [collapsed, setCollapsed] = useState(() => {
@@ -160,23 +164,25 @@ export default function StatsPanel({
             hint={t('stats.densityHint')}
           />
         ) : gridMode ? (
-          <Stat
-            label={t(gimbalPitch === -90 ? 'stats.gsd' : 'stats.gsdCentre')}
-            value={
-              gsd != null
-                ? uncertainty?.gsd
-                  ? `${gsd.toFixed(2)} (${uncertainty.gsd[0].toFixed(2)}–${uncertainty.gsd[1].toFixed(2)}) cm/px`
-                  : `${gsd.toFixed(2)} cm/px`
-                : t('stats.gsdOblique')
-            }
-            hint={
-              gimbalPitch === -90
-                ? uncertainty?.gsd
-                  ? t('stats.gsdRangeHint')
-                  : undefined
-                : t('stats.gsdCentreHint')
-            }
-          />
+          !omit(gsd) && (
+            <Stat
+              label={t(gimbalPitch === -90 ? 'stats.gsd' : 'stats.gsdCentre')}
+              value={
+                gsd != null
+                  ? uncertainty?.gsd
+                    ? `${gsd.toFixed(2)} (${uncertainty.gsd[0].toFixed(2)}–${uncertainty.gsd[1].toFixed(2)}) cm/px`
+                    : `${gsd.toFixed(2)} cm/px`
+                  : t('stats.gsdOblique')
+              }
+              hint={
+                gimbalPitch === -90
+                  ? uncertainty?.gsd
+                    ? t('stats.gsdRangeHint')
+                    : undefined
+                  : t('stats.gsdCentreHint')
+              }
+            />
+          )
         ) : (
           <Stat
             label={t('stats.gsd')}
@@ -192,35 +198,41 @@ export default function StatsPanel({
         )}
         {gridMode && (
           <>
-            <Stat
-              label={t('stats.footprint')}
-              value={
-                footprint
-                  ? footprint.along != null
-                    ? `${footprint.across.toFixed(0)} × ${footprint.along.toFixed(0)} m`
-                    : t('stats.swath', { v: footprint.across.toFixed(0) })
-                  : '—'
-              }
-            />
-            <Stat
-              label={t('stats.spacing')}
-              value={spacing != null ? `${spacing.toFixed(1)} m` : '—'}
-            />
-            <Stat
-              label={t('stats.interval')}
-              value={
-                interval != null
-                  ? `${
-                      triggerMode === 'time'
-                        ? `${(intervalS ?? Math.floor((interval / speed) * 10 + 1e-9) / 10).toFixed(1)} s`
-                        : `${interval.toFixed(1)} m`
-                    }${intervalManual ? ` · ${t('stats.intervalManual')}` : ''}`
-                  : '—'
-              }
-              tone={shutterWarn ? 'near' : 'ok'}
-              hint={shutterWarn ? t('stats.intervalWarnHint') : undefined}
-              testId="stats-interval"
-            />
+            {!omit(footprint) && (
+              <Stat
+                label={t('stats.footprint')}
+                value={
+                  footprint
+                    ? footprint.along != null
+                      ? `${footprint.across.toFixed(0)} × ${footprint.along.toFixed(0)} m`
+                      : t('stats.swath', { v: footprint.across.toFixed(0) })
+                    : '—'
+                }
+              />
+            )}
+            {!omit(spacing) && (
+              <Stat
+                label={t('stats.spacing')}
+                value={spacing != null ? `${spacing.toFixed(1)} m` : '—'}
+              />
+            )}
+            {!omit(interval) && (
+              <Stat
+                label={t('stats.interval')}
+                value={
+                  interval != null
+                    ? `${
+                        triggerMode === 'time'
+                          ? `${(intervalS ?? Math.floor((interval / speed) * 10 + 1e-9) / 10).toFixed(1)} s`
+                          : `${interval.toFixed(1)} m`
+                      }${intervalManual ? ` · ${t('stats.intervalManual')}` : ''}`
+                    : '—'
+                }
+                tone={shutterWarn ? 'near' : 'ok'}
+                hint={shutterWarn ? t('stats.intervalWarnHint') : undefined}
+                testId="stats-interval"
+              />
+            )}
           </>
         )}
       </Group>

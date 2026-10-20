@@ -6,6 +6,17 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Corrigido
+
+- **Métricas do separador aberto.** Nos separadores Corredor e Circular o
+  grupo «Qualidade» do painel de métricas (GSD com o intervalo da incerteza,
+  pegada, espaçamento e intervalo de disparo) mostrava os números da grelha
+  da área. Passa a mostrar os do próprio separador: o corredor à sua altura,
+  com o gimbal nadir e sem o intervalo da incerteza (que é da área); o
+  circular o GSD à inclinação do gimbal e a corda entre fotos ao longo do
+  círculo, sem pegada nem espaçamento. Uma métrica que o modo não tem fica
+  de fora; a área não muda.
+
 ### Interno (repartição do `App.jsx`)
 
 - **O `App.jsx` passa de 3422 para 1118 linhas**, sem mudar o que a
