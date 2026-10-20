@@ -43,7 +43,7 @@ const TXT = {
     'Terrain under the route vs. flight altitude (absolute values, m)',
   ),
   close: bi('Fechar (Esc)', 'Close (Esc)'),
-  selection: bi('Seleção', 'Selection'),
+  selection: bi('Selecção', 'Selection'),
   all: bi('Tudo', 'All'),
   terrain: bi('Terreno', 'Terrain'),
   flight: bi('Voo', 'Flight'),

@@ -479,7 +479,7 @@ regra, a mesma de `mosaicLegacy.js` para os projectos antigos:
    à mão e o estado desactivado. Sem essa célula fica com a atribuição
    automática e activa.
 3. As atribuições manuais que nenhuma célula nova herdou contam-se, e o
-   painel das bases diz «N atribuições manuais não passaram para o novo
+   cartão 5 (Bases e segurança) diz «N atribuições manuais não passaram para o novo
    mosaico» até o operador o dispensar ou o mosaico mudar de novo.
 
 Vale para o mosaico e a grelha da âncora (células) e para o corte da
@@ -1469,6 +1469,22 @@ acrescentados: rota que entra no relevo (folga negativa, amostrada a 40 m
 sobre o relevo carregado, em todos os modos); base a uma distância cujo
 trânsito de ida e volta excede o tempo útil de uma bateria. Lembretes: sem
 base em terreno plano; alturas relativas à descolagem.
+
+Pacote R-B da revisão do código: a fachada bloqueia quando o corredor de
+voo corta a superfície do DSM (`face-clearance`, com as passagens e a folga
+mínima, de `checkFaceClearance`) e avisa sem DSM local (`face-unverified`);
+o corredor avisa das passagens sem cobertura (`corridor-uncovered`); a
+altura de regresso que o KMZ escreve (`rthByFlight`, por voo com bases: o
+tecto da rota desse voo + 20 m, mínimo 100 m) está no cartão 5, na ficha,
+na checklist e no relatório, entra no remédio do `transit-collision` e dá a
+nota `open-category-rth` acima dos 120 m (M3-U3). O erro do plano chega ao
+preflight traduzido (`planErrorText`, dos dicionários de cada modo) e os
+itens de rota dão o voo e as coordenadas do waypoint (`routePoints`,
+`flightOfIndex`), não o índice; o aviso da bateria por bloco diz o rótulo
+do voo (`blockFlightLabels`), o mesmo do mapa e do ficheiro (M3-U4, M3-U8).
+A pastilha conta no singular e no plural, é neutra sem plano, e as caixas
+dos cartões usam o nível do item correspondente (M3-U12). Os limiares são
+testados na fronteira em `tests/unit/preflight-limiares.test.mjs` (M3-T5).
 
 Bases múltiplas, bloco a bloco (missão de área com blocos e bases,
 `blockBaseItems`; os blocos nomeados pelo voo e pelo id, «Voo B-4 (bloco

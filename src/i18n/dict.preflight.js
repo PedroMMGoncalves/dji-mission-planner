@@ -7,9 +7,18 @@ export default {
   },
   'preflight.ok': { pt: 'Pronto a exportar', en: 'Ready to export' },
   'preflight.summary': {
-    pt: '{b} bloqueios, {w} avisos',
-    en: '{b} blockers, {w} warnings',
+    pt: '{b} {bw}, {w} {ww}',
+    en: '{b} {bw}, {w} {ww}',
   },
+  'preflight.word.blocker': { pt: 'bloqueio', en: 'blocker' },
+  'preflight.word.blockers': { pt: 'bloqueios', en: 'blockers' },
+  'preflight.word.warning': { pt: 'aviso', en: 'warning' },
+  'preflight.word.warnings': { pt: 'avisos', en: 'warnings' },
+  'preflight.noPlanArea': {
+    pt: 'sem plano: defina a área (cartão 2)',
+    en: 'no plan: define the area (card 2)',
+  },
+  'preflight.noPlan': { pt: 'sem plano ainda', en: 'no plan yet' },
   'preflight.pillTitle': {
     pt: 'Verificação única antes de exportar: bloqueios, avisos e lembretes da missão activa',
     en: 'Single check before exporting: blockers, warnings and reminders for the active mission',
@@ -19,8 +28,8 @@ export default {
     en: 'No flight plan yet: define the area, axis, baseline or POI.',
   },
   'preflight.plan-error': {
-    pt: 'O plano tem um erro ({error}); corrija-o antes de exportar.',
-    en: 'The plan has an error ({error}); fix it before exporting.',
+    pt: 'O plano tem um erro: {error} Corrija-o antes de exportar.',
+    en: 'The plan has an error: {error} Fix it before exporting.',
   },
   'preflight.terrain-photo-waypoint': {
     pt: 'Seguir terreno e foto por waypoint não podem coexistir: escolha disparo por distância ou desligue o terreno.',
@@ -67,8 +76,8 @@ export default {
     en: '{n} waypoints in one route: Pilot 2 imports slowly; consider splitting into blocks.',
   },
   'preflight.agl-cap': {
-    pt: 'Altura de {worst} m acima do tecto AGL do payload ({cap} m).',
-    en: 'Height of {worst} m above the payload AGL ceiling ({cap} m).',
+    pt: 'Altura de {worst} m acima do tecto AGL do payload ({cap} m): baixe a altitude ou escolha outro payload.',
+    en: 'Height of {worst} m above the payload AGL ceiling ({cap} m): lower the altitude or choose another payload.',
   },
   'preflight.shutter': {
     pt: 'Intervalo entre fotos de {s} s abaixo do mínimo do obturador ({min} s); velocidade máxima {vmax} m/s.',
@@ -79,8 +88,8 @@ export default {
     en: 'Estimated {min} min exceeds the useful time per flight ({usable} min, landing reserve included): split into blocks.',
   },
   'preflight.battery-block': {
-    pt: 'Bloco {id}: {min} min excede o tempo útil por voo ({usable} min, já com a reserva de aterragem).',
-    en: 'Block {id}: {min} min exceeds the useful time per flight ({usable} min, landing reserve included).',
+    pt: 'Voo {flight}: {min} min excede o tempo útil por voo ({usable} min, já com a reserva de aterragem). Reduza o lado do quadrado, divida mais ou aumente a velocidade.',
+    en: 'Flight {flight}: {min} min exceeds the useful time per flight ({usable} min, landing reserve included). Reduce the square side, split further or raise the speed.',
   },
   'preflight.battery-block-base': {
     pt: 'Voo {flight} (bloco {id}, base {base}): {min} min com {transit} min de trânsito de ida e volta do pior ponto da zona excede o tempo útil por voo ({usable} min). Aproxime a base ou reduza o lado do bloco.',
@@ -147,16 +156,16 @@ export default {
     en: 'At this speed the motion blur at 1/500 s is {px} px ({cm} cm): use a shorter exposure or reduce speed.',
   },
   'preflight.route-duplicate-waypoint': {
-    pt: 'A rota tem {n} par(es) de waypoints consecutivos a menos de 0,5 m (primeiro no índice {at}), o mínimo do SDK da DJI entre waypoints.',
-    en: 'The route has {n} pair(s) of consecutive waypoints closer than 0.5 m (first at index {at}), the DJI SDK minimum between waypoints.',
+    pt: 'A rota tem {n} par(es) de waypoints consecutivos a menos de 0,5 m (o primeiro no voo {flight}, em {lat}, {lon}), o mínimo do SDK da DJI entre waypoints: afaste ou retire um dos pontos.',
+    en: 'The route has {n} pair(s) of consecutive waypoints closer than 0.5 m (the first on flight {flight}, at {lat}, {lon}), the DJI SDK minimum between waypoints: move or remove one of the points.',
   },
   'preflight.route-climb-rate': {
-    pt: 'Subida de {rate} m/s exigida no segmento {at} ({n} segmento(s) acima da aeronave): a rota vai atrasar-se ou o Pilot 2 vai suavizá-la.',
-    en: 'Climb of {rate} m/s required at segment {at} ({n} segment(s) above the aircraft): the route will lag or Pilot 2 will smooth it.',
+    pt: 'Subida de {rate} m/s exigida no voo {flight}, a partir de {lat}, {lon} ({n} segmento(s) acima da aeronave): a rota vai atrasar-se ou o Pilot 2 vai suavizá-la. Reduza a velocidade ou a tolerância do seguimento de terreno.',
+    en: 'Climb of {rate} m/s required on flight {flight}, from {lat}, {lon} ({n} segment(s) above the aircraft): the route will lag or Pilot 2 will smooth it. Reduce the speed or the terrain-following tolerance.',
   },
   'preflight.route-long-segment': {
-    pt: 'Segmento de {km} km (índice {at}): confirme que a ligação atravessa terreno seguro à altura de trânsito.',
-    en: '{km} km segment (index {at}): confirm the link crosses safe terrain at transit height.',
+    pt: 'Segmento de {km} km no voo {flight}, a partir de {lat}, {lon}: confirme que a ligação atravessa terreno seguro à altura de trânsito.',
+    en: '{km} km segment on flight {flight}, from {lat}, {lon}: confirm the link crosses safe terrain at transit height.',
   },
   'preflight.base-far': {
     pt: 'Base a {km} km da área: o trânsito conta na bateria e o regresso tem de o cobrir. Confirme que é o ponto real de descolagem.',
@@ -187,8 +196,8 @@ export default {
     en: 'No elevation data at {n} of {total} route points ({pct} %), the first at {lat}, {lon}: the route crosses a hole in the model (a missing tile or a no-data area of the DEM), where terrain following and ground clearance cannot know the height above ground. Reload the elevation data or import a DEM that covers the route.',
   },
   'preflight.transit-collision': {
-    pt: 'O trânsito entre a base e a rota (voo {flight}) entra no relevo: {m} m abaixo do solo a {h} m acima da base. A aeronave sobe na descolagem à altura do 1.º waypoint (ou à de segurança) e voa a direito até ele; no fim regressa à altura de RTH. Mova a base, suba a altura ou o RTH, ou comece a rota noutro ponto.',
-    en: 'The transit between the home point and the route (flight {flight}) goes into the terrain: {m} m below ground at {h} m above the home point. The aircraft climbs at take-off to the first waypoint’s height (or the safety height) and flies straight to it; at the end it returns at the RTH height. Move the home point, raise the altitude or the RTH, or start the route elsewhere.',
+    pt: 'O trânsito entre a base e a rota (voo {flight}) entra no relevo: {m} m abaixo do solo a {h} m acima da base. A aeronave sobe na descolagem à altura do 1.º waypoint (ou à de segurança) e voa a direito até ele; no fim regressa a {rth} m acima da descolagem (RTH, escrito no KMZ). Mova a base para o lado de cá do relevo ou aproxime-a da rota, suba a altitude, ou comece a rota noutro ponto.',
+    en: 'The transit between the home point and the route (flight {flight}) goes into the terrain: {m} m below ground at {h} m above the home point. The aircraft climbs at take-off to the first waypoint’s height (or the safety height) and flies straight to it; at the end it returns at {rth} m above take-off (the RTH written in the KMZ). Move the home point to this side of the terrain or closer to the route, raise the altitude, or start the route elsewhere.',
   },
   'preflight.transit-low': {
     pt: 'Folga mínima de {m} m no trânsito entre a base e a rota (voo {flight}, a {h} m acima da base), abaixo de 15 m.',
@@ -206,12 +215,28 @@ export default {
     pt: 'Sem ponto de base: o trânsito não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota.',
     en: 'No base point: transit is not counted against the battery and heights refer to the minimum terrain elevation under the route.',
   },
+  'preflight.open-category-rth': {
+    pt: 'O regresso (RTH) a {rth} m acima da descolagem passa os {cap} m da categoria aberta junto à base.',
+    en: 'The return (RTH) at {rth} m above take-off exceeds the {cap} m of the Open category near the home point.',
+  },
+  'preflight.face-unverified': {
+    pt: 'Afastamento da fachada não verificado contra o terreno: sem MDT/DSM local, os tiles globais não têm resolução à escala de uma face. Importe um GeoTIFF no separador Área, cartão 2 (Área e relevo), para a verificação de folga.',
+    en: 'Facade standoff not verified against the terrain: without a local DEM/DSM, global tiles lack resolution at face scale. Import a GeoTIFF in the Area tab, card 2 (Area and terrain), for the clearance check.',
+  },
+  'preflight.face-clearance': {
+    pt: 'O corredor de voo da fachada corta a superfície do DSM nas passagens {passes} (folga mínima {min} m): aumente o afastamento ou a folga admissível, conscientemente.',
+    en: 'The facade flight corridor clips the DSM surface on passes {passes} (minimum clearance {min} m): raise the standoff or knowingly adjust the allowed clearance.',
+  },
+  'preflight.corridor-uncovered': {
+    pt: '{n} passagem(ns) do corredor sem cobertura: a curvatura do eixo é mais apertada do que a distância ao eixo e o KMZ não cobre a largura pedida aí. Reduza a meia-largura, suavize a curva ou voe essa faixa à parte.',
+    en: '{n} corridor pass(es) without coverage: the centreline curves tighter than the pass distance and the KMZ leaves the requested width uncovered there. Reduce the half-width, ease the bend, or fly that strip separately.',
+  },
   'preflight.open-category-agl': {
     pt: 'A rota chega a {max} m acima do solo. O máximo na categoria aberta é {cap} m; acima disso é preciso voar na categoria específica, com autorização.',
     en: 'The route reaches {max} m above ground. The Open category maximum is {cap} m; above that you need to fly in the Specific category, with authorisation.',
   },
   'preflight.heights-relative': {
-    pt: 'As alturas do KMZ são relativas ao ponto de descolagem: descole na base ou no ponto de referência do plano.',
-    en: 'KMZ heights are relative to the take-off point: take off at the base or at the plan’s reference point.',
+    pt: 'As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.',
+    en: 'KMZ heights are relative to the take-off point: take off at the marked base (or inside its zone). Without a base the plan assumes the area’s lowest elevation: taking off higher raises the route.',
   },
 }

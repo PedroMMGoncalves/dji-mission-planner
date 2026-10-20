@@ -300,7 +300,7 @@ export default function MapView({
       )
   }, [mode])
 
-  // Enquadrar o mapa na área (após importação ou abertura de projeto)
+  // Enquadrar o mapa na área (após importação ou abertura de projecto)
   useEffect(() => {
     const map = mapRef.current
     if (!map || !fitKey || !ring || ring.length < 3) return
@@ -463,7 +463,7 @@ export default function MapView({
     })
   }, [draftVertices, mode, closeHint])
 
-  // Polígono da área + vértices editáveis + auto-interseções (kinks)
+  // Polígono da área + vértices editáveis + auto-intersecções (kinks)
   useEffect(() => {
     const g = layersRef.current?.polygon
     if (!g) return

@@ -38,6 +38,7 @@ import { legacyBases, normalizeBases, normalizeBlockBase } from './bases.js'
 import { normalizeObstacleM } from './viewshedPlan.js'
 import { normalizeSafety } from './safety.js'
 import { DEFAULT_ANCHOR, DEFAULT_PARAMS } from './defaults.js'
+import { safeFileStem } from '../utils/exporters.js'
 
 export const PROJECT_VERSION = 2
 /**
@@ -175,11 +176,9 @@ export function normalizeDemFile(v) {
 
 /** Nome do ficheiro de projecto a partir do nome da missão. */
 export function projectFileName(missionName) {
-  return `${
-    String(missionName ?? '')
-      .trim()
-      .replace(/[^\w-]+/g, '-') || 'missao'
-  }-projeto.json`
+  // a mesma regra dos KML e KMZ (safeFileStem, K-E3): «Évora» dava
+  // `-vora-projeto.json` ao lado de `Evora_area.kmz` (M3-T15)
+  return `${safeFileStem(missionName)}-projecto.json`
 }
 
 /**

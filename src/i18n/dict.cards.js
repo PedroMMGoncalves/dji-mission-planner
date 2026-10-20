@@ -110,6 +110,19 @@ export default {
     en: 'At the end of the mission: {finish} · signal loss: {lost}',
   },
   'safety.checklistStop': { pt: '{mode}, depois {action}', en: '{mode}, then {action}' },
+  'safety.rth': {
+    pt: 'Regresso (RTH): {rth} m acima da descolagem · subida na descolagem: {takeoff} m',
+    en: 'Return (RTH): {rth} m above take-off · take-off climb: {takeoff} m',
+  },
+  'safety.rthHint': {
+    pt: 'Escritos no KMZ: o RTH fica acima do ponto mais alto da rota (mínimo 100 m) e tem de livrar o relevo e os obstáculos no regresso.',
+    en: 'Written in the KMZ: the RTH sits above the highest point of the route (minimum 100 m) and must clear the terrain and obstacles on the way back.',
+  },
+  'cards.summary.blocked': {
+    pt: 'Exportação bloqueada pelo preflight:',
+    en: 'Export blocked by the preflight:',
+  },
+  'cards.summary.seeAll': { pt: 'Ver todos no Preflight', en: 'See all in the Preflight' },
   'safety.checklistHint': {
     pt: 'Confirmar no DJI Pilot 2, ao abrir a rota, que são estas; a altura de regresso (RTH) do comando tem de livrar o relevo e os obstáculos.',
     en: 'Confirm in DJI Pilot 2, when opening the route, that these are the ones; the controller return (RTH) height must clear the terrain and obstacles.',

@@ -180,6 +180,11 @@ export default {
     pt: '{ref} m · voo entre 0 e +{gain} m acima do planeado',
     en: '{ref} m · flight between 0 and +{gain} m above plan',
   },
+  'bases.sheet.rth': { pt: 'Regresso (RTH)', en: 'Return (RTH)' },
+  'bases.sheet.rthValue': {
+    pt: '{rth} m acima da descolagem (a maior entre os voos desta base) · subida na descolagem: {takeoff} m',
+    en: '{rth} m above take-off (the highest among this base’s flights) · take-off climb: {takeoff} m',
+  },
   'bases.sheet.batteries': { pt: 'Conjuntos de baterias', en: 'Battery sets' },
   'bases.sheet.setsKnown': {
     pt: '{flights} necessários · a equipa tem {sets}',

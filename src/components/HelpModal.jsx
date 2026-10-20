@@ -36,8 +36,9 @@ function InstrucoesPt() {
           central, ou importe KML/GeoJSON/Shapefile.
         </Li>
         <Li>
-          Opcional: marque a <strong>base</strong>, divida em <strong>blocos</strong>, carregue o{' '}
-          <strong>terreno</strong> e planeie <strong>GCPs</strong>.
+          Confirme o <strong>relevo</strong> (cartão 2: o global descarrega-se sozinho, ou importe
+          um MDT; sem relevo não há exportação) e, se quiser, marque a <strong>base</strong>, divida
+          em <strong>blocos</strong> e planeie <strong>GCPs</strong>.
         </Li>
         <Li>
           <strong>Exporte</strong>: KML simples (área) ou WPML/KMZ (missão completa para o DJI Pilot
@@ -183,8 +184,8 @@ function InstrucoesPt() {
           Esc ou um novo clique no pino desselecciona. Sem base seleccionada, o clique activa ou
           desactiva a célula. Refeito o mosaico (ângulo, lado, bateria, área editada), cada bloco
           novo herda a base escolhida à mão e o estado desactivado do bloco antigo que cobre pelo
-          menos metade dele; as atribuições que não passam são ditas no painel das bases. Com a área
-          substituída por outra (menos de metade em comum) nada passa.
+          menos metade dele; as atribuições que não passam são ditas no cartão 5 (Bases e
+          segurança). Com a área substituída por outra (menos de metade em comum) nada passa.
         </Li>
         <Li>
           <strong>Juntar blocos a esta base</strong> — à mão: carregue em «Juntar blocos a esta

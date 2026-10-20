@@ -157,7 +157,8 @@ describe('seguimento de terreno com a cota de cada bloco', () => {
       agl: 30,
       blockRefs: [100, 400],
     })
-    expect(r.warnings.some((w) => /Altura relativa mínima/.test(w))).toBe(true)
+    expect(r.warnings.some((w) => /Altura relativa mínima/.test(w.message))).toBe(true)
+    expect(r.warnings.find((w) => w.code === 'tf.min-relative')).toBeTruthy()
   })
 })
 

@@ -146,8 +146,12 @@ describe('projecto: serializar e ler', () => {
   })
 
   test('nome do ficheiro', () => {
-    expect(projectFileName('Quinta do Lago')).toBe('Quinta-do-Lago-projeto.json')
-    expect(projectFileName('   ')).toBe('missao-projeto.json')
+    expect(projectFileName('Quinta do Lago')).toBe('Quinta-do-Lago-projecto.json')
+    expect(projectFileName('   ')).toBe('missao-projecto.json')
+    // a mesma regra dos KML e KMZ (M3-T15): sem diacriticos, tracos colapsados e aparados
+    expect(projectFileName('Évora')).toBe('Evora-projecto.json')
+    expect(projectFileName('Quinta da Conceição')).toBe('Quinta-da-Conceicao-projecto.json')
+    expect(projectFileName('Corta Norte (2026)')).toBe('Corta-Norte-2026-projecto.json')
     expect(MISSION_MODES).toContain('corridor')
   })
 })

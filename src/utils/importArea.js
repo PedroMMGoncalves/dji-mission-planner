@@ -2,6 +2,7 @@ import * as turf from '@turf/turf'
 import proj4 from 'proj4'
 import shp from 'shpjs'
 import { findAll, findFirst, parseXml, textOf } from './xml.js'
+import { AppError } from './appError.js'
 
 /**
  * Importação de áreas de levantamento a partir de ficheiros:
@@ -208,7 +209,7 @@ export function simplifyRingIfNeeded(ring) {
  * com o exterior.
  */
 function parseKml(text) {
-  const doc = parseXml(text, 'KML inválido')
+  const doc = parseXml(text, 'KML inválido', 'import.kml-invalid')
   const polys = []
   const ringOf = (node) => {
     const coords = textOf(node ? findFirst(node, 'coordinates') : null)
@@ -227,7 +228,22 @@ function parseKml(text) {
     const holes = findAll(poly, 'innerBoundaryIs').map(ringOf).filter(Boolean)
     polys.push({ ring, holes })
   }
-  return polys
+  // linhas sem polígonos: o ficheiro é um eixo (M3-U18), e a mensagem di-lo
+  return Object.assign(polys, { lines: findAll(doc.documentElement, 'LineString').length })
+}
+
+/** Linhas de um GeoJSON (LineString/MultiLineString), para a mensagem do eixo. */
+function countLines(geojson) {
+  const geoms = []
+  const walk = (g) => {
+    if (!g || typeof g !== 'object') return
+    if (g.type === 'FeatureCollection') (g.features ?? []).forEach(walk)
+    else if (g.type === 'Feature') walk(g.geometry)
+    else if (g.type === 'GeometryCollection') (g.geometries ?? []).forEach(walk)
+    else geoms.push(g.type)
+  }
+  walk(geojson)
+  return geoms.filter((t) => t === 'LineString' || t === 'MultiLineString').length
 }
 
 /**
@@ -246,8 +262,12 @@ function parseKml(text) {
  */
 export async function parseAreaFile(file) {
   const name = file.name.toLowerCase()
-  const finish = (parts, what, extra = {}) => {
-    if (parts.length === 0) throw new Error(`Nenhum polígono encontrado no ${what}`)
+  const finish = (parts, what, extra = {}, lines = 0) => {
+    if (parts.length === 0)
+      throw new AppError(lines > 0 ? 'import.no-polygon-lines' : 'import.no-polygon', {
+        what,
+        n: lines,
+      })
     const [main] = parts
     return { ring: main.ring, holes: main.holes, parts, discardedParts: parts.length - 1, ...extra }
   }
@@ -256,11 +276,17 @@ export async function parseAreaFile(file) {
     const buffer = await file.arrayBuffer()
     const geojson = await shp(buffer) // reprojeta via .prj quando presente
     const parts = toParts(collectPolygons(geojson))
-    return finish(parts, 'shapefile', looksProjected(parts[0]?.ring) ? { needsCrs: true } : {})
+    return finish(
+      parts,
+      'shapefile',
+      looksProjected(parts[0]?.ring) ? { needsCrs: true } : {},
+      countLines(geojson),
+    )
   }
 
   if (name.endsWith('.kml')) {
-    return finish(toParts(parseKml(await file.text())), 'KML')
+    const polys = parseKml(await file.text())
+    return finish(toParts(polys), 'KML', {}, polys.lines)
   }
 
   if (name.endsWith('.geojson') || name.endsWith('.json')) {
@@ -268,10 +294,10 @@ export async function parseAreaFile(file) {
     try {
       geojson = JSON.parse(await file.text())
     } catch {
-      throw new Error('GeoJSON inválido')
+      throw new AppError('import.geojson-invalid', {})
     }
     let parts = toParts(collectPolygons(geojson))
-    if (parts.length === 0) throw new Error('Nenhum polígono encontrado no GeoJSON')
+    if (parts.length === 0) return finish(parts, 'GeoJSON', {}, countLines(geojson))
     // CRS declarado no ficheiro: aplica-se se for conhecido; WGS84 nao muda nada
     const code = crsCodeFromGeojson(geojson)
     if (code && code !== 4326) {
@@ -283,5 +309,5 @@ export async function parseAreaFile(file) {
     return finish(parts, 'GeoJSON', looksProjected(parts[0].ring) ? { needsCrs: true } : {})
   }
 
-  throw new Error('Formato não suportado — use .kml, .geojson/.json ou .zip (shapefile)')
+  throw new AppError('import.unsupported-format', {})
 }

@@ -16,7 +16,17 @@ import {
 } from './Icons.jsx'
 import BatterySetsNote from './BatterySetsNote.jsx'
 import BasesPanel, { FlightExports, ViewshedBox } from './BasesPanel.jsx'
-import { Card, CardColumn, Drawer, DrawerGroup, SafetyActions, useDrawers } from './Cards.jsx'
+import {
+  Card,
+  CardColumn,
+  Drawer,
+  DrawerGroup,
+  RthLine,
+  SafetyActions,
+  useDrawers,
+} from './Cards.jsx'
+import { errorText, terrainErrorText as terrainErrText } from '../utils/appError.js'
+import { batteryLabel } from '../mission/equipment.js'
 
 function Field({ label, suffix, children }) {
   return (
@@ -202,6 +212,15 @@ export default function ControlPanel({
   aglWarn,
   importState,
   importError,
+  // o projecto que não abriu: no cartão 1, junto do botão (M3-U18)
+  projectError = null,
+  // folga ao solo da rota (min/max), para o intervalo AGL sobre a área (M3-U2)
+  routeClearance = null,
+  // altura de regresso (RTH) e subida de descolagem escritas no KMZ (M3-U3)
+  rthInfo = null,
+  // os primeiros bloqueios do preflight, ditos no cartão 7 (M3-U6)
+  preflightBlockers = [],
+  onShowPreflight = null,
   importWarning = null,
   importParts = null,
   onImportUseAll = null,
@@ -350,6 +369,14 @@ export default function ControlPanel({
               }}
             />
           </div>
+          {projectError && (
+            <p
+              data-testid="project-error"
+              className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300"
+            >
+              ⚠ {errorText(projectError, t)}
+            </p>
+          )}
           <p className="mt-1.5 text-[11px] text-slate-500">{t('cp.mission.autosave')}</p>
           <div className="mt-3">
             <select
@@ -524,8 +551,11 @@ export default function ControlPanel({
           )}
 
           {importError && (
-            <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
-              ⚠ {importError}
+            <p
+              data-testid="import-error"
+              className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300"
+            >
+              ⚠ {errorText(importError, t)}
             </p>
           )}
           {importWarning && (
@@ -662,8 +692,8 @@ export default function ControlPanel({
           )}
 
           {planError === 'too-many-lines' && (
-            <div className="mt-3 rounded border border-amber-700 bg-amber-950/60 p-3 text-xs leading-relaxed text-amber-300">
-              ⚠ {t('cp.area.tooManyLines')}
+            <div className="mt-3 rounded border border-red-700 bg-red-950/60 p-3 text-xs leading-relaxed text-red-300">
+              ⛔ {t('cp.area.tooManyLines')}
             </div>
           )}
           {planError && planError !== 'too-many-lines' && (
@@ -747,12 +777,12 @@ export default function ControlPanel({
 
             {terrain.status === 'error' && (
               <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
-                ⚠ {terrain.error}
+                ⚠ {terrainErrText(terrain.error, t)}
               </p>
             )}
             {terrain.status === 'ready' && !terrainCovers && (
-              <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
-                ⚠ {t('cp.terrain.outOfCoverage')}
+              <p className="mt-2 rounded border border-red-700 bg-red-950/60 p-2 text-[11px] leading-relaxed text-red-300">
+                ⛔ {t('cp.terrain.outOfCoverage')}
               </p>
             )}
             <p className="mt-1.5 text-[11px] text-slate-500">
@@ -778,7 +808,10 @@ export default function ControlPanel({
 
         {/* 3. Parâmetros de voo */}
         <Card id="voo" n={3} title={t('cards.flight')} more={d.more('voo')}>
-          <Field label={t('cp.flight.altitude')} suffix="m">
+          <Field
+            label={terrainFollow?.enabled ? t('cp.flight.altitudeTf') : t('cp.flight.altitudeRel')}
+            suffix="m"
+          >
             <NumberInput
               value={params.altitude}
               min={5}
@@ -786,6 +819,21 @@ export default function ControlPanel({
               onChange={(v) => setParam('altitude', v)}
             />
           </Field>
+          {!terrainFollow?.enabled &&
+            Number.isFinite(routeClearance?.minM) &&
+            Number.isFinite(routeClearance?.maxM) && (
+              <p
+                data-testid="agl-over-area"
+                className={`-mt-1 mb-2 text-[11px] leading-relaxed ${
+                  routeClearance.minM < params.altitude / 2 ? 'text-amber-300' : 'text-slate-400'
+                }`}
+              >
+                {t('cp.flight.aglOverArea', {
+                  min: Math.round(routeClearance.minM),
+                  max: Math.round(routeClearance.maxM),
+                })}
+              </p>
+            )}
           {gsd != null && (
             <Field label={t('cp.flight.gsdTarget')} suffix="cm/px">
               <NumberInput
@@ -802,7 +850,7 @@ export default function ControlPanel({
             </p>
           )}
           {aglWarn && (
-            <p className="mb-2 rounded border border-red-800/60 bg-red-950/40 p-2 text-[11px] leading-relaxed text-red-200">
+            <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
               ⚠{' '}
               {t('cp.flight.aglCapWarn', {
                 payload: payload.label,
@@ -946,7 +994,7 @@ export default function ControlPanel({
                 })}
                 {terrainResult.warnings?.map((w, i) => (
                   <p key={i} className="mt-1 text-amber-300">
-                    ⚠ {w}
+                    ⚠ {errorText(w, t)}
                   </p>
                 ))}
               </div>
@@ -1035,7 +1083,7 @@ export default function ControlPanel({
                 >
                   {batteries.map((b) => (
                     <option key={b.id} value={b.id}>
-                      {b.label || b.id} · {b.usefulMin} min
+                      {batteryLabel(b, t)} · {b.usefulMin} min
                     </option>
                   ))}
                 </select>
@@ -1126,7 +1174,7 @@ export default function ControlPanel({
                             style={{ backgroundColor: f.color }}
                           />
                         )}
-                        {f?.baseId ? `${f.flightLabel} · ` : ''}B{String(b.id).padStart(2, '0')}
+                        {f?.flightLabel || String(b.id)}
                       </span>
                       <span>{b.areaHa.toFixed(1)} ha</span>
                       <span>{(b.lengthM / 1000).toFixed(1)} km</span>
@@ -1173,6 +1221,7 @@ export default function ControlPanel({
               {t('safety.title')}
             </p>
             <SafetyActions safety={safety} onChange={setSafety} />
+            <RthLine info={rthInfo} />
           </div>
         </Card>
 
@@ -1216,7 +1265,29 @@ export default function ControlPanel({
               </div>
             ))}
           </dl>
-          <BatterySetsNote check={setsCheck} battery={battery?.label || battery?.id || ''} />
+          <BatterySetsNote check={setsCheck} battery={batteryLabel(battery, t)} />
+          {preflightBlockers.length > 0 && (
+            <div
+              data-testid="summary-blockers"
+              className="mt-3 rounded border border-red-800/60 bg-red-950/40 p-2 text-[11px] leading-relaxed text-red-200"
+            >
+              <p className="font-semibold">⛔ {t('cards.summary.blocked')}</p>
+              {preflightBlockers.map((txt, i) => (
+                <p key={i} className="mt-1">
+                  {txt}
+                </p>
+              ))}
+              {onShowPreflight && (
+                <button
+                  type="button"
+                  onClick={onShowPreflight}
+                  className="mt-1.5 rounded border border-current px-2 py-0.5 text-[11px] font-medium hover:bg-white/10"
+                >
+                  {t('cards.summary.seeAll')}
+                </button>
+              )}
+            </div>
+          )}
           {exportFlights && exportFlights.files.length > 1 && (
             <FlightExports {...exportFlights} rows={basesPanel.rows} />
           )}

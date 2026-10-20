@@ -29,6 +29,31 @@ const wpCount = (x) => (Array.isArray(x?.waypoints) ? x.waypoints.length : 0)
 const round1 = (v) => Math.round(v * 10) / 10
 
 /**
+ * Plano com erro: a mensagem traduzida do modo (`c.planErrorText`, que o App
+ * tira dos dicionários do painel), e não o código em bruto, que o operador
+ * não sabe ler («standoff-corner»); o código fica em `code` (M3-U8).
+ */
+const planErrorItem = (c, plan) =>
+  item('block', 'plan-error', {
+    error: c.planErrorText ?? String(plan.error),
+    code: String(plan.error),
+  })
+
+/**
+ * Onde é um índice da rota de verificação: o voo (rótulo) e as coordenadas
+ * do waypoint, que se encontram no mapa, em vez do índice que nenhum ecrã
+ * mostra (M3-U8). `c.routePoints` é a rota de verificação ([lon, lat, h]) e
+ * `c.flightOfIndex(i)` o rótulo do voo a que o índice pertence (com blocos).
+ */
+function whereAt(c, index) {
+  const w = Array.isArray(c.routePoints) ? c.routePoints[index] : null
+  const lat = w && Number.isFinite(w[1]) ? w[1].toFixed(5) : '—'
+  const lon = w && Number.isFinite(w[0]) ? w[0].toFixed(5) : '—'
+  const flight = typeof c.flightOfIndex === 'function' ? (c.flightOfIndex(index) ?? '1') : '1'
+  return { at: index, flight, lat, lon }
+}
+
+/**
  * Foto por waypoint sem paragem: nenhum voo provou ainda que o Pilot 2
  * dispara a acção de foto ao passar pelo ponto sem parar. Aviso até um voo
  * o confirmar (docs/VALIDACAO.md, matriz de compatibilidade).
@@ -110,6 +135,8 @@ function transitItems(c) {
     m: round1(Math.abs(t.minM)),
     flight: t.flight ?? '—',
     h: Math.round(t.at?.leg === 'back' ? t.backHeightM : t.outHeightM),
+    // a altura de regresso que o KMZ escreve, para o remédio dizer o que é
+    rth: Number.isFinite(c.rthHeightM) ? Math.round(c.rthHeightM) : '—',
   }
   if (t.minM < 0) out.push(item('block', 'transit-collision', params))
   else if (t.minM < CLEARANCE_WARN_M) out.push(item('warn', 'transit-low', params))
@@ -199,7 +226,7 @@ function routeItems(c) {
       out.push(
         item('block', 'route-duplicate-waypoint', {
           n: c.route.duplicates.length,
-          at: c.route.duplicates[0],
+          ...whereAt(c, c.route.duplicates[0]),
         }),
       )
     if (c.route.climb.length > 0) {
@@ -207,8 +234,8 @@ function routeItems(c) {
       out.push(
         item('warn', 'route-climb-rate', {
           rate: worst.rateMS.toFixed(1),
-          at: worst.at,
           n: c.route.climb.length,
+          ...whereAt(c, worst.at),
         }),
       )
     }
@@ -217,7 +244,7 @@ function routeItems(c) {
       out.push(
         item('warn', 'route-long-segment', {
           km: (longest.lengthM / 1000).toFixed(1),
-          at: longest.at,
+          ...whereAt(c, longest.at),
         }),
       )
     }
@@ -375,13 +402,18 @@ export function usableBatteryMin(batteryMin, reservePct = 0) {
  * @param {number} [c.vlosM] alcance visual da aeronave (m), para a mensagem
  * @param {{label: string, zone: any}|null} [c.refZone] rota única com bases: a zona da base de referência
  * @param {Record<string, any>|null} [c.viewsheds] bacias de visão por bloco (viewshedsByBlock)
+ * @param {string|null} [c.planErrorText] mensagem traduzida do erro do plano (M3-U8)
+ * @param {Record<string, string>} [c.blockFlightLabels] rótulo do voo de cada bloco, por id (M3-U4)
+ * @param {number[][]|null} [c.routePoints] rota de verificação [lon, lat, h], para as coordenadas dos itens de rota
+ * @param {((i: number) => string|null)|null} [c.flightOfIndex] voo a que um índice da rota pertence
+ * @param {number|null} [c.rthHeightM] altura de regresso (RTH) escrita no KMZ (a maior, com vários voos)
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
   const out = []
   const plan = c.plan ?? null
   if (!plan) return [item('block', 'no-plan')]
-  if (plan.error) return [item('block', 'plan-error', { error: String(plan.error) })]
+  if (plan.error) return [planErrorItem(c, plan)]
 
   const tf = Boolean(c.terrainFollow?.enabled)
   const tfOk = tf && c.terrainResult && !c.terrainResult.error
@@ -469,7 +501,13 @@ export function preflightArea(c) {
         const min = ((b.timeS ?? 0) + (b.transitS ?? 0)) / 60
         if (min > usable)
           out.push(
-            item('warn', 'battery-block', { id: b.id, min: round1(min), usable: round1(usable) }),
+            item('warn', 'battery-block', {
+              // o rótulo do voo, o mesmo do mapa e do ficheiro (M3-U4)
+              flight: c.blockFlightLabels?.[b.id] ?? String(b.id),
+              id: b.id,
+              min: round1(min),
+              usable: round1(usable),
+            }),
           )
       }
     } else if (Number.isFinite(plan.stats?.flightTimeS)) {
@@ -495,12 +533,27 @@ export function preflightArea(c) {
  * sem paragem; o corredor e o circular passam `terrainFollow`,
  * `terrainCovers` e `terrainResult` (bloqueio sem relevo) e `reference`,
  * `basePoint` e `baseDistance` (verificações da base e da cota assumida).
+ * A fachada passa `faceClearance` ({ok, passes, minClearanceM}, checkFaceClearance)
+ * e `faceDsmLoaded`; o corredor `corridorDropped` (passagens sem cobertura).
+ * @param {any} c
  */
 export function preflightPlan(c) {
   const out = []
   const plan = c.plan ?? null
   if (!plan) return [item('block', 'no-plan')]
-  if (plan.error) return [item('block', 'plan-error', { error: String(plan.error) })]
+  if (plan.error) return [planErrorItem(c, plan)]
+  // Fachada: a folga ao DSM que o painel verifica (M3-U1) — o corredor de
+  // voo a cortar a superfície bloqueia; sem DSM local a verificação não é
+  // possível, e fica o aviso. Corredor: passagens sem cobertura (aviso).
+  if (c.faceDsmLoaded === false) out.push(item('warn', 'face-unverified'))
+  if (c.faceClearance && c.faceClearance.ok === false)
+    out.push(
+      item('block', 'face-clearance', {
+        passes: (c.faceClearance.passes ?? []).join(', '),
+        min: c.faceClearance.minClearanceM,
+      }),
+    )
+  if (c.corridorDropped > 0) out.push(item('warn', 'corridor-uncovered', { n: c.corridorDropped }))
   // Seguimento de terreno pedido (corredor, circular) sem relevo que cubra a
   // rota: o KMZ sairia com alturas planas, sem nenhum aviso. Os modos que não
   // o suportam não passam `terrainFollow`.
@@ -554,12 +607,24 @@ export const OPEN_CATEGORY_MAX_AGL_M = 120
  * Nota, e só nota, quando a rota passa os 120 m acima do solo: a altura é
  * decisão operacional (categoria específica, autorização), a aplicação não
  * corta nem bloqueia. `c.aglMaxM` é a maior altura acima do solo da rota
- * exportada, sobre o relevo.
+ * exportada, sobre o relevo; `c.rthHeightM` a altura de regresso (a maior,
+ * com vários voos) que o KMZ escreve.
  */
 function openCategoryItems(c) {
+  const out = []
   const m = c.aglMaxM
-  if (!Number.isFinite(m) || m <= OPEN_CATEGORY_MAX_AGL_M) return []
-  return [item('info', 'open-category-agl', { max: Math.round(m), cap: OPEN_CATEGORY_MAX_AGL_M })]
+  if (Number.isFinite(m) && m > OPEN_CATEGORY_MAX_AGL_M)
+    out.push(
+      item('info', 'open-category-agl', { max: Math.round(m), cap: OPEN_CATEGORY_MAX_AGL_M }),
+    )
+  // o regresso (RTH) acima dos 120 m passa a categoria aberta junto à base,
+  // onde o solo está à cota da descolagem (M3-U3)
+  const r = c.rthHeightM
+  if (Number.isFinite(r) && r > OPEN_CATEGORY_MAX_AGL_M)
+    out.push(
+      item('info', 'open-category-rth', { rth: Math.round(r), cap: OPEN_CATEGORY_MAX_AGL_M }),
+    )
+  return out
 }
 
 /** Um bloqueio impede a exportação. */

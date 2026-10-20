@@ -3,6 +3,7 @@ import proj4 from 'proj4'
 import { CRS_OPTIONS } from './importArea.js'
 import { describeVerticalDatum } from './verticalDatum.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
+import { AppError } from './appError.js'
 
 /**
  * MDT LOCAL — lê um GeoTIFF de Modelo Digital de Terreno do disco do
@@ -50,7 +51,7 @@ const GEOKEY_UNDEFINED = 32767
 
 const MAX_MAX_DIM = 8192 // trava superior para `maxDim` (8192² × 4 B ≈ 256 MB)
 const DEFAULT_MAX_DIM = 2048
-const EDGE_SAMPLES = 8 // pontos por aresta ao projetar bounding boxes
+const EDGE_SAMPLES = 8 // pontos por aresta ao projectar bounding boxes
 
 /** Sentinela típico de "sem dados" em bandas float (−3.4e38 e afins). */
 const HUGE_SENTINEL = 1e30
@@ -79,9 +80,7 @@ export function resolveRasterCrs(geoKeys) {
   const code = usable(proj) ? proj : usable(geog) ? geog : null
 
   if (code === null) {
-    throw new Error(
-      'O GeoTIFF não indica o sistema de coordenadas (sem GeoKeys) — exporte o MDT em PT-TM06 (EPSG:3763)',
-    )
+    throw new AppError('dem.no-crs', {})
   }
 
   // Graus: lon/lat direto, sem reprojeção (ETRS89 e WGS84 coincidem à escala
@@ -92,7 +91,7 @@ export function resolveRasterCrs(geoKeys) {
 
   const option = CRS_OPTIONS.find((o) => o.code === `EPSG:${code}`)
   if (!option) {
-    throw new Error(`CRS não suportado: EPSG:${code} — exporte o MDT em PT-TM06 (EPSG:3763)`)
+    throw new AppError('dem.crs-unsupported', { code })
   }
   return { crsCode: option.code, geographic: false, def: option.def }
 }
@@ -144,7 +143,7 @@ export function projectBox(box, project, steps = EDGE_SAMPLES) {
   }
 
   if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
-    throw new Error('Não foi possível projetar a área para o sistema de coordenadas do MDT')
+    throw new AppError('dem.project-failed', {})
   }
   return [minX, minY, maxX, maxY]
 }
@@ -173,14 +172,14 @@ export async function loadDemFromFile(
   { maxDim = DEFAULT_MAX_DIM, marginM = 500 } = {},
 ) {
   if (!file || typeof file.slice !== 'function') {
-    throw new Error('Ficheiro de MDT inválido')
+    throw new AppError('dem.file-invalid', {})
   }
   if (
     !Array.isArray(areaBbox) ||
     areaBbox.length < 4 ||
     !areaBbox.every((v) => Number.isFinite(v))
   ) {
-    throw new Error('Área de levantamento inválida para recortar o MDT')
+    throw new AppError('dem.area-invalid', {})
   }
 
   const areaBox = [
@@ -195,20 +194,22 @@ export async function loadDemFromFile(
   try {
     tiff = await fromBlob(file)
   } catch (err) {
-    throw new Error(`Não foi possível abrir o GeoTIFF: ${err?.message ?? 'formato inválido'}`)
+    const d = err?.message ?? 'formato inválido'
+    throw new AppError('dem.open-failed', { d })
   }
 
   let image
   try {
     image = await tiff.getImage(0) // primeira imagem = resolução máxima
   } catch (err) {
-    throw new Error(`GeoTIFF ilegível: ${err?.message ?? 'sem imagens'}`)
+    const d = err?.message ?? 'sem imagens'
+    throw new AppError('dem.unreadable', { d })
   }
 
   const rasterWidth = image.getWidth()
   const rasterHeight = image.getHeight()
   if (!(rasterWidth > 0) || !(rasterHeight > 0)) {
-    throw new Error('O GeoTIFF não tem píxeis')
+    throw new AppError('dem.no-pixels', {})
   }
 
   // 3.2) Georreferenciação. Só se suportam rasters "north-up" (sem rotação):
@@ -218,7 +219,7 @@ export async function loadDemFromFile(
     transformation &&
     (Math.abs(transformation[1]) > 1e-12 || Math.abs(transformation[4]) > 1e-12)
   ) {
-    throw new Error('MDT com rotação não suportado — reexporte o raster sem rotação (north-up)')
+    throw new AppError('dem.rotated', {})
   }
 
   let origin
@@ -227,12 +228,12 @@ export async function loadDemFromFile(
     origin = image.getOrigin()
     resolution = image.getResolution()
   } catch {
-    throw new Error('O GeoTIFF não está georreferenciado (sem origem/escala de píxel)')
+    throw new AppError('dem.not-georeferenced', {})
   }
   const [originX, originY] = origin
   const [resX, resY] = resolution // resY é negativo em rasters north-up
   if (!Number.isFinite(resX) || !Number.isFinite(resY) || resX === 0 || resY === 0) {
-    throw new Error('O GeoTIFF tem uma escala de píxel inválida')
+    throw new AppError('dem.bad-scale', {})
   }
 
   const { crsCode, geographic, def } = resolveRasterCrs(image.geoKeys)
@@ -266,7 +267,7 @@ export async function loadDemFromFile(
   const cutMaxX = Math.min(wanted[2], Math.max(extent[0], extent[2]))
   const cutMaxY = Math.min(wanted[3], Math.max(extent[1], extent[3]))
   if (!(cutMaxX > cutMinX) || !(cutMaxY > cutMinY)) {
-    throw new Error('O MDT não cobre a área de levantamento')
+    throw new AppError('dem.outside-area', {})
   }
 
   // 3.5) Janela de píxeis [x0, y0, x1, y1] (x1/y1 exclusivos)
@@ -300,17 +301,18 @@ export async function loadDemFromFile(
       interleave: false,
     })
   } catch (err) {
-    throw new Error(`Falha ao ler os píxeis do MDT: ${err?.message ?? 'erro de descodificação'}`)
+    const d = err?.message ?? 'erro de descodificação'
+    throw new AppError('dem.read-failed', { d })
   }
 
   const band = Array.isArray(rasters) ? rasters[0] : rasters
   if (!band || typeof band.length !== 'number') {
-    throw new Error('O MDT não devolveu dados na janela pedida')
+    throw new AppError('dem.no-data-window', {})
   }
   const gridW = rasters.width ?? outW
   const gridH = rasters.height ?? outH
   if (band.length < gridW * gridH) {
-    throw new Error('O MDT devolveu uma grelha incompleta')
+    throw new AppError('dem.incomplete', {})
   }
 
   // 3.7) Normalização para Float32Array, com nodata → NaN
@@ -341,7 +343,7 @@ export async function loadDemFromFile(
     validCount++
   }
   if (validCount === 0) {
-    throw new Error('O MDT não tem valores de elevação válidos na área de levantamento')
+    throw new AppError('dem.no-valid-values', {})
   }
 
   // 3.8) Extensão efetiva da janela, em WGS84

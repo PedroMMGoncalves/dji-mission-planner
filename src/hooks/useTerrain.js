@@ -11,6 +11,7 @@ import { loadDemFromFile } from '../utils/demFile.js'
 import { DEFAULT_TERRAIN_FOLLOW } from '../mission/defaults.js'
 import { isOffline } from '../utils/tileCache.js'
 import { bboxIntersects } from '../mission/corridorTerrain.js'
+import { errorInfo } from '../utils/appError.js'
 
 /** Espera antes de voltar a descarregar quando se edita uma geometria já com relevo. */
 const EDIT_DEBOUNCE_MS = 800
@@ -99,15 +100,17 @@ export function useTerrain({
       setTerrain({ status: 'ready', data, error: null })
     } catch (err) {
       if (req !== requestRef.current) return
-      // sem rede, a mensagem diz o que se passa em vez de um HTTP opaco; as
-      // areas ja descarregadas continuam a vir da cache persistente
-      const offline = isOffline()
-        ? 'Sem ligacao a Internet: so as areas ja descarregadas estao na cache. '
-        : ''
+      // sem rede, a nota diz o que se passa em vez de um HTTP opaco; as
+      // áreas já descarregadas continuam a vir da cache persistente. O erro
+      // fica com código e variáveis: o painel traduz (M3-C11)
+      const info = errorInfo(err)
       setTerrain({
         status: 'error',
         data: null,
-        error: offline + (err?.message ?? 'Falha no terreno'),
+        error: {
+          ...(info.code ? info : { ...info, code: 'terrain.generic', params: { d: info.message } }),
+          offline: isOffline(),
+        },
       })
     }
   }, [ringBbox])
@@ -139,10 +142,11 @@ export function useTerrain({
         fileRef.current = null
         setDemFileLabel(null)
         autoRef.current = { key: boxKey(ringBbox), attempts: Infinity }
+        const info = errorInfo(err)
         setTerrain({
           status: 'error',
           data: null,
-          error: err?.message ?? 'Falha ao ler o MDT',
+          error: info.code ? info : { ...info, code: 'dem.generic', params: { d: info.message } },
           fromFile: true,
         })
       }

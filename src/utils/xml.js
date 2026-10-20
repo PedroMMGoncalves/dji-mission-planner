@@ -11,6 +11,7 @@
  *
  * Convenção: `node.nodeType === 1` é um elemento (Node.ELEMENT_NODE).
  */
+import { AppError } from './appError.js'
 
 /** Nome da tag sem prefixo: `wpml:executeHeight` → `executeHeight`. */
 export function localNameOf(node) {
@@ -70,18 +71,19 @@ export function textOf(el) {
  * elemento `<parsererror>` na raiz (ou logo abaixo dela); os parsers
  * estritos (ex.: @xmldom/xmldom, usado pelos testes) atiram uma excepção.
  */
-export function parseXml(text, errorMessage) {
+export function parseXml(text, errorMessage, code = null) {
+  const fail = () => (code ? new AppError(code) : new Error(errorMessage))
   let doc
   try {
     doc = new DOMParser().parseFromString(text, 'application/xml')
   } catch {
-    throw new Error(errorMessage)
+    throw fail()
   }
   const root = doc?.documentElement
   const failed =
     !root ||
     localNameOf(root) === 'parsererror' ||
     elementChildren(root).some((el) => localNameOf(el) === 'parsererror')
-  if (failed) throw new Error(errorMessage)
+  if (failed) throw fail()
   return doc
 }

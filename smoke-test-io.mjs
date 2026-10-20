@@ -720,7 +720,7 @@ function bboxFrom(x0, y0, x1, y1) {
         projectBox([0, 0, 1, 1], () => {
           throw new Error('fora')
         }),
-      'Não foi possível projetar a área',
+      'Não foi possível projectar a área',
     )) === null,
   )
 }

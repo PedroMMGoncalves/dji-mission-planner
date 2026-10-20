@@ -125,3 +125,22 @@ describe('transitLegs: as pernas base <-> rota', () => {
     expect(worstTransit(transitLegs(args), { elevationAt: () => null })).toBeNull()
   })
 })
+
+describe('rthByFlight: a altura de regresso que o KMZ escreve, por voo (M3-U3)', () => {
+  it('tecto do voo + 20 m, minimo 100; a altitude nominal entra no tecto; o rotulo do intervalo', async () => {
+    const { rthByFlight, rthRangeLabel } = await import('../../src/mission/transitLegs.js')
+    const legs = [
+      { flight: 'A-1', waypoints: [em(0, 0, 60), em(10, 0, 95)] },
+      { flight: 'B-2', waypoints: [em(0, 0, 40), em(10, 0, 50)] },
+    ]
+    const r = rthByFlight(legs)
+    expect(r.map((x) => x.flight)).toEqual(['A-1', 'B-2'])
+    expect(r.map((x) => x.rthM)).toEqual([115, 100])
+    expect(r[0].ceilingM).toBe(95)
+    // a altitude pedida conta (o exportador toma o maior entre ela e a rota)
+    expect(rthByFlight(legs, { altitudeM: 120 }).map((x) => x.rthM)).toEqual([140, 140])
+    expect(rthRangeLabel({ minM: 100, maxM: 115 })).toBe('100–115')
+    expect(rthRangeLabel({ minM: 100, maxM: 100 })).toBe('100')
+    expect(rthRangeLabel(null)).toBe('—')
+  })
+})

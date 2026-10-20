@@ -1754,7 +1754,7 @@ check('mosaico minúsculo → erro controlado', mosaicTiny?.error === 'too-many-
     'tecto explicito: a subida e limitada e sai aviso',
     travado.cappedCount > 0 &&
       travado.clearanceMinM < 110 &&
-      travado.warnings.some((w) => w.includes('tecto') && w.includes('folga')) &&
+      travado.warnings.some((w) => w.message.includes('tecto') && w.message.includes('folga')) &&
       travado.waypoints.every(([, lat, h]) => h - (soloForte(lat) - 200) <= 120 + 0.05),
     `folga ${travado.clearanceMinM?.toFixed(1)} m em ${travado.cappedCount} pontos`,
   )

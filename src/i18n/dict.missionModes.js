@@ -119,6 +119,14 @@ export default {
     pt: 'A meia-largura pedida exige mais passagens do que um plano admite. Reduza a meia-largura, suba a altitude ou baixe a sobreposição lateral.',
     en: 'The requested half-width needs more passes than one plan allows. Reduce the half-width, raise the altitude, or lower the side overlap.',
   },
+  'orb.err.invalid-radius': {
+    pt: 'A órbita precisa de um POI e de um raio maior do que zero.',
+    en: 'The orbit needs a POI and a radius greater than zero.',
+  },
+  'orb.err.invalid-levels': {
+    pt: 'Os níveis da órbita são inválidos: alturas crescentes, do mínimo ao máximo, com pelo menos um nível.',
+    en: 'The orbit levels are invalid: increasing heights from minimum to maximum, with at least one level.',
+  },
   'co.err.no-coverage': {
     pt: 'Nenhuma passagem é geometricamente possível com estes parâmetros.',
     en: 'No pass is geometrically possible with these parameters.',
@@ -173,8 +181,8 @@ export default {
     en: 'Safety floor of {floor} m: the bottom {n} m of the face are left uncovered — at this distance the image is {img} m tall and the lowest pass cannot go any lower. Raise the standoff to widen the image, or shoot the foot of the face separately.',
   },
   'fp.warn.unverified': {
-    pt: 'Afastamento NÃO verificado contra o terreno: sem MDT/DSM local carregado, os tiles globais não têm resolução à escala de uma face. Importe um GeoTIFF local no modo Área (secção Terreno) para activar a verificação de folga.',
-    en: 'Standoff NOT verified against the terrain: without a local DEM/DSM, global tiles lack resolution at face scale. Import a local GeoTIFF in Area mode (Terrain section) to enable the clearance check.',
+    pt: 'Afastamento NÃO verificado contra o terreno: sem MDT/DSM local carregado, os tiles globais não têm resolução à escala de uma face. Importe um GeoTIFF no separador Área, cartão 2 (Área e relevo), para activar a verificação de folga.',
+    en: 'Standoff NOT verified against the terrain: without a local DEM/DSM, global tiles lack resolution at face scale. Import a GeoTIFF in the Area tab, card 2 (Area and terrain), to enable the clearance check.',
   },
   'fp.warn.clearance': {
     pt: 'Folga abaixo de {min} m nas passagens {passes} — o corredor de voo corta a superfície do DSM. Aumente o afastamento ou a folga admissível conscientemente.',

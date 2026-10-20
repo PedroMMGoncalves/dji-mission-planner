@@ -2,6 +2,7 @@ import JSZip from 'jszip'
 import * as turf from '@turf/turf'
 import { M_PER_DEG_LAT, metersPerDegLonSafe as metersPerDegLon } from './units.js'
 import { childNamed, findAll, findFirst, parseXml, textOf } from './xml.js'
+import { AppError } from './appError.js'
 
 /**
  * Importação de missões WPML (.kmz da DJI) — o caminho inverso de exporters.js.
@@ -23,7 +24,11 @@ const MIN_HULL_BBOX_RATIO = 0.05
 
 /** Lê XML de missão; erro legível quando o ficheiro está corrompido. */
 function parseMissionXml(text) {
-  return parseXml(text, 'XML da missão ilegível — o ficheiro WPML está corrompido')
+  return parseXml(
+    text,
+    'XML da missão ilegível — o ficheiro WPML está corrompido',
+    'wpml.xml-invalid',
+  )
 }
 
 /** Nome do ficheiro sem a extensão, quando o objecto o traz (File/Blob com name). */
@@ -147,7 +152,7 @@ function dropClosingVertex(ring) {
   return ring
 }
 
-/** Retângulo de recurso: bbox dos pontos com ~20 m de folga de cada lado. */
+/** Rectângulo de recurso: bbox dos pontos com ~20 m de folga de cada lado. */
 function fallbackRect(waypoints) {
   let minLon = Infinity
   let minLat = Infinity
@@ -174,7 +179,7 @@ function fallbackRect(waypoints) {
  * Com pontos colineares/degenerados recorre ao retângulo mínimo com folga.
  */
 function buildRing(waypoints) {
-  if (waypoints.length < 3) throw new Error('KMZ sem waypoints suficientes')
+  if (waypoints.length < 3) throw new AppError('wpml.too-few-waypoints', {})
   try {
     const hull = turf.convex(turf.featureCollection(waypoints.map((p) => turf.point(p))))
     const coords = hull?.geometry?.coordinates?.[0]
@@ -238,7 +243,7 @@ export async function parseWpmlKmz(file) {
   try {
     zip = await JSZip.loadAsync(await toZipInput(file))
   } catch {
-    throw new Error('KMZ ilegível — o ficheiro está corrompido ou não é um .kmz')
+    throw new AppError('wpml.unreadable', {})
   }
 
   // Estrutura oficial: wpmz/waylines.wpml (rota executável) + wpmz/template.kml
@@ -246,7 +251,7 @@ export async function parseWpmlKmz(file) {
   const waylinesEntry = pickEntry(zip, 'waylines.wpml')
   const templateEntry = pickEntry(zip, 'template.kml')
   if (!waylinesEntry && !templateEntry) {
-    throw new Error('KMZ sem waylines.wpml nem template.kml — não é uma missão WPML')
+    throw new AppError('wpml.not-mission', {})
   }
 
   const waylines = waylinesEntry
@@ -260,7 +265,7 @@ export async function parseWpmlKmz(file) {
   const main = waylines?.waypoints.length ? waylines : template
   const alt = main === waylines ? template : waylines
   if (!main || main.waypoints.length === 0) {
-    throw new Error('KMZ sem coordenadas válidas — nenhum waypoint encontrado')
+    throw new AppError('wpml.no-coordinates', {})
   }
 
   const waypoints = main.waypoints
@@ -270,9 +275,7 @@ export async function parseWpmlKmz(file) {
   // cota. Só se importa o referencial que a app escreve.
   const heightMode = main.heightMode ?? alt?.heightMode ?? null
   if (heightMode && heightMode !== 'relativeToStartPoint') {
-    throw new Error(
-      `KMZ com alturas em ${heightMode} — só se importam missões com alturas relativas ao ponto de descolagem (relativeToStartPoint)`,
-    )
+    throw new AppError('wpml.height-mode', { mode: heightMode })
   }
 
   // Altitude: única se todas as alturas coincidirem, senão mediana.

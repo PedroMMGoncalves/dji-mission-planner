@@ -14,8 +14,13 @@ aplicado, com `tests/unit/projecto-ida-volta.test.mjs`,
 (desempenho e portão de testes: C8, C9, T2, T3, T7, T8, T13, T14)
 aplicado, com `tests/unit/i18n.test.mjs`,
 `tests/unit/ligacao-app-seguranca.test.mjs`, o workflow nocturno e quatro
-cenários E2E novos; R-B e R-D a seguir. Os achados das duas primeiras
-vagas não se repetem aqui.
+cenários E2E novos. R-B (preflight, textos e identificadores: U1, U2, U3,
+U4, U6, U8, U12, C10, C11/U18, U21 + T15 + C12a, T5, T10) aplicado, com
+`tests/unit/preflight-limiares.test.mjs`, `src/utils/appError.js` e
+`src/i18n/dict.errors.js`; de U21 ficam de fora, de propósito, a formatação
+pt-PT dos números (os números do painel seguem os dos ficheiros e das
+medições) e o nome por omissão com data. R-D a seguir. Os achados das duas
+primeiras vagas não se repetem aqui.
 
 ## 1. Método
 

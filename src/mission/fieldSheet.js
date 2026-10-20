@@ -52,6 +52,7 @@ const viewOf = (v) => (v?.summary?.status === 'ok' ? v.summary : null)
  * @property {boolean} withinVlos
  * @property {import('./viewshedPlan.js').ViewSummary|null} view bacia de visão vista do ponto
  *   da base (null enquanto se calcula, ou sem relevo)
+ * @property {number|null} rthM altura de regresso (RTH) escrita no KMZ deste voo
  */
 
 /**
@@ -68,6 +69,8 @@ const viewOf = (v) => (v?.summary?.status === 'ok' ? v.summary : null)
  * @param {string} [args.baseWord] palavra antes do rótulo no nome do marcador ("Base")
  * @param {Record<string, any>|null} [args.viewsheds] bacias de visão por bloco (viewshedsByBlock)
  * @param {import('./viewshedPlan.js').TerrainModel|null} [args.viewTerrain] relevo das bacias
+ * @param {Array<{flight: string|null, rthM: number}>|null} [args.rthByFlight] RTH de cada voo (rthByFlight)
+ * @param {number|null} [args.takeoffM] subida de descolagem escrita no KMZ
  */
 export function baseFieldSheets({
   rows,
@@ -81,10 +84,18 @@ export function baseFieldSheets({
   baseWord = 'Base',
   viewsheds = null,
   viewTerrain = null,
+  // altura de regresso (RTH) de cada voo, como o KMZ a escreve (rthByFlight),
+  // e a subida de descolagem (M3-U3)
+  rthByFlight = null,
+  takeoffM = null,
 }) {
   if (!layout?.hasBases || !Array.isArray(blocks) || blocks.length === 0) return []
   const byId = new Map(blocks.map((b) => [b.id, b]))
   const fileOf = new Map((files ?? []).map((f) => [f.blockId, f.file]))
+  const rthOf = (label) => {
+    const r = (rthByFlight ?? []).find((x) => x.flight === label)
+    return r && fin(r.rthM) ? r.rthM : null
+  }
   return (rows ?? [])
     .filter((r) => (r.blockIds ?? []).length > 0)
     .map((r) => {
@@ -107,9 +118,11 @@ export function baseFieldSheets({
           worstVlosM: fin(info.worstVlosM) ? info.worstVlosM : null,
           withinVlos: info.withinVlos !== false,
           view: viewOf(viewsheds?.[id]),
+          rthM: rthOf(info.flightLabel || String(id)),
         }
       })
       const worst = flights.map((f) => f.worstVlosM).filter(fin)
+      const rths = flights.map((f) => f.rthM).filter(fin)
       return {
         id: r.id,
         label: r.label,
@@ -124,6 +137,9 @@ export function baseFieldSheets({
         noTerrain: Boolean(r.noTerrain),
         refElev: fin(r.refElev) ? r.refElev : null,
         gainM: fin(r.gainM) ? r.gainM : null,
+        // a maior altura de regresso entre os voos desta base
+        rthM: rths.length ? Math.max(...rths) : null,
+        takeoffM: fin(takeoffM) ? takeoffM : null,
         flights,
         totalS: flights.reduce((s, f) => s + f.totalS, 0),
         sets: flightsVsSets(equipment, aircraftId, batteryId, flights.length),

@@ -9,6 +9,7 @@ import {
   IconMountain,
   IconTrash,
 } from './Icons.jsx'
+import { errorText, terrainErrorText as terrainErrText } from '../utils/appError.js'
 
 /**
  * E5.1: painel do modo corredor (cobertura de infraestruturas lineares a
@@ -82,6 +83,7 @@ export default function CorridorPanel({
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
   safety = null,
   setSafety = () => {},
+  rthInfo = null,
   // relevo e seguimento de terreno (partilhados com a área)
   terrain,
   corridorCovers,
@@ -279,7 +281,7 @@ export default function CorridorPanel({
         )}
         {terrain?.status === 'error' && (
           <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
-            ⚠ {terrain.error}
+            ⚠ {terrainErrText(terrain.error, t)}
           </p>
         )}
         {terrainReady && axis && !corridorCovers && (
@@ -320,7 +322,7 @@ export default function CorridorPanel({
             })}
             {tfOk.warnings?.map((w, i) => (
               <p key={i} className="mt-1 text-amber-300">
-                ⚠ {w}
+                ⚠ {errorText(w, t)}
               </p>
             ))}
           </div>
@@ -368,7 +370,13 @@ export default function CorridorPanel({
         </button>
       </Card>
 
-      <SafetyCard id="corredor-seguranca" n={4} safety={safety} onChange={setSafety} />
+      <SafetyCard
+        rthInfo={rthInfo}
+        id="corredor-seguranca"
+        n={4}
+        safety={safety}
+        onChange={setSafety}
+      />
 
       <Card id="corredor-5" n={5} title={t('co.plan.title')}>
         {errorKey && (

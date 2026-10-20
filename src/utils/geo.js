@@ -248,7 +248,7 @@ export function photoInterval(footprintAlong, frontOverlapPct) {
 }
 
 /**
- * Validação topológica com turf.kinks: deteta auto-interseções.
+ * Validação topológica com turf.kinks: detecta auto-intersecções.
  * Devolve { valid, kinks: [[lon,lat], ...] }.
  */
 export function validateRing(ring, holes = null) {
@@ -1092,7 +1092,6 @@ export function normalizeTriggerMode(value) {
 }
 
 /** Paragem nos waypoints: só nos cantos das faixas, ou em todos. */
-export const WAYPOINT_STOPS = ['corners', 'all']
 
 /** Projectos antigos e valores inválidos carregam com paragem só nos cantos. */
 export function normalizeWaypointStops(value) {

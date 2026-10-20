@@ -13,7 +13,10 @@ import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const BUDGET_KB = 2200
+// 2200 → 2250 no pacote R-B da revisão do código (2026-10): o dicionário dos
+// erros com código (41 mensagens PT/EN) e os textos do preflight; nenhuma
+// dependência nova. O total ia em 2203 KB.
+const BUDGET_KB = 2250
 // fileURLToPath e não .pathname: este descodifica percent-encoding e trata
 // os caminhos do Windows, o outro devolve-os em bruto.
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))

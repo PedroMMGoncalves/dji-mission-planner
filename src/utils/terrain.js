@@ -23,6 +23,7 @@
 import { TERRARIUM_DATUM } from './verticalDatum.js'
 import { withTileCache } from './tileCache.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
+import { AppError, ptMessage } from './appError.js'
 
 const TERRARIUM_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'
 
@@ -173,9 +174,9 @@ async function fetchTilePixels(url, doFetch, despike = true) {
   try {
     const { width, height } = bitmap
     const canvas = createCanvas(width, height)
-    if (!canvas) throw new Error('canvas indisponível neste ambiente')
+    if (!canvas) throw new AppError('terrain.unsupported', { d: 'canvas' })
     const ctx = canvas.getContext('2d', { willReadFrequently: true })
-    if (!ctx) throw new Error('contexto 2d indisponível')
+    if (!ctx) throw new AppError('terrain.unsupported', { d: 'canvas 2d' })
     ctx.drawImage(bitmap, 0, 0)
     const img = ctx.getImageData(0, 0, width, height)
     // Descodifica já para metros (Float32) e remove picos residuais
@@ -332,7 +333,7 @@ export async function loadTerrain(bbox, opts = {}) {
     tileTimeoutMs = TILE_TIMEOUT_MS,
   } = opts
   if (!Array.isArray(bbox) || bbox.length < 4 || !bbox.every((v) => Number.isFinite(v))) {
-    throw new Error('bbox inválida para o modelo de terreno')
+    throw new AppError('terrain.bbox-invalid', {})
   }
   const z = clamp(Math.round(zoom), 0, 15)
 
@@ -344,13 +345,13 @@ export async function loadTerrain(bbox, opts = {}) {
         ? globalThis.fetch.bind(globalThis)
         : fetchImpl
       : null
-  if (!doFetch) throw new Error('fetch indisponível para descarregar o terreno')
+  if (!doFetch) throw new AppError('terrain.unsupported', { d: 'fetch' })
   // cache persistente a frente da rede (tiles imutaveis); sem Cache API e
   // o fetch simples, com as mesmas estatisticas a zero
   const cached = withTileCache(doFetch, { cacheStorage: opts.cacheStorage ?? null })
   const fetchTile = cached.fetch
   if (typeof createImageBitmap !== 'function') {
-    throw new Error('createImageBitmap indisponível para descodificar o terreno')
+    throw new AppError('terrain.unsupported', { d: 'createImageBitmap' })
   }
 
   const minLon = Math.min(bbox[0], bbox[2])
@@ -372,7 +373,7 @@ export async function loadTerrain(bbox, opts = {}) {
     for (let x = x0; x <= x1; x++) wanted.push({ x, y })
   }
   if (wanted.length > MAX_TILES) {
-    throw new Error('Área demasiado grande para o modelo de terreno — reduza o zoom ou a área')
+    throw new AppError('terrain.too-large', {})
   }
 
   const tiles = new Map()
@@ -416,7 +417,7 @@ export async function loadTerrain(bbox, opts = {}) {
   }
 
   if (wanted.length === 0 || failed > wanted.length * MAX_FAIL_RATIO) {
-    throw new Error('Falha ao descarregar o modelo de terreno')
+    throw new AppError('terrain.download-failed', {})
   }
   despikeMosaic(tiles)
 
@@ -799,20 +800,25 @@ export function terrainFollowLines(
   }
 
   // Avisos operacionais
+  // com código e variáveis (M3-C11): os painéis traduzem-nos; a mensagem em
+  // português fica para o registo e os testes
+  const warn = (code, params) => warnings.push({ code, params, message: ptMessage(code, params) })
   if (Number.isFinite(minRel) && minRel < MIN_SAFE_REL_M) {
-    warnings.push(
-      `Altura relativa mínima de ${minRel.toFixed(1)} m (abaixo dos ${MIN_SAFE_REL_M} m recomendados face ao ponto de descolagem) — verifique o relevo e obstáculos.`,
-    )
+    warn('tf.min-relative', { min: minRel.toFixed(1), rec: MIN_SAFE_REL_M })
   }
   if (noDataCount > 0) {
-    warnings.push(
-      `Sem dados de terreno em ${noDataCount} de ${sampleCount} pontos amostrados — nessas zonas foi usada a última elevação válida.`,
-    )
+    warn('tf.no-data', { n: noDataCount, total: sampleCount })
   }
   if (cappedCount > 0 && Number.isFinite(clearanceMinM)) {
-    warnings.push(
-      `Terreno até ${corridorRiseMaxM.toFixed(0)} m mais alto dentro de ${half} m do eixo: para manter ${height} m de folga a rota teria de passar o tecto de ${aglCapM} m acima do solo. Ficou limitada ao tecto e a folga desce a ${clearanceMinM.toFixed(0)} m em ${cappedCount} de ${sampleCount} pontos — baixe a altura, rode as faixas ou parta a área.`,
-    )
+    warn('tf.capped', {
+      rise: corridorRiseMaxM.toFixed(0),
+      half,
+      height,
+      cap: aglCapM,
+      min: clearanceMinM.toFixed(0),
+      n: cappedCount,
+      total: sampleCount,
+    })
   }
 
   return {

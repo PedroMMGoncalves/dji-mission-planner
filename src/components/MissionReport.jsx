@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLang, useT } from '../i18n.jsx'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
 import BaseFieldSheets from './BaseFieldSheets.jsx'
+import { rthRangeLabel } from '../mission/transitLegs.js'
 
 /* ------------------------------------------------------------------ *
  * Relatório de plano de missão — página imprimível (A4 retrato).
@@ -56,7 +57,9 @@ const UI = {
   mapMissing: bi('Sem área desenhada.', 'No area drawn.'),
 
   paramsTitle: bi('Parâmetros de voo', 'Flight parameters'),
-  pAltitude: bi('Altitude AGL', 'Altitude AGL'),
+  pAltitudeRel: bi('Altura acima da descolagem', 'Height above take-off'),
+  pAltitudeTf: bi('Altura AGL (segue o terreno)', 'AGL height (follows terrain)'),
+  pRth: bi('Regresso (RTH) · subida na descolagem', 'Return (RTH) · take-off climb'),
   pGsd: bi('GSD', 'GSD'),
   pSpeed: bi('Velocidade', 'Speed'),
   pFrontOverlap: bi('Sobreposição frontal', 'Forward overlap'),
@@ -613,6 +616,10 @@ export default function MissionReport({
   basePoints = null,
   // ficha de campo por base (baseFieldSheets), com a área dividida e bases
   baseSheets = [],
+  // «Altura acima da descolagem» ou «Altura AGL (segue o terreno)» (M3-U2)
+  terrainFollowOn = false,
+  // altura de regresso (RTH) e subida de descolagem escritas no KMZ (M3-U3)
+  rthInfo = null,
   gcps,
   lines,
   reproducibility = null,
@@ -734,7 +741,8 @@ export default function MissionReport({
       : `${interval.toFixed(1)} m`
 
   const paramRows = [
-    [L(UI.pAltitude), fmt(p.altitude, 0, 'm AGL')],
+    [L(terrainFollowOn ? UI.pAltitudeTf : UI.pAltitudeRel), fmt(p.altitude, 0, 'm')],
+    ...(rthInfo ? [[L(UI.pRth), `${rthRangeLabel(rthInfo)} m · ${rthInfo.takeoffM} m`]] : []),
     [L(UI.pGsd), fmt(gsd, 2, 'cm/px')],
     [L(UI.pSpeed), fmt(p.speed, 1, 'm/s')],
     ...(p.spacingMode === 'manual'

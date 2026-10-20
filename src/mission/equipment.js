@@ -16,6 +16,7 @@
  * razoáveis (ver defaultAircraftEquipment) sem tocar neste ficheiro.
  */
 import { AIRCRAFT } from '../data/drones.js'
+import { AppError } from '../utils/appError.js'
 
 export const EQUIPMENT_KEY = 'dji-mission-planner:equipment'
 export const EQUIPMENT_VERSION = 1
@@ -341,6 +342,19 @@ export function equipmentToJson(eq) {
 }
 
 /**
+ * O rótulo de uma bateria no ecrã: a «Bateria padrão» de cada aeronave
+ * (a estimada, de origem) traduz-se; as do operador ficam como ele as chamou.
+ * @param {{id?: string, label?: string}|null|undefined} b
+ * @param {(key: string) => string} t
+ */
+export function batteryLabel(b, t) {
+  if (!b) return ''
+  if (b.id === 'padrao' && (!b.label || b.label === 'Bateria padrão'))
+    return t('set.defaultBattery')
+  return b.label || b.id || ''
+}
+
+/**
  * Lê um ficheiro exportado por equipmentToJson. Lança um Error com
  * mensagem em português quando o texto não é JSON ou não é um ficheiro de
  * equipamento (`kind` errado ou ausente); senão devolve-o normalizado.
@@ -352,12 +366,10 @@ export function equipmentFromJson(text) {
   try {
     data = JSON.parse(String(text))
   } catch {
-    throw new Error('Ficheiro de equipamento inválido: o conteúdo não é JSON.')
+    throw new AppError('equipment.not-json', {})
   }
   if (!isPlainObject(data) || data.kind !== EQUIPMENT_KIND) {
-    throw new Error(
-      `Este ficheiro não é uma configuração de equipamento (esperado kind "${EQUIPMENT_KIND}").`,
-    )
+    throw new AppError('equipment.wrong-kind', { kind: EQUIPMENT_KIND })
   }
   return normalizeEquipment(data)
 }

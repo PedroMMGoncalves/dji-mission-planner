@@ -260,6 +260,8 @@ async function exportKmz(page, file) {
 }
 
 const bodyText = (page) => page.evaluate(() => document.body.innerText)
+const pillText = async (page) => (await page.getByTestId('preflight-pill').innerText()).trim()
+const semBloqueio = (txt) => /Pronto a exportar|Ready to export|0 bloqueios|0 blockers/.test(txt)
 
 const ONLY = process.env.E2E_ONLY ? process.env.E2E_ONLY.split(',') : null
 // os nomes registados, para um E2E_ONLY com um nome que não existe não
@@ -559,6 +561,14 @@ await scenario('corredor-desenhado', async () => {
 // as mesmas teclas, e o Esc cancela.
 await scenario('desenho-teclas-primeiro-vertice', async () => {
   const { page, errors } = await openMission({})
+  // sem plano a pastilha é neutra e diz o passo seguinte, não «⛔ 1 bloqueios» (M3-U12)
+  const pastilha = await page.getByTestId('preflight-pill').innerText()
+  check(
+    'sem área: a pastilha do preflight é neutra e aponta para o cartão 2',
+    /defina a área \(cartão 2\)|define the area \(card 2\)/.test(pastilha) &&
+      !/bloqueio|blocker|⛔/.test(pastilha),
+    pastilha,
+  )
   const draft = page.locator('path.draft-vertex')
   const closer = page.locator('path.draft-close')
   const handles = page.locator('.vertex-handle')
@@ -791,6 +801,16 @@ await scenario('fachada-desenhada', async () => {
       (wpml.match(/takePhoto/g) ?? []).length >= r.n,
     `${r.n} waypoints, ${rumos.length} rumos`,
   )
+  // sem DSM local, o aviso do afastamento não verificado está no preflight,
+  // não só na caixa do painel (M3-U1)
+  await page.getByTestId('preflight-pill').click()
+  const lista = await page.getByTestId('preflight-list').innerText()
+  check(
+    'fachada: o preflight avisa que o afastamento não foi verificado contra o terreno',
+    /aviso|warning/.test(await pillText(page)) &&
+      /não verificado contra o terreno|not verified against the terrain/.test(lista),
+    `${await pillText(page)} | ${lista.replace(/\s+/g, ' ').slice(0, 160)}`,
+  )
   check('fachada: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
@@ -979,6 +999,17 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
       /1 bloqueio|1 blocker/.test(await pill.innerText()) &&
       !(await exportBtn.isEnabled()),
     await pill.innerText(),
+  )
+  // o cartão 7 diz o bloqueio ao pé dos botões cinzentos, sem abrir a pastilha (M3-U6)
+  const caixa7 = page.getByTestId('summary-blockers')
+  check(
+    'preflight: o cartão 7 diz o bloqueio do relevo e oferece a lista',
+    (await caixa7.count()) === 1 &&
+      /Não há relevo sobre a rota|No elevation data over the route/.test(
+        await caixa7.innerText(),
+      ) &&
+      (await caixa7.getByRole('button', { name: /Ver todos|See all/ }).count()) === 1,
+    (await caixa7.innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 160),
   )
   await pill.click()
   const list = page.getByTestId('preflight-list')
@@ -1178,7 +1209,7 @@ await scenario('inspeccao-sem-relevo-bloqueia', async () => {
 await scenario('preflight-bloqueia-colisao-com-relevo', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
   const alt = page
-    .locator('label', { hasText: /Altitude/ })
+    .locator('label', { hasText: /Altura acima da descolagem|Altura AGL|Altitude/ })
     .locator('input')
     .first()
   await alt.fill('30')
@@ -3055,7 +3086,7 @@ const INVENTARIO_INICIO = [
   ],
   ['missao', 'RTK', inv.field(/Posicionamento RTK/)],
   ['missao', 'preset de missão', inv.field(/Preset de missão/)],
-  ['voo', 'altitude', inv.field(/^Altitude \(AGL\)/)],
+  ['voo', 'altitude', inv.field(/^Altura acima da descolagem|^Altura AGL|^Altitude/)],
   ['voo', 'GSD alvo', inv.field(/GSD alvo/)],
   ['voo', 'velocidade', inv.field(/^Velocidade/)],
   ['voo', 'sobreposição frontal', inv.field(/Sobreposição frontal/)],
@@ -3078,7 +3109,7 @@ const INVENTARIO_INICIO = [
   ['voo', 'expansão 30 %', inv.exact('30%')],
   ['voo', 'seguir terreno', inv.field(/Seguir terreno/)],
   ['area', 'Polígono', inv.btn(/Polígono/)],
-  ['area', 'Retângulo', inv.btn(/Retângulo/)],
+  ['area', 'Rectângulo', inv.btn(/Rectângulo/)],
   ['area', 'Quadrado', inv.btn(/^Quadrado/)],
   ['area', 'Importar área', inv.btn(/Importar área/)],
   ['area', 'Descarregar relevo global', inv.btn(DOWNLOAD_GLOBAL)],
@@ -3254,7 +3285,7 @@ await scenario('inventario-painel-area', async () => {
   // desenho livre e formas ancoradas
   await (await usa(page, 'area', inv.btn(/Polígono/))).click()
   await verifica(page, INVENTARIO_DESENHO)
-  await (await usa(page, 'area', inv.btn(/Retângulo/))).click()
+  await (await usa(page, 'area', inv.btn(/Rectângulo/))).click()
   await verifica(page, INVENTARIO_ANCORA)
   await (await usa(page, 'area', inv.btn(/^Quadrado/))).click()
   await verifica(page, [['area', 'lado do quadrado', inv.field(/^Lado°?m?$/)]])
@@ -3470,6 +3501,20 @@ await scenario('accoes-seguranca-kmz', async () => {
     JSON.stringify(accoes(r.wpml)) === JSON.stringify(['goHome', 'executeLostAction', 'goBack']),
     accoes(r.wpml).join(','),
   )
+  // a altura de regresso e a subida de descolagem escritas no KMZ estão no
+  // cartão 5, iguais às do ficheiro (M3-U3)
+  const rthTxt = await page.getByTestId('card-bases').getByTestId('safety-rth').innerText()
+  const rthKmz = Number(/<wpml:globalRTHHeight>([\d.]+)</.exec(r.wpml)?.[1])
+  const subidaKmz = Number(/<wpml:takeOffSecurityHeight>([\d.]+)</.exec(r.wpml)?.[1])
+  const mRth = /RTH\): (\d+) m/.exec(rthTxt)
+  const mSubida = /descolagem: (\d+) m|climb: (\d+) m/.exec(rthTxt)
+  check(
+    'segurança: o cartão 5 diz o RTH e a subida de descolagem do KMZ',
+    Boolean(mRth) &&
+      Number(mRth[1]) === rthKmz &&
+      Number(mSubida?.[1] ?? mSubida?.[2]) === subidaKmz,
+    `${rthTxt.replace(/\s+/g, ' ').slice(0, 120)} | KMZ ${rthKmz} / ${subidaKmz}`,
+  )
   await fim.selectOption('autoLand')
   await accao.selectOption('hover')
   await page.waitForTimeout(400)
@@ -3523,6 +3568,12 @@ await scenario('accoes-seguranca-kmz', async () => {
   // a checklist de campo diz quais são
   await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
   const chk = await page.getByTestId('checklist-safety').innerText()
+  check(
+    'segurança: a checklist diz o RTH do KMZ',
+    (await page.getByTestId('checklist-rth').count()) === 1 &&
+      new RegExp(`RTH\\): ${rthKmz} m`).test(chk),
+    chk.replace(/\s+/g, ' ').slice(0, 160),
+  )
   check(
     'segurança: a checklist de campo diz as acções escritas no KMZ',
     /Aterrar no local/.test(chk) && /Continuar a missão até ao fim/.test(chk),
@@ -4047,8 +4098,6 @@ async function importDem(page, file) {
     { timeout: 20000 },
   )
 }
-const pillText = async (page) => (await page.getByTestId('preflight-pill').innerText()).trim()
-const semBloqueio = (txt) => /Pronto a exportar|Ready to export|0 bloqueios|0 blockers/.test(txt)
 
 // um MDT com um disco de 150 m sem dados debaixo da rota: o preflight
 // bloqueia (terrain-holes), diz quantos pontos e onde, e o KMZ fica
@@ -4156,7 +4205,9 @@ await scenario('preflight-bloqueia-transito-atras-da-cumeada', async () => {
     abaixo >= 45 && abaixo <= 60,
     `${abaixo} m`,
   )
-  const alt = page.locator('label', { hasText: /Altitude \(AGL\)/ }).locator('input')
+  const alt = page
+    .locator('label', { hasText: /Altura acima da descolagem|Altura AGL|Altitude/ })
+    .locator('input')
   await alt.fill('150')
   await alt.press('Tab')
   await page.waitForTimeout(1500)
@@ -4281,6 +4332,62 @@ await scenario('bateria-com-prolongamento-fiada-e-margem', async () => {
     await page.getByTestId('stats-longest').innerText(),
   )
   check('bateria: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// erros de importação por código, junto do botão (M3-U18): um KML só com
+// o eixo de uma estrada diz que é um eixo e manda para o Corredor; um
+// projecto que não abre fica no cartão 1, junto de «Abrir projecto»
+await scenario('erros-de-importacao-junto-do-botao', async () => {
+  const { page, errors } = await openMission({ dem: false })
+  const eixo = join(OUT, 'eixo-estrada.kml')
+  writeFileSync(
+    eixo,
+    `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>EN 2</name>
+<LineString><coordinates>${toLL(200, 150).join(',')},0 ${toLL(2700, 1950).join(',')},0</coordinates></LineString>
+</Placemark></Document></kml>`,
+  )
+  const areaInput = page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
+  await areaInput.waitFor({ state: 'attached', timeout: 20000 })
+  await areaInput.setInputFiles(eixo)
+  await page.waitForTimeout(800)
+  const erro = page.getByTestId('import-error')
+  check(
+    'importação: um KML só com uma linha diz que é um eixo e manda para o Corredor',
+    (await erro.count()) === 1 &&
+      /tem 1 linha\(s\) mas nenhum polígono|has 1 line\(s\) but no polygon/.test(
+        await erro.innerText(),
+      ) &&
+      /Corredor|Corridor/.test(await erro.innerText()),
+    (await erro.innerText().catch(() => '')).slice(0, 160),
+  )
+  check(
+    'importação: o erro está no cartão 2, junto de «Importar área»',
+    (await page.getByTestId('card-area').getByTestId('import-error').count()) === 1,
+  )
+  // em inglês a mesma mensagem traduzida (não o português cru)
+  await page.getByTitle(/English/).click()
+  await page.waitForTimeout(300)
+  const en = await erro.innerText().catch(() => '')
+  check(
+    'importação: em EN a mensagem é a tradução, não o português cru',
+    /has 1 line\(s\) but no polygon/.test(en) && /Corridor/.test(en),
+    en.slice(0, 120),
+  )
+  await page.getByTitle(/Português/).click()
+  await page.waitForTimeout(300)
+  // um projecto que não abre: erro no cartão 1, junto do botão
+  const mau = join(OUT, 'projecto-mau.json')
+  writeFileSync(mau, JSON.stringify({ version: 2, ring: 'x' }))
+  await page.locator('input[accept=".json"]').setInputFiles(mau)
+  await page.waitForTimeout(600)
+  check(
+    'projecto: o erro de um projecto que não abre está no cartão 1, junto de «Abrir projecto»',
+    (await page.getByTestId('card-missao').getByTestId('project-error').count()) === 1,
+  )
+  check('importação: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })

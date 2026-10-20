@@ -146,6 +146,15 @@ export default {
   /* ---- Parâmetros de voo ---- */
   'cp.flight.title': { pt: 'Parâmetros de Voo', en: 'Flight Parameters' },
   'cp.flight.altitude': { pt: 'Altitude (AGL)', en: 'Altitude (AGL)' },
+  'cp.flight.altitudeRel': { pt: 'Altura acima da descolagem', en: 'Height above take-off' },
+  'cp.flight.altitudeTf': {
+    pt: 'Altura AGL (segue o terreno)',
+    en: 'AGL height (follows terrain)',
+  },
+  'cp.flight.aglOverArea': {
+    pt: 'Sobre a área: {min}–{max} m acima do solo (sem seguir terreno, a altura é fixa em relação à descolagem).',
+    en: 'Over the area: {min}–{max} m above ground (without terrain following, the height is fixed relative to take-off).',
+  },
   'cp.flight.gsdTarget': { pt: 'GSD alvo', en: 'Target GSD' },
   'cp.flight.altWarnPre': { pt: 'Acima de', en: 'Above' },
   'cp.flight.altWarnPost': {
@@ -225,9 +234,9 @@ export default {
     pt: 'Polígono livre: clique a clique no mapa',
     en: 'Free-form polygon: click by click on the map',
   },
-  'cp.area.rect': { pt: 'Retângulo', en: 'Rectangle' },
+  'cp.area.rect': { pt: 'Rectângulo', en: 'Rectangle' },
   'cp.area.rectTitle': {
-    pt: 'Retângulo centrado num ponto (comprimento × largura)',
+    pt: 'Rectângulo centrado num ponto (comprimento × largura)',
     en: 'Rectangle centred on a point (length × width)',
   },
   'cp.area.square': { pt: 'Quadrado', en: 'Square' },
@@ -290,7 +299,7 @@ export default {
   'cp.area.finish': { pt: 'Concluir', en: 'Finish' },
   'cp.area.anchorHint': {
     pt: 'Clique no mapa para definir o centro. A forma ajusta-se aos valores abaixo.',
-    en: 'Click on the map to set the center point. The shape adjusts to the values below.',
+    en: 'Click on the map to set the centre point. The shape adjusts to the values below.',
   },
   'cp.area.quickSizes': { pt: 'Tamanhos rápidos', en: 'Quick sizes' },
   'cp.area.sizeTitle': { pt: '{s}×{s} m', en: '{s}×{s} m' },
@@ -325,7 +334,7 @@ export default {
   'cp.area.clear': { pt: 'Limpar área', en: 'Clear area' },
   'cp.area.invalidTitle': { pt: 'Polígono inválido:', en: 'Invalid polygon:' },
   'cp.area.invalidBody': {
-    pt: 'foram detectadas auto-interseções (marcadas a vermelho no mapa). Arraste os vértices para corrigir a geometria antes de gerar as linhas de voo.',
+    pt: 'foram detectadas auto-intersecções (marcadas a vermelho no mapa). Arraste os vértices para corrigir a geometria antes de gerar as linhas de voo.',
     en: 'self-intersections were detected (marked in red on the map). Drag the vertices to fix the geometry before generating the flight lines.',
   },
   'cp.area.planError.cell-uncovered': {
@@ -407,8 +416,8 @@ export default {
     en: 'Set or propose the bases: each block’s transit counts from its own.',
   },
   'cp.split.exportHint': {
-    pt: 'A exportação WPML gera um ZIP com um KMZ por voo, pela ordem de voo e com o rótulo do voo no nome (…_A-1.kmz), cada um com as alturas referidas à zona da sua base. Os voos de uma só base, ou um só voo, exportam-se no painel das bases.',
-    en: 'The WPML export produces a ZIP with one KMZ per flight, in flight order and named after the flight (…_A-1.kmz), each with heights referred to its base zone. One base’s flights, or a single flight, are exported from the bases panel.',
+    pt: 'A exportação WPML gera um ZIP com um KMZ por voo, pela ordem de voo e com o rótulo do voo no nome (…_A-1.kmz), cada um com as alturas referidas à zona da sua base. Os voos de uma só base, ou um só voo, exportam-se no cartão 5 (Bases e segurança).',
+    en: 'The WPML export produces a ZIP with one KMZ per flight, in flight order and named after the flight (…_A-1.kmz), each with heights referred to its base zone. One base’s flights, or a single flight, are exported from card 5 (Bases and safety).',
   },
 
   /* ---- Terreno (DEM) ---- */
@@ -532,7 +541,7 @@ export default {
   'cp.gcp.export': { pt: 'Exportar GCPs (KML)', en: 'Export GCPs (KML)' },
   'cp.gcp.hint': {
     pt: 'Heurística bordo + centro (distribuição de erro mínimo na literatura fotogramétrica).',
-    en: 'Edge + center heuristic (minimum-error distribution in the photogrammetric literature).',
+    en: 'Edge + centre heuristic (minimum-error distribution in the photogrammetric literature).',
   },
 
   'cp.terrain.auto': {

@@ -50,6 +50,7 @@ export default function OrbitPanel({
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
   safety = null,
   setSafety = () => {},
+  rthInfo = null,
 }) {
   const t = useT()
   const stats = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
@@ -214,7 +215,13 @@ export default function OrbitPanel({
       </Card>
 
       {/* Plano e exportação */}
-      <SafetyCard id="orbita-seguranca" n={4} safety={safety} onChange={setSafety} />
+      <SafetyCard
+        rthInfo={rthInfo}
+        id="orbita-seguranca"
+        n={4}
+        safety={safety}
+        onChange={setSafety}
+      />
 
       <Card id="orbita-5" n={5} title={t('op.plan.title')}>
         {!orbitConfig.poi && (

@@ -23,6 +23,7 @@ import {
 } from '../mission/equipment.js'
 import { downloadBlob } from '../utils/exporters.js'
 import { useT } from '../i18n.jsx'
+import { errorInfo, errorText } from '../utils/appError.js'
 
 export const EQUIPMENT_FILE_NAME = 'equipamento-dji-mission-planner.json'
 
@@ -151,7 +152,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
       setConfirmRestore(false)
       setStatus({ kind: 'ok', text: t('set.imported') })
     } catch (err) {
-      setStatus({ kind: 'error', text: err instanceof Error ? err.message : String(err) })
+      setStatus({ kind: 'error', text: errorText(errorInfo(err), t) })
     }
   }
 

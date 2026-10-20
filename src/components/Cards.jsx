@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n.jsx'
+import { rthRangeLabel } from '../mission/transitLegs.js'
 import {
   DEFAULT_SAFETY,
   FINISH_ACTIONS,
@@ -267,12 +268,28 @@ export function SafetyActions({ safety, onChange }) {
   )
 }
 
+/**
+ * Altura de regresso (RTH) e subida de descolagem escritas no KMZ (M3-U3):
+ * nenhum ecrã as mostrava, e a checklist mandava «confirmar o RTH».
+ */
+export function RthLine({ info }) {
+  const t = useT()
+  if (!info) return null
+  return (
+    <p data-testid="safety-rth" className="mt-2 text-[11px] leading-relaxed text-slate-300">
+      {t('safety.rth', { rth: rthRangeLabel(info), takeoff: info.takeoffM })}
+      <span className="block text-slate-500">{t('safety.rthHint')}</span>
+    </p>
+  )
+}
+
 /** Cartão das acções de segurança dos painéis dos outros modos. */
-export function SafetyCard({ id = 'seguranca', n, safety, onChange }) {
+export function SafetyCard({ id = 'seguranca', n, safety, onChange, rthInfo = null }) {
   const t = useT()
   return (
     <Card id={id} n={n} title={t('safety.title')}>
       <SafetyActions safety={safety} onChange={onChange} />
+      <RthLine info={rthInfo} />
     </Card>
   )
 }

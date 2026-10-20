@@ -10,6 +10,7 @@ import { describe, expect, test } from 'vitest'
 import DICT from '../../src/i18n.jsx'
 import * as dicts from '../../src/i18n/dict.bases.js'
 import cardsDict from '../../src/i18n/dict.cards.js'
+import errorsDict from '../../src/i18n/dict.errors.js'
 import controlPanelDict from '../../src/i18n/dict.controlPanel.js'
 import missionModesDict from '../../src/i18n/dict.missionModes.js'
 import preflightDict from '../../src/i18n/dict.preflight.js'
@@ -67,6 +68,7 @@ describe('M3-T13: o dicionario contra o codigo', () => {
       ['dict.settings.js', Object.keys(settingsDict)],
       ['dict.bases.js', Object.keys(dicts.default ?? dicts)],
       ['dict.cards.js', Object.keys(cardsDict)],
+      ['dict.errors.js', Object.keys(errorsDict)],
     ]
     const vistas = new Map()
     const duplicadas = []
@@ -77,6 +79,23 @@ describe('M3-T13: o dicionario contra o codigo', () => {
       }
     expect(duplicadas).toEqual([])
     expect(vistas.size).toBe(Object.keys(DICT).length)
+  })
+
+  test('M3-C11: cada erro com codigo (AppError, avisos do relevo) tem texto, e nenhum Error cru em portugues', () => {
+    const codigos = new Set()
+    const crus = []
+    for (const { p, text } of code) {
+      if (p.endsWith('appError.js')) continue
+      for (const m of text.matchAll(/new AppError\(\s*'([a-z.-]+)'/g)) codigos.add(m[1])
+      for (const m of text.matchAll(/\bwarn\(\s*'([a-z.-]+)'/g)) codigos.add(m[1])
+      for (const m of text.matchAll(/parseXml\([^)]*,\s*'([a-z.-]+)'\s*\)/g)) codigos.add(m[1])
+      // um Error com texto em portugues (acentos) chegava cru ao ecra, tambem em EN
+      for (const m of text.matchAll(/new Error\(\s*[`']([^`']*)[`']/g))
+        if (/[áéíóúâêôãõç]/i.test(m[1])) crus.push(`${p.slice(SRC.length)}: ${m[1].slice(0, 60)}`)
+    }
+    expect(codigos.size).toBeGreaterThan(30)
+    for (const c of codigos) expect(DICT[`err.${c}`], `err.${c}`).toBeTruthy()
+    expect(crus).toEqual([])
   })
 
   test('cada codigo do preflight tem mensagem', () => {

@@ -13,18 +13,29 @@ const LEVEL_STYLE = {
 }
 const LEVEL_MARK = { block: '⛔', warn: '⚠', info: 'ⓘ' }
 
-export function PreflightPill({ items, open, onToggle }) {
+export function PreflightPill({ items, open, onToggle, mode = 'area' }) {
   const t = useT()
   const c = preflightCounts(items)
-  const tone =
-    c.block > 0
+  // sem plano ainda não há nada a verificar: pastilha neutra, com o passo
+  // seguinte, e não «⛔ 1 bloqueios» a quem abre a aplicação (M3-U12)
+  const noPlan = items.length === 1 && items[0].code === 'no-plan'
+  const tone = noPlan
+    ? 'border-slate-600 text-slate-300 hover:bg-slate-800'
+    : c.block > 0
       ? 'border-red-700 text-red-200 hover:bg-red-950/60'
       : c.warn > 0
         ? 'border-amber-700 text-amber-200 hover:bg-amber-950/60'
         : 'border-emerald-700 text-emerald-200 hover:bg-emerald-950/60'
-  const label =
-    c.block > 0 || c.warn > 0
-      ? t('preflight.summary', { b: c.block, w: c.warn })
+  const word = (n, one, many) => t(n === 1 ? one : many)
+  const label = noPlan
+    ? t(mode === 'area' ? 'preflight.noPlanArea' : 'preflight.noPlan')
+    : c.block > 0 || c.warn > 0
+      ? t('preflight.summary', {
+          b: c.block,
+          bw: word(c.block, 'preflight.word.blocker', 'preflight.word.blockers'),
+          w: c.warn,
+          ww: word(c.warn, 'preflight.word.warning', 'preflight.word.warnings'),
+        })
       : t('preflight.ok')
   return (
     <button
@@ -35,7 +46,14 @@ export function PreflightPill({ items, open, onToggle }) {
       data-testid="preflight-pill"
       className={`flex items-center gap-1.5 whitespace-nowrap rounded border px-3 py-1.5 text-sm font-medium transition-colors ${tone}`}
     >
-      {c.block > 0 ? LEVEL_MARK.block : c.warn > 0 ? LEVEL_MARK.warn : '✓'} {t('preflight.title')}
+      {noPlan
+        ? LEVEL_MARK.info
+        : c.block > 0
+          ? LEVEL_MARK.block
+          : c.warn > 0
+            ? LEVEL_MARK.warn
+            : '✓'}{' '}
+      {t('preflight.title')}
       <span className="text-xs opacity-80">· {label}</span>
     </button>
   )

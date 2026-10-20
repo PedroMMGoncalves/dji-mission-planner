@@ -66,7 +66,12 @@ import {
   photoInterval,
   resolveSensor,
 } from './utils/geo.js'
-import { MissionExportError, buildFilesZip, downloadBlob } from './utils/exporters.js'
+import {
+  DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+  MissionExportError,
+  buildFilesZip,
+  downloadBlob,
+} from './utils/exporters.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission, useCorridorRoute } from './hooks/useCorridorMission.js'
@@ -93,7 +98,7 @@ import { DEFAULT_CORRIDOR_CONFIG } from './utils/corridor.js'
 import { DEFAULT_CIRCULAR_CONFIG } from './utils/circular.js'
 import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
 import { routeClearance, terrainHolesAlong } from './mission/clearance.js'
-import { transitLegs, worstTransit } from './mission/transitLegs.js'
+import { rthByFlight, transitLegs, worstTransit } from './mission/transitLegs.js'
 import { missionWpml } from './mission/missionWpml.js'
 import { blockWorstTransitM, blockWorstVlosM } from './mission/takeoffZones.js'
 import { checkFaceClearance } from './utils/faceMode.js'
@@ -131,6 +136,7 @@ function browserStorage() {
   }
 }
 import { LANGS, LangContext, useT } from './i18n.jsx'
+import { terrainErrorText } from './utils/appError.js'
 
 /** Bases a menos de ~3 km da caixa da área: entram na caixa do relevo (a cota da zona). */
 function basePointsNear(bases, ring) {
@@ -293,7 +299,13 @@ function AppInner({ lang, setLang }) {
     try {
       await fn()
     } catch (err) {
-      setExportError(err instanceof MissionExportError ? err.code : 'unknown')
+      // o código e o detalhe (M3-C10): um erro que não é da validação chega
+      // ao operador com a mensagem, não com a chave `export.err.unknown` crua
+      setExportError(
+        err instanceof MissionExportError
+          ? { code: err.code, detail: err.detail ?? '' }
+          : { code: 'unknown', detail: String(err?.message ?? err ?? '') },
+      )
       if (!(err instanceof MissionExportError)) console.error(err)
     }
   }, [])
@@ -632,7 +644,6 @@ function AppInner({ lang, setLang }) {
     handleAreaMove,
     importState,
     importError,
-    setImportError,
     importWarning,
     handleImportFile,
     handleImportCrs,
@@ -1069,126 +1080,6 @@ function AppInner({ lang, setLang }) {
   })
   const viewshedByBlock = viewJobs.length ? viewsheds.byBlock : null
 
-  // ficha de campo por base (checklist, relatório e KML «Bases e blocos»):
-  // só com a área dividida em blocos e bases marcadas
-  const fieldSheets = useMemo(
-    () =>
-      perBlockBases
-        ? baseFieldSheets({
-            rows: baseRows,
-            layout: baseLayout,
-            blocks,
-            files: flightFiles,
-            vlosM,
-            equipment,
-            aircraftId: drone.aircraftId,
-            batteryId: missionBatteryType.id,
-            baseWord: t('bases.label', { label: '' }).trim(),
-            viewsheds: viewshedByBlock,
-            viewTerrain,
-          })
-        : [],
-    [
-      viewshedByBlock,
-      viewTerrain,
-      perBlockBases,
-      baseRows,
-      baseLayout,
-      blocks,
-      flightFiles,
-      vlosM,
-      equipment,
-      drone.aircraftId,
-      missionBatteryType.id,
-      t,
-    ],
-  )
-  // avisos do KML da área (K-B1, K-E1 e K-M8 da revisão da exportação): o
-  // ficheiro para o Pilot 2 leva só o anel exterior da maior parte, com as
-  // células desactivadas dentro; vão no título dos dois botões e no cartão 7
-  const areaKmlNotes = useMemo(() => {
-    const notes = []
-    const nHoles = holes?.length ?? 0
-    if (nHoles) notes.push(t(nHoles === 1 ? 'app.kmlHoleNote' : 'app.kmlHolesNote', { n: nHoles }))
-    const parts = gridCells?.length > 1 ? gridCells.length : (importParts?.length ?? 0)
-    if (parts > 1) notes.push(t('app.kmlPartsNote', { n: parts }))
-    const off = disabledTiles?.size ?? 0
-    if (off) notes.push(t(off === 1 ? 'app.kmlCellNote' : 'app.kmlCellsNote', { n: off }))
-    return notes
-  }, [holes, gridCells, importParts, disabledTiles, t])
-  const exportKmlTitle = [t('app.exportKmlTitle'), ...areaKmlNotes].join(' ')
-
-  const handleExportBasesKml = useCallback(() => {
-    if (!fieldSheets.length) return
-    runExport(() => {
-      const kml = buildBasesKML(
-        {
-          name: missionName.trim() || areaSafeName,
-          sheets: fieldSheets,
-          blocks,
-          layout: baseLayout,
-          files: flightFiles,
-          // contornos exactos dos blocos de faixas: área ∩ faixa das linhas
-          spacingM: spacing,
-          area: ring ? { ring, holes } : null,
-        },
-        t,
-      )
-      downloadBlob(
-        new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }),
-        `${areaSafeName}_bases.kml`,
-      )
-    })
-  }, [
-    fieldSheets,
-    runExport,
-    missionName,
-    areaSafeName,
-    blocks,
-    baseLayout,
-    flightFiles,
-    spacing,
-    ring,
-    holes,
-    t,
-  ])
-
-  // KML por base (secção 7 da revisão da exportação): um ZIP com uma pasta
-  // por base, um KML por bloco só com o polígono (a missão de mapeamento do
-  // Pilot 2, que calcula a rota dele) e mapa/ com a base; sem preflight,
-  // como os outros KML
-  const handleExportKmlByBase = useCallback(() => {
-    if (!fieldSheets.length || !blocks?.length) return
-    runExport(async () => {
-      const { entries } = blocksKmlByBase(
-        {
-          missionName: missionName.trim() || areaSafeName,
-          blocks,
-          layout: baseLayout,
-          sheets: fieldSheets,
-          files: flightFiles,
-          spacingM: spacing,
-          area: ring ? { ring, holes } : null,
-        },
-        t,
-      )
-      downloadBlob(await buildFilesZip(entries), `${exportBaseName}_kml-por-base.zip`)
-    })
-  }, [
-    fieldSheets,
-    blocks,
-    runExport,
-    missionName,
-    areaSafeName,
-    baseLayout,
-    flightFiles,
-    spacing,
-    ring,
-    holes,
-    t,
-    exportBaseName,
-  ])
-
   // tipos de bateria da aeronave (selector da missão) e voos contra os
   // conjuntos que a equipa tem — o aviso só aparece com a contagem conhecida
   const equipmentBatteries = aircraftEquipmentFor(equipment, drone.aircraftId).batteries
@@ -1545,9 +1436,8 @@ function AppInner({ lang, setLang }) {
   // descolagem) e voa a direito até ele; no fim regressa à altura de RTH.
   // Com bases, cada voo descola da sua base, às alturas relativas à cota da
   // zona dela (a rota do 3D está na cota comum); o pior voo manda.
-  const transitClearanceInfo = useMemo(() => {
-    const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
-    if (!elevationAt || !view3d?.waypoints?.length || !Number.isFinite(view3d.refElev)) return null
+  const transitLegsInfo = useMemo(() => {
+    if (!view3d?.waypoints?.length || !Number.isFinite(view3d.refElev)) return []
     const tfOk = terrainResult && !terrainResult.error
     const basePoint =
       missionMode === 'area'
@@ -1557,7 +1447,7 @@ function AppInner({ lang, setLang }) {
           : missionMode === 'circular'
             ? (circularBase?.point ?? null)
             : null
-    const legs = transitLegs({
+    return transitLegs({
       view3d,
       perBlock: missionMode === 'area' && perBlockBases && view3d.refSource === 'bases',
       blocks: tfOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks,
@@ -1566,9 +1456,7 @@ function AppInner({ lang, setLang }) {
       blockRefs,
       basePoint,
     })
-    return worstTransit(legs, { elevationAt })
   }, [
-    terrain,
     view3d,
     missionMode,
     perBlockBases,
@@ -1581,6 +1469,198 @@ function AppInner({ lang, setLang }) {
     corridorBase,
     circularBase,
   ])
+  const transitClearanceInfo = useMemo(() => {
+    const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
+    if (!elevationAt || transitLegsInfo.length === 0) return null
+    return worstTransit(transitLegsInfo, { elevationAt })
+  }, [terrain, transitLegsInfo])
+
+  // Altura de regresso (RTH) e subida de descolagem que o KMZ escreve
+  // (M3-U3): por voo com bases (cada um no seu KMZ), senão da rota inteira;
+  // nenhum ecrã as mostrava e a checklist mandava «confirmar o RTH».
+  const rthInfo = useMemo(() => {
+    const legs = transitLegsInfo.length
+      ? transitLegsInfo
+      : view3d?.waypoints?.length
+        ? [{ flight: null, waypoints: view3d.waypoints }]
+        : []
+    if (legs.length === 0) return null
+    const altitudeM = missionMode === 'area' ? params.altitude : 0
+    const byFlight = rthByFlight(legs, { altitudeM })
+    const values = byFlight.map((r) => r.rthM)
+    return {
+      minM: Math.min(...values),
+      maxM: Math.max(...values),
+      takeoffM: DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+      byFlight,
+    }
+  }, [transitLegsInfo, view3d, missionMode, params.altitude])
+
+  // ficha de campo por base (checklist, relatório e KML «Bases e blocos»):
+  // só com a área dividida em blocos e bases marcadas
+  const fieldSheets = useMemo(
+    () =>
+      perBlockBases
+        ? baseFieldSheets({
+            rows: baseRows,
+            layout: baseLayout,
+            blocks,
+            files: flightFiles,
+            vlosM,
+            equipment,
+            aircraftId: drone.aircraftId,
+            batteryId: missionBatteryType.id,
+            baseWord: t('bases.label', { label: '' }).trim(),
+            viewsheds: viewshedByBlock,
+            viewTerrain,
+            rthByFlight: rthInfo?.byFlight ?? null,
+            takeoffM: DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+          })
+        : [],
+    [
+      viewshedByBlock,
+      viewTerrain,
+      perBlockBases,
+      baseRows,
+      baseLayout,
+      blocks,
+      flightFiles,
+      vlosM,
+      equipment,
+      drone.aircraftId,
+      missionBatteryType.id,
+      t,
+      rthInfo,
+    ],
+  )
+  // avisos do KML da área (K-B1, K-E1 e K-M8 da revisão da exportação): o
+  // ficheiro para o Pilot 2 leva só o anel exterior da maior parte, com as
+  // células desactivadas dentro; vão no título dos dois botões e no cartão 7
+  const areaKmlNotes = useMemo(() => {
+    const notes = []
+    const nHoles = holes?.length ?? 0
+    if (nHoles) notes.push(t(nHoles === 1 ? 'app.kmlHoleNote' : 'app.kmlHolesNote', { n: nHoles }))
+    const parts = gridCells?.length > 1 ? gridCells.length : (importParts?.length ?? 0)
+    if (parts > 1) notes.push(t('app.kmlPartsNote', { n: parts }))
+    const off = disabledTiles?.size ?? 0
+    if (off) notes.push(t(off === 1 ? 'app.kmlCellNote' : 'app.kmlCellsNote', { n: off }))
+    return notes
+  }, [holes, gridCells, importParts, disabledTiles, t])
+  const exportKmlTitle = [t('app.exportKmlTitle'), ...areaKmlNotes].join(' ')
+
+  const handleExportBasesKml = useCallback(() => {
+    if (!fieldSheets.length) return
+    runExport(() => {
+      const kml = buildBasesKML(
+        {
+          name: missionName.trim() || areaSafeName,
+          sheets: fieldSheets,
+          blocks,
+          layout: baseLayout,
+          files: flightFiles,
+          // contornos exactos dos blocos de faixas: área ∩ faixa das linhas
+          spacingM: spacing,
+          area: ring ? { ring, holes } : null,
+        },
+        t,
+      )
+      downloadBlob(
+        new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }),
+        `${areaSafeName}_bases.kml`,
+      )
+    })
+  }, [
+    fieldSheets,
+    runExport,
+    missionName,
+    areaSafeName,
+    blocks,
+    baseLayout,
+    flightFiles,
+    spacing,
+    ring,
+    holes,
+    t,
+  ])
+
+  // KML por base (secção 7 da revisão da exportação): um ZIP com uma pasta
+  // por base, um KML por bloco só com o polígono (a missão de mapeamento do
+  // Pilot 2, que calcula a rota dele) e mapa/ com a base; sem preflight,
+  // como os outros KML
+  const handleExportKmlByBase = useCallback(() => {
+    if (!fieldSheets.length || !blocks?.length) return
+    runExport(async () => {
+      const { entries } = blocksKmlByBase(
+        {
+          missionName: missionName.trim() || areaSafeName,
+          blocks,
+          layout: baseLayout,
+          sheets: fieldSheets,
+          files: flightFiles,
+          spacingM: spacing,
+          area: ring ? { ring, holes } : null,
+        },
+        t,
+      )
+      downloadBlob(await buildFilesZip(entries), `${exportBaseName}_kml-por-base.zip`)
+    })
+  }, [
+    fieldSheets,
+    blocks,
+    runExport,
+    missionName,
+    areaSafeName,
+    baseLayout,
+    flightFiles,
+    spacing,
+    ring,
+    holes,
+    t,
+    exportBaseName,
+  ])
+
+  // Rótulo do voo de cada bloco (o do mapa e do ficheiro): um só
+  // identificador visível no cartão, no preflight e nas fichas (M3-U4)
+  const blockFlightLabels = useMemo(() => {
+    const out = {}
+    for (const [id, info] of Object.entries(baseLayout?.byBlock ?? {}))
+      if (info?.flightLabel) out[id] = info.flightLabel
+    return out
+  }, [baseLayout])
+  // o voo a que um índice da rota de verificação pertence (os blocos seguem-se
+  // pela ordem da rota; os cortes em `breaks`)
+  const flightOfIndex = useMemo(() => {
+    if (!view3d?.breaks?.length || !blocks?.length) return null
+    const starts = [0, ...view3d.breaks]
+    const withWps = blocks.filter((b) => b.waypoints?.length > 0)
+    return (i) => {
+      let k = 0
+      while (k + 1 < starts.length && i >= starts[k + 1]) k += 1
+      const b = withWps[k]
+      return b ? (blockFlightLabels[b.id] ?? String(b.id)) : null
+    }
+  }, [view3d, blocks, blockFlightLabels])
+
+  // A mensagem traduzida do erro do plano, para o preflight não mostrar o
+  // código em bruto (M3-U8): a mesma que o painel do modo já mostra
+  const planErrorText = useMemo(() => {
+    const tr = (key, vars) => {
+      const msg = t(key, vars)
+      return msg === key ? null : msg
+    }
+    if (missionMode === 'area') {
+      const code = plan?.error
+      if (!code) return null
+      if (code === 'too-many-lines') return tr('cp.area.tooManyLines')
+      return tr(`cp.area.planError.${code}`, { cells: (plan?.errorCells ?? []).join(', ') })
+    }
+    if (missionMode === 'corridor')
+      return corridorPlan?.error ? tr(`co.err.${corridorPlan.error}`) : null
+    if (missionMode === 'circular')
+      return circularPlan?.error ? tr(`ci.err.${circularPlan.error}`) : null
+    if (missionMode === 'face') return facePlan?.error ? tr(`fp.error.${facePlan.error}`) : null
+    return orbitPlan?.error ? tr(`orb.err.${orbitPlan.error}`) : null
+  }, [missionMode, plan, corridorPlan, circularPlan, facePlan, orbitPlan, t])
 
   // Ganho da zona de descolagem (§4.1): o voo real fica entre 0 e +ganho
   // acima do planeado, e isso conta para o tecto AGL do payload e para a
@@ -1622,10 +1702,11 @@ function AppInner({ lang, setLang }) {
       covered,
       status: terrain.status,
       source: terrain.data?.source ?? null,
-      error: terrain.error ?? null,
+      // o texto traduzido: o preflight só o mostra
+      error: terrain.error ? terrainErrorText(terrain.error, t) : null,
       fromFile: Boolean(terrain.fromFile),
     }
-  }, [view3d, terrain])
+  }, [view3d, terrain, t])
 
   // Inclinacao do gimbal pedida fora do que o payload alcanca (a exportacao
   // recorta; aqui avisa-se do valor pedido), no modo activo e nos pontos de
@@ -1831,6 +1912,11 @@ function AppInner({ lang, setLang }) {
         gimbal,
         aglMaxM,
         terrainRoute,
+        planErrorText,
+        blockFlightLabels,
+        routePoints: view3d?.waypoints ?? null,
+        flightOfIndex,
+        rthHeightM: rthInfo?.maxM ?? null,
       })
     }
     const other = {
@@ -1843,6 +1929,9 @@ function AppInner({ lang, setLang }) {
       gimbal,
       aglMaxM,
       terrainRoute,
+      planErrorText,
+      routePoints: view3d?.waypoints ?? null,
+      rthHeightM: rthInfo?.maxM ?? null,
     }
     if (missionMode === 'corridor')
       return preflightPlan({
@@ -1865,6 +1954,9 @@ function AppInner({ lang, setLang }) {
           ? { label: corridorBase?.label ?? '', zone: corridorReference.zone }
           : null,
         speed: corridorSpeed,
+        // passagens sem cobertura (a curva mais apertada do que a distância
+        // ao eixo): só o painel as dizia (M3-U1)
+        corridorDropped: corridorPlan?.stats?.droppedPasses ?? 0,
       })
     if (missionMode === 'circular')
       return preflightPlan({
@@ -1886,7 +1978,14 @@ function AppInner({ lang, setLang }) {
           : null,
         speed: circularSpeed,
       })
-    if (missionMode === 'face') return preflightPlan({ ...other, plan: facePlan })
+    if (missionMode === 'face')
+      // a folga ao DSM e a sua verificação, que só o painel mostrava (M3-U1)
+      return preflightPlan({
+        ...other,
+        plan: facePlan,
+        faceClearance: facePlan && !facePlan.error && dsmLoaded ? faceClearance : null,
+        faceDsmLoaded: facePlan && !facePlan.error ? dsmLoaded : null,
+      })
     return preflightPlan({ ...other, plan: orbitPlan, triggerWarn: orbitTriggerWarn })
   }, [
     missionMode,
@@ -1943,6 +2042,13 @@ function AppInner({ lang, setLang }) {
     transitClearanceInfo,
     orbitTriggerWarn,
     areaRouteOps,
+    planErrorText,
+    blockFlightLabels,
+    flightOfIndex,
+    rthInfo,
+    view3d,
+    dsmLoaded,
+    faceClearance,
     corridorRouteOps,
     circularRouteOps,
   ])
@@ -1981,7 +2087,7 @@ function AppInner({ lang, setLang }) {
     if (!exportBlocked) fn()
   }
 
-  /* --------------- Persistência do projeto (localStorage) -------------- */
+  /* --------------- Persistência do projecto (localStorage) -------------- */
 
   // leitura e migração (v1/v2) em src/mission/project.js e mecânica de
   // gravação/ficheiro em hooks/useProject.js; aqui só se distribui o
@@ -2121,12 +2227,15 @@ function AppInner({ lang, setLang }) {
   )
 
   const fitToArea = useCallback(() => setFitKey((k) => k + 1), [setFitKey])
+  // o erro de um projecto que não abre fica no cartão 1, junto de «Abrir
+  // projecto» (M3-U18); o da área continua no cartão 2
+  const [projectError, setProjectError] = useState(null)
   const { exportProject, importProject } = useProject({
     state: projectState,
     missionName,
     applyNormalized,
     onLoaded: fitToArea,
-    setImportError,
+    setImportError: setProjectError,
     t,
   })
 
@@ -2387,6 +2496,7 @@ function AppInner({ lang, setLang }) {
         baseSheets={missionMode === 'area' ? fieldSheets : []}
         plannedGcps={gcps ?? []}
         safety={safety}
+        rthInfo={rthInfo}
         onBack={() => setView('planner')}
       />
     )
@@ -2450,6 +2560,7 @@ function AppInner({ lang, setLang }) {
             items={preflight}
             open={showPreflight}
             onToggle={() => setShowPreflight((v) => !v)}
+            mode={missionMode}
           />
           <button
             // no modo circular o KMZ do cabecalho e a missao circular: o
@@ -2510,7 +2621,7 @@ function AppInner({ lang, setLang }) {
           className="flex items-start gap-2 border-b border-red-800 bg-red-950/60 px-4 py-2 text-xs text-red-200"
         >
           <span className="font-semibold">⚠ {t('export.failed')}</span>
-          <span>{t(`export.err.${exportError}`)}</span>
+          <span>{t(`export.err.${exportError.code}`, { d: exportError.detail })}</span>
           <button
             onClick={() => setExportError(null)}
             className="ml-auto rounded border border-red-700 px-2 py-0.5 font-medium hover:bg-red-900"
@@ -2528,6 +2639,7 @@ function AppInner({ lang, setLang }) {
               <FacePanel
                 safety={safety}
                 setSafety={setSafety}
+                rthInfo={rthInfo}
                 faceConfig={faceConfig}
                 setFaceParam={setFaceParam}
                 facePlan={facePlan}
@@ -2548,6 +2660,7 @@ function AppInner({ lang, setLang }) {
               <OrbitPanel
                 safety={safety}
                 setSafety={setSafety}
+                rthInfo={rthInfo}
                 orbitConfig={orbitConfig}
                 setOrbitParam={setOrbitParam}
                 orbitPlan={orbitPlan}
@@ -2567,6 +2680,7 @@ function AppInner({ lang, setLang }) {
               <CorridorPanel
                 safety={safety}
                 setSafety={setSafety}
+                rthInfo={rthInfo}
                 triggerWarn={corridorTriggerWarn}
                 corridorConfig={
                   corridorConfig.speedMS === corridorSpeed
@@ -2602,6 +2716,7 @@ function AppInner({ lang, setLang }) {
               <CircularPanel
                 safety={safety}
                 setSafety={setSafety}
+                rthInfo={rthInfo}
                 circularConfig={
                   circularConfig.speedMS === circularSpeed
                     ? circularConfig
@@ -2688,6 +2803,14 @@ function AppInner({ lang, setLang }) {
                 aglWarn={aglWarn}
                 importState={importState}
                 importError={importError}
+                projectError={projectError}
+                routeClearance={clearance}
+                rthInfo={rthInfo}
+                preflightBlockers={preflight
+                  .filter((i) => i.level === 'block')
+                  .slice(0, 2)
+                  .map((i) => t(`preflight.${i.code}`, i.params))}
+                onShowPreflight={() => setShowPreflight(true)}
                 importWarning={importWarning}
                 importParts={importParts}
                 onImportUseAll={useAllImportedParts}
@@ -2943,6 +3066,8 @@ function AppInner({ lang, setLang }) {
               ring={ring}
               basePoints={bases.map((b) => b.point)}
               baseSheets={missionMode === 'area' ? fieldSheets : []}
+              terrainFollowOn={Boolean(terrainFollow?.enabled)}
+              rthInfo={rthInfo}
               gcps={gcps}
               lines={planOk.lines}
               reproducibility={{

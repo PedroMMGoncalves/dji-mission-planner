@@ -109,8 +109,19 @@ describe('preflightArea', () => {
     expect(codes(preflightArea({ ...base(), plan: null }))).toEqual(['no-plan'])
     const items = preflightArea({ ...base(), plan: { error: 'too-many-lines' } })
     expect(items).toEqual([
-      { level: 'block', code: 'plan-error', params: { error: 'too-many-lines' } },
+      {
+        level: 'block',
+        code: 'plan-error',
+        params: { error: 'too-many-lines', code: 'too-many-lines' },
+      },
     ])
+    // com a mensagem traduzida do modo (M3-U8) o texto deixa de ser o código
+    const traduzido = preflightArea({
+      ...base(),
+      plan: { error: 'too-many-lines' },
+      planErrorText: 'Demasiadas faixas.',
+    })
+    expect(traduzido[0].params).toEqual({ error: 'Demasiadas faixas.', code: 'too-many-lines' })
   })
 
   test('seguir terreno: foto por waypoint, relevo em falta e erro do cálculo bloqueiam', () => {
@@ -484,5 +495,167 @@ describe('nao ha missao sem relevo', () => {
     }
     expect(preflightDict['preflight.no-base'].pt).not.toMatch(/sem relevo/)
     expect(preflightDict['preflight.no-base'].en).not.toMatch(/without terrain/)
+  })
+})
+
+/* ---- revisão do código, pacote R-B ------------------------------------- */
+describe('M3-U1: a fachada e o corredor no preflight', () => {
+  const plan = { waypoints: [em(0, 0), em(10, 0), em(20, 0)], stats: { flightTimeS: 60 } }
+  test('fachada: sem DSM local avisa; o corredor de voo a cortar o DSM bloqueia', () => {
+    const semDsm = preflightPlan({ plan, faceDsmLoaded: false, faceClearance: null })
+    expect(codes(semDsm)).toContain('face-unverified')
+    expect(semDsm.find((i) => i.code === 'face-unverified').level).toBe('warn')
+    const corta = preflightPlan({
+      plan,
+      faceDsmLoaded: true,
+      faceClearance: { ok: false, passes: [3, 4], minClearanceM: 1.5 },
+    })
+    const it = corta.find((i) => i.code === 'face-clearance')
+    expect(it.level).toBe('block')
+    expect(it.params).toEqual({ passes: '3, 4', min: 1.5 })
+    expect(hasBlockers(corta)).toBe(true)
+    const ok = preflightPlan({
+      plan,
+      faceDsmLoaded: true,
+      faceClearance: { ok: true, passes: [], minClearanceM: 12 },
+    })
+    expect(codes(ok)).not.toContain('face-clearance')
+    expect(codes(ok)).not.toContain('face-unverified')
+  })
+  test('corredor: passagens sem cobertura avisam, com o número', () => {
+    const it = preflightPlan({ plan, corridorDropped: 2 }).find(
+      (i) => i.code === 'corridor-uncovered',
+    )
+    expect(it.level).toBe('warn')
+    expect(it.params).toEqual({ n: 2 })
+    expect(codes(preflightPlan({ plan, corridorDropped: 0 }))).not.toContain('corridor-uncovered')
+  })
+})
+
+describe('M3-U3: a altura de regresso (RTH) no preflight', () => {
+  test('o trânsito que entra no relevo diz o RTH do KMZ; acima de 120 m há a nota da categoria aberta', () => {
+    const t = {
+      minM: -3,
+      at: { leg: 'out' },
+      outHeightM: 40,
+      backHeightM: 100,
+      flight: 'A-1',
+    }
+    const it = preflightArea({ ...base(), transitClearance: t, rthHeightM: 130 })
+    expect(it.find((i) => i.code === 'transit-collision').params).toMatchObject({ rth: 130 })
+    const nota = it.find((i) => i.code === 'open-category-rth')
+    expect(nota.level).toBe('info')
+    expect(nota.params).toEqual({ rth: 130, cap: OPEN_CATEGORY_MAX_AGL_M })
+    expect(codes(preflightArea({ ...base(), rthHeightM: 120 }))).not.toContain('open-category-rth')
+    expect(codes(preflightArea({ ...base(), rthHeightM: null }))).not.toContain('open-category-rth')
+  })
+})
+
+describe('M3-U4: um só identificador de voo nos textos', () => {
+  test('o aviso da bateria por bloco diz o rótulo do voo (o do mapa e do ficheiro), não o id da célula', () => {
+    // células 1, 2, 4, 5 (a 3 desactivada): o quadrado da célula 4 é o voo 3
+    const blocks = [1, 2, 4, 5].map((id) => ({
+      id,
+      waypoints: plan.waypoints,
+      timeS: 60 * 60,
+      transitS: 0,
+    }))
+    const labels = { 1: '1', 2: '2', 4: '3', 5: '4' }
+    const items = preflightArea({
+      ...base(),
+      blocks,
+      blockFlightLabels: labels,
+      batteryMin: 30,
+      reservePct: 0,
+    })
+    const bat = items.filter((i) => i.code === 'battery-block')
+    expect(bat.map((i) => i.params.flight)).toEqual(['1', '2', '3', '4'])
+    expect(bat.map((i) => i.params.id)).toEqual([1, 2, 4, 5])
+    // sem rótulos (não devia acontecer), o id
+    const semRotulos = preflightArea({ ...base(), blocks, batteryMin: 30, reservePct: 0 })
+    expect(
+      semRotulos.filter((i) => i.code === 'battery-block').map((i) => i.params.flight),
+    ).toEqual(['1', '2', '4', '5'])
+  })
+})
+
+describe('M3-U8: mensagens que dizem onde e o quê', () => {
+  test('os itens de rota dão o voo e as coordenadas do waypoint, não o índice', () => {
+    const pts = [em(0, 0), em(10, 0), em(20, 0), em(30, 0), em(40, 0), em(50, 0)]
+    const c = {
+      ...base(),
+      route: {
+        duplicates: [4],
+        longSegments: [{ at: 2, lengthM: 6000 }],
+        climb: [{ at: 1, rateMS: 9, dh: 20, lengthM: 10 }],
+      },
+      routePoints: pts,
+      flightOfIndex: (i) => (i < 3 ? 'A-1' : 'B-2'),
+    }
+    const items = preflightArea(c)
+    const dup = items.find((i) => i.code === 'route-duplicate-waypoint')
+    expect(dup.params).toMatchObject({ n: 1, at: 4, flight: 'B-2', lat: pts[4][1].toFixed(5) })
+    expect(dup.params.lon).toBe(pts[4][0].toFixed(5))
+    expect(items.find((i) => i.code === 'route-long-segment').params).toMatchObject({
+      km: '6.0',
+      flight: 'A-1',
+    })
+    expect(items.find((i) => i.code === 'route-climb-rate').params).toMatchObject({
+      rate: '9.0',
+      flight: 'A-1',
+      n: 1,
+    })
+    // rota única, sem blocos: o voo é o 1
+    const unica = preflightArea({ ...c, flightOfIndex: null })
+    expect(unica.find((i) => i.code === 'route-duplicate-waypoint').params.flight).toBe('1')
+    // nenhuma mensagem do preflight fala em «índice»
+    for (const [k, v] of Object.entries(preflightDict)) {
+      expect(`${k}: ${v.pt}`).not.toMatch(/índice/i)
+      expect(`${k}: ${v.en}`).not.toMatch(/\bindex\b/i)
+    }
+  })
+  test('plan-error: cada código de erro dos modos tem texto no dicionário, e a mensagem não mostra o código', async () => {
+    const { readFileSync } = await import('node:fs')
+    const dict = (await import('../../src/i18n/dict.missionModes.js')).default
+    const cp = (await import('../../src/i18n/dict.controlPanel.js')).default
+    const codesIn = (file) =>
+      [...readFileSync(new URL(file, import.meta.url), 'utf8').matchAll(/error: '([a-z-]+)'/g)].map(
+        (m) => m[1],
+      )
+    const families = [
+      ['../../src/utils/faceMode.js', (c) => dict[`fp.error.${c}`]],
+      ['../../src/utils/corridor.js', (c) => dict[`co.err.${c}`]],
+      // o circular tem erros do plano (ci.err) e do relevo (ci.terrain.err)
+      ['../../src/utils/circular.js', (c) => dict[`ci.err.${c}`] ?? dict[`ci.terrain.err.${c}`]],
+      ['../../src/utils/orbit.js', (c) => dict[`orb.err.${c}`]],
+      [
+        '../../src/utils/geo.js',
+        // too-many-cells é o erro do mosaico (tilesError), dito no cartão 4
+        (c) =>
+          c === 'too-many-lines'
+            ? cp['cp.area.tooManyLines']
+            : c === 'too-many-cells'
+              ? cp['cp.split.tooManyCellsTile']
+              : cp[`cp.area.planError.${c}`],
+      ],
+      [
+        '../../src/mission/areaPlan.js',
+        (c) => (c === 'too-many-lines' ? cp['cp.area.tooManyLines'] : cp[`cp.area.planError.${c}`]),
+      ],
+    ]
+    let n = 0
+    for (const [file, lookup] of families) {
+      for (const code of new Set(codesIn(file))) {
+        n += 1
+        const entry = lookup(code)
+        expect(entry, `${file}: ${code}`).toBeTruthy()
+        expect(entry.pt).not.toMatch(/\([a-z]+(-[a-z]+)+\)/)
+      }
+    }
+    expect(n).toBeGreaterThan(10)
+    // a mensagem traduzida entra inteira no item; o código fica à parte
+    const item = preflightPlan({ plan: { error: 'standoff-corner' }, planErrorText: 'Texto.' })[0]
+    expect(item.params).toEqual({ error: 'Texto.', code: 'standoff-corner' })
+    expect(preflightDict['preflight.plan-error'].pt).not.toMatch(/\(\{error\}\)/)
   })
 })

@@ -262,7 +262,7 @@ resolves to the latest release. The repository also ships a `CITATION.cff`
 After a real flight, `tools/planeado-vs-medido.mjs` compares what the planner predicted with what the flight produced, from the project file plus any of: the photos (a folder of JPEGs read via EXIF/XMP, or a CSV from `exiftool -csv -n`), the LiDAR cloud (`.las`, with the CRS of the file) and the flight log (Airdata-style CSV). It reports AGL height, GSD, photo interval and front overlap, strip spacing and side overlap, strip and photo counts, photos inside the area, duration, point density (overall and minimum per 10 m cell) and speed, each as planned / measured / deviation:
 
 ```bash
-node tools/planeado-vs-medido.mjs --projecto missao-projeto.json --fotos fotos.csv \
+node tools/planeado-vs-medido.mjs --projecto missao-projecto.json --fotos fotos.csv \
   --las nuvem.las --crs EPSG:3763 --log voo.csv --md relatorio.md
 ```
 

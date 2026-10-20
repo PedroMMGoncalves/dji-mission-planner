@@ -169,12 +169,6 @@ export function FlagGB({ className = 'h-3.5 w-5' }) {
 }
 
 /** SVG standalone (string) para o marcador da base no mapa Leaflet. */
-export const BASE_MARKER_HTML = `
-<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#f59e0b" stroke-width="1.8"
-     stroke-linecap="round" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,.8))">
-  <circle cx="12" cy="12" r="9" fill="#0f172a" fill-opacity="0.85"/>
-  <path d="M8.8 7.5v9M15.2 7.5v9M8.8 12h6.4"/>
-</svg>`
 
 /** Roda dentada — configuração. */
 export function IconGear({ className }) {

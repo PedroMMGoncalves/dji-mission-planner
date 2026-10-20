@@ -113,4 +113,5 @@ export default {
     pt: 'A missão precisa de {flights} voos e a equipa tem {sets} conjuntos de {battery}: conte com recarregar no campo.',
     en: 'The mission needs {flights} flights and the team has {sets} sets of {battery}: plan on recharging in the field.',
   },
+  'set.defaultBattery': { pt: 'Bateria padrão', en: 'Default battery' },
 }

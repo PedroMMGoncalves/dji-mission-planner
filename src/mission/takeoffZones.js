@@ -34,7 +34,6 @@ export const DEFAULT_ZONE_RADIUS_M = 100
 /** Desnível máximo aceite dentro da zona antes de a reduzir (m). */
 export const DEFAULT_MAX_RELIEF_M = 10
 /** Alcance visual (VLOS) de referência por classe de aeronave (m). */
-export const VLOS_M = Object.freeze({ large: 1000, small: 500 })
 
 /** Raio médio da Terra usado pelo turf (m): as distâncias coincidem com turf.distance. */
 const EARTH_RADIUS_M = 6371008.8

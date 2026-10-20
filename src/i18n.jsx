@@ -5,6 +5,7 @@ import preflightDict from './i18n/dict.preflight.js'
 import settingsDict from './i18n/dict.settings.js'
 import basesDict from './i18n/dict.bases.js'
 import cardsDict from './i18n/dict.cards.js'
+import errorsDict from './i18n/dict.errors.js'
 
 /**
  * Internacionalização PT/EN.
@@ -57,8 +58,12 @@ const BASE_DICT = {
   },
   /* ---- Falhas de exportação (E4.1) ---- */
   'export.failed': {
-    pt: 'A exportação foi cancelada: o plano tem valores inválidos e o ficheiro não foi escrito.',
-    en: 'Export cancelled: the plan has invalid values and no file was written.',
+    pt: 'A exportação foi cancelada e o ficheiro não foi escrito.',
+    en: 'Export cancelled; no file was written.',
+  },
+  'export.err.unknown': {
+    pt: 'Erro inesperado ao escrever o ficheiro: {d}',
+    en: 'Unexpected error while writing the file: {d}',
   },
   'export.err.no-waypoints': { pt: 'O plano não tem waypoints.', en: 'The plan has no waypoints.' },
   'export.err.too-few-waypoints': {
@@ -305,6 +310,7 @@ const DICT = {
   ...settingsDict,
   ...basesDict,
   ...cardsDict,
+  ...errorsDict,
 }
 
 export default DICT

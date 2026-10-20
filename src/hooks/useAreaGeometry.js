@@ -33,6 +33,7 @@ import {
 } from '../utils/importArea.js'
 import { parseWpmlKmz } from '../utils/importWpml.js'
 import { DEFAULT_ANCHOR, DEFAULT_SPLIT } from '../mission/defaults.js'
+import { errorInfo } from '../utils/appError.js'
 
 /**
  * @param {object} args
@@ -691,7 +692,11 @@ export function useAreaGeometry({
           }
         }
       } catch (err) {
-        setImportError(err?.message ?? 'Falha ao ler o ficheiro')
+        // com código e variáveis, para o painel traduzir (M3-C11/U18)
+        const info = errorInfo(err)
+        setImportError(
+          info.code ? info : { ...info, code: 'import.read-failed', params: { d: info.message } },
+        )
         setImportState(null)
       }
     },
@@ -710,7 +715,11 @@ export function useAreaGeometry({
           setImportWarning(t('cp.area.importDiscarded', { n: importState.discardedParts }))
         }
       } catch {
-        setImportError('Falha na conversão de coordenadas')
+        setImportError({
+          code: 'import.crs-failed',
+          params: {},
+          message: 'Falha na conversão de coordenadas',
+        })
         setImportState(null)
       }
     },

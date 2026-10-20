@@ -49,6 +49,7 @@ export default function FacePanel({
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
   safety = null,
   setSafety = () => {},
+  rthInfo = null,
 }) {
   const t = useT()
   const stats = facePlan && !facePlan.error ? facePlan.stats : null
@@ -180,7 +181,13 @@ export default function FacePanel({
       </Card>
 
       {/* Plano e avisos */}
-      <SafetyCard id="fachada-seguranca" n={3} safety={safety} onChange={setSafety} />
+      <SafetyCard
+        rthInfo={rthInfo}
+        id="fachada-seguranca"
+        n={3}
+        safety={safety}
+        onChange={setSafety}
+      />
 
       <Card id="fachada-4" n={4} title={t('fp.plan.title')}>
         {!faceConfig.baseline && (

@@ -472,6 +472,79 @@ escrever e o que o portão de testes deixava passar.
   falha, e um cenário que lança guarda a captura da página aberta e
   fecha-a.
 
+### Corrigido (revisão do código, pacote R-B: preflight, textos e identificadores)
+
+O terceiro pacote da terceira vaga: o que o preflight deixava de fora, o
+que os textos diziam mal e os identificadores que não batiam certo.
+
+- **A fachada e o corredor no preflight** (M3-U1): o corredor de voo da
+  fachada a cortar a superfície do DSM bloqueia (`face-clearance`, com as
+  passagens e a folga), sem DSM local o afastamento não verificado é um
+  aviso (`face-unverified`) e as passagens do corredor sem cobertura são um
+  aviso (`corridor-uncovered`) — antes só existiam nas caixas dos painéis,
+  com a pastilha verde e o KMZ activo.
+- **A altura diz o que é** (M3-U2): «Altura acima da descolagem» sem seguir
+  terreno, com a linha «Sobre a área: {min}–{max} m acima do solo» (a âmbar
+  quando o mínimo fica abaixo de metade), e «Altura AGL (segue o terreno)»
+  com o seguimento; o mesmo no relatório. «AGL 80» com a base no vale e a
+  área 60 m acima eram 20 m do chão, e nada o dizia.
+- **A altura de regresso (RTH) à vista** (M3-U3): «Regresso (RTH): {rth} m
+  acima da descolagem · subida na descolagem: 30 m» no cartão 5 e nos
+  cartões de segurança dos outros modos, na ficha de cada base, na
+  checklist e no relatório — os mesmos valores que o KMZ escreve, por voo
+  com bases; nota da categoria aberta quando o regresso passa os 120 m; o
+  remédio do trânsito que entra no relevo deixa de mandar «subir o RTH»,
+  que não há onde.
+- **Um só identificador de voo** (M3-U4): o cartão 4 mostra o rótulo do
+  voo (o do mapa e do ficheiro), não «B04», e o aviso da bateria diz «Voo
+  3», não «Bloco 4» — com uma célula desactivada o operador ia ao quadrado
+  errado.
+- **O cartão 7 diz o que bloqueia** (M3-U6): caixa vermelha com os dois
+  primeiros bloqueios e «Ver todos no Preflight», ao pé dos botões cinzentos;
+  os textos que mandavam para a «secção Terreno» e o «painel das bases»
+  apontam para os cartões 2 e 5, e o passo 3 da ajuda deixa de chamar
+  opcional ao relevo.
+- **Mensagens que dizem onde e o quê** (M3-U8): o erro do plano chega
+  traduzido («O plano tem um erro: Afastamento demasiado curto…»), não como
+  código («standoff-corner»); os itens de rota dão o voo e as coordenadas
+  em vez do índice do waypoint; os avisos da bateria por bloco, do tecto do
+  payload e das alturas relativas dizem o passo seguinte.
+- **Cores pelo nível** (M3-U12): as caixas dos cartões usam o nível e o
+  ícone do item do preflight (⛔ impede a exportação, ⚠ avisa) — faixas a
+  mais e relevo fora da cobertura a vermelho, o tecto do payload a âmbar;
+  plurais na pastilha («1 bloqueio, 1 aviso»); sem plano a pastilha é neutra
+  e diz «defina a área (cartão 2)», não «⛔ 1 bloqueios» a quem abre a
+  aplicação.
+- **Erros de exportação com detalhe** (M3-C10): um erro que não é da
+  validação mostra a mensagem (`export.err.unknown`), não a chave crua; os
+  erros por waypoint trazem o detalhe; «A exportação foi cancelada» deixa de
+  culpar o plano por uma falha do ZIP.
+- **Mensagens por código, PT/EN, junto do botão** (M3-C11, M3-U18): as
+  importações de áreas e de missões, o MDT (16 mensagens), o relevo global,
+  o equipamento e os avisos do seguimento de terreno passam a erros com
+  código e variáveis (`src/utils/appError.js`, `src/i18n/dict.errors.js`),
+  traduzidos nos painéis — antes saíam em português cru também em EN; o
+  erro de um projecto que não abre fica no cartão 1, junto de «Abrir
+  projecto»; um KML só com linhas diz que é um eixo e manda para o
+  separador Corredor; «Formato não suportado» lista o .kmz; «Bateria padrão»
+  traduz-se.
+- **Grafias pré-AO90 e um só nome de ficheiro** (M3-U21, M3-T15, M3-C12):
+  «Rectângulo», «auto-intersecções», «Selecção», «correcto», «eléctrica»,
+  «inspeccionada», «projectar»; um só inglês («centre»); o projecto grava-se
+  como `<nome>-projecto.json` pela mesma regra dos KML e KMZ
+  (`safeFileStem`: «Évora» dava `-vora-projeto.json`), e o ficheiro da
+  checklist também. Ficam de fora, de propósito: a formatação pt-PT dos
+  números (os números do painel seguem os dos ficheiros e das medições, com
+  ponto decimal) e o nome por omissão com data.
+- **Orçamento do JavaScript** de 2200 para 2250 KB (`scripts/check-bundle-size.mjs`):
+  o dicionário dos erros com código (41 mensagens PT/EN) e os textos novos
+  do preflight levaram o total a 2203 KB; nenhuma dependência nova.
+- **Testes dos limiares na fronteira** (M3-T5): `transit-collision` a
+  −0,1/0 m, `clearance-low` a 14,9/15 m, VLOS um metro aquém e além do pior
+  caso, RTH 40→100 e 90→110 m, subida de descolagem 30 m
+  (`tests/unit/preflight-limiares.test.mjs`); `baseZoneFor` (M3-T10) com um
+  patamar a 200 m e 196 m à volta.
+
 ## 1.4.2 — 2026-10-08
 
 ### Alterado (desenho)

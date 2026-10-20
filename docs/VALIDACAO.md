@@ -42,7 +42,7 @@ tempo permitir, R1 também com RTK activo.
 1. Na aplicação (versão indicada no cabeçalho), abrir o projecto da
    missão, mover a área para o local, marcar a base no ponto real de
    descolagem, confirmar o preflight sem bloqueios, guardar o projecto
-   (`<missão>-projeto.json`) e exportar o KMZ (ou o zip de blocos).
+   (`<missão>-projecto.json`) e exportar o KMZ (ou o zip de blocos).
 2. Importar no Pilot 2 e registar na matriz (secção 5): versão do Pilot 2,
    firmware da aeronave, aceitação do ficheiro, avisos do comando.
 3. Voar sem alterar nada no comando; anotar vento, temperatura, baterias
@@ -56,7 +56,7 @@ tempo permitir, R1 também com RTK activo.
 exiftool -csv -n -GPSLatitude -GPSLongitude -GPSAltitude -RelativeAltitude \
   -DateTimeOriginal -SubSecTimeOriginal -FocalLength -ImageWidth \
   -GimbalPitchDegree -ImageSource fotos/*.JPG > R1-fotos.csv
-node tools/planeado-vs-medido.mjs --projecto R1-projeto.json --fotos R1-fotos.csv \
+node tools/planeado-vs-medido.mjs --projecto R1-projecto.json --fotos R1-fotos.csv \
   --log R1-voo.csv --json R1-rel.json --md R1-rel.md
 # LiDAR: acrescentar --las nuvem.las --crs EPSG:3763
 ```

@@ -71,6 +71,7 @@ export default function CircularPanel({
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
   safety = null,
   setSafety = () => {},
+  rthInfo = null,
   circularTerrain = null,
   circularCovers = false,
   onRemove,
@@ -243,7 +244,13 @@ export default function CircularPanel({
       </Card>
 
       {/* Plano e exportação */}
-      <SafetyCard id="circular-seguranca" n={3} safety={safety} onChange={setSafety} />
+      <SafetyCard
+        rthInfo={rthInfo}
+        id="circular-seguranca"
+        n={3}
+        safety={safety}
+        onChange={setSafety}
+      />
 
       <Card id="circular-4" n={4} title={t('ci.plan.title')}>
         {errorKey && (

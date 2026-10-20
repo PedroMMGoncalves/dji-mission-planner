@@ -68,6 +68,33 @@ export function transitLegs({ view3d, perBlock, blocks, baseLayout, bases, block
 }
 
 /**
+ * Altura de regresso (RTH) de cada voo: a que o KMZ escreve
+ * (`defaultRthHeightM` do tecto da rota desse voo, nas alturas da sua zona,
+ * nunca abaixo da altitude pedida — como `missionConfigXml`), para o cartão,
+ * a ficha, a checklist e o relatório mostrarem o que vai no ficheiro, e a
+ * subida de descolagem (M3-U3 da revisão do código).
+ * @param {Array<{flight: string|null, waypoints: number[][]}>} legs
+ * @param {{altitudeM?: number}} [opts] altitude nominal (área): entra no tecto
+ * @returns {{flight: string|null, ceilingM: number, rthM: number}[]}
+ */
+export function rthByFlight(legs, { altitudeM = 0 } = {}) {
+  const alt = Number.isFinite(altitudeM) ? altitudeM : 0
+  return (legs ?? []).map((leg) => {
+    let tecto = alt
+    for (const w of leg.waypoints ?? []) if (Number.isFinite(w[2]) && w[2] > tecto) tecto = w[2]
+    return { flight: leg.flight ?? null, ceilingM: tecto, rthM: defaultRthHeightM(tecto) }
+  })
+}
+
+/** «100» ou «100–120»: o RTH de todos os voos, para os ecrãs. */
+export function rthRangeLabel(info) {
+  if (!info || !Number.isFinite(info.minM) || !Number.isFinite(info.maxM)) return '—'
+  const a = Math.round(info.minM)
+  const b = Math.round(info.maxM)
+  return a === b ? String(a) : `${a}–${b}`
+}
+
+/**
  * A pior folga das pernas: o resultado de transitClearance da perna com a
  * menor folga, com o rótulo do voo. Cada perna regressa à altura de RTH do
  * seu tecto (o waypoint mais alto).

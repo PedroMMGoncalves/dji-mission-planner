@@ -156,6 +156,17 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
                 </td>
               </tr>
               <tr>
+                <th className={head}>{t('bases.sheet.rth')}</th>
+                <td className={cell} data-testid="base-sheet-rth">
+                  {s.rthM != null
+                    ? t('bases.sheet.rthValue', {
+                        rth: Math.round(s.rthM),
+                        takeoff: s.takeoffM ?? '—',
+                      })
+                    : '—'}
+                </td>
+              </tr>
+              <tr>
                 <th className={head}>{t('bases.sheet.batteries')}</th>
                 <td className={`${cell} ${s.sets.short ? 'text-amber-300' : ''}`}>
                   {s.sets.sets != null

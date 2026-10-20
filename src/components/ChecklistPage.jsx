@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLang, useT } from '../i18n.jsx'
 import { groupApplies } from '../data/checklist.js'
 import BaseFieldSheets from './BaseFieldSheets.jsx'
+import { rthRangeLabel } from '../mission/transitLegs.js'
+import { safeFileStem } from '../utils/exporters.js'
 
 /* ------------------------------------------------------------------ *
  * Checklist de campo UAV — pré-campo, durante, pós-campo + relatório.
@@ -104,7 +106,7 @@ const FASES = [
           ),
           it(
             bi(
-              'Hélices fixas com sentido correto por motor',
+              'Hélices fixas com sentido correcto por motor',
               'Propellers secured with correct rotation per motor',
             ),
             null,
@@ -183,7 +185,7 @@ const FASES = [
           it(
             bi('Gerador verificado com combustível', 'Generator checked and fuelled'),
             bi(
-              'Missões em áreas remotas sem rede elétrica',
+              'Missões em áreas remotas sem rede eléctrica',
               'Missions in remote areas with no mains power',
             ),
           ),
@@ -697,7 +699,7 @@ const FASES = [
         titulo: bi('Controlo de qualidade', 'Quality control'),
         itens: [
           it(
-            bi('Amostra de imagens inspecionada', 'Sample of images inspected'),
+            bi('Amostra de imagens inspeccionada', 'Sample of images inspected'),
             bi('blur, exposição', 'blur, exposure'),
           ),
           it(
@@ -927,15 +929,6 @@ const chaveItem = (faseId, gi, ii) => `${faseId}.${gi}.${ii}`
 const hoje = () => new Date().toISOString().slice(0, 10)
 
 /** Marcas diacríticas combinatórias (bloco U+0300–U+036F). */
-const DIACRITICOS = new RegExp('[\\u0300-\\u036f]', 'g')
-
-const slug = (s) =>
-  (s || 'missao')
-    .normalize('NFD')
-    .replace(DIACRITICOS, '')
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .toLowerCase() || 'missao'
 
 /* --------------------------- Subcomponentes --------------------------- */
 
@@ -1201,6 +1194,8 @@ export default function ChecklistPage({
   plannedGcps = [],
   // acções de segurança escritas no KMZ (src/mission/safety.js)
   safety = null,
+  // altura de regresso (RTH) e subida de descolagem escritas no KMZ (M3-U3)
+  rthInfo = null,
   onBack,
 }) {
   const lang = useLang()
@@ -1413,7 +1408,7 @@ export default function ChecklistPage({
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `checklist-${slug(missao.missao)}-${missao.data || hoje()}.json`
+    a.download = `checklist-${safeFileStem(missao.missao)}-${missao.data || hoje()}.json`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -1523,6 +1518,11 @@ export default function ChecklistPage({
                     : t('safety.rcLost.goContinue'),
               })}
             </p>
+            {rthInfo && (
+              <p data-testid="checklist-rth" className="mt-1 text-sm text-slate-200">
+                {t('safety.rth', { rth: rthRangeLabel(rthInfo), takeoff: rthInfo.takeoffM })}
+              </p>
+            )}
             <p className="mt-1 text-xs leading-relaxed text-slate-400">
               {t('safety.checklistHint')}
             </p>

@@ -199,3 +199,33 @@ describe('M2-T3: folga dos transitos entre a base e a rota', () => {
     expect(transitClearance(base, rota, { elevationAt: () => null, refElev: 100 })).toBeNull()
   })
 })
+
+describe('M3-T10: baseZoneFor (a zona da base do corredor e do circular)', () => {
+  // patamar a 200 m num raio de 40 m à volta da base, 196 m à volta: a cota
+  // de referência é a mínima da zona (196) e o ganho 4 m
+  const lat0 = 38.7
+  const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
+  const base = [-9.14, lat0]
+  const dist = (lon, lat) => Math.hypot((lon + 9.14) * mLon, (lat - lat0) * 110574)
+  const patamar = (lon, lat) => (dist(lon, lat) <= 40 ? 200 : 196)
+  const zoneConfig = { radiusM: 100, maxReliefM: 10 }
+  it('cota mínima da zona e ganho', async () => {
+    const { baseZoneFor } = await import('../../src/mission/reference.js')
+    const z = baseZoneFor(base, { elevationAt: patamar, zoneConfig })
+    expect(z).not.toBeNull()
+    expect(z.refElev).toBe(196)
+    expect(z.gainM).toBe(4)
+    expect(z.radiusM).toBe(100)
+    // o raio próprio da base manda sobre o da configuração
+    expect(baseZoneFor(base, { elevationAt: patamar, zoneConfig, baseRadiusM: 30 }).radiusM).toBe(
+      30,
+    )
+  })
+  it('sem configuração, sem relevo ou sem base, nada', async () => {
+    const { baseZoneFor } = await import('../../src/mission/reference.js')
+    expect(baseZoneFor(base, { elevationAt: patamar, zoneConfig: null })).toBeNull()
+    expect(baseZoneFor(base, { elevationAt: null, zoneConfig })).toBeNull()
+    expect(baseZoneFor(null, { elevationAt: patamar, zoneConfig })).toBeNull()
+    expect(baseZoneFor(base, { elevationAt: () => null, zoneConfig })).toBeNull()
+  })
+})
