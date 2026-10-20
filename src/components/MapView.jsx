@@ -18,6 +18,7 @@ import { blockRing } from '../mission/baseLayout.js'
  *    percentagem visível de cada bloco
  */
 
+/** @type {(p: number[]) => [number, number]} */
 const toLatLng = ([lon, lat]) => [lat, lon]
 
 /** Modos em que um clique no mapa marca ou desenha (vértice, base, ponto, POI). */
@@ -72,7 +73,7 @@ export default function MapView({
 
   // As callbacks/modo vivem num ref para os handlers Leaflet (registados uma
   // única vez) lerem sempre a versão atual sem re-registos.
-  const stateRef = useRef({})
+  const stateRef = useRef(/** @type {any} */ ({}))
   // instante do fim do último arrasto de um marcador (vértice, ponto
   // intermédio, base): o «click» que o browser dispara a seguir ao mouseup
   // cai no mapa, porque o marcador foi redesenhado entretanto, e num modo de

@@ -114,4 +114,17 @@ export default {
     en: 'The mission needs {flights} flights and the team has {sets} sets of {battery}: plan on recharging in the field.',
   },
   'set.defaultBattery': { pt: 'Bateria padrão', en: 'Default battery' },
+  'set.clearCache': { pt: 'Limpar a cache do relevo', en: 'Clear the terrain cache' },
+  'set.cacheCleared': {
+    pt: 'Cache do relevo apagada: as áreas voltam a ser descarregadas quando forem precisas.',
+    en: 'Terrain cache cleared: areas will be downloaded again when needed.',
+  },
+  'set.cacheEmpty': {
+    pt: 'Não havia cache do relevo neste browser.',
+    en: 'There was no terrain cache in this browser.',
+  },
+  'set.storageUsed': {
+    pt: 'Armazenamento usado pela aplicação: ~{mb} MB.',
+    en: 'Storage used by the application: ~{mb} MB.',
+  },
 }

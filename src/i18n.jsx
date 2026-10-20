@@ -37,13 +37,19 @@ export function translate(lang, key, vars) {
   return s
 }
 
+/** @returns {(key: string, vars?: Record<string, any>) => string} */
 export function useT() {
   const lang = useContext(LangContext)
   // memoizada por língua (M3-C8): uma função nova em cada render era
   // dependência do seguimento de terreno e das fichas de campo, que se
   // refaziam — com a rota, a folga, o preflight e o mapa — a cada tecla no
   // nome da missão (4,6 s de tarefas longas em 10 teclas numa área de 5 × 4 km)
-  return useMemo(() => (key, vars) => translate(lang, key, vars), [lang])
+  return useMemo(
+    () =>
+      (key, vars = undefined) =>
+        translate(lang, key, vars),
+    [lang],
+  )
 }
 
 const BASE_DICT = {

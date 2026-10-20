@@ -42,6 +42,8 @@
     "three": "^0.170.0"
   },
   "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.1.0",
     "@xmldom/xmldom": "^0.9.12",
     "ajv": "^8.20.0",

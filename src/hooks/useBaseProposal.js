@@ -87,7 +87,12 @@ export function useBaseProposal() {
   )
 
   // sair da página a meio: a corrida pára
-  useEffect(() => cancel, [cancel])
+  useEffect(
+    () => () => {
+      cancel()
+    },
+    [cancel],
+  )
 
   return { running: status !== null, progress: status?.progress ?? 0, start, cancel }
 }

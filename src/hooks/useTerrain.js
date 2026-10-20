@@ -57,7 +57,7 @@ export function useTerrain({
   // corredor ao lado) baixava a resolução da grelha (2048 píxeis de lado)
   const fileBox = activeBbox ?? ringBbox
   const [terrain, setTerrain] = useState(
-    /** @type {{status: string, data: any, error: string|null, fromFile?: boolean}} */ ({
+    /** @type {{status: string, data: any, error: null | (import('../utils/appError.js').ErrorInfo & {offline?: boolean}), fromFile?: boolean}} */ ({
       status: 'idle',
       data: null,
       error: null,

@@ -18,6 +18,7 @@ import {
 } from '../mission/corridorTerrain.js'
 import { baseZoneFor, referenceElevation } from '../mission/reference.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
+import { finishDraft } from '../mission/draft.js'
 
 export function useCorridorMission({
   sensor,
@@ -28,6 +29,7 @@ export function useCorridorMission({
   missionMode,
   setMode,
   setDraftVertices,
+  draftVertices = [],
   avisoObturador,
 }) {
   const [corridorConfig, setCorridorConfig] = useState(DEFAULT_CORRIDOR_CONFIG)
@@ -50,22 +52,12 @@ export function useCorridorMission({
   }, [setMode, setDraftVertices])
 
   const handleFinishCorridor = useCallback(() => {
-    setDraftVertices((draft) => {
-      const EPS = 1e-6
-      const clean = draft.filter(
-        (v, i) =>
-          i === 0 ||
-          Math.abs(v[0] - draft[i - 1][0]) > EPS ||
-          Math.abs(v[1] - draft[i - 1][1]) > EPS,
-      )
-      if (clean.length >= 2) {
-        setCorridorConfig((c) => ({ ...c, centreline: clean }))
-        setMode('idle')
-        return []
-      }
-      return draft
-    })
-  }, [setMode, setDraftVertices])
+    const { ok, clean } = finishDraft(draftVertices, 2)
+    if (!ok) return
+    setCorridorConfig((c) => ({ ...c, centreline: clean }))
+    setMode('idle')
+    setDraftVertices([])
+  }, [draftVertices, setMode, setDraftVertices])
 
   const clearCorridorAxis = useCallback(() => {
     setCorridorConfig((c) => ({ ...c, centreline: null }))

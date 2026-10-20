@@ -33,7 +33,6 @@ import {
 import {
   aircraftEquipmentFor,
   flightsVsSets,
-  followBatteryIfEqual,
   loadEquipment,
   resolveMissionBattery,
   saveEquipment,
@@ -49,7 +48,8 @@ import {
   removeBase as removeBaseFrom,
   setBaseRadius,
 } from './mission/bases.js'
-import { blockRing, blocksViewRoute, summarizeBases, convexHull } from './mission/baseLayout.js'
+import { blockRing, summarizeBases, convexHull } from './mission/baseLayout.js'
+import { activeRoute } from './mission/activeRoute.js'
 import {
   baseFieldSheets,
   daySummary,
@@ -67,8 +67,6 @@ import {
   findOptimalDirection,
   lidarPointDensity,
   lineSpacing,
-  normalizeTriggerMode,
-  normalizeWaypointStops,
   photoInterval,
   resolveSensor,
   ringToPolygon,
@@ -89,22 +87,13 @@ import { useOrbitMission } from './hooks/useOrbitMission.js'
 import { useFaceMission } from './hooks/useFaceMission.js'
 import { useInspection } from './hooks/useInspection.js'
 import { useTerrain } from './hooks/useTerrain.js'
-import { useProject } from './hooks/useProject.js'
+import { useProjectSession } from './hooks/useProjectSession.js'
 import { terrainIdentity, useViewsheds } from './hooks/useViewsheds.js'
 import { useBaseProposal } from './hooks/useBaseProposal.js'
 import { viewshedJobs, viewshedTerrainModel } from './mission/viewshedPlan.js'
-import {
-  DEFAULT_GCP_CONFIG,
-  DEFAULT_MISSION_NAME,
-  DEFAULT_PARAMS,
-  DEFAULT_TERRAIN_FOLLOW,
-  clampParam,
-} from './mission/defaults.js'
-import { DEFAULT_FACE_CONFIG } from './utils/faceMode.js'
-import { DEFAULT_ORBIT_CONFIG } from './utils/orbit.js'
-import { DEFAULT_CORRIDOR_CONFIG } from './utils/corridor.js'
-import { DEFAULT_CIRCULAR_CONFIG } from './utils/circular.js'
-import { hasBlockers, preflightArea, preflightPlan } from './mission/preflight.js'
+import { DEFAULT_MISSION_NAME, DEFAULT_PARAMS, clampParam } from './mission/defaults.js'
+import { hasBlockers } from './mission/preflight.js'
+import { preflightFor } from './mission/preflightFor.js'
 import { routeClearance, terrainHolesAlong } from './mission/clearance.js'
 import { rthByFlight, transitLegs, worstTransit } from './mission/transitLegs.js'
 import { missionWpml } from './mission/missionWpml.js'
@@ -146,7 +135,6 @@ function browserStorage() {
 import { LANGS, LangContext, useT } from './i18n.jsx'
 import { terrainErrorText } from './utils/appError.js'
 import { isVerifiedFlight } from './data/validation.js'
-import { APP_VERSION, versionBefore } from './mission/project.js'
 
 /** Bases a menos de ~3 km da caixa da área: entram na caixa do relevo (a cota da zona). */
 function basePointsNear(bases, ring) {
@@ -214,10 +202,17 @@ function AppInner({ lang, setLang }) {
   // acções de segurança (fim da missão, sinal perdido) de todos os modos
   const [safety, setSafety] = useState(() => ({ ...DEFAULT_SAFETY }))
   // seleção de hardware: aeronave + payload (T1.1)
-  const [drone, setDrone] = useState(() => ({ ...DEFAULT_SELECTION }))
+  const [drone, setDrone] = useState(
+    () =>
+      /** @type {{aircraftId: string, payloadId: string, rtk?: boolean}} */ ({
+        ...DEFAULT_SELECTION,
+      }),
+  )
   const [custom, setCustom] = useState(DEFAULT_CUSTOM_SENSOR)
   // afinações por payload (T1.2): { [payloadId]: { effectiveFov } }
-  const [payloadTuning, setPayloadTuning] = useState({})
+  const [payloadTuning, setPayloadTuning] = useState(
+    /** @type {Record<string, {effectiveFov?: number}>} */ ({}),
+  )
   // Equipamento (Configuração): baterias com tempo útil, VLOS e zona de
   // descolagem por aeronave. Vive no browser, à parte do projecto.
   const [equipment, setEquipment] = useState(() => loadEquipment(browserStorage()))
@@ -299,7 +294,6 @@ function AppInner({ lang, setLang }) {
   const [exportError, setExportError] = useState(null)
   // a versão que gravou o projecto aberto (M3-U17): o cartão 1 diz o que mudou
   // desde então; null depois de lido ou quando é a actual
-  const [projectVersion, setProjectVersion] = useState(null)
 
   /**
    * E4.1: nenhuma exportação escreve um ficheiro com valores inválidos. O
@@ -521,6 +515,7 @@ function AppInner({ lang, setLang }) {
     handleFinishCorridor,
     clearCorridorAxis,
   } = useCorridorMission({
+    draftVertices,
     sensor,
     speedRange,
     altitude: params.altitude,
@@ -569,6 +564,7 @@ function AppInner({ lang, setLang }) {
     facePreview,
     handleExportFace,
   } = useFaceMission({
+    draftVertices,
     sensor,
     missionMode,
     missionName,
@@ -665,6 +661,7 @@ function AppInner({ lang, setLang }) {
     setFitKey,
     applyProjectGeometry,
   } = useAreaGeometry({
+    draftVertices,
     mode,
     setMode,
     setDraftVertices,
@@ -1324,79 +1321,45 @@ function AppInner({ lang, setLang }) {
   // E1.4: a vista 3D cobre o modo activo — grelha (com terrain follow),
   // passagens de fachada empilhadas ou anéis de órbita às suas alturas.
   // refElev ancora as alturas relativas: pé da face / solo do POI / base.
-  const view3d = useMemo(() => {
-    const elevAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
-    if (missionMode === 'face' && facePlan && !facePlan.error) {
-      const foot = elevAt?.(faceConfig.baseline[0][0], faceConfig.baseline[0][1])
-      return { waypoints: facePlan.waypoints, refElev: Number.isFinite(foot) ? foot : 0 }
-    }
-    if (missionMode === 'orbit' && orbitPlan && !orbitPlan.error) {
-      const ground = elevAt?.(orbitConfig.poi[0], orbitConfig.poi[1])
-      return { waypoints: orbitPlan.waypoints, refElev: Number.isFinite(ground) ? ground : 0 }
-    }
-    // Sem este ramo o modo corredor caía no plano de ÁREA: com um polígono
-    // desenhado antes, a vista 3D e o perfil mostravam a grelha da área
-    // enquanto o painel do corredor estava aberto — a missão errada.
-    // Circular: alturas por ponto (planas ou do terreno) sobre a cota de
-    // referencia da area, a mesma cadeia do modo area
-    if (missionMode === 'circular') {
-      if (!circularPlan || circularPlan.error) return null
-      return {
-        waypoints: circularPlan.waypoints,
-        refElev: circularReference?.elev ?? null,
-        refSource: circularReference?.source ?? null,
-      }
-    }
-    // Corredor: a mesma cadeia de referência da área (base com relevo, senão
-    // a mínima debaixo da rota); antes era a cota do início do eixo
-    if (missionMode === 'corridor') {
-      if (!corridorPlan || corridorPlan.error) return null
-      return {
-        waypoints: corridorPlan.waypoints.map(([lon, lat, h]) => [lon, lat, h ?? params.altitude]),
-        refElev: corridorReference?.elev ?? null,
-        refSource: corridorReference?.source ?? null,
-      }
-    }
-    if (!planOk) return null
-    const tfOk = terrainResult && !terrainResult.error
-    // Bases múltiplas: cada bloco na cota da zona da sua base, exprimido na
-    // comum (a mesma altitude absoluta); os troços entre blocos não se voam
-    if (blockRefs && blocks?.length) {
-      const src = tfOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
-      const vr = blocksViewRoute(src, blockRefs, params.altitude)
-      return {
-        waypoints: vr.waypoints,
-        breaks: vr.breaks,
-        refElev: blockRefs.common,
-        refSource: 'bases',
-      }
-    }
-    const wps = tfOk
-      ? terrainResult.waypoints
-      : planOk.waypoints.map(([lon, lat]) => [lon, lat, params.altitude])
-    // Cota de referencia unica (useAreaMission): base com relevo, senao a
-    // minima do relevo debaixo da rota. Antes caia em 0 com a base fora do
-    // relevo e o perfil punha o voo debaixo da terra.
-    const refElev = tfOk ? terrainResult.refElev : (reference?.elev ?? null)
-    return { waypoints: wps, refElev, refSource: reference?.source ?? null }
-  }, [
-    missionMode,
-    facePlan,
-    faceConfig.baseline,
-    orbitPlan,
-    orbitConfig.poi,
-    corridorPlan,
-    corridorReference,
-    circularPlan,
-    circularReference,
-    planOk,
-    terrainResult,
-    terrain,
-    reference,
-    blockRefs,
-    blocks,
-    params.altitude,
-  ])
+  const view3d = useMemo(
+    () =>
+      activeRoute({
+        missionMode,
+        elevationAt: terrain.status === 'ready' ? terrain.data?.elevationAt : null,
+        facePlan,
+        faceBaseline: faceConfig.baseline,
+        orbitPlan,
+        orbitPoi: orbitConfig.poi,
+        corridorPlan,
+        corridorReference,
+        circularPlan,
+        circularReference,
+        planOk,
+        terrainResult,
+        reference,
+        blockRefs,
+        blocks,
+        altitude: params.altitude,
+      }),
+    [
+      missionMode,
+      facePlan,
+      faceConfig.baseline,
+      orbitPlan,
+      orbitConfig.poi,
+      corridorPlan,
+      corridorReference,
+      circularPlan,
+      circularReference,
+      planOk,
+      terrainResult,
+      terrain,
+      reference,
+      blockRefs,
+      blocks,
+      params.altitude,
+    ],
+  )
 
   // Vista 3D com bases: a cor de cada voo (a da sua base, como no mapa),
   // pela ordem dos troços de view3d, e o contorno e o rótulo de cada bloco
@@ -2020,27 +1983,24 @@ function AppInner({ lang, setLang }) {
       return null
     return { aircraft: aircraft.label, payload: payload.label, mode: t(`mode.${missionMode}`) }
   }, [drone.aircraftId, drone.payloadId, missionMode, aircraft, payload, t])
-  const preflight = useMemo(() => {
-    if (missionMode === 'area') {
-      return preflightArea({
+  const preflight = useMemo(
+    () =>
+      preflightFor(missionMode, {
         plan,
         blocks,
         photoMode,
         waypointStops: params.waypointStops,
         terrainFollow,
         terrainCovers,
-        terrainResult: terrainResultForPreflight,
-        basePoint: areaBasePoint,
-        // com blocos e bases, o alcance e o trânsito vão bloco a bloco
-        baseDistance: perBlockBases ? null : areaBaseDistance,
-        baseTransitS: areaRouteOps?.transitS ?? null,
-        routeVlosM: areaRouteOps?.vlosWorstM ?? null,
-        baseLayout: perBlockBases ? baseLayout : null,
-        viewsheds: perBlockBases ? viewshedByBlock : null,
-        refZone:
-          !perBlockBases && refBase && zones[refBase.id] && !zones[refBase.id].error
-            ? { label: refBase.label, zone: zones[refBase.id] }
-            : null,
+        terrainResultForPreflight,
+        areaBasePoint,
+        perBlockBases,
+        areaBaseDistance,
+        areaRouteOps,
+        baseLayout,
+        viewshedByBlock,
+        refBase,
+        zones,
         vlosM,
         speed,
         batteryMin,
@@ -2053,7 +2013,7 @@ function AppInner({ lang, setLang }) {
         route,
         clearance,
         terrainHoles,
-        transitClearance: transitClearanceInfo,
+        transitClearanceInfo,
         reference,
         gimbal,
         aglMaxM,
@@ -2064,143 +2024,99 @@ function AppInner({ lang, setLang }) {
         flightOfIndex,
         rthHeightM: rthInfo?.maxM ?? null,
         unverified,
-      })
-    }
-    const other = {
+        corridorPlan,
+        corridorTriggerWarn,
+        corridorPhotoMode: corridorConfig.photoMode,
+        corridorWaypointStops: corridorConfig.waypointStops,
+        corridorCovers,
+        corridorTerrain,
+        corridorReference,
+        corridorBase,
+        corridorBaseDistance,
+        corridorRouteOps,
+        corridorSpeed,
+        circularPlan,
+        circularTriggerWarn,
+        circularCovers,
+        circularTerrain,
+        circularReference,
+        circularBase,
+        circularBaseDistance,
+        circularRouteOps,
+        circularSpeed,
+        facePlan,
+        dsmLoaded,
+        faceClearance,
+        orbitPlan,
+        orbitTriggerWarn,
+      }),
+    [
+      missionMode,
+      plan,
+      blocks,
+      photoMode,
+      params.waypointStops,
+      corridorConfig.photoMode,
+      corridorConfig.waypointStops,
+      terrainFollow,
+      terrainCovers,
+      terrainResultForPreflight,
+      areaBasePoint,
+      areaBaseDistance,
+      perBlockBases,
+      baseLayout,
+      viewshedByBlock,
+      refBase,
+      zones,
+      vlosM,
+      corridorBase,
+      circularBase,
+      circularBaseDistance,
+      speed,
       batteryMin,
-      reservePct: split.reservePct,
+      split.reservePct,
+      aglWarn,
+      triggerWarn,
+      corridorPlan,
+      corridorTriggerWarn,
+      corridorTerrain,
+      corridorReference,
+      corridorCovers,
+      corridorBaseDistance,
+      corridorSpeed,
+      circularPlan,
+      circularTriggerWarn,
+      circularReference,
+      circularTerrain,
+      circularCovers,
+      circularSpeed,
+      facePlan,
+      orbitPlan,
+      terrain.data,
       clearance,
-      terrainHoles,
-      transitClearance: transitClearanceInfo,
-      route,
+      reference,
       gimbal,
+      uncertainty,
+      blur,
+      route,
       aglMaxM,
       terrainRoute,
+      terrainHoles,
+      transitClearanceInfo,
+      orbitTriggerWarn,
+      areaRouteOps,
       planErrorText,
-      routePoints: view3d?.waypoints ?? null,
-      rthHeightM: rthInfo?.maxM ?? null,
+      blockFlightLabels,
+      flightOfIndex,
+      rthInfo,
+      view3d,
+      dsmLoaded,
+      faceClearance,
       unverified,
-    }
-    if (missionMode === 'corridor')
-      return preflightPlan({
-        ...other,
-        plan: corridorPlan,
-        aglWarn,
-        triggerWarn: corridorTriggerWarn,
-        photoMode: corridorConfig.photoMode,
-        waypointStops: corridorConfig.waypointStops,
-        terrainFollow,
-        terrainCovers: corridorCovers,
-        terrainResult: corridorTerrain,
-        reference: corridorReference,
-        basePoint: corridorBase?.point ?? null,
-        baseDistance: corridorBaseDistance,
-        baseTransitS: corridorRouteOps?.transitS ?? null,
-        routeVlosM: corridorRouteOps?.vlosWorstM ?? null,
-        vlosM,
-        refZone: corridorReference?.zone
-          ? { label: corridorBase?.label ?? '', zone: corridorReference.zone }
-          : null,
-        speed: corridorSpeed,
-        // passagens sem cobertura (a curva mais apertada do que a distância
-        // ao eixo): só o painel as dizia (M3-U1)
-        corridorDropped: corridorPlan?.stats?.droppedPasses ?? 0,
-      })
-    if (missionMode === 'circular')
-      return preflightPlan({
-        ...other,
-        plan: circularPlan,
-        aglWarn,
-        triggerWarn: circularTriggerWarn,
-        terrainFollow,
-        terrainCovers: circularCovers,
-        terrainResult: circularTerrain,
-        reference: circularReference,
-        basePoint: circularBase?.point ?? null,
-        baseDistance: circularBaseDistance,
-        baseTransitS: circularRouteOps?.transitS ?? null,
-        routeVlosM: circularRouteOps?.vlosWorstM ?? null,
-        vlosM,
-        refZone: circularReference?.zone
-          ? { label: circularBase?.label ?? '', zone: circularReference.zone }
-          : null,
-        speed: circularSpeed,
-      })
-    if (missionMode === 'face')
-      // a folga ao DSM e a sua verificação, que só o painel mostrava (M3-U1)
-      return preflightPlan({
-        ...other,
-        plan: facePlan,
-        faceClearance: facePlan && !facePlan.error && dsmLoaded ? faceClearance : null,
-        faceDsmLoaded: facePlan && !facePlan.error ? dsmLoaded : null,
-      })
-    return preflightPlan({ ...other, plan: orbitPlan, triggerWarn: orbitTriggerWarn })
-  }, [
-    missionMode,
-    plan,
-    blocks,
-    photoMode,
-    params.waypointStops,
-    corridorConfig.photoMode,
-    corridorConfig.waypointStops,
-    terrainFollow,
-    terrainCovers,
-    terrainResultForPreflight,
-    areaBasePoint,
-    areaBaseDistance,
-    perBlockBases,
-    baseLayout,
-    viewshedByBlock,
-    refBase,
-    zones,
-    vlosM,
-    corridorBase,
-    circularBase,
-    circularBaseDistance,
-    speed,
-    batteryMin,
-    split.reservePct,
-    aglWarn,
-    triggerWarn,
-    corridorPlan,
-    corridorTriggerWarn,
-    corridorTerrain,
-    corridorReference,
-    corridorCovers,
-    corridorBaseDistance,
-    corridorSpeed,
-    circularPlan,
-    circularTriggerWarn,
-    circularReference,
-    circularTerrain,
-    circularCovers,
-    circularSpeed,
-    facePlan,
-    orbitPlan,
-    terrain.data,
-    clearance,
-    reference,
-    gimbal,
-    uncertainty,
-    blur,
-    route,
-    aglMaxM,
-    terrainRoute,
-    terrainHoles,
-    transitClearanceInfo,
-    orbitTriggerWarn,
-    areaRouteOps,
-    planErrorText,
-    blockFlightLabels,
-    flightOfIndex,
-    rthInfo,
-    view3d,
-    dsmLoaded,
-    faceClearance,
-    unverified,
-    corridorRouteOps,
-    circularRouteOps,
-  ])
+      corridorRouteOps,
+      circularRouteOps,
+    ],
+  )
   const exportBlocked = hasBlockers(preflight)
   // sem relevo sobre a rota, o próprio item do preflight descarrega o global
   const terrainActions = useMemo(() => {
@@ -2245,118 +2161,22 @@ function AppInner({ lang, setLang }) {
   // ou não (M3-C1): antes fundia-se no estado corrente (`{...prev, ...n.x}`),
   // e um projecto v1 aberto por cima de uma sessão herdava o prolongamento, a
   // fiada, a margem e o seguir terreno que nunca teve
-  const applyNormalized = useCallback(
-    (n) => {
-      // a versão que gravou: só interessa quando é anterior à actual (ou falta)
-      setProjectVersion(
-        APP_VERSION && (n.appVersion == null || versionBefore(n.appVersion, APP_VERSION))
-          ? { saved: n.appVersion ?? null, now: APP_VERSION }
-          : null,
-      )
-      setMissionName(n.missionName || DEFAULT_MISSION_NAME)
-      setDrone(n.drone ?? { ...DEFAULT_SELECTION })
-      setCustom({ ...DEFAULT_CUSTOM_SENSOR, ...(n.custom ?? {}) })
-      setPayloadTuning(n.payloadTuning ?? {})
-      setParams({
-        ...DEFAULT_PARAMS,
-        ...(n.params ?? {}),
-        // triggerMode desconhecido (ou ausente) carrega como distância
-        triggerMode: normalizeTriggerMode(n.params?.triggerMode),
-        // projectos anteriores ao parâmetro abrem com paragem só nos cantos
-        waypointStops: normalizeWaypointStops(n.params?.waypointStops),
-      })
-      // bateria da missão (os projectos antigos já vêm convertidos em tempo
-      // útil, project.js): igual ao do equipamento, passa a segui-lo
-      if (n.battery) setMissionBattery(followBatteryIfEqual(equipment, n.battery))
-      setMissionMode(n.missionMode ?? 'area')
-      setFaceConfig(n.faceConfig ?? { ...DEFAULT_FACE_CONFIG })
-      setOrbitConfig(n.orbitConfig ?? { ...DEFAULT_ORBIT_CONFIG })
-      setCorridorConfig(n.corridorConfig ?? { ...DEFAULT_CORRIDOR_CONFIG })
-      setCircularConfig(n.circularConfig ?? { ...DEFAULT_CIRCULAR_CONFIG })
-      setInspectPoints(n.inspectPoints ?? [])
-      inspectSeqRef.current = n.nextInspectId ?? 1
-      applyProjectGeometry(n) // split, anchor, ring, células, origem e células desactivadas
-      // bases (a base única antiga abre como A) e as atribuições manuais,
-      // que valem para a disposição de blocos que o projecto reabre
-      setBases(n.bases ?? [])
-      setBlockBaseState({ key: null, map: n.blockBase ?? {}, cells: null, ring: null, lost: 0 })
-      setSelectedBaseId(null)
-      setBaseProposal(null)
-      setTerrainFollow({ ...DEFAULT_TERRAIN_FOLLOW, ...(n.terrainFollow ?? {}) })
-      setGcpConfig({ ...DEFAULT_GCP_CONFIG, ...(n.gcpConfig ?? {}) })
-      setObstacleM(n.obstacleHeightM ?? 0)
-      setDemMemory(n.demFile ?? null)
-      // projectos anteriores às acções de segurança abrem com as omissões
-      setSafety(n.safety ?? { ...DEFAULT_SAFETY })
-    },
-    [
-      setCorridorConfig,
-      setCircularConfig,
-      setOrbitConfig,
-      setFaceConfig,
-      setInspectPoints,
-      inspectSeqRef,
-      setTerrainFollow,
-      applyProjectGeometry,
-      setGcpConfig,
-      equipment,
-    ],
-  )
-
-  // a bateria tal como o projecto a guarda: o tipo e o tempo útil efectivo
-  const projectBattery = useMemo(
-    () => ({ batteryId: missionBatteryType.id, usefulMin: batteryMin }),
-    [missionBatteryType.id, batteryMin],
-  )
-
-  // tudo o que o projecto guarda, num só objecto (autosave e ficheiro)
-  // ficheiro de relevo a gravar no projecto: com um ficheiro carregado, o
-  // dele; sem ele (ainda por reimportar), o do projecto aberto. Depende só
-  // de valores simples: o relevo recortado de novo (outro objecto, o mesmo
-  // ficheiro) não pode reiniciar a espera da gravação automática
-  const projectDemFile = useMemo(
-    () => (demFileLabel ? { label: demFileLabel, surface: demSurface } : demMemory),
-    [demFileLabel, demSurface, demMemory],
-  )
-  const projectState = useMemo(
-    () => ({
+  const fitToArea = useCallback(() => setFitKey((k) => k + 1), [setFitKey])
+  const {
+    projectState,
+    exportProject,
+    importProject,
+    projectVersion,
+    dismissVersionNote,
+    projectError,
+  } = useProjectSession({
+    values: {
       missionName,
       drone,
       custom,
       payloadTuning,
-      battery: projectBattery,
-      inspectPoints,
-      missionMode,
-      faceConfig,
-      corridorConfig,
-      orbitConfig,
-      circularConfig,
-      params,
-      split,
-      anchor,
-      ring,
-      holes,
-      // as células de uma importação em partes (project.js deixa de fora as da âncora)
-      cells: gridCells,
-      areaOrigin,
-      bases,
-      // só as atribuições que valem para os blocos de agora
-      blockBase: blockBaseEffective,
-      disabledTiles,
-      terrainFollow,
-      gcpConfig,
-      obstacleHeightM: obstacleM,
-      safety,
-      // com um ficheiro carregado grava-se o dele; sem ele (ainda por
-      // reimportar) mantém-se o do projecto aberto
-      demFile: projectDemFile,
-    }),
-    [
-      missionName,
-      drone,
-      custom,
-      payloadTuning,
-      projectBattery,
+      missionBatteryType,
+      batteryMin,
       inspectPoints,
       missionMode,
       faceConfig,
@@ -2377,14 +2197,40 @@ function AppInner({ lang, setLang }) {
       gcpConfig,
       obstacleM,
       safety,
-      projectDemFile,
-    ],
-  )
+      demFileLabel,
+      demSurface,
+      demMemory,
+    },
+    setters: {
+      setMissionName,
+      setDrone,
+      setCustom,
+      setPayloadTuning,
+      setParams,
+      setMissionBattery,
+      setMissionMode,
+      setFaceConfig,
+      setOrbitConfig,
+      setCorridorConfig,
+      setCircularConfig,
+      setInspectPoints,
+      inspectSeqRef,
+      applyProjectGeometry,
+      setBases,
+      setBlockBaseState,
+      setSelectedBaseId,
+      setBaseProposal,
+      setTerrainFollow,
+      setGcpConfig,
+      setObstacleM,
+      setDemMemory,
+      setSafety,
+    },
+    equipment,
+    onLoaded: fitToArea,
+    t,
+  })
 
-  const fitToArea = useCallback(() => setFitKey((k) => k + 1), [setFitKey])
-  // o erro de um projecto que não abre fica no cartão 1, junto de «Abrir
-  // projecto» (M3-U18); o da área continua no cartão 2
-  const [projectError, setProjectError] = useState(null)
   // a margem em metros do contorno (M3-U22: o Pilot 2 e o UgCS pedem metros)
   const bufferM = useMemo(
     () =>
@@ -2407,14 +2253,6 @@ function AppInner({ lang, setLang }) {
       }) / 60,
     [speed, spacing, params, photoMode, interval, bufferM],
   )
-  const { exportProject, importProject } = useProject({
-    state: projectState,
-    missionName,
-    applyNormalized,
-    onLoaded: fitToArea,
-    setImportError: setProjectError,
-    t,
-  })
 
   // Os blocos sob demanda (vista 3D, relatório, perfil) pedem-se depois do
   // arranque, para ficarem na cache do browser antes de se ir para o campo
@@ -2990,7 +2828,7 @@ function AppInner({ lang, setLang }) {
                 importError={importError}
                 projectError={projectError}
                 projectVersion={projectVersion}
-                onDismissVersionNote={() => setProjectVersion(null)}
+                onDismissVersionNote={dismissVersionNote}
                 ops={statsOps}
                 bufferM={bufferM}
                 squareMinutes={squareMinutes}

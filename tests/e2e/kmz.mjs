@@ -6,19 +6,34 @@
  */
 import { readFileSync } from 'node:fs'
 import JSZip from 'jszip'
+import { describeErrors, validateKmz } from '../lib/wpml-conformidade.mjs'
 
-/** Devolve [{ name, wpml }] para cada rota dentro do ficheiro. */
+/**
+ * Cada KMZ que sai pela interface passa pelo validador da especificação
+ * (M3-T11): um ficheiro fora da especificação é um erro do cenário, mesmo
+ * que a leitura e as medições passem.
+ */
+async function validado(name, bytes) {
+  const { errors } = await validateKmz(bytes)
+  if (errors.length)
+    throw new Error(`${name} fora da especificação WPML: ${describeErrors(errors)}`)
+}
+
+/** Devolve [{ name, wpml }] para cada rota dentro do ficheiro, cada KMZ validado. */
 export async function readRoutes(file) {
-  const zip = await JSZip.loadAsync(readFileSync(file))
+  const bytes = readFileSync(file)
+  const zip = await JSZip.loadAsync(bytes)
   const inner = Object.keys(zip.files).filter((n) => n.endsWith('.kmz'))
   if (inner.length === 0) {
-    return [
-      { name: file.split('/').pop(), wpml: await zip.file('wpmz/waylines.wpml').async('string') },
-    ]
+    const name = file.split('/').pop()
+    await validado(name, bytes)
+    return [{ name, wpml: await zip.file('wpmz/waylines.wpml').async('string') }]
   }
   const out = []
   for (const name of inner.sort()) {
-    const kmz = await JSZip.loadAsync(await zip.file(name).async('nodebuffer'))
+    const inner = await zip.file(name).async('nodebuffer')
+    await validado(name, inner)
+    const kmz = await JSZip.loadAsync(inner)
     out.push({ name, wpml: await kmz.file('wpmz/waylines.wpml').async('string') })
   }
   return out

@@ -556,7 +556,7 @@ const blockLabel = (id, i) => `B${String(fin(id) ? id : i + 1).padStart(2, '0')}
 
 /* --------------------------- Subcomponentes --------------------------- */
 
-function Section({ title, right, children, className = '' }) {
+function Section({ title, right = null, children, className = '' }) {
   return (
     <section
       className={`rep-block mb-3 rounded border border-slate-800 bg-slate-900 p-3 ${className}`}

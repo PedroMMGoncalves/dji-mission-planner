@@ -24,8 +24,14 @@ Verificar, com hardware real (DJI Pilot 2 + aeronave + payload), que:
 Ficheiros de projecto em `docs/validacao/missoes/`, gerados por
 `node tools/missoes-referencia.mjs`, com a previsão do planeador em
 `esperado.json` (o diff desse ficheiro é a prova de qualquer mudança no
-motor). As áreas estão num terreno genérico; antes de voar, mover a área
-para o local real na interface e guardar o projecto com o mesmo nome.
+motor). A previsão vem de `planMissionFromProject`
+(`src/mission/planFromProject.js`), o mesmo motor da aplicação, mosaico e
+blocos incluídos: por missão, além da pegada, das faixas, das fotos e do
+tempo, o número de blocos (`blockCount`), o voo mais longo
+(`longestFlightS`) e esse voo em fracção do tempo útil
+(`flightUsefulRatio`; acima de 1 não cabe numa bateria). As áreas estão num
+terreno genérico; antes de voar, mover a área para o local real na
+interface e guardar o projecto com o mesmo nome.
 
 | Código | Missão | O que testa |
 |---|---|---|

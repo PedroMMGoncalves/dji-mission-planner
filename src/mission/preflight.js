@@ -373,8 +373,8 @@ export function usableBatteryMin(batteryMin, reservePct = 0) {
  * @param {object} c
  * @param {any} c.plan plano (pode ter `error`) ou null
  * @param {any[]|null} [c.blocks] blocos de voo, quando a missão está dividida
- * @param {'distance'|'waypoint'} [c.photoMode]
- * @param {'corners'|'all'} [c.waypointStops] paragem nos waypoints (omissão: só nos cantos)
+ * @param {string} [c.photoMode] 'distance' | 'waypoint'
+ * @param {string} [c.waypointStops] paragem nos waypoints: 'corners' (omissão) | 'all'
  * @param {{enabled: boolean, tolerance: number}} [c.terrainFollow]
  * @param {boolean} [c.terrainCovers] o relevo carregado cobre a área
  * @param {any} [c.terrainResult] resultado do terrain follow ({error} ou waypoints)

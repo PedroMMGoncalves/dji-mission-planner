@@ -37,7 +37,8 @@ export function baseColor(index) {
 }
 
 /**
- * @typedef {{id: string, label: string, point: number[], radiusM: number|null}} Base
+ * @typedef {{id: string, label: string, point: number[], radiusM: number|null, color?: string|null}} Base
+ *   `color`: cor atribuída pela disposição (baseLayout); ausente nas bases guardadas
  */
 
 const isPoint = (p) =>

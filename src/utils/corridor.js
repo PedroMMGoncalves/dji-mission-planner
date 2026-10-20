@@ -477,6 +477,8 @@ export function corridorBufferRing(centreline, bufferM) {
  * generateFlightLines, para o resto da aplicação (pré-visualização, blocos,
  * exportação) o consumir sem casos especiais; ou { error } quando os
  * parâmetros não permitem um plano.
+ * @returns {{error?: string, lines?: any[], waypoints?: any[], perWaypoint?: any[],
+ *   perLine?: number[], stats?: any}}
  */
 export function generateCorridorPlan(centreline, options) {
   const {

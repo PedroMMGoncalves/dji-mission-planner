@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "area",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::3763" } },
+"features": [
+{"type":"Feature","properties":{"fid":1,"nome":"Área de voo","uso":"olival"},"geometry":{"type":"MultiPolygon","coordinates":[[[[20320.632,-124120.564],[20756.495,-124119.447],[20755.633,-123786.425],[20319.788,-123787.542],[20320.632,-124120.564]],[[20494.694,-124009.112],[20581.865,-124008.889],[20581.637,-123920.083],[20494.467,-123920.307],[20494.694,-124009.112]]]]}}
+]
+}

@@ -24,6 +24,7 @@ import {
 import { downloadBlob } from '../utils/exporters.js'
 import { useT } from '../i18n.jsx'
 import { errorInfo, errorText } from '../utils/appError.js'
+import { clearTileCache } from '../utils/tileCache.js'
 
 export const EQUIPMENT_FILE_NAME = 'equipamento-dji-mission-planner.json'
 
@@ -46,7 +47,16 @@ function H({ children }) {
  * gravado. Assim escrever "1000" não passa por "1" recortado a 50.
  * `allowEmpty`: vazio grava null (ex.: conjuntos desconhecidos).
  */
-function NumField({ id, value, onCommit, limits, step = 1, integer = false, allowEmpty, ...rest }) {
+function NumField({
+  id,
+  value,
+  onCommit,
+  limits,
+  step = 1,
+  integer = false,
+  allowEmpty = false,
+  ...rest
+}) {
   const [draft, setDraft] = useState(null)
   const shown = draft ?? (value == null ? '' : String(value))
   return (
@@ -485,6 +495,30 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
               </div>
             </div>
           )}
+          <button
+            type="button"
+            data-testid="settings-clear-cache"
+            onClick={async () => {
+              const ok = await clearTileCache()
+              let usedMb = null
+              try {
+                const est = await navigator.storage?.estimate?.()
+                if (est && Number.isFinite(est.usage)) usedMb = Math.round(est.usage / 1048576)
+              } catch {
+                /* sem estimativa */
+              }
+              setConfirmRestore(false)
+              setStatus({
+                kind: 'ok',
+                text:
+                  (ok ? t('set.cacheCleared') : t('set.cacheEmpty')) +
+                  (usedMb != null ? ` ${t('set.storageUsed', { mb: usedMb })}` : ''),
+              })
+            }}
+            className={`${BUTTON} mt-2 w-full`}
+          >
+            {t('set.clearCache')}
+          </button>
           {status && (
             <p
               role={status.kind === 'error' ? 'alert' : 'status'}

@@ -55,6 +55,19 @@ export function regroupTerrainBlocks(res, blocks) {
 }
 
 /**
+ * Resultado do seguimento de terreno: `{error}` (com `detail` opcional) ou as
+ * alturas e as estatísticas de terrainFollowLines, mais a cota de referência
+ * e, com blocos, os blocos com alturas (`blocks3`). Um só objecto com campos
+ * opcionais para o chamador testar `error` e usar o resto sem conversões.
+ * @typedef {{error?: string, detail?: string, waypoints?: Array<[number, number, number]>,
+ *   perLine?: number[], perLink?: number[], vertexIndex?: number[][], elevMin?: number|null,
+ *   elevMax?: number|null, corridorM?: number, corridorRiseMaxM?: number,
+ *   clearanceMinM?: number|null, cappedCount?: number, noDataCount?: number,
+ *   sampleCount?: number, warnings?: Array<{code: string, params: any, message: string}>,
+ *   refElev?: number, blocks3?: any[]|null}} TerrainFollowResult
+ */
+
+/**
  * Alturas por waypoint para um plano de área.
  *
  * A cota de referência é o zero das alturas relativas que o WPML escreve:
@@ -68,6 +81,7 @@ export function regroupTerrainBlocks(res, blocks) {
  * recalculados com ela (os mesmos pontos: cada troço é amostrado por si, e a
  * ligação que antecede o bloco já não entrava); a rota inteira
  * (`waypoints`) fica na cota comum `refElev`, para o 3D e a folga ao solo.
+ * @returns {TerrainFollowResult}
  */
 export function planTerrainFollow(
   terrain,

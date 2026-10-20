@@ -30,7 +30,7 @@ import { batteryLabel } from '../mission/equipment.js'
 import { notesSince } from '../data/versionNotes.js'
 import { versionBefore } from '../mission/project.js'
 
-function Field({ label, suffix, children }) {
+function Field({ label, suffix = null, children }) {
   return (
     <label className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-300">
       <span className="flex-1">{label}</span>
@@ -64,6 +64,10 @@ function fmtClock(sec) {
   return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`
 }
 
+/**
+ * @param {{value: any, onChange: (v: any) => void, min?: number, max?: number, step?: number,
+ *   wide?: boolean, testId?: string, label?: string}} props
+ */
 function NumberInput({ value, onChange, min, max, step = 1, wide, testId, label }) {
   const [draft, setDraft] = useState(null)
   const timer = useRef(null)
@@ -296,7 +300,7 @@ export default function ControlPanel({
   zoneRadiusM = 100,
   // acções de segurança (fim da missão, sinal perdido): cartão 5
   safety = null,
-  setSafety = () => {},
+  setSafety = (_next) => {},
   // cartão 7: números da missão e exportação
   summary = null,
   onExportMission = null,
@@ -584,7 +588,12 @@ export default function ControlPanel({
               </select>
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => onImportCrs(document.getElementById('crs-select').value)}
+                  onClick={() =>
+                    onImportCrs(
+                      /** @type {HTMLSelectElement} */ (document.getElementById('crs-select'))
+                        .value,
+                    )
+                  }
                   className="rounded bg-sky-700 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
                 >
                   {t('cp.area.convert')}
@@ -1992,7 +2001,7 @@ export default function ControlPanel({
                   draggable
                   onDragStart={(e) => {
                     // não iniciar o arrasto a partir dos campos de edição
-                    const tag = e.target?.tagName
+                    const tag = /** @type {HTMLElement} */ (e.target)?.tagName
                     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
                       e.preventDefault()
                       return

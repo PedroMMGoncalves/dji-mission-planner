@@ -13,11 +13,11 @@
     <wpml:globalRTHHeight>100</wpml:globalRTHHeight>
     <wpml:globalTransitionalSpeed>8</wpml:globalTransitionalSpeed>
     <wpml:droneInfo>
-      <wpml:droneEnumValue>77</wpml:droneEnumValue>
+      <wpml:droneEnumValue>60</wpml:droneEnumValue>
       <wpml:droneSubEnumValue>0</wpml:droneSubEnumValue>
     </wpml:droneInfo>
     <wpml:payloadInfo>
-      <wpml:payloadEnumValue>66</wpml:payloadEnumValue>
+      <wpml:payloadEnumValue>65535</wpml:payloadEnumValue>
       <wpml:payloadSubEnumValue>0</wpml:payloadSubEnumValue>
       <wpml:payloadPositionIndex>0</wpml:payloadPositionIndex>
     </wpml:payloadInfo>

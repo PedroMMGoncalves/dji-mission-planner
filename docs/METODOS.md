@@ -1219,6 +1219,21 @@ coerência entre os dois ficheiros e empacotamento do KMZ. Tudo o que a app
 escreve fora das tabelas está na lista `ALLOW` do validador com a prova
 (81 KMZ reais, voos): um elemento novo sem prova faz o teste falhar.
 
+A matriz (M3-T11) tem 60 casos: a área por distância, por tempo, por
+waypoint e com terreno em cinco pares aeronave/payload, LiDAR em área e em
+corredor (M300 + Mapper+), corredor por distância e por waypoint no M3E, no
+M4T e no M300 + P1, fachada no M3E, no M4T térmico e no M300 + P1, órbita
+(foto, por nível e vídeo), circular e pontos de inspecção no M3E, no M4T e
+no M300 + P1, e a área pelo montador real (`buildAreaExport`, sobre o plano
+de `planMissionFromProject`): blocos por área, dupla grelha com nadir,
+seguimento de terreno e mosaico por bateria, um ficheiro por bloco. Em
+todos os casos com câmara há disparo (grupo por distância ou por tempo,
+foto no waypoint ou gravação) e a lente escrita (`payloadLensIndex`) é a do
+payload; com LiDAR não há acção de câmara. Os E2E validam cada KMZ
+exportado ao lê-lo (`tests/e2e/kmz.mjs`), e os goldens do smoke levam um
+resumo estrutural (`tests/golden/<cenário>.resumo.json`) que diz o que
+mudou num diff.
+
 ### 11.3 Voos de uma área dividida: nomes e exportação por base
 
 Módulos `src/mission/flightFiles.js`, `src/mission/areaExport.js`,
@@ -1383,7 +1398,15 @@ de inspecção com coordenadas e ids inteiros, âncora com centro ponto ou
 nulo e dimensões positivas, parâmetros só com as chaves e os tipos da
 omissão; um ficheiro com coordenadas que não são números é recusado
 (`null`), não aberto a meio, porque deixava a página em branco — e, vindo
-do armazenamento, em todos os arranques (M3-C5). Um projecto gravado que
+do armazenamento, em todos os arranques (M3-C5). A suite lê ficheiros
+reais (M3-T12, `tests/fixtures/`): uma área como o Google Earth a escreve
+(KML com estilos, um pino e um caminho que se ignoram), como o QGIS a
+exporta (GeoJSON em CRS84 e em PT-TM06 com o membro `crs`, shapefile com e
+sem `.prj` — sem ele a aplicação pede o CRS), um recorte de MDT em PT-TM06
+(GeoTIFF float32) e projectos como as versões 1.0.1, 1.3.0 e 1.4.2 os
+gravavam (a base única vira a base A, a bateria por combinação vira tempo
+útil, o mosaico antigo com células desligadas fica para traduzir, o
+1.4.2 valida contra o esquema). Um projecto gravado que
 não se consiga ler (JSON inválido, versão desconhecida, coordenadas
 inválidas) fica numa cópia datada
 (`dji-mission-planner:project:v1:recusado:<data>`) antes de a gravação

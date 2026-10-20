@@ -1,92 +1,44 @@
 /**
  * O que o plano previu, a partir do ficheiro de projecto (o mesmo motor da
- * aplicação: sensor, pegada, espaçamento, intervalo, plano de área,
- * densidade LiDAR), e a comparação com o que se mediu.
+ * aplicação, em src/mission/planFromProject.js: sensor, pegada, espaçamento,
+ * intervalo, mosaico, plano de área, blocos, densidade LiDAR), e a
+ * comparação com o que se mediu.
  */
-import { AIRCRAFT, PAYLOADS, batteryMinFor } from '../../src/data/drones.js'
-import {
-  computeFootprint,
-  computeGSD,
-  lidarPointDensity,
-  lineSpacing,
-  normalizeWaypointStops,
-  photoInterval,
-  resolveSensor,
-} from '../../src/utils/geo.js'
-import { planArea } from '../../src/mission/areaPlan.js'
+import { planMissionFromProject } from '../../src/mission/planFromProject.js'
 import { normalizeProject } from '../../src/mission/project.js'
-import { DEFAULT_PARAMS, DEFAULT_SPLIT } from '../../src/mission/defaults.js'
 
 /** Lê o projecto (v1/v2) e devolve o previsto para a missão de área. */
 export function predictFromProject(json) {
   const n = normalizeProject(json)
   if (!n) throw new Error('ficheiro de projecto invalido (version 1 ou 2 em falta)')
-  const drone = n.drone ?? { aircraftId: 'M3E', payloadId: 'M3E_WIDE' }
-  const aircraft = AIRCRAFT[drone.aircraftId]
-  const payload = PAYLOADS[drone.payloadId]
-  if (!aircraft || !payload)
-    throw new Error(`hardware desconhecido: ${drone.aircraftId}/${drone.payloadId}`)
-  const tuning = n.payloadTuning?.[drone.payloadId]?.effectiveFov
-  const activePayload =
-    payload.type === 'lidar' && tuning ? { ...payload, effectiveFov: tuning } : payload
-  const sensor = resolveSensor(activePayload, n.custom ?? {})
-  const params = { ...DEFAULT_PARAMS, ...(n.params ?? {}) }
-  const split = { ...DEFAULT_SPLIT, ...(n.split ?? {}) }
-  const range = aircraft.speedRange ?? { min: 1, max: 20 }
-  const speed = Math.min(range.max, Math.max(range.min, params.speed))
-  const footprint = computeFootprint(sensor, params.altitude)
-  const spacingM =
-    params.spacingMode === 'manual'
-      ? Math.max(1, params.manualSpacing)
-      : lineSpacing(footprint.across, params.sideOverlap)
-  const intervalM = photoInterval(footprint.along, params.frontOverlap)
-  const gsdPitch = params.crosshatch && params.includeNadir ? -90 : params.gimbalPitch
-  const gsdCm = computeGSD(sensor, params.altitude, gsdPitch)
-  const photoMode =
-    sensor.type === 'camera' && params.triggerMode === 'waypoint' && intervalM > 0
-      ? 'waypoint'
-      : 'distance'
-  const plan = n.ring
-    ? planArea(n.ring, null, {
-        spacingM,
-        angleDeg: params.angle,
-        bufferPct: params.bufferPct,
-        photoIntervalM: intervalM ?? 0,
-        speed,
-        crosshatch: params.crosshatch,
-        includeNadir: Boolean(params.crosshatch && params.includeNadir),
-        overshootM: Math.max(0, params.overshoot || 0),
-        tieLine: Boolean(params.tieLine),
-        photoMode,
-        waypointStops: normalizeWaypointStops(params.waypointStops),
-      })
-    : null
-  const density =
-    sensor.type === 'lidar' && payload.maxPrr
-      ? lidarPointDensity({ prr: payload.maxPrr, speed, swathM: footprint.across })
-      : null
+  const p = planMissionFromProject(n)
   return {
     missionName: n.missionName ?? null,
-    drone,
-    aircraftLabel: aircraft.label,
-    payloadLabel: payload.label,
-    imageSource: payload.imageSource ?? null,
-    sensor,
-    params,
-    speed,
-    batteryMin: batteryMinFor(aircraft, drone.payloadId, n.batteryByCombo ?? {}),
-    reservePct: split.reservePct,
-    ring: n.ring ?? null,
-    basePoint: n.bases?.[0]?.point ?? null,
-    footprint,
-    spacingM,
-    intervalM,
-    gsdCm,
-    aglM: params.altitude,
-    plan: plan && !plan.error ? plan : null,
-    planError: plan?.error ?? null,
-    densityPerM2: density?.single ?? null,
-    densityOverlapPerM2: density?.overlap ?? null,
+    drone: p.drone,
+    aircraftLabel: p.aircraft.label,
+    payloadLabel: p.payload.label,
+    imageSource: p.payload.imageSource ?? null,
+    sensor: p.sensor,
+    params: p.params,
+    speed: p.speed,
+    // tempo útil por voo (a reserva já descontada) e a reserva que o projecto declara
+    batteryMin: p.batteryMin,
+    reservePct: p.reservePct,
+    ring: p.ring,
+    basePoint: p.basePoint,
+    footprint: p.footprint,
+    spacingM: p.spacingM,
+    intervalM: p.intervalM,
+    gsdCm: p.gsdCm,
+    aglM: p.aglM,
+    plan: p.planOk,
+    planError: p.planError,
+    // blocos de voo (área, bateria ou mosaico) e o voo mais longo em fracção do tempo útil
+    blocks: p.blocks,
+    longestS: p.longestS,
+    worstRatio: p.worstRatio,
+    densityPerM2: p.densityPerM2,
+    densityOverlapPerM2: p.densityOverlapPerM2,
   }
 }
 

@@ -20,7 +20,7 @@ de trazer para ser integrado. O texto está em português europeu
 ```bash
 npm run dev            # servidor local
 npm run lint           # ESLint (regras react-hooks incluídas)
-npm run typecheck      # tsc --checkJs sobre os tipos JSDoc
+npm run typecheck      # tsc --checkJs sobre toda a src/ (tipos JSDoc, React e Vite)
 npm run format:check   # Prettier (npm run format corrige)
 npm test               # smoke + E/S + propriedades (Vitest + fast-check)
 npm run test:coverage  # as três suites sob c8 com limiares (só podem subir)
@@ -50,6 +50,7 @@ um contra-exemplo que apareça aí passa a teste fixo.
 | E/S | `smoke-test-io.mjs` | leitores de KML/GeoJSON/WPML/GeoTIFF, entradas malformadas, ida e volta |
 | Propriedades | `tests/unit/*.test.mjs` | invariantes sob entradas aleatórias (corredor, terrain follow, disparo, grelha) e os módulos de `src/mission/` |
 | Esquema | `tests/unit/esquema.test.mjs` | o ficheiro de projecto cumpre `public/schema/project-v2.schema.json` |
+| Ficheiros reais | `tests/fixtures/`, `tests/unit/ficheiros-reais.test.mjs` | KML do Google Earth, GeoJSON e shapefile do QGIS (CRS84 e PT-TM06), MDT em PT-TM06 e projectos das versões 1.0.1, 1.3.0 e 1.4.2 lidos pelas funções da interface; `node tests/lib/fixtures-reais.mjs` regenera-os byte a byte |
 | Dicionários | `tests/unit/i18n.test.mjs` | cada `t('chave')` do código existe, PT e EN com as mesmas variáveis, sem chaves repetidas; os códigos do preflight têm texto |
 | E2E | `tests/e2e/` | o percurso do operador no browser e o ficheiro que sairia para o comando |
 | Manual | `docs/QA_MANUAL.md` | o que nenhuma das anteriores cobre; uma passagem por release |
@@ -57,7 +58,19 @@ um contra-exemplo que apareça aí passa a teste fixo.
 Uma alteração intencional à exportação muda os goldens: corra
 `npm run test:update-golden`, leia o diff dos ficheiros em `tests/golden/`
 e explique-o na mensagem de commit. Um golden que muda sem explicação é
-uma regressão até prova em contrário.
+uma regressão até prova em contrário. Comece pelo
+`<cenário>.resumo.json` de cada golden (waypoints, distância, duração,
+elementos por nome, acções e gatilhos): diz em meia página o que o diff
+dos ficheiros inteiros diz em milhares de linhas.
+
+A matriz modos × aeronaves (`tests/lib/wpml-matriz.mjs`) é a cobertura da
+conformidade WPML: um modo, uma aeronave ou um caminho de exportação novo
+(um parâmetro de `buildAreaExport`, por exemplo) entra ali, e o E2E valida
+cada KMZ que lê (`tests/e2e/kmz.mjs`). O plano que a ferramenta
+planeado-vs-medido e as missões de referência usam é
+`planMissionFromProject` (`src/mission/planFromProject.js`), o mesmo motor
+da aplicação; depois de mudar o motor, `node tools/missoes-referencia.mjs`
+regenera `docs/validacao/missoes/esperado.json` e o diff é a prova.
 
 ## Convenções
 

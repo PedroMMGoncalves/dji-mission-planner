@@ -179,6 +179,11 @@ export function esperadoDe(proj) {
     pathLengthM: p.plan?.stats?.pathLengthM == null ? null : Math.round(p.plan.stats.pathLengthM),
     densityPerM2: p.densityPerM2 == null ? null : Math.round(p.densityPerM2),
     planError: p.planError,
+    // blocos de voo e o voo mais longo em fracção do tempo útil (M3-T9):
+    // acima de 1 nao cabe numa bateria
+    blockCount: p.blocks?.length ?? null,
+    longestFlightS: p.longestS == null ? null : Math.round(p.longestS),
+    flightUsefulRatio: p.worstRatio == null ? null : Number(p.worstRatio.toFixed(2)),
     tfWaypointCount: tf?.tfWaypointCount ?? null,
     tfRelMinM: tf?.tfRelMinM ?? null,
     tfRelMaxM: tf?.tfRelMaxM ?? null,

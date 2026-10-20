@@ -103,9 +103,38 @@ describe('matriz modos x aeronaves (T2, T3, T4)', () => {
       'orbita-video-m3e',
       'circular-m300rtk',
       'inspeccao-m4t',
+      // combinações acrescentadas na revisão (T11): M4T e M300 nos modos que
+      // só tinham uma aeronave, LiDAR em corredor, e a área pelo montador real
+      'corredor-distance-m4t',
+      'corredor-lidar-m300rtk',
+      'fachada-m300rtk',
+      'orbita-foto-m4t',
+      'orbita-nivel-1-m300rtk',
+      'orbita-video-m300rtk',
+      'circular-m4t',
+      'inspeccao-m300rtk',
+      'area-blocos-m3e-1',
+      'area-blocos-m3e-2',
+      'area-cruzada-nadir-m3e',
+      'area-terreno-m300rtk',
+      'area-mosaico-bateria-m4t-1',
+      'area-mosaico-bateria-m4t-2',
     ])
       expect(nomes).toContain(n)
-    expect(casos.length).toBeGreaterThanOrEqual(30)
+    expect(casos.length).toBeGreaterThanOrEqual(50)
+  })
+  test('a câmara dispara em todos os casos com câmara, nunca com LiDAR; a lente é a do payload', () => {
+    for (const c of casos) {
+      const { waylines } = ficheiros(c.params)
+      const dispara = /takePhoto|startRecord|multipleDistance|multipleTiming/.test(waylines)
+      expect(dispara, c.name).toBe(c.params.sensorType !== 'lidar')
+      const fmt = c.params.wpml?.imageFormat
+      const lentes = [...waylines.matchAll(/<wpml:payloadLensIndex>([^<]*)</g)].map((m) => m[1])
+      if (dispara && typeof fmt === 'string' && /^[a-z_,]+$/.test(fmt)) {
+        expect(lentes.length, `${c.name}: sem payloadLensIndex`).toBeGreaterThan(0)
+        expect(new Set(lentes), c.name).toEqual(new Set([fmt]))
+      } else expect(lentes, c.name).toEqual([])
+    }
   })
   for (const c of casos) {
     test(`conforme: ${c.name}`, () => {

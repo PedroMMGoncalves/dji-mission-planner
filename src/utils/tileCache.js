@@ -63,7 +63,11 @@ export function withTileCache(doFetch, { cacheStorage = null, cacheName = TILE_C
   }
 }
 
-/** Apaga a cache de tiles (botão "limpar" ou mudança de fonte). */
+/**
+ * Apaga a cache dos tiles de relevo: o botão «Limpar a cache do relevo» da
+ * Configuração (M3-C13); a cache não tem limite próprio além da quota do
+ * browser. Devolve true quando havia cache e foi apagada.
+ */
 export async function clearTileCache(cacheStorage = null, cacheName = TILE_CACHE_NAME) {
   const storage = cacheStorage ?? (typeof caches !== 'undefined' ? caches : null)
   if (!storage || typeof storage.delete !== 'function') return false

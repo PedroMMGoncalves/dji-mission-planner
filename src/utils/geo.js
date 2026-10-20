@@ -395,7 +395,8 @@ export function squareSideForBattery({
  * os parâmetros actuais» em vez de «≈ 1 bateria» (M3-U20: um quadrado de
  * 250 m dura 3 min no M3E e 6 no P1, contra 25-32 min úteis).
  * @param {number} sideM lado do quadrado do mosaico
- * @param {Parameters<typeof squareSideForBattery>[0]} opts os mesmos de squareSideForBattery
+ * @param {Omit<Parameters<typeof squareSideForBattery>[0], 'batteryMin'>} opts os mesmos de
+ *   squareSideForBattery, menos a bateria
  */
 export function squareFlightTimeS(
   sideM,

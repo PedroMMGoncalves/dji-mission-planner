@@ -22,7 +22,17 @@ pt-PT dos números (os números do painel seguem os dos ficheiros e das
 medições) e o nome por omissão com data. R-D em duas partes: a primeira
 (campo e textos: U7, U10, U11, U13, U14, U15, U16, U17, U19, U20, U22, U23)
 aplicada; a segunda (estrutura e testes: C12b/c, C13, C14, C15, T6, T9, T11,
-T12, T16) a seguir. Os achados das duas primeiras vagas não se repetem aqui.
+T12) aplicada, com `src/mission/activeRoute.js`, `preflightFor.js`,
+`planFromProject.js`, `src/hooks/useProjectSession.js`, `tests/fixtures/`
+e os resumos dos goldens; o typecheck cobre toda a `src/`. Dois desvios,
+de propósito: de C15 ficou por fazer `useBases()` — o estado das bases
+está entrelaçado com os blocos, as zonas e o relevo em dez memos do App, e
+movê-los sem os reescrever só mudaria de ficheiro; e T16 (partição do
+`smoke-test.mjs`) não se fez — os 65 blocos partilham fixtures e estado de
+topo (49 sem cabeçalho), e parti-los à mão é reescrever o smoke, com o
+risco de perder cenários pelo caminho; os resumos estruturais dos goldens
+(T6) tiram-lhe parte da dor. Os achados das duas primeiras vagas não se
+repetem aqui.
 
 ## 1. Método
 

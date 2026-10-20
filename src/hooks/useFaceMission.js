@@ -9,6 +9,7 @@ import { DEFAULT_FACE_CONFIG, generateFacePlan } from '../utils/faceMode.js'
 import { headingTicks } from '../utils/preview.js'
 import { faceExportParams } from '../mission/exportParams.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
+import { finishDraft } from '../mission/draft.js'
 
 export function useFaceMission({
   sensor,
@@ -19,6 +20,7 @@ export function useFaceMission({
   safety = null,
   setMode,
   setDraftVertices,
+  draftVertices = [],
   runExport,
 }) {
   const [faceConfig, setFaceConfig] = useState(() => ({ ...DEFAULT_FACE_CONFIG }))
@@ -33,22 +35,12 @@ export function useFaceMission({
   }, [setMode, setDraftVertices])
 
   const handleFinishFace = useCallback(() => {
-    setDraftVertices((draft) => {
-      const EPS = 1e-6
-      const clean = draft.filter(
-        (v, i) =>
-          i === 0 ||
-          Math.abs(v[0] - draft[i - 1][0]) > EPS ||
-          Math.abs(v[1] - draft[i - 1][1]) > EPS,
-      )
-      if (clean.length >= 2) {
-        setFaceConfig((c) => ({ ...c, baseline: clean }))
-        setMode('idle')
-        return []
-      }
-      return draft
-    })
-  }, [setMode, setDraftVertices])
+    const { ok, clean } = finishDraft(draftVertices, 2)
+    if (!ok) return
+    setFaceConfig((c) => ({ ...c, baseline: clean }))
+    setMode('idle')
+    setDraftVertices([])
+  }, [draftVertices, setMode, setDraftVertices])
 
   const clearFaceBaseline = useCallback(() => {
     setFaceConfig((c) => ({ ...c, baseline: null }))

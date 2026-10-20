@@ -46,10 +46,17 @@ export function baseZoneFor(basePoint, { elevationAt, zoneConfig = null, baseRad
 }
 
 /**
+ * Cota de referência das alturas relativas e o relevo sob a rota. `zone` é a
+ * zona da base (baseZoneFor) quando a rota descola de uma base com cota
+ * própria — juntada pelos hooks de corredor e circular, não aqui.
+ * @typedef {{elev: number|null, source: 'base'|'area-min'|null, baseOutside: boolean,
+ *   terrainMin: number|null, terrainMax: number|null, reliefM: number|null, zone?: any}} Reference
+ */
+
+/**
  * @param {{elevationAt?: ((lon: number, lat: number) => number|null)|null,
  *   basePoint?: number[]|null, waypoints?: number[][]|null}} args
- * @returns {{elev: number|null, source: 'base'|'area-min'|null, baseOutside: boolean,
- *   terrainMin: number|null, terrainMax: number|null, reliefM: number|null}}
+ * @returns {Reference}
  */
 export function referenceElevation({ elevationAt, basePoint, waypoints }) {
   const none = {

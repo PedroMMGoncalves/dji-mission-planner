@@ -87,7 +87,7 @@ export const MOSAIC_VERSION = 2
 /** Versão da aplicação (vite.config.js); nos testes em Node não há (null). */
 export const APP_VERSION = (() => {
   // `import.meta.env.APP_VERSION` é definido pelo Vite (define); em Node não há
-  const env = /** @type {any} */ (import.meta).env
+  const env = import.meta.env
   return env && typeof env.APP_VERSION === 'string' && env.APP_VERSION ? env.APP_VERSION : null
 })()
 

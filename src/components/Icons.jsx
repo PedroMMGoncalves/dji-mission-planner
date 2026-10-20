@@ -21,6 +21,7 @@ function Svg({ children, className = 'h-4 w-4', strokeWidth = 1.8 }) {
 }
 
 /** Quadricóptero visto de cima. */
+/** @param {{className?: string}} props */
 export function IconDrone({ className }) {
   return (
     <Svg className={className}>
@@ -35,6 +36,7 @@ export function IconDrone({ className }) {
 }
 
 /** Polígono com vértices — desenho livre. */
+/** @param {{className?: string}} props */
 export function IconPolygon({ className }) {
   return (
     <Svg className={className}>
@@ -49,6 +51,7 @@ export function IconPolygon({ className }) {
 }
 
 /** Mira — modo ponto central. */
+/** @param {{className?: string}} props */
 export function IconTarget({ className }) {
   return (
     <Svg className={className}>
@@ -60,6 +63,7 @@ export function IconTarget({ className }) {
 }
 
 /** Plataforma de aterragem (H) — base do operador. */
+/** @param {{className?: string}} props */
 export function IconHelipad({ className }) {
   return (
     <Svg className={className}>
@@ -69,6 +73,7 @@ export function IconHelipad({ className }) {
   )
 }
 
+/** @param {{className?: string}} props */
 export function IconTrash({ className }) {
   return (
     <Svg className={className}>
@@ -79,6 +84,7 @@ export function IconTrash({ className }) {
   )
 }
 
+/** @param {{className?: string}} props */
 export function IconDownload({ className }) {
   return (
     <Svg className={className}>
@@ -88,6 +94,7 @@ export function IconDownload({ className }) {
   )
 }
 
+/** @param {{className?: string}} props */
 export function IconCheck({ className }) {
   return (
     <Svg className={className}>
@@ -97,6 +104,7 @@ export function IconCheck({ className }) {
 }
 
 /** Montanhas — terreno/relevo. */
+/** @param {{className?: string}} props */
 export function IconMountain({ className }) {
   return (
     <Svg className={className}>
@@ -107,6 +115,7 @@ export function IconMountain({ className }) {
 }
 
 /** Cubo isométrico — vista 3D. */
+/** @param {{className?: string}} props */
 export function IconCube({ className }) {
   return (
     <Svg className={className}>
@@ -117,6 +126,7 @@ export function IconCube({ className }) {
 }
 
 /** Pasta — abrir/importar ficheiros. */
+/** @param {{className?: string}} props */
 export function IconFolder({ className }) {
   return (
     <Svg className={className}>
@@ -126,6 +136,7 @@ export function IconFolder({ className }) {
 }
 
 /** Gráfico de perfil — perfil de elevação. */
+/** @param {{className?: string}} props */
 export function IconChart({ className }) {
   return (
     <Svg className={className}>
@@ -171,6 +182,7 @@ export function FlagGB({ className = 'h-3.5 w-5' }) {
 /** SVG standalone (string) para o marcador da base no mapa Leaflet. */
 
 /** Roda dentada — configuração. */
+/** @param {{className?: string}} props */
 export function IconGear({ className }) {
   return (
     <Svg className={className}>

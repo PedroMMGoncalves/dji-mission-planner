@@ -41,6 +41,7 @@ function fmtClock(s) {
 
 const TONE = { ok: 'text-sky-300', near: 'text-amber-300', over: 'text-red-300' }
 
+/** @param {{label: any, value: any, hint?: any, tone?: string, testId?: string}} props */
 function Stat({ label, value, hint, tone = 'ok', testId }) {
   // os mosaicos recebem o rato (a dica do `title`); o contentor continua a
   // deixar passar os cliques para o mapa entre eles (M3-U13)

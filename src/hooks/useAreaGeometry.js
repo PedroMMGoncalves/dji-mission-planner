@@ -34,12 +34,14 @@ import {
 import { parseWpmlKmz } from '../utils/importWpml.js'
 import { DEFAULT_ANCHOR, DEFAULT_SPLIT } from '../mission/defaults.js'
 import { errorInfo } from '../utils/appError.js'
+import { finishDraft } from '../mission/draft.js'
 
 /**
  * @param {object} args
  * @param {string} args.mode modo de interacção corrente ('draw' | 'anchor' | ...)
  * @param {Function} args.setMode
  * @param {Function} args.setDraftVertices
+ * @param {number[][]} [args.draftVertices] os vértices do desenho em curso (concluir lê-os)
  * @param {number} args.lineAngle ângulo das faixas (°), que os quadrados seguem por omissão
  * @param {number} [args.zoneRadiusM] raio da zona de descolagem (trânsito de dimensionamento)
  * @param {number} args.speed velocidade efectiva (m/s)
@@ -61,6 +63,9 @@ export function useAreaGeometry({
   mode,
   setMode,
   setDraftVertices,
+  // os vértices do desenho em curso (App): concluir lê-os em vez de os
+  // mexer dentro do actualizador (M3-C12)
+  draftVertices = [],
   lineAngle = 0,
   zoneRadiusM = 100,
   speed,
@@ -516,28 +521,16 @@ export function useAreaGeometry({
   }, [pushHistory, setMode, setDraftVertices])
 
   const handleFinishDraw = useCallback(() => {
-    setDraftVertices((draft) => {
-      // remove vértices quase-duplicados consecutivos (ex.: 2.º clique do
-      // duplo-clique, com tolerância para o jitter de ~1 píxel)
-      const EPS = 1e-6
-      const clean = draft.filter(
-        (v, i) =>
-          i === 0 ||
-          Math.abs(v[0] - draft[i - 1][0]) > EPS ||
-          Math.abs(v[1] - draft[i - 1][1]) > EPS,
-      )
-      if (clean.length >= 3) {
-        pushHistory()
-        setRing(clean)
-        setHoles([])
-        setImportParts(null)
-        setAreaOrigin('draw')
-        setMode('idle')
-        return []
-      }
-      return draft
-    })
-  }, [pushHistory, setMode, setDraftVertices])
+    const { ok, clean } = finishDraft(draftVertices, 3)
+    if (!ok) return
+    pushHistory()
+    setRing(clean)
+    setHoles([])
+    setImportParts(null)
+    setAreaOrigin('draw')
+    setMode('idle')
+    setDraftVertices([])
+  }, [draftVertices, pushHistory, setMode, setDraftVertices])
 
   /** Clique no mapa nos modos da área; devolve true se o consumiu. */
   const handleAreaClick = useCallback(

@@ -211,6 +211,9 @@ export function overlapAdvice(ring, { radiusM, overlapPct, angleDeg = null }) {
  * @param {number} [opts.speed=8] velocidade (m/s)
  * @param {number|null} [opts.angleDeg=null] rumo das fiadas; null = aresta mais longa
  * @param {number[][][]|null} [opts.holes=null] anéis interiores (só para a área em ha)
+ * @returns {{error?: string, count?: number, cols?: number, rows?: number, waypoints?: any[],
+ *   perWaypoint?: any[], circles?: any[], turnMode?: string, stats?: any}} `{error}` quando os
+ *   parâmetros não permitem um plano
  */
 export function generateCircularPlan(ring, opts) {
   const {

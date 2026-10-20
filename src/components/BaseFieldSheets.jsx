@@ -78,7 +78,7 @@ export function flightViewText(t, view) {
  * (trânsito incluído), a parte de cada bloco que se vê da base (bacias de
  * visão, com o relevo usado) e o nome do KMZ. Imprimível: as ligações levam o
  * texto das coordenadas, e as classes de impressão vêm de quem a usa.
- * @param {{sheets: any[], cardClass?: string, tableClass?: string}} props
+ * @param {{sheets: any[], day?: any, cardClass?: string, tableClass?: string}} props
  */
 export default function BaseFieldSheets({ sheets, day = null, cardClass = '', tableClass = '' }) {
   const t = useT()

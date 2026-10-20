@@ -601,6 +601,66 @@ que os textos diziam mal e os identificadores que não batiam certo.
   direito; `aria-label` nas setas e no ✕ dos pontos de inspecção; a `select`
   das paragens mais larga.
 
+### Corrigido (revisão do código, pacote R-D, segunda parte: estrutura e testes)
+
+- **O typecheck cobre toda a `src/`** (M3-C14): `tsconfig.json` inclui o
+  `App.jsx`, os componentes e o `main.jsx` (antes só `utils`, `mission`,
+  `data` e `hooks`), com os tipos do React (`@types/react`, devDependency) e
+  do Vite (`import.meta.env`, importações de CSS). Os 779 erros que isso
+  revelava vinham de uma dúzia de definições, não de 779 sítios: `useT`
+  tipado com as variáveis opcionais; os planos do corredor, do circular e do
+  seguimento de terreno com o resultado declarado (`{error?}` com os campos
+  opcionais em vez de uma união que o `!plan.error` não estreitava); o tipo
+  `Block` em `src/mission/blocks.js`; `Reference` com a `zone`; a `color`
+  das bases na disposição; as props opcionais dos componentes pequenos
+  (`Field`, `NumberInput`, `Stat`, ícones, `Botao`, `NumField`, `Section`)
+  declaradas como tal; os estados do App com forma (`drone` com `rtk`,
+  `payloadTuning`); dois elementos do DOM com o tipo certo. Nenhum ficheiro
+  ficou de fora com `@ts-nocheck`.
+- **`App.jsx` mais pequeno, três extracções puras ou quase** (M3-C15): a
+  rota exportável do separador aberto — para o 3D, a folga, os buracos do
+  relevo e os trânsitos — é `activeRoute()` em `src/mission/activeRoute.js`
+  (testada em Node por modo, com e sem terreno, com bases); o preflight do
+  separador aberto é `preflightFor(modo, estado)` em
+  `src/mission/preflightFor.js` (cada modo lê só o seu plano: testado); a
+  gravação, a reposição e a validação do projecto estão no hook
+  `useProjectSession` (`src/hooks/useProjectSession.js`): o que se guarda e
+  o que se repõe, lado a lado. `useBases()` fica por fazer — ver o relatório.
+- **Os goldens têm um resumo estrutural** (M3-T6): a cada cenário do smoke
+  junta-se `tests/golden/<cenário>.resumo.json` (waypoints, distância,
+  duração, elementos por nome em cada ficheiro, acções e gatilhos); num diff
+  dos goldens é o resumo que diz o que mudou. O golden `area-lidar` passa a
+  ser a combinação real (M300 RTK + Zenmuse L2/Mapper+, enums 60/65535), não
+  o M3E com `sensorType: 'lidar'`.
+- **O plano a partir do projecto é uma função do motor** (M3-T9):
+  `planMissionFromProject(n)` em `src/mission/planFromProject.js` — sensor,
+  pegada, espaçamento, intervalo, mosaico manual ou por bateria, plano por
+  célula e blocos, com o voo mais longo em fracção do tempo útil. A
+  ferramenta planeado-vs-medido e as missões de referência usam-na;
+  `esperado.json` ganha `blockCount`, `longestFlightS` e `flightUsefulRatio`,
+  e a R3 (blocos por bateria) passa a ser o plano do mosaico, como na
+  aplicação (95 faixas em 4 blocos, não 45 numa serpentina inteira).
+- **A matriz de conformidade cobre o que faltava** (M3-T11): corredor no M4T
+  e LiDAR no M300 + Mapper+, fachada e inspecção no M300 + P1, órbita e
+  circular no M4T e no M300, e a área pelo montador real (`buildAreaExport`)
+  — blocos por área, dupla grelha com nadir, seguimento de terreno e mosaico
+  por bateria, um ficheiro por bloco — 60 casos. Em todos: a câmara dispara
+  (nunca com LiDAR) e a lente escrita é a do payload. Os E2E validam cada
+  KMZ exportado contra a especificação ao lê-lo (`tests/e2e/kmz.mjs`).
+- **Ficheiros reais na suite** (M3-T12): `tests/fixtures/` tem uma área como
+  o Google Earth a escreve (KML com estilos, pino e caminho), como o QGIS a
+  exporta (GeoJSON em CRS84 e em PT-TM06 com o membro `crs`, shapefile com e
+  sem `.prj`), um recorte de MDT em PT-TM06 (GeoTIFF float32) e projectos
+  como as versões 1.0.1, 1.3.0 e 1.4.2 os gravavam; `tests/unit/ficheiros-reais.test.mjs`
+  lê-os com as funções da interface e o gerador (`tests/lib/fixtures-reais.mjs`,
+  com `tests/lib/shapefile.mjs`) reproduz os ficheiros byte a byte.
+- **Duplicações e código de serviço** (M3-C12b/c, M3-C13): `escapeXml` dos
+  GCP é o do exportador; o fecho de um desenho (área, corredor, fachada) é
+  `finishDraft` em `src/mission/draft.js`, uma só vez; a configuração tem
+  «Limpar a cache de mapas» com o que ocupa.
+- **Por fazer, de propósito** (M3-T16): a partição do `smoke-test.mjs` por
+  áreas não se fez — ver o relatório.
+
 ## 1.4.2 — 2026-10-08
 
 ### Alterado (desenho)

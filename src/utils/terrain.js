@@ -604,7 +604,8 @@ function segmentLengthM(a, b) {
  * @returns {{waypoints: Array<[number, number, number]>, perLine: number[],
  *   perLink: number[], vertexIndex: number[][], elevMin: number|null, elevMax: number|null,
  *   corridorM: number, corridorRiseMaxM: number, clearanceMinM: number|null,
- *   cappedCount: number, noDataCount: number, sampleCount: number, warnings: string[]}}
+ *   cappedCount: number, noDataCount: number, sampleCount: number,
+ *   warnings: Array<{code: string, params: any, message: string}>}}
  */
 export function terrainFollowLines(
   terrain,

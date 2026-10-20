@@ -8,7 +8,7 @@ import { IconDownload, IconTarget, IconTrash } from './Icons.jsx'
  * exportação (missão única ou um KMZ por nível).
  */
 
-function Field({ label, suffix, children }) {
+function Field({ label, suffix = null, children }) {
   return (
     <label className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-300">
       <span className="flex-1">{label}</span>
@@ -18,6 +18,7 @@ function Field({ label, suffix, children }) {
   )
 }
 
+/** @param {{value: any, onChange: (v: any) => void, min?: number, max?: number, step?: number}} props */
 function NumberInput({ value, onChange, min, max, step = 1 }) {
   return (
     <input
@@ -49,7 +50,7 @@ export default function OrbitPanel({
   exportBlocked = false,
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
   safety = null,
-  setSafety = () => {},
+  setSafety = (_next) => {},
   rthInfo = null,
 }) {
   const t = useT()

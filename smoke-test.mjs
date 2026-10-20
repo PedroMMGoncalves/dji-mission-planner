@@ -107,6 +107,7 @@ import {
   batteryMinFor,
   migrateDroneSelection,
 } from './src/data/drones.js'
+import { missionWpml } from './src/mission/missionWpml.js'
 
 let failures = 0
 function check(name, cond, extra = '') {
@@ -3714,13 +3715,15 @@ check(
       },
     ],
     [
+      // LiDAR numa combinacao que a aplicacao produz (M300 RTK + Mapper+),
+      // nao M3E + LiDAR (M3-T6)
       'area-lidar',
       {
         name: 'ref_lidar',
         waypoints: areaPlan.waypoints,
         altitude: 80,
         speed: 8,
-        wpml: enums,
+        wpml: missionWpml(AIRCRAFT.M300RTK, PAYLOADS.MAPPER_PLUS, DEFAULT_CUSTOM_SENSOR),
         photoIntervalM: 0,
         triggerMode: 'distance',
         sensorType: 'lidar',
@@ -3981,16 +3984,45 @@ check(
 
   /* 11e. Ficheiros de referencia. Qualquer alteracao ao exportador passa a
      aparecer como diferenca revisivel em tests/golden/, em vez de mudar em
-     silencio. Regenerar com UPDATE_GOLDEN=1 node smoke-test.mjs. */
+     silencio. Regenerar com UPDATE_GOLDEN=1 node smoke-test.mjs. Ao lado de
+     cada par de ficheiros ha um resumo estrutural (<cenario>.resumo.json:
+     contagens por elemento e por accao, waypoints, distancia e duracao,
+     M3-T6) — e esse o diff que se revê quando o motor muda; o texto exacto
+     continua guardado. */
   {
     const dir = new URL('./tests/golden/', import.meta.url)
     const update = process.env.UPDATE_GOLDEN === '1'
     if (update) mkdirSync(dir, { recursive: true })
+    const resumoDe = (template, waylines) => {
+      const contar = (xml, re) => {
+        const out = {}
+        for (const m of xml.matchAll(re)) out[m[1]] = (out[m[1]] ?? 0) + 1
+        return Object.fromEntries(Object.entries(out).sort())
+      }
+      const num = (xml, tag) => {
+        const m = new RegExp(`<wpml:${tag}>([-\\d.]+)</wpml:${tag}>`).exec(xml)
+        return m ? Number(m[1]) : null
+      }
+      return {
+        waypoints: (waylines.match(/<Placemark>/g) ?? []).length,
+        distanceM: num(waylines, 'distance'),
+        durationS: num(waylines, 'duration'),
+        elementos: {
+          template: contar(template, /<(wpml:[A-Za-z]+)>/g),
+          waylines: contar(waylines, /<(wpml:[A-Za-z]+)>/g),
+        },
+        accoes: contar(waylines, /<wpml:actionActuatorFunc>([A-Za-z]+)</g),
+        gatilhos: contar(waylines, /<wpml:actionTriggerType>([A-Za-z]+)</g),
+      }
+    }
     for (const [label, params] of scenarios) {
       const fixed = { ...params, createTimeMs: 1756000000000 }
+      const template = buildTemplateKML(fixed)
+      const waylines = buildWaylinesWPML(fixed)
       for (const [suffix, xml] of [
-        ['template.kml', buildTemplateKML(fixed)],
-        ['waylines.wpml', buildWaylinesWPML(fixed)],
+        ['template.kml', template],
+        ['waylines.wpml', waylines],
+        ['resumo.json', JSON.stringify(resumoDe(template, waylines), null, 2) + '\n'],
       ]) {
         const file = new URL(`${label}.${suffix}`, dir)
         if (update) {

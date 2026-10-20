@@ -280,38 +280,41 @@ export function useAreaMission({
   }, [elevationAt, planOk, blockRefs, refBase, zones])
 
   /* ------------- Terrain follow: alturas por waypoint ----------------- */
-  const terrainResult = useMemo(() => {
-    // B: com foto por waypoint, a densificação do seguimento de terreno
-    // reindexaria as acções de foto — erro explícito (e exportação bloqueada)
-    // em vez de uma missão parcial com alturas planas ou fotos perdidas
-    // códigos, não texto: o painel e o preflight traduzem (M3-C8: `t` como
-    // dependência refazia o seguimento de terreno a cada render do App)
-    if (terrainFollow.enabled && photoMode === 'waypoint') return { error: 'photo-waypoint' }
-    if (!terrainFollow.enabled || !terrainCovers || !planOk?.lines?.length) return null
-    try {
-      const res = planTerrainFollow(terrain.data, planOk, {
-        blocks,
-        refElev: reference?.elev ?? null,
-        agl: params.altitude,
-        toleranceM: terrainFollow.tolerance,
-        // cada bloco com a cota da zona da sua base
-        blockRefs: blockRefs?.refs ?? null,
-      })
-      return res
-    } catch (err) {
-      return { error: 'terrain-failed', detail: err?.message ?? '' }
-    }
-  }, [
-    photoMode,
-    terrainFollow,
-    terrainCovers,
-    terrain.data,
-    planOk,
-    blocks,
-    reference,
-    blockRefs,
-    params.altitude,
-  ])
+  const terrainResult = useMemo(
+    /** @returns {import('../mission/terrainFollow.js').TerrainFollowResult|null} */ () => {
+      // B: com foto por waypoint, a densificação do seguimento de terreno
+      // reindexaria as acções de foto — erro explícito (e exportação bloqueada)
+      // em vez de uma missão parcial com alturas planas ou fotos perdidas
+      // códigos, não texto: o painel e o preflight traduzem (M3-C8: `t` como
+      // dependência refazia o seguimento de terreno a cada render do App)
+      if (terrainFollow.enabled && photoMode === 'waypoint') return { error: 'photo-waypoint' }
+      if (!terrainFollow.enabled || !terrainCovers || !planOk?.lines?.length) return null
+      try {
+        const res = planTerrainFollow(terrain.data, planOk, {
+          blocks,
+          refElev: reference?.elev ?? null,
+          agl: params.altitude,
+          toleranceM: terrainFollow.tolerance,
+          // cada bloco com a cota da zona da sua base
+          blockRefs: blockRefs?.refs ?? null,
+        })
+        return res
+      } catch (err) {
+        return { error: 'terrain-failed', detail: err?.message ?? '' }
+      }
+    },
+    [
+      photoMode,
+      terrainFollow,
+      terrainCovers,
+      terrain.data,
+      planOk,
+      blocks,
+      reference,
+      blockRefs,
+      params.altitude,
+    ],
+  )
 
   // Com seguimento de terreno os waypoints levam altura e a rota real e a
   // 3D — e e essa que o Pilot 2 escreve em `wpml:distance`. Sem esta

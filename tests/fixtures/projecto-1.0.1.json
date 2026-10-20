@@ -1,0 +1,116 @@
+{
+  "version": 2,
+  "missionName": "Olival da Herdade",
+  "drone": {
+    "aircraftId": "M3E",
+    "payloadId": "M3E_WIDE"
+  },
+  "custom": {
+    "mode": "camera",
+    "sensorWidth": 17.3,
+    "sensorHeight": 13,
+    "focalLength": 12.2,
+    "imageWidth": 5280,
+    "fov": 70,
+    "droneEnumValue": 60,
+    "payloadEnumValue": 50
+  },
+  "payloadTuning": {},
+  "batteryByCombo": {
+    "M3E:M3E_WIDE": 40
+  },
+  "inspectPoints": [],
+  "missionMode": "area",
+  "faceConfig": {
+    "baseline": null,
+    "heightM": 30,
+    "standoffM": 25,
+    "side": "left",
+    "verticalOverlapPct": 70,
+    "horizontalOverlapPct": 70,
+    "gimbalPitch": 0,
+    "minClearanceM": 15,
+    "speedMS": 5
+  },
+  "corridorConfig": {
+    "centreline": null,
+    "bufferM": 60,
+    "speedMS": 8,
+    "photoMode": "distance",
+    "simplifyM": 1
+  },
+  "orbitConfig": {
+    "poi": null,
+    "radiusM": 60,
+    "levelCount": 3,
+    "levelStartM": 30,
+    "levelStepM": 15,
+    "horizontalOverlapPct": 80,
+    "poiHeightM": 0,
+    "clockwise": true,
+    "speedMS": 5
+  },
+  "params": {
+    "altitude": 80,
+    "speed": 8,
+    "frontOverlap": 80,
+    "sideOverlap": 70,
+    "angle": 90,
+    "bufferPct": 0,
+    "triggerMode": "distance",
+    "spacingMode": "auto",
+    "manualSpacing": 50,
+    "crosshatch": false,
+    "includeNadir": false,
+    "gimbalPitch": -90
+  },
+  "split": {
+    "mode": "area",
+    "maxAreaHa": 20,
+    "reservePct": 30,
+    "maxSide": 500,
+    "tileSize": 250,
+    "tileOrientation": 0
+  },
+  "anchor": {
+    "center": null,
+    "length": 500,
+    "width": 300,
+    "orientation": 90,
+    "shape": "rect",
+    "cols": 1,
+    "rows": 1
+  },
+  "ring": [
+    [
+      -7.9,
+      38.55
+    ],
+    [
+      -7.895,
+      38.55
+    ],
+    [
+      -7.895,
+      38.553
+    ],
+    [
+      -7.9,
+      38.553
+    ]
+  ],
+  "areaOrigin": "draw",
+  "basePoint": [
+    -7.9004,
+    38.5498
+  ],
+  "disabledTiles": [],
+  "terrainFollow": {
+    "enabled": false,
+    "tolerance": 5
+  },
+  "gcpConfig": {
+    "enabled": false,
+    "count": null
+  }
+}

@@ -965,7 +965,7 @@ function Titulo({ children, className = '' }) {
   )
 }
 
-function Botao({ children, onClick, tom = 'neutro', disabled }) {
+function Botao({ children, onClick, tom = 'neutro', disabled = false }) {
   const tons = {
     neutro: 'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700',
     primario: 'bg-emerald-700 text-white hover:bg-emerald-700 border border-emerald-600',

@@ -1,0 +1,197 @@
+{
+  "$schema": "https://pedrommgoncalves.github.io/dji-mission-planner/schema/project-v2.schema.json",
+  "version": 2,
+  "missionName": "Olival da Herdade",
+  "drone": {
+    "aircraftId": "M4T",
+    "payloadId": "M4T_WIDE",
+    "rtk": true
+  },
+  "custom": {
+    "mode": "camera",
+    "sensorWidth": 17.3,
+    "sensorHeight": 13,
+    "focalLength": 12.2,
+    "imageWidth": 5280,
+    "fov": 70,
+    "droneEnumValue": 60,
+    "payloadEnumValue": 50
+  },
+  "payloadTuning": {},
+  "battery": {
+    "batteryId": "padrao",
+    "usefulMin": 24
+  },
+  "inspectPoints": [
+    {
+      "id": 1,
+      "point": [
+        -7.8995,
+        38.5505
+      ],
+      "heightM": 40,
+      "heading": 120,
+      "gimbalPitch": -30
+    }
+  ],
+  "missionMode": "area",
+  "faceConfig": {
+    "baseline": null,
+    "heightM": 30,
+    "standoffM": 25,
+    "side": "left",
+    "verticalOverlapPct": 70,
+    "horizontalOverlapPct": 70,
+    "gimbalPitch": 0,
+    "minClearanceM": 15,
+    "speedMS": 5
+  },
+  "corridorConfig": {
+    "centreline": null,
+    "bufferM": 60,
+    "speedMS": 8,
+    "photoMode": "distance",
+    "simplifyM": 1,
+    "waypointStops": "corners"
+  },
+  "orbitConfig": {
+    "poi": null,
+    "radiusM": 60,
+    "levelCount": 3,
+    "levelStartM": 30,
+    "levelStepM": 15,
+    "horizontalOverlapPct": 80,
+    "poiHeightM": 0,
+    "clockwise": true,
+    "speedMS": 5,
+    "capture": "photo"
+  },
+  "circularConfig": {
+    "radiusM": 30,
+    "overlapPct": 50,
+    "gimbalPitch": -45,
+    "speedMS": 8,
+    "angleDeg": null,
+    "enabled": false
+  },
+  "params": {
+    "altitude": 90,
+    "speed": 8,
+    "frontOverlap": 80,
+    "sideOverlap": 70,
+    "angle": 90,
+    "bufferPct": 0,
+    "triggerMode": "waypoint",
+    "spacingMode": "auto",
+    "manualSpacing": 50,
+    "crosshatch": true,
+    "includeNadir": true,
+    "gimbalPitch": -60,
+    "overshoot": 0,
+    "tieLine": false,
+    "waypointStops": "all"
+  },
+  "split": {
+    "mode": "battery",
+    "maxAreaHa": 20,
+    "reservePct": 0,
+    "maxSide": 500,
+    "tileSize": 250,
+    "tileOrientation": 0,
+    "tileOrientationAuto": true,
+    "mosaic": 2
+  },
+  "anchor": {
+    "center": null,
+    "length": 500,
+    "width": 300,
+    "orientation": 90,
+    "shape": "rect",
+    "cols": 1,
+    "rows": 1
+  },
+  "ring": [
+    [
+      -7.9,
+      38.55
+    ],
+    [
+      -7.895,
+      38.55
+    ],
+    [
+      -7.895,
+      38.553
+    ],
+    [
+      -7.9,
+      38.553
+    ]
+  ],
+  "holes": [
+    [
+      [
+        -7.898,
+        38.551
+      ],
+      [
+        -7.897,
+        38.551
+      ],
+      [
+        -7.897,
+        38.5518
+      ],
+      [
+        -7.898,
+        38.5518
+      ]
+    ]
+  ],
+  "areaOrigin": "draw",
+  "bases": [
+    {
+      "id": "base-a",
+      "label": "A",
+      "point": [
+        -7.9004,
+        38.5498
+      ],
+      "radiusM": null
+    },
+    {
+      "id": "base-b",
+      "label": "B",
+      "point": [
+        -7.8945,
+        38.5535
+      ],
+      "radiusM": 150
+    }
+  ],
+  "blockBase": {
+    "1": "base-a",
+    "3": "base-b"
+  },
+  "disabledTiles": [
+    2
+  ],
+  "terrainFollow": {
+    "enabled": true,
+    "tolerance": 5
+  },
+  "gcpConfig": {
+    "enabled": true,
+    "count": 5
+  },
+  "obstacleHeightM": 12,
+  "demFile": {
+    "label": "mdt-pttm06.tif",
+    "surface": "dtm"
+  },
+  "safety": {
+    "finishAction": "goHome",
+    "exitOnRCLost": "executeLostAction",
+    "executeRCLostAction": "goBack"
+  }
+}

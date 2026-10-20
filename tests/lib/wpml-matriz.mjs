@@ -25,6 +25,10 @@ import { generateFacePlan } from '../../src/utils/faceMode.js'
 import { passThroughFor, resolveSensor } from '../../src/utils/geo.js'
 import { generateOrbitPlan, orbitLevelsToBlocks } from '../../src/utils/orbit.js'
 import { DEFAULT_CUSTOM_SENSOR } from '../../src/data/drones.js'
+import { buildAreaExport } from '../../src/mission/areaExport.js'
+import { planMissionFromProject } from '../../src/mission/planFromProject.js'
+import { normalizeProject } from '../../src/mission/project.js'
+import { planTerrainFollow } from '../../src/mission/terrainFollow.js'
 
 const T0 = 1760000000000
 const lat = 40.4
@@ -143,20 +147,24 @@ export function casosMatriz() {
     gimbalPitch: -90,
   })
 
-  // corredor (M3E e M300+P1), por distância e por waypoint
+  // corredor: câmara (M3E, M4T, M300+P1) por distância e por waypoint, e
+  // LiDAR (M300 + Mapper+) sem acções de câmara
   const axis = [em(0, 0), em(300, 20), em(600, 0)]
   for (const [a, p] of [
     ['M3E', 'M3E_WIDE'],
+    ['M4T', 'M4T_WIDE'],
     ['M300RTK', 'P1'],
+    ['M300RTK', 'MAPPER_PLUS'],
   ]) {
     const sensor = resolveSensor(PAYLOADS[p], DEFAULT_CUSTOM_SENSOR)
-    for (const photoMode of ['distance', 'waypoint']) {
+    const lidar = sensor.type === 'lidar'
+    for (const photoMode of lidar ? ['distance'] : ['distance', 'waypoint']) {
       const plan = generateCorridorPlan(axis, {
         sensor,
         altitude: 100,
         bufferM: 60,
         sideOverlapPct: 70,
-        photoIntervalM: 20,
+        photoIntervalM: lidar ? 0 : 20,
         speed: 8,
         photoMode,
       })
@@ -168,18 +176,19 @@ export function casosMatriz() {
         altitude: 100,
         speed: 8,
         wpml: wpmlOf(a, p),
-        photoIntervalM: 20,
-        sensorType: 'camera',
+        photoIntervalM: lidar ? 0 : 20,
+        sensorType: sensor.type,
       })
-      add(`corredor-${photoMode}-${a.toLowerCase()}`, params)
+      add(`corredor-${lidar ? 'lidar' : photoMode}-${a.toLowerCase()}`, params)
     }
   }
 
-  // fachada (M3E, M4T térmica)
+  // fachada (M3E, M4T térmica, M300 + P1)
   const face = [em(0, 0), em(60, 5)]
   for (const [a, p] of [
     ['M3E', 'M3E_WIDE'],
     ['M4T', 'M4T_THERMAL'],
+    ['M300RTK', 'P1'],
   ]) {
     const sensor = resolveSensor(PAYLOADS[p], DEFAULT_CUSTOM_SENSOR)
     const plan = generateFacePlan(face, { sensor, faceHeightM: 20, standoffM: 15, speed: 3 })
@@ -197,10 +206,15 @@ export function casosMatriz() {
     )
   }
 
-  // órbita: foto (missão única e por nível) e vídeo
-  {
-    const sensor = resolveSensor(PAYLOADS.M3E_WIDE, DEFAULT_CUSTOM_SENSOR)
-    const wpml = wpmlOf('M3E', 'M3E_WIDE')
+  // órbita (M3E, M4T, M300 + P1): foto (missão única e por nível) e vídeo
+  for (const [a, p] of [
+    ['M3E', 'M3E_WIDE'],
+    ['M4T', 'M4T_WIDE'],
+    ['M300RTK', 'P1'],
+  ]) {
+    const tag = a.toLowerCase()
+    const sensor = resolveSensor(PAYLOADS[p], DEFAULT_CUSTOM_SENSOR)
+    const wpml = wpmlOf(a, p)
     const photo = generateOrbitPlan(em(0, 0), {
       sensor,
       radiusM: 40,
@@ -214,9 +228,12 @@ export function casosMatriz() {
       wpml,
       sensorType: 'camera',
     })
-    add('orbita-foto-m3e', pp)
+    add(`orbita-foto-${tag}`, pp)
     for (const b of orbitLevelsToBlocks(photo))
-      add(`orbita-nivel-${b.id}-m3e`, blockExportParams({ createTimeMs: T0, ...safety, ...pp }, b))
+      add(
+        `orbita-nivel-${b.id}-${tag}`,
+        blockExportParams({ createTimeMs: T0, ...safety, ...pp }, b),
+      )
     const video = generateOrbitPlan(em(0, 0), {
       sensor,
       radiusM: 40,
@@ -225,15 +242,16 @@ export function casosMatriz() {
       capture: 'video',
     })
     add(
-      'orbita-video-m3e',
+      `orbita-video-${tag}`,
       orbitExportParams({ missionName: 'm', plan: video, speed: 3, wpml, sensorType: 'camera' }),
     )
   }
 
-  // circular (M3E e M300+P1)
+  // circular (M3E, M4T e M300+P1)
   const ring = [em(0, 0), em(120, 0), em(120, 90), em(0, 90)]
   for (const [a, p] of [
     ['M3E', 'M3E_WIDE'],
+    ['M4T', 'M4T_WIDE'],
     ['M300RTK', 'P1'],
   ]) {
     const sensor = resolveSensor(PAYLOADS[p], DEFAULT_CUSTOM_SENSOR)
@@ -259,10 +277,11 @@ export function casosMatriz() {
     )
   }
 
-  // pontos de inspecção (M3E, M4T): rumo e pitch por ponto, um sem foto
+  // pontos de inspecção (M3E, M4T, M300 + P1): rumo e pitch por ponto, um sem foto
   for (const [a, p] of [
     ['M3E', 'M3E_WIDE'],
     ['M4T', 'M4T_WIDE'],
+    ['M300RTK', 'P1'],
   ]) {
     const points = [
       { point: em(0, 0), heightM: 30, heading: 270, gimbalPitch: -30 },
@@ -282,6 +301,101 @@ export function casosMatriz() {
       }),
     )
   }
+  // área pelo montador real (buildAreaExport) sobre o plano do projecto
+  // (planMissionFromProject): blocos por área, dupla grelha com nadir,
+  // seguimento de terreno e mosaico por bateria (um ficheiro por bloco)
+  const ringA = [em(0, 0), em(300, 0), em(300, 200), em(0, 200)]
+  const areaCase = (
+    tag,
+    { aircraftId, payloadId, params, split, battery = null, terrain = null },
+  ) => {
+    const n = normalizeProject({
+      version: 2,
+      missionName: 'm',
+      drone: { aircraftId, payloadId },
+      params,
+      split,
+      ...(battery ? { battery } : {}),
+      ring: ringA,
+      bases: [{ id: 'a', label: 'A', point: em(-30, -30), radiusM: null }],
+    })
+    const p = planMissionFromProject(n)
+    if (!p.planOk) throw new Error(`área ${tag}: ${p.planError}`)
+    const terrainResult = terrain
+      ? planTerrainFollow(terrain, p.planOk, {
+          blocks: p.blocks,
+          refPt: em(-30, -30),
+          agl: p.params.altitude,
+          toleranceM: 5,
+        })
+      : null
+    if (terrainResult?.error) throw new Error(`área ${tag}: terreno ${terrainResult.error}`)
+    const out = buildAreaExport({
+      missionName: 'm',
+      plan: p.planOk,
+      terrainResult,
+      blocks: p.blocks,
+      spacingM: p.spacingM,
+      photoMode: p.photoMode,
+      sensorType: p.sensor.type,
+      altitude: p.params.altitude,
+      speed: p.speed,
+      wpml: wpmlOf(aircraftId, payloadId),
+      photoIntervalM: p.intervalM,
+      triggerMode: p.params.triggerMode,
+      gimbalPitch: p.params.gimbalPitch,
+      crosshatch: p.params.crosshatch,
+      includeNadir: p.params.includeNadir,
+      tieLine: p.params.tieLine,
+      waypointStops: p.params.waypointStops,
+    })
+    if (!out.blocks) {
+      add(`area-${tag}`, out.params)
+      return
+    }
+    if (out.blocks.length < 2) throw new Error(`área ${tag}: esperavam-se 2+ blocos`)
+    for (const b of out.blocks)
+      add(
+        `area-${tag}-${b.id}`,
+        blockExportParams({ createTimeMs: T0, ...safety, ...out.params }, b),
+      )
+  }
+  const base = { altitude: 80, speed: 8, frontOverlap: 80, sideOverlap: 70, angle: 90 }
+  areaCase('blocos-m3e', {
+    aircraftId: 'M3E',
+    payloadId: 'M3E_WIDE',
+    params: { ...base, gimbalPitch: -90 },
+    split: { mode: 'area', maxAreaHa: 2.5 },
+  })
+  areaCase('cruzada-nadir-m3e', {
+    aircraftId: 'M3E',
+    payloadId: 'M3E_WIDE',
+    params: { ...base, gimbalPitch: -60, crosshatch: true, includeNadir: true },
+    split: { mode: 'none' },
+  })
+  areaCase('terreno-m300rtk', {
+    aircraftId: 'M300RTK',
+    payloadId: 'P1',
+    params: { ...base, gimbalPitch: -90, triggerMode: 'waypoint', waypointStops: 'all' },
+    split: { mode: 'none' },
+    // rampa suave para Este: alturas por waypoint sem tecto
+    terrain: { elevationAt: (lon) => 200 + 0.05 * ((lon + 7.2) * mL) },
+  })
+  areaCase('mosaico-bateria-m4t', {
+    aircraftId: 'M4T',
+    payloadId: 'M4T_WIDE',
+    params: {
+      altitude: 60,
+      speed: 6,
+      frontOverlap: 80,
+      sideOverlap: 70,
+      angle: 0,
+      gimbalPitch: -90,
+    },
+    split: { mode: 'battery', maxSide: 500 },
+    // tempo útil curto: o lado do quadrado fica pequeno e a área parte-se
+    battery: { batteryId: 'padrao', usefulMin: 5 },
+  })
   return casos
 }
 

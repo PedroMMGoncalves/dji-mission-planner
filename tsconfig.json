@@ -13,7 +13,7 @@
     "strictNullChecks": false,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "types": []
+    "types": ["vite/client"]
   },
-  "include": ["src/utils/**/*.js", "src/mission/**/*.js", "src/data/**/*.js", "src/hooks/**/*.js"]
+  "include": ["src/**/*.js", "src/**/*.jsx"]
 }
