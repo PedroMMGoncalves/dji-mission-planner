@@ -250,7 +250,7 @@ const BASE_DICT = {
     pt: 'Total (o disparo por distância cobre também o overshoot) e, entre parênteses, as fotos sobre a área.',
     en: 'Total (the distance trigger also fires along the overshoot) and, in parentheses, the photos over the area.',
   },
-  'stats.time': { pt: 'Tempo na rota (sem trânsito)', en: 'Time on route (no transit)' },
+  'stats.time': { pt: 'Tempo na missão (sem deslocação)', en: 'Time on route (no transit)' },
   'stats.baseToArea': { pt: 'Base → área', en: 'Base → area' },
   'stats.insideArea': { pt: 'dentro da área', en: 'inside the area' },
   'stats.groupQuality': { pt: 'Qualidade', en: 'Quality' },
@@ -267,8 +267,8 @@ const BASE_DICT = {
   'stats.show': { pt: 'Métricas', en: 'Metrics' },
   'stats.flightsBases': { pt: '{n} · {b} bases', en: '{n} · {b} bases' },
   'stats.batteries': { pt: 'Conjuntos de baterias', en: 'Battery sets' },
-  'stats.setsNeeded': { pt: '{n} precisos', en: '{n} needed' },
-  'stats.setsVs': { pt: '{n} precisos · {s} na equipa', en: '{n} needed · {s} in the team' },
+  'stats.setsNeeded': { pt: '{n} necessários', en: '{n} needed' },
+  'stats.setsVs': { pt: '{n} necessários · {s} na equipa', en: '{n} needed · {s} in the team' },
   'stats.setsShortHint': {
     pt: 'A missão pede mais voos do que os conjuntos de baterias que a equipa tem.',
     en: 'The mission needs more flights than the battery sets the team has.',
@@ -276,12 +276,12 @@ const BASE_DICT = {
   'stats.longest': { pt: 'Voo mais longo / útil', en: 'Longest flight / useful' },
   'stats.vsBattery': { pt: 'Voo / tempo útil', en: 'Flight / useful time' },
   'stats.longestHint': {
-    pt: 'Com o trânsito desde a base, contra o tempo útil de uma bateria. Âmbar acima de 90 %, vermelho acima de 100 %.',
+    pt: 'Com o deslocação desde a base, contra o tempo útil de uma bateria. Âmbar acima de 90 %, vermelho acima de 100 %.',
     en: 'Including transit from the base, against the useful time of one battery. Amber above 90 %, red above 100 %.',
   },
-  'stats.totalTime': { pt: 'Tempo total com trânsitos', en: 'Total time with transits' },
+  'stats.totalTime': { pt: 'Tempo total com deslocações', en: 'Total time with transits' },
   'stats.totalTimeHint': {
-    pt: 'Soma de todos os voos, com os trânsitos; sem trocas de bateria nem mudanças de base.',
+    pt: 'Soma de todos os voos, com os deslocações; sem trocas de bateria nem mudanças de base.',
     en: 'Sum of all flights, with transits; without battery swaps or base moves.',
   },
 

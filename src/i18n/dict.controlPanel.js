@@ -419,7 +419,7 @@ export default {
     en: 'to disable/re-enable it.',
   },
   'cp.split.markBaseHint': {
-    pt: 'Marque ou proponha as bases: o trânsito de cada bloco conta a partir da sua.',
+    pt: 'Marque ou proponha as bases: o deslocação de cada bloco conta a partir da sua.',
     en: 'Set or propose the bases: each block’s transit counts from its own.',
   },
   'cp.split.exportHint': {
@@ -546,9 +546,14 @@ export default {
     en: '{count} GCPs · ~{ha} ha/GCP · min. spacing {spacing}',
   },
   'cp.gcp.export': { pt: 'Exportar GCPs (KML)', en: 'Export GCPs (KML)' },
+  'cp.gcp.manual': {
+    pt: '{n} alvo(s) movido(s) à mão no mapa; os outros seguem a heurística.',
+    en: '{n} target(s) moved by hand on the map; the others follow the heuristic.',
+  },
+  'cp.gcp.reset': { pt: 'Repor posições', en: 'Reset positions' },
   'cp.gcp.hint': {
-    pt: 'Heurística bordo + centro (distribuição de erro mínimo na literatura fotogramétrica).',
-    en: 'Edge + centre heuristic (minimum-error distribution in the photogrammetric literature).',
+    pt: 'Heurística bordo + centro (distribuição de erro mínimo na literatura fotogramétrica). Arraste um alvo no mapa para o afinar; o ponto fica no projecto.',
+    en: 'Edge + centre heuristic (minimum-error distribution in the photogrammetric literature). Drag a target on the map to adjust it; the point is kept in the project.',
   },
 
   'cp.terrain.auto': {

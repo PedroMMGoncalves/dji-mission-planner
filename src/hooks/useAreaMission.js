@@ -11,6 +11,7 @@ import { planArea } from '../mission/areaPlan.js'
 import { planBlocks } from '../mission/blocks.js'
 import { planTerrainFollow } from '../mission/terrainFollow.js'
 import { buildAreaExport } from '../mission/areaExport.js'
+import { areaPhotoPoints } from '../mission/photoPoints.js'
 import {
   areaExportName,
   flightFiles,
@@ -37,7 +38,7 @@ import {
 } from '../mission/baseLayout.js'
 import { carryOverCells } from '../mission/cellCarryOver.js'
 import { nearestBase } from '../mission/bases.js'
-import { buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from '../utils/gcp.js'
+import { applyGcpManual, buildGcpKML, gcpStats, planGcps, suggestedGcpCount } from '../utils/gcp.js'
 import { DEFAULT_GCP_CONFIG } from '../mission/defaults.js'
 
 /** Mapa vazio estável (as atribuições de outra disposição de blocos não valem). */
@@ -243,7 +244,11 @@ export function useAreaMission({
   const gcps = useMemo(() => {
     if (!gcpConfig.enabled || !ring || !validation.valid) return null
     try {
-      return planGcps(ring, gcpConfig.count ?? gcpAutoCount, { holes })
+      // os alvos arrastados no mapa ficam onde o operador os pôs
+      return applyGcpManual(
+        planGcps(ring, gcpConfig.count ?? gcpAutoCount, { holes }),
+        gcpConfig.manual,
+      )
     } catch {
       return null
     }
@@ -252,6 +257,16 @@ export function useAreaMission({
   const gcpInfo = useMemo(
     () => (gcps && gcps.length > 0 ? gcpStats(ring, gcps, holes) : null),
     [gcps, ring, holes],
+  )
+
+  // onde as fotos saem com disparo por distância ou por tempo (com foto por
+  // waypoint cada foto já é um ponto da rota): os mesmos grupos da exportação
+  const photoPoints = useMemo(
+    () =>
+      photoMode === 'waypoint' || !planOk || !(interval > 0) || sensor.type !== 'camera'
+        ? null
+        : areaPhotoPoints(planOk, blocks, { intervalM: interval, spacingM: spacing }),
+    [photoMode, planOk, blocks, interval, spacing, sensor.type],
   )
 
   /* ------------- Cota de referencia das alturas relativas ------------- */
@@ -497,6 +512,7 @@ export function useAreaMission({
     gcpAutoCount,
     gcps,
     gcpInfo,
+    photoPoints,
     terrainResult,
     reference,
     zones,

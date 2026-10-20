@@ -46,6 +46,8 @@ export default function MapView({
   disabledTiles,
   onTileToggle,
   gcps,
+  onGcpDrag,
+  photoPoints = null,
   inspectPoints,
   onInspectDrag,
   facePreview,
@@ -102,6 +104,7 @@ export default function MapView({
       onBlockClick,
       onTileToggle,
       onInspectDrag,
+      onGcpDrag,
       onOrbitPoiDrag,
       onViewshedLayer,
     }
@@ -212,6 +215,7 @@ export default function MapView({
       buffer: L.layerGroup().addTo(map),
       lines: L.layerGroup().addTo(map),
       gcps: L.layerGroup().addTo(map),
+      photos: L.layerGroup().addTo(map),
       inspect: L.layerGroup().addTo(map),
       face: L.layerGroup().addTo(map),
       corridor: L.layerGroup().addTo(map),
@@ -763,18 +767,51 @@ export default function MapView({
     if (!g) return
     g.clearLayers()
     if (!gcps) return
-    gcps.forEach(({ id, point }) => {
-      L.marker(toLatLng(point), {
+    const draggable = Boolean(stateRef.current.onGcpDrag)
+    gcps.forEach(({ id, point, manual }) => {
+      const m = L.marker(toLatLng(point), {
         icon: L.divIcon({
-          className: 'gcp-marker',
+          className: `gcp-marker${manual ? ' gcp-manual' : ''}`,
           html: `<div class="gcp-target"></div><div class="gcp-label">${id}</div>`,
           iconSize: null,
         }),
-        interactive: false,
+        // arrastável: o operador afina o alvo (um caminho, um afloramento)
+        interactive: draggable,
+        draggable,
+        bubblingMouseEvents: false,
         zIndexOffset: 400,
       }).addTo(g)
+      if (draggable) {
+        m.on('dragstart', () => {
+          dragEndRef.current = Infinity
+        })
+        m.on('dragend', () => {
+          dragEndRef.current = performance.now()
+          const q = m.getLatLng()
+          stateRef.current.onGcpDrag?.(id, [q.lng, q.lat])
+        })
+      }
     })
   }, [gcps])
+
+  // Fotos por distância ou por tempo: onde o comando dispara dentro de cada
+  // grupo (com foto por waypoint, cada foto já é um ponto da rota)
+  useEffect(() => {
+    const g = layersRef.current?.photos
+    if (!g) return
+    g.clearLayers()
+    if (!photoPoints?.length) return
+    for (const p of photoPoints) {
+      L.circleMarker(toLatLng(p), {
+        radius: 1.8,
+        stroke: false,
+        fillColor: '#fde68a',
+        fillOpacity: 0.95,
+        interactive: false,
+        renderer: layersRef.current.canvas,
+      }).addTo(g)
+    }
+  }, [photoPoints])
 
   // Pré-visualização do modo fachada (E1.1): baseline (pé da face), linha
   // afastada ao standoff e traços de rumo da primeira passagem
@@ -837,6 +874,17 @@ export default function MapView({
         color: '#fde047',
         weight: 2,
         opacity: 0.95,
+      }).addTo(g)
+    })
+    // fotos por distância ao longo das passagens
+    corridorPreview.photos?.forEach((p) => {
+      L.circleMarker(toLatLng(p), {
+        radius: 1.8,
+        stroke: false,
+        fillColor: '#fde68a',
+        fillOpacity: 0.95,
+        interactive: false,
+        renderer: layersRef.current.canvas,
       }).addTo(g)
     })
   }, [corridorPreview])

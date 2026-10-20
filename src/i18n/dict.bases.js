@@ -158,12 +158,12 @@ export default {
   },
   'bases.kml.zoneName': { pt: 'Zona {label} ({r} m)', en: 'Zone {label} ({r} m)' },
   'bases.kml.flight': {
-    pt: 'voo {flight}: {min} min com trânsito · {file}',
+    pt: 'voo {flight}: {min} min com deslocação · {file}',
     en: 'flight {flight}: {min} min incl. transit · {file}',
   },
   'bases.kml.block': { pt: 'bloco {id}', en: 'block {id}' },
   'bases.kml.time': {
-    pt: '{min} min com trânsito',
+    pt: '{min} min com deslocação',
     en: '{min} min incl. transit',
   },
   /* ---- Ficha de campo por base (checklist e relatório) ---- */
@@ -193,11 +193,11 @@ export default {
     en: 'altitude {alt} m · {v} m/s · overlap {f}/{s} % · GSD {gsd} cm/px',
   },
   'bases.sheet.day': {
-    pt: 'Dia: {flights} voos · conjuntos de baterias: {sets} precisos · {team} na equipa',
+    pt: 'Dia: {flights} voos · conjuntos de baterias: {sets} necessários · {team} na equipa',
     en: 'Day: {flights} flights · battery sets: {sets} needed · {team} in the team',
   },
   'bases.sheet.dayUnknown': {
-    pt: 'Dia: {flights} voos · conjuntos de baterias: {sets} precisos (contagem da equipa por definir na Configuração)',
+    pt: 'Dia: {flights} voos · conjuntos de baterias: {sets} necessários (contagem da equipa por definir na Configuração)',
     en: 'Day: {flights} flights · battery sets: {sets} needed (team count to be set in Settings)',
   },
   'bases.sheet.rthValue': {
@@ -206,11 +206,11 @@ export default {
   },
   'bases.sheet.batteries': { pt: 'Conjuntos de baterias', en: 'Battery sets' },
   'bases.sheet.setsKnown': {
-    pt: '{flights} precisos · {sets} na equipa',
+    pt: '{flights} necessários · {sets} na equipa',
     en: '{flights} needed · {sets} in the team',
   },
   'bases.sheet.setsUnknown': {
-    pt: '{flights} precisos (contagem da equipa por definir na Configuração)',
+    pt: '{flights} necessários (contagem da equipa por definir na Configuração)',
     en: '{flights} needed (team count not set in Settings)',
   },
   'bases.sheet.setsShort': {
@@ -224,7 +224,7 @@ export default {
   },
   'bases.sheet.flight': { pt: 'Voo', en: 'Flight' },
   'bases.sheet.time': { pt: 'Tempo (min)', en: 'Time (min)' },
-  'bases.sheet.transit': { pt: 'dos quais trânsito', en: 'of which transit' },
+  'bases.sheet.transit': { pt: 'dos quais deslocação', en: 'of which transit' },
   'bases.sheet.file': { pt: 'Ficheiro KMZ', en: 'KMZ file' },
   'bases.sheet.total': { pt: 'Total da base', en: 'Base total' },
   'bases.sheet.outOfVlos': { pt: 'fora do alcance visual', en: 'beyond visual range' },
@@ -330,7 +330,7 @@ export default {
     en: 'Square edges along the flight lines ({deg}°); turn off to choose the orientation.',
   },
   'cp.split.transitCorner': {
-    pt: '(com o trânsito de uma base num canto do bloco, {r} m de zona)',
+    pt: '(com o deslocação de uma base num canto do bloco, {r} m de zona)',
     en: '(including transit from a base at a corner of the block, {r} m zone)',
   },
 }

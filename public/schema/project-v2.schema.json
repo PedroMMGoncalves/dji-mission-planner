@@ -660,8 +660,19 @@
               "minimum": 1
             }
           ]
+        },
+        "manual": {
+          "description": "Alvos arrastados no mapa: id do GCP -> [lon, lat]; os outros ficam onde a heuristica os poe.",
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Za-z0-9_-]{1,20}$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/lonLat"
+          }
         }
-      }
+      },
+      "description": "GCPs planeados: ligado, numero (null = automatico) e os alvos movidos a mao no mapa, por id."
     }
   },
   "$defs": {

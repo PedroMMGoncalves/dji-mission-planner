@@ -301,7 +301,7 @@ export function normalizeProject(p) {
   } else out.disabledTiles = disabled
   out.split.mosaic = MOSAIC_VERSION
   if (isObject(p.terrainFollow)) out.terrainFollow = p.terrainFollow
-  if (isObject(p.gcpConfig)) out.gcpConfig = p.gcpConfig
+  if (isObject(p.gcpConfig)) out.gcpConfig = normalizeGcpConfig(p.gcpConfig)
   out.obstacleHeightM = normalizeObstacleM(p.obstacleHeightM)
   out.demFile = normalizeDemFile(p.demFile)
   out.safety = normalizeSafety(p.safety)
@@ -310,6 +310,26 @@ export function normalizeProject(p) {
 
 function isObject(v) {
   return v !== null && typeof v === 'object' && !Array.isArray(v)
+}
+
+/**
+ * Configuração dos GCP: `enabled`, `count` (null = automático) e `manual`,
+ * os alvos arrastados no mapa pelo id do GCP (só os pontos válidos).
+ */
+function normalizeGcpConfig(g) {
+  const out = {
+    enabled: g.enabled === true,
+    count: Number.isInteger(g.count) && g.count > 0 ? g.count : null,
+  }
+  // só quando o ficheiro o traz (os anteriores ao campo abrem com a omissão)
+  if (isObject(g.manual)) {
+    const manual = {}
+    for (const [k, v] of Object.entries(g.manual)) {
+      if (/^[A-Za-z0-9_-]{1,20}$/.test(k) && isPoint(v)) manual[k] = [v[0], v[1]]
+    }
+    out.manual = manual
+  }
+  return out
 }
 
 /** [lon, lat] (ou [lon, lat, h]) com números finitos. */

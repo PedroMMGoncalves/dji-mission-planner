@@ -1081,6 +1081,20 @@ melhor candidato fica a menos de 10 m dos já escolhidos (pode devolver
 menos do que o pedido). A área por GCP (`gcpStats`) desconta os buracos
 (M2-E9).
 
+Os alvos arrastam-se no mapa: o ponto do operador substitui o da heurística
+para esse id (`gcpConfig.manual`, no projecto e no esquema), os outros
+continuam a seguir a heurística, e «Repor posições» limpa-os
+(`applyGcpManual`). O KML dos GCP, o relatório e a área por GCP usam os
+pontos finais.
+
+Com disparo por distância ou por tempo o mapa mostra onde as fotos saem
+(`src/mission/photoPoints.js`): a cada intervalo ao longo da rota voada
+dentro de cada grupo de disparo (os mesmos `triggerRangesForLines` da
+exportação), a começar no primeiro waypoint do grupo e a continuar pelas
+viragens curtas; nas ligações longas, fora dos grupos, não há fotos. Por
+tempo o intervalo em metros é o mesmo (os segundos vêm de velocidade ×
+intervalo). Com foto por waypoint cada foto é um ponto da rota, como sempre.
+
 ## 11. Exportação WPML
 
 Módulo `src/utils/exporters.js`. Dois ficheiros num KMZ (`wpmz/template.kml`

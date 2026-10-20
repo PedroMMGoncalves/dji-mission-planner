@@ -7,11 +7,11 @@
 > [!WARNING]
 > **Aviso.** Software fornecido tal como está, sem garantia (GPL-3.0). O piloto remoto é o único responsável pela operação; verifique cada missão no DJI Pilot 2 antes de voar. Alguns modos ainda não foram validados em voo: ver a [matriz de compatibilidade](docs/VALIDACAO.md#5-matriz-de-compatibilidade-a-preencher). A aplicação mostra o aviso completo na primeira abertura.
 
-[![React](https://img.shields.io/badge/React-18-20232a.svg?logo=react&logoColor=61dafb)](https://react.dev)
-[![Vite](https://img.shields.io/badge/Vite-5-646cff.svg?logo=vite&logoColor=ffd62e)](https://vitejs.dev)
+[![React](https://img.shields.io/badge/React-19-20232a.svg?logo=react&logoColor=61dafb)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Vite-8-646cff.svg?logo=vite&logoColor=ffd62e)](https://vitejs.dev)
 [![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900.svg?logo=leaflet&logoColor=white)](https://leafletjs.com)
 [![Turf.js](https://img.shields.io/badge/Turf.js-7-35495d.svg)](https://turfjs.org)
-[![three.js](https://img.shields.io/badge/three.js-r170-000000.svg?logo=threedotjs&logoColor=white)](https://threejs.org)
+[![three.js](https://img.shields.io/badge/three.js-r186-000000.svg?logo=threedotjs&logoColor=white)](https://threejs.org)
 [![Target](https://img.shields.io/badge/Alvo-DJI_Pilot_2-1f6feb.svg)](https://enterprise.dji.com)
 [![WPML](https://img.shields.io/badge/Formato-WPML_%2B_KML-1f6feb.svg)](https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/overview.html)
 [![UI](https://img.shields.io/badge/UI-PT_%7C_EN-informational.svg)](#utilizacao)
@@ -19,6 +19,7 @@
 [![License: GPL v3](https://img.shields.io/badge/Licença-GPLv3-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/PedroMMGoncalves/dji-mission-planner?logo=github&label=Release)](https://github.com/PedroMMGoncalves/dji-mission-planner/releases)
 [![DOI](https://zenodo.org/badge/1332291768.svg)](https://doi.org/10.5281/zenodo.22238440)
+[![CI](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/ci.yml/badge.svg)](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/ci.yml)
 [![deploy](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml/badge.svg)](https://github.com/PedroMMGoncalves/dji-mission-planner/actions/workflows/deploy.yml)
 [![Live](https://img.shields.io/website?url=https%3A%2F%2Fpedrommgoncalves.github.io%2Fdji-mission-planner%2F&label=GitHub%20Pages&logo=github&up_message=online&down_message=offline)](https://pedrommgoncalves.github.io/dji-mission-planner/)
 [![Last commit](https://img.shields.io/github/last-commit/PedroMMGoncalves/dji-mission-planner.svg?logo=github)](https://github.com/PedroMMGoncalves/dji-mission-planner/commits/main)
@@ -122,14 +123,14 @@ O espaçamento entre faixas vem da pegada transversal no solo, `altitude × larg
 
 ## Estado da validação
 
-**Exportação verificada contra a especificação WPML, contra 81 KMZ reais escritos pelo DJI Pilot 2 e por testes automáticos; o primeiro voo real (M3E, Setembro de 2026) está feito e a calibração contra os registos de voo está pendente.** Duas suites correm em cada push no CI (`npm test`): a `smoke-test.mjs` cobre a matemática de planeamento e a estrutura dos ficheiros exportados, e a `smoke-test-io.mjs` cobre a fronteira dos ficheiros — os leitores de KML/GeoJSON, WPML e GeoTIFF, incluindo entradas malformadas, com uma ida e volta que exporta uma missão e a volta a importar. Uma terceira camada, `npm run test:e2e`, conduz a build de produção em Chromium headless como um operador faria — importa um polígono e um MDT sintético, liga dupla grelha, terrain follow e blocos por bateria, exporta o KMZ — e mede o ficheiro exportado: folga ao solo ao longo de toda a rota, grupos de disparo, um KMZ por bloco. Uma quarta camada, `npm run test:unit`, tem os testes unitários por propriedades (Vitest + fast-check). Ao todo, 1000+ asserções; o que elas não cobrem está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release — a passagem da versão corrente está ainda por fazer. O primeiro voo mostrou duas coisas que nenhum teste apanhava: o Pilot 2 tira o progresso e o tempo em falta de `wpml:distance` e `wpml:duration`, que o exportador passou a escrever, e a grelha com foto por waypoint parava em cada ponto, razão pela qual as grelhas passam agora sem parar pelas fotos por omissão. Um segundo voo (M4T, Outubro de 2026, disparo por distância) fotografou só nos waypoints — os cantos das faixas: os grupos de disparo por intervalo saíam com `actionGroupMode` `parallel`, que a especificação não define (só existe `sequence`), e nunca tinham voado; corrigido, **ainda por voar — conte as fotos no primeiro voo**. Os enums do M3E voaram num comando real; os do M300 vêm de ficheiros reais do Pilot 2; os do M4T foram aceites e voados num comando real — ver as notas abaixo.
+**Exportação verificada contra a especificação WPML, contra 81 KMZ reais escritos pelo DJI Pilot 2 e por testes automáticos; o primeiro voo real (M3E, Setembro de 2026) está feito e a calibração contra os registos de voo está pendente.** Duas suites correm em cada push no CI (`npm test`): a `smoke-test.mjs` cobre a matemática de planeamento e a estrutura dos ficheiros exportados, e a `smoke-test-io.mjs` cobre a fronteira dos ficheiros — os leitores de KML/GeoJSON, WPML e GeoTIFF, incluindo entradas malformadas, com uma ida e volta que exporta uma missão e a volta a importar. Uma terceira camada, `npm run test:e2e`, conduz a build de produção em Chromium headless como um operador faria — importa um polígono e um MDT sintético, liga dupla grelha, terrain follow e blocos por bateria, exporta o KMZ — e mede o ficheiro exportado: folga ao solo ao longo de toda a rota, grupos de disparo, um KMZ por bloco. Uma quarta camada, `npm run test:unit`, tem os testes unitários por propriedades (Vitest + fast-check). Cada `template.kml` e `waylines.wpml` gerado — uma matriz de 60 casos modos × aeronaves, os ficheiros dourados e cada KMZ que os E2E exportam — é validado contra um dicionário construído a partir da documentação WPML da DJI (`tests/lib/wpml-conformidade.mjs`). Ao todo, 1000+ asserções; o que elas não cobrem está no protocolo manual [docs/QA_MANUAL.md](docs/QA_MANUAL.md), corrido por release — a passagem da versão corrente está ainda por fazer. O primeiro voo mostrou duas coisas que nenhum teste apanhava: o Pilot 2 tira o progresso e o tempo em falta de `wpml:distance` e `wpml:duration`, que o exportador passou a escrever, e a grelha com foto por waypoint parava em cada ponto, razão pela qual as grelhas passam agora sem parar pelas fotos por omissão. Um segundo voo (M4T, Outubro de 2026, disparo por distância) fotografou só nos waypoints — os cantos das faixas: os grupos de disparo por intervalo saíam com `actionGroupMode` `parallel`, que a especificação não define (só existe `sequence`), e nunca tinham voado; corrigido, **ainda por voar — conte as fotos no primeiro voo**. Os enums do M3E voaram num comando real; os do M300 vêm de ficheiros reais do Pilot 2; os do M4T foram aceites e voados num comando real — ver as notas abaixo.
 
 **Estado dos perfis:** todos os perfis de câmara (M3E, M4T grande-angular e térmica, P1) e o Mapper+ usam valores publicados nas fichas técnicas. A grande-angular do M4T (1/1.3", 24 mm eq., focal real 6,72 mm, 4032×3024 no modo 12 MP que a aeronave escreve por omissão) e a térmica (VOx 640×512, 12 µm, focal 12 mm, DFOV 45°) estão confirmadas contra o EXIF de fotografias originais da aeronave (firmware 10.00.21.17); o GSD térmico é calculado sobre o detector físico e não sobre o R-JPEG 1280×1024 de super-resolução. Para fotografias de 48 MP use o sensor custom com 8064 px (o GSD passa a metade).
 
 ## Requisitos
 
 - Qualquer browser moderno (Chromium, Firefox, Safari). Sem conta, sem chaves de API.
-- Para desenvolvimento: Node.js ≥ 18 e npm.
+- Para desenvolvimento: Node.js ≥ 22 e npm.
 - Internet para mapas base, CAOP e MDT global (um GeoTIFF local serve de fonte de elevação depois de importado).
 
 ## Fontes de dados
@@ -177,10 +178,11 @@ Os parâmetros de viragem seguem o modo em vez de serem fixos: as fachadas e os 
 npm install
 npm run dev                # servidor local
 npm run lint               # ESLint (inclui as regras react-hooks)
-npm run typecheck          # tsc --checkJs sobre os tipos JSDoc de src/utils, src/mission, src/hooks (sem emitir)
-npm run test               # as duas suites (correm também no CI antes de cada deploy)
-npm run test:unit          # só os testes por propriedades (Vitest + fast-check, tests/unit/)
-npm run test:coverage      # suites sob c8 com limiares de cobertura em src/utils/
+npm run typecheck          # tsc --checkJs sobre toda a src/ (tipos JSDoc, React e Vite; sem emitir)
+npm run format:check       # Prettier (npm run format corrige)
+npm run test               # smoke + E/S e os testes unitários do Vitest (correm também no CI antes de cada deploy)
+npm run test:unit          # só o Vitest: propriedades (fast-check), esquema, dicionários, conformidade WPML, ficheiros reais (tests/unit/)
+npm run test:coverage      # as três suites sob c8 com limiares de cobertura em src/utils/ e src/mission/
 npm run test:update-golden # regenerar tests/golden/ após alteração intencional
 npm run spec:wpml          # regenerar tests/spec/wpml-spec.json a partir de um clone de dji-sdk/cloud-api-doc
 npm run test:e2e           # E2E no browser sobre a build de produção (precisa de npm run build; Chromium via Playwright)
@@ -188,7 +190,7 @@ npm run build              # build de produção em dist/
 npm run size               # orçamento do pacote (exige build)
 ```
 
-O [.github/workflows/ci.yml](.github/workflows/ci.yml) corre lint, suite, build de produção, orçamento do pacote e `npm audit` em cada push e em cada pull request; o workflow de publicação repete-os antes de publicar, pelo que o `main` não pode publicar em vermelho. O [codeql.yml](.github/workflows/codeql.yml) corre a análise estática do GitHub no `main`, em pull request e semanalmente, e o Dependabot mantém os pacotes npm e as acções dos workflows actualizados. Todas as acções estão fixadas ao SHA e ambos os workflows declaram `contents: read` — o job de publicação é o único com permissão de escrita.
+O [.github/workflows/ci.yml](.github/workflows/ci.yml) corre o Prettier, o ESLint, o typecheck, as três suites com os limiares de cobertura, a build de produção com o orçamento do pacote, o `npm audit` e os E2E no browser em cada push e em cada pull request; o site ([deploy.yml](.github/workflows/deploy.yml)) e a release ([release.yml](.github/workflows/release.yml)) só se publicam depois de o CI ficar verde nesse commit, pelo que o `main` não pode publicar em vermelho; o [nightly.yml](.github/workflows/nightly.yml) repete de madrugada os testes por propriedades com uma semente aleatória. O [codeql.yml](.github/workflows/codeql.yml) corre a análise estática do GitHub no `main`, em pull request e semanalmente, e o Dependabot mantém os pacotes npm e as acções dos workflows actualizados. Todas as acções estão fixadas ao SHA e ambos os workflows declaram `contents: read` — o job de publicação é o único com permissão de escrita.
 
 Os documentos exportados são comparados com ficheiros de referência em `tests/golden/`, pelo que qualquer alteração ao WPML aparece como diferença revisível. Quando é intencional, regenerar com `npm run test:update-golden` e incluir a diferença no commit. A cada release corre-se além disso o protocolo manual de ~15 minutos em [docs/QA_MANUAL.md](docs/QA_MANUAL.md) (interface no browser, incluindo verificação em tablet), registando a passagem na tabela do fim. Cada ficheiro gerado é ainda validado contra um dicionário JSON da especificação WPML (`tests/spec/wpml-spec.json`, construído a partir das tabelas da documentação oficial da DJI): elementos, enums, intervalos, obrigatórios, suporte por aeronave, ordem dos filhos, coerência template ↔ waylines e empacotamento do KMZ, sobre uma matriz de 35 casos modos × aeronaves e os ficheiros dourados; cada desvio das tabelas está listado com a sua prova em `tests/lib/wpml-conformidade.mjs`.
 
@@ -205,7 +207,7 @@ Pushes a `main` constroem e publicam automaticamente no GitHub Pages via [.githu
 - O mapeamento de corredor é apenas nadir e não suporta divisão em blocos por bateria. A faixa desenhada no mapa é ilustrativa: mostra a largura pedida, não a efectivamente coberta, que é menor onde uma passagem teve de ser partida.
 - O modo circular e a espiral em vídeo da órbita ainda não voaram: as ligações em curva contínua entre círculos e entre anéis são o mesmo mecanismo, por confirmar na aeronave. A estimativa de tempo do modo circular cobra duas viragens por ligação e não está calibrada.
 - A colocação de GCPs é uma heurística geométrica; não modela a geometria das imagens.
-- Sem modo offline, de propósito: o planeamento é trabalho de gabinete.
+- O planeamento precisa de rede (mapas base, CAOP, MDT global). Para o campo, os tiles de relevo das áreas já vistas e os módulos sob demanda da aplicação ficam em cache no browser (a Configuração tem um botão para a limpar), pelo que uma missão planeada no gabinete abre sem cobertura; os mapas base não.
 
 ## Código de terceiros
 

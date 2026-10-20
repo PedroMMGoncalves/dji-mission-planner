@@ -55,10 +55,10 @@ export default {
   'cards.summary.flights': { pt: 'Voos', en: 'Flights' },
   'cards.summary.sets': { pt: 'Conjuntos de baterias', en: 'Battery sets' },
   'cards.summary.setsValue': {
-    pt: '{n} precisos · {s} na equipa',
+    pt: '{n} necessários · {s} na equipa',
     en: '{n} needed · {s} in the team',
   },
-  'cards.summary.setsUnknown': { pt: '{n} precisos', en: '{n} needed' },
+  'cards.summary.setsUnknown': { pt: '{n} necessários', en: '{n} needed' },
   'cards.summary.longest': { pt: 'Voo mais longo / útil', en: 'Longest flight / useful' },
   'cards.summary.exportMissionByBase': {
     pt: 'Exportar os voos por base (ZIP)',

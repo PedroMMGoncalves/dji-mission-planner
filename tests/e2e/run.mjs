@@ -356,6 +356,60 @@ await scenario('u-terrain-follow', async () => {
 const PASS_MODE = 'toPointAndPassWithContinuityCurvature'
 const STOP_MODE = 'toPointAndStopWithDiscontinuityCurvature'
 const turnModes = (wpml) => [...wpml.matchAll(/<wpml:waypointTurnMode>([^<]+)</g)].map((m) => m[1])
+
+// Os alvos GCP arrastam-se no mapa e o ponto fica no projecto, pelo id do
+// alvo; «Repor posições» devolve-os à heurística
+await scenario('gcp-arrastar-alvo', async () => {
+  const { page } = await openMission({ area: fx.rect })
+  await openDrawer(page, 'extras')
+  await page.getByLabel(/Planear posições de GCPs|Plan GCP positions/).check()
+  const marker = page.locator('.gcp-marker').first()
+  await marker.waitFor({ state: 'visible', timeout: 10000 })
+  const n0 = await page.locator('.gcp-marker').count()
+  const box = await marker.boundingBox()
+  const x0 = box.x + box.width / 2
+  const y0 = box.y + box.height / 2
+  await page.mouse.move(x0, y0)
+  await page.mouse.down()
+  await page.mouse.move(x0 + 40, y0, { steps: 6 })
+  await page.mouse.move(x0 + 80, y0, { steps: 6 })
+  await page.mouse.up()
+  await page.waitForTimeout(1200) // autosave com debounce de 500 ms
+  const manual = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem('dji-mission-planner:project:v1') ?? 'null')?.gcpConfig
+        ?.manual ?? {},
+  )
+  const ids = Object.keys(manual)
+  check(
+    'gcp: o alvo arrastado fica no projecto, pelo seu id',
+    ids.length === 1 && /^GCP-\d+$/.test(ids[0]) && Array.isArray(manual[ids[0]]),
+    JSON.stringify(manual),
+  )
+  const moved = page.locator('.gcp-marker.gcp-manual')
+  const box2 = await moved.first().boundingBox()
+  check(
+    'gcp: o marcador movido fica assinalado, a Este de onde estava, e os alvos continuam todos',
+    (await moved.count()) === 1 &&
+      (await page.locator('.gcp-marker').count()) === n0 &&
+      box2 != null &&
+      box2.x > box.x + 50,
+    `${await moved.count()} movidos, ${await page.locator('.gcp-marker').count()}/${n0} alvos, x ${box?.x?.toFixed(0)} → ${box2?.x?.toFixed(0)}`,
+  )
+  await page
+    .getByTestId('gcp-manual')
+    .getByRole('button', { name: /Repor posições|Reset positions/ })
+    .click()
+  await page.waitForTimeout(300)
+  check(
+    'gcp: «Repor posições» devolve o alvo à heurística',
+    (await moved.count()) === 0 && (await page.getByTestId('gcp-manual').count()) === 0,
+    `${await moved.count()} movidos`,
+  )
+  await page.close()
+  return { page }
+})
+
 await scenario('paragens-waypoints', async () => {
   const { page, errors } = await openMission({ area: fx.u })
   const stops = page
@@ -1957,7 +2011,7 @@ await scenario('bases-exportar-por-base', async () => {
       /descolar até \d+ m do ponto/.test(sB.text) &&
       /voo entre 0 e \+\d+ m acima do planeado/.test(sB.text) &&
       /Alcance visual/i.test(sB.text) &&
-      /precisos/.test(sB.text) &&
+      /necessários/.test(sB.text) &&
       // M3-U10: alturas no comando, % do útil e os parâmetros do plano
       /Altura no comando/i.test(sB.text) &&
       /\d+–\d+ m \(rel\. à descolagem\)/.test(sB.text) &&
@@ -1970,7 +2024,7 @@ await scenario('bases-exportar-por-base', async () => {
   check(
     'checklist: a linha do dia soma os voos de todas as bases contra os conjuntos da equipa',
     (await sec.getByTestId('sheets-day').count()) === 1 &&
-      /Dia: \d+ voos · conjuntos de baterias: \d+ precisos/.test(
+      /Dia: \d+ voos · conjuntos de baterias: \d+ necessários/.test(
         await sec.getByTestId('sheets-day').innerText(),
       ),
     await sec
@@ -4186,7 +4240,7 @@ await scenario('preflight-bloqueia-transito-atras-da-cumeada', async () => {
   await pill.click()
   const txt = await page.getByTestId('preflight-list').innerText()
   const m =
-    /trânsito entre a base e a rota \(voo (A-\d)\) entra no relevo: (\d+(?:\.\d)?) m abaixo do solo a (\d+) m acima da base|transit between the home point and the route \(flight (A-\d)\) goes into the terrain: (\d+(?:\.\d)?) m below ground at (\d+) m above the home point/.exec(
+    /deslocação entre a base e a rota \(voo (A-\d)\) entra no relevo: (\d+(?:\.\d)?) m abaixo do solo a (\d+) m acima da base|transit between the home point and the route \(flight (A-\d)\) goes into the terrain: (\d+(?:\.\d)?) m below ground at (\d+) m above the home point/.exec(
       txt,
     )
   const abaixo = Number(m?.[2] ?? m?.[5])

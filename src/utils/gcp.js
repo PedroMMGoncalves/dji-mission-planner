@@ -204,6 +204,22 @@ export function planGcps(ring, count, { insetM = null, holes = null } = {}) {
  * @returns {{ count: number, areaHa: number, haPerGcp: number|null, minSpacingM: number }}
  *          `haPerGcp` é null sem GCPs; `minSpacingM` é Infinity com 0 ou 1 GCP.
  */
+/**
+ * Aplica os alvos arrastados no mapa (`manual`: id → [lon, lat]) aos GCP da
+ * heurística: o ponto passa a ser o do operador e o alvo fica marcado
+ * `manual`; os ids sem entrada ficam onde a heurística os pôs.
+ * @param {any[]} gcps
+ * @param {Record<string, number[]>|null|undefined} manual
+ * @returns {any[]}
+ */
+export function applyGcpManual(gcps, manual) {
+  if (!manual || !gcps) return gcps
+  return gcps.map((g) => {
+    const m = manual[String(g.id)]
+    return Array.isArray(m) && m.length >= 2 ? { ...g, point: [m[0], m[1]], manual: true } : g
+  })
+}
+
 export function gcpStats(ring, gcps, holes = null) {
   const list = Array.isArray(gcps) ? gcps : []
   const count = list.length

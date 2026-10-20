@@ -19,6 +19,7 @@ import {
 import { baseZoneFor, referenceElevation } from '../mission/reference.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
 import { finishDraft } from '../mission/draft.js'
+import { corridorPhotoPoints } from '../mission/photoPoints.js'
 
 export function useCorridorMission({
   sensor,
@@ -87,12 +88,25 @@ export function useCorridorMission({
     if (missionMode !== 'corridor') return null
     const axis = corridorConfig.centreline
     if (!axis || axis.length < 2) return null
+    const planOk = corridorPlan && !corridorPlan.error ? corridorPlan : null
     return {
       centreline: axis,
       buffer: corridorBufferRing(axis, corridorConfig.bufferM),
-      passes: corridorPlan && !corridorPlan.error ? corridorPlan.lines : null,
+      passes: planOk ? planOk.lines : null,
+      // fotos por distância, com os grupos de disparo da exportação
+      photos:
+        planOk && corridorConfig.photoMode !== 'waypoint' && interval > 0
+          ? corridorPhotoPoints(planOk, interval)
+          : null,
     }
-  }, [missionMode, corridorConfig.centreline, corridorConfig.bufferM, corridorPlan])
+  }, [
+    missionMode,
+    corridorConfig.centreline,
+    corridorConfig.bufferM,
+    corridorConfig.photoMode,
+    corridorPlan,
+    interval,
+  ])
 
   // caixa do corredor para o relevo: a faixa coberta, antes de haver plano
   const corridorBbox = useMemo(

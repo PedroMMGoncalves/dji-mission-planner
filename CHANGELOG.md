@@ -6,6 +6,21 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Adicionado (mapa: fotos por distância e GCP à mão)
+
+- **Onde as fotos saem com disparo por distância ou por tempo**: pontos
+  âmbar no mapa, a cada intervalo ao longo da rota dentro de cada grupo de
+  disparo (os mesmos grupos da exportação; sem fotos nas ligações longas),
+  na área, nos blocos e no corredor. Com foto por waypoint cada foto já era
+  um ponto da rota.
+- **Alvos GCP arrastáveis**: o ponto do operador fica no projecto pelo id do
+  alvo (`gcpConfig.manual`, no esquema), assinalado a branco; os outros
+  seguem a heurística bordo + centro; «Repor posições» limpa-os. O KML dos
+  GCP, o relatório e a área por GCP usam os pontos finais.
+- **Palavras**: «conjuntos de baterias: n necessários» (era «precisos»);
+  «Tempo na missão (sem deslocação)» e «Tempo total com deslocações» (era
+  «trânsito»), e «deslocação» em todas as mensagens em PT.
+
 ### Corrigido (M4T: fotos só nos cantos das faixas)
 
 - **Grupos de disparo por intervalo em `sequence`.** Voo real num M4T

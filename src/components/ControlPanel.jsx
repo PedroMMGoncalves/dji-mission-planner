@@ -1955,6 +1955,20 @@ export default function ControlPanel({
                   </button>
                 </div>
               </Field>
+              {Object.keys(gcpConfig.manual ?? {}).length > 0 && (
+                <p
+                  className="mt-1 flex items-center gap-2 text-xs text-slate-400"
+                  data-testid="gcp-manual"
+                >
+                  <span>{t('cp.gcp.manual', { n: Object.keys(gcpConfig.manual).length })}</span>
+                  <button
+                    onClick={() => setGcpConfig({ ...gcpConfig, manual: {} })}
+                    className="rounded bg-slate-800 px-2 py-0.5 text-xs font-medium text-slate-300 hover:bg-slate-700"
+                  >
+                    {t('cp.gcp.reset')}
+                  </button>
+                </p>
+              )}
               {gcpInfo && (
                 <p className="text-xs leading-relaxed text-slate-400">
                   {t('cp.gcp.info', {

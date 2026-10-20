@@ -78,4 +78,5 @@ export const DEFAULT_ANCHOR = {
 
 export const DEFAULT_TERRAIN_FOLLOW = { enabled: false, tolerance: 5 }
 
-export const DEFAULT_GCP_CONFIG = { enabled: false, count: null } // null = auto
+// count null = auto; manual: alvos arrastados no mapa, por id (lon, lat)
+export const DEFAULT_GCP_CONFIG = { enabled: false, count: null, manual: {} }

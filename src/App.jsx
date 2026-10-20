@@ -850,6 +850,7 @@ function AppInner({ lang, setLang }) {
     gcpAutoCount,
     gcps,
     gcpInfo,
+    photoPoints,
     terrainResult,
     reference,
     zones,
@@ -2162,6 +2163,13 @@ function AppInner({ lang, setLang }) {
   // e um projecto v1 aberto por cima de uma sessão herdava o prolongamento, a
   // fiada, a margem e o seguir terreno que nunca teve
   const fitToArea = useCallback(() => setFitKey((k) => k + 1), [setFitKey])
+  // um alvo GCP arrastado no mapa fica no projecto, pelo seu id; a heurística
+  // continua a dar os outros
+  const handleGcpDrag = useCallback(
+    (id, point) =>
+      setGcpConfig((c) => ({ ...c, manual: { ...(c.manual ?? {}), [String(id)]: point } })),
+    [setGcpConfig],
+  )
   const {
     projectState,
     exportProject,
@@ -2973,6 +2981,8 @@ function AppInner({ lang, setLang }) {
             disabledTiles={disabledTiles}
             onTileToggle={handleTileClick}
             gcps={gcps}
+            onGcpDrag={handleGcpDrag}
+            photoPoints={missionMode === 'area' ? photoPoints : null}
             inspectPoints={inspectPoints}
             onInspectDrag={handleInspectDrag}
             facePreview={facePreview}

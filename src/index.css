@@ -129,6 +129,13 @@ body,
   background: conic-gradient(#fff 0 25%, #111 25% 50%, #fff 50% 75%, #111 75%);
   box-shadow: 0 0 0 1.5px #fde047;
 }
+/* alvo movido à mão: etiqueta e aro a branco */
+.gcp-manual .gcp-label {
+  color: #f8fafc;
+}
+.gcp-manual .gcp-target {
+  box-shadow: 0 0 0 1.5px #f8fafc;
+}
 .gcp-label {
   position: absolute;
   top: 11px;
