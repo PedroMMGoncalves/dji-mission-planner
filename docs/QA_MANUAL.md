@@ -188,10 +188,12 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
   **Esperado:** um `actionGroup` com `takePhoto` por waypoint intermédio
   (`reachPoint`), sem `multipleDistance`/`multipleTiming`; os extremos de
   overshoot não têm grupo de foto.
-- ☐ Activar **Seguir terreno** com o disparo por waypoint.
-  **Esperado:** erro vermelho no cartão 3, por baixo de **Seguir terreno**, e
-  botão **WPML** desactivado;
-  voltar a **Distância** reactiva ambos.
+- ☐ Activar **Seguir terreno** com o disparo por waypoint (com relevo
+  carregado a cobrir a área).
+  **Esperado:** sem erro nem bloqueio; **Waypoints** sobe (pontos de foto
+  mais as amostras do relevo); o WPML exportado continua a ter um
+  `takePhoto` por ponto de foto, agora com alturas que acompanham o relevo;
+  na vista 3D as fotos aparecem sobre a rota.
 - ☐ Abrir um projecto gravado antes desta versão.
   **Esperado:** carrega em **Distância** (nada muda no plano nem na exportação).
 - ☐ Em **Distância**, exportar WPML e abrir `waylines.wpml`.

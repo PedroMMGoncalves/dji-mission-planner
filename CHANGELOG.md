@@ -6,20 +6,37 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
-### Adicionado (mapa: fotos por distância e GCP à mão)
+### Adicionado (fotos no mapa e no 3D, GCP à mão, terreno com foto por waypoint)
 
 - **Onde as fotos saem com disparo por distância ou por tempo**: pontos
   âmbar no mapa, a cada intervalo ao longo da rota dentro de cada grupo de
   disparo (os mesmos grupos da exportação; sem fotos nas ligações longas),
   na área, nos blocos e no corredor. Com foto por waypoint cada foto já era
   um ponto da rota.
+- **Fotos na vista 3D**: esferas âmbar sobre a rota onde a aeronave dispara,
+  na área, nos blocos e no corredor — por distância ou por tempo, os pontos
+  do mapa à altura do troço mais próximo da rota; por waypoint, os waypoints
+  com acção de foto. Seguem o exagero vertical. O plano do corredor com
+  relevo, o que a vista 3D e as verificações recebem, passa a levar as
+  acções por waypoint reindexadas para os pontos do relevo (levava as do
+  plano plano; a exportação já usava as certas).
+- **Seguir terreno com foto por waypoint** (era um bloqueio): os pontos de
+  foto do plano entram na rota densificada pela distância ao longo de cada
+  faixa, com a altura interpolada entre as amostras do relevo (um ponto a
+  menos de 0,5 m de uma amostra funde-se com ela), e as acções seguem os
+  pontos; o WPML leva um `takePhoto` por ponto de foto com alturas que
+  acompanham o relevo, também por bloco com bases. O código de erro
+  `photo-waypoint` e o seu bloqueio no preflight deixaram de existir.
 - **Alvos GCP arrastáveis**: o ponto do operador fica no projecto pelo id do
   alvo (`gcpConfig.manual`, no esquema), assinalado a branco; os outros
   seguem a heurística bordo + centro; «Repor posições» limpa-os. O KML dos
   GCP, o relatório e a área por GCP usam os pontos finais.
 - **Palavras**: «conjuntos de baterias: n necessários» (era «precisos»);
   «Tempo na missão (sem deslocação)» e «Tempo total com deslocações» (era
-  «trânsito»), e «deslocação» em todas as mensagens em PT.
+  «trânsito»; em EN «Mission time (no transit)»), e «deslocação» em todas as
+  mensagens em PT, na ajuda e nas notas de versão, com a concordância no
+  feminino («a deslocação», «as deslocações»; a primeira troca deixou dez
+  mensagens com «o deslocação»).
 
 ### Corrigido (M4T: fotos só nos cantos das faixas)
 
@@ -637,6 +654,10 @@ que os textos diziam mal e os identificadores que não batiam certo.
 
 ### Infra-estrutura (CI)
 
+- O CI deixa de guardar as capturas dos E2E como artefactos: num
+  repositório público qualquer conta as descarregava; o registo da execução
+  diz que verificação falhou e porquê, e as capturas obtêm-se a correr os
+  E2E localmente (`tests/e2e/out/`).
 - Os runners ficam fixos em `ubuntu-24.04` (o `ubuntu-latest` passa a
   Ubuntu 26 a partir de 19 de Outubro de 2026; os E2E dependem do Chromium
   do Playwright e das suas bibliotecas); `codeql-action` 4.39.0 nos dois

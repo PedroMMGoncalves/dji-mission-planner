@@ -5,11 +5,10 @@
  * o relevo exige, dentro das passagens e nas ligações entre elas. Lógica
  * pura, sem React.
  *
- * Diferença para a área: na foto por waypoint a área recusa o seguimento de
- * terreno, porque a densificação mudaria os índices das acções. Aqui os
- * vértices das passagens SÃO as posições de foto e o motor diz onde ficou
- * cada um (`vertexIndex`), pelo que as acções são reindexadas e os pontos
- * novos seguem sem foto.
+ * Foto por waypoint: os vértices das passagens SÃO as posições de foto e o
+ * motor diz onde ficou cada um (`vertexIndex`), pelo que as acções são
+ * reindexadas e os pontos novos seguem sem foto (na área, os pontos de foto
+ * entram na rota do relevo por mergePhotoWaypoints, em terrainFollow.js).
  */
 import * as turf from '@turf/turf'
 import { terrainFollowLines } from '../utils/terrain.js'
@@ -57,6 +56,32 @@ export function planCorridorTerrain(
     waypointStops,
   })
   return { ...res, refElev, perWaypoint, pathLengthM, flightTimeS }
+}
+
+/**
+ * O plano do corredor que sai no KMZ e que o resto da app mostra (vista 3D,
+ * perfil, verificações): com o seguimento de terreno, os waypoints do relevo,
+ * as acções por waypoint reindexadas para eles e a rota 3D nas estatísticas;
+ * sem ele, o plano plano tal qual. As acções do plano plano indexariam mal
+ * os waypoints densificados.
+ * @param {any} planFlat plano de generateCorridorPlan (com ou sem erro)
+ * @param {any} planOk o mesmo plano, sem erro, ou null
+ * @param {any} tfOk resultado de planCorridorTerrain sem erro, ou null
+ */
+export function corridorRouteWithTerrain(planFlat, planOk, tfOk) {
+  if (!planFlat || !planOk || !tfOk) return planFlat
+  return {
+    ...planOk,
+    waypoints: tfOk.waypoints,
+    perWaypoint: tfOk.perWaypoint ?? null,
+    stats: {
+      ...planOk.stats,
+      waypointCount: tfOk.waypoints.length,
+      pathLengthM: tfOk.pathLengthM,
+      flightTimeS: tfOk.flightTimeS,
+      path3D: true,
+    },
+  }
 }
 
 /** Caixa [oeste, sul, este, norte] de um anel ou de uma lista de pontos. */

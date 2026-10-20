@@ -163,10 +163,11 @@ function InstrucoesPt() {
         </Li>
         <Li>
           <strong>Bateria</strong> — quadrados dimensionados pelo{' '}
-          <strong>tempo útil por voo</strong> (com o trânsito de uma base num canto do bloco, tecto
-          VLOS). Escolha o tipo de bateria e acerte o tempo útil para as condições do dia; já inclui
-          a reserva com que aterra, nada é descontado por cima. Os quadrados são recortados pela
-          área, seguem as faixas e as tiras pequenas juntam-se ao vizinho quando cabem na bateria.
+          <strong>tempo útil por voo</strong> (com a deslocação de uma base num canto do bloco,
+          tecto VLOS). Escolha o tipo de bateria e acerte o tempo útil para as condições do dia; já
+          inclui a reserva com que aterra, nada é descontado por cima. Os quadrados são recortados
+          pela área, seguem as faixas e as tiras pequenas juntam-se ao vizinho quando cabem na
+          bateria.
         </Li>
         <Li>
           <strong>Bases</strong> — «Marcar base» acrescenta A, B, C... (arraste para mover; retire
@@ -289,9 +290,9 @@ function InstrucoesPt() {
         <Li>
           <strong>Disparo por waypoint</strong> — em «Disparo por: Waypoint», cada passagem é
           densificada em waypoints a passos iguais ≤ intervalo e cada um leva uma acção de foto (sem
-          gatilho por distância); o overshoot não fotografa e o modo não é compatível com «Seguir
-          terreno». Em «Paragem nos waypoints» escolhe-se parar só nos cantos das faixas (por
-          omissão) ou em cada ponto.
+          gatilho por distância); o overshoot não fotografa. Com «Seguir terreno», os pontos de foto
+          entram na rota do relevo e cada um leva a altura do perfil nesse sítio. Em «Paragem nos
+          waypoints» escolhe-se parar só nos cantos das faixas (por omissão) ou em cada ponto.
         </Li>
         <Li>
           O projecto grava-se automaticamente no browser; use «Guardar/Abrir projecto» para arquivar
@@ -587,9 +588,10 @@ function InstrucoesEn() {
         <Li>
           <strong>Per-waypoint trigger</strong> — with “Trigger by: Waypoint”, each pass is
           densified into waypoints at equal steps ≤ interval and every one carries a take-photo
-          action (no distance trigger); the overshoot takes no photos and the mode is not compatible
-          with “Follow terrain”. “Stop at waypoints” chooses between stopping only at strip corners
-          (default) or at every point.
+          action (no distance trigger); the overshoot takes no photos. With “Follow terrain”, the
+          photo points join the terrain route and each one takes the profile height at that spot.
+          “Stop at waypoints” chooses between stopping only at strip corners (default) or at every
+          point.
         </Li>
         <Li>
           The project auto-saves in the browser; use “Save/Open project” to archive it as a file.

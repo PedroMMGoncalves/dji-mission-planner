@@ -17,7 +17,7 @@ import { blocksViewRoute } from './baseLayout.js'
  *   blockRefs?: {refs: (number|null)[], common: number}|null, blocks?: any[]|null,
  *   altitude: number}} c
  * @returns {{waypoints: number[][], refElev: number|null, refSource?: string|null,
- *   breaks?: number[]|null}|null}
+ *   breaks?: number[]|null, perWaypoint?: any[]|null}|null}
  */
 export function activeRoute(c) {
   const {
@@ -67,6 +67,8 @@ export function activeRoute(c) {
       waypoints: corridorPlan.waypoints.map(([lon, lat, h]) => [lon, lat, h ?? altitude]),
       refElev: corridorReference?.elev ?? null,
       refSource: corridorReference?.source ?? null,
+      // acções por waypoint (foto por waypoint), alinhadas com a rota
+      perWaypoint: corridorPlan.perWaypoint ?? null,
     }
   }
   if (!planOk) return null
@@ -81,6 +83,7 @@ export function activeRoute(c) {
       breaks: vr.breaks,
       refElev: blockRefs.common,
       refSource: 'bases',
+      perWaypoint: vr.perWaypoint ?? null,
     }
   }
   const wps = tfOk
@@ -90,5 +93,10 @@ export function activeRoute(c) {
   // mínima do relevo debaixo da rota. Antes caía em 0 com a base fora do
   // relevo e o perfil punha o voo debaixo da terra.
   const refElev = tfOk ? terrainResult.refElev : (reference?.elev ?? null)
-  return { waypoints: wps, refElev, refSource: reference?.source ?? null }
+  return {
+    waypoints: wps,
+    refElev,
+    refSource: reference?.source ?? null,
+    perWaypoint: (tfOk ? terrainResult.perWaypoint : planOk.perWaypoint) ?? null,
+  }
 }

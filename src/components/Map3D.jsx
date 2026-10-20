@@ -36,6 +36,7 @@ const IMAGERY_URL =
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
 const DEFAULT_REL_HEIGHT = 100 // altura relativa assumida quando não vem no waypoint
 const MAX_WP_SPHERES = 2000 // acima disto desenha-se apenas a polilinha
+const MAX_PHOTO_SPHERES = 20000 // fotos: acima disto não se desenham
 
 /** Fração vertical [0,1] de uma latitude em Web Mercator (0 = Norte). */
 function mercatorN(lat) {
@@ -216,6 +217,7 @@ export default function Map3D({
   blocks3d = null,
   bases3d = null,
   gcps,
+  photos = null,
   onClose,
 }) {
   const t = useT()
@@ -247,6 +249,7 @@ export default function Map3D({
       blocks3d,
       bases3d,
       gcps,
+      photos,
     }
     onCloseRef.current = onClose
     exagRef.current = exag
@@ -272,6 +275,7 @@ export default function Map3D({
       .map((b) => `${b.label}:${b.color}:${b.point?.join(',')}:${Math.round(b.radiusM ?? 0)}`)
       .join(';'),
     gcps?.length ?? 0,
+    photos?.length ?? 0,
   ].join('|')
 
   // Esc fecha o visualizador
@@ -297,6 +301,7 @@ export default function Map3D({
       blocks3d,
       bases3d,
       gcps,
+      photos,
     } = propsRef.current
     if (!host || !Array.isArray(terrain?.bbox) || typeof terrain.elevationAt !== 'function') return
 
@@ -526,6 +531,26 @@ export default function Map3D({
       startMarker = new THREE.Mesh(markerGeo, startMat)
       endMarker = new THREE.Mesh(markerGeo, endMat)
       scene.add(startMarker, endMarker)
+    }
+
+    /* --- fotos: onde a aeronave dispara, sobre a rota -------------------- */
+    // alturas relativas à mesma cota de referência dos waypoints; esferas
+    // âmbar um pouco maiores do que as dos waypoints, para que, com foto por
+    // waypoint, cada waypoint com foto fique âmbar (os outros ficam como estão)
+    const photoList = Array.isArray(photos)
+      ? photos.filter((p) => Array.isArray(p) && Number.isFinite(p[0]) && Number.isFinite(p[1]))
+      : []
+    let photoInstances = null
+    let photoXY = []
+    let photoZ = []
+    if (photoList.length > 0 && photoList.length <= MAX_PHOTO_SPHERES) {
+      photoXY = photoList.map(toLocal)
+      photoZ = photoList.map((p) => ref + (Number.isFinite(p[2]) ? p[2] : defaultHeight))
+      const photoGeo = track(new THREE.SphereGeometry(unit * 0.5, 8, 6))
+      const photoMat = track(new THREE.MeshLambertMaterial({ color: '#fde68a' }))
+      photoInstances = new THREE.InstancedMesh(photoGeo, photoMat, photoList.length)
+      photoInstances.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
+      scene.add(photoInstances)
     }
 
     /* --- linhas drapejadas no terreno (área, blocos, zonas) ------------- */
@@ -763,6 +788,15 @@ export default function Map3D({
         const last = pathXY.length - 1
         startMarker.position.set(pathXY[0][0], pathXY[0][1], pathZ[0] * k)
         endMarker.position.set(pathXY[last][0], pathXY[last][1], pathZ[last] * k)
+      }
+      if (photoInstances) {
+        for (let i = 0; i < photoXY.length; i++) {
+          dummy.position.set(photoXY[i][0], photoXY[i][1], photoZ[i] * k)
+          dummy.updateMatrix()
+          photoInstances.setMatrixAt(i, dummy.matrix)
+        }
+        photoInstances.instanceMatrix.needsUpdate = true
+        photoInstances.computeBoundingSphere()
       }
       for (const { geo, z } of draped) {
         const arr = geo.attributes.position

@@ -420,9 +420,7 @@ export function preflightArea(c) {
   const tfOk = tf && c.terrainResult && !c.terrainResult.error
   const noTerrain = terrainRouteItems(c)
   out.push(...noTerrain)
-  if (tf && c.photoMode === 'waypoint') {
-    out.push(item('block', 'terrain-photo-waypoint'))
-  } else if (noTerrain.length > 0) {
+  if (noTerrain.length > 0) {
     // o bloqueio do relevo em falta já diz tudo
   } else if (tf && !c.terrainCovers) {
     // sem relevo o KMZ sairia com alturas planas, sem nenhum aviso

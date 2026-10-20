@@ -297,12 +297,10 @@ export function useAreaMission({
   /* ------------- Terrain follow: alturas por waypoint ----------------- */
   const terrainResult = useMemo(
     /** @returns {import('../mission/terrainFollow.js').TerrainFollowResult|null} */ () => {
-      // B: com foto por waypoint, a densificação do seguimento de terreno
-      // reindexaria as acções de foto — erro explícito (e exportação bloqueada)
-      // em vez de uma missão parcial com alturas planas ou fotos perdidas
       // códigos, não texto: o painel e o preflight traduzem (M3-C8: `t` como
-      // dependência refazia o seguimento de terreno a cada render do App)
-      if (terrainFollow.enabled && photoMode === 'waypoint') return { error: 'photo-waypoint' }
+      // dependência refazia o seguimento de terreno a cada render do App);
+      // com foto por waypoint os pontos de foto entram na rota do relevo
+      // (mergePhotoWaypoints), com a acção a seguir o ponto
       if (!terrainFollow.enabled || !terrainCovers || !planOk?.lines?.length) return null
       try {
         const res = planTerrainFollow(terrain.data, planOk, {
@@ -319,7 +317,6 @@ export function useAreaMission({
       }
     },
     [
-      photoMode,
       terrainFollow,
       terrainCovers,
       terrain.data,
@@ -353,11 +350,9 @@ export function useAreaMission({
   /* --------------------------- Exportação ---------------------------- */
   const safeName = safeFileStem(missionName)
   const canExportKML = Boolean(ring && validation.valid)
-  // B: seguir terreno + foto por waypoint é um erro explícito, não uma
-  // exportação com alturas planas
-  const canExportKMZ =
-    Boolean(planOk && planOk.waypoints.length >= 2) &&
-    !(terrainFollow.enabled && photoMode === 'waypoint')
+  // seguir terreno com foto por waypoint exporta como os outros modos: os
+  // pontos de foto entram na rota do relevo (mergePhotoWaypoints)
+  const canExportKMZ = Boolean(planOk && planOk.waypoints.length >= 2)
 
   const handleExportKML = useCallback(() => {
     if (canExportKML)

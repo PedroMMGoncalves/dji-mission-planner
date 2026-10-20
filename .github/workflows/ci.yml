@@ -80,11 +80,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run build
+      # sem artefactos: num repositorio publico qualquer conta descarregava as
+      # capturas de uma falha; o registo diz que verificacao falhou e porque,
+      # e as capturas obtem-se a correr os E2E localmente (tests/e2e/out/)
       - run: npm run test:e2e
-      - name: Capturas e ficheiros exportados (em falha)
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: e2e-out
-          path: tests/e2e/out
-          if-no-files-found: ignore

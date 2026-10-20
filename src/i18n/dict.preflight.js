@@ -31,10 +31,6 @@ export default {
     pt: 'O plano tem um erro: {error} Corrija-o antes de exportar.',
     en: 'The plan has an error: {error} Fix it before exporting.',
   },
-  'preflight.terrain-photo-waypoint': {
-    pt: 'Seguir terreno e foto por waypoint não podem coexistir: escolha disparo por distância ou desligue o terreno.',
-    en: 'Follow terrain and photo-per-waypoint cannot coexist: choose distance triggering or turn terrain off.',
-  },
   'preflight.photo-pass-unverified': {
     pt: 'Foto por waypoint sem paragem: ainda não foi confirmado em voo que o Pilot 2 dispara ao passar pelo ponto. Confira o número de fotos no primeiro voo, ou escolha «Paragem nos waypoints: Em todos».',
     en: 'Photo per waypoint without stopping: it is not yet confirmed in flight that Pilot 2 fires while passing the point. Check the photo count on the first flight, or choose "Stop at waypoints: At every waypoint".',
@@ -96,7 +92,7 @@ export default {
     en: 'Flight {flight} (block {id}, base {base}): {min} min including {transit} min of round-trip transit from the worst point of the zone exceeds the useful time per flight ({usable} min). Move the base closer or reduce the block side.',
   },
   'preflight.block-base-unreachable': {
-    pt: 'Voo {flight} (bloco {id}): só o deslocação de ida e volta da base {base} leva {min} min, acima dos {usable} min úteis de uma bateria. Mude a base deste bloco.',
+    pt: 'Voo {flight} (bloco {id}): só a deslocação de ida e volta da base {base} leva {min} min, acima dos {usable} min úteis de uma bateria. Mude a base deste bloco.',
     en: 'Flight {flight} (block {id}): the round trip from base {base} alone takes {min} min, above the {usable} usable minutes of one battery. Change this block’s base.',
   },
   'preflight.block-vlos': {
@@ -168,11 +164,11 @@ export default {
     en: '{km} km segment on flight {flight}, from {lat}, {lon}: confirm the link crosses safe terrain at transit height.',
   },
   'preflight.base-far': {
-    pt: 'Base a {km} km da área: o deslocação conta na bateria e o regresso tem de o cobrir. Confirme que é o ponto real de descolagem.',
+    pt: 'Base a {km} km da área: a deslocação conta na bateria e o regresso tem de a cobrir. Confirme que é o ponto real de descolagem.',
     en: 'Base {km} km from the area: the transit counts against the battery and the return has to cover it. Confirm it is the real take-off point.',
   },
   'preflight.base-unreachable': {
-    pt: 'Base a {km} km da área: só o deslocação de ida e volta leva {min} min, acima dos {usable} min úteis de uma bateria. Mova a base para junto da área.',
+    pt: 'Base a {km} km da área: só a deslocação de ida e volta leva {min} min, acima dos {usable} min úteis de uma bateria. Mova a base para junto da área.',
     en: 'Base {km} km from the area: the round trip alone takes {min} min, above the {usable} usable minutes of one battery. Move the base next to the area.',
   },
   'preflight.base-no-terrain': {
@@ -196,11 +192,11 @@ export default {
     en: 'No elevation data at {n} of {total} route points ({pct} %), the first at {lat}, {lon}: the route crosses a hole in the model (a missing tile or a no-data area of the DEM), where terrain following and ground clearance cannot know the height above ground. Reload the elevation data or import a DEM that covers the route.',
   },
   'preflight.transit-collision': {
-    pt: 'O deslocação entre a base e a rota (voo {flight}) entra no relevo: {m} m abaixo do solo a {h} m acima da base. A aeronave sobe na descolagem à altura do 1.º waypoint (ou à de segurança) e voa a direito até ele; no fim regressa a {rth} m acima da descolagem (RTH, escrito no KMZ). Mova a base para o lado de cá do relevo ou aproxime-a da rota, suba a altitude, ou comece a rota noutro ponto.',
+    pt: 'A deslocação entre a base e a rota (voo {flight}) entra no relevo: {m} m abaixo do solo a {h} m acima da base. A aeronave sobe na descolagem à altura do 1.º waypoint (ou à de segurança) e voa a direito até ele; no fim regressa a {rth} m acima da descolagem (RTH, escrito no KMZ). Mova a base para o lado de cá do relevo ou aproxime-a da rota, suba a altitude, ou comece a rota noutro ponto.',
     en: 'The transit between the base and the route (flight {flight}) goes into the terrain: {m} m below ground at {h} m above the base. The aircraft climbs at take-off to the first waypoint’s height (or the safety height) and flies straight to it; at the end it returns at {rth} m above take-off (the RTH written in the KMZ). Move the base to this side of the terrain or closer to the route, raise the altitude, or start the route elsewhere.',
   },
   'preflight.transit-low': {
-    pt: 'Folga mínima de {m} m no deslocação entre a base e a rota (voo {flight}, a {h} m acima da base), abaixo de 15 m.',
+    pt: 'Folga mínima de {m} m na deslocação entre a base e a rota (voo {flight}, a {h} m acima da base), abaixo de 15 m.',
     en: 'Minimum clearance of {m} m on the transit between the base and the route (flight {flight}, at {h} m above the base), below 15 m.',
   },
   'preflight.base-zone-partial': {
@@ -212,7 +208,7 @@ export default {
     en: 'Gimbal pitch of {worst}° requested outside what the payload reaches ({min}° to {max}°): the KMZ is clamped to the limit. Adjust the pitch.',
   },
   'preflight.no-base': {
-    pt: 'Sem ponto de base: o deslocação não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota.',
+    pt: 'Sem ponto de base: a deslocação não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota.',
     en: 'No base point: transit is not counted against the battery and heights refer to the minimum terrain elevation under the route.',
   },
   'preflight.unverified-combo': {

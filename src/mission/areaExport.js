@@ -151,7 +151,11 @@ export function buildAreaExport({
 
   // acções de foto por waypoint do plano (null no modo distância); o
   // marcador de gimbal nadir funde-se com a entrada existente do waypoint
-  const photoPw = photoMode === 'waypoint' ? (plan.perWaypoint ?? null) : null
+  // com terreno, as do terreno (os pontos de foto já lá estão, com altura)
+  const photoPw =
+    photoMode === 'waypoint'
+      ? ((terrainOk ? terrainResult.perWaypoint : plan.perWaypoint) ?? null)
+      : null
 
   // R2.10: com a passagem nadir extra, o gimbal roda a −90 no primeiro
   // waypoint da grelha nadir (a missão arranca no pitch oblíquo global)

@@ -12,7 +12,7 @@ export const VERSION_NOTES = [
       'Quadrados por bateria mais pequenos: o prolongamento das faixas, a fiada de amarração e a margem passam a contar no lado do quadrado.',
       'Disparo por distância e por tempo escrito em «sequence»: no M4T as fotos saíam só nos cantos das faixas (a confirmar no primeiro voo).',
       'Tempo e distância pela rota 3D quando segue o terreno; os blocos por área deixam de contar o prolongamento como área.',
-      'Bloqueios novos no preflight: buracos no relevo debaixo da rota, trânsito entre a base e a rota a entrar no relevo, fachada a cortar o DSM, corredor com passagens sem cobertura.',
+      'Bloqueios novos no preflight: buracos no relevo debaixo da rota, deslocação entre a base e a rota a entrar no relevo, fachada a cortar o DSM, corredor com passagens sem cobertura.',
       'Circular: o número de pontos por círculo segue a pegada no bordo exterior (mais pontos); órbita a começar do lado da base.',
       'Um só identificador de voo (o do mapa e do ficheiro); os blocos sem base deixam de ter «B04» e «Bloco 4».',
       'Altura de regresso (RTH) e subida de descolagem escritas no KMZ, agora à vista no cartão 5, na ficha e na checklist.',

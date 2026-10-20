@@ -446,6 +446,41 @@ await scenario('paragens-waypoints', async () => {
   return { page }
 })
 
+// Seguir terreno com foto por waypoint: os pontos de foto entram na rota do
+// relevo, com a acção a seguir o ponto; a exportação deixa de ficar bloqueada
+await scenario('terreno-foto-por-waypoint', async () => {
+  const { page, errors } = await openMission({ area: fx.u })
+  await configure(page, { tf: true })
+  await openDrawer(page, 'voo')
+  await page
+    .locator('label', { hasText: /Disparo por|Trigger by/ })
+    .locator('select')
+    .selectOption('waypoint')
+  await page.waitForTimeout(800)
+  await closeDrawer(page)
+  const pill = await pillText(page)
+  check('terreno + foto por waypoint: sem bloqueio no preflight', semBloqueio(pill), pill)
+  const routes = await readRoutes(await exportKmz(page, join(OUT, 'u-tf-waypoint.kmz')))
+  const wpml = routes[0].wpml
+  const tiros = (wpml.match(/<wpml:actionActuatorFunc>takePhoto</g) ?? []).length
+  const alturas = [...wpml.matchAll(/<wpml:executeHeight>([^<]+)</g)].map((m) => +m[1])
+  const r = analyseRoute(wpml, { toM, ground, aglNominalM: AGL_M })
+  executavel(r)
+  check(
+    'terreno + foto por waypoint: uma acção de foto por ponto de foto, às dezenas, com alturas do relevo',
+    tiros >= 30 && Math.max(...alturas) - Math.min(...alturas) > 10,
+    `${tiros} fotos, alturas ${Math.min(...alturas)}–${Math.max(...alturas)} m`,
+  )
+  check(
+    'terreno + foto por waypoint: a rota segue o relevo com a folga pedida',
+    clearanceOk(r),
+    `${r.minClearance.toFixed(1)} m (AGL ${r.agl}) ${r.minAt}`,
+  )
+  check('terreno + foto por waypoint: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 await scenario('u-crosshatch-tf', async () => {
   const { page, errors } = await openMission({ area: fx.u })
   await configure(page, { cross: true, tf: true })

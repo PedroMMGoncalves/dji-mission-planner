@@ -330,7 +330,7 @@ export default {
     en: 'Square edges along the flight lines ({deg}°); turn off to choose the orientation.',
   },
   'cp.split.transitCorner': {
-    pt: '(com o deslocação de uma base num canto do bloco, {r} m de zona)',
+    pt: '(com a deslocação de uma base num canto do bloco, {r} m de zona)',
     en: '(including transit from a base at a corner of the block, {r} m zone)',
   },
 }

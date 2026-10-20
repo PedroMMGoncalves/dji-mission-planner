@@ -14,6 +14,7 @@ import {
   baseToRouteM,
   bboxCovers,
   bboxOfPoints,
+  corridorRouteWithTerrain,
   planCorridorTerrain,
 } from '../mission/corridorTerrain.js'
 import { baseZoneFor, referenceElevation } from '../mission/reference.js'
@@ -208,21 +209,12 @@ export function useCorridorRoute({
   const tfOk = corridorTerrain && !corridorTerrain.error ? corridorTerrain : null
 
   // o plano que sai no KMZ e que o resto da app mostra: alturas do terreno
-  // quando as há, e a rota 3D correspondente nas estatísticas
-  const corridorRoute = useMemo(() => {
-    if (!planFlat || !planOk || !tfOk) return planFlat
-    return {
-      ...planOk,
-      waypoints: tfOk.waypoints,
-      stats: {
-        ...planOk.stats,
-        waypointCount: tfOk.waypoints.length,
-        pathLengthM: tfOk.pathLengthM,
-        flightTimeS: tfOk.flightTimeS,
-        path3D: true,
-      },
-    }
-  }, [planFlat, planOk, tfOk])
+  // quando as há, com as acções por waypoint reindexadas, e a rota 3D
+  // correspondente nas estatísticas
+  const corridorRoute = useMemo(
+    () => corridorRouteWithTerrain(planFlat, planOk, tfOk),
+    [planFlat, planOk, tfOk],
+  )
 
   const corridorBaseDistance = useMemo(
     () => (planOk ? baseToRouteM(basePoint, planOk.waypoints) : null),

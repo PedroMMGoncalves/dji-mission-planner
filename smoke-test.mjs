@@ -60,6 +60,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { XMLValidator } from 'fast-xml-parser'
 import { groupApplies } from './src/data/checklist.js'
 import { M_PER_DEG_LAT, metersPerDegLon, metersPerDegLonSafe } from './src/utils/units.js'
+import { planTerrainFollow } from './src/mission/terrainFollow.js'
 import { decomposeCells, orderCells } from './src/utils/gridRoute.js'
 import {
   DEFAULT_FACE_CONFIG,
@@ -3743,6 +3744,33 @@ check(
       },
     ],
     [
+      // seguir terreno com foto por waypoint: os pontos de foto na rota do
+      // relevo, com a altura do perfil voado e a accao a seguir o ponto
+      'area-terreno-waypoint',
+      (() => {
+        const tf = planTerrainFollow(
+          {
+            elevationAt: (lon, lat) => 200 + (lat - rectNS[0][1]) * M_PER_DEG_LAT * 0.1,
+            resolutionM: 10,
+          },
+          areaWp,
+          { refElev: 200, agl: 90, toleranceM: 5 },
+        )
+        return {
+          name: 'ref_terreno_wp',
+          waypoints: tf.waypoints,
+          perWaypoint: tf.perWaypoint,
+          passThrough: passThroughFor(tf.perLine, tf.perLink, 'corners'),
+          altitude: 90,
+          speed: 10,
+          wpml: enums,
+          photoIntervalM: 0,
+          triggerMode: 'waypoint',
+          sensorType: 'camera',
+        }
+      })(),
+    ],
+    [
       'fachada',
       {
         name: 'ref_face',
@@ -4123,6 +4151,7 @@ check(
       'area-distancia',
       'area-lidar',
       'area-terreno',
+      'area-terreno-waypoint',
       'area-waypoint-overshoot',
       'area-waypoint-cantos',
       'corredor',

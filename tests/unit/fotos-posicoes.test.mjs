@@ -5,7 +5,12 @@
  */
 import { describe, expect, test } from 'vitest'
 import * as turf from '@turf/turf'
-import { areaPhotoPoints, photoPointsAlong } from '../../src/mission/photoPoints.js'
+import {
+  areaPhotoPoints,
+  photoPointsAlong,
+  photosAtWaypoints,
+  photosOnRoute,
+} from '../../src/mission/photoPoints.js'
 import { triggerMaxLinkM } from '../../src/utils/geo.js'
 
 const lat = 40.4
@@ -65,5 +70,38 @@ describe('fotos por distância', () => {
     expect(photoPointsAlong([em(0, 0), em(10, 0)], [[0, 1]], 0)).toEqual([])
     expect(photoPointsAlong([em(0, 0), em(10, 0)], [], 5)).toEqual([])
     expect(photoPointsAlong([em(0, 0)], [[0, 3]], 5)).toEqual([])
+  })
+
+  test('na rota 3D: cada foto recebe a altura do troço mais próximo; os saltos entre voos não contam', () => {
+    // duas faixas a subir (100 → 120 m) ligadas por um salto entre voos
+    const route = [
+      [...em(0, 0), 100],
+      [...em(100, 0), 120],
+      [...em(100, 500), 300],
+      [...em(0, 500), 300],
+    ]
+    const fotos = [em(50, 0), em(25, 1), em(50, 500)]
+    const out = photosOnRoute(fotos, route, { breaks: [2] })
+    expect(out).toHaveLength(3)
+    expect(out[0][2]).toBeCloseTo(110, 0)
+    expect(out[1][2]).toBeCloseTo(105, 0)
+    expect(out[2][2]).toBe(300)
+    // uma foto logo a seguir ao fim da faixa (no salto, que não se voa) vai
+    // para o troço real mais próximo; uma foto longe de qualquer troço (mais
+    // do que o passo da procura) não pertence à rota e não é desenhada
+    const salto = photosOnRoute([em(100, 30), em(100, 250)], route, { breaks: [2] })
+    expect(salto).toHaveLength(1)
+    expect(salto[0][2]).toBe(120)
+  })
+
+  test('com foto por waypoint: só os waypoints com a acção de foto', () => {
+    const route = [
+      [...em(0, 0), 100],
+      [...em(10, 0), 100],
+      [...em(20, 0), 100],
+    ]
+    const pw = [undefined, { actions: ['takePhoto'] }, { actions: ['startRecord'] }]
+    expect(photosAtWaypoints(route, pw)).toEqual([route[1]])
+    expect(photosAtWaypoints(route, null)).toEqual([])
   })
 })

@@ -9,6 +9,7 @@ import {
   baseToRouteM,
   bboxCovers,
   bboxOfPoints,
+  corridorRouteWithTerrain,
   planCorridorTerrain,
   terrainTargetBbox,
   bboxIntersects,
@@ -120,6 +121,24 @@ describe('seguimento de terreno do corredor', () => {
     for (const k of r.vertexIndex.flat()) expect(r.perWaypoint[k].actions).toEqual(['takePhoto'])
     const semFoto = r.waypoints.length - fotos
     expect(semFoto).toBeGreaterThan(0)
+  })
+
+  test('o plano mostrado leva as acções do relevo: cada foto num vértice do plano plano', () => {
+    const wp = generateCorridorPlan(eixo, opcoes({ photoMode: 'waypoint', photoIntervalM: 60 }))
+    const r = planCorridorTerrain(relevo, wp, { refElev: ref, agl: 60, toleranceM: 1, speed: 8 })
+    const rota = corridorRouteWithTerrain(wp, wp, r)
+    expect(rota.waypoints).toBe(r.waypoints)
+    expect(rota.perWaypoint).toBe(r.perWaypoint)
+    expect(rota.stats.path3D).toBe(true)
+    // as fotos caem nos vértices do plano plano (as posições de foto), não
+    // nos pontos que o relevo acrescentou
+    const naRota = rota.waypoints
+      .filter((_, i) => rota.perWaypoint[i]?.actions?.includes('takePhoto'))
+      .map(([lon, lat]) => `${lon.toFixed(7)},${lat.toFixed(7)}`)
+    const doPlano = wp.waypoints.map(([lon, lat]) => `${lon.toFixed(7)},${lat.toFixed(7)}`)
+    expect(naRota).toEqual(doPlano)
+    // sem seguimento, o plano plano tal qual
+    expect(corridorRouteWithTerrain(wp, wp, null)).toBe(wp)
   })
 })
 

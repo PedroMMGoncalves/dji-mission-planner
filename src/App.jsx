@@ -50,6 +50,7 @@ import {
 } from './mission/bases.js'
 import { blockRing, summarizeBases, convexHull } from './mission/baseLayout.js'
 import { activeRoute } from './mission/activeRoute.js'
+import { photosAtWaypoints, photosOnRoute } from './mission/photoPoints.js'
 import {
   baseFieldSheets,
   daySummary,
@@ -1361,6 +1362,36 @@ function AppInner({ lang, setLang }) {
       params.altitude,
     ],
   )
+
+  // Onde a aeronave dispara, sobre a rota 3D (área, blocos e corredor): por
+  // distância ou por tempo, os pontos do mapa à altura do troço mais próximo;
+  // por waypoint, os waypoints com acção de foto
+  const photos3d = useMemo(() => {
+    if (!view3d?.waypoints?.length) return null
+    if (missionMode === 'area') {
+      if (params.triggerMode === 'waypoint') {
+        return photosAtWaypoints(view3d.waypoints, view3d.perWaypoint)
+      }
+      return photoPoints?.length
+        ? photosOnRoute(photoPoints, view3d.waypoints, { breaks: view3d.breaks ?? null })
+        : null
+    }
+    if (missionMode === 'corridor') {
+      if (corridorConfig.photoMode === 'waypoint') {
+        return photosAtWaypoints(view3d.waypoints, view3d.perWaypoint)
+      }
+      const pts = corridorPreview?.photos
+      return pts?.length ? photosOnRoute(pts, view3d.waypoints) : null
+    }
+    return null
+  }, [
+    view3d,
+    missionMode,
+    params.triggerMode,
+    photoPoints,
+    corridorConfig.photoMode,
+    corridorPreview,
+  ])
 
   // Vista 3D com bases: a cor de cada voo (a da sua base, como no mapa),
   // pela ordem dos troços de view3d, e o contorno e o rótulo de cada bloco
@@ -3153,6 +3184,7 @@ function AppInner({ lang, setLang }) {
                 radiusM: b.radiusM,
               }))}
               gcps={missionMode === 'area' ? gcps : null}
+              photos={photos3d}
               onClose={() => setShow3d(false)}
             />
           </Suspense>

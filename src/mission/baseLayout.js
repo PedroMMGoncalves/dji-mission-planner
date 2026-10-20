@@ -310,20 +310,30 @@ export function blockReferences(blocks, layout) {
  * @param {any[]} blocks blocos (ou blocks3 do seguimento de terreno)
  * @param {{refs: (number|null)[], common: number}} refs blockReferences
  * @param {number} altitude altura dos waypoints sem altura própria
+ * @returns {{waypoints: number[][], breaks: number[], perWaypoint: any[]|null}}
  */
 export function blocksViewRoute(blocks, refs, altitude) {
   const waypoints = []
   const breaks = []
+  // acções por waypoint de cada bloco (foto por waypoint), nos índices da rota
+  const perWaypoint = []
+  let anyAction = false
   blocks.forEach((b, i) => {
     const r = refs.refs[i]
     const dh = Number.isFinite(r) ? r - refs.common : 0
     if (waypoints.length > 0) breaks.push(waypoints.length)
-    for (const w of b.waypoints ?? []) {
+    const offset = waypoints.length
+    ;(b.waypoints ?? []).forEach((w, k) => {
       const h = Number.isFinite(w[2]) ? w[2] : altitude
       waypoints.push([w[0], w[1], h + dh])
-    }
+      const pw = b.perWaypoint?.[k]
+      if (pw) {
+        perWaypoint[offset + k] = pw
+        anyAction = true
+      }
+    })
   })
-  return { waypoints, breaks }
+  return { waypoints, breaks, perWaypoint: anyAction ? perWaypoint : null }
 }
 
 /**

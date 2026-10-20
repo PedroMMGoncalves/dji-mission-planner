@@ -146,4 +146,64 @@ describe('rota activa por modo', () => {
     expect(r.waypoints[2][2]).toBeCloseTo(120, 6)
     expect(r.breaks).toEqual([2])
   })
+
+  test('acções por waypoint (foto por waypoint): do plano, do seguimento e dos blocos, na rota', () => {
+    const pw = [undefined, { actions: ['takePhoto'] }]
+    const plan = {
+      waypoints: [
+        [-8, 40],
+        [-8.001, 40],
+      ],
+      perWaypoint: pw,
+    }
+    const flat = activeRoute({
+      missionMode: 'area',
+      planOk: plan,
+      terrainResult: null,
+      reference: { elev: 100, source: 'x' },
+      altitude: 90,
+    })
+    expect(flat.perWaypoint).toBe(pw)
+    const tf = {
+      waypoints: [
+        [-8, 40, 90],
+        [-8.0005, 40, 95],
+        [-8.001, 40, 100],
+      ],
+      refElev: 100,
+      perWaypoint: [undefined, undefined, { actions: ['takePhoto'] }],
+    }
+    const terr = activeRoute({ missionMode: 'area', planOk: plan, terrainResult: tf, altitude: 90 })
+    expect(terr.perWaypoint).toBe(tf.perWaypoint)
+    // blocos: as acções de cada bloco deslocadas para os índices da rota
+    const blocks = [
+      { waypoints: plan.waypoints, perWaypoint: pw },
+      {
+        waypoints: [
+          [-8, 40.001],
+          [-8.001, 40.001],
+        ],
+        perWaypoint: pw,
+      },
+    ]
+    const b = activeRoute({
+      missionMode: 'area',
+      planOk: plan,
+      blockRefs: { refs: [100, 100], common: 100 },
+      blocks,
+      altitude: 90,
+    })
+    expect(b.breaks).toEqual([2])
+    expect(b.perWaypoint).toHaveLength(4)
+    expect(b.perWaypoint[1]).toBe(pw[1])
+    expect(b.perWaypoint[2]).toBeUndefined()
+    expect(b.perWaypoint[3]).toBe(pw[1])
+    // sem acções (disparo por distância): null
+    const none = activeRoute({
+      missionMode: 'area',
+      planOk: { waypoints: plan.waypoints },
+      altitude: 90,
+    })
+    expect(none.perWaypoint).toBeNull()
+  })
 })

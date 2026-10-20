@@ -732,8 +732,11 @@ ao perfil (com os 40 m de antes, uma cumeada com flancos de 45° passava
 preflight amostra à mesma resolução, com tecto de 10 m). O Terrarium é
 um modelo de superfície de origem mista (~30 m), sem vegetação nem
 edifícios modelados; a diferença de resolução entre fontes não é
-assinalada. Seguir terreno e foto por waypoint são mutuamente exclusivos
-(a densificação reindexaria as acções).
+assinalada. Com foto por waypoint, os pontos de foto do plano entram na
+rota densificada (`mergePhotoWaypoints`: por faixa, pela distância ao
+longo da linha, com a altura interpolada entre as amostras vizinhas; um
+ponto a menos de 0,5 m de uma amostra funde-se com ela) e as acções de
+foto seguem esses pontos; os dois modos deixaram de ser exclusivos.
 
 Sugestão para encostas: plano `z = ax + by + c` ajustado por mínimos
 quadrados a uma grelha 12×12 na caixa da área, só com os nós dentro do
@@ -1478,11 +1481,12 @@ a rota que entra no relevo (`transit-collision`, `transitClearance`: a ida
 regresso à maior entre a altura do último waypoint e a de RTH; por voo com
 bases, M2-T3; as pernas são `transitLegs`/`worstTransit` em
 `src/mission/transitLegs.js`, funções puras que o App usa e os testes
-importam, M3-T3); seguir terreno com
-foto por waypoint; seguir terreno ligado sem relevo a cobrir a área; erro
+importam, M3-T3); seguir terreno ligado sem relevo a cobrir a área; erro
 do cálculo do terreno (o resultado do seguimento traz um código —
-`photo-waypoint`, `ref-outside-terrain`, `no-plan`, `terrain-failed` com
-o detalhe — que os painéis e o preflight traduzem, M3-C8); mais de 65535
+`ref-outside-terrain`, `no-plan`, `terrain-failed` com
+o detalhe — que os painéis e o preflight traduzem, M3-C8; o bloqueio
+«seguir terreno com foto por waypoint» desapareceu quando os pontos de
+foto passaram a entrar na rota densificada); mais de 65535
 waypoints numa rota (a maior, com
 blocos); waypoints consecutivos a menos de 0,5 m em 3D na rota exportada (o mínimo
 que a DJI aceita), em todos os modos — as verificações de rota corriam só

@@ -9,6 +9,7 @@
  */
 import * as turf from '@turf/turf'
 import { triggerMaxLinkM, triggerRangesForLines } from '../utils/geo.js'
+import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
 
 /**
  * Pontos de fotografia ao longo de `waypoints` dentro dos grupos `ranges`.
@@ -77,4 +78,102 @@ export function corridorPhotoPoints(plan, intervalM) {
     maxLinkM: Math.max(2.5 * plan.stats.spacingM, 60),
   })
   return photoPointsAlong(plan.waypoints, ranges, intervalM)
+}
+
+/**
+ * Fotos sobre a rota 3D: cada ponto de foto (2D) recebe a altura da rota no
+ * ponto mais próximo (interpolada no troço), para a vista 3D as desenhar
+ * onde a aeronave dispara. Os saltos entre voos (`breaks`: índices onde
+ * começa um voo novo) não são troços. Uma grelha de células acelera a
+ * procura (milhares de fotos × milhares de troços).
+ * @param {number[][]} photos [lon, lat]
+ * @param {number[][]} route [lon, lat, h] pela ordem de voo
+ * @param {{breaks?: number[]|null}} [opts]
+ * @returns {number[][]} [lon, lat, h]
+ */
+export function photosOnRoute(photos, route, { breaks = null } = {}) {
+  if (!Array.isArray(photos) || !Array.isArray(route) || route.length < 2) return []
+  const lat0 = route[0][1]
+  const mLon = metersPerDegLon(lat0)
+  const xy = route.map((w) => [(w[0] - route[0][0]) * mLon, (w[1] - lat0) * M_PER_DEG_LAT])
+  const breakSet = new Set(Array.isArray(breaks) ? breaks : [])
+  // troços válidos e a maior extensão, para o passo da grelha
+  const segs = []
+  let maxLen = 0
+  for (let i = 1; i < route.length; i++) {
+    if (breakSet.has(i)) continue
+    const len = Math.hypot(xy[i][0] - xy[i - 1][0], xy[i][1] - xy[i - 1][1])
+    if (!(len > 0)) continue
+    segs.push(i)
+    if (len > maxLen) maxLen = len
+  }
+  if (segs.length === 0) return []
+  const cell = Math.max(50, maxLen)
+  const key = (cx, cy) => `${cx}:${cy}`
+  const grid = new Map()
+  for (const i of segs) {
+    const [ax, ay] = xy[i - 1]
+    const [bx, by] = xy[i]
+    const x0 = Math.floor(Math.min(ax, bx) / cell)
+    const x1 = Math.floor(Math.max(ax, bx) / cell)
+    const y0 = Math.floor(Math.min(ay, by) / cell)
+    const y1 = Math.floor(Math.max(ay, by) / cell)
+    for (let cx = x0; cx <= x1; cx++) {
+      for (let cy = y0; cy <= y1; cy++) {
+        const k = key(cx, cy)
+        const list = grid.get(k)
+        if (list) list.push(i)
+        else grid.set(k, [i])
+      }
+    }
+  }
+  const out = []
+  for (const p of photos) {
+    const px = (p[0] - route[0][0]) * mLon
+    const py = (p[1] - lat0) * M_PER_DEG_LAT
+    const cx = Math.floor(px / cell)
+    const cy = Math.floor(py / cell)
+    let best = Infinity
+    let z = null
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (const i of grid.get(key(cx + dx, cy + dy)) ?? []) {
+          const [ax, ay] = xy[i - 1]
+          const [bx, by] = xy[i]
+          const vx = bx - ax
+          const vy = by - ay
+          const t = Math.max(
+            0,
+            Math.min(1, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy)),
+          )
+          const d = Math.hypot(px - (ax + vx * t), py - (ay + vy * t))
+          if (d < best) {
+            best = d
+            const za = route[i - 1][2]
+            const zb = route[i][2]
+            z = Number.isFinite(za) && Number.isFinite(zb) ? za + (zb - za) * t : null
+          }
+        }
+      }
+    }
+    if (z != null) out.push([p[0], p[1], Math.round(z * 10) / 10])
+  }
+  return out
+}
+
+/**
+ * Fotos com disparo por waypoint: os waypoints da rota com uma acção de foto
+ * (`perWaypoint[i].actions` com 'takePhoto'), os mesmos que a levam no WPML.
+ * @param {number[][]} route [lon, lat, h]
+ * @param {any[]|null|undefined} perWaypoint
+ * @returns {number[][]}
+ */
+export function photosAtWaypoints(route, perWaypoint) {
+  if (!Array.isArray(route) || !Array.isArray(perWaypoint)) return []
+  const out = []
+  route.forEach((w, i) => {
+    const acts = perWaypoint[i]?.actions
+    if (Array.isArray(acts) && acts.includes('takePhoto')) out.push(w)
+  })
+  return out
 }

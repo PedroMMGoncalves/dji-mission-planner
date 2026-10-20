@@ -124,11 +124,14 @@ describe('preflightArea', () => {
     expect(traduzido[0].params).toEqual({ error: 'Demasiadas faixas.', code: 'too-many-lines' })
   })
 
-  test('seguir terreno: foto por waypoint, relevo em falta e erro do cálculo bloqueiam', () => {
+  test('seguir terreno: relevo em falta e erro do cálculo bloqueiam; foto por waypoint já não', () => {
     const tf = { enabled: true, tolerance: 5 }
-    expect(codes(preflightArea({ ...base(), terrainFollow: tf, photoMode: 'waypoint' }))).toContain(
-      'terrain-photo-waypoint',
-    )
+    // os pontos de foto entram na rota do relevo (mergePhotoWaypoints)
+    expect(
+      codes(
+        preflightArea({ ...base(), terrainFollow: tf, terrainCovers: true, photoMode: 'waypoint' }),
+      ),
+    ).not.toContain('terrain-photo-waypoint')
     expect(codes(preflightArea({ ...base(), terrainFollow: tf, terrainCovers: false }))).toContain(
       'terrain-not-loaded',
     )
@@ -315,7 +318,7 @@ describe('preflightArea', () => {
       expect(typeof entry.pt).toBe('string')
       expect(typeof entry.en).toBe('string')
     }
-    expect(all.size).toBe(19)
+    expect(all.size).toBe(18)
   })
 })
 

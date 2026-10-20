@@ -174,8 +174,8 @@ export default {
   'cp.flight.triggerTime': { pt: 'Tempo', en: 'Time' },
   'cp.flight.triggerWaypoint': { pt: 'Waypoint', en: 'Waypoint' },
   'cp.flight.triggerWaypointHint': {
-    pt: 'Uma foto por waypoint: cada passagem é densificada a passos iguais ≤ intervalo, cada ponto leva uma acção de foto e o overshoot não dispara. Não há gatilho por distância; a paragem em cada ponto escolhe-se em «Paragem nos waypoints». Incompatível com «Seguir terreno».',
-    en: 'One photo per waypoint: each pass is densified at equal steps ≤ interval, every point carries a take-photo action and the overshoot does not trigger. There is no distance trigger; stopping at each point is set in "Stop at waypoints". Incompatible with "Follow terrain".',
+    pt: 'Uma foto por waypoint: cada passagem é densificada a passos iguais ≤ intervalo, cada ponto leva uma acção de foto e o overshoot não dispara. Não há gatilho por distância; a paragem em cada ponto escolhe-se em «Paragem nos waypoints». Com «Seguir terreno», os pontos de foto entram na rota do relevo com a altura do perfil voado.',
+    en: 'One photo per waypoint: each pass is densified at equal steps ≤ interval, every point carries a take-photo action and the overshoot does not trigger. There is no distance trigger; stopping at each point is set in "Stop at waypoints". With "Follow terrain", the photo points join the terrain route at the height of the flown profile.',
   },
   'cp.flight.stops': { pt: 'Paragem nos waypoints', en: 'Stop at waypoints' },
   'cp.flight.stopsCorners': { pt: 'Só nos cantos', en: 'Corners only' },
@@ -419,7 +419,7 @@ export default {
     en: 'to disable/re-enable it.',
   },
   'cp.split.markBaseHint': {
-    pt: 'Marque ou proponha as bases: o deslocação de cada bloco conta a partir da sua.',
+    pt: 'Marque ou proponha as bases: a deslocação de cada bloco conta a partir da sua.',
     en: 'Set or propose the bases: each block’s transit counts from its own.',
   },
   'cp.split.exportHint': {
@@ -475,15 +475,7 @@ export default {
     en: 'Follow terrain (constant AGL)',
   },
   'cp.terrain.tolerance': { pt: 'Tolerância vertical', en: 'Vertical tolerance' },
-  'cp.terrain.photoWaypoint': {
-    pt: 'Seguir terreno não é compatível com o disparo por waypoint: a densificação do terreno reindexaria as fotos. Escolha disparo por distância/tempo ou desligue o seguimento — a exportação WPML fica bloqueada entretanto.',
-    en: 'Follow terrain is not compatible with the per-waypoint trigger: terrain densification would re-index the photos. Choose the distance/time trigger or disable following — the WPML export stays blocked meanwhile.',
-  },
   /* ---- erros do seguimento de terreno, por código (M3-C8) ---- */
-  'cp.terrain.err.photo-waypoint': {
-    pt: 'Seguir terreno não é compatível com o disparo por waypoint: a densificação do terreno reindexaria as fotos. Escolha disparo por distância/tempo ou desligue o seguimento — a exportação WPML fica bloqueada entretanto.',
-    en: 'Follow terrain is not compatible with the per-waypoint trigger: terrain densification would re-index the photos. Choose the distance/time trigger or disable following — the WPML export stays blocked meanwhile.',
-  },
   'cp.terrain.err.ref-outside-terrain': {
     pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado.',
     en: 'No reference elevation: neither the base nor the route lies on the loaded terrain.',
