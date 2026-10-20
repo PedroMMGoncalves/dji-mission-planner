@@ -89,6 +89,11 @@ export default function StatsPanel({
   spacing,
   pointDensity,
   interval,
+  // segundos do disparo por tempo como vão para o ficheiro (por defeito à
+  // décima; o arredondamento ao mais próximo podia mostrar 2,2 s e escrever 2,1 s)
+  intervalS = null,
+  // intervalo escrito pelo piloto, e não calculado pela sobreposição
+  intervalManual = false,
   triggerMode,
   speed,
   stats,
@@ -205,9 +210,11 @@ export default function StatsPanel({
               label={t('stats.interval')}
               value={
                 interval != null
-                  ? triggerMode === 'time'
-                    ? `${(interval / speed).toFixed(1)} s`
-                    : `${interval.toFixed(1)} m`
+                  ? `${
+                      triggerMode === 'time'
+                        ? `${(intervalS ?? Math.floor((interval / speed) * 10 + 1e-9) / 10).toFixed(1)} s`
+                        : `${interval.toFixed(1)} m`
+                    }${intervalManual ? ` · ${t('stats.intervalManual')}` : ''}`
                   : '—'
               }
               tone={shutterWarn ? 'near' : 'ok'}

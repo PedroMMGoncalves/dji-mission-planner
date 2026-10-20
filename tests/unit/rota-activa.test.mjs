@@ -34,7 +34,7 @@ describe('rota activa por modo', () => {
       orbitPoi: [-7.2, 40.401],
       altitude: 100,
     })
-    expect(orbit).toEqual({ waypoints: wps, refElev: 0 })
+    expect(orbit).toEqual({ waypoints: wps, refElev: 0, perWaypoint: null })
     // um plano com erro não é rota: cai no plano de área (aqui, nenhum)
     expect(
       activeRoute({ missionMode: 'face', facePlan: { error: 'x' }, planOk: null, altitude: 100 }),
@@ -67,7 +67,12 @@ describe('rota activa por modo', () => {
       circularReference: null,
       altitude: 100,
     })
-    expect(circ).toEqual({ waypoints: [[-7.2, 40.4, 60]], refElev: null, refSource: null })
+    expect(circ).toEqual({
+      waypoints: [[-7.2, 40.4, 60]],
+      refElev: null,
+      refSource: null,
+      perWaypoint: null,
+    })
     expect(
       activeRoute({
         missionMode: 'circular',
@@ -205,5 +210,34 @@ describe('rota activa por modo', () => {
       altitude: 90,
     })
     expect(none.perWaypoint).toBeNull()
+  })
+
+  test('fachada, órbita e circular levam as acções por waypoint do plano', () => {
+    const pw = [{ actions: ['takePhoto'] }, { actions: ['takePhoto'] }]
+    const wps = [
+      [-8, 40, 10],
+      [-8.001, 40, 10],
+    ]
+    const face = activeRoute({
+      missionMode: 'face',
+      facePlan: { waypoints: wps, perWaypoint: pw },
+      faceBaseline: [[-8, 40]],
+      altitude: 100,
+    })
+    expect(face.perWaypoint).toBe(pw)
+    const orbit = activeRoute({
+      missionMode: 'orbit',
+      orbitPlan: { waypoints: wps, perWaypoint: pw },
+      orbitPoi: [-8, 40],
+      altitude: 100,
+    })
+    expect(orbit.perWaypoint).toBe(pw)
+    const circ = activeRoute({
+      missionMode: 'circular',
+      circularPlan: { waypoints: wps, perWaypoint: pw },
+      circularReference: { elev: 100, source: 'x' },
+      altitude: 100,
+    })
+    expect(circ.perWaypoint).toBe(pw)
   })
 })

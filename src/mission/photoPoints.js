@@ -177,3 +177,24 @@ export function photosAtWaypoints(route, perWaypoint) {
   })
   return out
 }
+
+/**
+ * Posições de foto no mapa (2D): [lon, lat] sem repetições — na fachada e
+ * na órbita as passagens empilham-se na vertical e o mesmo ponto do mapa
+ * leva várias fotos, que no mapa são uma só marca.
+ * @param {number[][]} points [lon, lat, ...]
+ * @returns {number[][]}
+ */
+export function photoPositions2d(points) {
+  if (!Array.isArray(points)) return []
+  const seen = new Set()
+  const out = []
+  for (const p of points) {
+    if (!Array.isArray(p) || !Number.isFinite(p[0]) || !Number.isFinite(p[1])) continue
+    const k = `${p[0].toFixed(7)},${p[1].toFixed(7)}`
+    if (seen.has(k)) continue
+    seen.add(k)
+    out.push([p[0], p[1]])
+  }
+  return out
+}

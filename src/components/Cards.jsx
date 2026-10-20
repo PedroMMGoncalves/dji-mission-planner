@@ -4,9 +4,17 @@ import { rthRangeLabel } from '../mission/transitLegs.js'
 import {
   DEFAULT_SAFETY,
   FINISH_ACTIONS,
+  MIN_RTH_HEIGHT_M,
   RC_LOST_ACTIONS,
   RC_LOST_MODES,
 } from '../mission/safety.js'
+import {
+  DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+  MAX_RTH_HEIGHT_M,
+  MAX_TAKEOFF_SECURITY_HEIGHT_M,
+  MIN_TAKEOFF_SECURITY_HEIGHT_M,
+} from '../utils/exporters.js'
+import NumberInput from './NumberInput.jsx'
 
 /**
  * Painéis em cartões: uma coluna de cartões numerados pela ordem do
@@ -180,6 +188,10 @@ export function DrawerGroup({ title, children }) {
   )
 }
 
+/** Campo das alturas de segurança (vazio = automática). */
+const HEIGHT_INPUT =
+  'w-full min-w-0 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-sm text-slate-100 focus:border-sky-500 focus:outline-none'
+
 /**
  * Acções de segurança da missão (src/mission/safety.js): no fim da missão e
  * com o sinal do comando perdido. Saem no missionConfig do KMZ de todos os
@@ -264,6 +276,43 @@ export function SafetyActions({ safety, onChange }) {
           {t('safety.rcLostActionHint')}
         </p>
       </div>
+      {/* alturas escritas no missionConfig: vazio = automática */}
+      <div className="grid grid-cols-2 gap-2">
+        <label className="block text-xs text-slate-300">
+          <span className="mb-1 block">{t('safety.takeoffHeight')}</span>
+          <span className="flex items-center gap-1">
+            <NumberInput
+              testId="safety-takeoff-height"
+              className={HEIGHT_INPUT}
+              allowEmpty
+              value={s.takeOffSecurityHeightM ?? null}
+              placeholder={String(DEFAULT_TAKEOFF_SECURITY_HEIGHT_M)}
+              min={MIN_TAKEOFF_SECURITY_HEIGHT_M}
+              max={MAX_TAKEOFF_SECURITY_HEIGHT_M}
+              onChange={(v) => set('takeOffSecurityHeightM', v)}
+            />
+            m
+          </span>
+        </label>
+        <label className="block text-xs text-slate-300">
+          <span className="mb-1 block">{t('safety.rthHeight')}</span>
+          <span className="flex items-center gap-1">
+            <NumberInput
+              testId="safety-rth-height"
+              className={HEIGHT_INPUT}
+              allowEmpty
+              value={s.rthHeightM ?? null}
+              placeholder={t('safety.auto')}
+              min={MIN_RTH_HEIGHT_M}
+              max={MAX_RTH_HEIGHT_M}
+              step={5}
+              onChange={(v) => set('rthHeightM', v)}
+            />
+            m
+          </span>
+        </label>
+      </div>
+      <p className="text-xs leading-relaxed text-slate-400">{t('safety.heightsHint')}</p>
     </div>
   )
 }
@@ -291,5 +340,59 @@ export function SafetyCard({ id = 'seguranca', n, safety, onChange, rthInfo = nu
       <SafetyActions safety={safety} onChange={onChange} />
       <RthLine info={rthInfo} />
     </Card>
+  )
+}
+
+/**
+ * Descolagem da face ou da órbita (src/mission/takeoffRef.js): no chão do
+ * alvo, como sempre, ou numa base do projecto, com as alturas exportadas
+ * convertidas pela diferença de cotas.
+ */
+export function TakeoffSelect({
+  value,
+  onChange,
+  bases = [],
+  takeoff = null,
+  targetLabel,
+  targetHint,
+  testId = 'takeoff',
+}) {
+  const t = useT()
+  const signed = (v) => (v >= 0 ? `+${v.toFixed(1)}` : v.toFixed(1))
+  return (
+    <div className="mt-2" data-testid={testId}>
+      <label htmlFor={`${testId}-select`} className="mb-1 block text-sm text-slate-300">
+        {t('takeoff.label')}
+      </label>
+      <select
+        id={`${testId}-select`}
+        data-testid={`${testId}-select`}
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value || null)}
+        className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+      >
+        <option value="">{targetLabel}</option>
+        {bases.map((b) => (
+          <option key={b.id} value={b.id}>
+            {t('takeoff.base', { label: b.label })}
+          </option>
+        ))}
+      </select>
+      {takeoff?.error ? (
+        <p className="mt-1 text-xs leading-relaxed text-red-300">
+          ⚠ {t(`takeoff.err.${takeoff.error}`)}
+        </p>
+      ) : takeoff?.mode === 'base' ? (
+        <p className="mt-1 text-xs leading-relaxed text-slate-400">
+          {t('takeoff.baseHint', {
+            base: takeoff.base?.label ?? '',
+            dh: signed(takeoff.dh),
+            elev: Number.isFinite(takeoff.baseElev) ? Math.round(takeoff.baseElev) : '—',
+          })}
+        </p>
+      ) : (
+        <p className="mt-1 text-xs leading-relaxed text-slate-400">{targetHint}</p>
+      )}
+    </div>
   )
 }

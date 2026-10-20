@@ -242,3 +242,16 @@ input[type='range'] {
   cursor: pointer;
   pointer-events: auto;
 }
+
+/* rótulo de cada voo de um corredor partido, no início do voo */
+.corridor-flight-label span {
+  display: inline-block;
+  transform: translate(-50%, -140%);
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.6);
+}

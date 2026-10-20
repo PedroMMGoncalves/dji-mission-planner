@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import { AIRCRAFT, PAYLOADS } from '../data/drones.js'
 import { CRS_OPTIONS } from '../utils/importArea.js'
 import { useLang, useT } from '../i18n.jsx'
@@ -15,6 +15,7 @@ import {
   IconTrash,
 } from './Icons.jsx'
 import BatterySetsNote from './BatterySetsNote.jsx'
+import NumberInput from './NumberInput.jsx'
 import BasesPanel, { FlightExports, ViewshedBox } from './BasesPanel.jsx'
 import {
   Card,
@@ -62,48 +63,6 @@ function fmtClock(sec) {
   const m = Math.floor((tt % 3600) / 60)
   const ss = String(tt % 60).padStart(2, '0')
   return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`
-}
-
-/**
- * @param {{value: any, onChange: (v: any) => void, min?: number, max?: number, step?: number,
- *   wide?: boolean, testId?: string, label?: string}} props
- */
-function NumberInput({ value, onChange, min, max, step = 1, wide, testId, label }) {
-  const [draft, setDraft] = useState(null)
-  const timer = useRef(null)
-  const commit = (raw) => {
-    clearTimeout(timer.current)
-    setDraft(null)
-    const n = Number(raw)
-    if (raw === '' || raw == null || !Number.isFinite(n)) return
-    let v = n
-    if (Number.isFinite(min)) v = Math.max(min, v)
-    if (Number.isFinite(max)) v = Math.min(max, v)
-    if (v !== value) onChange(v)
-  }
-  useEffect(() => () => clearTimeout(timer.current), [])
-  return (
-    <input
-      type="number"
-      aria-label={label}
-      data-testid={testId}
-      onBlur={() => draft != null && commit(draft)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && draft != null) commit(draft)
-      }}
-      className={`${wide ? 'w-28' : 'w-20'} rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-sm text-slate-100 focus:border-sky-500 focus:outline-none`}
-      value={draft ?? value}
-      min={min}
-      max={max}
-      step={step}
-      onChange={(e) => {
-        const raw = e.target.value
-        setDraft(raw)
-        clearTimeout(timer.current)
-        timer.current = setTimeout(() => commit(raw), 400)
-      }}
-    />
-  )
 }
 
 /**
@@ -224,6 +183,8 @@ export default function ControlPanel({
   presets,
   onApplyPreset,
   triggerWarn,
+  // intervalo de disparo efectivo e sobreposição frontal resultante (triggerInterval)
+  trigger = null,
   waypointWarn,
   aglWarn,
   importState,
@@ -942,14 +903,21 @@ export default function ControlPanel({
               })}
             </p>
           )}
-          <Field label={t('cp.flight.frontOverlap')} suffix="%">
-            <NumberInput
-              value={params.frontOverlap}
-              min={0}
-              max={95}
-              onChange={(v) => setParam('frontOverlap', v)}
-            />
-          </Field>
+          {/* com o intervalo manual a sobreposição frontal resulta do intervalo */}
+          <div
+            className={
+              params.intervalMode === 'manual' && payload.type === 'camera' ? 'opacity-40' : ''
+            }
+          >
+            <Field label={t('cp.flight.frontOverlap')} suffix="%">
+              <NumberInput
+                value={params.frontOverlap}
+                min={0}
+                max={95}
+                onChange={(v) => setParam('frontOverlap', v)}
+              />
+            </Field>
+          </div>
           <div className={params.spacingMode === 'manual' ? 'opacity-40' : ''}>
             <Field label={t('cp.flight.sideOverlap')} suffix="%">
               <NumberInput
@@ -1075,8 +1043,10 @@ export default function ControlPanel({
               {t('cp.split.gridActive')}
             </p>
           )}
+          {/* 2 × 2 no painel estreito (w-80, abaixo de lg): em quatro
+              colunas, «Quadrícula» e «Nenhuma» não cabiam no botão */}
           {!gridActive && (
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5 lg:grid-cols-4">
               {[
                 { value: 'none', key: 'cp.split.modeNone' },
                 { value: 'area', key: 'cp.split.modeArea' },
@@ -1732,6 +1702,58 @@ export default function ControlPanel({
               {t('cp.flight.triggerWaypointHint')}
             </p>
           )}
+          {/* intervalo escrito à mão: metros em Distância e Waypoint, segundos em Tempo */}
+          {payload.type === 'camera' && (
+            <>
+              <label className="mb-2 flex items-center gap-2 text-sm text-slate-300">
+                <input
+                  type="checkbox"
+                  data-testid="interval-manual"
+                  checked={params.intervalMode === 'manual'}
+                  onChange={(e) => setParam('intervalMode', e.target.checked ? 'manual' : 'auto')}
+                />
+                {t('cp.flight.manualInterval')}
+              </label>
+              {params.intervalMode === 'manual' &&
+                (params.triggerMode === 'time' ? (
+                  <Field label={t('cp.flight.intervalValue')} suffix="s">
+                    <NumberInput
+                      value={params.manualIntervalS}
+                      min={0.1}
+                      max={60}
+                      step={0.1}
+                      testId="interval-seconds"
+                      onChange={(v) => setParam('manualIntervalS', v)}
+                    />
+                  </Field>
+                ) : (
+                  <Field label={t('cp.flight.intervalValue')} suffix="m">
+                    <NumberInput
+                      value={params.manualIntervalM}
+                      min={0.5}
+                      max={1000}
+                      step={0.5}
+                      testId="interval-metres"
+                      onChange={(v) => setParam('manualIntervalM', v)}
+                    />
+                  </Field>
+                ))}
+              {params.intervalMode === 'manual' && trigger?.frontOverlapPct != null && (
+                <p
+                  data-testid="interval-overlap"
+                  className={`-mt-1 mb-2 text-xs leading-relaxed ${
+                    trigger.frontOverlapPct < 60 ? 'text-amber-300' : 'text-slate-400'
+                  }`}
+                >
+                  {t('cp.flight.intervalOverlap', {
+                    pct: Math.round(trigger.frontOverlapPct),
+                    m: trigger.intervalM.toFixed(1),
+                  })}
+                  {trigger.frontOverlapPct < 60 && ` ${t('cp.flight.intervalOverlapLow')}`}
+                </p>
+              )}
+            </>
+          )}
           {/* só há pontos intermédios com foto por waypoint ou seguimento de terreno */}
           {((payload.type === 'camera' && params.triggerMode === 'waypoint') ||
             terrainFollow.enabled) && (
@@ -1761,6 +1783,33 @@ export default function ControlPanel({
             />
           </Field>
           <p className="text-xs text-slate-400">{t('cp.flight.gimbalHint')}</p>
+          {/* rumo da aeronave: segue a rota, ou fixo (smoothTransition com o mesmo ângulo) */}
+          <div className="mt-2">
+            <Field label={t('cp.flight.headingMode')}>
+              <select
+                data-testid="heading-mode"
+                className="w-32 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+                value={params.headingMode === 'fixed' ? 'fixed' : 'route'}
+                onChange={(e) => setParam('headingMode', e.target.value)}
+              >
+                <option value="route">{t('cp.flight.headingRoute')}</option>
+                <option value="fixed">{t('cp.flight.headingFixed')}</option>
+              </select>
+            </Field>
+            {params.headingMode === 'fixed' && (
+              <Field label={t('cp.flight.headingDeg')} suffix="°">
+                <NumberInput
+                  value={params.headingDeg}
+                  min={0}
+                  max={359}
+                  step={5}
+                  testId="heading-deg"
+                  onChange={(v) => setParam('headingDeg', ((Math.round(v) % 360) + 360) % 360)}
+                />
+              </Field>
+            )}
+            <p className="text-xs leading-relaxed text-slate-400">{t('cp.flight.headingHint')}</p>
+          </div>
           <div className="mt-2">
             <Field label={t('cp.flight.overshoot')} suffix="m">
               <NumberInput
@@ -2066,7 +2115,7 @@ export default function ControlPanel({
                     </button>
                   </div>
                   <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-xs text-slate-400">
-                    <label className="flex items-center gap-1">
+                    <label className="flex items-center gap-1" title={t('cp.inspect.heightTitle')}>
                       {t('cp.inspect.height')}
                       <input
                         type="number"
@@ -2115,14 +2164,37 @@ export default function ControlPanel({
                       />
                     </label>
                   </div>
-                  <label className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
-                    <input
-                      type="checkbox"
-                      checked={p.photo !== false}
-                      onChange={(e) => onInspectUpdate(p.id, { photo: e.target.checked })}
-                    />
-                    {t('cp.inspect.photo')}
-                  </label>
+                  <div className="mt-1 flex items-center justify-between gap-2 text-xs text-slate-400">
+                    <label className="flex items-center gap-1.5">
+                      <input
+                        type="checkbox"
+                        checked={p.photo !== false}
+                        onChange={(e) => onInspectUpdate(p.id, { photo: e.target.checked })}
+                      />
+                      {t('cp.inspect.photo')}
+                    </label>
+                    <label className="flex items-center gap-1" title={t('cp.inspect.hoverTitle')}>
+                      {t('cp.inspect.hover')}
+                      <input
+                        type="number"
+                        className="w-14 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right text-xs text-slate-100"
+                        value={p.hoverS ?? ''}
+                        placeholder="0"
+                        min={0}
+                        max={60}
+                        step={0.5}
+                        onChange={(e) =>
+                          onInspectUpdate(p.id, {
+                            hoverS:
+                              e.target.value === ''
+                                ? null
+                                : Math.max(0, Math.min(60, Number(e.target.value))),
+                          })
+                        }
+                      />
+                      s
+                    </label>
+                  </div>
                 </div>
               ))}
 

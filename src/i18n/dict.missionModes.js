@@ -4,7 +4,7 @@
 export default {
   /* ---- Selector de modo (E1.0, modelo A) ---- */
   'mode.area': { pt: 'Área', en: 'Area' },
-  'mode.face': { pt: 'Fachada', en: 'Face' },
+  'mode.face': { pt: 'Face', en: 'Face' },
   'mode.orbit': { pt: 'Órbita', en: 'Orbit' },
   'mode.corridor': { pt: 'Corredor', en: 'Corridor' },
   'mode.circular': { pt: 'Circular', en: 'Circular' },
@@ -30,8 +30,8 @@ export default {
   'co.params.title': { pt: 'Parâmetros do Corredor', en: 'Corridor Parameters' },
   'co.params.buffer': { pt: 'Meia-largura', en: 'Half-width' },
   'co.params.bufferHint': {
-    pt: 'Distância coberta de cada lado do eixo; a largura total é o dobro. O número de passagens sai daqui, da altitude e da sobreposição lateral.',
-    en: 'Distance covered on each side of the centreline; total width is twice this. The pass count follows from it, the altitude and the side overlap.',
+    pt: 'Distância coberta de cada lado do eixo; a largura total é o dobro. O número de passagens sai daqui, da altura de voo e da sobreposição lateral.',
+    en: 'Distance covered on each side of the centreline; total width is twice this. The pass count follows from it, the flight height and the side overlap.',
   },
   'co.params.speed': { pt: 'Velocidade', en: 'Speed' },
   'co.params.photoMode': { pt: 'Disparo', en: 'Trigger' },
@@ -50,12 +50,12 @@ export default {
   },
   'co.terrain.title': { pt: 'Relevo e Base', en: 'Terrain and base' },
   'co.terrain.follow': {
-    pt: 'Seguir terreno (cada passagem sobre o seu chão)',
+    pt: 'Seguir terreno (cada passagem sobre o seu solo)',
     en: 'Follow terrain (each pass over its own ground)',
   },
   'co.terrain.hint': {
-    pt: 'Cada passagem sobe e desce com o relevo debaixo dela e dos 30 m de cada lado, sem tecto (a altura é decisão do operador); as dobras ficam e acrescentam-se os pontos que a tolerância exigir. A área e o corredor partilham o relevo carregado: um só MDT da DGT, ou o vosso último levantamento, serve os dois.',
-    en: 'Each pass rises and drops with the terrain beneath it and 30 m to each side, with no ceiling (the operator decides the height); bends are kept and the points the tolerance requires are added. Area and corridor share the loaded terrain: one DGT DTM, or your latest survey, serves both.',
+    pt: 'Cada passagem sobe e desce com o relevo debaixo dela e dos 30 m de cada lado, sem tecto (a altura é decisão do piloto); as dobras ficam e acrescentam-se os pontos que a tolerância exigir. A área e o corredor partilham o relevo carregado: um só MDT da DGT, ou o último levantamento da equipa, serve os dois.',
+    en: 'Each pass rises and drops with the terrain beneath it and 30 m to each side, with no ceiling (the pilot decides the height); bends are kept and the points the tolerance requires are added. Area and corridor share the loaded terrain: one DGT DTM, or the team’s latest survey, serves both.',
   },
   'co.terrain.outOfCoverage': {
     pt: 'O corredor sai fora do relevo carregado: volte a descarregar ou importe um MDT que o cubra.',
@@ -66,7 +66,7 @@ export default {
     en: 'Heights relative to the marked base, at {elev} m.',
   },
   'co.terrain.refMin': {
-    pt: 'Sem base sobre o relevo: alturas relativas à cota mínima debaixo da rota, {elev} m. Descolar mais acima põe o drone mais alto, nunca mais baixo.',
+    pt: 'Sem base sobre o relevo: alturas relativas à cota mínima debaixo da rota, {elev} m. Descolar mais acima põe a aeronave mais alta, nunca mais baixa.',
     en: 'No base on the terrain: heights relative to the minimum elevation under the route, {elev} m. Taking off higher puts the aircraft higher, never lower.',
   },
   'co.terrain.err.terrain-not-loaded': {
@@ -74,41 +74,40 @@ export default {
     en: 'The loaded terrain does not cover the corridor.',
   },
   'co.terrain.err.ref-outside-terrain': {
-    pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado.',
-    en: 'No reference elevation: neither the base nor the route lies on the loaded terrain.',
+    pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado. Carregue relevo que cubra a base ou a rota.',
+    en: 'No reference elevation: neither the base nor the route lies on the loaded terrain. Load terrain that covers the base or the route.',
   },
   'co.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
   'co.plan.length': { pt: 'Comprimento do eixo', en: 'Centreline length' },
   'co.plan.passes': { pt: '{n} passagens ({r} troços)', en: '{n} passes ({r} runs)' },
   'co.plan.width': { pt: 'Largura coberta', en: 'Covered width' },
   'co.plan.fromArea': {
-    pt: 'Altitude {h} m · sobreposição {f}/{s} % (do separador Área, cartão 3).',
-    en: 'Altitude {h} m · overlap {f}/{s} % (from the Area tab, card 3).',
+    pt: 'Altura {h} m · sobreposição {f}/{s} % (do separador Área, cartão 3).',
+    en: 'Height {h} m · overlap {f}/{s} % (from the Area tab, card 3).',
   },
-  'co.plan.spacing': { pt: 'Espaçamento', en: 'Line spacing' },
   'co.plan.waypoints': { pt: '{n} waypoints', en: '{n} waypoints' },
   'co.plan.photos': { pt: '{n} fotos', en: '{n} photos' },
   'co.plan.distance': { pt: 'Distância de voo', en: 'Flight distance' },
   'co.plan.time': { pt: 'Tempo estimado', en: 'Estimated time' },
   'co.err.corridor-too-long': {
-    pt: 'O corredor é longo demais para ser amostrado com esta sobreposição (as passagens exteriores são mais compridas do que o eixo): a passagem teria de ser cosida com um segmento recto que sai do corredor. Divida o eixo em troços, suba a altitude ou baixe a sobreposição lateral.',
-    en: 'The corridor is too long to sample at this overlap (the outer passes are longer than the centreline): the pass would have to be stitched with a straight segment that leaves the corridor. Split the centreline, raise the altitude, or lower the side overlap.',
+    pt: 'O corredor é longo demais para ser amostrado com esta sobreposição (as passagens exteriores são mais compridas do que o eixo): a passagem teria de ser cosida com um segmento recto que sai do corredor. Divida o eixo em troços, suba a altura de voo ou baixe a sobreposição lateral.',
+    en: 'The corridor is too long to sample at this overlap (the outer passes are longer than the centreline): the pass would have to be stitched with a straight segment that leaves the corridor. Split the centreline, raise the flight height, or lower the side overlap.',
   },
   'co.plan.dropped': {
-    pt: '{n} passagem(ns) não pôde(puderam) ser voada(s): nessa(s) faixa(s) a curvatura do eixo é mais apertada do que a distância ao eixo, e o corredor fica SEM COBERTURA aí. A largura indicada é a pedida, não a coberta. Reduza a meia-largura, suavize a curva ou voe essa faixa à parte.',
-    en: '{n} pass(es) could not be flown: there the centreline curves tighter than the pass distance, and the corridor is LEFT UNCOVERED. The width shown is the requested one, not the covered one. Reduce the half-width, ease the bend, or fly that strip separately.',
+    pt: 'Passagens que não podem ser voadas: {n}. Nelas, a curvatura do eixo é mais apertada do que a distância ao eixo, e o corredor fica SEM COBERTURA aí. A largura indicada é a pedida, não a coberta. Reduza a meia-largura, suavize a curva ou voe essas passagens à parte.',
+    en: '{n} pass(es) could not be flown: there the centreline curves tighter than the pass distance, and the corridor is LEFT UNCOVERED. The width shown is the requested one, not the covered one. Reduce the half-width, ease the bend, or fly those passes separately.',
   },
   'co.plan.widthRequested': {
     pt: 'Largura pedida (não coberta)',
     en: 'Requested width (not covered)',
   },
   'co.plan.split': {
-    pt: 'Curvatura mais apertada do que o desvio: {n} passagem(ns) partida(s) em troços; a cobertura pára onde deixaria de ser geometricamente possível.',
-    en: 'Curvature tighter than the offset: {n} pass(es) split into runs; coverage stops where it would no longer be geometrically possible.',
+    pt: 'Curvatura mais apertada do que a distância ao eixo: {n} passagem(ns) partida(s) em troços; a cobertura pára onde deixaria de ser geometricamente possível.',
+    en: 'Curvature tighter than the pass distance: {n} pass(es) split into runs; coverage stops where it would no longer be geometrically possible.',
   },
   'co.plan.export': { pt: 'Exportar WPML (KMZ)', en: 'Export WPML (KMZ)' },
   'co.err.invalid-buffer': { pt: 'Meia-largura inválida.', en: 'Invalid half-width.' },
-  'co.err.invalid-altitude': { pt: 'Altitude inválida.', en: 'Invalid altitude.' },
+  'co.err.invalid-altitude': { pt: 'Altura inválida.', en: 'Invalid height.' },
   'co.err.overlap-too-high': {
     pt: 'Sobreposição lateral demasiado alta para gerar passagens.',
     en: 'Side overlap too high to generate passes.',
@@ -118,10 +117,13 @@ export default {
     en: 'A camera payload is required.',
   },
   'co.err.invalid-footprint': { pt: 'Pegada da câmara inválida.', en: 'Invalid camera footprint.' },
-  'co.err.degenerate-centreline': { pt: 'Eixo degenerado.', en: 'Degenerate centreline.' },
+  'co.err.degenerate-centreline': {
+    pt: 'Eixo inválido: precisa de pelo menos dois vértices distintos. Desenhe-o de novo.',
+    en: 'Invalid centreline: it needs at least two distinct vertices. Draw it again.',
+  },
   'co.err.too-many-passes': {
-    pt: 'A meia-largura pedida exige mais passagens do que um plano admite. Reduza a meia-largura, suba a altitude ou baixe a sobreposição lateral.',
-    en: 'The requested half-width needs more passes than one plan allows. Reduce the half-width, raise the altitude, or lower the side overlap.',
+    pt: 'A meia-largura pedida exige mais passagens do que um plano admite. Reduza a meia-largura, suba a altura de voo ou baixe a sobreposição lateral.',
+    en: 'The requested half-width needs more passes than one plan allows. Reduce the half-width, raise the flight height, or lower the side overlap.',
   },
   'orb.err.invalid-radius': {
     pt: 'A órbita precisa de um POI e de um raio maior do que zero.',
@@ -151,7 +153,7 @@ export default {
   'fp.baseline.undo': { pt: 'Anular ponto', en: 'Undo point' },
   'fp.baseline.finish': { pt: 'Concluir', en: 'Finish' },
   'fp.cameraRequired': {
-    pt: 'O modo fachada precisa de um payload de câmara — seleccione uma câmara no modo Área.',
+    pt: 'O modo Face precisa de um payload de câmara — seleccione uma câmara no modo Área.',
     en: 'Face mode needs a camera payload — select a camera in Area mode.',
   },
   'fp.params.title': { pt: 'Parâmetros da Face', en: 'Face Parameters' },
@@ -161,12 +163,12 @@ export default {
   'fp.params.sideLeft': { pt: 'Esquerda', en: 'Left' },
   'fp.params.sideRight': { pt: 'Direita', en: 'Right' },
   'fp.params.sideHint': {
-    pt: 'Lado relativo ao sentido em que desenhou a baseline; a face fica do lado oposto ao drone.',
+    pt: 'Lado relativo ao sentido em que desenhou o pé da face; a face fica do lado oposto ao drone.',
     en: 'Side relative to the direction the baseline was drawn; the face sits opposite the drone.',
   },
   'fp.params.vOverlap': { pt: 'Sobreposição vertical', en: 'Vertical overlap' },
   'fp.params.hOverlap': { pt: 'Sobreposição horizontal', en: 'Horizontal overlap' },
-  'fp.params.gimbal': { pt: 'Pitch do gimbal', en: 'Gimbal pitch' },
+  'fp.params.gimbal': { pt: 'Inclinação do gimbal', en: 'Gimbal pitch' },
   'fp.params.minClearance': { pt: 'Folga mínima', en: 'Minimum clearance' },
   'fp.params.speed': { pt: 'Velocidade', en: 'Speed' },
   'fp.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
@@ -181,27 +183,27 @@ export default {
   'fp.plan.path': { pt: 'percurso {km} km', en: 'path {km} km' },
   'fp.plan.time': { pt: '~{min} min', en: '~{min} min' },
   'fp.warn.bottom': {
-    pt: 'Piso de segurança de {floor} m: os primeiros {n} m no pé da face ficam sem cobertura — a esta distância a imagem tem {img} m de altura e a passagem mais baixa não pode descer mais. Aumente o afastamento para alargar a imagem, ou fotografe o pé da face à parte.',
-    en: 'Safety floor of {floor} m: the bottom {n} m of the face are left uncovered — at this distance the image is {img} m tall and the lowest pass cannot go any lower. Raise the standoff to widen the image, or shoot the foot of the face separately.',
+    pt: 'Altura mínima de segurança de {floor} m: os primeiros {n} m no pé da face ficam sem cobertura — a esta distância a imagem tem {img} m de altura e a passagem mais baixa não pode descer mais. Aumente o afastamento para a imagem cobrir mais altura, ou fotografe o pé da face à parte.',
+    en: 'Safety floor of {floor} m: the bottom {n} m of the face are left uncovered — at this distance the image is {img} m tall and the lowest pass cannot go any lower. Raise the standoff so that the image covers more height, or shoot the foot of the face separately.',
   },
   'fp.warn.unverified': {
-    pt: 'Afastamento NÃO verificado contra o terreno: sem MDT/DSM local carregado, os tiles globais não têm resolução à escala de uma face. Importe um GeoTIFF no separador Área, cartão 2 (Área e relevo), para activar a verificação de folga.',
-    en: 'Standoff NOT verified against the terrain: without a local DEM/DSM, global tiles lack resolution at face scale. Import a GeoTIFF in the Area tab, card 2 (Area and terrain), to enable the clearance check.',
+    pt: 'Afastamento NÃO verificado contra o terreno: sem MDT/MDS local carregado, os tiles globais não têm resolução à escala de uma face. Importe um GeoTIFF no separador Área, cartão 2 (Área e relevo), para activar a verificação de folga.',
+    en: 'Standoff NOT verified against the terrain: without a local DTM/DSM, global tiles lack resolution at face scale. Import a GeoTIFF in the Area tab, card 2 (Area and terrain), to enable the clearance check.',
   },
   'fp.warn.clearance': {
-    pt: 'Folga abaixo de {min} m nas passagens {passes} — o corredor de voo corta a superfície do DSM. Aumente o afastamento ou a folga admissível conscientemente.',
-    en: 'Clearance below {min} m on passes {passes} — the flight corridor clips the DSM surface. Raise the standoff or knowingly adjust the allowed clearance.',
+    pt: 'Folga abaixo de {min} m nas passagens {passes} — o corredor de voo corta a superfície do modelo local (MDT/MDS). Aumente o afastamento ou, conscientemente, reduza a «Folga mínima».',
+    en: 'Clearance below {min} m on passes {passes} — the flight corridor clips the local model surface (DTM/DSM). Raise the standoff or knowingly lower the “Minimum clearance”.',
   },
   'fp.warn.clearanceOk': {
-    pt: 'Folga verificada contra o DSM local: todas as passagens ≥ {min} m.',
-    en: 'Clearance verified against the local DSM: all passes ≥ {min} m.',
+    pt: 'Folga verificada contra o modelo local (MDT/MDS): todas as passagens ≥ {min} m.',
+    en: 'Clearance verified against the local DTM/DSM: all passes ≥ {min} m.',
   },
   'fp.warn.noData': {
-    pt: 'O DSM local não cobre a zona da face — afastamento por verificar.',
-    en: 'The local DSM does not cover the face area — standoff unverified.',
+    pt: 'O modelo local (MDT/MDS) não cobre a zona da face — afastamento por verificar.',
+    en: 'The local DTM/DSM does not cover the face area — standoff unverified.',
   },
   'fp.error.camera-required': {
-    pt: 'Payload sem câmara — o modo fachada precisa de óptica de câmara.',
+    pt: 'Payload sem câmara — o modo Face precisa de óptica de câmara.',
     en: 'Payload has no camera — face mode needs camera optics.',
   },
   'fp.error.invalid-dimensions': {
@@ -217,13 +219,13 @@ export default {
     en: 'Camera pitch too steep to see the face at this distance.',
   },
   'fp.error.standoff-corner': {
-    pt: 'Num canto o drone ficaria a menos do afastamento pedido da face (canto demasiado fechado ou troço mais curto do que o afastamento permite). Abra o canto, reduza o afastamento ou parta a linha em duas fachadas.',
-    en: 'At a corner the drone would be closer to the face than the requested standoff (corner too tight, or a segment shorter than the standoff allows). Open the corner, reduce the standoff or split the line into two facades.',
+    pt: 'Num canto o drone ficaria a menos do afastamento pedido da face (canto demasiado fechado ou troço mais curto do que o afastamento permite). Abra o canto, reduza o afastamento ou parta o pé da face em dois troços.',
+    en: 'At a corner the drone would be closer to the face than the requested standoff (corner too tight, or a segment shorter than the standoff allows). Open the corner, reduce the standoff or split the face foot into two segments.',
   },
   'fp.export': { pt: 'Exportar WPML (KMZ)', en: 'Export WPML (KMZ)' },
   'fp.exportHint': {
-    pt: 'Alturas relativas ao ponto de descolagem: descole à cota do pé da face, ou ajuste as alturas. Rumo fixo e uma foto em cada waypoint.',
-    en: 'Heights relative to the take-off point: take off at the face-foot elevation, or adjust heights. Fixed heading and one photo at every waypoint.',
+    pt: 'Alturas relativas à descolagem escolhida no cartão 2 (o pé da face, ou uma base). Rumo próprio e uma foto em cada waypoint.',
+    en: 'Heights relative to the take-off chosen in card 2 (the foot of the face, or a base). Own heading and one photo at every waypoint.',
   },
 
   /* ---- Painel de órbita (E1.2) ---- */
@@ -234,10 +236,10 @@ export default {
     pt: 'Clique no mapa sobre o centro do alvo. O marcador fica arrastável.',
     en: 'Click the map on the target centre. The marker stays draggable.',
   },
-  'op.poi.height': { pt: 'Cota do centro do alvo', en: 'Target centre height' },
+  'op.poi.height': { pt: 'Altura do centro do alvo', en: 'Target centre height' },
   'op.poi.heightHint': {
-    pt: 'Acima do ponto de descolagem — o gimbal de cada nível aponta a esta cota.',
-    en: 'Above the take-off point — each level’s gimbal aims at this height.',
+    pt: 'Acima do chão no POI: o gimbal de cada nível aponta a esta altura.',
+    en: 'Above the ground at the POI: each level’s gimbal aims at this height.',
   },
   'op.capture.title': { pt: 'Captura', en: 'Capture' },
   'op.capture.photo': { pt: 'Fotografia (anéis)', en: 'Photo (rings)' },
@@ -252,7 +254,7 @@ export default {
   },
   'op.geom.title': { pt: 'Geometria da Órbita', en: 'Orbit Geometry' },
   'op.geom.radius': { pt: 'Raio', en: 'Radius' },
-  'op.geom.gsdTarget': { pt: 'GSD alvo à distância', en: 'Target GSD at range' },
+  'op.geom.gsdTarget': { pt: 'GSD pretendido no alvo', en: 'Target GSD at range' },
   'op.geom.levels': { pt: 'Número de níveis', en: 'Number of levels' },
   'op.geom.firstLevel': { pt: 'Primeiro nível', en: 'First level' },
   'op.geom.step': { pt: 'Passo vertical', en: 'Vertical step' },
@@ -261,14 +263,14 @@ export default {
   'op.geom.speed': { pt: 'Velocidade', en: 'Speed' },
   'op.lidarNote': {
     pt: 'Sem câmara activa os pontos por volta usam um passo por omissão (24/volta).',
-    en: 'Without an active camera the points per orbit fall back to a default (24/orbit).',
+    en: 'Without an active camera the points per turn fall back to a default (24/turn).',
   },
   'op.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
   'op.plan.noPoi': {
     pt: 'Marque o POI no mapa para gerar as órbitas.',
     en: 'Mark the POI on the map to generate the orbits.',
   },
-  'op.plan.rings': { pt: '{n} níveis × {pts} pontos/volta', en: '{n} levels × {pts} points/orbit' },
+  'op.plan.rings': { pt: '{n} níveis × {pts} pontos/volta', en: '{n} levels × {pts} points/turn' },
   'op.plan.photos': { pt: '{n} fotos (1 por waypoint)', en: '{n} photos (1 per waypoint)' },
   'op.plan.spiral': {
     pt: 'espiral: {turns} voltas, {h0} → {h1} m, {pts} pontos/volta',
@@ -290,8 +292,8 @@ export default {
   },
   /* ---- Resumo do projecto (E3.2) ---- */
   'ps.line': {
-    pt: '{plans} planos · {min} min de voo · {bat} baterias · {photos} fotos',
-    en: '{plans} plans · {min} min of flight · {bat} batteries · {photos} photos',
+    pt: '{plans} planos · {min} min de voo · {bat} conjuntos de baterias · {photos} fotos',
+    en: '{plans} plans · {min} min of flight · {bat} battery sets · {photos} photos',
   },
 
   'op.exportHint': {
@@ -330,15 +332,15 @@ export default {
   },
   'ci.params.pitch': { pt: 'Inclinação do gimbal', en: 'Gimbal pitch' },
   'ci.params.pitchHint': {
-    pt: 'Fixa em todos os pontos, com o rumo ao centro do círculo. −45° é o valor do estudo de referência; o eixo óptico toca o chão a {d} m do drone.',
+    pt: 'Fixa em todos os pontos, com o rumo ao centro do círculo. −45° é o valor do estudo de referência; o eixo óptico intersecta o solo a {d} m do drone.',
     en: 'Fixed at every point, heading at the circle centre. −45° is the reference study value; the optical axis meets the ground {d} m from the drone.',
   },
   'ci.params.speed': { pt: 'Velocidade', en: 'Speed' },
-  'ci.params.angle': { pt: 'Rumo das fiadas', en: 'Row heading' },
+  'ci.params.angle': { pt: 'Azimute das filas', en: 'Row azimuth' },
   'ci.params.angleAuto': { pt: 'auto', en: 'auto' },
   'ci.params.altitudeNote': {
     pt: 'Altura e sobreposição frontal (fotos ao longo do círculo) são as do separador Área: {h} m, {f} %.',
-    en: 'Height and front overlap (photos along the circle) come from the Area tab: {h} m, {f} %.',
+    en: 'Height and forward overlap (photos along the circle) come from the Area tab: {h} m, {f} %.',
   },
   'ci.advice': {
     pt: 'Com {p} %: {cols} × {rows} = {n} círculos. O mesmo número mantém-se de {min} % a {max} %; no topo do intervalo os círculos saem menos da área.',
@@ -368,12 +370,12 @@ export default {
     en: 'The loaded terrain does not cover the circles.',
   },
   'ci.terrain.err.ref-outside-terrain': {
-    pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado.',
-    en: 'No reference elevation: neither the base nor the route lies on the loaded terrain.',
+    pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado. Carregue relevo que cubra a base ou a rota.',
+    en: 'No reference elevation: neither the base nor the route lies on the loaded terrain. Load terrain that covers the base or the route.',
   },
   'ci.terrain.err.terrain-nodata': {
-    pt: '{n} círculo(s) sem nenhum dado de relevo: não há altura segura para eles.',
-    en: '{n} circle(s) without any terrain data: there is no safe height for them.',
+    pt: '{n} círculo(s) sem nenhum dado de relevo: não há altura segura para eles. Importe um MDT que os cubra ou desligue «Seguir terreno».',
+    en: '{n} circle(s) without any terrain data: there is no safe height for them. Import a DTM that covers them or turn off “Follow terrain”.',
   },
   'ci.remove': {
     pt: 'Retirar a missão circular do projecto',
@@ -388,7 +390,7 @@ export default {
     en: 'Area-tab grid ({kind}): ~{min} min',
   },
   'ci.plan.kindSerpentine': { pt: 'serpentina', en: 'serpentine' },
-  'ci.plan.kindCrosshatch': { pt: 'dupla grelha', en: 'double grid' },
+  'ci.plan.kindCrosshatch': { pt: 'dupla grelha', en: 'crosshatch' },
   'ci.plan.blocks': {
     pt: '{n} blocos por bateria ({min} min úteis)',
     en: '{n} blocks per battery ({min} usable min)',
@@ -423,5 +425,56 @@ export default {
   'ci.err.too-many-circles': {
     pt: 'Demasiados círculos ({n}, máximo {max}): aumente o raio ou baixe a sobreposição.',
     en: 'Too many circles ({n}, maximum {max}): increase the radius or lower the overlap.',
+  },
+
+  /* ---- Corredor em vários voos, parâmetros próprios, espera e descolagem ---- */
+  'co.params.own': { pt: 'Altura e sobreposições próprias', en: 'Own height and overlaps' },
+  'co.params.altitude': { pt: 'Altura acima da descolagem', en: 'Height above take-off' },
+  'co.params.frontOverlap': { pt: 'Sobreposição frontal', en: 'Forward overlap' },
+  'co.params.sideOverlap': { pt: 'Sobreposição lateral', en: 'Side overlap' },
+  'co.split.title': { pt: 'Divisão em voos', en: 'Split into flights' },
+  'co.split.none': { pt: 'Nenhuma', en: 'None' },
+  'co.split.battery': { pt: 'Por bateria', en: 'By battery' },
+  'co.split.hint': {
+    pt: 'Corta o eixo em troços iguais, cada um um voo que cabe na bateria (com 5 % de margem); os troços sobrepõem-se uma pegada no corte. Cada voo descola da base mais próxima, ou à cota mínima do seu troço, e sai num KMZ próprio, dentro de um ZIP.',
+    en: 'Cuts the centreline into equal stretches, each one a flight that fits the battery (with a 5 % margin); stretches overlap by one footprint at each cut. Each flight takes off from the nearest base, or at the lowest elevation of its stretch, and is written to its own KMZ inside a ZIP.',
+  },
+  'co.split.summary': {
+    pt: '{n} voos; o mais longo {max} (tempo útil {usable} min)',
+    en: '{n} flights; the longest {max} (usable time {usable} min)',
+  },
+  'co.split.flight': { pt: '{label}: {time} · base {base}', en: '{label}: {time} · base {base}' },
+  'co.split.err.too-many-flights': {
+    pt: 'Seriam precisos mais de 60 voos: aumente o tempo útil da bateria ou reduza a largura do corredor.',
+    en: 'More than 60 flights would be needed: increase the usable battery time or narrow the corridor.',
+  },
+  'ci.params.own': {
+    pt: 'Altura e sobreposição frontal próprias',
+    en: 'Own height and forward overlap',
+  },
+  'ci.params.altitude': { pt: 'Altura acima da descolagem', en: 'Height above take-off' },
+  'ci.params.frontOverlap': { pt: 'Sobreposição frontal', en: 'Forward overlap' },
+  'fp.params.hover': { pt: 'Espera em cada foto', en: 'Wait at each photo' },
+  'fp.params.hoverHint': {
+    pt: 'A aeronave pára e espera antes de cada disparo (acção hover do WPML): útil com pouca luz ou com a câmara térmica. Conta no tempo de voo.',
+    en: 'The aircraft stops and waits before each shot (WPML hover action): useful in low light or with the thermal camera. It counts in the flight time.',
+  },
+  'fp.params.extendEnds': {
+    pt: 'Prolongar as pontas meia imagem',
+    en: 'Extend the ends by half an image',
+  },
+  'fp.params.extendEndsHint': {
+    pt: 'A primeira e a última coluna de fotos ficam {m} m para lá das pontas da face, para as pontas terem a mesma sobreposição do resto. Desligue junto a outras paredes.',
+    en: 'The first and last photo columns sit {m} m beyond the ends of the face, so the ends get the same overlap as the rest. Switch it off next to other walls.',
+  },
+  'fp.takeoff.foot': { pt: 'No pé da face', en: 'At the foot of the face' },
+  'fp.takeoff.footHint': {
+    pt: 'Alturas relativas ao pé da face: descole à cota dele, ou escolha a base de onde vai descolar.',
+    en: 'Heights relative to the foot of the face: take off at its elevation, or choose the base you will take off from.',
+  },
+  'op.takeoff.poi': { pt: 'No chão do POI', en: 'On the ground at the POI' },
+  'op.takeoff.poiHint': {
+    pt: 'Alturas relativas ao chão do POI: descole à cota dele, ou escolha a base de onde vai descolar.',
+    en: 'Heights relative to the ground at the POI: take off at its elevation, or choose the base you will take off from.',
   },
 }

@@ -1,5 +1,6 @@
 import { useT } from '../i18n.jsx'
-import { Card, CardColumn, SafetyCard } from './Cards.jsx'
+import NumberInput from './NumberInput.jsx'
+import { Card, CardColumn, SafetyCard, TakeoffSelect } from './Cards.jsx'
 import { IconDownload, IconTarget, IconTrash } from './Icons.jsx'
 
 /**
@@ -15,21 +16,6 @@ function Field({ label, suffix = null, children }) {
       {children}
       {suffix && <span className="w-8 text-xs text-slate-400">{suffix}</span>}
     </label>
-  )
-}
-
-/** @param {{value: any, onChange: (v: any) => void, min?: number, max?: number, step?: number}} props */
-function NumberInput({ value, onChange, min, max, step = 1 }) {
-  return (
-    <input
-      type="number"
-      className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-      value={value}
-      min={min}
-      max={max}
-      step={step}
-      onChange={(e) => onChange(Number(e.target.value))}
-    />
   )
 }
 
@@ -52,6 +38,9 @@ export default function OrbitPanel({
   safety = null,
   setSafety = (_next) => {},
   rthInfo = null,
+  // bases do projecto e a descolagem escolhida (takeoffReference)
+  bases = [],
+  takeoff = null,
 }) {
   const t = useT()
   const stats = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
@@ -96,6 +85,15 @@ export default function OrbitPanel({
           />
         </Field>
         <p className="text-xs leading-relaxed text-slate-400">{t('op.poi.heightHint')}</p>
+        <TakeoffSelect
+          value={orbitConfig.takeoffBaseId}
+          onChange={(v) => setOrbitParam('takeoffBaseId', v)}
+          bases={bases}
+          takeoff={takeoff}
+          targetLabel={t('op.takeoff.poi')}
+          targetHint={t('op.takeoff.poiHint')}
+          testId="orbit-takeoff"
+        />
       </Card>
 
       {/* Captura: aneis com fotografia, ou espiral em video */}

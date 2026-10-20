@@ -65,69 +65,81 @@ export default {
     en: 'The GeoTIFF does not state its coordinate system (no GeoKeys): export the DTM in PT-TM06 (EPSG:3763).',
   },
   'err.dem.crs-unsupported': {
-    pt: 'CRS não suportado: EPSG:{code}. Exporte o MDT em PT-TM06 (EPSG:3763).',
+    pt: 'SRC não suportado: EPSG:{code}. Exporte o MDT em PT-TM06 (EPSG:3763).',
     en: 'Unsupported CRS: EPSG:{code}. Export the DTM in PT-TM06 (EPSG:3763).',
   },
   'err.dem.project-failed': {
-    pt: 'Não foi possível projectar a área para o sistema de coordenadas do MDT.',
-    en: 'The area could not be projected into the DTM coordinate system.',
+    pt: 'Não foi possível projectar a área para o sistema de coordenadas do MDT. Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'The area could not be projected into the DTM coordinate system. Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
   },
-  'err.dem.file-invalid': { pt: 'Ficheiro de MDT inválido.', en: 'Invalid DTM file.' },
+  'err.dem.file-invalid': {
+    pt: 'Ficheiro de MDT inválido. Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'Invalid DTM file. Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
+  },
   'err.dem.area-invalid': {
     pt: 'Área de levantamento inválida para recortar o MDT.',
     en: 'Invalid survey area for cropping the DTM.',
   },
   'err.dem.open-failed': {
-    pt: 'Não foi possível abrir o GeoTIFF: {d}',
-    en: 'Could not open the GeoTIFF: {d}',
+    pt: 'Não foi possível abrir o GeoTIFF ({d}). Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'Could not open the GeoTIFF ({d}). Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
   },
-  'err.dem.unreadable': { pt: 'GeoTIFF ilegível: {d}', en: 'Unreadable GeoTIFF: {d}' },
-  'err.dem.no-pixels': { pt: 'O GeoTIFF não tem píxeis.', en: 'The GeoTIFF has no pixels.' },
+  'err.dem.unreadable': {
+    pt: 'GeoTIFF ilegível ({d}). Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'Unreadable GeoTIFF ({d}). Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
+  },
+  'err.dem.no-pixels': {
+    pt: 'O GeoTIFF não tem píxeis. Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'The GeoTIFF has no pixels. Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
+  },
   'err.dem.rotated': {
-    pt: 'MDT com rotação não suportado: reexporte o raster sem rotação (north-up).',
+    pt: 'MDT com rotação não suportado: reexporte o raster sem rotação (orientado a norte).',
     en: 'Rotated DTM not supported: re-export the raster without rotation (north-up).',
   },
   'err.dem.not-georeferenced': {
-    pt: 'O GeoTIFF não está georreferenciado (sem origem/escala de píxel).',
-    en: 'The GeoTIFF is not georeferenced (no pixel origin/scale).',
+    pt: 'O GeoTIFF não está georreferenciado (sem origem/escala de píxel). Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'The GeoTIFF is not georeferenced (no pixel origin/scale). Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
   },
   'err.dem.bad-scale': {
-    pt: 'O GeoTIFF tem uma escala de píxel inválida.',
-    en: 'The GeoTIFF has an invalid pixel scale.',
+    pt: 'O GeoTIFF tem uma escala de píxel inválida. Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'The GeoTIFF has an invalid pixel scale. Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
   },
   'err.dem.outside-area': {
     pt: 'O MDT não cobre a área de levantamento: importe um ficheiro que a inclua, ou use o relevo global (~30 m).',
     en: 'The DTM does not cover the survey area: import a file that includes it, or use the global terrain (~30 m).',
   },
   'err.dem.read-failed': {
-    pt: 'Falha ao ler os píxeis do MDT: {d}',
-    en: 'Could not read the DTM pixels: {d}',
+    pt: 'Falha ao ler os píxeis do MDT ({d}). Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'Could not read the DTM pixels ({d}). Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
   },
   'err.dem.no-data-window': {
-    pt: 'O MDT não devolveu dados na janela pedida.',
-    en: 'The DTM returned no data in the requested window.',
+    pt: 'O MDT não devolveu dados na janela pedida. Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'The DTM returned no data in the requested window. Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
   },
   'err.dem.incomplete': {
-    pt: 'O MDT devolveu uma grelha incompleta.',
-    en: 'The DTM returned an incomplete grid.',
+    pt: 'O MDT devolveu uma grelha incompleta. Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'The DTM returned an incomplete grid. Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
   },
   'err.dem.no-valid-values': {
-    pt: 'O MDT não tem valores de elevação válidos na área de levantamento.',
-    en: 'The DTM has no valid elevation values in the survey area.',
+    pt: 'O MDT não tem cotas válidas na área de levantamento. Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'The DTM has no valid elevation values in the survey area. Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
   },
-  'err.dem.generic': { pt: 'Falha ao ler o MDT.', en: 'Could not read the DTM.' },
+  'err.dem.generic': {
+    pt: 'Falha ao ler o MDT. Reexporte o MDT do SIG (GeoTIFF georreferenciado, PT-TM06) ou use o relevo global (~30 m).',
+    en: 'Could not read the DTM. Re-export the DTM from the GIS (georeferenced GeoTIFF, PT-TM06) or use the global terrain (~30 m).',
+  },
   // relevo global
   'err.terrain.download-failed': {
-    pt: 'Falha ao descarregar o modelo de terreno.',
-    en: 'Failed to download the terrain model.',
+    pt: 'Falha ao descarregar o relevo global: verifique a ligação e volte a tentar, ou importe um MDT.',
+    en: 'Could not download the global terrain: check the connection and retry, or import a DTM.',
   },
   'err.terrain.too-large': {
-    pt: 'Área demasiado grande para o modelo de terreno: reduza a área.',
-    en: 'Area too large for the terrain model: reduce the area.',
+    pt: 'Área demasiado grande para o relevo global: reduza a área.',
+    en: 'Area too large for the global terrain: reduce the area.',
   },
   'err.terrain.bbox-invalid': {
-    pt: 'Caixa inválida para o modelo de terreno.',
-    en: 'Invalid bounding box for the terrain model.',
+    pt: 'Rectângulo envolvente inválido para o relevo global.',
+    en: 'Invalid bounding box for the global terrain.',
   },
   'err.terrain.unsupported': {
     pt: 'Este browser não consegue descodificar o relevo ({d}).',
@@ -137,18 +149,18 @@ export default {
     pt: 'Sem ligação à Internet: só as áreas já descarregadas estão na cache.',
     en: 'No Internet connection: only the areas already downloaded are in the cache.',
   },
-  'err.terrain.generic': { pt: 'Falha no terreno.', en: 'Terrain failure.' },
+  'err.terrain.generic': { pt: 'Falha ao obter o relevo.', en: 'Could not load the terrain.' },
   // avisos do seguimento de terreno
   'err.tf.min-relative': {
     pt: 'Altura relativa mínima de {min} m (abaixo dos {rec} m recomendados face ao ponto de descolagem): verifique o relevo e os obstáculos.',
     en: 'Minimum relative height of {min} m (below the {rec} m recommended above the take-off point): check the terrain and obstacles.',
   },
   'err.tf.no-data': {
-    pt: 'Sem dados de terreno em {n} de {total} pontos amostrados: nessas zonas foi usada a última elevação válida.',
+    pt: 'Sem dados de terreno em {n} de {total} pontos amostrados: nessas zonas foi usada a última cota válida.',
     en: 'No terrain data at {n} of {total} sampled points: the last valid elevation was used there.',
   },
   'err.tf.capped': {
-    pt: 'Terreno até {rise} m mais alto dentro de {half} m do eixo: para manter {height} m de folga a rota teria de passar o tecto de {cap} m acima do solo. Ficou limitada ao tecto e a folga desce a {min} m em {n} de {total} pontos: baixe a altura, rode as faixas ou parta a área.',
+    pt: 'Terreno até {rise} m mais alto dentro de {half} m do eixo da faixa: para manter {height} m de folga a rota teria de passar o tecto de {cap} m acima do solo. Ficou limitada ao tecto e a folga desce a {min} m em {n} de {total} pontos: baixe a altura, rode as faixas ou parta a área.',
     en: 'Terrain up to {rise} m higher within {half} m of the line: to keep {height} m of clearance the route would exceed the {cap} m ceiling above ground. It was capped at the ceiling and the clearance drops to {min} m at {n} of {total} points: lower the height, rotate the lines or split the area.',
   },
   // equipamento (Configuração)
@@ -157,7 +169,7 @@ export default {
     en: 'Invalid equipment file: the content is not JSON.',
   },
   'err.equipment.wrong-kind': {
-    pt: 'Este ficheiro não é uma configuração de equipamento (esperado kind "{kind}").',
-    en: 'This file is not an equipment configuration (expected kind "{kind}").',
+    pt: 'Este ficheiro não é uma configuração de equipamento (esperado kind «{kind}»).',
+    en: 'This file is not an equipment configuration (expected kind “{kind}”).',
   },
 }

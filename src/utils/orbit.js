@@ -15,6 +15,9 @@ export const DEFAULT_ORBIT_CONFIG = {
   // 'photo': anéis a altura constante, uma foto por waypoint (fotogrametria)
   // 'video': espiral contínua, a gravar do primeiro ao último ponto
   capture: 'photo',
+  // descolagem: null = no chão do POI (como sempre); o id de uma base do
+  // projecto = alturas convertidas pela diferença de cotas (takeoffRef.js)
+  takeoffBaseId: null,
 }
 
 export const ORBIT_CAPTURES = ['photo', 'video']
@@ -43,6 +46,10 @@ export function normalizeOrbitConfig(stored) {
     clockwise: stored.clockwise !== false,
     speedMS: num(stored.speedMS, 1, 10, d.speedMS),
     capture: ORBIT_CAPTURES.includes(stored.capture) ? stored.capture : d.capture,
+    takeoffBaseId:
+      typeof stored.takeoffBaseId === 'string' && stored.takeoffBaseId
+        ? stored.takeoffBaseId
+        : null,
   }
 }
 

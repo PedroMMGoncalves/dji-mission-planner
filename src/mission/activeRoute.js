@@ -5,6 +5,7 @@
  * vivia num useMemo do App.jsx (M3-C15).
  */
 import { blocksViewRoute } from './baseLayout.js'
+import { shiftHeights } from './takeoffRef.js'
 
 /**
  * @param {{missionMode: string,
@@ -15,7 +16,8 @@ import { blocksViewRoute } from './baseLayout.js'
  *   circularPlan?: any, circularReference?: any,
  *   planOk?: any, terrainResult?: any, reference?: any,
  *   blockRefs?: {refs: (number|null)[], common: number}|null, blocks?: any[]|null,
- *   altitude: number}} c
+ *   altitude: number, corridorAltitude?: number,
+ *   faceTakeoff?: any, orbitTakeoff?: any}} c
  * @returns {{waypoints: number[][], refElev: number|null, refSource?: string|null,
  *   breaks?: number[]|null, perWaypoint?: any[]|null}|null}
  */
@@ -37,14 +39,43 @@ export function activeRoute(c) {
     blockRefs,
     blocks,
     altitude,
+    // a altura do corredor (a sua, ou a da área)
+    corridorAltitude = altitude,
+    // descolagem da face e da órbita numa base (takeoffReference): as alturas
+    // relativas a ela e a cota de referência a da base
+    faceTakeoff = null,
+    orbitTakeoff = null,
   } = c
+  const atBase = (ref) => ref && ref.mode === 'base' && !ref.error && Number.isFinite(ref.refElev)
   if (missionMode === 'face' && facePlan && !facePlan.error) {
+    if (atBase(faceTakeoff)) {
+      return {
+        waypoints: shiftHeights(facePlan.waypoints, faceTakeoff.dh),
+        refElev: faceTakeoff.refElev,
+        perWaypoint: facePlan.perWaypoint ?? null,
+      }
+    }
     const foot = elevationAt?.(faceBaseline[0][0], faceBaseline[0][1])
-    return { waypoints: facePlan.waypoints, refElev: Number.isFinite(foot) ? foot : 0 }
+    return {
+      waypoints: facePlan.waypoints,
+      refElev: Number.isFinite(foot) ? foot : 0,
+      perWaypoint: facePlan.perWaypoint ?? null,
+    }
   }
   if (missionMode === 'orbit' && orbitPlan && !orbitPlan.error) {
+    if (atBase(orbitTakeoff)) {
+      return {
+        waypoints: shiftHeights(orbitPlan.waypoints, orbitTakeoff.dh),
+        refElev: orbitTakeoff.refElev,
+        perWaypoint: orbitPlan.perWaypoint ?? null,
+      }
+    }
     const ground = elevationAt?.(orbitPoi[0], orbitPoi[1])
-    return { waypoints: orbitPlan.waypoints, refElev: Number.isFinite(ground) ? ground : 0 }
+    return {
+      waypoints: orbitPlan.waypoints,
+      refElev: Number.isFinite(ground) ? ground : 0,
+      perWaypoint: orbitPlan.perWaypoint ?? null,
+    }
   }
   // Sem este ramo o modo corredor caía no plano de ÁREA: com um polígono
   // desenhado antes, a vista 3D e o perfil mostravam a grelha da área
@@ -57,6 +88,7 @@ export function activeRoute(c) {
       waypoints: circularPlan.waypoints,
       refElev: circularReference?.elev ?? null,
       refSource: circularReference?.source ?? null,
+      perWaypoint: circularPlan.perWaypoint ?? null,
     }
   }
   // Corredor: a mesma cadeia de referência da área (base com relevo, senão
@@ -64,11 +96,13 @@ export function activeRoute(c) {
   if (missionMode === 'corridor') {
     if (!corridorPlan || corridorPlan.error) return null
     return {
-      waypoints: corridorPlan.waypoints.map(([lon, lat, h]) => [lon, lat, h ?? altitude]),
+      waypoints: corridorPlan.waypoints.map(([lon, lat, h]) => [lon, lat, h ?? corridorAltitude]),
       refElev: corridorReference?.elev ?? null,
       refSource: corridorReference?.source ?? null,
       // acções por waypoint (foto por waypoint), alinhadas com a rota
       perWaypoint: corridorPlan.perWaypoint ?? null,
+      // vários voos: onde começa cada um (o salto entre voos não se voa)
+      ...(Array.isArray(corridorPlan.breaks) ? { breaks: corridorPlan.breaks } : {}),
     }
   }
   if (!planOk) return null

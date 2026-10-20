@@ -15,7 +15,13 @@ import { buildSquareMosaic, mosaicOrientationForLines } from '../../src/mission/
 import { routeChecks } from '../../src/mission/uncertainty.js'
 import { circularGrid, generateCircularPlan } from '../../src/utils/circular.js'
 import { extendRunEnds, generateCorridorPlan } from '../../src/utils/corridor.js'
-import { generateFacePlan } from '../../src/utils/faceMode.js'
+import {
+  CORNER_MIN_SPACING_M,
+  MIN_PHOTO_GAP_M,
+  MIN_SAMPLE_STEP_M,
+  generateFacePlan,
+  spacePhotos,
+} from '../../src/utils/faceMode.js'
 import { gcpStats, planGcps } from '../../src/utils/gcp.js'
 import {
   bufferDistanceMeters,
@@ -241,17 +247,107 @@ describe('M2-E11: nos cantos a fachada roda o rumo em passos', () => {
       expect(r.stats.pointsPerPass).toBeGreaterThan(r.stats.samplesPerPass)
       for (const s of saltos(r)) expect(s).toBeLessThanOrEqual(maxStep + 1)
       expect(r.stats.photoCount).toBe(r.stats.heights.length * r.stats.pointsPerPass)
-      // as fotos inseridas estao no MESMO ponto da amostra seguinte
-      let inseridas = 0
-      for (let i = 1; i < r.stats.pointsPerPass; i++)
-        if (dist(r.waypoints[i - 1], r.waypoints[i]) < 0.01) inseridas++
-      expect(inseridas).toBe(r.stats.pointsPerPass - r.stats.samplesPerPass)
+      // as fotos inseridas ficam ENTRE as amostras, ao longo da linha
+      // afastada: nenhum par seguido da mesma passagem a menos do espacamento
+      // minimo (antes iam para o ponto da amostra seguinte, a 0 m, e o
+      // preflight bloqueava a exportacao)
+      const n = r.stats.pointsPerPass
+      for (let i = 1; i < r.waypoints.length; i++) {
+        if (i % n === 0) continue // mudanca de passagem, na vertical
+        expect(dist(r.waypoints[i - 1], r.waypoints[i])).toBeGreaterThanOrEqual(
+          CORNER_MIN_SPACING_M - 0.01,
+        )
+      }
+      expect(routeChecks(r.waypoints, {}).duplicates).toEqual([])
+      // e nenhuma se aproxima da face mais do que o afastamento pedido
+      const pe = turf.lineString(L)
+      for (const w of r.waypoints)
+        expect(
+          turf.pointToLineDistance(turf.point([w[0], w[1]]), pe, { units: 'meters' }),
+        ).toBeGreaterThan(25 * 0.95)
+    }
+  })
+  test('um canto agudo do lado de fora: as fotos seguem o arco a volta da aresta', () => {
+    // deflexao de 135 graus: do lado convexo a linha afastada e um arco de
+    // raio igual ao afastamento, centrado no vertice
+    const V = [em(0, 0), em(60, 0), em(60 - 60 * Math.cos(Math.PI / 4), 60 * Math.sin(Math.PI / 4))]
+    for (const side of ['left', 'right']) {
+      const r = face(V, side)
+      if (r.error) continue // o lado concavo fechado demais e recusado (standoff-corner)
+      expect(routeChecks(r.waypoints, {}).duplicates).toEqual([])
+      for (const s of saltos(r)) expect(s).toBeLessThanOrEqual(maxStep + 1)
     }
   })
   test('numa face recta nao ha fotos inseridas', () => {
     const r = face([em(0, 0), em(60, 0)], 'left')
     expect(r.stats.pointsPerPass).toBe(r.stats.samplesPerPass)
     expect(Math.max(...saltos(r))).toBeLessThanOrEqual(1)
+  })
+  // um canto agudo do lado de dentro, a 5 m: ao longo da linha afastada as
+  // fotos ficam a um passo, mas atraves do vertice da esquadria a distancia
+  // em linha recta caia para 0,06-0,4 m e o preflight bloqueava a exportacao
+  test('canto agudo do lado de dentro: nenhuma foto seguida abaixo do minimo da DJI', () => {
+    for (const defl of [90, 105, 135, 150, 170]) {
+      const a = (defl * Math.PI) / 180
+      const V = [em(0, 0), em(60, 0), em(60 + 60 * Math.cos(a), 60 * Math.sin(a))]
+      for (const side of ['left', 'right'])
+        for (const ov of [50, 90]) {
+          const r = generateFacePlan(V, {
+            sensor: M3E,
+            faceHeightM: 30,
+            standoffM: 5,
+            side,
+            verticalOverlapPct: 70,
+            horizontalOverlapPct: ov,
+          })
+          if (r.error) {
+            expect(r.error).toBe('standoff-corner')
+            continue
+          }
+          expect(routeChecks(r.waypoints, {}).duplicates).toEqual([])
+          const n = r.stats.pointsPerPass
+          for (let i = 1; i < r.waypoints.length; i++) {
+            if (i % n === 0) continue // mudanca de passagem, na vertical
+            expect(dist(r.waypoints[i - 1], r.waypoints[i])).toBeGreaterThanOrEqual(
+              MIN_PHOTO_GAP_M - 0.01,
+            )
+          }
+          // so se tiram posicoes da linha afastada: nenhuma se aproxima da face
+          const pe = turf.lineString(V)
+          for (const w of r.waypoints)
+            expect(
+              turf.pointToLineDistance(turf.point([w[0], w[1]]), pe, { units: 'meters' }),
+            ).toBeGreaterThan(5 * 0.95)
+        }
+    }
+  })
+  test('95 % de sobreposicao a 5 m: fotos e passagens a MIN_SAMPLE_STEP_M ou mais', () => {
+    const r = generateFacePlan([em(0, 0), em(40, 0)], {
+      sensor: M3E,
+      faceHeightM: 10,
+      standoffM: 5,
+      side: 'left',
+      verticalOverlapPct: 95,
+      horizontalOverlapPct: 95,
+    })
+    expect(r.error).toBeUndefined()
+    expect(r.stats.hStepM).toBeGreaterThanOrEqual(MIN_SAMPLE_STEP_M - 1e-9)
+    expect(r.stats.vStepM).toBeGreaterThanOrEqual(MIN_SAMPLE_STEP_M - 0.1)
+    expect(routeChecks(r.waypoints, {}).duplicates).toEqual([])
+  })
+  test('spacePhotos: num V fechado fica a posicao do vertice, com o rumo do meio', () => {
+    // tres posicoes a 0,3 m do vertice, com rumos 180, 105 e 30; as vizinhas
+    // de fora a 2 m, com os rumos das faces
+    const pts = [em(-2, 0), em(-0.3, 0), em(0, 0.05), em(-0.3, 0.1), em(-2, 0.5)]
+    const hs = [180, 180, 105, 30, 30]
+    const r = spacePhotos(pts, hs, 0.9)
+    expect(r.headings).toEqual([180, 105, 30])
+    for (let i = 1; i < r.pts.length; i++)
+      expect(dist(r.pts[i - 1], r.pts[i])).toBeGreaterThanOrEqual(0.9)
+    // as pontas da passagem ficam sempre
+    const ponta = spacePhotos([em(0, 0), em(0.2, 0), em(3, 0)], [90, 90, 90], 0.9)
+    expect(ponta.pts[0]).toEqual(em(0, 0))
+    expect(ponta.pts.at(-1)).toEqual(em(3, 0))
   })
 })
 

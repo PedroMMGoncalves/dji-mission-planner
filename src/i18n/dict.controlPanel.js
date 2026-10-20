@@ -11,7 +11,6 @@
 
 export default {
   /* ---- Missão ---- */
-  'cp.mission.title': { pt: 'Missão', en: 'Mission' },
   'cp.mission.namePlaceholder': { pt: 'nome-da-missao', en: 'mission-name' },
   'cp.mission.nameHintA': {
     pt: 'Nome dos ficheiros exportados',
@@ -37,7 +36,6 @@ export default {
   },
 
   /* ---- Drone / Sensor ---- */
-  'cp.drone.title': { pt: 'Drone / Sensor', en: 'Drone / Sensor' },
   'cp.drone.rtk': { pt: 'Posicionamento RTK activo', en: 'RTK positioning active' },
   'cp.drone.rtkHint': {
     pt: 'Reduz o erro de posição de ±0,5 / ±1,5 m (GNSS) para centímetros nos intervalos de GSD e sobreposição.',
@@ -65,7 +63,11 @@ export default {
     pt: 'Clique no mapa para acrescentar pontos. Arraste um marcador para o mover.',
     en: 'Click the map to add points. Drag a marker to move it.',
   },
-  'cp.inspect.height': { pt: 'alt', en: 'alt' },
+  'cp.inspect.height': { pt: 'altura', en: 'hgt' },
+  'cp.inspect.heightTitle': {
+    pt: 'Altura acima do ponto de descolagem, em metros',
+    en: 'Height above the take-off point, in metres',
+  },
   'cp.inspect.heading': { pt: 'rumo', en: 'hdg' },
   'cp.inspect.headingTitle': {
     pt: 'Rumo fixo em graus; vazio = segue a rota',
@@ -73,7 +75,7 @@ export default {
   },
   'cp.inspect.pitch': { pt: 'pitch', en: 'pitch' },
   'cp.inspect.pitchTitle': {
-    pt: 'Pitch do gimbal neste ponto; vazio = mantém o anterior',
+    pt: 'Inclinação (pitch) do gimbal neste ponto; vazio = mantém o anterior',
     en: 'Gimbal pitch at this point; empty = keeps the previous one',
   },
   'cp.inspect.photo': { pt: 'Fotografar neste ponto', en: 'Take a photo at this point' },
@@ -84,51 +86,51 @@ export default {
   },
   'cp.inspect.export': { pt: 'Exportar KMZ', en: 'Export KMZ' },
   'cp.inspect.noTerrain': {
-    pt: 'Sem relevo sobre os pontos: a exportação fica disponível quando o relevo os cobrir (descarrega sozinho; ou importe um MDT).',
+    pt: 'Sem relevo sob os pontos: a exportação fica disponível quando o relevo os cobrir (é descarregado automaticamente; ou importe um MDT).',
     en: 'No terrain under the points: export becomes available once terrain covers them (it downloads on its own; or import a DTM).',
   },
   'cp.inspect.hint': {
-    pt: 'Missão própria, independente da grelha: rumo e pitch por ponto, uma foto por ponto marcado. As alturas são relativas ao ponto de descolagem.',
+    pt: 'Missão própria, independente da grelha: rumo e inclinação por ponto, uma foto por ponto marcado. As alturas são relativas ao ponto de descolagem.',
     en: 'A mission of its own, independent of the grid: per-point heading and pitch, one photo per marked point. Heights are relative to the take-off point.',
   },
   'cp.terrain.slopeHint': {
-    pt: 'Encosta média de {slope}° a descer para {az}°. Para encostas íngremes com terrain follow: linhas ao longo das curvas de nível ({lines}°). A câmara fica a nadir: com o rumo a seguir a rota, uma câmara oblíqua inclinava-se ao longo da curva de nível, não para a encosta.',
-    en: 'Mean slope of {slope}° descending toward {az}°. For steep slopes with terrain follow: lines along the contours ({lines}°). Keep the camera at nadir: with the heading following the route, an oblique camera tilted along the contour, not toward the slope.',
+    pt: 'Declive médio de {slope}°, a descer para {az}°. Em encostas íngremes, com seguimento do terreno: faixas ao longo das curvas de nível ({lines}°). Mantenha a câmara a nadir: com o rumo da aeronave a seguir a rota, uma câmara oblíqua inclinar-se-ia ao longo da curva de nível, não para a encosta.',
+    en: 'Mean slope of {slope}° descending towards {az}°. For steep slopes with terrain following: lines along the contours ({lines}°). Keep the camera at nadir: with the aircraft heading following the route, an oblique camera would tilt along the contour, not towards the slope.',
   },
-  'cp.terrain.slopeApplyLines': { pt: 'Linhas a {lines}°', en: 'Lines at {lines}°' },
+  'cp.terrain.slopeApplyLines': { pt: 'Faixas a {lines}°', en: 'Lines at {lines}°' },
   'cp.orientation.optimal': { pt: 'Óptima', en: 'Optimal' },
   'cp.orientation.optimalTitle': {
     pt: 'Procura a direcção com menos faixas dentro do polígono real (menos viragens, menos tempo)',
     en: 'Searches for the direction with the fewest lines inside the real polygon (fewer turns, less time)',
   },
   'cp.orientation.includeNadir': {
-    pt: 'Passagem nadir extra (orto)',
-    en: 'Extra nadir pass (ortho)',
+    pt: 'Passagem nadir extra (ortomosaico)',
+    en: 'Extra nadir pass (orthomosaic)',
   },
   'cp.orientation.includeNadirHint': {
-    pt: 'Terceira grelha na direcção da primeira, voada no fim com a câmara a −90°: garante o produto orto além do 3D. Conta para o tempo, blocos e bateria; o GSD mostrado passa a ser o nadir (a resolução governante do orto).',
-    en: 'Third grid along the first direction, flown last with the camera at −90°: secures the ortho product besides the 3D. Counts toward time, blocks and battery; the displayed GSD becomes the nadir one (the governing ortho resolution).',
+    pt: 'Terceira grelha na direcção da primeira, voada no fim com a câmara a −90°: garante o ortomosaico além do modelo 3D. Conta para o tempo, blocos e bateria; o GSD mostrado passa a ser o nadir (a resolução que condiciona o ortomosaico).',
+    en: 'Third grid along the first direction, flown last with the camera at −90°: ensures the orthomosaic as well as the 3D model. Counts towards time, blocks and battery; the displayed GSD becomes the nadir one (the resolution that governs the orthomosaic).',
   },
   'cp.orientation.tieLine': {
-    pt: 'Fiada de amarração perpendicular',
+    pt: 'Faixa transversal de amarração',
     en: 'Perpendicular tie line',
   },
   'cp.orientation.tieLineHint': {
-    pt: 'Uma passagem extra a meio do bloco, perpendicular às faixas e voada em último lugar — cruza todas as fiadas para o ajuste de strips LiDAR (ex.: CloudStation).',
-    en: 'One extra pass across the middle of the block, perpendicular to the lines and flown last — it crosses every strip for LiDAR strip adjustment (e.g. CloudStation).',
+    pt: 'Uma passagem extra a meio do bloco, perpendicular às faixas e voada em último lugar — cruza todas as faixas, para o ajuste de faixas LiDAR (strip adjustment).',
+    en: 'One extra pass across the middle of the block, perpendicular to the lines and flown last — it crosses every line, for LiDAR strip adjustment.',
   },
-  'cp.flight.overshoot': { pt: 'Overshoot por faixa', en: 'Per-line overshoot' },
+  'cp.flight.overshoot': { pt: 'Prolongamento por faixa', en: 'Per-line overshoot' },
   'cp.flight.overshootHint': {
     pt: 'Prolonga cada faixa nos dois extremos: as viragens ficam fora da área e os dados dentro dela são captados a velocidade e atitude estáveis. Sugerido 10–20 m para LiDAR; 0 desliga. Conta para o tempo e para os blocos.',
-    en: 'Extends every line at both ends: turns happen outside the area and in-area data is captured at stable speed and attitude. Suggested 10–20 m for LiDAR; 0 disables. Counts toward time and block budgets.',
+    en: 'Extends every line at both ends: turns happen outside the area and in-area data is captured at stable speed and attitude. Suggested 10–20 m for LiDAR; 0 disables. Counts towards time and block budgets.',
   },
   'cp.flight.aglCapWarn': {
-    pt: 'O payload {payload} tem tecto operacional de {cap} m AGL e a rota chega a ~{worst} m sobre o terreno. Reduza a altitude.',
-    en: 'The {payload} payload is rated to {cap} m AGL and the route reaches ~{worst} m above ground. Lower the altitude.',
+    pt: 'O payload {payload} tem tecto operacional de {cap} m AGL e a rota chega a ~{worst} m sobre o terreno. Reduza a altura de voo.',
+    en: 'The {payload} payload is rated to {cap} m AGL and the route reaches ~{worst} m above ground. Lower the flight height.',
   },
   'cp.drone.effectiveFovHint': {
-    pt: 'Corte de trabalho do feixe: a faixa e o espaçamento usam este ângulo. Bordas do feixe têm mais ruído — é comum voar com um corte mais estreito que o nominal.',
-    en: 'Working beam cut: swath and spacing use this angle. Beam edges are noisier — flying a narrower cut than nominal is common practice.',
+    pt: 'Ângulo útil do feixe: a largura de varrimento e o espaçamento usam este ângulo. Os bordos do feixe têm mais ruído — é comum voar com um ângulo mais estreito do que o nominal.',
+    en: 'Working beam angle: swath and spacing use this angle. Beam edges are noisier — flying a narrower angle than nominal is common practice.',
   },
   'cp.drone.specs': {
     pt: '{camera} · sensor {w}×{h} mm · focal {focal} mm · payload {payload}',
@@ -144,8 +146,6 @@ export default {
   'cp.drone.wpmlEnums': { pt: 'Enums WPML (avançado)', en: 'WPML enums (advanced)' },
 
   /* ---- Parâmetros de voo ---- */
-  'cp.flight.title': { pt: 'Parâmetros de Voo', en: 'Flight Parameters' },
-  'cp.flight.altitude': { pt: 'Altitude (AGL)', en: 'Altitude (AGL)' },
   'cp.flight.altitudeRel': { pt: 'Altura acima da descolagem', en: 'Height above take-off' },
   'cp.flight.altitudeTf': {
     pt: 'Altura AGL (segue o terreno)',
@@ -158,31 +158,31 @@ export default {
   'cp.flight.gsdTarget': { pt: 'GSD alvo', en: 'Target GSD' },
   'cp.flight.altWarnPre': { pt: 'Acima de', en: 'Above' },
   'cp.flight.altWarnPost': {
-    pt: '— excede o limite geral da categoria Aberta (UE); requer autorização específica.',
-    en: '— exceeds the general Open category limit (EU); specific authorisation is required.',
+    pt: '— excede o limite geral da categoria aberta (UE): é preciso operar na categoria específica, com autorização operacional.',
+    en: '— exceeds the general Open category limit (EU): operate in the Specific category, with an operational authorisation.',
   },
   'cp.flight.speed': { pt: 'Velocidade', en: 'Speed' },
   'cp.flight.frontOverlap': { pt: 'Sobreposição frontal', en: 'Forward overlap' },
   'cp.flight.sideOverlap': { pt: 'Sobreposição lateral', en: 'Side overlap' },
   'cp.flight.manualSpacing': {
-    pt: 'Espaçamento manual entre linhas',
+    pt: 'Espaçamento manual entre faixas',
     en: 'Manual line spacing',
   },
-  'cp.flight.lineDistance': { pt: 'Distância entre linhas', en: 'Line spacing' },
+  'cp.flight.lineDistance': { pt: 'Espaçamento entre faixas', en: 'Line spacing' },
   'cp.flight.triggerBy': { pt: 'Disparo por', en: 'Trigger by' },
   'cp.flight.triggerDistance': { pt: 'Distância', en: 'Distance' },
   'cp.flight.triggerTime': { pt: 'Tempo', en: 'Time' },
   'cp.flight.triggerWaypoint': { pt: 'Waypoint', en: 'Waypoint' },
   'cp.flight.triggerWaypointHint': {
-    pt: 'Uma foto por waypoint: cada passagem é densificada a passos iguais ≤ intervalo, cada ponto leva uma acção de foto e o overshoot não dispara. Não há gatilho por distância; a paragem em cada ponto escolhe-se em «Paragem nos waypoints». Com «Seguir terreno», os pontos de foto entram na rota do relevo com a altura do perfil voado.',
-    en: 'One photo per waypoint: each pass is densified at equal steps ≤ interval, every point carries a take-photo action and the overshoot does not trigger. There is no distance trigger; stopping at each point is set in "Stop at waypoints". With "Follow terrain", the photo points join the terrain route at the height of the flown profile.',
+    pt: 'Uma foto por waypoint: cada faixa é densificada a passos iguais ≤ intervalo, cada ponto leva uma acção de foto e o prolongamento não dispara. Não há disparo por distância; a paragem em cada ponto escolhe-se em «Paragem nos waypoints». Com «Seguir terreno», os pontos de foto passam a fazer parte da rota que segue o relevo, à altura do perfil voado.',
+    en: 'One photo per waypoint: each line is densified at equal steps ≤ interval, every point carries a take-photo action and the overshoot does not trigger. There is no distance trigger; stopping at each point is set in “Stop at waypoints”. With “Follow terrain”, the photo points become part of the terrain-following route, at the height of the flown profile.',
   },
   'cp.flight.stops': { pt: 'Paragem nos waypoints', en: 'Stop at waypoints' },
   'cp.flight.stopsCorners': { pt: 'Só nos cantos', en: 'Corners only' },
   'cp.flight.stopsAll': { pt: 'Em todos', en: 'At every waypoint' },
   'cp.flight.stopsHint': {
-    pt: 'Só nos cantos: a aeronave pára no fim de cada faixa e passa sem parar pelas fotos e pelos vértices do terreno (no Pilot 2, waypointTurnMode coordinateTurn nesses pontos). Em todos: pára em cada waypoint (toPointAndStopWithDiscontinuityCurvature; pouca luz, exposições longas), e o tempo previsto conta as paragens.',
-    en: 'Corners only: the aircraft stops at the end of each strip and flies through photo points and terrain vertices (in Pilot 2, waypointTurnMode coordinateTurn at those points). At every waypoint: it stops at each one (toPointAndStopWithDiscontinuityCurvature; low light, long exposures), and the estimated time counts the stops.',
+    pt: 'Só nos cantos: a aeronave pára no fim de cada faixa e passa sem parar pelas fotos e pelos vértices do terreno (nesses pontos o KMZ leva waypointTurnMode toPointAndPassWithContinuityCurvature com useStraightLine 1, o «Turns before waypoint. Flies through» do Pilot 2). Em todos: pára em cada waypoint (toPointAndStopWithDiscontinuityCurvature; pouca luz, exposições longas), e o tempo previsto conta as paragens.',
+    en: 'Corners only: the aircraft stops at the end of each line and flies through photo points and terrain vertices (at those points the KMZ carries waypointTurnMode toPointAndPassWithContinuityCurvature with useStraightLine 1, Pilot 2’s “Turns before waypoint. Flies through”). At every waypoint: it stops at each one (toPointAndStopWithDiscontinuityCurvature; low light, long exposures), and the estimated time counts the stops.',
   },
   'cp.flight.waypointWarn': {
     pt: '{n} waypoints num só bloco — acima de 2000 a importação no Pilot 2 fica lenta; aumente o intervalo ou divida em blocos.',
@@ -195,7 +195,7 @@ export default {
   },
 
   /* ---- Orientação das linhas ---- */
-  'cp.orientation.title': { pt: 'Orientação das Linhas', en: 'Flight Line Orientation' },
+  'cp.orientation.title': { pt: 'Orientação das faixas', en: 'Flight Line Orientation' },
   'cp.orientation.azimuthHint': {
     pt: 'Azimute das faixas: 0° = Norte–Sul · 90° = Este–Oeste',
     en: 'Flight line azimuth: 0° = North–South · 90° = East–West',
@@ -204,16 +204,16 @@ export default {
   'cp.orientation.perpendicular': { pt: '⊥ Perpendic.', en: '⊥ Perpend.' },
   'cp.orientation.oblique45': { pt: '∠ Oblíquas 45°', en: '∠ Oblique 45°' },
   'cp.orientation.relativeTitle': {
-    pt: 'Direcção relativa à orientação do bloco (ou à aresta mais longa do polígono)',
+    pt: 'Direcção relativa à orientação do bloco (ou ao lado mais longo do polígono)',
     en: 'Direction relative to the block orientation (or to the longest edge of the polygon)',
   },
   'cp.orientation.reference': {
-    pt: 'Referência: {deg}° — orientação do bloco / aresta mais longa',
+    pt: 'Referência: {deg}° — orientação do bloco / lado mais longo',
     en: 'Reference: {deg}° — block orientation / longest edge',
   },
   'cp.orientation.crosshatch': {
     pt: 'Dupla grelha perpendicular (crosshatch, 3D)',
-    en: 'Perpendicular double grid (crosshatch, 3D)',
+    en: 'Perpendicular crosshatch (3D)',
   },
   'cp.orientation.crosshatchHint': {
     pt: 'Segunda passagem a {deg}°. Duplica o tempo de voo — os blocos por bateria são redimensionados. Sugere-se gimbal a −60°.',
@@ -222,8 +222,8 @@ export default {
 
   /* ---- Expansão (buffer) ---- */
   'cp.buffer.title': {
-    pt: 'Expansão das Linhas (Buffer)',
-    en: 'Flight Line Expansion (Buffer)',
+    pt: 'Margem da área (buffer)',
+    en: 'Area buffer',
   },
   'cp.buffer.metres': {
     pt: '= {m} m para cada lado ({pct} % de √área ÷ 2; o Pilot 2 e o UgCS pedem metros)',
@@ -234,7 +234,6 @@ export default {
   'cp.inspect.remove': { pt: 'Retirar o ponto {n}', en: 'Remove point {n}' },
 
   /* ---- Área de levantamento ---- */
-  'cp.area.title': { pt: 'Área de Levantamento', en: 'Survey Area' },
   'cp.area.shape': { pt: 'Forma', en: 'Shape' },
   'cp.area.polygon': { pt: 'Polígono', en: 'Polygon' },
   'cp.area.polygonTitle': {
@@ -261,7 +260,7 @@ export default {
   },
   'cp.area.importUseAll': { pt: 'Usar todas as partes como células', en: 'Use all parts as cells' },
   'cp.area.importCrsHint': {
-    pt: 'O ficheiro declara {crs}, que não está na lista; escolha o CRS equivalente ou reexporte em PT-TM06.',
+    pt: 'O ficheiro declara {crs}, que não está na lista; escolha o SRC equivalente ou reexporte em PT-TM06.',
     en: 'The file declares {crs}, which is not in the list; pick the equivalent CRS or re-export in PT-TM06.',
   },
   'cp.area.importDiscarded': {
@@ -269,7 +268,7 @@ export default {
     en: '{n} extra polygon(s) in the file: the largest one was used. To fly them all, use them as cells (button below) or import them as separate projects.',
   },
   'cp.area.importTitle': {
-    pt: 'Importar área de ficheiro KML, GeoJSON ou Shapefile zipado',
+    pt: 'Importar área de ficheiro KML, GeoJSON ou Shapefile comprimido (.zip)',
     en: 'Import an area from a KML, GeoJSON or zipped Shapefile',
   },
   'cp.area.crsPrompt': {
@@ -280,8 +279,8 @@ export default {
   'cp.area.cancel': { pt: 'Cancelar', en: 'Cancel' },
   'cp.area.markBase': { pt: 'Marcar base', en: 'Set base' },
   'cp.area.baseTitle': {
-    pt: 'Marcar o ponto de descolagem / posição do operador',
-    en: 'Set the take-off point / operator position',
+    pt: 'Marcar o ponto de descolagem / posição do piloto',
+    en: 'Set the take-off point / pilot position',
   },
   'cp.area.removeBase': { pt: 'Remover base', en: 'Remove base' },
   'cp.area.baseHint': {
@@ -323,10 +322,10 @@ export default {
     en: 'Block grid (replicas of the shape)',
   },
   'cp.area.cols': { pt: 'Colunas (∥ orientação)', en: 'Columns (∥ orientation)' },
-  'cp.area.rows': { pt: 'Linhas (⊥ orientação)', en: 'Rows (⊥ orientation)' },
+  'cp.area.rows': { pt: 'Filas (⊥ orientação)', en: 'Rows (⊥ orientation)' },
   'cp.area.gridHint': {
-    pt: 'Com mais de 1 célula, cada célula torna-se um bloco de voo numerado (ex.: 3×2 quadrados de 250 m = 6 blocos; para os dimensionar pela bateria use a divisão «Bateria», cartão 4). Use o buffer para criar sobreposição entre células.',
-    en: 'With more than 1 cell, each cell becomes a numbered flight block (e.g. 3×2 squares of 250 m = 6 blocks; to size them by battery use the "Battery" split, card 4). Use the buffer to create overlap between cells.',
+    pt: 'Com mais de 1 célula, cada célula torna-se um bloco de voo numerado (ex.: 3×2 quadrados de 250 m = 6 blocos; para os dimensionar pela bateria use a divisão «Bateria», cartão 4). Use a margem da área para criar sobreposição entre células.',
+    en: 'With more than 1 cell, each cell becomes a numbered flight block (e.g. 3×2 squares of 250 m = 6 blocks; to size them by battery use the “Battery” split, card 4). Use the area buffer to create overlap between cells.',
   },
   'cp.area.editHintA': {
     pt: 'Edição: arraste os vértices · arraste os pontos intermédios para',
@@ -345,38 +344,37 @@ export default {
     en: 'self-intersections were detected (marked in red on the map). Drag the vertices to fix the geometry before generating the flight lines.',
   },
   'cp.area.planError.cell-uncovered': {
-    pt: 'As células {cells} da grelha ficaram sem passagens de voo — a missão NÃO cobre toda a área desenhada. Ajuste o espaçamento, a orientação ou o tamanho das células.',
-    en: 'Grid cells {cells} received no flight passes — the mission does NOT cover the whole drawn area. Adjust the spacing, the direction or the cell size.',
+    pt: 'As células {cells} da grelha ficaram sem faixas — a missão NÃO cobre toda a área desenhada. Ajuste o espaçamento, a orientação ou o tamanho das células.',
+    en: 'Grid cells {cells} received no flight lines — the mission does NOT cover the whole drawn area. Adjust the spacing, the orientation or the cell size.',
   },
   'cp.area.planError.crosshatch-failed': {
     pt: 'A segunda grelha (perpendicular) não pôde ser gerada — sem dupla grelha a missão não sai. Ajuste o espaçamento ou a área.',
-    en: 'The second (perpendicular) grid could not be generated — no mission without the double grid. Adjust the spacing or the area.',
+    en: 'The second (perpendicular) grid could not be generated — no mission without the crosshatch. Adjust the spacing or the area.',
   },
   'cp.area.planError.nadir-failed': {
     pt: 'A passagem nadir extra não pôde ser gerada — a missão não sai sem ela. Ajuste o espaçamento ou desligue a passagem nadir.',
     en: 'The extra nadir pass could not be generated — no mission without it. Adjust the spacing or switch the nadir pass off.',
   },
   'cp.area.tooManyLines': {
-    pt: 'O espaçamento calculado gera linhas em excesso (>2500). Aumente a altitude, reduza a sobreposição lateral ou diminua a área.',
-    en: 'The computed spacing produces too many flight lines (>2500). Increase the altitude, reduce the side overlap or shrink the area.',
+    pt: 'O espaçamento calculado gera faixas em excesso (>2500). Aumente a altura de voo, reduza a sobreposição lateral ou diminua a área.',
+    en: 'The computed spacing produces too many flight lines (>2500). Increase the flight height, reduce the side overlap or shrink the area.',
   },
 
   /* ---- Divisão em blocos de voo ---- */
-  'cp.split.title': { pt: 'Divisão em Blocos de Voo', en: 'Split into Flight Blocks' },
   'cp.split.gridActive': {
-    pt: 'Grelha activa: cada célula é um bloco de voo. A divisão por área/bateria aplica-se apenas a áreas sem grelha.',
-    en: 'Grid active: each cell is a flight block. Splitting by area/battery applies only to areas without a grid.',
+    pt: 'Grelha de blocos activa: cada célula é um bloco de voo. A divisão em voos (Faixas, Bateria ou Quadrícula) aplica-se apenas a áreas sem grelha de blocos.',
+    en: 'Block grid active: each cell is a flight block. Splitting into flights (Lines, Battery or Tiles) applies only to areas without a block grid.',
   },
   'cp.split.modeNone': { pt: 'Nenhuma', en: 'None' },
   'cp.split.modeArea': { pt: 'Faixas', en: 'Lines' },
   'cp.split.modeBattery': { pt: 'Bateria', en: 'Battery' },
-  'cp.split.modeTiles': { pt: 'Mosaico', en: 'Mosaic' },
+  'cp.split.modeTiles': { pt: 'Quadrícula', en: 'Tiles' },
   'cp.split.tileSideLabel': { pt: 'Lado do quadrado', en: 'Square side' },
   'cp.split.customSide': { pt: 'Lado personalizado', en: 'Custom side' },
-  'cp.split.meshOrientation': { pt: 'Orientação da malha', en: 'Mosaic orientation' },
+  'cp.split.meshOrientation': { pt: 'Orientação da quadrícula', en: 'Tile orientation' },
   'cp.split.undo': { pt: 'Anular (Ctrl+Z)', en: 'Undo (Ctrl+Z)' },
   'cp.split.undoTitle': {
-    pt: 'Desfazer a última edição: área, células ou bases (Ctrl+Z)',
+    pt: 'Anular a última edição: área, células ou bases (Ctrl+Z)',
     en: 'Undo the last edit: area, cells or bases (Ctrl+Z)',
   },
   'cp.split.restoreAll': { pt: 'Reactivar todas', en: 'Re-enable all' },
@@ -389,7 +387,7 @@ export default {
     en: 'Click a cell on the map',
   },
   'cp.split.tilesHintB': {
-    pt: 'para a desactivar/reactivar (Ctrl+Z desfaz). Cada célula activa é um bloco de voo numerado.',
+    pt: 'para a desactivar/reactivar (Ctrl+Z anula). Cada célula activa é um bloco de voo numerado.',
     en: 'to disable/re-enable it (Ctrl+Z undoes). Each active cell is a numbered flight block.',
   },
   'cp.split.cellsGenerated': { pt: '{n} células geradas', en: '{n} cells generated' },
@@ -400,18 +398,18 @@ export default {
     en: 'Too many cells (>400). Increase the square side.',
   },
   'cp.split.tooManyCellsBattery': {
-    pt: 'Demasiadas células (>400). Aumente o tempo útil por voo ou o tecto VLOS.',
-    en: 'Too many cells (>400). Increase the useful time per flight or the VLOS ceiling.',
+    pt: 'Demasiadas células (>400). Aumente o tempo útil por voo ou o «Lado máx. (VLOS)».',
+    en: 'Too many cells (>400). Increase the usable time per flight or the “Max. side (VLOS)”.',
   },
   'cp.split.maxAreaPerBlock': { pt: 'Área máx. por bloco', en: 'Max. area per block' },
   'cp.split.maxSide': { pt: 'Lado máx. (VLOS)', en: 'Max. side (VLOS)' },
   'cp.split.squareBlocks': { pt: 'Blocos quadrados de', en: 'Square blocks of' },
   'cp.split.batteryUse': {
     pt: ', dimensionados para {min} min úteis por voo',
-    en: ', sized for {min} useful min per flight',
+    en: ', sized for {min} usable min per flight',
   },
   'cp.split.batteryHintA': {
-    pt: 'Áreas compactas mantêm o voo dentro do alcance visual (VLOS) e a troca de baterias perto do bloco.',
+    pt: 'Áreas compactas mantêm o voo dentro da distância VLOS e a troca de baterias perto do bloco.',
     en: 'Compact areas keep the flight within visual line of sight (VLOS) and battery swaps close to the block.',
   },
   'cp.split.batteryHintB': {
@@ -428,11 +426,7 @@ export default {
   },
 
   /* ---- Terreno (DEM) ---- */
-  'cp.terrain.title': {
-    pt: 'Terreno (DEM) — Terrain Follow',
-    en: 'Terrain (DEM) — Terrain Follow',
-  },
-  'cp.terrain.loading': { pt: 'A carregar terreno…', en: 'Loading terrain…' },
+  'cp.terrain.loading': { pt: 'A carregar o relevo…', en: 'Loading terrain…' },
   'cp.terrain.rememberedDtm': {
     pt: 'Este projecto usou o MDT «{file}». O ficheiro não fica no projecto: importe-o de novo para o usar.',
     en: 'This project used the DTM “{file}”. The file is not stored in the project: import it again to use it.',
@@ -459,7 +453,7 @@ export default {
   'cp.terrain.surfaceDtm': { pt: 'MDT', en: 'DTM' },
   'cp.terrain.surfaceDsm': { pt: 'MDS', en: 'DSM' },
   'cp.terrain.surfaceHint': {
-    pt: 'MDT: só o chão (ex. LiDAR da DGT). MDS: com a vegetação, as construções e as escombreiras (ex. o último voo da equipa). As bacias de visão somam a vegetação e os obstáculos da missão só a um MDT.',
+    pt: 'MDT: só o solo nu (ex. LiDAR da DGT). MDS: com a vegetação, as construções e as escombreiras (ex. o último voo da equipa). As bacias de visão somam a vegetação e os obstáculos da missão só a um MDT.',
     en: 'DTM: bare ground (e.g. DGT LiDAR). DSM: with vegetation, buildings and spoil heaps (e.g. the team’s last flight). The viewsheds add the mission’s vegetation and obstacle height only to a DTM.',
   },
   'cp.terrain.demGrid': {
@@ -467,8 +461,8 @@ export default {
     en: '({crs}, ~{res} m grid)',
   },
   'cp.terrain.outOfCoverage': {
-    pt: 'A área actual sai fora do relevo carregado — volte a descarregar.',
-    en: 'The current area extends beyond the loaded terrain — download it again.',
+    pt: 'A área actual sai fora do relevo carregado — volte a descarregar o relevo global ou importe um MDT que a cubra.',
+    en: 'The current area extends beyond the loaded terrain — download the global terrain again or import a DTM that covers it.',
   },
   'cp.terrain.follow': {
     pt: 'Seguir terreno (AGL constante)',
@@ -477,20 +471,20 @@ export default {
   'cp.terrain.tolerance': { pt: 'Tolerância vertical', en: 'Vertical tolerance' },
   /* ---- erros do seguimento de terreno, por código (M3-C8) ---- */
   'cp.terrain.err.ref-outside-terrain': {
-    pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado.',
-    en: 'No reference elevation: neither the base nor the route lies on the loaded terrain.',
+    pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado. Carregue relevo que cubra a base ou a rota.',
+    en: 'No reference elevation: neither the base nor the route lies on the loaded terrain. Load terrain that covers the base or the route.',
   },
   'cp.terrain.err.no-plan': {
     pt: 'Sem plano: não há faixas para seguir o terreno.',
-    en: 'No plan: there are no strips to follow the terrain with.',
+    en: 'No plan: there are no lines to follow the terrain with.',
   },
   'cp.terrain.err.terrain-failed': {
-    pt: 'Falha no cálculo do terreno: {msg}',
-    en: 'Terrain computation failed: {msg}',
+    pt: 'Falha no seguimento do terreno: {msg}',
+    en: 'Terrain following failed: {msg}',
   },
   'cp.terrain.result': {
-    pt: 'Terreno {min}–{max} m · {n} waypoints com altura própria (ref. {ref} m).',
-    en: 'Terrain {min}–{max} m · {n} waypoints with individual heights (ref. {ref} m).',
+    pt: 'Cotas do terreno {min}–{max} m · {n} waypoints com altura própria (cota de referência {ref} m).',
+    en: 'Terrain elevation {min}–{max} m · {n} waypoints with individual heights (reference elevation {ref} m).',
   },
   'cp.terrain.sourceHint': {
     pt: 'Fonte: Terrarium/AWS (~30 m). As alturas por waypoint são relativas ao ponto de descolagem — marque a base no local real de descolagem e valide no Pilot 2.',
@@ -501,7 +495,7 @@ export default {
     en: '{hits} of {total} tiles came from the local cache (areas seen before load without network).',
   },
   'cp.terrain.datum': {
-    pt: 'Datum vertical: {datum}. As alturas exportadas são diferenças de cotas da mesma fonte, pelo que um desvio constante do datum cancela.',
+    pt: 'Datum vertical: {datum}. As alturas exportadas são diferenças de cotas da mesma fonte, pelo que um desvio constante do datum se anula.',
     en: 'Vertical datum: {datum}. Exported heights are differences of elevations from the same source, so a constant datum offset cancels out.',
   },
   'cp.terrain.datumOrtho': { pt: 'ortométrico, {model}', en: 'orthometric, {model}' },
@@ -517,7 +511,7 @@ export default {
   },
   'cp.terrain.datumEllipWarn': {
     pt: 'O MDT declara alturas elipsoidais: não misture com fontes ortométricas (Terrarium, MDT DGT) na mesma missão; a referência das alturas relativas continua a ser este ficheiro.',
-    en: 'The DTM declares ellipsoidal heights: do not mix with orthometric sources (Terrarium, national DTMs) in the same mission; relative heights are still referenced to this file.',
+    en: 'The DTM declares ellipsoidal heights: do not mix with orthometric sources (Terrarium, DGT DTM) in the same mission; relative heights are still referenced to this file.',
   },
   'cp.terrain.sourceHintFile': {
     pt: 'Fonte: MDT local {label} ({res} m). As alturas por waypoint são relativas ao ponto de descolagem — marque a base no local real de descolagem e valide no Pilot 2.',
@@ -525,7 +519,7 @@ export default {
   },
 
   /* ---- GCPs ---- */
-  'cp.gcp.title': { pt: 'GCPs — Pontos de Controlo', en: 'GCPs — Ground Control Points' },
+  'cp.gcp.title': { pt: 'GCPs', en: 'GCPs' },
   'cp.gcp.plan': { pt: 'Planear posições de GCPs', en: 'Plan GCP positions' },
   'cp.gcp.count': { pt: 'Número de GCPs', en: 'Number of GCPs' },
   'cp.gcp.auto': { pt: 'Auto', en: 'Auto' },
@@ -558,15 +552,40 @@ export default {
     en: 'Flight elevation profile',
   },
   'cp.flight.triggerFast': {
-    pt: 'Disparo a cada {s} s — abaixo do mínimo do obturador (~{min} s). Reduza a velocidade para ≤ {vmax} m/s ou baixe a sobreposição frontal.',
-    en: 'Shot every {s} s — below the shutter minimum (~{min} s). Reduce speed to ≤ {vmax} m/s or lower the front overlap.',
+    pt: 'Disparo a cada {s} s — abaixo do intervalo mínimo da câmara (~{min} s). Reduza a velocidade para ≤ {vmax} m/s ou baixe a sobreposição frontal.',
+    en: 'Shot every {s} s — below the camera’s minimum interval (~{min} s). Reduce speed to ≤ {vmax} m/s or lower the forward overlap.',
   },
 
   /* ---- Presets de missão ---- */
-  'cp.preset.label': { pt: 'Preset de missão', en: 'Mission preset' },
+  'cp.preset.label': { pt: 'Tipo de levantamento', en: 'Survey type' },
   'cp.preset.custom': { pt: 'Personalizado', en: 'Custom' },
   'cp.preset.hint': {
     pt: 'Escolha um tipo de levantamento para aplicar sobreposições, velocidade, gimbal e dupla grelha recomendados.',
     en: 'Pick a survey type to apply the recommended overlaps, speed, gimbal and crosshatch.',
+  },
+
+  /* ---- Intervalo manual, rumo fixo e espera nos pontos de inspecção ---- */
+  'cp.flight.manualInterval': { pt: 'Intervalo de disparo manual', en: 'Manual trigger interval' },
+  'cp.flight.intervalValue': { pt: 'Intervalo de disparo', en: 'Trigger interval' },
+  'cp.flight.intervalOverlap': {
+    pt: 'Sobreposição frontal resultante: {pct} % ({m} m entre fotos); o campo da sobreposição frontal deixa de contar.',
+    en: 'Resulting forward overlap: {pct} % ({m} m between photos); the forward overlap field no longer applies.',
+  },
+  'cp.flight.intervalOverlapLow': {
+    pt: 'Abaixo de 60 % a reconstrução perde robustez.',
+    en: 'Below 60 % the reconstruction loses robustness.',
+  },
+  'cp.flight.headingMode': { pt: 'Rumo da aeronave', en: 'Aircraft heading' },
+  'cp.flight.headingRoute': { pt: 'Segue a rota', en: 'Follows the route' },
+  'cp.flight.headingFixed': { pt: 'Fixo', en: 'Fixed' },
+  'cp.flight.headingDeg': { pt: 'Rumo fixo', en: 'Fixed heading' },
+  'cp.flight.headingHint': {
+    pt: 'Fixo: a câmara aponta sempre para o mesmo lado, seja qual for o sentido da faixa (oblíquas viradas para a encosta, e cada direcção de vista com a sobreposição lateral pedida; a seguir a rota, as faixas alternam a direcção). Sai como smoothTransition com o mesmo ângulo em todos os waypoints.',
+    en: 'Fixed: the camera always points the same way, whatever the direction of the line (obliques facing the slope, and each viewing direction with the requested side overlap; following the route, lines alternate the direction). Written as smoothTransition with the same angle at every waypoint.',
+  },
+  'cp.inspect.hover': { pt: 'Espera', en: 'Wait' },
+  'cp.inspect.hoverTitle': {
+    pt: 'Segundos de espera no ponto antes do disparo (acção hover)',
+    en: 'Seconds to wait at the point before the shot (hover action)',
   },
 }

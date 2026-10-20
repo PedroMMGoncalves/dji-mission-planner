@@ -2,8 +2,8 @@
 export default {
   'app.settings': { pt: 'Configuração', en: 'Settings' },
   'app.settingsTitle': {
-    pt: 'Configuração: baterias, alcance visual e zona de descolagem por aeronave',
-    en: 'Settings: batteries, visual range and take-off zone per aircraft',
+    pt: 'Configuração: baterias, distância VLOS e zona de descolagem por aeronave',
+    en: 'Settings: batteries, VLOS range and take-off zone per aircraft',
   },
 
   /* ---- Janela Configuração ---- */
@@ -15,18 +15,18 @@ export default {
     en: 'The team’s equipment, stored in this browser and apart from the projects. Take it to another computer with Export / Import.',
   },
   'set.aircraftTitle': { pt: 'Equipamento por aeronave', en: 'Equipment per aircraft' },
-  'set.vlos': { pt: 'Alcance visual (VLOS)', en: 'Visual line of sight (VLOS)' },
+  'set.vlos': { pt: 'Distância VLOS', en: 'VLOS range' },
   'set.vlosHint': {
     pt: 'Distância a que o piloto mantém esta aeronave à vista.',
     en: 'Distance at which the pilot keeps this aircraft in sight.',
   },
   'set.batteriesTitle': { pt: 'Baterias', en: 'Batteries' },
   'set.batteriesHint': {
-    pt: 'Tempo útil = minutos de voo por conjunto já descontada a reserva com que aterra (15-20 %). Não há reserva aplicada por cima.',
-    en: 'Useful time = flight minutes per set with the landing reserve (15-20 %) already taken off. No further reserve is applied.',
+    pt: 'Tempo útil = minutos de voo por conjunto já descontada a reserva com que aterra (15–20 %). Não há reserva aplicada por cima.',
+    en: 'Usable time = flight minutes per set with the landing reserve (15–20 %) already deducted. No further reserve is applied.',
   },
   'set.batteryLabel': { pt: 'Nome', en: 'Name' },
-  'set.usefulMin': { pt: 'Tempo útil por conjunto', en: 'Useful time per set' },
+  'set.usefulMin': { pt: 'Tempo útil por conjunto', en: 'Usable time per set' },
   'set.count': { pt: 'Conjuntos na equipa', en: 'Sets the team has' },
   'set.countPlaceholder': { pt: 'opcional', en: 'optional' },
   'set.default': { pt: 'Por omissão', en: 'Default' },
@@ -58,19 +58,19 @@ export default {
   },
   'set.maxFlightsPerBase': { pt: 'Máximo de voos por base', en: 'Max. flights per base' },
   'set.maxFlightsPerBaseHint': {
-    pt: 'Limite de blocos que a proposta de bases dá a cada base (0 = sem limite, só o alcance visual). As escolhas manuais não são limitadas.',
-    en: 'How many blocks the base proposal gives each base (0 = no limit, only the visual range). Manual choices are not limited.',
+    pt: 'Limite de voos que a proposta de bases dá a cada base (0 = sem limite, só a distância VLOS). As escolhas manuais não são limitadas.',
+    en: 'How many flights the base proposal gives each base (0 = no limit, only the VLOS range). Manual choices are not limited.',
   },
-  'set.operatorTitle': { pt: 'Operador', en: 'Operator' },
+  'set.operatorTitle': { pt: 'Piloto', en: 'Pilot' },
   'set.eyeHeight': { pt: 'Altura dos olhos', en: 'Eye height' },
   'set.eyeHeightHint': {
-    pt: 'Altura dos olhos do operador acima do chão no ponto da base (1-5 m; 1,7 m de pé). Usada nas bacias de visão: que partes de cada bloco ficam atrás do relevo vistas da base.',
-    en: 'Height of the operator’s eyes above the ground at the base point (1-5 m; 1.7 m standing). Used in the viewsheds: which parts of each block are behind the terrain seen from the base.',
+    pt: 'Altura dos olhos do piloto acima do solo no ponto da base (1–5 m; 1,7 m de pé). Usada nas bacias de visão: que partes de cada bloco ficam atrás do relevo vistas da base.',
+    en: 'Height of the pilot’s eyes above the ground at the base point (1–5 m; 1.7 m standing). Used in the viewsheds: which parts of each block are behind the terrain seen from the base.',
   },
   'set.antennaHeight': { pt: 'Altura do comando (antena)', en: 'Controller (antenna) height' },
   'set.antennaHeightHint': {
-    pt: 'Altura das antenas do comando acima do chão no ponto da base (1-5 m; 1,5 m nas mãos). Usada no rádio das bacias de visão: 60 % da primeira zona de Fresnel a 2,4 GHz livre de relevo.',
-    en: 'Height of the controller antennas above the ground at the base point (1-5 m; 1.5 m hand-held). Used for the radio check of the viewsheds: 60 % of the first Fresnel zone at 2.4 GHz clear of terrain.',
+    pt: 'Altura das antenas do comando acima do solo no ponto da base (1–5 m; 1,5 m nas mãos). Usada no rádio das bacias de visão: 60 % da primeira zona de Fresnel a 2,4 GHz livre de relevo.',
+    en: 'Height of the controller antennas above the ground at the base point (1–5 m; 1.5 m hand-held). Used for the radio check of the viewsheds: 60 % of the first Fresnel zone at 2.4 GHz clear of terrain.',
   },
   'set.fileTitle': { pt: 'Ficheiro', en: 'File' },
   'set.export': { pt: 'Exportar', en: 'Export' },
@@ -95,25 +95,25 @@ export default {
 
   /* ---- Bateria da missão (divisão por bateria) ---- */
   'cp.split.batteryType': { pt: 'Bateria', en: 'Battery' },
-  'cp.split.usefulMin': { pt: 'Tempo útil por voo', en: 'Useful time per flight' },
+  'cp.split.usefulMin': { pt: 'Tempo útil por voo', en: 'Usable time per flight' },
   'cp.split.usefulReset': { pt: '↺ {min}', en: '↺ {min}' },
   'cp.split.usefulResetTitle': {
     pt: 'Voltar ao tempo útil da bateria ({min} min)',
-    en: 'Back to the battery’s useful time ({min} min)',
+    en: 'Back to the battery’s usable time ({min} min)',
   },
   'cp.split.usefulHint': {
     pt: 'Já descontada a reserva com que aterra. Acerte-o para as condições do dia (vento, frio); os tipos de bateria configuram-se em',
-    en: 'With the landing reserve already taken off. Adjust it for the day’s conditions (wind, cold); battery types are set up in',
+    en: 'With the landing reserve already deducted. Adjust it for the day’s conditions (wind, cold); battery types are set up in',
   },
   'cp.split.estimated': {
     pt: 'Tempo útil estimado, sem dados de campo para esta aeronave.',
-    en: 'Estimated useful time, no field data for this aircraft.',
+    en: 'Estimated usable time, no field data for this aircraft.',
   },
   'sets.short': {
     pt: 'A missão precisa de {flights} voos e a equipa tem {sets} conjuntos de {battery}: conte com recarregar no campo.',
     en: 'The mission needs {flights} flights and the team has {sets} sets of {battery}: plan on recharging in the field.',
   },
-  'set.defaultBattery': { pt: 'Bateria padrão', en: 'Default battery' },
+  'set.defaultBattery': { pt: 'Bateria de origem', en: 'Stock battery' },
   'set.clearCache': { pt: 'Limpar a cache do relevo', en: 'Clear the terrain cache' },
   'set.cacheCleared': {
     pt: 'Cache do relevo apagada: as áreas voltam a ser descarregadas quando forem precisas.',

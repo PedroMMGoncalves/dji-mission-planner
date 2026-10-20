@@ -22,7 +22,6 @@ import {
   lineSpacing,
   normalizeTriggerMode,
   normalizeWaypointStops,
-  photoInterval,
   resolveSensor,
   ringToPolygon,
   validateRing,
@@ -31,6 +30,7 @@ import { planArea } from './areaPlan.js'
 import { cellFitsBattery, squareSideWithBaseTransit } from './baseLayout.js'
 import { DEFAULT_ZONE_RADIUS_M } from './takeoffZones.js'
 import { planBlocks } from './blocks.js'
+import { triggerInterval } from './triggerInterval.js'
 import { DEFAULT_PARAMS, DEFAULT_SPLIT } from './defaults.js'
 import { usableBatteryMin } from './preflight.js'
 import { buildSquareMosaic, mosaicOrientationForLines } from './squareMosaic.js'
@@ -64,7 +64,16 @@ export function planMissionFromProject(n, { zoneRadiusM = DEFAULT_ZONE_RADIUS_M 
     params.spacingMode === 'manual'
       ? Math.max(1, params.manualSpacing)
       : lineSpacing(footprint.across, params.sideOverlap)
-  const intervalM = photoInterval(footprint.along, params.frontOverlap)
+  // o mesmo intervalo efectivo da aplicação: automático, ou o escrito à mão
+  const intervalM = triggerInterval({
+    footprintAlong: footprint.along,
+    frontOverlapPct: params.frontOverlap,
+    triggerMode: params.triggerMode,
+    intervalMode: sensor.type === 'camera' ? params.intervalMode : 'auto',
+    manualIntervalM: params.manualIntervalM,
+    manualIntervalS: params.manualIntervalS,
+    speed,
+  }).intervalM
   const gsdPitch = params.crosshatch && params.includeNadir ? -90 : params.gimbalPitch
   const gsdCm = computeGSD(sensor, params.altitude, gsdPitch)
   const photoMode =

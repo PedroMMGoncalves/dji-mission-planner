@@ -381,6 +381,7 @@ export function usableBatteryMin(batteryMin, reservePct = 0) {
  * @param {number[]|null} [c.basePoint]
  * @param {number|null} [c.baseDistance] distância base → área (m)
  * @param {number|null} [c.baseTransitS] trânsito de ida e volta da rota única, do pior ponto da zona (s)
+ * @param {number|null} [c.worstFlightS] corredor partido em voos: o pior voo com o trânsito da sua base (s)
  * @param {number|null} [c.routeVlosM] vértice mais afastado da rota única, do pior ponto da zona (m)
  * @param {number} [c.speed] m/s
  * @param {number} [c.batteryMin]
@@ -545,6 +546,13 @@ export function preflightPlan(c) {
   // Fachada: a folga ao DSM que o painel verifica (M3-U1) — o corredor de
   // voo a cortar a superfície bloqueia; sem DSM local a verificação não é
   // possível, e fica o aviso. Corredor: passagens sem cobertura (aviso).
+  // descolagem numa base que não se consegue medir no relevo (ou que já não
+  // existe): as alturas sairiam relativas a uma cota desconhecida
+  // (takeoff-base-missing, takeoff-terrain-missing, takeoff-ref-outside-terrain)
+  if (c.takeoffRef?.error)
+    out.push(
+      item('block', `takeoff-${c.takeoffRef.error}`, { base: c.takeoffRef.base?.label ?? '' }),
+    )
   if (c.faceDsmLoaded === false) out.push(item('warn', 'face-unverified'))
   if (c.faceClearance && c.faceClearance.ok === false)
     out.push(
@@ -582,8 +590,14 @@ export function preflightPlan(c) {
   const usable = usableBatteryMin(c.batteryMin, c.reservePct)
   if (usable != null && Number.isFinite(plan.stats?.flightTimeS)) {
     // com o trânsito de ida e volta, como a área (o corredor e o circular
-    // contavam só o voo)
-    const min = (plan.stats.flightTimeS + routeTransitS(c)) / 60
+    // contavam só o voo); o corredor partido em voos conta o pior voo com o
+    // trânsito da sua base (`worstFlightS`), ou o mais longo
+    const flightS = Number.isFinite(plan.stats.longestFlightS)
+      ? plan.stats.longestFlightS
+      : plan.stats.flightTimeS
+    const min = Number.isFinite(c.worstFlightS)
+      ? c.worstFlightS / 60
+      : (flightS + routeTransitS(c)) / 60
     if (min > usable)
       out.push(item('warn', 'battery', { min: round1(min), usable: round1(usable) }))
   }

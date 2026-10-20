@@ -209,6 +209,13 @@ export const ALLOW = {
     },
     {
       file: '*',
+      parent: 'actionActuatorFuncParam',
+      name: 'hoverTime',
+      before: 'gimbalRotateMode',
+      why: 'tabela do hover (common-element.md, linha 178): hoverTime e o unico parametro; os exemplos nao tem hover',
+    },
+    {
+      file: '*',
       parent: 'actionTrigger',
       name: 'actionTriggerParam',
       after: 'actionTriggerType',

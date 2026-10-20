@@ -50,7 +50,7 @@ const TXT = {
   agl: bi('Altura de voo (AGL)', 'Flight height (AGL)'),
   clearance: bi('Folga mínima', 'Minimum clearance'),
   reference: bi('Referência (descolagem)', 'Reference (take-off)'),
-  refBase: bi('base', 'home point'),
+  refBase: bi('base', 'base'),
   refAreaMin: bi('mínima da área', 'lowest of the area'),
   refBases: bi('a mais baixa das zonas das bases', 'lowest of the base zones'),
   refZone: bi('zona da base', 'base zone'),

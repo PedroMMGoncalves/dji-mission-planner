@@ -8,6 +8,7 @@ import * as turf from '@turf/turf'
 import {
   areaPhotoPoints,
   photoPointsAlong,
+  photoPositions2d,
   photosAtWaypoints,
   photosOnRoute,
 } from '../../src/mission/photoPoints.js'
@@ -103,5 +104,18 @@ describe('fotos por distância', () => {
     const pw = [undefined, { actions: ['takePhoto'] }, { actions: ['startRecord'] }]
     expect(photosAtWaypoints(route, pw)).toEqual([route[1]])
     expect(photosAtWaypoints(route, null)).toEqual([])
+  })
+
+  test('no mapa, as fotos empilhadas na vertical (fachada, órbita) são uma só marca', () => {
+    const a = em(0, 0)
+    const b = em(10, 0)
+    const pts = photoPositions2d([
+      [...a, 10],
+      [...a, 20],
+      [...b, 10],
+      [Number.NaN, 0],
+    ])
+    expect(pts).toEqual([a, b])
+    expect(photoPositions2d(null)).toEqual([])
   })
 })

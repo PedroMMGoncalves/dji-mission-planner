@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import { useLang, useT } from '../i18n.jsx'
+import LayerLegend from './LayerLegend.jsx'
 import { hiddenStrips, radioStrips, ringLabelPoint } from '../mission/viewshedPlan.js'
 import { blockRing } from '../mission/baseLayout.js'
 
@@ -23,6 +24,24 @@ const toLatLng = ([lon, lat]) => [lat, lon]
 
 /** Modos em que um clique no mapa marca ou desenha (vértice, base, ponto, POI). */
 const MAP_CLICK_MODES = new Set(['draw', 'anchor', 'base', 'inspect', 'face', 'orbit', 'corridor'])
+
+/**
+ * Camadas da missão na legenda do mapa: o grupo Leaflet de cada uma, o
+ * texto e o símbolo. A legenda só mostra as que têm conteúdo.
+ */
+const LEGEND_LAYERS = [
+  { key: 'polygon', label: 'legend.area', kind: 'area', color: '#38bdf8' },
+  { key: 'buffer', label: 'legend.buffer', kind: 'dashed', color: '#f59e0b' },
+  { key: 'lines', label: 'legend.lines', kind: 'line', color: '#22d3ee' },
+  { key: 'photos', label: 'legend.photos', kind: 'dot', color: '#fde68a' },
+  { key: 'gcps', label: 'legend.gcps', kind: 'marker', color: '#facc15' },
+  { key: 'bases', label: 'legend.bases', kind: 'marker', color: '#f59e0b' },
+  { key: 'inspect', label: 'legend.inspect', kind: 'dot', color: '#f472b6' },
+  { key: 'corridor', label: 'legend.corridor', kind: 'line', color: '#f97316' },
+  { key: 'face', label: 'legend.face', kind: 'line', color: '#f97316' },
+  { key: 'orbit', label: 'legend.orbit', kind: 'line', color: '#38bdf8' },
+  { key: 'circular', label: 'legend.circular', kind: 'line', color: '#fde047' },
+]
 
 export default function MapView({
   mode,
@@ -876,17 +895,30 @@ export default function MapView({
         opacity: 0.95,
       }).addTo(g)
     })
-    // fotos por distância ao longo das passagens
-    corridorPreview.photos?.forEach((p) => {
-      L.circleMarker(toLatLng(p), {
-        radius: 1.8,
-        stroke: false,
-        fillColor: '#fde68a',
-        fillOpacity: 0.95,
-        interactive: false,
-        renderer: layersRef.current.canvas,
-      }).addTo(g)
+    // vários voos: as passagens de cada um na sua cor, e o rótulo no início
+    corridorPreview.pieces?.forEach((piece) => {
+      piece.passes?.forEach((seg) => {
+        if (seg.length < 2) return
+        L.polyline(seg.map(toLatLng), {
+          color: piece.color,
+          weight: 2,
+          opacity: 0.95,
+        }).addTo(g)
+      })
+      if (piece.start) {
+        L.marker(toLatLng(piece.start), {
+          icon: L.divIcon({
+            className: 'corridor-flight-label',
+            html: `<span style="background:${piece.color}">${String(piece.label).replace(/[<>&]/g, '')}</span>`,
+            iconSize: null,
+          }),
+          interactive: false,
+          keyboard: false,
+        }).addTo(g)
+      }
     })
+    // as fotos do corredor vão na camada das fotos (photoPoints), para a
+    // legenda as mostrar e esconder com as dos outros modos
   }, [corridorPreview])
 
   // Pré-visualização do modo órbita (E1.2): POI arrastável, anel do 1.º
@@ -980,5 +1012,72 @@ export default function MapView({
     })
   }, [inspectPoints])
 
-  return <div ref={containerRef} className="h-full w-full" />
+  // Legenda: as camadas com conteúdo (depois dos efeitos que as desenham,
+  // que correm antes deste) e as que o piloto escondeu
+  const [legendOpen, setLegendOpen] = useState(false)
+  const [hiddenLayers, setHiddenLayers] = useState(() => new Set())
+  const [presentLayers, setPresentLayers] = useState(/** @type {string[]} */ ([]))
+  useEffect(() => {
+    const refs = layersRef.current
+    if (!refs) return
+    const now = LEGEND_LAYERS.filter((l) => refs[l.key]?.getLayers?.().length > 0).map((l) => l.key)
+    setPresentLayers((prev) =>
+      prev.length === now.length && prev.every((k, i) => k === now[i]) ? prev : now,
+    )
+    // as props que enchem cada camada (os efeitos que as desenham correm antes)
+  }, [
+    ring,
+    holes,
+    plan,
+    blocks,
+    tiles,
+    gridCells,
+    gcps,
+    photoPoints,
+    bases,
+    baseLayout,
+    inspectPoints,
+    facePreview,
+    corridorPreview,
+    orbitPreview,
+    circularPreview,
+  ])
+  useEffect(() => {
+    const map = mapRef.current
+    const refs = layersRef.current
+    if (!map || !refs) return
+    for (const l of LEGEND_LAYERS) {
+      const g = refs[l.key]
+      if (!g) continue
+      const show = !hiddenLayers.has(l.key)
+      if (show && !map.hasLayer(g)) g.addTo(map)
+      else if (!show && map.hasLayer(g)) map.removeLayer(g)
+    }
+  }, [hiddenLayers])
+  const legendItems = LEGEND_LAYERS.filter((l) => presentLayers.includes(l.key)).map((l) => ({
+    ...l,
+    label: t(l.label),
+  }))
+  const toggleLayer = (key) =>
+    setHiddenLayers((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+
+  return (
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full" />
+      <LayerLegend
+        items={legendItems}
+        hidden={hiddenLayers}
+        onToggle={toggleLayer}
+        open={legendOpen}
+        onOpenChange={setLegendOpen}
+        className="absolute bottom-6 left-2 z-[1000] max-w-[14rem]"
+        testId="map-legend"
+      />
+    </div>
+  )
 }

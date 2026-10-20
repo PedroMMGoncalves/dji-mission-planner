@@ -7,6 +7,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, test } from 'vitest'
+import { rthByFlight } from '../../src/mission/transitLegs.js'
 import Ajv2020 from 'ajv/dist/2020.js'
 import {
   DEFAULT_SAFETY,
@@ -159,6 +160,10 @@ describe('acções de segurança: normalização', () => {
       exitOnRCLost: 'executeLostAction',
       executeRCLostAction: 'goBack',
     })
+    // alturas automáticas (30 m de subida, RTH acima do tecto de cada voo):
+    // sem campo, para um projecto antigo voltar a gravar-se igual
+    expect(DEFAULT_SAFETY.takeOffSecurityHeightM).toBeUndefined()
+    expect(DEFAULT_SAFETY.rthHeightM).toBeUndefined()
     expect(normalizeSafety(undefined)).toEqual(DEFAULT_SAFETY)
     expect(normalizeSafety([])).toEqual(DEFAULT_SAFETY)
     expect(safetyParams(null)).toEqual(DEFAULT_SAFETY)
@@ -188,8 +193,13 @@ describe('acções de segurança: exportação de todos os modos', () => {
   })
 
   test('sem escolha, as omissões de sempre', () => {
+    const { finishAction, exitOnRCLost, executeRCLostAction } = DEFAULT_SAFETY
     for (const [modo, p] of Object.entries(modos(null)))
-      expect(lidas(buildWaylinesWPML(p)), modo).toEqual(DEFAULT_SAFETY)
+      expect(lidas(buildWaylinesWPML(p)), modo).toEqual({
+        finishAction,
+        exitOnRCLost,
+        executeRCLostAction,
+      })
   })
 
   test('cada acção de fim e de sinal perdido sai tal como escolhida (área)', () => {
@@ -220,5 +230,57 @@ describe('acções de segurança: projecto', () => {
     expect(normalizeProject({ version: 2 }).safety).toEqual(DEFAULT_SAFETY)
     expect(normalizeProject({ version: 1 }).safety).toEqual(DEFAULT_SAFETY)
     expect(serializeProject({}).safety).toEqual(DEFAULT_SAFETY)
+  })
+})
+
+describe('alturas de segurança: descolagem e regresso escritas pelo piloto', () => {
+  const tagNum = (xml, name) => Number(tag(xml, name))
+  test('normalização: dentro dos limites da especificação, ou automáticas', () => {
+    expect(normalizeSafety({ takeOffSecurityHeightM: 0.5 }).takeOffSecurityHeightM).toBe(1.2)
+    expect(normalizeSafety({ takeOffSecurityHeightM: 2000 }).takeOffSecurityHeightM).toBe(1500)
+    expect(normalizeSafety({ takeOffSecurityHeightM: 45 }).takeOffSecurityHeightM).toBe(45)
+    expect(normalizeSafety({ rthHeightM: 5 }).rthHeightM).toBe(20)
+    expect(normalizeSafety({ rthHeightM: 150 }).rthHeightM).toBe(150)
+    expect(normalizeSafety({ rthHeightM: '150' }).rthHeightM).toBeUndefined()
+    expect(
+      normalizeSafety({ takeOffSecurityHeightM: Number.NaN }).takeOffSecurityHeightM,
+    ).toBeUndefined()
+  })
+
+  test('chegam ao missionConfig de todos os modos; sem valor, as automáticas', () => {
+    const alturas = { ...escolha, takeOffSecurityHeightM: 45, rthHeightM: 150 }
+    for (const [modo, p] of Object.entries(modos(alturas))) {
+      const wl = buildWaylinesWPML(p)
+      expect(tagNum(wl, 'takeOffSecurityHeight'), modo).toBe(45)
+      expect(tagNum(wl, 'globalRTHHeight'), modo).toBe(150)
+      expect(tagNum(buildTemplateKML(p), 'takeOffSecurityHeight'), modo).toBe(45)
+    }
+    for (const [modo, p] of Object.entries(modos(escolha))) {
+      const wl = buildWaylinesWPML(p)
+      expect(tagNum(wl, 'takeOffSecurityHeight'), modo).toBe(30)
+      // automática: pelo menos 100 m (o mínimo do Pilot 2), acima do tecto da rota
+      expect(tagNum(wl, 'globalRTHHeight'), modo).toBeGreaterThanOrEqual(100)
+    }
+  })
+
+  test('o RTH escrito vale para todos os voos no cartão e na ficha', () => {
+    const legs = [
+      { flight: 'A-1', waypoints: [[0, 0, 90]] },
+      { flight: 'A-2', waypoints: [[0, 0, 140]] },
+    ]
+    expect(rthByFlight(legs).map((r) => r.rthM)).toEqual([110, 160])
+    expect(rthByFlight(legs, { rthHeightM: 150 }).map((r) => r.rthM)).toEqual([150, 150])
+  })
+
+  test('o esquema aceita-as e recusa valores fora dos limites', () => {
+    const schema = JSON.parse(
+      readFileSync(new URL('../../public/schema/project-v2.schema.json', import.meta.url), 'utf8'),
+    )
+    const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema)
+    const v = (s) => validate({ version: 2, safety: { ...escolha, ...s } })
+    expect(v({ takeOffSecurityHeightM: 45, rthHeightM: 150 })).toBe(true)
+    expect(v({ takeOffSecurityHeightM: null, rthHeightM: null })).toBe(true)
+    expect(v({ takeOffSecurityHeightM: 1 })).toBe(false)
+    expect(v({ rthHeightM: 2000 })).toBe(false)
   })
 })

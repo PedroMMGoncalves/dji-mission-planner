@@ -81,8 +81,8 @@ const BASE_DICT = {
     en: 'Two files with the same name in the ZIP.',
   },
   'export.err.too-many-waypoints': {
-    pt: 'O plano excede os 65536 waypoints que uma rota WPML admite.',
-    en: 'The plan exceeds the 65536 waypoints a WPML route allows.',
+    pt: 'O plano excede os 65\u00a0536 waypoints que uma rota WPML admite.',
+    en: 'The plan exceeds the 65,536 waypoints a WPML route allows.',
   },
   'export.err.waypoint-malformed': { pt: 'Waypoint malformado.', en: 'Malformed waypoint.' },
   'export.err.waypoint-not-finite': {
@@ -95,19 +95,19 @@ const BASE_DICT = {
   },
   'export.err.height-not-finite': {
     pt: 'Altura não numérica num waypoint (verifique o seguimento de terreno).',
-    en: 'Non-numeric height in a waypoint (check terrain follow).',
+    en: 'Non-numeric height in a waypoint (check terrain following).',
   },
-  'export.err.altitude-not-finite': { pt: 'Altitude inválida.', en: 'Invalid altitude.' },
+  'export.err.altitude-not-finite': { pt: 'Altura inválida.', en: 'Invalid height.' },
   'export.err.altitude-not-positive': {
-    pt: 'A altitude tem de ser positiva.',
-    en: 'The altitude must be positive.',
+    pt: 'A altura tem de ser positiva.',
+    en: 'The height must be positive.',
   },
   'export.err.speed-out-of-range': {
-    pt: 'Velocidade fora do intervalo admissível.',
-    en: 'Speed outside the admissible range.',
+    pt: 'Velocidade fora do intervalo admissível: reveja os parâmetros do plano.',
+    en: 'Speed outside the admissible range: check the plan parameters.',
   },
   'export.err.per-waypoint-not-finite': {
-    pt: 'Uma acção por waypoint tem um rumo ou um pitch que não é número ({d}). A exportação foi travada — sem isto o valor entrava tal e qual no ficheiro e só o comando o recusaria, já no campo.',
+    pt: 'Uma acção por waypoint tem um rumo ou uma inclinação que não é número ({d}). A exportação foi travada — sem isto o valor entrava tal e qual no ficheiro e só o comando o recusaria, já no campo.',
     en: 'A per-waypoint action has a non-numeric heading or pitch ({d}). Export was stopped — without this the value would land verbatim in the file and only the controller would reject it, already in the field.',
   },
   'export.err.per-waypoint-invalid': {
@@ -115,8 +115,8 @@ const BASE_DICT = {
     en: 'A per-waypoint action entry has an unexpected shape ({d}).',
   },
   'export.err.param-out-of-range': {
-    pt: 'Parâmetro de missão fora do intervalo admissível.',
-    en: 'Mission parameter outside the admissible range.',
+    pt: 'Parâmetro de missão fora do intervalo admissível: reveja os parâmetros do plano.',
+    en: 'Mission parameter outside the admissible range: check the plan parameters.',
   },
   'export.err.speed-invalid': { pt: 'Velocidade inválida.', en: 'Invalid speed.' },
   'export.err.wpml-enums-missing': {
@@ -137,13 +137,13 @@ const BASE_DICT = {
     en: 'View the flight lines in 3D over the terrain',
   },
   'app.view3dNotReady': {
-    pt: 'Carregue primeiro o relevo (secção Terreno) e gere um plano',
-    en: 'Load the terrain first (Terrain section) and generate a plan',
+    pt: 'Carregue primeiro o relevo (cartão 2, Área e relevo) e gere um plano',
+    en: 'Load the terrain first (card 2, Area and terrain) and generate a plan',
   },
   'app.checklist': { pt: 'Checklist de campo', en: 'Field checklist' },
   'app.checklistTitle': {
-    pt: 'Checklist de campo UAV (pré-campo, durante, pós-campo) + relatório de missão',
-    en: 'UAV field checklist (pre-field, in-field, post-field) + mission report',
+    pt: 'Checklist de campo UAS (pré-campo, durante, pós-campo) + relatório de missão',
+    en: 'UAS field checklist (pre-field, in-field, post-field) + mission report',
   },
   'app.exportKml': { pt: 'Exportar KML da área', en: 'Export area KML' },
   'map.moveArea': {
@@ -171,12 +171,12 @@ const BASE_DICT = {
     en: 'The area has {n} parts: the KML carries only the largest.',
   },
   'app.kmlCellNote': {
-    pt: 'A célula desactivada fica dentro do polígono do KML.',
-    en: 'The disabled cell stays inside the KML polygon.',
+    pt: 'A célula desactivada fica dentro do polígono do KML: a missão do Pilot 2 vai cobri-la.',
+    en: 'The disabled cell stays inside the KML polygon: the Pilot 2 mission will cover it.',
   },
   'app.kmlCellsNote': {
-    pt: 'As {n} células desactivadas ficam dentro do polígono do KML.',
-    en: 'The {n} disabled cells stay inside the KML polygon.',
+    pt: 'As {n} células desactivadas ficam dentro do polígono do KML: a missão do Pilot 2 vai cobri-las.',
+    en: 'The {n} disabled cells stay inside the KML polygon: the Pilot 2 mission will cover them.',
   },
   'app.exportWpml': { pt: 'Exportar WPML Avançado (KMZ)', en: 'Export Advanced WPML (KMZ)' },
   'app.exportWpmlTitle': {
@@ -216,38 +216,38 @@ const BASE_DICT = {
 
   /* ---- Painel de métricas ---- */
   'stats.gsd': { pt: 'GSD', en: 'GSD' },
-  'stats.gsdCentre': { pt: 'GSD (centro do quadro)', en: 'GSD (frame centre)' },
+  'stats.gsdCentre': { pt: 'GSD (centro da imagem)', en: 'GSD (frame centre)' },
   'stats.gsdCentreHint': {
-    pt: 'Com o gimbal oblíquo o GSD usa o alcance inclinado ao centro do quadro (altitude ÷ sin|pitch|); nos bordos superiores do quadro é pior.',
-    en: 'With an oblique gimbal the GSD uses the slant range to the frame centre (altitude ÷ sin|pitch|); the upper frame edges are worse.',
+    pt: 'Com o gimbal oblíquo o GSD usa a distância inclinada ao centro da imagem (altura ÷ sen|pitch|); nos bordos superiores da imagem é pior.',
+    en: 'With an oblique gimbal the GSD uses the slant range to the frame centre (height ÷ sin|pitch|); the upper frame edges are worse.',
   },
-  'stats.gsdOblique': { pt: 'n/a (oblíqua)', en: 'n/a (oblique)' },
+  'stats.gsdOblique': { pt: '— (oblíqua)', en: 'n/a (oblique)' },
   'stats.gsdRangeHint': {
     pt: 'Intervalo [pior, melhor] com o erro de posicionamento e o relevo dentro da área (ver Métodos §2).',
     en: 'Range [worst, best] with positioning error and relief inside the area (see Methods §2).',
   },
-  'stats.overlapRange': { pt: 'Sobreposição real', en: 'Actual overlap' },
+  'stats.overlapRange': { pt: 'Sobreposição efectiva', en: 'Effective overlap' },
   'stats.overlapRangeHint': {
     pt: 'Frontal / lateral no pior caso do posicionamento e do relevo; o mínimo habitual é 60 / 50 %.',
-    en: 'Front / side in the worst case of positioning and relief; the usual minimum is 60 / 50 %.',
+    en: 'Forward / side in the worst case of positioning and relief; the usual minimum is 60 / 50 %.',
   },
   'stats.density': { pt: 'Densidade LiDAR', en: 'LiDAR density' },
   'stats.densityHint': {
-    pt: 'Média na área, PRR ÷ (velocidade × espaçamento), com o PRR de retorno único — conservador, multi-eco aumenta. Entre parênteses: o mínimo de uma só passagem, PRR ÷ (velocidade × faixa).',
-    en: 'Area mean, PRR ÷ (speed × line spacing), using the single-return PRR — conservative, multi-echo raises it. In parentheses: the single-pass minimum, PRR ÷ (speed × swath).',
+    pt: 'Média na área, PRR ÷ (velocidade × espaçamento), com o PRR (taxa de repetição de impulsos) de retorno único — conservador; com retornos múltiplos aumenta. Entre parênteses: o mínimo de uma só passagem, PRR ÷ (velocidade × largura de varrimento).',
+    en: 'Area mean, PRR ÷ (speed × line spacing), using the single-return PRR (pulse repetition rate) — conservative; multiple returns raise it. In parentheses: the single-pass minimum, PRR ÷ (speed × swath).',
   },
-  'stats.footprint': { pt: 'Pegada no chão', en: 'Ground footprint' },
-  'stats.swath': { pt: 'faixa {v} m', en: 'swath {v} m' },
-  'stats.spacing': { pt: 'Espaç. faixas', en: 'Line spacing' },
-  'stats.interval': { pt: 'Intervalo disparo', en: 'Trigger interval' },
+  'stats.footprint': { pt: 'Pegada no solo', en: 'Ground footprint' },
+  'stats.swath': { pt: 'largura {v} m', en: 'swath {v} m' },
+  'stats.spacing': { pt: 'Espaçamento entre faixas', en: 'Line spacing' },
+  'stats.interval': { pt: 'Intervalo de disparo', en: 'Trigger interval' },
   'stats.area': { pt: 'Área', en: 'Area' },
-  'stats.lines': { pt: 'Nº de faixas', en: 'No. of lines' },
-  'stats.circles': { pt: 'Nº de círculos', en: 'No. of circles' },
+  'stats.lines': { pt: 'N.º de faixas', en: 'No. of lines' },
+  'stats.circles': { pt: 'N.º de círculos', en: 'No. of circles' },
   'stats.waypoints': { pt: 'Waypoints', en: 'Waypoints' },
   'stats.totalDist': { pt: 'Distância total', en: 'Total distance' },
-  'stats.photos': { pt: 'Nº de fotos', en: 'No. of photos' },
+  'stats.photos': { pt: 'N.º de fotos', en: 'No. of photos' },
   'stats.photosHint': {
-    pt: 'Total (o disparo por distância cobre também o overshoot) e, entre parênteses, as fotos sobre a área.',
+    pt: 'Total (o disparo por distância cobre também o prolongamento) e, entre parênteses, as fotos sobre a área.',
     en: 'Total (the distance trigger also fires along the overshoot) and, in parentheses, the photos over the area.',
   },
   'stats.time': { pt: 'Tempo na missão (sem deslocação)', en: 'Mission time (no transit)' },
@@ -256,8 +256,8 @@ const BASE_DICT = {
   'stats.groupQuality': { pt: 'Qualidade', en: 'Quality' },
   'stats.groupFlight': { pt: 'Voo', en: 'Flight' },
   'stats.groupOps': { pt: 'Operação', en: 'Operation' },
-  'stats.passes': { pt: 'Nº de passagens', en: 'No. of passes' },
-  'stats.levels': { pt: 'Nº de níveis', en: 'No. of levels' },
+  'stats.passes': { pt: 'N.º de passagens', en: 'No. of passes' },
+  'stats.levels': { pt: 'N.º de níveis', en: 'No. of levels' },
   'stats.intervalWarnHint': {
     pt: 'Abaixo do intervalo mínimo da câmara a esta velocidade: ver o preflight.',
     en: 'Below the camera’s minimum interval at this speed: see the preflight.',
@@ -270,19 +270,19 @@ const BASE_DICT = {
   'stats.setsNeeded': { pt: '{n} necessários', en: '{n} needed' },
   'stats.setsVs': { pt: '{n} necessários · {s} na equipa', en: '{n} needed · {s} in the team' },
   'stats.setsShortHint': {
-    pt: 'A missão pede mais voos do que os conjuntos de baterias que a equipa tem.',
-    en: 'The mission needs more flights than the battery sets the team has.',
+    pt: 'A missão pede mais voos do que os conjuntos de baterias que a equipa tem: conte com recarregar no campo.',
+    en: 'The mission needs more flights than the battery sets the team has: plan on recharging in the field.',
   },
-  'stats.longest': { pt: 'Voo mais longo / útil', en: 'Longest flight / useful' },
-  'stats.vsBattery': { pt: 'Voo / tempo útil', en: 'Flight / useful time' },
+  'stats.longest': { pt: 'Voo mais longo / tempo útil', en: 'Longest flight / usable time' },
+  'stats.vsBattery': { pt: 'Voo / tempo útil', en: 'Flight / usable time' },
   'stats.longestHint': {
-    pt: 'Com a deslocação desde a base, contra o tempo útil de uma bateria. Âmbar acima de 90 %, vermelho acima de 100 %.',
-    en: 'Including transit from the base, against the useful time of one battery. Amber above 90 %, red above 100 %.',
+    pt: 'Com a deslocação desde a base, contra o tempo útil de um conjunto de baterias. Âmbar acima de 90 %, vermelho acima de 100 %.',
+    en: 'Including transit from the base, against the usable time of one battery set. Amber above 90 %, red above 100 %.',
   },
-  'stats.totalTime': { pt: 'Tempo total com deslocações', en: 'Total time with transits' },
+  'stats.totalTime': { pt: 'Tempo total com deslocações', en: 'Total time incl. transit' },
   'stats.totalTimeHint': {
     pt: 'Soma de todos os voos, com as deslocações; sem trocas de bateria nem mudanças de base.',
-    en: 'Sum of all flights, with transits; without battery swaps or base moves.',
+    en: 'Sum of all flights, including transit; without battery swaps or base moves.',
   },
 
   /* ---- Vista 3D ---- */
@@ -308,6 +308,57 @@ const BASE_DICT = {
   'map.parishes': { pt: 'Freguesias (CAOP)', en: 'Parishes (CAOP)' },
   'map.viewsheds': { pt: 'Bacias de visão', en: 'Viewsheds' },
   'map.viewshedRadio': { pt: '{vis} % · rádio −{pct} %', en: '{vis} % · radio −{pct} %' },
+
+  /* ---- Legenda das camadas, vista 3D, intervalo manual e descolagem da face e da órbita ---- */
+  'legend.title': { pt: 'Legenda', en: 'Legend' },
+  'legend.area': { pt: 'Área', en: 'Area' },
+  'legend.buffer': { pt: 'Margem', en: 'Buffer' },
+  'legend.lines': { pt: 'Faixas e rota', en: 'Lines and route' },
+  'legend.photos': { pt: 'Fotos', en: 'Photos' },
+  'legend.gcps': { pt: 'GCP', en: 'GCP' },
+  'legend.bases': { pt: 'Bases e zonas de descolagem', en: 'Bases and take-off zones' },
+  'legend.inspect': { pt: 'Pontos de inspecção', en: 'Inspection points' },
+  'legend.corridor': { pt: 'Corredor', en: 'Corridor' },
+  'legend.face': { pt: 'Face', en: 'Face' },
+  'legend.orbit': { pt: 'Órbita', en: 'Orbit' },
+  'legend.circular': { pt: 'Circular', en: 'Circular' },
+  'legend.terrain': { pt: 'Relevo', en: 'Terrain' },
+  'legend.blocks': { pt: 'Blocos', en: 'Blocks' },
+  'legend.route': { pt: 'Rota', en: 'Route' },
+  'legend.waypoints': { pt: 'Waypoints', en: 'Waypoints' },
+  'map3d.imageryOk': { pt: 'Imagens © Esri', en: 'Imagery © Esri' },
+  'map3d.imageryLoading': { pt: 'A carregar imagens…', en: 'Loading imagery…' },
+  'map3d.imageryFallback': {
+    pt: 'Relevo sombreado (sem imagens)',
+    en: 'Shaded relief (no imagery)',
+  },
+  'map3d.controlsHint': {
+    pt: 'Arrastar: rodar · Roda do rato: zoom · Botão direito: deslocar · Esc: fechar',
+    en: 'Drag: rotate · Wheel: zoom · Right button: pan · Esc: close',
+  },
+  'map3d.noTerrain': {
+    pt: 'Sem relevo carregado: descarregue o relevo da área para ver a missão em 3D.',
+    en: "No terrain loaded: download the area's terrain to see the mission in 3D.",
+  },
+  'stats.intervalManual': { pt: 'manual', en: 'manual' },
+  'takeoff.label': { pt: 'Descolagem', en: 'Take-off' },
+  'takeoff.base': { pt: 'Na base {label}', en: 'At base {label}' },
+  'takeoff.baseHint': {
+    pt: 'As alturas exportadas são relativas à base {base} (cota {elev} m): o chão do alvo está a {dh} m dela, e essa diferença soma-se às alturas do plano.',
+    en: 'Exported heights are relative to base {base} (elevation {elev} m): the target ground is {dh} m from it, and that difference is added to the plan heights.',
+  },
+  'takeoff.err.base-missing': {
+    pt: 'A base escolhida já não existe no projecto: escolha outra descolagem.',
+    en: 'The chosen base is no longer in the project: choose another take-off.',
+  },
+  'takeoff.err.terrain-missing': {
+    pt: 'Sem relevo carregado: carregue-o para converter as alturas para a base.',
+    en: 'No terrain loaded: load it to convert the heights to the base.',
+  },
+  'takeoff.err.ref-outside-terrain': {
+    pt: 'O relevo carregado não cobre a base e o alvo: carregue relevo que cubra os dois.',
+    en: 'The loaded terrain does not cover both the base and the target: load terrain that covers both.',
+  },
 }
 
 const DICT = {

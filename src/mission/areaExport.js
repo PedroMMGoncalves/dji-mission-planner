@@ -44,8 +44,41 @@ export function nadirMarkerIndex(block, terrainOk) {
  * título da missão no KMZ: `<missao>_area[-variantes]_A-1`), o rótulo do voo
  * e a base (flightFiles); sem ele ficam pela ordem do plano e sem nome (o
  * exportador cai no `_bNN` do id).
+ *
+ * Com `fixedHeadingDeg` (rumo fixo na grelha) todos os waypoints, da rota e
+ * de cada bloco, levam esse rumo (waypointHeadingMode smoothTransition, com
+ * o mesmo ângulo em todos): a câmara aponta sempre para o mesmo lado, seja
+ * qual for o sentido da faixa. Sem ele, o rumo segue a rota (followWayline).
+ * @param {any} args
+ * @returns {{params: any, blocks: any[]|null}}
  */
-export function buildAreaExport({
+export function buildAreaExport({ fixedHeadingDeg = null, ...args }) {
+  const out = buildAreaExportBase(args)
+  if (!Number.isFinite(fixedHeadingDeg)) return out
+  const h = ((Math.round(fixedHeadingDeg) % 360) + 360) % 360
+  const params = {
+    ...out.params,
+    perWaypoint: withFixedHeading(out.params.perWaypoint, out.params.waypoints.length, h),
+  }
+  const blocks =
+    out.blocks?.map((b) => ({
+      ...b,
+      perWaypoint: withFixedHeading(b.perWaypoint, b.waypoints?.length ?? 0, h),
+    })) ?? null
+  return { params, blocks }
+}
+
+/** As acções por waypoint com o rumo `h` em todos os `n` waypoints (as acções ficam). */
+function withFixedHeading(perWaypoint, n, h) {
+  const out = []
+  for (let i = 0; i < n; i++) {
+    const pw = perWaypoint?.[i]
+    out.push(pw ? { ...pw, heading: h } : { heading: h })
+  }
+  return out
+}
+
+function buildAreaExportBase({
   missionName,
   plan,
   terrainResult = null,
@@ -57,6 +90,9 @@ export function buildAreaExport({
   speed,
   wpml,
   photoIntervalM,
+  // segundos do disparo por tempo tal como vão para o ficheiro (intervalo
+  // manual em segundos, ou o automático já convertido); null fora do tempo
+  photoIntervalS = null,
   triggerMode,
   gimbalPitch,
   crosshatch = false,
@@ -99,6 +135,7 @@ export function buildAreaExport({
     // no modo foto-por-waypoint não há gatilho por distância — as fotos vão
     // nas acções por waypoint (perWaypoint)
     photoIntervalM: sensorType === 'camera' && photoMode !== 'waypoint' ? photoIntervalM : 0,
+    photoIntervalS: triggerMode === 'time' ? photoIntervalS : null,
     triggerMode,
     gimbalPitch,
     sensorType,

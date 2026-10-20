@@ -184,6 +184,19 @@ METODOS §11.2): o que a app escreve fora das tabelas da DJI está na lista
 de excepções do validador com a prova respectiva. A matriz da secção 5
 continua a ser a única prova de que o comando aceita e voa o ficheiro.
 
+Elementos novos de Outubro de 2026, confrontados com a documentação WPML
+da DJI (`dji-sdk/cloud-api-doc`, através do dicionário) e ainda **por
+confirmar em voo**:
+
+| Elemento | O que a app escreve | Documentação DJI | Por confirmar no comando |
+|---|---|---|---|
+| `hover` / `hoverTime` | espera antes do disparo na face e nos pontos de inspecção, depois do `gimbalRotate` | common-element.md, l. 178: `hoverTime` float > 0 s, obrigatório, todas as aeronaves; sem exemplo (excepção de ordem com a prova) | que a aeronave pára o tempo escrito antes da foto |
+| `waypointHeadingMode` `smoothTransition` com o mesmo ângulo em todos os waypoints | rumo fixo na grelha da área | common-element.md, l. 42: enum com `fixed` e `smoothTransition`; o ângulo só é obrigatório em `smoothTransition` | que o rumo se mantém nas viragens entre faixas e na passagem por grupos de disparo |
+| `takeOffSecurityHeight` escrito pelo piloto | 1,2 a 1500 m | template-kml.md l. 161, waylines-wpml.md l. 133: [1,2; 1500] m | que o comando aceita valores diferentes de 30 m |
+| `globalRTHHeight` escrito pelo piloto | 20 a 1500 m (recorte da app) | waylines-wpml.md l. 135: float, m, sem intervalo | que o comando usa o valor do ficheiro e o seu próprio limite |
+| `actionTriggerParam` com segundos escritos | intervalo manual em «Tempo» | common-element.md, l. 77: float > 0, «s or m» | que o disparo por tempo segue o valor (contar fotos) |
+| vários KMZ por corredor | corredor partido em voos | sem elemento próprio (`mappingStrip/cuttingDistance` é do mapeamento) | que cada KMZ do ZIP se importa e voa como um corredor normal |
+
 ## 8. Ensaio a seco
 
 `node tools/ensaio-seco.mjs` gera, para R1 e L1, um voo sintético a partir

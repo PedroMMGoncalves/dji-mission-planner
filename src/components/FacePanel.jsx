@@ -1,5 +1,6 @@
 import { useT } from '../i18n.jsx'
-import { Card, CardColumn, SafetyCard } from './Cards.jsx'
+import NumberInput from './NumberInput.jsx'
+import { Card, CardColumn, SafetyCard, TakeoffSelect } from './Cards.jsx'
 import { IconCheck, IconDownload, IconPolygon, IconTrash } from './Icons.jsx'
 
 /**
@@ -14,21 +15,6 @@ function Field({ label, suffix = null, children }) {
       {children}
       {suffix && <span className="w-8 text-xs text-slate-400">{suffix}</span>}
     </label>
-  )
-}
-
-/** @param {{value: any, onChange: (v: any) => void, min?: number, max?: number, step?: number}} props */
-function NumberInput({ value, onChange, min, max, step = 1 }) {
-  return (
-    <input
-      type="number"
-      className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-      value={value}
-      min={min}
-      max={max}
-      step={step}
-      onChange={(e) => onChange(Number(e.target.value))}
-    />
   )
 }
 
@@ -50,6 +36,9 @@ export default function FacePanel({
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
   safety = null,
   setSafety = (_next) => {},
+  // bases do projecto e a descolagem escolhida (takeoffReference)
+  bases = [],
+  takeoff = null,
   rthInfo = null,
 }) {
   const t = useT()
@@ -179,6 +168,42 @@ export default function FacePanel({
             onChange={(v) => setFaceParam('speedMS', Math.max(1, Math.min(10, v)))}
           />
         </Field>
+        <Field label={t('fp.params.hover')} suffix="s">
+          <NumberInput
+            value={faceConfig.hoverS}
+            min={0}
+            max={60}
+            step={0.5}
+            onChange={(v) => setFaceParam('hoverS', Math.max(0, Math.min(60, v)))}
+          />
+        </Field>
+        <p className="mb-2 text-xs leading-relaxed text-slate-400">{t('fp.params.hoverHint')}</p>
+        <label className="mb-1 flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            data-testid="face-extend-ends"
+            checked={faceConfig.extendEnds !== false}
+            onChange={(e) => setFaceParam('extendEnds', e.target.checked)}
+          />
+          {t('fp.params.extendEnds')}
+        </label>
+        <p className="mb-2 text-xs leading-relaxed text-slate-400">
+          {t('fp.params.extendEndsHint', {
+            m:
+              facePlan?.stats?.endExtensionM != null
+                ? facePlan.stats.endExtensionM.toFixed(1)
+                : '—',
+          })}
+        </p>
+        <TakeoffSelect
+          value={faceConfig.takeoffBaseId}
+          onChange={(v) => setFaceParam('takeoffBaseId', v)}
+          bases={bases}
+          takeoff={takeoff}
+          targetLabel={t('fp.takeoff.foot')}
+          targetHint={t('fp.takeoff.footHint')}
+          testId="face-takeoff"
+        />
       </Card>
 
       {/* Plano e avisos */}

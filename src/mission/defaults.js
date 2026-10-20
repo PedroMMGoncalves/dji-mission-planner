@@ -18,12 +18,21 @@ export const DEFAULT_PARAMS = {
   triggerMode: 'distance', // 'distance' | 'waypoint'
   spacingMode: 'auto', // 'auto' (sobreposição) | 'manual' (distância em m)
   manualSpacing: 50,
+  // intervalo de disparo: 'auto' (pela sobreposição frontal) | 'manual' (o
+  // valor escrito: metros em Distância e Waypoint, segundos em Tempo)
+  intervalMode: 'auto',
+  manualIntervalM: 20,
+  manualIntervalS: 2,
   crosshatch: false, // dupla grelha perpendicular (3D)
   includeNadir: false, // passagem nadir extra no fim do crosshatch — R2.10
   gimbalPitch: -90, // inclinação da câmara: -90 nadir · -60/-45 oblíqua
   overshoot: 0, // prolongamento de cada faixa nos dois extremos (m) — T2.2
   tieLine: false, // fiada de amarração perpendicular no fim — T2.3
   waypointStops: 'corners', // 'corners' | 'all': paragem só nos cantos das faixas, ou em todos os waypoints
+  // rumo da aeronave na grelha: 'route' (segue a rota) | 'fixed' (sempre
+  // `headingDeg`, seja qual for o sentido da faixa)
+  headingMode: 'route',
+  headingDeg: 0,
 }
 
 /**
@@ -38,8 +47,13 @@ export const PARAM_LIMITS = {
   angle: [0, 359],
   bufferPct: [0, 50],
   manualSpacing: [1, 2000],
+  // a especificação só pede > 0 (actionTriggerParam); 0,5 m é o mínimo da
+  // DJI entre waypoints seguidos, que vale para a foto por waypoint
+  manualIntervalM: [0.5, 1000],
+  manualIntervalS: [0.1, 60],
   overshoot: [0, 300],
   gimbalPitch: [-90, 45],
+  headingDeg: [0, 359],
 }
 
 /** Valor de um parâmetro dentro dos seus limites (sem limites, tal como veio). */

@@ -67,6 +67,13 @@ export const DEFAULT_CORRIDOR_CONFIG = {
   photoMode: 'distance', // 'distance' | 'waypoint'
   simplifyM: 1, // tolerância de simplificação das passagens (modo distância)
   waypointStops: 'corners', // 'corners' | 'all': paragem só nas pontas dos troços, ou em todos
+  // altura e sobreposições próprias (true), ou as do separador Área (false)
+  ownParams: false,
+  altitude: 100,
+  frontOverlap: 80,
+  sideOverlap: 70,
+  // divisão em voos: 'none' (um só voo) | 'battery' (troços que cabem na bateria)
+  split: 'none',
 }
 
 /** Normaliza uma configuração guardada num projecto (campos em falta, lixo). */
@@ -96,6 +103,11 @@ export function normalizeCorridorConfig(stored) {
     photoMode: s.photoMode === 'waypoint' ? 'waypoint' : 'distance',
     simplifyM: num(s.simplifyM, d.simplifyM, 0, 25),
     waypointStops: normalizeWaypointStops(s.waypointStops),
+    ownParams: s.ownParams === true,
+    altitude: num(s.altitude, d.altitude, 5, 1500),
+    frontOverlap: num(s.frontOverlap, d.frontOverlap, 10, 95),
+    sideOverlap: num(s.sideOverlap, d.sideOverlap, 10, 95),
+    split: s.split === 'battery' ? 'battery' : 'none',
   }
 }
 

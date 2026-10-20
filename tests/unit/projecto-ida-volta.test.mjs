@@ -72,7 +72,13 @@ const estadoCompleto = () => ({
   terrainFollow: { enabled: true, tolerance: 7 },
   gcpConfig: { enabled: true, count: 8 },
   obstacleHeightM: 12,
-  safety: { finishAction: 'autoLand', exitOnRCLost: 'goContinue', executeRCLostAction: 'hover' },
+  safety: {
+    finishAction: 'autoLand',
+    exitOnRCLost: 'goContinue',
+    executeRCLostAction: 'hover',
+    takeOffSecurityHeightM: 45,
+    rthHeightM: 150,
+  },
   demFile: { label: 'mdt-dgt.tif', surface: 'dsm' },
 })
 

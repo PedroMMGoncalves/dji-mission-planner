@@ -315,6 +315,10 @@ describe('configuracao guardada', () => {
       speedMS: 8,
       angleDeg: 90,
       enabled: false,
+      // sem campos próprios: herda a altura e a sobreposição frontal da área
+      ownParams: false,
+      altitude: 100,
+      frontOverlap: 80,
     })
     expect(normalizeCircularConfig({ enabled: true }).enabled).toBe(true)
     expect(normalizeCircularConfig({ enabled: 'sim' }).enabled).toBe(false)

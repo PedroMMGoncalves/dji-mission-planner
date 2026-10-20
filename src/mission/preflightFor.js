@@ -77,6 +77,8 @@ export function preflightFor(missionMode, s) {
     faceClearance,
     orbitPlan,
     orbitTriggerWarn,
+    faceTakeoff = null,
+    orbitTakeoff = null,
   } = s
   if (missionMode === 'area') {
     return preflightArea({
@@ -153,6 +155,8 @@ export function preflightFor(missionMode, s) {
       basePoint: corridorBase?.point ?? null,
       baseDistance: corridorBaseDistance,
       baseTransitS: corridorRouteOps?.transitS ?? null,
+      // partido em voos: o voo mais longo com o trânsito da sua base
+      worstFlightS: corridorRouteOps?.worstFlightS ?? null,
       routeVlosM: corridorRouteOps?.vlosWorstM ?? null,
       vlosM,
       refZone: corridorReference?.zone
@@ -190,6 +194,12 @@ export function preflightFor(missionMode, s) {
       plan: facePlan,
       faceClearance: facePlan && !facePlan.error && dsmLoaded ? faceClearance : null,
       faceDsmLoaded: facePlan && !facePlan.error ? dsmLoaded : null,
+      takeoffRef: faceTakeoff,
     })
-  return preflightPlan({ ...other, plan: orbitPlan, triggerWarn: orbitTriggerWarn })
+  return preflightPlan({
+    ...other,
+    plan: orbitPlan,
+    triggerWarn: orbitTriggerWarn,
+    takeoffRef: orbitTakeoff,
+  })
 }

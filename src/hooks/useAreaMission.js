@@ -70,6 +70,8 @@ export function useAreaMission({
   params,
   spacing,
   interval,
+  // segundos do disparo por tempo que vão para o ficheiro (triggerInterval)
+  intervalS = null,
   speed,
   batteryMin,
   split,
@@ -421,6 +423,7 @@ export function useAreaMission({
         speed,
         wpml,
         photoIntervalM: interval,
+        photoIntervalS: intervalS,
         triggerMode: params.triggerMode,
         gimbalPitch: params.gimbalPitch,
         crosshatch: params.crosshatch,
@@ -429,6 +432,8 @@ export function useAreaMission({
         waypointStops: params.waypointStops,
         layout: baseLayout,
         safety,
+        // rumo fixo na grelha (null = segue a rota)
+        fixedHeadingDeg: params.headingMode === 'fixed' ? params.headingDeg : null,
       })
       if (!exportBlocks) {
         runExport(() => exportWPMLKmz(exportParams))
@@ -471,11 +476,14 @@ export function useAreaMission({
       sensor.type,
       params.altitude,
       params.triggerMode,
+      intervalS,
       params.gimbalPitch,
       params.crosshatch,
       params.includeNadir,
       params.tieLine,
       params.waypointStops,
+      params.headingMode,
+      params.headingDeg,
       speed,
       wpml,
       interval,

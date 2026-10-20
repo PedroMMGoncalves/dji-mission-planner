@@ -50,7 +50,9 @@ import {
 } from './mission/bases.js'
 import { blockRing, summarizeBases, convexHull } from './mission/baseLayout.js'
 import { activeRoute } from './mission/activeRoute.js'
-import { photosAtWaypoints, photosOnRoute } from './mission/photoPoints.js'
+import { triggerInterval } from './mission/triggerInterval.js'
+import { takeoffReference } from './mission/takeoffRef.js'
+import { photoPositions2d, photosAtWaypoints, photosOnRoute } from './mission/photoPoints.js'
 import {
   baseFieldSheets,
   daySummary,
@@ -68,13 +70,13 @@ import {
   findOptimalDirection,
   lidarPointDensity,
   lineSpacing,
-  photoInterval,
   resolveSensor,
   ringToPolygon,
   squareFlightTimeS,
 } from './utils/geo.js'
 import {
   DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+  defaultRthHeightM,
   MissionExportError,
   buildFilesZip,
   downloadBlob,
@@ -452,10 +454,32 @@ function AppInner({ lang, setLang }) {
         : lineSpacing(footprint.across, params.sideOverlap),
     [footprint, params.sideOverlap, params.spacingMode, params.manualSpacing],
   )
-  const interval = useMemo(
-    () => photoInterval(footprint.along, params.frontOverlap),
-    [footprint, params.frontOverlap],
+  // intervalo de disparo: automático (pela sobreposição frontal) ou o que o
+  // piloto escreve, em metros ou em segundos (src/mission/triggerInterval.js);
+  // `interval` é o efectivo, em metros, que o plano, as fotos e os avisos usam
+  const trigger = useMemo(
+    () =>
+      triggerInterval({
+        footprintAlong: footprint.along,
+        frontOverlapPct: params.frontOverlap,
+        triggerMode: params.triggerMode,
+        intervalMode: sensor.type === 'camera' ? params.intervalMode : 'auto',
+        manualIntervalM: params.manualIntervalM,
+        manualIntervalS: params.manualIntervalS,
+        speed,
+      }),
+    [
+      footprint,
+      params.frontOverlap,
+      params.triggerMode,
+      params.intervalMode,
+      params.manualIntervalM,
+      params.manualIntervalS,
+      sensor.type,
+      speed,
+    ],
   )
+  const interval = trigger.intervalM
   // com a passagem nadir extra (R2.10) o produto orto é governado pelo GSD
   // nadir — é esse que se mostra e que serve de alvo
   const gsdPitch = params.crosshatch && params.includeNadir ? -90 : params.gimbalPitch
@@ -509,6 +533,8 @@ function AppInner({ lang, setLang }) {
     setCorridorParam,
     corridorSpeed,
     corridorTriggerWarn,
+    corridorFlight,
+    corridorSplit,
     corridorPlan: corridorPlanFlat,
     corridorBbox,
     corridorPreview,
@@ -519,13 +545,16 @@ function AppInner({ lang, setLang }) {
     draftVertices,
     sensor,
     speedRange,
+    // a altura e as sobreposições da área valem quando o corredor não tem as
+    // suas; o intervalo do corredor é sempre o automático (o manual é da área)
     altitude: params.altitude,
+    frontOverlap: params.frontOverlap,
     sideOverlap: params.sideOverlap,
-    interval,
     missionMode,
     setMode,
     setDraftVertices,
-    avisoObturador,
+    avisoIntervalo,
+    usableMin: batteryMin,
   })
 
   /* ------------------------ Modo órbita (E1.2) ------------------------ */
@@ -830,8 +859,10 @@ function AppInner({ lang, setLang }) {
     basePoint: corridorBase?.point ?? null,
     zoneConfig,
     baseRadiusM: corridorBase?.radiusM ?? null,
-    altitude: params.altitude,
-    interval,
+    altitude: corridorFlight.altitude,
+    interval: corridorFlight.interval,
+    corridorSplit,
+    bases,
     missionName,
     wpml,
     safety,
@@ -887,6 +918,7 @@ function AppInner({ lang, setLang }) {
     params,
     spacing,
     interval,
+    intervalS: trigger.seconds,
     speed,
     batteryMin,
     split,
@@ -931,6 +963,7 @@ function AppInner({ lang, setLang }) {
     setCircularConfig,
     setCircularParam,
     circularSpeed,
+    circularFlight,
     circularTriggerWarn,
     circularPlan,
     circularAdvice,
@@ -998,15 +1031,36 @@ function AppInner({ lang, setLang }) {
     () => (perBlockBases ? null : routeOpsFor(refBase, planOk?.waypoints, speed)),
     [perBlockBases, routeOpsFor, refBase, planOk, speed],
   )
-  const corridorRouteOps = useMemo(
-    () =>
-      routeOpsFor(
+  // Corredor partido em voos: cada voo com a base mais próxima do seu troço
+  // (src/mission/corridorFlights.js), o seu tempo e o seu trânsito
+  const corridorFlightOps = useMemo(() => {
+    const flights = corridorPlan && !corridorPlan.error ? corridorPlan.flights : null
+    if (!flights?.length) return null
+    return flights.map((f) => ({
+      label: f.label,
+      timeS: f.route?.stats?.flightTimeS ?? 0,
+      ops: routeOpsFor(f.base, f.route?.waypoints, corridorSpeed),
+    }))
+  }, [routeOpsFor, corridorPlan, corridorSpeed])
+  const corridorRouteOps = useMemo(() => {
+    if (!corridorFlightOps)
+      return routeOpsFor(
         corridorBase,
         corridorPlan && !corridorPlan.error ? corridorPlan.waypoints : null,
         corridorSpeed,
-      ),
-    [routeOpsFor, corridorBase, corridorPlan, corridorSpeed],
-  )
+      )
+    // vários voos, cada um medido da sua base (a rota junta, da base mais
+    // próxima do corredor, dava trânsitos e um alcance que nenhum voo tem):
+    // o pior de cada medida, e o voo mais longo com o seu próprio trânsito
+    const ok = corridorFlightOps.map((f) => f.ops).filter(Boolean)
+    if (ok.length === 0) return null
+    return {
+      transitM: Math.max(...ok.map((o) => o.transitM)),
+      transitS: Math.max(...ok.map((o) => o.transitS)),
+      vlosWorstM: Math.max(...ok.map((o) => o.vlosWorstM)),
+      worstFlightS: Math.max(...corridorFlightOps.map((f) => f.timeS + (f.ops?.transitS ?? 0))),
+    }
+  }, [corridorFlightOps, routeOpsFor, corridorBase, corridorPlan, corridorSpeed])
   const circularRouteOps = useMemo(
     () =>
       routeOpsFor(
@@ -1152,6 +1206,22 @@ function AppInner({ lang, setLang }) {
         sets: flightsOf(n || singleFlights(modeStats?.flightTimeS, transitS)),
       })
     }
+    if (missionMode === 'corridor' && corridorFlightOps) {
+      // partido em voos: cada voo com o seu trânsito, contra o tempo útil
+      return opsSummary({
+        blocks: corridorFlightOps.map((f, i) => ({
+          id: i + 1,
+          timeS: f.timeS,
+          transitS: f.ops?.transitS ?? 0,
+        })),
+        byBlock: Object.fromEntries(
+          corridorFlightOps.map((f, i) => [i + 1, { flightLabel: f.label }]),
+        ),
+        usefulMin: batteryMin,
+        bases: bases.length,
+        sets: flightsOf(corridorFlightOps.length),
+      })
+    }
     const transitS = missionMode === 'corridor' ? (corridorRouteOps?.transitS ?? 0) : 0
     return opsSummary({
       singleTimeS: modeStats?.flightTimeS ?? null,
@@ -1168,6 +1238,7 @@ function AppInner({ lang, setLang }) {
     areaBaseDistance,
     areaRouteOps,
     corridorRouteOps,
+    corridorFlightOps,
     circularRouteOps,
     speed,
     batteryMin,
@@ -1288,7 +1359,17 @@ function AppInner({ lang, setLang }) {
           // com corredor mostrava menos planos, menos tempo e menos baterias
           // do que tem, e e daqui que sai o pack que vai para o campo.
           corridorPlan && !corridorPlan.error
-            ? { ...corridorPlan.stats, transitS: corridorRouteOps?.transitS ?? 0 }
+            ? {
+                ...corridorPlan.stats,
+                transitS: corridorRouteOps?.transitS ?? 0,
+                // partido em voos, uma bateria (ou mais) por voo
+                blocks: corridorFlightOps
+                  ? corridorFlightOps.map((f) => ({
+                      timeS: f.timeS,
+                      transitS: f.ops?.transitS ?? 0,
+                    }))
+                  : null,
+              }
             : null,
           circularPlan && !circularPlan.error
             ? {
@@ -1312,6 +1393,7 @@ function AppInner({ lang, setLang }) {
       orbitPlan,
       corridorPlan,
       corridorRouteOps,
+      corridorFlightOps,
       circularPlan,
       circularRouteOps,
       circularBlocks,
@@ -1323,6 +1405,31 @@ function AppInner({ lang, setLang }) {
   // E1.4: a vista 3D cobre o modo activo — grelha (com terrain follow),
   // passagens de fachada empilhadas ou anéis de órbita às suas alturas.
   // refElev ancora as alturas relativas: pé da face / solo do POI / base.
+  // Descolagem da face e da órbita: no chão do alvo (como sempre) ou numa
+  // base do projecto, com as alturas convertidas pela diferença de cotas
+  const faceTakeoff = useMemo(
+    () =>
+      takeoffReference({
+        baseId: faceConfig.takeoffBaseId,
+        bases,
+        targetPoint: faceConfig.baseline?.[0] ?? null,
+        elevationAt: terrain.status === 'ready' ? (terrain.data?.elevationAt ?? null) : null,
+        zoneConfig,
+      }),
+    [faceConfig.takeoffBaseId, faceConfig.baseline, bases, terrain, zoneConfig],
+  )
+  const orbitTakeoff = useMemo(
+    () =>
+      takeoffReference({
+        baseId: orbitConfig.takeoffBaseId,
+        bases,
+        targetPoint: orbitConfig.poi,
+        elevationAt: terrain.status === 'ready' ? (terrain.data?.elevationAt ?? null) : null,
+        zoneConfig,
+      }),
+    [orbitConfig.takeoffBaseId, orbitConfig.poi, bases, terrain, zoneConfig],
+  )
+
   const view3d = useMemo(
     () =>
       activeRoute({
@@ -1342,6 +1449,9 @@ function AppInner({ lang, setLang }) {
         blockRefs,
         blocks,
         altitude: params.altitude,
+        corridorAltitude: corridorFlight.altitude,
+        faceTakeoff,
+        orbitTakeoff,
       }),
     [
       missionMode,
@@ -1360,6 +1470,9 @@ function AppInner({ lang, setLang }) {
       blockRefs,
       blocks,
       params.altitude,
+      corridorFlight.altitude,
+      faceTakeoff,
+      orbitTakeoff,
     ],
   )
 
@@ -1383,7 +1496,8 @@ function AppInner({ lang, setLang }) {
       const pts = corridorPreview?.photos
       return pts?.length ? photosOnRoute(pts, view3d.waypoints) : null
     }
-    return null
+    // fachada, órbita e circular: fotos por waypoint (as acções do plano)
+    return photosAtWaypoints(view3d.waypoints, view3d.perWaypoint)
   }, [
     view3d,
     missionMode,
@@ -1391,6 +1505,41 @@ function AppInner({ lang, setLang }) {
     photoPoints,
     corridorConfig.photoMode,
     corridorPreview,
+  ])
+
+  // Onde saem as fotos, no mapa: na área, os pontos por distância ou por
+  // tempo, ou com foto por waypoint os waypoints com a acção de foto; na
+  // fachada, na órbita e no circular, também os waypoints com a acção de
+  // foto (o corredor calcula as suas na pré-visualização)
+  const mapPhotoPoints = useMemo(() => {
+    if (missionMode === 'area') {
+      if (params.triggerMode !== 'waypoint') return photoPoints
+      // por waypoint, os waypoints com a acção de foto (os mesmos do 3D)
+      if (!view3d?.waypoints?.length) return null
+      const pts = photoPositions2d(photosAtWaypoints(view3d.waypoints, view3d.perWaypoint))
+      return pts.length ? pts : null
+    }
+    if (missionMode === 'corridor') return corridorPreview?.photos ?? null
+    const plan =
+      missionMode === 'face'
+        ? facePlan
+        : missionMode === 'orbit'
+          ? orbitPlan
+          : missionMode === 'circular'
+            ? circularPlan
+            : null
+    if (!plan || plan.error) return null
+    const pts = photoPositions2d(photosAtWaypoints(plan.waypoints, plan.perWaypoint))
+    return pts.length ? pts : null
+  }, [
+    missionMode,
+    params.triggerMode,
+    photoPoints,
+    view3d,
+    corridorPreview,
+    facePlan,
+    orbitPlan,
+    circularPlan,
   ])
 
   // Vista 3D com bases: a cor de cada voo (a da sua base, como no mapa),
@@ -1480,8 +1629,16 @@ function AppInner({ lang, setLang }) {
   const transitClearanceInfo = useMemo(() => {
     const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
     if (!elevationAt || transitLegsInfo.length === 0) return null
-    return worstTransit(transitLegsInfo, { elevationAt })
-  }, [terrain, transitLegsInfo])
+    // as alturas escritas pelo piloto (acções de segurança), senão as omissões
+    const takeOffSecurityHeightM =
+      safety.takeOffSecurityHeightM ?? DEFAULT_TAKEOFF_SECURITY_HEIGHT_M
+    const rthFixed = safety.rthHeightM
+    return worstTransit(transitLegsInfo, {
+      elevationAt,
+      takeOffSecurityHeightM,
+      rthHeightOf: (tecto) => (Number.isFinite(rthFixed) ? rthFixed : defaultRthHeightM(tecto)),
+    })
+  }, [terrain, transitLegsInfo, safety.takeOffSecurityHeightM, safety.rthHeightM])
 
   // Altura de regresso (RTH) e subida de descolagem que o KMZ escreve
   // (M3-U3): por voo com bases (cada um no seu KMZ), senão da rota inteira;
@@ -1494,26 +1651,68 @@ function AppInner({ lang, setLang }) {
         : []
     if (legs.length === 0) return null
     const altitudeM = missionMode === 'area' ? params.altitude : 0
-    const byFlight = rthByFlight(legs, { altitudeM })
+    const byFlight = rthByFlight(legs, { altitudeM, rthHeightM: safety.rthHeightM })
     const values = byFlight.map((r) => r.rthM)
     return {
       minM: Math.min(...values),
       maxM: Math.max(...values),
-      takeoffM: DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+      takeoffM: safety.takeOffSecurityHeightM ?? DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+      // escritas pelo piloto (true) ou automáticas
+      rthManual: Number.isFinite(safety.rthHeightM),
+      takeoffManual: Number.isFinite(safety.takeOffSecurityHeightM),
       byFlight,
     }
-  }, [transitLegsInfo, view3d, missionMode, params.altitude])
+  }, [
+    transitLegsInfo,
+    view3d,
+    missionMode,
+    params.altitude,
+    safety.rthHeightM,
+    safety.takeOffSecurityHeightM,
+  ])
 
   // os parâmetros que o piloto confere no Pilot 2, na ficha (M3-U10)
+  // (no corredor, a altura e as sobreposições que o corredor usa: as suas ou as da área)
   const sheetParams = useMemo(
-    () => ({
-      altitudeM: params.altitude,
-      speedMS: speed,
-      frontPct: params.frontOverlap,
-      sidePct: params.sideOverlap,
-      gsdCm: Number.isFinite(gsd) ? gsd : null,
-    }),
-    [params.altitude, params.frontOverlap, params.sideOverlap, speed, gsd],
+    () =>
+      missionMode === 'corridor'
+        ? {
+            altitudeM: corridorFlight.altitude,
+            speedMS: corridorSpeed,
+            frontPct: corridorFlight.frontOverlap,
+            sidePct: corridorFlight.sideOverlap,
+            gsdCm: computeGSD(sensor, corridorFlight.altitude, -90),
+          }
+        : missionMode === 'circular'
+          ? {
+              altitudeM: circularFlight.altitude,
+              speedMS: circularSpeed,
+              frontPct: circularFlight.frontOverlap,
+              sidePct: circularConfig.overlapPct,
+              gsdCm: computeGSD(sensor, circularFlight.altitude, circularConfig.gimbalPitch),
+            }
+          : {
+              altitudeM: params.altitude,
+              speedMS: speed,
+              frontPct: params.frontOverlap,
+              sidePct: params.sideOverlap,
+              gsdCm: Number.isFinite(gsd) ? gsd : null,
+            },
+    [
+      missionMode,
+      corridorFlight,
+      corridorSpeed,
+      circularFlight,
+      circularSpeed,
+      circularConfig.overlapPct,
+      circularConfig.gimbalPitch,
+      sensor,
+      params.altitude,
+      params.frontOverlap,
+      params.sideOverlap,
+      speed,
+      gsd,
+    ],
   )
   // a ficha de uma rota única com a base marcada (área sem blocos, corredor,
   // circular): a mesma forma das fichas por base, com um só voo (M3-U10)
@@ -1565,7 +1764,7 @@ function AppInner({ lang, setLang }) {
       vlosM,
       worstVlosM: pick.ops?.vlosWorstM ?? null,
       rthM: rthInfo?.maxM ?? null,
-      takeoffM: DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+      takeoffM: rthInfo?.takeoffM ?? DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
       heights: heightsOfWaypoints(view3d?.waypoints, params.altitude),
       usefulS: batteryMin > 0 ? batteryMin * 60 : null,
       params: sheetParams,
@@ -1618,7 +1817,7 @@ function AppInner({ lang, setLang }) {
             viewsheds: viewshedByBlock,
             viewTerrain,
             rthByFlight: rthInfo?.byFlight ?? null,
-            takeoffM: DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+            takeoffM: rthInfo?.takeoffM ?? DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
             heightsOf: (id) => {
               const tfOk = terrainResult && !terrainResult.error
               const src = tfOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
@@ -2081,6 +2280,8 @@ function AppInner({ lang, setLang }) {
         faceClearance,
         orbitPlan,
         orbitTriggerWarn,
+        faceTakeoff,
+        orbitTakeoff,
       }),
     [
       missionMode,
@@ -2124,6 +2325,8 @@ function AppInner({ lang, setLang }) {
       circularSpeed,
       facePlan,
       orbitPlan,
+      faceTakeoff,
+      orbitTakeoff,
       terrain.data,
       clearance,
       reference,
@@ -2168,8 +2371,8 @@ function AppInner({ lang, setLang }) {
   // waypoints repetidos, base inalcançável).
   const modeExport = {
     area: handleExportKMZ,
-    face: handleExportFace,
-    orbit: handleExportOrbitSingle,
+    face: () => handleExportFace(faceTakeoff),
+    orbit: () => handleExportOrbitSingle(orbitTakeoff),
     corridor: handleExportCorridor,
     circular: handleExportCircularSingle,
   }[missionMode]
@@ -2709,7 +2912,9 @@ function AppInner({ lang, setLang }) {
                 onUndoVertex={removeLastDraftVertex}
                 onFinishDraw={handleFinishFace}
                 onClearBaseline={clearFaceBaseline}
-                onExport={gated(handleExportFace)}
+                onExport={gated(() => handleExportFace(faceTakeoff))}
+                bases={bases}
+                takeoff={faceTakeoff}
                 exportBlocked={exportBlocked}
               />
             )}
@@ -2727,8 +2932,10 @@ function AppInner({ lang, setLang }) {
                 mode={mode}
                 onStartPoi={startOrbitPoi}
                 onClearPoi={clearOrbitPoi}
-                onExportSingle={gated(handleExportOrbitSingle)}
-                onExportPerLevel={gated(handleExportOrbitPerLevel)}
+                onExportSingle={gated(() => handleExportOrbitSingle(orbitTakeoff))}
+                onExportPerLevel={gated(() => handleExportOrbitPerLevel(orbitTakeoff))}
+                bases={bases}
+                takeoff={orbitTakeoff}
                 exportBlocked={exportBlocked}
                 triggerWarn={orbitTriggerWarn}
               />
@@ -2766,6 +2973,8 @@ function AppInner({ lang, setLang }) {
                   frontOverlap: params.frontOverlap,
                   sideOverlap: params.sideOverlap,
                 }}
+                corridorSplit={corridorSplit}
+                usableMin={batteryMin}
                 hasBase={Boolean(corridorBase)}
                 onStartBase={startBase}
                 onRemoveBase={removeBase}
@@ -2792,8 +3001,9 @@ function AppInner({ lang, setLang }) {
                 setsCheck={circularSetsCheck}
                 batteryLabel={missionBatteryType.label || missionBatteryType.id}
                 triggerWarn={circularTriggerWarn}
-                altitude={params.altitude}
-                frontOverlap={params.frontOverlap}
+                altitude={circularFlight.altitude}
+                frontOverlap={circularFlight.frontOverlap}
+                areaParams={{ altitude: params.altitude, frontOverlap: params.frontOverlap }}
                 areaStats={planOk?.stats ?? null}
                 areaKind={params.crosshatch ? 'crosshatch' : 'serpentine'}
                 terrainFollow={terrainFollow}
@@ -2861,6 +3071,7 @@ function AppInner({ lang, setLang }) {
                 presets={flightPresets}
                 onApplyPreset={applyPreset}
                 triggerWarn={triggerWarn}
+                trigger={trigger}
                 waypointWarn={waypointWarn}
                 aglWarn={aglWarn}
                 importState={importState}
@@ -3013,7 +3224,7 @@ function AppInner({ lang, setLang }) {
             onTileToggle={handleTileClick}
             gcps={gcps}
             onGcpDrag={handleGcpDrag}
-            photoPoints={missionMode === 'area' ? photoPoints : null}
+            photoPoints={mapPhotoPoints}
             inspectPoints={inspectPoints}
             onInspectDrag={handleInspectDrag}
             facePreview={facePreview}
@@ -3043,6 +3254,8 @@ function AppInner({ lang, setLang }) {
             spacing={spacing}
             pointDensity={pointDensity}
             interval={interval}
+            intervalS={trigger.seconds}
+            intervalManual={trigger.manual}
             triggerMode={params.triggerMode}
             speed={speed}
             missionMode={missionMode}

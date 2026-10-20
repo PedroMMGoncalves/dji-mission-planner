@@ -26,8 +26,10 @@ export function useCircularMission({
   holes = null,
   validation,
   sensor,
-  altitude,
-  frontOverlap,
+  // altura e sobreposição frontal do separador Área: valem quando o
+  // circular não tem as suas (circularConfig.ownParams)
+  altitude: areaAltitude,
+  frontOverlap: areaFrontOverlap,
   speedRange,
   missionName,
   wpml,
@@ -54,6 +56,10 @@ export function useCircularMission({
 
   // a velocidade guardada limita-se à aeronave, como no corredor
   const circularSpeed = Math.min(speedRange.max, Math.max(speedRange.min, circularConfig.speedMS))
+  // altura e sobreposição frontal do circular: as próprias ou as da área
+  const ownParams = circularConfig.ownParams === true
+  const altitude = ownParams ? circularConfig.altitude : areaAltitude
+  const frontOverlap = ownParams ? circularConfig.frontOverlap : areaFrontOverlap
 
   // A missão circular só existe quando foi criada (abrir o separador liga
   // `enabled`): usa o polígono da área e, sem isto, qualquer área dava uma
@@ -240,6 +246,8 @@ export function useCircularMission({
     setCircularConfig,
     setCircularParam,
     circularSpeed,
+    // altura e sobreposição frontal que o circular usa (as suas ou as da área)
+    circularFlight: { own: ownParams, altitude, frontOverlap },
     circularTriggerWarn,
     circularPlan,
     circularAdvice,

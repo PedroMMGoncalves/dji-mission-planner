@@ -9,6 +9,7 @@ import { DEFAULT_ORBIT_CONFIG, generateOrbitPlan, orbitLevelsToBlocks } from '..
 import { computeGSD } from '../utils/geo.js'
 import { headingTicks } from '../utils/preview.js'
 import { orbitExportParams } from '../mission/exportParams.js'
+import { planForTakeoff } from '../mission/takeoffRef.js'
 import { exportBlocksZip, exportWPMLKmz } from '../utils/exporters.js'
 
 export function useOrbitMission({
@@ -101,11 +102,13 @@ export function useOrbitMission({
     }
   }, [missionMode, orbitPlan, orbitConfig.poi, orbitConfig.radiusM])
 
+  // `takeoff` (takeoffReference): com a descolagem numa base, as alturas
+  // saem relativas a ela; sem, como sempre (descolagem no chão do POI)
   const orbitParams = useCallback(
-    () =>
+    (takeoff = null) =>
       orbitExportParams({
         missionName,
-        plan: orbitPlan,
+        plan: planForTakeoff(orbitPlan, takeoff),
         speed: orbitConfig.speedMS,
         wpml,
         sensorType: sensor.type,
@@ -114,18 +117,29 @@ export function useOrbitMission({
     [orbitPlan, missionName, orbitConfig.speedMS, wpml, sensor.type, safety],
   )
 
-  const handleExportOrbitSingle = useCallback(() => {
-    if (!orbitPlan || orbitPlan.error) return
-    runExport(() => exportWPMLKmz(orbitParams()))
-  }, [orbitPlan, orbitParams, runExport])
+  const handleExportOrbitSingle = useCallback(
+    (takeoff = null) => {
+      if (!orbitPlan || orbitPlan.error) return
+      runExport(() => exportWPMLKmz(orbitParams(takeoff)))
+    },
+    [orbitPlan, orbitParams, runExport],
+  )
 
-  const handleExportOrbitPerLevel = useCallback(() => {
-    if (!orbitPlan || orbitPlan.error) return
-    // em video a gravacao e uma so, do primeiro ao ultimo ponto: fatiar a
-    // espiral deixava os KMZ intermedios sem startRecord/stopRecord
-    if (orbitPlan.stats.capture === 'video') return
-    runExport(() => exportBlocksZip(orbitParams(), orbitLevelsToBlocks(orbitPlan)))
-  }, [orbitPlan, orbitParams, runExport])
+  const handleExportOrbitPerLevel = useCallback(
+    (takeoff = null) => {
+      if (!orbitPlan || orbitPlan.error) return
+      // em video a gravacao e uma so, do primeiro ao ultimo ponto: fatiar a
+      // espiral deixava os KMZ intermedios sem startRecord/stopRecord
+      if (orbitPlan.stats.capture === 'video') return
+      runExport(() =>
+        exportBlocksZip(
+          orbitParams(takeoff),
+          orbitLevelsToBlocks(planForTakeoff(orbitPlan, takeoff)),
+        ),
+      )
+    },
+    [orbitPlan, orbitParams, runExport],
+  )
 
   return {
     orbitConfig,

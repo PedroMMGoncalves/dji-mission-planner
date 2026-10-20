@@ -692,7 +692,7 @@ function bboxFrom(x0, y0, x1, y1) {
     'MDT CRS: EPSG desconhecido -> erro que nomeia o codigo',
     (await throwsWith(
       async () => resolveRasterCrs({ ProjectedCSTypeGeoKey: 32633 }),
-      'CRS não suportado: EPSG:32633',
+      'SRC não suportado: EPSG:32633',
     )) === null,
   )
 }
@@ -787,7 +787,7 @@ function bboxFrom(x0, y0, x1, y1) {
     'MDT: janela toda sem dados -> erro legivel',
     (await throwsWith(
       () => loadDemFromFile(allVoid, bboxFrom(-30000, 20000, -29920, 19940), { marginM: 0 }),
-      'não tem valores de elevação válidos',
+      'não tem cotas válidas',
     )) === null,
   )
 

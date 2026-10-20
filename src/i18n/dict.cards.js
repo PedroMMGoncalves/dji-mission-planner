@@ -21,16 +21,16 @@ export default {
   'cards.lines': { pt: 'Linhas de voo', en: 'Flight lines' },
   'cards.capture': { pt: 'Disparo e câmara', en: 'Trigger and camera' },
   'cards.passes': { pt: 'Passagens extra', en: 'Extra passes' },
-  'cards.anchorShape': { pt: 'Forma ancorada', en: 'Anchored shape' },
+  'cards.anchorShape': { pt: 'Forma centrada num ponto', en: 'Shape centred on a point' },
   'cards.terrainSource': { pt: 'Fonte do relevo', en: 'Terrain source' },
   'cards.terrainReload': {
     pt: 'Reimportar o MDT ou voltar ao relevo global',
     en: 'Re-import the DTM or go back to global terrain',
   },
-  'cards.slope': { pt: 'Encosta', en: 'Slope' },
+  'cards.slope': { pt: 'Declive', en: 'Slope' },
   'cards.slopeAvailable': {
-    pt: 'Encosta média de {slope}°: há uma sugestão para o ângulo das linhas em «Mais opções».',
-    en: 'Average slope of {slope}°: a line-angle suggestion is under “More options”.',
+    pt: 'Declive médio de {slope}°: há uma sugestão de azimute das faixas em «Mais opções».',
+    en: 'Mean slope of {slope}°: a line-azimuth suggestion is under “More options”.',
   },
   'cards.splitNone': {
     pt: 'Sem divisão: a missão sai num só voo. Escolhida uma divisão, as opções dela aparecem aqui.',
@@ -59,14 +59,17 @@ export default {
     en: '{n} needed · {s} in the team',
   },
   'cards.summary.setsUnknown': { pt: '{n} necessários', en: '{n} needed' },
-  'cards.summary.longest': { pt: 'Voo mais longo / útil', en: 'Longest flight / useful' },
+  'cards.summary.longest': {
+    pt: 'Voo mais longo / tempo útil',
+    en: 'Longest flight / usable time',
+  },
   'cards.summary.exportMissionByBase': {
     pt: 'Exportar os voos por base (ZIP)',
     en: 'Export the flights by base (ZIP)',
   },
   'cards.summary.exportMissionByBaseTitle': {
     pt: 'Um ZIP com uma pasta por base (cada piloto leva as pastas das suas bases); o ZIP com todos os voos soltos e cada voo à parte estão em «Exportar voos».',
-    en: 'One ZIP with a folder per base (each pilot takes the folders of their bases); the ZIP with all flights loose and each flight on its own are under "Export flights".',
+    en: 'One ZIP with a folder per base (each pilot takes the folders of their bases); the ZIP with all flights loose and each flight on its own are under “Export flights”.',
   },
   'cards.versionNote': {
     pt: 'Projecto gravado com a versão {v}; esta é a {now}. Desde então mudou:',
@@ -99,7 +102,10 @@ export default {
     pt: 'O que a aeronave faz depois do último waypoint. Por omissão regressa ao ponto de descolagem, à altura de regresso.',
     en: 'What the aircraft does after the last waypoint. By default it returns to the take-off point at the return height.',
   },
-  'safety.finish.goHome': { pt: 'Regressar à base (RTH)', en: 'Return to home (RTH)' },
+  'safety.finish.goHome': {
+    pt: 'Regressar ao ponto de descolagem (RTH)',
+    en: 'Return to home (RTH)',
+  },
   'safety.finish.noAction': { pt: 'Pairar no último ponto', en: 'Hover at the last point' },
   'safety.finish.autoLand': { pt: 'Aterrar no local', en: 'Land in place' },
   'safety.finish.gotoFirstWaypoint': {
@@ -125,7 +131,10 @@ export default {
     pt: 'Só se aplica quando a perda de sinal interrompe a missão.',
     en: 'Only applies when the signal loss stops the mission.',
   },
-  'safety.rcAction.goBack': { pt: 'Regressar à base (RTH)', en: 'Return to home (RTH)' },
+  'safety.rcAction.goBack': {
+    pt: 'Regressar ao ponto de descolagem (RTH)',
+    en: 'Return to home (RTH)',
+  },
   'safety.rcAction.landing': { pt: 'Aterrar', en: 'Land' },
   'safety.rcAction.hover': { pt: 'Pairar', en: 'Hover' },
   'safety.checklist': {
@@ -138,20 +147,29 @@ export default {
   },
   'safety.checklistStop': { pt: '{mode}, depois {action}', en: '{mode}, then {action}' },
   'safety.rth': {
-    pt: 'Regresso (RTH): {rth} m acima da descolagem · subida na descolagem: {takeoff} m',
-    en: 'Return (RTH): {rth} m above take-off · take-off climb: {takeoff} m',
+    pt: 'Regresso (RTH): {rth} m acima da descolagem · altura de segurança na descolagem: {takeoff} m',
+    en: 'Return (RTH): {rth} m above take-off · take-off safety height: {takeoff} m',
   },
   'safety.rthHint': {
-    pt: 'Escritos no KMZ: o RTH fica acima do ponto mais alto da rota (mínimo 100 m) e tem de livrar o relevo e os obstáculos no regresso.',
-    en: 'Written in the KMZ: the RTH sits above the highest point of the route (minimum 100 m) and must clear the terrain and obstacles on the way back.',
+    pt: 'Escritos no KMZ: sem valor escrito, o RTH fica acima do ponto mais alto da rota (mínimo 100 m); tem de livrar o relevo e os obstáculos no regresso.',
+    en: 'Written in the KMZ: with no typed value, the RTH sits above the highest point of the route (minimum 100 m); it must clear the terrain and obstacles on the way back.',
   },
   'cards.summary.blocked': {
     pt: 'Exportação bloqueada pelo preflight:',
     en: 'Export blocked by the preflight:',
   },
-  'cards.summary.seeAll': { pt: 'Ver todos no Preflight', en: 'See all in the Preflight' },
+  'cards.summary.seeAll': { pt: 'Ver todos no preflight', en: 'See all in the preflight' },
   'safety.checklistHint': {
     pt: 'Confirmar no DJI Pilot 2, ao abrir a rota, que são estas; a altura de regresso (RTH) do comando tem de livrar o relevo e os obstáculos.',
     en: 'Confirm in DJI Pilot 2, when opening the route, that these are the ones; the controller return (RTH) height must clear the terrain and obstacles.',
+  },
+
+  /* ---- Alturas de segurança escritas pelo piloto ---- */
+  'safety.takeoffHeight': { pt: 'Altura de segurança na descolagem', en: 'Take-off safety height' },
+  'safety.rthHeight': { pt: 'Altura de regresso (RTH)', en: 'Return-to-home (RTH) height' },
+  'safety.auto': { pt: 'auto', en: 'auto' },
+  'safety.heightsHint': {
+    pt: 'Vazio = automática: 30 m de subida vertical antes da deslocação, e o RTH acima do ponto mais alto de cada voo (no mínimo 100 m). Um valor escrito vale para todos os voos e entra nas verificações da deslocação; a aeronave pode impor os seus limites.',
+    en: 'Empty = automatic: a 30 m vertical climb before the transit, and the RTH above the highest point of each flight (at least 100 m). A typed value applies to every flight and to the transit checks; the aircraft may impose its own limits.',
   },
 }

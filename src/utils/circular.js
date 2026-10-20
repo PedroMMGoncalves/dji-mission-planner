@@ -42,6 +42,10 @@ export const DEFAULT_CIRCULAR_CONFIG = {
   // separador. Sem isto, qualquer área gerava uma missão circular que o
   // resumo do projecto somava sem ninguém a ter pedido.
   enabled: false,
+  // altura e sobreposição frontal próprias (true), ou as do separador Área
+  ownParams: false,
+  altitude: 100,
+  frontOverlap: 80,
 }
 
 /** Tecto de círculos por missão: acima disto o KMZ fica enorme e o plano lento. */
@@ -63,6 +67,9 @@ export function normalizeCircularConfig(stored) {
     speedMS: num(stored.speedMS, 1, 15, d.speedMS),
     angleDeg: Number.isFinite(stored.angleDeg) ? ((stored.angleDeg % 180) + 180) % 180 : null,
     enabled: stored.enabled === true,
+    ownParams: stored.ownParams === true,
+    altitude: num(stored.altitude, 5, 1500, d.altitude),
+    frontOverlap: num(stored.frontOverlap, 10, 95, d.frontOverlap),
   }
 }
 

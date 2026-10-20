@@ -46,11 +46,11 @@ const UI = {
   dash: bi('—', '—'),
 
   mapCaption: bi(
-    'Área do levantamento, faixas de voo, base e GCPs · imagem: Esri World Imagery',
+    'Área do levantamento, linhas de voo, base e GCPs · imagem: Esri World Imagery',
     'Survey area, flight lines, base and GCPs · imagery: Esri World Imagery',
   ),
   mapCaptionOffline: bi(
-    'Área do levantamento, faixas de voo, base e GCPs · imagem de satélite indisponível',
+    'Área do levantamento, linhas de voo, base e GCPs · imagem de satélite indisponível',
     'Survey area, flight lines, base and GCPs · satellite imagery unavailable',
   ),
   mapCaptionLoading: bi('A compor a imagem de satélite…', 'Composing the satellite imagery…'),
@@ -59,7 +59,10 @@ const UI = {
   paramsTitle: bi('Parâmetros de voo', 'Flight parameters'),
   pAltitudeRel: bi('Altura acima da descolagem', 'Height above take-off'),
   pAltitudeTf: bi('Altura AGL (segue o terreno)', 'AGL height (follows terrain)'),
-  pRth: bi('Regresso (RTH) · subida na descolagem', 'Return (RTH) · take-off climb'),
+  pRth: bi(
+    'Regresso (RTH) · altura de segurança na descolagem',
+    'Return (RTH) · take-off safety height',
+  ),
   pGsd: bi('GSD', 'GSD'),
   pSpeed: bi('Velocidade', 'Speed'),
   pFrontOverlap: bi('Sobreposição frontal', 'Forward overlap'),
@@ -68,7 +71,7 @@ const UI = {
   pSpacing: bi('Espaçamento entre faixas', 'Line spacing'),
   pInterval: bi('Intervalo de disparo', 'Trigger interval'),
   pAngle: bi('Azimute das faixas', 'Line azimuth'),
-  pBuffer: bi('Buffer da área', 'Area buffer'),
+  pBuffer: bi('Margem da área', 'Area buffer'),
   pGimbal: bi('Inclinação do gimbal', 'Gimbal pitch'),
   pCrosshatch: bi('Dupla grelha', 'Crosshatch'),
   yes: bi('Sim', 'Yes'),
@@ -83,7 +86,7 @@ const UI = {
   rGsd: bi('GSD [pior, melhor]', 'GSD [worst, best]'),
   rOverlap: bi(
     'Sobreposição frontal / lateral [pior, melhor]',
-    'Front / side overlap [worst, best]',
+    'Forward / side overlap [worst, best]',
   ),
   rBlur: bi('Arrastamento a 1/1000 · 1/500 s', 'Motion blur at 1/1000 · 1/500 s'),
   rDatum: bi('Datum vertical do relevo', 'Elevation vertical datum'),
@@ -108,14 +111,14 @@ const UI = {
   bTime: bi('Tempo (min)', 'Time (min)'),
   bTotal: bi('Total', 'Total'),
 
-  gcpsTitle: bi('Pontos de controlo (GCPs)', 'Ground control points (GCPs)'),
+  gcpsTitle: bi('GCPs', 'GCPs'),
   gcpsNote: bi('Coordenadas WGS84 (lat, lon)', 'WGS84 coordinates (lat, lon)'),
   inspectTitle: bi('Pontos de inspecção', 'Inspection points'),
   inspectNote: bi('Esqueleto do relatório de campo', 'Field report skeleton'),
-  inspectIdx: bi('Nº', 'No.'),
+  inspectIdx: bi('N.º', 'No.'),
   inspectLabel: bi('Etiqueta', 'Label'),
   inspectCoords: bi('Lat, Lon', 'Lat, Lon'),
-  inspectHeight: bi('Alt (m)', 'Alt (m)'),
+  inspectHeight: bi('Altura (m)', 'Height (m)'),
   inspectPhoto: bi('Foto prevista', 'Expected photo'),
   inspectYes: bi('sim', 'yes'),
   inspectNo: bi('não', 'no'),
@@ -507,7 +510,7 @@ const blockColor = (id, idx) =>
  * Se os blocos trouxerem as suas próprias faixas (`block.lines`), usa-as
  * directamente. Caso contrário reparte a lista global — que vem na mesma ordem
  * de voo em serpentina usada por splitIntoBlocks — pelo comprimento acumulado
- * de cada bloco (`lengthM`), o que reproduz exatamente a partição original.
+ * de cada bloco (`lengthM`), o que reproduz exactamente a partição original.
  */
 function groupLinesByBlock(lines, blocks) {
   const segs = Array.isArray(lines) ? lines.filter((s) => Array.isArray(s) && s.length >= 2) : []

@@ -7,6 +7,68 @@ import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
 export const STANDOFF_MIN_FRAC = 0.95
 
 /**
+ * Espaçamento mínimo entre as fotografias que rodam o rumo num canto: o
+ * dobro dos 0,5 m que a DJI exige entre waypoints seguidos.
+ */
+export const CORNER_MIN_SPACING_M = 1
+
+/**
+ * Passo mínimo da amostragem, ao longo da linha afastada e entre passagens:
+ * uma sobreposição de 95 % a 5 m pedia fotografias a 0,35 m, e uma face
+ * baixa com imagens altas duas passagens quase à mesma altura, abaixo dos
+ * 0,5 m que a DJI exige entre waypoints seguidos.
+ */
+export const MIN_SAMPLE_STEP_M = 0.6
+
+/** Distância mínima, em linha recta, entre fotografias seguidas (10 % acima dos 0,5 m da DJI). */
+export const MIN_PHOTO_GAP_M = 0.55
+
+/**
+ * As fotografias de uma passagem com `minGap` ou mais entre seguidas, em
+ * linha recta. Do lado de dentro de um canto agudo, duas posições a um passo
+ * ao longo da linha afastada ficam muito mais perto em linha recta, de um
+ * lado e do outro do vértice da esquadria (0,06 m num V de 10° a 5 m de
+ * afastamento). Cada grupo de posições seguidas mais perto do que `minGap`
+ * passa a uma só: a ponta da passagem, se o grupo a tiver, senão a que tem o
+ * rumo mais perto da média dos rumos à volta do grupo — num canto côncavo, a
+ * que fica junto ao vértice a olhar para o fundo do canto. Só se tiram
+ * posições, todas na linha afastada: nenhuma se aproxima da face.
+ * @param {number[][]} pts posições [lon, lat], pela ordem do voo
+ * @param {number[]} headings rumo (graus) em cada posição
+ * @param {number} minGap distância mínima (m)
+ * @returns {{pts: number[][], headings: number[]}}
+ */
+export function spacePhotos(pts, headings, minGap) {
+  const idx = pts.map((_, i) => i)
+  const near = (a, b) => turf.distance(a, b, { units: 'meters' }) < minGap
+  const rad = (j) => (headings[idx[j]] * Math.PI) / 180
+  let k = 0
+  while (k < idx.length - 1) {
+    if (!near(pts[idx[k]], pts[idx[k + 1]])) {
+      k++
+      continue
+    }
+    // o grupo idx[k..e]: cada posição perto da seguinte
+    let e = k + 1
+    while (e + 1 < idx.length && near(pts[idx[e]], pts[idx[e + 1]])) e++
+    let keep = k
+    if (e === idx.length - 1 && k > 0) keep = e
+    else if (k > 0) {
+      // média circular dos rumos das vizinhas do grupo
+      const a = rad(k - 1)
+      const b = rad(e + 1)
+      const mean = Math.atan2(Math.sin(a) + Math.sin(b), Math.cos(a) + Math.cos(b))
+      const off = (j) => Math.abs(Math.atan2(Math.sin(rad(j) - mean), Math.cos(rad(j) - mean)))
+      for (let j = k + 1; j <= e; j++) if (off(j) < off(keep)) keep = j
+    }
+    idx.splice(k, e - k + 1, idx[keep])
+    // a que ficou pode estar perto da anterior: volta uma posição atrás
+    k = Math.max(0, k - 1)
+  }
+  return { pts: idx.map((i) => pts[i]), headings: idx.map((i) => headings[i]) }
+}
+
+/**
  * Linha afastada de dM metros (positivo = à ESQUERDA do sentido do desenho)
  * de uma polilinha lon/lat, num referencial métrico local — turf.lineOffset
  * trabalha em graus e encolhe os desvios E-O por cos(lat), que a ~40° faz
@@ -39,6 +101,24 @@ function offsetPolyline(coords, dM) {
   return off.map(([x, y]) => [x / kx, y / ky])
 }
 
+/**
+ * Prolonga as duas pontas de uma polilinha lon/lat de `d` metros, na
+ * direcção do troço da ponta (o primeiro e o último vértice afastam-se).
+ */
+function extendPolylineEnds(pts, d) {
+  const out = pts.map((p) => [p[0], p[1]])
+  const n = out.length
+  if (n < 2 || !(d > 0)) return out
+  const km = d / 1000
+  out[0] = turf.destination(out[0], km, turf.bearing(out[1], out[0]), {
+    units: 'kilometers',
+  }).geometry.coordinates
+  out[n - 1] = turf.destination(out[n - 1], km, turf.bearing(out[n - 2], out[n - 1]), {
+    units: 'kilometers',
+  }).geometry.coordinates
+  return out
+}
+
 /** Valores iniciais da configuração de fachada (E1.1). */
 export const DEFAULT_FACE_CONFIG = {
   baseline: null, // polilinha [[lon,lat],...] = pé da face
@@ -50,6 +130,13 @@ export const DEFAULT_FACE_CONFIG = {
   gimbalPitch: 0,
   minClearanceM: 15,
   speedMS: 5, // velocidade de voo da fachada (P1) — parâmetro explícito
+  // prolongamento nas pontas: meia largura de imagem para lá de cada ponta
+  // da face, como no corredor (M2-E12); desligável junto a outras paredes
+  extendEnds: true,
+  hoverS: 0, // espera em cada foto, antes de disparar (acção hover do WPML)
+  // descolagem: null = no pé da face (como sempre); o id de uma base do
+  // projecto = alturas convertidas pela diferença de cotas (takeoffRef.js)
+  takeoffBaseId: null,
 }
 
 /**
@@ -78,6 +165,12 @@ export function normalizeFaceConfig(stored) {
     gimbalPitch: num(stored.gimbalPitch, -90, 45, d.gimbalPitch),
     minClearanceM: num(stored.minClearanceM, 2, 100, d.minClearanceM),
     speedMS: num(stored.speedMS, 1, 10, d.speedMS),
+    extendEnds: typeof stored.extendEnds === 'boolean' ? stored.extendEnds : d.extendEnds,
+    hoverS: num(stored.hoverS, 0, 60, d.hoverS),
+    takeoffBaseId:
+      typeof stored.takeoffBaseId === 'string' && stored.takeoffBaseId
+        ? stored.takeoffBaseId
+        : null,
   }
 }
 
@@ -113,6 +206,10 @@ export function generateFacePlan(baseline, options) {
     gimbalPitch = 0,
     minHeightM = 5,
     speed = 3,
+    // meia largura de imagem para lá de cada ponta da face (M2-E12 no corredor)
+    extendEnds = false,
+    // espera em cada foto, em segundos (acção hover antes do disparo)
+    hoverS = 0,
   } = options ?? {}
 
   if (!baseline || baseline.length < 2) return null
@@ -160,11 +257,19 @@ export function generateFacePlan(baseline, options) {
   } else {
     const first = Math.max(-bandBottom, floorM)
     const last = faceHeightM - bandTop
-    if (last <= first) {
-      // o piso já está acima do centro da passagem de topo: uma só passagem
+    // as alturas saem arredondadas a 0,1 m: o passo entre passagens fica
+    // 0,1 m acima do mínimo, para o arredondamento não o levar abaixo
+    const minVStep = MIN_SAMPLE_STEP_M + 0.1
+    if (last - first < minVStep) {
+      // o piso já está acima do centro da passagem de topo (ou quase): uma
+      // só passagem; duas mais perto faziam dois waypoints seguidos quase no
+      // mesmo ponto, na viragem em altura
       heights = [first]
     } else {
-      const n = Math.max(2, Math.ceil((last - first) / vStep) + 1)
+      const n = Math.max(
+        2,
+        Math.min(Math.ceil((last - first) / vStep) + 1, Math.floor((last - first) / minVStep) + 1),
+      )
       const step = (last - first) / (n - 1)
       heights = Array.from({ length: n }, (_, k) => first + k * step)
     }
@@ -174,14 +279,29 @@ export function generateFacePlan(baseline, options) {
 
   // linha afastada: standoff para o lado escolhido, em métrica local; null
   // quando um canto ou um troço curto não deixam manter o afastamento
-  const offsetPts = offsetPolyline(baseline, side === 'left' ? standoffM : -standoffM)
-  if (!offsetPts) return { error: 'standoff-corner' }
+  const offsetRaw = offsetPolyline(baseline, side === 'left' ? standoffM : -standoffM)
+  if (!offsetRaw) return { error: 'standoff-corner' }
+  // Prolongamento nas pontas: a primeira e a última foto ficavam centradas
+  // na ponta da face, e a ponta era vista por uma só imagem; meia largura de
+  // imagem para lá de cada ponta, na direcção do troço, dá-lhe a sobreposição
+  // do resto da face (o defeito que o M2-E12 corrigiu no corredor)
+  const extM = extendEnds ? imgW / 2 : 0
+  const offsetPts = extM > 0 ? extendPolylineEnds(offsetRaw, extM) : offsetRaw
   const offset = turf.lineString(offsetPts)
   const offLenM = turf.length(offset, { units: 'meters' })
   if (!(offLenM > 0)) return null
+  // do lado de dentro de um canto agudo com troços curtos, as duas linhas
+  // afastadas cruzam-se e a esquadria deixa um coto que não cobre a face
+  // (num V de 135° com troços de 60 m e 25 m de afastamento, 0,2 m): duas
+  // fotografias quase no mesmo ponto, que a DJI recusa
+  if (offLenM < CORNER_MIN_SPACING_M) return { error: 'standoff-corner' }
 
   // amostragem ao longo da linha afastada, extremos incluídos, passo ≤ hStep
-  const nPts = Math.max(2, Math.ceil(offLenM / hStep) + 1)
+  // e nunca abaixo de MIN_SAMPLE_STEP_M (offLenM ≥ 1 m: duas amostras, pelo menos)
+  const nPts = Math.max(
+    2,
+    Math.min(Math.ceil(offLenM / hStep) + 1, Math.floor(offLenM / MIN_SAMPLE_STEP_M) + 1),
+  )
   const stepM = offLenM / (nPts - 1)
   const pts = Array.from(
     { length: nPts },
@@ -199,12 +319,22 @@ export function generateFacePlan(baseline, options) {
   })
 
   // Cantos (M2-E11): entre duas amostras cujo rumo salta mais do que a
-  // abertura horizontal útil, HFOV · (1 − sobreposição) — a esquadria de um
-  // canto côncavo, ou um arco apertado — inserem-se fotografias no mesmo
-  // ponto com o rumo a rodar em passos até esse limite, para a face junto
-  // ao vértice não ficar vista só de esguelha.
+  // abertura horizontal útil, HFOV · (1 − sobreposição) — um canto da face,
+  // ou um arco apertado —, inserem-se fotografias ENTRE as duas amostras, ao
+  // longo da linha afastada, com o rumo a rodar em passos até esse limite,
+  // para a face junto ao vértice não ficar vista só de esguelha. Do lado de
+  // fora de um canto a linha afastada já é um arco à volta da aresta, ao
+  // afastamento exacto (offsetPolylineMiter), e as fotografias ficam nesse
+  // arco; do lado de dentro a rotação reparte-se pelo troço antes e depois
+  // do vértice da esquadria, que corta o canto a afastar-se das duas faces.
+  // Nunca no mesmo ponto: iam todas para o ponto da amostra seguinte, e
+  // waypoints seguidos a menos de 0,5 m (o mínimo da DJI) faziam o preflight
+  // bloquear a exportação de qualquer face com cantos. Quando o troço entre
+  // as duas amostras não deixa CORNER_MIN_SPACING_M entre fotografias, faz-se
+  // o número de passos que cabe (cada passo roda um pouco mais).
   const hfovDeg = (2 * Math.atan(sensor.sensorWidth / (2 * sensor.focalLength)) * 180) / Math.PI
   const maxStepDeg = Math.max(5, hfovDeg * (1 - horizontalOverlapPct / 100))
+  const maxStepsBySpacing = Math.max(1, Math.floor(stepM / CORNER_MIN_SPACING_M))
   const samplePts = []
   const sampleHeadings = []
   for (let i = 0; i < nPts; i++) {
@@ -214,13 +344,23 @@ export function generateFacePlan(baseline, options) {
     let delta = headings[i + 1] - headings[i]
     while (delta > 180) delta -= 360
     while (delta < -180) delta += 360
-    const steps = Math.ceil(Math.abs(delta) / maxStepDeg)
+    const steps = Math.min(Math.ceil(Math.abs(delta) / maxStepDeg), maxStepsBySpacing)
     for (let k = 1; k < steps; k++) {
-      samplePts.push(pts[i + 1])
+      const s = (i + k / steps) * stepM
+      samplePts.push(turf.along(offset, s, { units: 'meters' }).geometry.coordinates)
       sampleHeadings.push(((Math.round(headings[i] + (delta * k) / steps) % 360) + 360) % 360)
     }
   }
-  const nPhotos = samplePts.length
+  // Ao longo da linha as fotografias ficam a um passo umas das outras, mas
+  // do lado de dentro de um canto agudo a distância em linha recta através
+  // do vértice da esquadria é muito menor (num V de 150° a 5 m de
+  // afastamento, 0,2 m): a DJI recusava a rota e o preflight bloqueava a
+  // exportação. Nunca a menos de 0,9 m (ou de 90 % do passo, se este for
+  // mais curto), e nunca abaixo de MIN_PHOTO_GAP_M.
+  const minGap = Math.max(MIN_PHOTO_GAP_M, 0.9 * Math.min(CORNER_MIN_SPACING_M, stepM))
+  const spaced = spacePhotos(samplePts, sampleHeadings, minGap)
+  if (spaced.pts.length < 2) return { error: 'standoff-corner' }
+  const nPhotos = spaced.pts.length
 
   // serpentina vertical: cada passagem alterna o sentido; a subida entre
   // passagens acontece no mesmo ponto horizontal (viragem em altura)
@@ -230,8 +370,13 @@ export function generateFacePlan(baseline, options) {
     const order = Array.from({ length: nPhotos }, (_, i) => i)
     if (k % 2 === 1) order.reverse()
     for (const i of order) {
-      waypoints.push([samplePts[i][0], samplePts[i][1], Math.round(h * 10) / 10])
-      perWaypoint.push({ heading: sampleHeadings[i], gimbalPitch, actions: ['takePhoto'] })
+      waypoints.push([spaced.pts[i][0], spaced.pts[i][1], Math.round(h * 10) / 10])
+      perWaypoint.push({
+        heading: spaced.headings[i],
+        gimbalPitch,
+        ...(hoverS > 0 ? { hoverS } : {}),
+        actions: ['takePhoto'],
+      })
     }
   })
 
@@ -268,7 +413,10 @@ export function generateFacePlan(baseline, options) {
       heights,
       pathLengthM,
       // paragem-e-disparo: ~2 s por waypoint além do deslocamento
-      flightTimeS: speed > 0 ? pathLengthM / speed + waypoints.length * 2 : null,
+      // 2 s por foto (paragem e disparo) mais a espera pedida em cada uma
+      flightTimeS: speed > 0 ? pathLengthM / speed + waypoints.length * (2 + hoverS) : null,
+      // prolongamento aplicado em cada ponta (m)
+      endExtensionM: extM,
     },
   }
 }

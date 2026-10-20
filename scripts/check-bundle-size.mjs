@@ -19,7 +19,12 @@ import { fileURLToPath } from 'node:url'
 // 2250 → 2400 nas actualizações de Outubro de 2026: React 19 (o react-dom
 // cresce 77 KB) e three 0.186 (a vista 3D cresce 54 KB). O total ia em
 // 2354 KB; o orçamento continua a obrigar a uma decisão por cada subida.
-const BUDGET_KB = 2400
+// 2400 → 2450 no lote dos parâmetros de missão (Outubro de 2026): a legenda
+// do mapa e da vista 3D, o corredor partido em voos, a descolagem numa base,
+// o intervalo manual, o rumo fixo, as alturas de segurança, os cantos da
+// face, o campo numérico partilhado e os textos PT/EN e da ajuda; nenhuma
+// dependência nova. O lote acrescenta 45 KB (2361 → 2406 KB).
+const BUDGET_KB = 2450
 // fileURLToPath e não .pathname: este descodifica percent-encoding e trata
 // os caminhos do Windows, o outro devolve-os em bruto.
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))

@@ -644,6 +644,81 @@ await scenario('corredor-desenhado', async () => {
   return { page }
 })
 
+// Corredor com altura própria e partido em voos pela bateria: o painel
+// lista os voos, o mapa mostra cada um com o seu rótulo, e a exportação dá
+// um KMZ por voo, todos à altura do corredor (a da área fica nos 100 m).
+await scenario('corredor-voos-parametros-proprios', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await modo(page, /^Corredor$|^Corridor$/)
+  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await clickMap(page, -300, 40)
+  await clickMap(page, 0, -60)
+  await clickMap(page, 300, 40)
+  await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
+  const meia = page.locator('label', { hasText: /Meia-largura|Half-width/ }).locator('input')
+  await meia.fill('300')
+  await meia.press('Tab')
+  await page.getByTestId('corridor-own-params').check()
+  const altura = page
+    .getByTestId('card-corredor-2')
+    .locator('label', { hasText: /Altura acima da descolagem|Height above take-off/ })
+    .locator('input')
+  await altura.fill('60')
+  await altura.press('Tab')
+  await page.waitForTimeout(800)
+  const exportar = /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/
+  const alturas = (wpml) =>
+    [...wpml.matchAll(/<wpml:executeHeight>([-\d.]+)</g)].map((m) => Number(m[1]))
+  const [um] = await readRoutes(await panelExport(page, exportar, join(OUT, 'corredor-60.kmz')))
+  const h1 = alturas(um.wpml)
+  check(
+    'corredor: com altura própria, o KMZ voa a 60 m',
+    h1.length > 0 && h1.every((h) => h === 60),
+    `${Math.min(...h1)}–${Math.max(...h1)} m`,
+  )
+  await page.getByTestId('corridor-split').selectOption('battery')
+  await page.waitForTimeout(1200)
+  const voos = page.getByTestId('corridor-flights').locator('li')
+  const n = await voos.count()
+  check(
+    'corredor: partido pela bateria, o painel lista os voos',
+    n >= 2,
+    (
+      await page
+        .getByTestId('corridor-flights')
+        .innerText()
+        .catch(() => '')
+    ).slice(0, 160),
+  )
+  check(
+    'corredor: cada voo com o seu rótulo no mapa',
+    (await page.locator('.corridor-flight-label').count()) === n,
+    `${await page.locator('.corridor-flight-label').count()} rótulos, ${n} voos`,
+  )
+  // as estatísticas contam os voos da divisão (contavam a rota junta como um
+  // voo, a vermelho contra o tempo útil)
+  const nVoos = (await page.getByTestId('stats-flights').locator('[data-tone]').innerText()).trim()
+  const maisLongo = page.getByTestId('stats-longest').locator('[data-tone]')
+  check(
+    'corredor: as estatísticas contam os voos, e o mais longo cabe no tempo útil',
+    new RegExp(`^${n}\\b`).test(nVoos) &&
+      (await maisLongo.getAttribute('data-tone')) !== 'over' &&
+      /^C-\d+ \d+:\d\d \/ \d+:\d\d$/.test((await maisLongo.innerText()).trim()),
+    `${nVoos} · ${await maisLongo.innerText()}`,
+  )
+  const rotas = await readRoutes(await panelExport(page, exportar, join(OUT, 'corredor-voos.zip')))
+  const medidas = rotas.map((x) => analyseRoute(x.wpml, plano))
+  for (const m of medidas) executavel(m)
+  check(
+    'corredor: um KMZ por voo, todos a 60 m',
+    rotas.length === n && rotas.every((x) => alturas(x.wpml).every((h) => h === 60)),
+    `${rotas.length} KMZ, ${n} voos`,
+  )
+  check('corredor em voos: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 // Desenho: Backspace e Ctrl+Z anulam o último vértice (o Ctrl+Z não desfaz
 // edições da área por baixo), o clique noutro vértice não faz nada e o
 // clique no primeiro, com 3 ou mais, fecha o polígono. No eixo do corredor
@@ -828,7 +903,7 @@ await scenario('corredor-segue-terreno', async () => {
       ),
   )
   const tf = page
-    .locator('label', { hasText: /cada passagem sobre o seu chão|each pass over its own ground/ })
+    .locator('label', { hasText: /cada passagem sobre o seu solo|each pass over its own ground/ })
     .locator('input')
   check('corredor: seguimento de terreno disponível com o MDT da área', !(await tf.isDisabled()))
   await tf.check()
@@ -867,7 +942,7 @@ await scenario('corredor-segue-terreno', async () => {
 
 await scenario('fachada-desenhada', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
-  await modo(page, /^Fachada$|^Face$/)
+  await modo(page, /^Face$/)
   await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
   await clickMap(page, -200, 0)
   await clickMap(page, 200, 0)
@@ -901,6 +976,141 @@ await scenario('fachada-desenhada', async () => {
     `${await pillText(page)} | ${lista.replace(/\s+/g, ' ').slice(0, 160)}`,
   )
   check('fachada: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Face em L: as fotografias do canto ficam em posições diferentes ao longo
+// da linha afastada, com o rumo a rodar entre os das duas faces; nunca no
+// mesmo ponto, que a DJI recusa (o preflight bloqueava a exportação de
+// qualquer face com cantos). A espera em cada foto sai como acção hover
+// antes do disparo, e o prolongamento das pontas desloca a primeira foto
+// meia imagem para lá da ponta.
+await scenario('fachada-em-l', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await modo(page, /^Face$/)
+  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await clickMap(page, -200, 0)
+  await clickMap(page, 100, 0)
+  await clickMap(page, 100, -150)
+  await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
+  const espera = page
+    .locator('label', { hasText: /Espera em cada foto|Wait at each photo/ })
+    .locator('input')
+  await espera.fill('2')
+  await espera.press('Tab')
+  await page.waitForTimeout(800)
+  const exportar = /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/
+  check(
+    'fachada em L: a exportação fica disponível',
+    await page.getByRole('button', { name: exportar }).isEnabled(),
+  )
+  const [rota] = await readRoutes(await panelExport(page, exportar, join(OUT, 'fachada-l.kmz')))
+  const r = analyseRoute(rota.wpml, plano)
+  executavel(r)
+  check(
+    'fachada em L: waypoints seguidos a 1 m ou mais, sem fotos sobrepostas no canto',
+    r.minStep3DM >= 0.9,
+    `passo mínimo ${r.minStep3DM.toFixed(2)} m`,
+  )
+  // os dois rumos mais frequentes são os das faces; os do canto ficam entre eles
+  const norm = (h) => ((Math.round(h) % 360) + 360) % 360
+  const ang = (x, y) => Math.abs(((x - y + 540) % 360) - 180)
+  const rumos = [...rota.wpml.matchAll(/<wpml:waypointHeadingAngle>([-\d.]+)</g)].map((m) =>
+    norm(Number(m[1])),
+  )
+  const freq = new Map()
+  for (const h of rumos) freq.set(h, (freq.get(h) ?? 0) + 1)
+  const [a, b] = [...freq.entries()].sort((x, y) => y[1] - x[1]).map(([h]) => h)
+  const canto = rumos.filter(
+    (h) => ang(h, a) > 2 && ang(h, b) > 2 && ang(h, a) + ang(h, b) <= ang(a, b) + 1,
+  )
+  check(
+    'fachada em L: as duas faces a ~90° e rumos intermédios no canto',
+    Math.abs(ang(a, b) - 90) <= 3 && canto.length >= 1,
+    `faces a ${a}° e ${b}°, ${canto.length} no canto`,
+  )
+  const fotos = (rota.wpml.match(/<wpml:actionActuatorFunc>takePhoto</g) ?? []).length
+  const esperas = [
+    ...rota.wpml.matchAll(
+      /<wpml:actionActuatorFunc>hover<\/wpml:actionActuatorFunc>\s*<wpml:actionActuatorFuncParam>\s*<wpml:hoverTime>([\d.]+)</g,
+    ),
+  ].map((m) => Number(m[1]))
+  check(
+    'fachada em L: uma espera de 2 s (hover) antes de cada foto',
+    fotos === r.n && esperas.length === fotos && esperas.every((x) => x === 2),
+    `${fotos} fotos, ${esperas.length} esperas`,
+  )
+  // prolongamento: sem ele, a primeira foto recua o que o painel diz
+  const dica = await page
+    .locator('p', { hasText: /para lá das pontas da face|beyond the ends of the face/ })
+    .innerText()
+  const extM = Number(/(\d+(?:\.\d+)?) m (?:para lá|beyond)/.exec(dica)?.[1])
+  await page.getByTestId('face-extend-ends').uncheck()
+  await page.waitForTimeout(800)
+  const [semPontas] = await readRoutes(
+    await panelExport(page, exportar, join(OUT, 'fachada-l-sem-pontas.kmz')),
+  )
+  const [x0, y0] = r.points[0]
+  const [x1, y1] = analyseRoute(semPontas.wpml, plano).points[0]
+  check(
+    'fachada em L: o prolongamento põe a primeira foto meia imagem para lá da ponta',
+    extM > 0 && Math.abs(Math.hypot(x1 - x0, y1 - y0) - extM) < 0.5,
+    `${Math.hypot(x1 - x0, y1 - y0).toFixed(2)} m no KMZ, ${extM} m no painel`,
+  )
+  check('fachada em L: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// V muito fechado (deflexão de 150°, braços de 40 m), voado do lado de
+// dentro a 5 m com 90 % de sobreposição: ao longo da linha afastada as fotos
+// ficavam a um passo, mas através do vértice da esquadria duas seguidas
+// ficavam a menos de 0,5 m e o preflight bloqueava a exportação. A linha de
+// base entra pelo projecto gravado, em coordenadas exactas: a distância
+// através do vértice depende de onde as amostras caem, e um desenho à mão
+// podia cair num sítio bom.
+await scenario('fachada-v-fechado-por-dentro', async () => {
+  const lat0 = 38.7
+  const mLon = 111320 * Math.cos((lat0 * Math.PI) / 180)
+  const LL = (x, y) => [-9.14 + x / mLon, lat0 + y / 110574]
+  const a = (150 * Math.PI) / 180
+  const baseline = [LL(0, 0), LL(40, 0), LL(40 + 40 * Math.cos(a), 40 * Math.sin(a))]
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await page.waitForTimeout(1200) // autosave com debounce de 500 ms
+  await page.evaluate((b) => {
+    const p = JSON.parse(localStorage.getItem('dji-mission-planner:project:v1'))
+    p.missionMode = 'face'
+    p.faceConfig = {
+      ...p.faceConfig,
+      baseline: b,
+      heightM: 6,
+      standoffM: 5,
+      side: 'left',
+      verticalOverlapPct: 70,
+      horizontalOverlapPct: 90,
+    }
+    localStorage.setItem('dji-mission-planner:project:v1', JSON.stringify(p))
+  }, baseline)
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  const exportar = /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/
+  const botao = page.getByRole('button', { name: exportar })
+  await botao.waitFor({ timeout: 20000 })
+  await page.waitForTimeout(1500)
+  check(
+    'V fechado por dentro: a exportação fica disponível',
+    await botao.isEnabled(),
+    (await pillText(page)).replace(/\s+/g, ' '),
+  )
+  const [rota] = await readRoutes(await panelExport(page, exportar, join(OUT, 'fachada-v.kmz')))
+  const r = analyseRoute(rota.wpml, plano)
+  executavel(r)
+  check(
+    'V fechado por dentro: fotos seguidas a 0,55 m ou mais',
+    r.minStep3DM >= 0.54,
+    `passo mínimo ${r.minStep3DM.toFixed(2)} m, ${r.n} waypoints`,
+  )
+  check('V fechado por dentro: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })
@@ -1094,9 +1304,7 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
   check(
     'preflight: o cartão 7 diz o bloqueio do relevo e oferece a lista',
     (await caixa7.count()) === 1 &&
-      /Não há relevo sobre a rota|No elevation data over the route/.test(
-        await caixa7.innerText(),
-      ) &&
+      /Não há relevo sob a rota|No terrain under the route/.test(await caixa7.innerText()) &&
       (await caixa7.getByRole('button', { name: /Ver todos|See all/ }).count()) === 1,
     (await caixa7.innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 160),
   )
@@ -1263,7 +1471,7 @@ await scenario('inspeccao-sem-relevo-bloqueia', async () => {
     'inspecção: sem relevo o KMZ fica desactivado e o painel explica',
     (await btn.count()) === 1 &&
       !(await btn.isEnabled()) &&
-      /Sem relevo sobre os pontos|No terrain under the points/.test(await bodyText(page)),
+      /Sem relevo sob os pontos|No terrain under the points/.test(await bodyText(page)),
   )
   // a rede volta: o relevo chega e a exportação fica disponível
   await page.route(/elevation-tiles-prod\/terrarium\//, (route) =>
@@ -1365,7 +1573,7 @@ const centro = (r) => [
 await scenario('area-mover-inteira', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   // mosaico: `editable` fica falso, que era a condicao que escondia a pega
-  await configure(page, { split: 'Mosaico' })
+  await configure(page, { split: 'Quadrícula' })
   const pega = page.locator('.anchor-handle')
   check('mover: ha pega central numa area importada com mosaico', (await pega.count()) === 1)
 
@@ -1748,10 +1956,10 @@ await scenario('bases-multiplas', async () => {
   const lista = await page.getByTestId('preflight-list').innerText()
   check(
     'bases: o preflight diz que os voos da base A ficaram fora do alcance visual',
-    /Voo A-\d+ \(bloco \d+\) fora do alcance visual da base A: \d+ m/.test(lista),
+    /Voo A-\d+ \(bloco \d+\) longe demais da base A para VLOS: \d+ m/.test(lista),
     lista
       .split('\n')
-      .filter((l) => /alcance visual/.test(l))
+      .filter((l) => /VLOS/.test(l))
       .slice(0, 2)
       .join(' | ')
       .slice(0, 300),
@@ -2045,13 +2253,13 @@ await scenario('bases-exportar-por-base', async () => {
       /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/.test(sB.href) &&
       /descolar até \d+ m do ponto/.test(sB.text) &&
       /voo entre 0 e \+\d+ m acima do planeado/.test(sB.text) &&
-      /Alcance visual/i.test(sB.text) &&
+      /Distância VLOS/i.test(sB.text) &&
       /necessários/.test(sB.text) &&
       // M3-U10: alturas no comando, % do útil e os parâmetros do plano
       /Altura no comando/i.test(sB.text) &&
       /\d+–\d+ m \(rel\. à descolagem\)/.test(sB.text) &&
       /\d+ %/.test(sB.text) &&
-      /altitude \d+ m · [\d.]+ m\/s · sobreposição \d+\/\d+ %/.test(sB.text) &&
+      /altura \d+ m · [\d.]+ m\/s · sobreposição \d+\/\d+ %/.test(sB.text) &&
       sB.flights.join(',') === wantB.join(',') &&
       inB.every((n) => sB.text.includes(n.split('/').pop())),
     sB ? sB.text.replace(/\s+/g, ' ').slice(0, 300) : 'sem ficha',
@@ -2321,7 +2529,7 @@ await scenario('atribuir-bloco-a-base', async () => {
     check(
       `${split}: sem base seleccionada, o painel diz como passar blocos`,
       (await hint.getAttribute('data-assign')) === 'off' &&
-        /Juntar blocos a esta base/.test(await hint.innerText()),
+        /Atribuir blocos a esta base/.test(await hint.innerText()),
     )
     await basePin(page, B.label).click()
     check(
@@ -2526,7 +2734,7 @@ await scenario('mosaico-refeito-mantem-atribuicoes', async () => {
     'refeito: o painel diz quantas atribuições não passaram',
     lostWanted > 0 &&
       lost === lostWanted &&
-      /atribuições manuais não passaram para o novo mosaico/.test(await info.innerText()),
+      /atribuições manuais não passaram para a nova divisão/.test(await info.innerText()),
     `${lost} no painel, ${lostWanted} esperadas`,
   )
   // os blocos sem herança voltam à base automática: todos com base
@@ -2586,7 +2794,7 @@ await scenario('bacias-visao-cumeada', async () => {
     .filter({ has: page.locator('option[value="M300RTK"]') })
     .first()
     .selectOption('M300RTK')
-  await configure(page, { split: 'Mosaico' })
+  await configure(page, { split: 'Quadrícula' })
   const nBlocks = await page.getByTestId('block-row').count()
   check('cumeada: dois blocos de 250 m', nBlocks === 2, `${nBlocks} blocos`)
   check(
@@ -2659,7 +2867,7 @@ await scenario('bacias-visao-cumeada', async () => {
     .innerText()}`
   check(
     'cumeada: o painel diz a distância a que fica tapado e o relevo usado (com a ressalva do MDT)',
-    new RegExp(`${hf} \\d+ % \\(tapado a ~\\d+ m do operador\\)`).test(panelText) &&
+    new RegExp(`${hf} \\d+ % \\(tapado a ~\\d+ m do piloto\\)`).test(panelText) &&
       /Relevo: MDT importado «cumeada\.tif»/.test(panelText) &&
       /MDS/.test(panelText),
     panelText.replace(/\s+/g, ' ').slice(0, 400),
@@ -2870,7 +3078,7 @@ await scenario('bacias-visao-cumeada', async () => {
   check(
     `cumeada: a ficha da base A dá «N % visível — olhos a … — tapado a ~X m do operador» no voo ${hf}`,
     new RegExp(
-      `^${views[hf]} % visível( — olhos a \\d+ m [NSEO]{1,2} da base \\(-?\\d+\\.\\d{5}, -?\\d+\\.\\d{5}\\))? — tapado a ~\\d+ m do operador( — rádio em risco em \\d+ % \\(Fresnel a ~\\d+ m\\))?$`,
+      `^${views[hf]} % visível( — olhos a \\d+ m [NSEO]{1,2} da base \\(-?\\d+\\.\\d{5}, -?\\d+\\.\\d{5}\\))? — tapado a ~\\d+ m do piloto( — rádio em risco em \\d+ % \\(Fresnel a ~\\d+ m\\))?$`,
     ).test(cellText.trim()),
     cellText,
   )
@@ -2961,7 +3169,7 @@ await scenario('propor-bases-sitio-alto', async () => {
     .filter({ has: page.locator('option[value="M300RTK"]') })
     .first()
     .selectOption('M300RTK')
-  await configure(page, { split: 'Mosaico' })
+  await configure(page, { split: 'Quadrícula' })
   check('alto: dois blocos de 250 m', (await page.getByTestId('block-row').count()) === 2)
   const preflightText = async () => {
     await page.getByTestId('preflight-pill').click()
@@ -3167,7 +3375,7 @@ const INVENTARIO_INICIO = [
     (r, page) => r.locator('select').filter({ has: page.locator('option[value="M300RTK"]') }),
   ],
   ['missao', 'RTK', inv.field(/Posicionamento RTK/)],
-  ['missao', 'preset de missão', inv.field(/Preset de missão/)],
+  ['missao', 'preset de missão', inv.field(/Tipo de levantamento/)],
   ['voo', 'altitude', inv.field(/^Altura acima da descolagem|^Altura AGL|^Altitude/)],
   ['voo', 'GSD alvo', inv.field(/GSD alvo/)],
   ['voo', 'velocidade', inv.field(/^Velocidade/)],
@@ -3175,8 +3383,10 @@ const INVENTARIO_INICIO = [
   ['voo', 'sobreposição lateral', inv.field(/Sobreposição lateral/)],
   ['voo', 'espaçamento manual', inv.field(/Espaçamento manual/)],
   ['voo', 'disparo por', inv.field(/Disparo por/)],
+  ['voo', 'intervalo de disparo manual', inv.id('interval-manual')],
+  ['voo', 'rumo da aeronave', inv.id('heading-mode')],
   ['voo', 'inclinação do gimbal', inv.field(/Inclinação do gimbal/)],
-  ['voo', 'overshoot', inv.field(/Overshoot por faixa/)],
+  ['voo', 'overshoot', inv.field(/Prolongamento por faixa/)],
   ['voo', 'direcção das linhas (cursor)', (r) => r.locator('input[type=range][max="360"]')],
   ['voo', 'direcção das linhas (graus)', (r) => r.locator('input[type=number][max="360"]')],
   ['voo', '∥ Paralelas', inv.btn(/Paralelas/)],
@@ -3184,7 +3394,7 @@ const INVENTARIO_INICIO = [
   ['voo', '∠ Oblíquas 45°', inv.btn(/Oblíquas 45/)],
   ['voo', 'Óptima', inv.exact('Óptima')],
   ['voo', 'dupla grelha (crosshatch)', inv.field(/crosshatch/)],
-  ['voo', 'fiada de amarração', inv.field(/Fiada de amarração/)],
+  ['voo', 'fiada de amarração', inv.field(/Faixa transversal de amarração/)],
   ['voo', 'expansão 0 %', inv.exact('0%')],
   ['voo', 'expansão 10 %', inv.exact('10%')],
   ['voo', 'expansão 20 %', inv.exact('20%')],
@@ -3200,7 +3410,7 @@ const INVENTARIO_INICIO = [
   ['divisao', 'divisão: Nenhuma', inv.exact('Nenhuma')],
   ['divisao', 'divisão: Faixas', inv.exact('Faixas')],
   ['divisao', 'divisão: Bateria', inv.exact('Bateria')],
-  ['divisao', 'divisão: Mosaico', inv.exact('Mosaico')],
+  ['divisao', 'divisão: Mosaico', inv.exact('Quadrícula')],
   ['bases', 'Marcar base', inv.btn(/Marcar base/)],
   ['bases', 'Remover base', inv.btn(/Remover base/)],
   ['extras', 'planear GCPs', inv.field(/Planear posições de GCPs/)],
@@ -3238,7 +3448,7 @@ const INVENTARIO_ANCORA = [
   ['area', 'largura', inv.field(/^Larguram?$/)],
   ['area', 'orientação da forma', inv.field(/^Orientação°?$/)],
   ['area', 'grelha de réplicas: colunas', inv.field(/^Colunas/)],
-  ['area', 'grelha de réplicas: linhas', inv.field(/^Linhas \(/)],
+  ['area', 'grelha de réplicas: linhas', inv.field(/^Filas \(/)],
 ]
 const INVENTARIO_AREA = [
   ['area', 'Limpar área', inv.btn(/Limpar área/)],
@@ -3247,10 +3457,10 @@ const INVENTARIO_AREA = [
   ['area', 'reimportar MDT', inv.btn(/Importar MDT/)],
   ['area', 'relevo global (de novo)', inv.btn(DOWNLOAD_GLOBAL)],
   // a sugestão de gimbal caiu (M2-T9): fica só a do ângulo das linhas
-  ['area', 'declive: linhas', inv.btn(/^Linhas a \d+°$/)],
+  ['area', 'declive: linhas', inv.btn(/^Faixas a \d+°$/)],
   ['voo', 'tolerância vertical', inv.field(/Tolerância vertical/)],
   ['voo', 'paragem nos waypoints', inv.field(/Paragem nos waypoints/)],
-  ['voo', 'distância entre linhas', inv.field(/Distância entre linhas/)],
+  ['voo', 'distância entre linhas', inv.field(/Espaçamento entre faixas/)],
   ['voo', 'passagem nadir extra', inv.field(/Passagem nadir extra/)],
 ]
 const INVENTARIO_MOSAICO = [
@@ -3408,12 +3618,12 @@ await scenario('inventario-painel-area', async () => {
   await clickMap(p2, 200, -120)
   await (await usa(p2, 'bases', inv.btn(/Marcar base/))).click()
   await closeDrawer(p2)
-  await (await usa(p2, 'divisao', inv.exact('Mosaico'))).click()
+  await (await usa(p2, 'divisao', inv.exact('Quadrícula'))).click()
   await closeDrawer(p2)
   await p2.waitForTimeout(800)
   await verifica(p2, INVENTARIO_MOSAICO)
   await (await usa(p2, 'divisao', inv.id('tile-orientation-auto'))).uncheck()
-  await verifica(p2, [['divisao', 'orientação da malha', inv.field(/Orientação da malha/)]])
+  await verifica(p2, [['divisao', 'orientação da malha', inv.field(/Orientação da quadrícula/)]])
   await (await usa(p2, 'divisao', inv.exact('Faixas'))).click()
   await closeDrawer(p2)
   await verifica(p2, [['divisao', 'área máxima por bloco', inv.field(/Área máx\. por bloco/)]])
@@ -3549,12 +3759,12 @@ await scenario('cartoes-gavetas', async () => {
   )
   // o que se mudou numa gaveta fica, fechada e reaberta (continua montada)
   await openDrawer(page, 'voo')
-  await label(page, /Fiada de amarração|Perpendicular tie line/).check()
+  await label(page, /Faixa transversal de amarração|Perpendicular tie line/).check()
   await closeDrawer(page)
   await openDrawer(page, 'voo')
   check(
     'gaveta: o que se mudou nela fica depois de fechar e abrir',
-    await label(page, /Fiada de amarração|Perpendicular tie line/).isChecked(),
+    await label(page, /Faixa transversal de amarração|Perpendicular tie line/).isChecked(),
   )
   await closeDrawer(page)
   check('gavetas: sem erros de página', errors.length === 0, errors.join(' | '))
@@ -3593,7 +3803,7 @@ await scenario('accoes-seguranca-kmz', async () => {
   const rthKmz = Number(/<wpml:globalRTHHeight>([\d.]+)</.exec(r.wpml)?.[1])
   const subidaKmz = Number(/<wpml:takeOffSecurityHeight>([\d.]+)</.exec(r.wpml)?.[1])
   const mRth = /RTH\): (\d+) m/.exec(rthTxt)
-  const mSubida = /descolagem: (\d+) m|climb: (\d+) m/.exec(rthTxt)
+  const mSubida = /descolagem: (\d+) m|safety height: (\d+) m/.exec(rthTxt)
   check(
     'segurança: o cartão 5 diz o RTH e a subida de descolagem do KMZ',
     Boolean(mRth) &&
@@ -3725,6 +3935,211 @@ await scenario('painel-estatisticas', async () => {
     orbitTxt.replace(/\s+/g, ' ').slice(0, 160),
   )
   check('estatísticas: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Intervalo de disparo escrito à mão: em «Distância» os metros, em «Tempo»
+// os segundos, tal como saem no KMZ e nas estatísticas, com a sobreposição
+// frontal que resulta; e o rumo fixo, o mesmo ângulo em todos os waypoints.
+await scenario('intervalo-manual-e-rumo-fixo', async () => {
+  // relevo global plano: com o MDT de colinas, a grelha sem seguir terreno bloqueia
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await exportReady(page)
+  const usa = async (loc) => {
+    const { el, where } = await reach(page, 'voo', loc)
+    if (!where) throw new Error('controlo do cartão «Parâmetros de voo» fora de alcance')
+    return el
+  }
+  const params = (wpml, tipo) =>
+    [
+      ...wpml.matchAll(
+        new RegExp(
+          `<wpml:actionTriggerType>${tipo}</wpml:actionTriggerType>\\s*<wpml:actionTriggerParam>([\\d.]+)<`,
+          'g',
+        ),
+      ),
+    ].map((m) => Number(m[1]))
+  await (await usa(inv.id('interval-manual'))).check()
+  const metros = await usa(inv.id('interval-metres'))
+  await metros.fill('25')
+  await metros.press('Tab')
+  await page.waitForTimeout(600)
+  const sobre = await page.getByTestId('interval-overlap').innerText()
+  await closeDrawer(page)
+  let [r] = await readRoutes(await exportKmz(page, join(OUT, 'intervalo-25m.kmz')))
+  let p = params(r.wpml, 'multipleDistance')
+  check(
+    'intervalo manual: 25 m no KMZ, nas estatísticas e na sobreposição do painel',
+    p.length > 0 &&
+      p.every((x) => x === 25) &&
+      /25\.0 m · manual/.test(await page.getByTestId('stats-interval').innerText()) &&
+      /\d+ % \(25\.0 m entre fotos\)/.test(sobre),
+    `${p.length} grupos (${[...new Set(p)].join(',')}) · ${sobre.slice(0, 80)}`,
+  )
+  // por tempo: os segundos escritos, sem passar por metros
+  await (await usa(inv.field(/Disparo por/))).selectOption('time')
+  const segundos = await usa(inv.id('interval-seconds'))
+  await segundos.fill('2.3')
+  await segundos.press('Tab')
+  await page.waitForTimeout(600)
+  await closeDrawer(page)
+  ;[r] = await readRoutes(await exportKmz(page, join(OUT, 'intervalo-2_3s.kmz')))
+  p = params(r.wpml, 'multipleTiming')
+  check(
+    'intervalo manual: 2,3 s no KMZ e nas estatísticas',
+    p.length > 0 &&
+      p.every((x) => x === 2.3) &&
+      /2\.3 s · manual/.test(await page.getByTestId('stats-interval').innerText()),
+    `${p.length} grupos (${[...new Set(p)].join(',')})`,
+  )
+  // rumo fixo a 270°: −90 no WPML, em smoothTransition, em todos os waypoints
+  await (await usa(inv.id('heading-mode'))).selectOption('fixed')
+  const graus = await usa(inv.id('heading-deg'))
+  await graus.fill('270')
+  await graus.press('Tab')
+  await page.waitForTimeout(600)
+  await closeDrawer(page)
+  ;[r] = await readRoutes(await exportKmz(page, join(OUT, 'rumo-fixo.kmz')))
+  const rumos = r.wpml
+    .split('<Placemark>')
+    .slice(1)
+    .map((pm) =>
+      /<wpml:waypointHeadingMode>(\w+)<\/wpml:waypointHeadingMode>\s*<wpml:waypointHeadingAngle>([-\d.]+)</.exec(
+        pm,
+      ),
+    )
+  check(
+    'rumo fixo: smoothTransition a −90° em todos os waypoints',
+    rumos.length > 0 && rumos.every((m) => m && m[1] === 'smoothTransition' && m[2] === '-90'),
+    `${rumos.length} waypoints; o primeiro ${rumos[0]?.[1]} ${rumos[0]?.[2]}`,
+  )
+  check('intervalo e rumo: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Alturas de segurança escritas pelo piloto: a subida de descolagem e o RTH
+// saem no KMZ e no cartão; vazias, voltam às automáticas. Escritas tecla a
+// tecla e devagar, como no campo: «150» não pode passar pelo mínimo (20 m)
+// a meio da escrita (o campo levava cada tecla ao limite e dava 205).
+await scenario('alturas-seguranca-kmz', async () => {
+  // relevo global plano: com o MDT de colinas, a grelha sem seguir terreno bloqueia
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await exportReady(page)
+  const alturas = (wpml) => ({
+    rth: Number(/<wpml:globalRTHHeight>([\d.]+)</.exec(wpml)?.[1]),
+    subida: Number(/<wpml:takeOffSecurityHeight>([\d.]+)</.exec(wpml)?.[1]),
+  })
+  let [r] = await readRoutes(await exportKmz(page, join(OUT, 'alturas-auto.kmz')))
+  const auto = alturas(r.wpml)
+  const subida = page.getByTestId('safety-takeoff-height')
+  const rth = page.getByTestId('safety-rth-height')
+  await rth.click()
+  await rth.pressSequentially('150', { delay: 450 })
+  await subida.click()
+  await subida.pressSequentially('45', { delay: 450 })
+  await subida.press('Tab')
+  await page.waitForTimeout(500)
+  ;[r] = await readRoutes(await exportKmz(page, join(OUT, 'alturas-escritas.kmz')))
+  const escritas = alturas(r.wpml)
+  const cartao = await page.getByTestId('card-bases').getByTestId('safety-rth').innerText()
+  check(
+    'segurança: as alturas escritas (45 e 150 m) saem no KMZ e no cartão',
+    escritas.subida === 45 &&
+      escritas.rth === 150 &&
+      /RTH\): 150 m/.test(cartao) &&
+      /(descolagem|safety height): 45 m/.test(cartao),
+    `KMZ ${escritas.subida} / ${escritas.rth} · ${cartao.replace(/\s+/g, ' ').slice(0, 120)}`,
+  )
+  await rth.fill('')
+  await rth.press('Tab')
+  await subida.fill('')
+  await subida.press('Tab')
+  await page.waitForTimeout(500)
+  ;[r] = await readRoutes(await exportKmz(page, join(OUT, 'alturas-repostas.kmz')))
+  const repostas = alturas(r.wpml)
+  check(
+    'segurança: com os campos vazios, as alturas voltam às automáticas',
+    repostas.rth === auto.rth && repostas.subida === auto.subida,
+    `${repostas.subida} / ${repostas.rth} (automáticas ${auto.subida} / ${auto.rth})`,
+  )
+  check('alturas de segurança: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Legenda do mapa e da vista 3D: só as camadas com conteúdo, e cada caixa
+// esconde e volta a mostrar a sua camada (a área em SVG, as fotos no canvas).
+await scenario('legenda-camadas', async () => {
+  // relevo global plano: com o MDT de colinas, a grelha sem seguir terreno bloqueia
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await exportReady(page)
+  const legenda = page.getByTestId('map-legend')
+  await legenda.getByTestId('map-legend-toggle').click()
+  const caixas = await legenda
+    .locator('input[type=checkbox]')
+    .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')))
+  check(
+    'legenda: a área, as faixas e as fotos, e não as camadas vazias',
+    ['polygon', 'lines', 'photos'].every((k) => caixas.includes(`map-legend-${k}`)) &&
+      !caixas.includes('map-legend-orbit') &&
+      !caixas.includes('map-legend-gcps'),
+    caixas.join(','),
+  )
+  const caminhos = () => page.locator('.leaflet-overlay-pane svg path').count()
+  const antes = await caminhos()
+  await legenda.getByTestId('map-legend-polygon').uncheck()
+  const sem = await caminhos()
+  await legenda.getByTestId('map-legend-polygon').check()
+  const depois = await caminhos()
+  check(
+    'legenda: a caixa da área esconde e volta a mostrar o polígono',
+    sem < antes && depois === antes,
+    `${antes} → ${sem} → ${depois} caminhos`,
+  )
+  // as fotos e as faixas são desenhadas no canvas: a imagem muda com a caixa
+  const imagem = async () => {
+    await page.waitForTimeout(400)
+    return page
+      .locator('.leaflet-overlay-pane canvas')
+      .first()
+      .evaluate((c) => {
+        const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data
+        let h = 0
+        for (let i = 0; i < d.length; i += 4) h = (h * 31 + d[i] + d[i + 1] * 3 + d[i + 3]) >>> 0
+        return h
+      })
+  }
+  const comFotos = await imagem()
+  await legenda.getByTestId('map-legend-photos').uncheck()
+  const semFotos = await imagem()
+  await legenda.getByTestId('map-legend-photos').check()
+  const deNovo = await imagem()
+  check(
+    'legenda: a caixa das fotos esconde e volta a mostrar as fotos',
+    comFotos !== semFotos && deNovo !== semFotos,
+  )
+  // vista 3D: a sua legenda, com as fotos e a rota
+  await page.getByRole('button', { name: /Vista 3D|3D View/ }).click()
+  const l3d = page.getByTestId('map3d-legend')
+  await l3d.waitFor({ timeout: 20000 })
+  await l3d.getByTestId('map3d-legend-toggle').click()
+  const caixas3d = await l3d
+    .locator('input[type=checkbox]')
+    .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')))
+  const fotos3d = l3d.getByTestId('map3d-legend-photos')
+  await fotos3d.uncheck()
+  const desligada = !(await fotos3d.isChecked())
+  await fotos3d.check()
+  check(
+    'legenda 3D: relevo, rota e fotos, e a caixa das fotos liga e desliga',
+    ['terrain', 'route', 'photos'].every((k) => caixas3d.includes(`map3d-legend-${k}`)) &&
+      desligada &&
+      (await fotos3d.isChecked()),
+    caixas3d.join(','),
+  )
+  check('legenda: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })
@@ -3948,7 +4363,7 @@ await scenario('ancora-editada-sobrevive', async () => {
     `${editado.length} vs ${recarregado.length} vértices`,
   )
   // mover a área inteira mantém a forma editada
-  await configure(page, { split: 'Mosaico' })
+  await configure(page, { split: 'Quadrícula' })
   const pega = page.locator('.anchor-handle')
   check('âncora editada: há pega central', (await pega.count()) === 1)
   await dragMarker(page, pega, 100, 50)
@@ -4259,7 +4674,7 @@ await scenario('preflight-bloqueia-transito-atras-da-cumeada', async () => {
   await page.locator('input[accept=".json"]').setInputFiles(ficheiro)
   await page.waitForTimeout(1000)
   await importDem(page, fx.demMesas)
-  await configure(page, { split: 'Mosaico' })
+  await configure(page, { split: 'Quadrícula' })
   const nBlocks = await page.getByTestId('block-row').count()
   check('trânsito: dois blocos de 250 m, com a base A', nBlocks === 2, `${nBlocks} blocos`)
   await page.waitForTimeout(1500)
@@ -4367,11 +4782,11 @@ await scenario('bateria-com-prolongamento-fiada-e-margem', async () => {
   const base = await readRoutes(await exportKmz(page, join(OUT, 'bateria-simples.zip')))
   await openDrawer(page, 'voo')
   const over = page
-    .locator('label', { hasText: /Overshoot por faixa|Per-line overshoot/ })
+    .locator('label', { hasText: /Prolongamento por faixa|Per-line overshoot/ })
     .locator('input')
   await over.fill('30')
   await over.press('Tab')
-  await label(page, /Fiada de amarração|Perpendicular tie line/).check()
+  await label(page, /Faixa transversal de amarração|Perpendicular tie line/).check()
   await page.getByRole('button', { name: '10%', exact: true }).click()
   await closeDrawer(page)
   await page.waitForTimeout(1500)

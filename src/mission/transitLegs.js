@@ -74,15 +74,18 @@ export function transitLegs({ view3d, perBlock, blocks, baseLayout, bases, block
  * a ficha, a checklist e o relatório mostrarem o que vai no ficheiro, e a
  * subida de descolagem (M3-U3 da revisão do código).
  * @param {Array<{flight: string|null, waypoints: number[][]}>} legs
- * @param {{altitudeM?: number}} [opts] altitude nominal (área): entra no tecto
+ * @param {{altitudeM?: number, rthHeightM?: number|null}} [opts] altitude nominal
+ *   (área), que entra no tecto, e a altura de regresso escrita pelo piloto
  * @returns {{flight: string|null, ceilingM: number, rthM: number}[]}
  */
-export function rthByFlight(legs, { altitudeM = 0 } = {}) {
+export function rthByFlight(legs, { altitudeM = 0, rthHeightM = null } = {}) {
   const alt = Number.isFinite(altitudeM) ? altitudeM : 0
+  const fixed = Number.isFinite(rthHeightM) ? rthHeightM : null
   return (legs ?? []).map((leg) => {
     let tecto = alt
     for (const w of leg.waypoints ?? []) if (Number.isFinite(w[2]) && w[2] > tecto) tecto = w[2]
-    return { flight: leg.flight ?? null, ceilingM: tecto, rthM: defaultRthHeightM(tecto) }
+    // a altura escrita pelo piloto vale para todos os voos (é a do ficheiro)
+    return { flight: leg.flight ?? null, ceilingM: tecto, rthM: fixed ?? defaultRthHeightM(tecto) }
   })
 }
 

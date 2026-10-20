@@ -1,4 +1,5 @@
 import { useT } from '../i18n.jsx'
+import NumberInput from './NumberInput.jsx'
 import { Card, CardColumn, SafetyCard } from './Cards.jsx'
 import { IconDownload, IconTrash } from './Icons.jsx'
 import BatterySetsNote from './BatterySetsNote.jsx'
@@ -20,21 +21,6 @@ function Field({ label, suffix = null, children }) {
   )
 }
 
-/** @param {{value: any, onChange: (v: any) => void, min?: number, max?: number, step?: number}} props */
-function NumberInput({ value, onChange, min, max, step = 1 }) {
-  return (
-    <input
-      type="number"
-      className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-      value={value}
-      min={min}
-      max={max}
-      step={step}
-      onChange={(e) => onChange(Number(e.target.value))}
-    />
-  )
-}
-
 /** Mensagem de um erro do seguimento de terreno do circular. */
 function terrainErrorText(res, t) {
   const key = `ci.terrain.err.${res.error}`
@@ -52,8 +38,11 @@ export default function CircularPanel({
   setsCheck = null,
   batteryLabel = '',
   triggerWarn,
+  // altura e sobreposição frontal que o circular usa (as suas ou as da área)
   altitude,
   frontOverlap,
+  // as da área, para começar nelas ao ligar as próprias
+  areaParams = null,
   areaStats,
   areaKind,
   terrainFollow,
@@ -216,9 +205,47 @@ export default function CircularPanel({
             }
           />
         </Field>
-        <p className="text-xs leading-relaxed text-slate-400">
-          {t('ci.params.altitudeNote', { h: altitude, f: frontOverlap })}
-        </p>
+        {/* altura e sobreposição frontal próprias, ou as do separador Área */}
+        <label className="mb-2 mt-1 flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            data-testid="circular-own-params"
+            checked={circularConfig.ownParams === true}
+            onChange={(e) => {
+              // ao ligar, começa nos valores da área
+              if (e.target.checked && areaParams) {
+                setCircularParam('altitude', areaParams.altitude)
+                setCircularParam('frontOverlap', areaParams.frontOverlap)
+              }
+              setCircularParam('ownParams', e.target.checked)
+            }}
+          />
+          {t('ci.params.own')}
+        </label>
+        {circularConfig.ownParams === true ? (
+          <>
+            <Field label={t('ci.params.altitude')} suffix="m">
+              <NumberInput
+                value={circularConfig.altitude}
+                min={5}
+                max={1500}
+                onChange={(v) => setCircularParam('altitude', Math.max(5, Math.min(1500, v)))}
+              />
+            </Field>
+            <Field label={t('ci.params.frontOverlap')} suffix="%">
+              <NumberInput
+                value={circularConfig.frontOverlap}
+                min={10}
+                max={95}
+                onChange={(v) => setCircularParam('frontOverlap', Math.max(10, Math.min(95, v)))}
+              />
+            </Field>
+          </>
+        ) : (
+          <p className="text-xs leading-relaxed text-slate-400">
+            {t('ci.params.altitudeNote', { h: altitude, f: frontOverlap })}
+          </p>
+        )}
         <label className="mt-3 flex items-center gap-2 text-sm text-slate-300">
           <input
             type="checkbox"

@@ -6,6 +6,120 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Corrigido (face com cantos: a exportação estava bloqueada)
+
+- **Uma face com cantos não exportava.** As fotografias extra que rodam o
+  rumo num canto (M2-E11, de 19 de Outubro) iam todas para o ponto da
+  amostra seguinte: dois ou mais waypoints no mesmo ponto, que a DJI recusa
+  (mínimo de 0,5 m), e o preflight bloqueava a exportação de qualquer linha
+  de base em L. Passam a ficar entre as duas amostras, ao longo da linha
+  afastada: do lado de fora do canto num arco à volta da aresta, ao
+  afastamento exacto; do lado de dentro, repartidas pelo troço antes e
+  depois do vértice da esquadria, que corta o canto a afastar-se das duas
+  faces. A 1 m ou mais umas das outras ao longo da linha, e só com acções
+  já voadas (waypoint com rumo e foto). A rotação no próprio canto (acção
+  `rotateYaw`) fica para depois de um voo de teste.
+- **Cantos agudos do lado de dentro.** Ao longo da linha afastada as fotos
+  ficavam a um passo, mas em linha recta, através do vértice da esquadria,
+  duas seguidas ficavam a 0,06–0,4 m (deflexões de 105° a 170° a 5 m de
+  afastamento) e o preflight bloqueava. Cada grupo de posições a menos de
+  0,9 m em linha recta passa a uma só: a que fica junto ao vértice, com o
+  rumo do meio, a olhar para o fundo do canto. Só se tiram posições da
+  linha afastada, nenhuma se aproxima da face. Num varrimento de 936 faces
+  (deflexões de 10° a 170°, os dois lados, troços de 20 a 200 m,
+  afastamentos de 5 a 60 m), nenhuma fica com waypoints seguidos a menos de
+  0,5 m (eram 24).
+- **Sobreposição muito alta a afastamentos curtos.** A amostragem da face
+  nunca é mais densa do que 0,6 m ao longo da linha nem do que 0,7 m entre
+  passagens: 95 % de sobreposição a 5 m pedia fotos a 0,35 m, e uma face
+  baixa com imagens altas duas passagens quase à mesma altura, abaixo do
+  mínimo da DJI.
+- Do lado de dentro de um canto agudo com troços curtos, a linha afastada
+  colapsava num coto (0,2 m num V de 135° com troços de 60 m) e saía um
+  plano de dois waypoints quase no mesmo ponto: passa a ser recusado com a
+  mensagem de canto ou troço curto.
+
+### Adicionado (parâmetros de missão, confrontados com a especificação DJI)
+
+- **Intervalo de disparo escrito à mão**: metros com «Distância» e
+  «Waypoint», segundos com «Tempo». Vazio, o calculado de sempre (pegada ao
+  longo da faixa × (1 − sobreposição frontal)). Escrito, entra em tudo o que
+  usa o intervalo (plano, fotos no mapa e no 3D, estatísticas, avisos do
+  obturador, sobreposição real), o painel mostra a sobreposição frontal que
+  resulta, e o ficheiro leva o valor exacto: em «Tempo», os segundos
+  escritos (`actionTriggerParam` > 0, common-element.md). O corredor
+  continua com o intervalo automático.
+- **Rumo fixo na grelha**: «Rumo da aeronave: segue a rota | fixo». Fixo,
+  todos os waypoints (da rota e de cada bloco) levam o mesmo ângulo em
+  `smoothTransition` (o modo que a especificação manda usar com um ângulo;
+  `fixed` não leva ângulo): a câmara aponta sempre para o mesmo lado, para
+  oblíquas viradas para a encosta e cada direcção de vista com a
+  sobreposição lateral pedida.
+- **Espera em cada foto** (acção `hover`, `hoverTime` > 0 s em todas as
+  aeronaves, common-element.md): na face e em cada ponto de inspecção,
+  depois de o gimbal rodar e antes do disparo; conta no tempo de voo.
+- **Altura de segurança na descolagem e altura de regresso (RTH)
+  editáveis**, nas acções de segurança de todos os modos: vazio = as de
+  sempre (30 m; RTH acima do ponto mais alto de cada voo, no mínimo 100 m).
+  Limites da especificação: `takeOffSecurityHeight` de 1,2 a 1500 m;
+  `globalRTHHeight` sem limite na tabela, recortado a 20–1500 m. Os valores
+  escritos entram nas verificações da deslocação, no cartão, na ficha e no
+  preflight.
+- **Altura e sobreposições próprias no corredor e no circular** (opção «…
+  próprias», que começa nos valores da área); sem ela, as da área, como
+  antes.
+- **Descolagem da face e da órbita numa base**: «Descolagem: no pé da face
+  (no chão do POI) | na base X». Numa base, as alturas exportadas somam a
+  diferença de cotas entre o chão do alvo e a base (a cota da zona da base,
+  como na área e no corredor); sem relevo que cubra os dois, ou com a base
+  apagada, o preflight bloqueia.
+- **Prolongamento nas pontas da face**: meia largura de imagem para lá de
+  cada ponta, como o M2-E12 no corredor, para as pontas terem a mesma
+  sobreposição do resto; desligável junto a outras paredes.
+- **Corredor partido em vários voos** («Divisão em voos: por bateria»): o
+  eixo corta-se em troços iguais, o mínimo para cada voo caber no tempo útil
+  (5 % de margem); os troços sobrepõem-se uma pegada no corte. Cada voo
+  descola da base mais próxima (ou à cota mínima do seu troço), tem o seu
+  seguimento de terreno e sai num KMZ próprio, num ZIP; o mapa mostra cada
+  voo na sua cor, com o rótulo (C-1, C-2…). As estatísticas, as baterias do
+  projecto e o preflight contam cada voo com a deslocação da sua base: o
+  voo mais longo e o aviso de bateria são os do pior voo com a sua
+  deslocação, e o alcance visual o do pior voo.
+
+### Adicionado (mapa e vista 3D)
+
+- **Legenda das camadas** no mapa e na vista 3D: abre e fecha num botão, com
+  o símbolo de cada camada com conteúdo e uma caixa para a mostrar ou
+  esconder (área, margem, faixas, fotos, GCP, bases, pontos de inspecção,
+  corredor, face, órbita, circular; no 3D, relevo, área, blocos, rota,
+  waypoints, fotos, bases e GCP).
+- **Fotos em todos os modos**: no mapa e na vista 3D, também na face, na
+  órbita, no circular, e na área e no corredor com foto por waypoint (os
+  waypoints com a acção de foto; na área com foto por waypoint só apareciam
+  no 3D); as do corredor passam para a camada das fotos.
+- Os textos fixos da vista 3D (estado das imagens, comandos, sem relevo)
+  passam para os dicionários, em PT e EN.
+
+### Corrigido (desacertos entre texto e código)
+
+- Em «Tempo», o painel arredondava o intervalo ao mais próximo e o ficheiro
+  por defeito: podia mostrar 2,2 s e escrever 2,1 s. Mostra agora o valor
+  do ficheiro.
+
+### Corrigido (campos numéricos e botões da divisão)
+
+- **Campos levados ao limite a cada tecla.** Nos painéis do corredor, do
+  circular, da face e da órbita, o valor ia para o limite à primeira tecla:
+  com mínimo 5 m, escrever 30 no raio do circular dava 50 (o «3» passava a
+  5), e os campos novos (altura do corredor, sobreposições, RTH com mínimo
+  20 m) davam o mesmo. Estes painéis e as alturas de segurança passam a usar
+  o campo do painel da área, que só aplica o valor quando se acaba de
+  escrever (ao sair do campo, com Enter, ou 400 ms depois da última tecla se
+  o número já estiver dentro dos limites) e só então o leva ao limite; um
+  número por acabar («2.») já não apaga o valor.
+- Os quatro botões da divisão em voos ficam em 2 × 2 no painel estreito
+  (abaixo de 1024 px de largura): «Quadrícula» e «Nenhuma» não cabiam.
+
 ### Adicionado (fotos no mapa e no 3D, GCP à mão, terreno com foto por waypoint)
 
 - **Onde as fotos saem com disparo por distância ou por tempo**: pontos
@@ -66,7 +180,7 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   tipo, valores do enum, intervalo, obrigatoriedade (incluindo «obrigatório
   se…»), aeronaves suportadas e a ordem dos filhos dos exemplos.
 - **Validador de conformidade** (`tests/lib/wpml-conformidade.mjs`) sobre
-  uma matriz de 35 casos modos × aeronaves (área por distância, tempo e
+  uma matriz de 58 casos modos × aeronaves (área por distância, tempo e
   waypoint, com terreno, LiDAR; corredor; fachada; órbita em foto, por nível
   e em vídeo; circular; pontos de inspecção; em M3E, M4T grande-angular e
   térmica, M300 RTK com P1 e Mapper+, custom) e sobre os ficheiros

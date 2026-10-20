@@ -74,6 +74,8 @@ export function inspectionToWaypoints(points) {
     perWaypoint.push({
       ...(p.heading != null ? { heading: p.heading } : {}),
       ...(p.gimbalPitch != null ? { gimbalPitch: p.gimbalPitch } : {}),
+      // espera no ponto antes do disparo (acção hover do WPML)
+      ...(Number.isFinite(p.hoverS) && p.hoverS > 0 ? { hoverS: p.hoverS } : {}),
       actions: p.photo === false ? [] : ['takePhoto'],
     })
   }

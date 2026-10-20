@@ -10,6 +10,7 @@ import { headingTicks } from '../utils/preview.js'
 import { faceExportParams } from '../mission/exportParams.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
 import { finishDraft } from '../mission/draft.js'
+import { planForTakeoff } from '../mission/takeoffRef.js'
 
 export function useFaceMission({
   sensor,
@@ -61,6 +62,8 @@ export function useFaceMission({
       // a velocidade é um parâmetro explícito da fachada — o tempo estimado
       // usa exactamente o valor que a exportação escreve
       speed: faceConfig.speedMS,
+      extendEnds: faceConfig.extendEnds,
+      hoverS: faceConfig.hoverS,
     })
   }, [faceConfig, sensor])
 
@@ -79,31 +82,36 @@ export function useFaceMission({
     }
   }, [missionMode, facePlan, faceConfig.baseline, faceConfig.standoffM])
 
-  const handleExportFace = useCallback(() => {
-    if (!facePlan || facePlan.error) return
-    runExport(() =>
-      exportWPMLKmz(
-        faceExportParams({
-          missionName,
-          plan: facePlan,
-          speed: faceConfig.speedMS,
-          wpml,
-          gimbalPitch: faceConfig.gimbalPitch,
-          sensorType: sensor.type,
-          safety,
-        }),
-      ),
-    )
-  }, [
-    facePlan,
-    missionName,
-    faceConfig.speedMS,
-    wpml,
-    faceConfig.gimbalPitch,
-    sensor.type,
-    safety,
-    runExport,
-  ])
+  // `takeoff` (takeoffReference): com a descolagem numa base, as alturas
+  // saem relativas a ela; sem, como sempre (descolagem no pé da face)
+  const handleExportFace = useCallback(
+    (takeoff = null) => {
+      if (!facePlan || facePlan.error) return
+      runExport(() =>
+        exportWPMLKmz(
+          faceExportParams({
+            missionName,
+            plan: planForTakeoff(facePlan, takeoff),
+            speed: faceConfig.speedMS,
+            wpml,
+            gimbalPitch: faceConfig.gimbalPitch,
+            sensorType: sensor.type,
+            safety,
+          }),
+        ),
+      )
+    },
+    [
+      facePlan,
+      missionName,
+      faceConfig.speedMS,
+      wpml,
+      faceConfig.gimbalPitch,
+      sensor.type,
+      safety,
+      runExport,
+    ],
+  )
 
   return {
     faceConfig,

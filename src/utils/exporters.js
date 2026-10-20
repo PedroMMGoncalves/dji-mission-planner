@@ -73,6 +73,19 @@ const MIN_TRIGGER_PARAM = 0.1
 // intervalo de disparo real, logo nunca arredonda para cima por engano.
 const floorToParam = (v) => Math.floor(v * TRIGGER_PARAM_SCALE + 1e-9) / TRIGGER_PARAM_SCALE
 
+/** O valor de disparo como sai no ficheiro: por defeito à décima, nunca abaixo de 0,1. */
+export const triggerParamValue = (v) => Math.max(MIN_TRIGGER_PARAM, floorToParam(v))
+
+/**
+ * Segundos do disparo por tempo que vão para o ficheiro: o intervalo em
+ * metros a dividir pela velocidade, por defeito à décima. O painel mostra
+ * este valor, e não um arredondamento ao mais próximo.
+ */
+export function triggerSecondsFor(intervalM, speed) {
+  if (!(intervalM > 0) || !(speed > 0)) return null
+  return triggerParamValue(intervalM / speed)
+}
+
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v)
 /**
  * Decimal como texto, sem notação científica nem zeros à direita: a
@@ -137,6 +150,7 @@ export function validateExportParams(params) {
   }
   for (const key of [
     'photoIntervalM',
+    'photoIntervalS',
     'gimbalPitch',
     'rthHeightM',
     'turnDampingDistM',
@@ -152,6 +166,9 @@ export function validateExportParams(params) {
   // ponto de descolagem.
   if (isNum(params.photoIntervalM) && params.photoIntervalM < 0) {
     throw new MissionExportError('param-out-of-range', 'photoIntervalM')
+  }
+  if (isNum(params.photoIntervalS) && params.photoIntervalS < 0) {
+    throw new MissionExportError('param-out-of-range', 'photoIntervalS')
   }
   if (isNum(params.durationS) && params.durationS < 0) {
     throw new MissionExportError('param-out-of-range', 'durationS')
@@ -195,6 +212,14 @@ export function validateExportParams(params) {
       }
       if (isNum(pw.gimbalPitch) && (pw.gimbalPitch < -120 || pw.gimbalPitch > 60)) {
         throw new MissionExportError('param-out-of-range', `perWaypoint[${i}].gimbalPitch`)
+      }
+      // hover: hoverTime > 0 s na especificação (common-element.md); 0 ou
+      // ausente = sem espera
+      if (pw.hoverS != null && !isNum(pw.hoverS)) {
+        throw new MissionExportError('per-waypoint-not-finite', `${i}.hoverS=${pw.hoverS}`)
+      }
+      if (isNum(pw.hoverS) && (pw.hoverS < 0 || pw.hoverS > 900)) {
+        throw new MissionExportError('param-out-of-range', `perWaypoint[${i}].hoverS`)
       }
       if (pw.actions != null && !Array.isArray(pw.actions)) {
         throw new MissionExportError('per-waypoint-invalid', `${i}.actions`)
@@ -761,6 +786,9 @@ function buildActionGroups(params) {
     speed,
     wpml,
     photoIntervalM,
+    // segundos escritos pelo piloto (disparo por tempo com intervalo manual):
+    // vão tal qual para o ficheiro, sem passar pela conversão de metros
+    photoIntervalS = null,
     triggerMode,
     sensorType,
     perWaypoint = null,
@@ -782,11 +810,14 @@ function buildActionGroups(params) {
   const triggerXml = (() => {
     if (!photoIntervalM || photoIntervalM <= 0) return null
     if (triggerMode === 'time') {
-      const seconds = Math.max(MIN_TRIGGER_PARAM, floorToParam(photoIntervalM / speed))
+      const seconds =
+        isNum(photoIntervalS) && photoIntervalS > 0
+          ? triggerParamValue(photoIntervalS)
+          : triggerParamValue(photoIntervalM / speed)
       return `          <wpml:actionTriggerType>multipleTiming</wpml:actionTriggerType>
           <wpml:actionTriggerParam>${seconds.toFixed(1)}</wpml:actionTriggerParam>`
     }
-    const metres = Math.max(MIN_TRIGGER_PARAM, floorToParam(photoIntervalM))
+    const metres = triggerParamValue(photoIntervalM)
     return `          <wpml:actionTriggerType>multipleDistance</wpml:actionTriggerType>
           <wpml:actionTriggerParam>${metres.toFixed(1)}</wpml:actionTriggerParam>`
   })()
@@ -897,6 +928,18 @@ ${triggerXml}
               <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
               <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
               <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>`)
+    }
+    // Espera antes do disparo (hover, common-element.md: hoverTime > 0 s, em
+    // todas as aeronaves): depois de o gimbal rodar, para a imagem sair com
+    // a aeronave e a câmara paradas
+    if (isNum(pw.hoverS) && pw.hoverS > 0) {
+      actions.push(`          <wpml:action>
+            <wpml:actionId>${actions.length}</wpml:actionId>
+            <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:hoverTime>${fmtDec(pw.hoverS, 1)}</wpml:hoverTime>
             </wpml:actionActuatorFuncParam>
           </wpml:action>`)
     }

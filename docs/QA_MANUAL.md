@@ -23,7 +23,7 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
   vão do U — as pernas entre strips seguem pela base.
 - ☐ Carregar o atalho **Óptima**.
   **Esperado:** a direcção salta para ~0° (N-S), o nº de faixas desce
-  (comparar o cartão "Nº de faixas" antes/depois) e a distância total baixa.
+  (comparar o cartão "N.º de faixas" antes/depois) e a distância total baixa.
 - ☐ Voltar a 90° e comparar "Distância total".
   **Esperado:** maior do que na direcção óptima.
 
@@ -33,7 +33,7 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
   **Modelo 3D · Dupla grelha** (cartão 1, **Mais opções ›**); esperar a descarga automática do relevo;
   activar **terrain follow**.
   **Esperado:** duas famílias de linhas perpendiculares; cartão GSD passa a
-  **"GSD (centro do quadro)"** (gimbal −60°) com valor ~15% pior do que a
+  **"GSD (centro da imagem)"** (gimbal −60°) com valor ~15% pior do que a
   −90°; o resultado do terreno indica waypoints densificados.
 - ☐ Abrir o **perfil de elevação**.
   **Esperado:** a linha de voo acompanha o terreno dentro da tolerância; sem
@@ -75,9 +75,9 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 - ☐ Ainda com Mapper+: subir a altitude acima de 100 m.
   **Esperado:** aviso âmbar do tecto operacional (100 m AGL) no cartão 3 e no
   preflight. O cartão de métricas mostra **Densidade LiDAR** em vez de GSD.
-- ☐ Divisão «Bateria» com prolongamento 30 m, fiada e margem 10 %.
+- ☐ Divisão «Bateria» com prolongamento 30 m, faixa transversal de amarração e margem 10 %.
   **Esperado:** quadrados mais pequenos do que sem esses extras; cada bloco
-  cabe no tempo útil (cartão 7, «Voo mais longo / útil» sem vermelho).
+  cabe no tempo útil (cartão 7, «Voo mais longo / tempo útil» sem vermelho).
 - ☐ Checklist (com Mapper+ activo).
   **Esperado:** grupos **LiDAR** no pré-campo e no durante; com um perfil de
   câmara os grupos desaparecem e as contagens de progresso ajustam.
@@ -91,9 +91,9 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
   **Esperado:** área, hardware, parâmetros, blocos e afinações (FOV de
   trabalho, bateria por combinação) restaurados.
 
-## 6. Modo fachada (~2.5 min)
+## 6. Modo face (~2.5 min)
 
-- ☐ Selector do topo → **Fachada**; Desenhar; clicar um L no mapa (dois
+- ☐ Selector do topo → **Face**; Desenhar; clicar um L no mapa (dois
   troços perpendiculares, ~300 m cada); Concluir (ou duplo clique).
   **Esperado:** baseline laranja; linha afastada tracejada ao standoff do
   lado escolhido; traços amarelos de rumo perpendiculares a cada troço,
@@ -102,7 +102,7 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
   **Esperado:** a linha afastada salta para o outro lado da baseline e os
   rumos invertem.
 - ☐ Baixar o **Afastamento** para 5 m (o mínimo) e ler o painel.
-  **Esperado:** passo vertical POSITIVO e aviso âmbar do piso de segurança
+  **Esperado:** passo vertical POSITIVO e aviso âmbar da altura mínima de segurança
   com a faixa por cobrir no pé da face; as alturas das passagens sobem
   sempre, nenhuma abaixo dos 5 m. Repor o afastamento a 25 m faz o aviso
   desaparecer.
@@ -125,7 +125,7 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
   **Esperado:** anel tracejado ao raio, traços de rumo a apontarem ao POI,
   marcador arrastável; painel com níveis × pontos/volta e gimbal por nível
   (mais inclinado nos níveis altos).
-- ☐ Ajustar o **GSD alvo à distância**.
+- ☐ Ajustar o **GSD pretendido no alvo**.
   **Esperado:** o raio recalcula-se em conformidade.
 - ☐ Exportar missão única; reimportar o KMZ no modo Área.
   **Esperado:** `<missao>_orbit_nN.kmz` com
@@ -141,7 +141,7 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
   larga (3–4 vértices, ~500 m); Concluir (ou duplo clique).
   **Esperado:** eixo desenhado, faixa ilustrativa da largura pedida e as
   passagens paralelas; painel com o número de passagens, waypoints e tempo, e
-  a linha «Altitude … · sobreposição …/… % (do separador Área, cartão 3)».
+  a linha «Altura … · sobreposição …/… % (do separador Área, cartão 3)».
 - ☐ Aumentar a **meia-largura** de 60 para 120 m.
   **Esperado:** o número de passagens cresce **uma de cada vez**, nunca aos
   saltos, e a faixa alarga em conformidade.
@@ -179,7 +179,7 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 ## 10. Disparo por waypoint (~1.5 min)
 
 - ☐ Perfil de câmara (M3E); área rectangular ~100 × 60 m; no cartão 3,
-  **Mais opções ›**: overshoot 10 m e **Disparo por: Waypoint**.
+  **Mais opções ›**: prolongamento 10 m e **Disparo por: Waypoint**.
   **Esperado:** a opção só existe com câmara (desaparece com o Mapper+); o
   mapa mostra waypoints intermédios em cada faixa, nenhum nos troços de
   overshoot; o cartão **Fotos** passa a contar waypoints com foto (sem o
@@ -213,7 +213,7 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 A app é usada em campo: numa janela a **~768 px de largura** (DevTools ou
 tablet real):
 
-- ☐ O selector de modo e os cinco painéis (Área/Fachada/Órbita/Corredor/Circular) são usáveis
+- ☐ O selector de modo e os cinco painéis (Área/Face/Órbita/Corredor/Circular) são usáveis
   sem sobreposições; os campos numéricos aceitam toque; as listas fazem
   scroll dentro do painel.
 - ☐ Abrir **Mais opções ›** de um cartão.
@@ -270,7 +270,7 @@ tablet real):
   **Esperado:** uma ficha por base: coordenadas (6 casas) que abrem nos
   mapas, zona (reduzida e porquê), cota de referência, voos com tempo
   (trânsito incluído) e o nome do KMZ, conjuntos de baterias contra os da
-  equipa, alcance visual; cada base inteira numa página.
+  equipa, distância VLOS; cada base inteira numa página.
 - ☐ **No campo**, na base B: copiar a pasta `base-B/` do ZIP por base para o
   comando e importar no DJI Pilot 2 (cartão ou cabo).
   **Esperado:** as missões aparecem com o nome do ficheiro (`..._B-3`), pela
@@ -287,9 +287,9 @@ tablet real):
   dentro de uma célula criam a base e o ponto (a célula não se desactiva).
   Com uma gaveta aberta, o primeiro Esc fecha a gaveta e a base continua
   seleccionada.
-- ☐ Na linha da base A, **Juntar blocos a esta base**; clicar na área de dois
+- ☐ Na linha da base A, **Atribuir blocos a esta base**; clicar na área de dois
   blocos de outras bases (um na divisão por faixas, onde não há quadrados).
-  **Esperado:** nada muda ao carregar no botão; a linha diz «A juntar blocos
+  **Esperado:** nada muda ao carregar no botão; a linha diz «A atribuir blocos
   à base A…»; cada bloco clicado passa para A e só esses; **Terminar** sai do
   modo; dois **Ctrl+Z** repõem os blocos.
 
@@ -300,7 +300,7 @@ tablet real):
   **Esperado:** quadrados laranja onde o drone fica atrás do relevo visto do
   ponto da base, amarelos tracejados onde se vê mas a zona de Fresnel do
   rádio não está livre; a percentagem visível em cada bloco; no painel e na
-  ficha de campo, por voo, «N % visível — tapado a ~X m da base» e o rádio
+  ficha de campo, por voo, «N % visível — tapado a ~X m do piloto» e o rádio
   em risco; o relevo usado («relevo global ~30 m», «MDT importado …» ou
   «MDS importado …»). A camada fica ligada ao recarregar neste aparelho.
 - ☐ Com MDT, **Vegetação e obstáculos** a 15 m (ex. pinhal entre a base e
@@ -334,14 +334,14 @@ tablet real):
   `<wpml:finishAction>autoLand`, `<wpml:exitOnRCLost>executeLostAction` e
   `<wpml:executeRCLostAction>hover`; com **Continuar a missão até ao fim** a
   acção ao interromper fica desligada e o KMZ leva `goContinue`.
-- ☐ Mudar para Corredor, Circular, Fachada e Órbita.
+- ☐ Mudar para Corredor, Circular, Face e Órbita.
   **Esperado:** o cartão **Acções de segurança** com a mesma escolha; o KMZ
   de cada modo leva-a.
 - ☐ **Checklist de campo**; guardar e reabrir o projecto; abrir um projecto
   anterior.
   **Esperado:** a checklist diz as acções escritas no KMZ; o projecto
-  guarda-as; um projecto anterior abre com **Regressar à base (RTH)** e
-  **Interromper a missão → Regressar à base (RTH)**.
+  guarda-as; um projecto anterior abre com **Regressar ao ponto de descolagem (RTH)** e
+  **Interromper a missão → Regressar ao ponto de descolagem (RTH)**.
 - ☐ **No campo**, abrir a rota no DJI Pilot 2.
   **Esperado:** a acção de fim e a de perda de sinal da rota são as do
   planeador.
@@ -358,7 +358,7 @@ registar na matriz:
 
 - ☐ **M4T térmica (B2)**: cada foto do KMZ leva a lente `ir`; no cartão
   saem ficheiros `_T` (e não `_V`), uma por disparo; contar as fotos contra
-  o «Nº de fotos» do painel.
+  o «N.º de fotos» do painel.
 - ☐ **M300 RTK (M3)**: três waypoints colineares nas pontas das faixas; a
   rota voa a direito sem o comando os rejeitar, e o gimbal fica a −90.
 - ☐ **Template com acções e rumos (M2)**: o Pilot 2 abre a missão com as
@@ -370,12 +370,72 @@ registar na matriz:
 - ☐ **Alturas no comando**: a altura do primeiro waypoint que o comando
   mostra é a da ficha de campo («Altura no comando») e do KMZ; o RTH do
   cartão 5 é o que o comando propõe ao abrir a rota.
-- ☐ **Corredor, circular, órbita e fachada**: o KMZ aceite no comando, a
-  primeira passagem na posição e altura do plano, e as fotos a sair; fachada
+- ☐ **Corredor, circular, órbita e face**: o KMZ aceite no comando, a
+  primeira passagem na posição e altura do plano, e as fotos a sair; face
   e órbita com o rumo fixo escrito.
 
 Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
 «KMZ aceite», e o que falhou.
+
+## 17. Parâmetros novos, legenda e fotos (~6 min)
+
+- ☐ **Face em L**: desenhar um L e exportar.
+  **Esperado:** o preflight não bloqueia; no mapa, na esquina, as fotos
+  extra ficam num arco à volta da aresta (lado de fora) ou repartidas antes
+  e depois do vértice (lado de dentro), nunca no mesmo ponto; no
+  `waylines.wpml`, nenhum par de waypoints seguidos a menos de 1 m.
+- ☐ **Face em V muito fechado, por dentro**: um V de braços de 40 m com
+  uma deflexão de 150°, lado de dentro, afastamento 5 m, sobreposição
+  horizontal 90 %.
+  **Esperado:** a exportação fica disponível (sem bloqueio no preflight);
+  junto ao vértice fica uma foto a olhar para o fundo do canto; nenhum par
+  de waypoints seguidos a menos de 0,55 m.
+- ☐ **Face: prolongamento e espera**: com «Prolongar as pontas meia
+  imagem» ligado, a primeira e a última coluna de fotos ficam para lá das
+  pontas (o painel diz quanto); «Espera em cada foto» a 2 s.
+  **Esperado:** cada grupo de foto com `hover` (`hoverTime` 2) antes do
+  `takePhoto`, e o tempo de voo sobe 2 s por foto.
+- ☐ **Descolagem numa base** (face e órbita, com relevo e uma base): escolher
+  «Na base A».
+  **Esperado:** o painel diz a diferença de cotas, as alturas do KMZ sobem
+  (ou descem) dessa diferença, e a vista 3D mostra a rota no mesmo sítio;
+  apagar a base: o preflight bloqueia até escolher outra descolagem.
+- ☐ **Intervalo de disparo manual** (área): «Intervalo de disparo manual»
+  em «Distância», 25 m; depois «Tempo», 2,3 s.
+  **Esperado:** o painel mostra a sobreposição frontal resultante e o campo
+  da frontal esbate-se; as estatísticas, as fotos no mapa e o KMZ seguem o
+  valor (`multipleDistance` 25, depois `multipleTiming` 2,3); o intervalo
+  das estatísticas é o do ficheiro, com «manual».
+- ☐ **Rumo fixo** (área): «Rumo da aeronave: fixo», 270°.
+  **Esperado:** no `waylines.wpml`, todos os waypoints com
+  `smoothTransition` e ângulo −90; com blocos, todos os KMZ do ZIP.
+- ☐ **Alturas de segurança**: nas acções de segurança, 45 m de descolagem e
+  RTH 150 m.
+  **Esperado:** o cartão e a ficha mostram 45 e 150; `takeOffSecurityHeight`
+  45 e `globalRTHHeight` 150 em todos os KMZ; apagar os campos volta às
+  automáticas.
+- ☐ **Corredor e circular com parâmetros próprios**: ligar «Altura e
+  sobreposições próprias» e mudar a altura.
+  **Esperado:** o plano e o KMZ seguem a altura do corredor (ou do
+  circular), e a área não muda.
+- ☐ **Corredor partido em voos**: corredor de vários quilómetros, «Divisão
+  em voos: Por bateria».
+  **Esperado:** o painel lista os voos (C-1, C-2…) com o tempo e a base de
+  cada um, todos abaixo do tempo útil; as estatísticas dizem o mesmo número
+  de voos e o mais longo com a deslocação da sua base; o mapa mostra cada
+  voo na sua cor, com o rótulo; a exportação dá um ZIP com um KMZ por voo;
+  a vista 3D mostra os voos separados.
+- ☐ **Campos escritos devagar**: no RTH, escrever 150 tecla a tecla, com uma
+  pausa entre teclas; no raio do circular, 30.
+  **Esperado:** os campos ficam em 150 e 30 (antes davam 205 e 50).
+- ☐ **Espera nos pontos de inspecção**: 3 s num ponto.
+  **Esperado:** só esse ponto leva `hover`.
+- ☐ **Legenda e fotos**: abrir «Legenda» no mapa e na vista 3D, desligar
+  «Fotos» e voltar a ligar, em cada modo (área, corredor com foto por
+  waypoint, face, órbita, circular).
+  **Esperado:** a legenda só lista as camadas com conteúdo; cada caixa
+  esconde e mostra a sua camada; as fotos (âmbar) aparecem em todos os
+  modos, no mapa e no 3D.
 
 Registo de execução:
 

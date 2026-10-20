@@ -426,7 +426,7 @@ check(
   )
   check(
     'ChecklistPage: grupo face depois do grupo lidar de campo',
-    chk.indexOf("appliesTo: 'face'") > chk.indexOf("'Manobras de calibração antes das fiadas'"),
+    chk.indexOf("appliesTo: 'face'") > chk.indexOf("'Manobras de calibração antes das faixas'"),
   )
   check(
     'ChecklistPage: filtragem aplicada nos loops',
@@ -2233,20 +2233,22 @@ check(
       ...hits.map((f) => turf.distance([w[0], w[1]], f.geometry.coordinates, { units: 'meters' })),
     )
   })
-  // na esquina (M2-E11) ha waypoints no MESMO ponto com rumos intermedios:
-  // esses olham a esquina em diagonal, ate 25·sqrt(2) m; os outros ~25 m
-  const corner = fpL.waypoints.map(
-    (w, i) => i > 0 && turf.distance(w, fpL.waypoints[i - 1], { units: 'meters' }) < 0.01,
+  // na esquina (M2-E11) ha fotos com rumos intermedios, repartidas pela
+  // linha afastada antes e depois do vertice (nunca no mesmo ponto): olham a
+  // esquina em diagonal, de ate um passo de amostragem do vertice, e a
+  // distancia a face segundo o rumo vai ate hypot(25, 25 + passo); as outras
+  // olham de frente, a ~25 m
+  const corner = fpL.perWaypoint.map(
+    (pw) => Math.abs(pw.heading - 180) > 3 && Math.abs(pw.heading - 90) > 3,
   )
+  const diagMax = Math.hypot(25, 25 + fpL.stats.hStepM) + 1
   const okFacing = facing.filter((d, i) => !corner[i] && d != null && d > 22 && d < 28).length
   const nSamples = corner.filter((c) => !c).length
-  const okCorner = facing.every(
-    (d, i) => !corner[i] || (d != null && d > 22 && d < 25 * Math.SQRT2 + 1),
-  )
+  const okCorner = facing.every((d, i) => !corner[i] || (d != null && d > 22 && d < diagMax))
   check(
     'fachada L: distancia a face segundo o rumo ~25 m',
-    okFacing >= nSamples - 2 && okCorner && facing.every((d) => d == null || d < 37),
-    `${okFacing}/${nSamples} em [22,28]; esquina ${corner.filter(Boolean).length} rumos`,
+    okFacing >= nSamples - 2 && okCorner && corner.some(Boolean),
+    `${okFacing}/${nSamples} em [22,28]; esquina ${corner.filter(Boolean).length} rumos, ate ${diagMax.toFixed(0)} m`,
   )
   const dists = fpL.waypoints.map((w) =>
     turf.pointToLineDistance(turf.point([w[0], w[1]]), lLine, { units: 'meters' }),

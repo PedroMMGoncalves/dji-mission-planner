@@ -20,28 +20,53 @@ import {
 import { baseZoneFor, referenceElevation } from '../mission/reference.js'
 import { exportWPMLKmz } from '../utils/exporters.js'
 import { finishDraft } from '../mission/draft.js'
-import { corridorPhotoPoints } from '../mission/photoPoints.js'
+import { corridorPhotoPoints, photoPositions2d, photosAtWaypoints } from '../mission/photoPoints.js'
+import { computeFootprint, photoInterval } from '../utils/geo.js'
+import { corridorFlightRoutes, planCorridorFlights } from '../mission/corridorFlights.js'
+import { exportBlocksZip } from '../utils/exporters.js'
+
+/** Cores dos voos de um corredor partido (as dos blocos da área). */
+const FLIGHT_COLORS = ['#fde047', '#38bdf8', '#f472b6', '#a3e635', '#fb923c', '#c4b5fd']
 
 export function useCorridorMission({
   sensor,
   speedRange,
-  altitude,
-  sideOverlap,
-  interval,
+  // altura e sobreposições do separador Área: valem quando o corredor não
+  // tem as suas (corridorConfig.ownParams)
+  altitude: areaAltitude,
+  frontOverlap: areaFrontOverlap,
+  sideOverlap: areaSideOverlap,
   missionMode,
   setMode,
   setDraftVertices,
   draftVertices = [],
-  avisoObturador,
+  // (intervaloM, velocidade) → aviso do obturador ou null
+  avisoIntervalo,
+  // tempo útil por voo (min), para a divisão em voos por bateria
+  usableMin = null,
 }) {
   const [corridorConfig, setCorridorConfig] = useState(DEFAULT_CORRIDOR_CONFIG)
 
   // A velocidade guardada pode exceder a aeronave (o painel aceita até
   // 25 m/s): o plano e a exportação usam sempre a versão limitada.
   const corridorSpeed = Math.min(speedRange.max, Math.max(speedRange.min, corridorConfig.speedMS))
+  // altura, sobreposições e intervalo de disparo do corredor: os próprios ou
+  // os da área; o intervalo é sempre o automático (pegada × (1 − frontal))
+  const own = corridorConfig.ownParams === true
+  const altitude = own ? corridorConfig.altitude : areaAltitude
+  const frontOverlap = own ? corridorConfig.frontOverlap : areaFrontOverlap
+  const sideOverlap = own ? corridorConfig.sideOverlap : areaSideOverlap
+  const interval = useMemo(
+    () => photoInterval(computeFootprint(sensor, altitude).along, frontOverlap),
+    [sensor, altitude, frontOverlap],
+  )
+  const corridorFlight = useMemo(
+    () => ({ own, altitude, frontOverlap, sideOverlap, interval }),
+    [own, altitude, frontOverlap, sideOverlap, interval],
+  )
   const corridorTriggerWarn = useMemo(
-    () => avisoObturador(corridorSpeed),
-    [avisoObturador, corridorSpeed],
+    () => avisoIntervalo(interval, corridorSpeed),
+    [avisoIntervalo, interval, corridorSpeed],
   )
 
   const setCorridorParam = useCallback((key, value) => {
@@ -85,20 +110,69 @@ export function useCorridorMission({
     })
   }, [corridorConfig, corridorSpeed, sensor, altitude, sideOverlap, interval])
 
+  // Divisão em voos por bateria: troços do eixo, cada um com o seu plano;
+  // `flights` só com mais de um voo, `error` quando não cabe
+  const corridorSplit = useMemo(() => {
+    if (corridorConfig.split !== 'battery' || !corridorConfig.centreline) return null
+    const r = planCorridorFlights(
+      corridorConfig.centreline,
+      {
+        sensor,
+        altitude,
+        bufferM: corridorConfig.bufferM,
+        sideOverlapPct: sideOverlap,
+        photoIntervalM: interval ?? 0,
+        speed: corridorSpeed,
+        photoMode: corridorConfig.photoMode,
+        simplifyM: corridorConfig.simplifyM,
+        waypointStops: corridorConfig.waypointStops,
+      },
+      { usableS: usableMin > 0 ? usableMin * 60 : null },
+    )
+    if (r.error) return { flights: null, error: r.error }
+    return { flights: r.flights.length > 1 ? r.flights : null, error: null }
+  }, [corridorConfig, corridorSpeed, sensor, altitude, sideOverlap, interval, usableMin])
+
   const corridorPreview = useMemo(() => {
     if (missionMode !== 'corridor') return null
     const axis = corridorConfig.centreline
     if (!axis || axis.length < 2) return null
     const planOk = corridorPlan && !corridorPlan.error ? corridorPlan : null
+    // com vários voos, as passagens e as fotos de cada um (na cor do voo)
+    const flights = corridorSplit?.flights ?? null
+    if (flights) {
+      return {
+        centreline: axis,
+        buffer: corridorBufferRing(axis, corridorConfig.bufferM),
+        passes: null,
+        pieces: flights.map((f, i) => ({
+          label: f.label,
+          passes: f.plan.lines,
+          color: FLIGHT_COLORS[i % FLIGHT_COLORS.length],
+          start: f.plan.waypoints[0] ?? null,
+        })),
+        photos: flights.flatMap((f) =>
+          corridorConfig.photoMode === 'waypoint'
+            ? photoPositions2d(photosAtWaypoints(f.plan.waypoints, f.plan.perWaypoint))
+            : interval > 0
+              ? corridorPhotoPoints(f.plan, interval)
+              : [],
+        ),
+      }
+    }
     return {
       centreline: axis,
       buffer: corridorBufferRing(axis, corridorConfig.bufferM),
       passes: planOk ? planOk.lines : null,
-      // fotos por distância, com os grupos de disparo da exportação
-      photos:
-        planOk && corridorConfig.photoMode !== 'waypoint' && interval > 0
-          ? corridorPhotoPoints(planOk, interval)
-          : null,
+      // fotos por distância, com os grupos de disparo da exportação; por
+      // waypoint, os waypoints com a acção de foto
+      photos: !planOk
+        ? null
+        : corridorConfig.photoMode === 'waypoint'
+          ? photoPositions2d(photosAtWaypoints(planOk.waypoints, planOk.perWaypoint))
+          : interval > 0
+            ? corridorPhotoPoints(planOk, interval)
+            : null,
     }
   }, [
     missionMode,
@@ -106,6 +180,7 @@ export function useCorridorMission({
     corridorConfig.bufferM,
     corridorConfig.photoMode,
     corridorPlan,
+    corridorSplit,
     interval,
   ])
 
@@ -121,6 +196,8 @@ export function useCorridorMission({
     setCorridorParam,
     corridorSpeed,
     corridorTriggerWarn,
+    corridorFlight,
+    corridorSplit,
     corridorPlan,
     corridorBbox,
     corridorPreview,
@@ -158,6 +235,9 @@ export function useCorridorRoute({
   safety = null,
   sensorType,
   runExport,
+  // divisão em voos (parte 1) e as bases do projecto: cada voo com a sua
+  corridorSplit = null,
+  bases = [],
 }) {
   const planOk = planFlat && !planFlat.error ? planFlat : null
 
@@ -208,21 +288,141 @@ export function useCorridorRoute({
   ])
   const tfOk = corridorTerrain && !corridorTerrain.error ? corridorTerrain : null
 
+  // Vários voos: cada um com a sua base, referência e seguimento de terreno,
+  // e a rota de todos junta (src/mission/corridorFlights.js)
+  const split = useMemo(() => {
+    const flights = corridorSplit?.flights
+    if (!flights || !planOk) return null
+    return corridorFlightRoutes(flights, {
+      bases,
+      elevationAt: corridorCovers ? terrain.data?.elevationAt : null,
+      zoneConfig,
+      terrainFollow,
+      terrainData: corridorCovers ? terrain.data : null,
+      altitude,
+      speed: corridorSpeed,
+      waypointStops: corridorConfig.waypointStops,
+    })
+  }, [
+    corridorSplit,
+    planOk,
+    bases,
+    corridorCovers,
+    terrain,
+    zoneConfig,
+    terrainFollow,
+    altitude,
+    corridorSpeed,
+    corridorConfig.waypointStops,
+  ])
+
   // o plano que sai no KMZ e que o resto da app mostra: alturas do terreno
   // quando as há, com as acções por waypoint reindexadas, e a rota 3D
-  // correspondente nas estatísticas
-  const corridorRoute = useMemo(
-    () => corridorRouteWithTerrain(planFlat, planOk, tfOk),
-    [planFlat, planOk, tfOk],
-  )
+  // correspondente nas estatísticas; com vários voos, a rota junta (com
+  // `breaks`) e as estatísticas somadas
+  const corridorRoute = useMemo(() => {
+    if (!split) return corridorRouteWithTerrain(planFlat, planOk, tfOk)
+    const times = split.routes.map((r) => r.route.stats?.flightTimeS ?? 0)
+    const sum = (k) => split.routes.reduce((n, r) => n + (r.route.stats?.[k] ?? 0), 0)
+    return {
+      ...planOk,
+      waypoints: split.combined.waypoints,
+      perWaypoint: split.combined.perWaypoint,
+      breaks: split.combined.breaks,
+      flights: split.routes,
+      stats: {
+        ...planOk.stats,
+        waypointCount: split.combined.waypoints.length,
+        pathLengthM: sum('pathLengthM'),
+        flightTimeS: sum('flightTimeS'),
+        photoCount: planOk.stats.photoCount != null ? sum('photoCount') : null,
+        flightCount: split.routes.length,
+        longestFlightS: Math.max(...times),
+        path3D: Boolean(tfOk) || split.routes.some((r) => r.route.stats?.path3D),
+      },
+    }
+  }, [split, planFlat, planOk, tfOk])
 
-  const corridorBaseDistance = useMemo(
-    () => (planOk ? baseToRouteM(basePoint, planOk.waypoints) : null),
-    [basePoint, planOk],
-  )
+  const corridorBaseDistance = useMemo(() => {
+    if (!planOk) return null
+    if (!split) return baseToRouteM(basePoint, planOk.waypoints)
+    // o voo mais longe da sua base
+    const d = split.routes
+      .map((r) => (r.base ? baseToRouteM(r.base.point, r.plan.waypoints) : null))
+      .filter((v) => Number.isFinite(v))
+    return d.length ? Math.max(...d) : null
+  }, [basePoint, planOk, split])
+
+  // com vários voos: a referência comum (a menor) e o seguimento de terreno
+  // de todos (o primeiro erro, ou o relevo de todos)
+  const splitReference = useMemo(() => {
+    if (!split) return null
+    const refs = split.routes.map((r) => r.reference).filter(Boolean)
+    if (refs.length === 0 || !Number.isFinite(split.combined.refElev)) return null
+    const fin = (k, f) => {
+      const v = refs.map((r) => r[k]).filter((x) => Number.isFinite(x))
+      return v.length ? f(...v) : null
+    }
+    const tMin = fin('terrainMin', Math.min)
+    const tMax = fin('terrainMax', Math.max)
+    return {
+      elev: split.combined.refElev,
+      source: refs.every((r) => r.source === 'base') ? 'base' : 'area-min',
+      baseOutside: refs.some((r) => r.baseOutside),
+      terrainMin: tMin,
+      terrainMax: tMax,
+      reliefM: tMin != null && tMax != null ? tMax - tMin : null,
+      // cada voo tem a sua zona (em flights); não há uma zona comum
+      zone: null,
+    }
+  }, [split])
+  const splitTerrain = useMemo(() => {
+    if (!split || !terrainFollow?.enabled) return null
+    const bad = split.routes.find((r) => r.terrain?.error)
+    if (bad) return { error: bad.terrain.error }
+    const tfs = split.routes.map((r) => r.terrain).filter(Boolean)
+    if (tfs.length === 0) return null
+    return {
+      waypoints: split.combined.waypoints,
+      refElev: split.combined.refElev,
+      elevMin: Math.min(...tfs.map((x) => x.elevMin)),
+      elevMax: Math.max(...tfs.map((x) => x.elevMax)),
+      warnings: tfs.flatMap((x) => x.warnings ?? []),
+    }
+  }, [split, terrainFollow])
 
   const handleExportCorridor = useCallback(() => {
     if (!planOk) return
+    // vários voos: um KMZ por voo, num ZIP, cada um com a sua referência
+    if (split) {
+      if (terrainFollow?.enabled && split.routes.some((r) => !r.terrain || r.terrain.error)) return
+      const perFlight = split.routes.map((r) =>
+        corridorExportParams({
+          missionName: `${missionName}_${r.label}`,
+          plan: r.plan,
+          photoMode: corridorConfig.photoMode,
+          altitude,
+          speed: corridorSpeed,
+          wpml,
+          photoIntervalM: interval,
+          sensorType,
+          waypointStops: corridorConfig.waypointStops,
+          terrainResult: r.terrain && !r.terrain.error ? r.terrain : null,
+          safety,
+        }),
+      )
+      const blocks = perFlight.map((p, i) => ({
+        id: i + 1,
+        name: p.name,
+        waypoints: p.waypoints,
+        perWaypoint: p.perWaypoint ?? null,
+        triggerRanges: p.triggerRanges ?? null,
+        passThrough: p.passThrough ?? null,
+        durationS: p.durationS ?? null,
+      }))
+      runExport(() => exportBlocksZip(perFlight[0], blocks, `${missionName}_corridor_voos`))
+      return
+    }
     // seguimento de terreno pedido e impossível: o preflight bloqueia, e
     // aqui também não sai nada com alturas planas
     if (terrainFollow?.enabled && !tfOk) return
@@ -245,6 +445,7 @@ export function useCorridorRoute({
     )
   }, [
     planOk,
+    split,
     terrainFollow,
     tfOk,
     corridorConfig.photoMode,
@@ -261,8 +462,9 @@ export function useCorridorRoute({
 
   return {
     corridorRoute,
-    corridorTerrain,
-    corridorReference,
+    // com vários voos, o seguimento e a referência de todos
+    corridorTerrain: split ? splitTerrain : corridorTerrain,
+    corridorReference: split ? splitReference : corridorReference,
     corridorCovers,
     corridorBaseDistance,
     handleExportCorridor,

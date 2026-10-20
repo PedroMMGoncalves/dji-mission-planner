@@ -86,6 +86,19 @@ spacing  = across · (1 − sideOverlap/100)      (modo manual: max(1 m, valor))
 interval = along  · (1 − frontOverlap/100)     distância entre fotos (m)
 ```
 
+Intervalo manual (`src/mission/triggerInterval.js`): com «Intervalo de
+disparo manual», o piloto escreve metros (disparo por distância ou por
+waypoint, 0,5 a 1000 m, por defeito à décima, o valor do ficheiro) ou
+segundos (por tempo, 0,1 a 60 s; `interval = segundos · v`). O intervalo
+efectivo entra em tudo o que usa `interval` (plano, fotos no mapa e no 3D,
+contagem, avisos, incerteza da sobreposição), e a sobreposição frontal
+passa a resultar dele: `100 · (1 − interval / along)`, mostrada no painel
+(âmbar abaixo de 60 %). A especificação só pede `actionTriggerParam > 0`;
+o mapeamento do Pilot 2 não guarda o valor, só o tipo de disparo, mas as
+rotas de waypoints guardam. A sobreposição lateral não entra no intervalo
+(é o espaçamento), e a velocidade só entra na conversão para segundos e no
+aviso do obturador.
+
 Aviso de obturador (`App.jsx`): `interval / v < minTriggerS` (0,7 s por
 omissão) marca o intervalo como impossível à velocidade `v` e sugere
 `vmax = interval / minTriggerS`.
@@ -371,7 +384,7 @@ pela ordem do primeiro bloco que servem, e os seus blocos ficam-lhes
 atribuídos. Voos: base a base pela ordem dos
 rótulos e, em cada base, pela ordem do mosaico: A-1, A-2, B-3.
 
-«Juntar blocos a esta base» é manual: o botão da base (ou o clique no seu
+«Atribuir blocos a esta base» é manual: o botão da base (ou o clique no seu
 pino) selecciona-a, e cada clique num bloco do mapa (o rótulo, a célula do
 mosaico ou, nas faixas, o contorno do bloco) passa-o para ela por
 atribuição manual (`blockClickTarget`: um bloco que já é dela fica). Nada
@@ -792,7 +805,9 @@ passam sem parar os pontos em que o rumo muda menos de 5°
 Módulo `src/utils/faceMode.js`. Linha de base = pé da face; passagens
 horizontais empilhadas ao longo da linha desviada de `standoff` para o
 lado escolhido; rumo perpendicular ao segmento local, virado para a face;
-alturas relativas à descolagem (que deve estar à cota do pé da face).
+alturas acima do pé da face, exportadas relativas à descolagem escolhida:
+no pé da face, como sempre, ou numa base do projecto, com a diferença de
+cotas somada (§8, `takeoffRef.js`).
 
 Pegada **na face**, à distância standoff `d`, com a câmara a `p` graus
 de inclinação e meia-abertura vertical `v = atan(sensorHeight/2f)`: a
@@ -818,16 +833,42 @@ de base (canto côncavo demasiado fechado, troço mais curto do que o
 afastamento permite, um U voado por dentro), o plano é recusado com
 `standoff-corner` (a mitra com bisel de antes punha o drone a 6–12 m de
 uma face a 25 m, M2-E3). Amostragem ao longo da linha desviada a passos ≤
-hStep, extremos incluídos; rumo por diferença central arredondado ao
-grau. Nos cantos (M2-E11): entre duas amostras cujo rumo salte mais do que
+hStep, extremos incluídos, e nunca abaixo de `MIN_SAMPLE_STEP_M = 0,6 m`
+(nem de 0,7 m entre passagens, com o arredondamento das alturas a 0,1 m):
+95 % de sobreposição a 5 m pedia 0,35 m, e uma face baixa com imagens altas
+duas passagens quase à mesma altura, abaixo dos 0,5 m da DJI. Rumo por
+diferença central arredondado ao grau. Nos cantos (M2-E11): entre duas amostras cujo rumo salte mais do que
 `HFOV · (1 − hOverlap)` (`HFOV = 2·atan(sW/2f)`; mínimo 5°) inserem-se
-fotografias no mesmo ponto com o rumo a rodar em passos até esse limite,
-para a face junto a um vértice côncavo não ficar vista só de esguelha
-(`pointsPerPass` fotos por passagem, `samplesPerPass` amostras). Um
-`takePhoto` por waypoint; pitch do gimbal constante em todas as
-passagens. Serpentina com subida no mesmo ponto horizontal. Tempo
-`L/v + 2 s · waypoints` (paragem e disparo). GSD ao longo do eixo óptico,
-`d / cos p`.
+fotografias **entre** as duas amostras, ao longo da linha desviada, com o
+rumo a rodar em passos até esse limite, para a face junto a um vértice não
+ficar vista só de esguelha (`pointsPerPass` fotos por passagem,
+`samplesPerPass` amostras). Do lado de fora do canto a linha desviada é o
+arco à volta da aresta, e as fotografias ficam nele, ao afastamento
+exacto; do lado de dentro, repartem-se pelo troço antes e depois do
+vértice da esquadria, cuja corda se afasta das duas faces. O número de
+passos é limitado para nunca ficarem a menos de `CORNER_MIN_SPACING_M =
+1 m` umas das outras ao longo da linha (o dobro do mínimo da DJI entre
+waypoints seguidos). Do lado de dentro de um canto agudo, a distância em
+linha recta através do vértice da esquadria é muito menor do que ao longo
+da linha (0,06–0,4 m com deflexões de 105° a 170° a 5 m de afastamento):
+`spacePhotos` passa cada grupo de posições seguidas a menos de `max(0,55,
+0,9 · min(1, passo))` m umas das outras a uma só — a ponta da passagem, se
+o grupo a tiver, senão a de rumo mais perto da média dos rumos à volta, a
+que fica junto ao vértice a olhar para o fundo do canto. Só se tiram
+posições da linha desviada: nenhuma se aproxima da face. Até Outubro de
+2026 iam todas para o ponto da amostra seguinte: waypoints seguidos a 0 m,
+que o preflight bloqueava em qualquer face com cantos. Uma
+linha desviada com menos de 1 m (o coto que a esquadria deixa do lado de
+dentro de um canto agudo com troços curtos) é recusada com
+`standoff-corner`. Prolongamento nas pontas (`extendEnds`, ligado por
+omissão): a linha desviada prolonga-se `imgW/2` em cada ponta, na direcção
+do troço, para as pontas terem a sobreposição do resto (a primeira e a
+última foto ficavam centradas na ponta, como no corredor antes do M2-E12);
+`endExtensionM` nas estatísticas. Um `takePhoto` por waypoint, precedido
+de `hover` quando há espera (`hoverS`, §11); pitch do gimbal constante em
+todas as passagens. Serpentina com subida no mesmo ponto horizontal.
+Tempo `L/v + (2 s + espera) · waypoints` (paragem, espera e disparo). GSD
+ao longo do eixo óptico, `d / cos p`.
 
 Folga (`checkFaceClearance`), só contra um DSM **local** (o Terrarium é
 inutilizável à escala de uma face): por waypoint, folga vertical =
@@ -858,6 +899,18 @@ muito abaixo dela (46 m em vez de 85 m, M2-E14). O rumo inicial é o
 azimute do POI para a base mais próxima (`startBearingDeg`), para a órbita
 começar e acabar do lado da base (M2-E13); sem bases, norte. Sem câmara a
 órbita não conta fotos.
+
+Descolagem da face e da órbita (`src/mission/takeoffRef.js`): as alturas
+do plano medem-se acima do chão do alvo (o pé da face, no seu primeiro
+vértice; o chão no POI). Com «Descolagem: no pé da face / no chão do POI»
+exportam-se tal qual, e o piloto descola à cota do alvo (como sempre).
+Com «na base X», somam `dh = cota do alvo − cota da base` (a da zona de
+descolagem da base, a mínima, como na área e no corredor; senão a do
+ponto), e a vista 3D e as verificações usam a cota da base como
+referência. Sem relevo, com o relevo a não cobrir a base e o alvo, ou com
+a base apagada, o preflight bloqueia (`takeoff-terrain-missing`,
+`takeoff-ref-outside-terrain`, `takeoff-base-missing`): as alturas
+ficariam relativas a uma cota desconhecida.
 
 Posições por `turf.destination` (círculo geodésico), `nPts` pontos por
 anel; só o último anel fecha a volta no rumo inicial (um waypoint a mais).
@@ -948,6 +1001,31 @@ com os intervalos de disparo quebrados nas ligações longas. Sem rumo por
 waypoint (segue a rota), gimbal −90°. Tempo `L/v + (troços − 1) · v/1,7`
 (+ paragens com «Em todos», §6).
 
+Altura e sobreposições: as do separador Área, ou as próprias do corredor
+(`corridorConfig.ownParams`, que começa nos valores da área); o intervalo
+de disparo do corredor é sempre o automático, `along(h) · (1 − frontal)`
+(o intervalo manual, §2, é da área).
+
+Divisão em voos por bateria (`src/mission/corridorFlights.js`): o eixo
+corta-se em `n` troços de igual comprimento e cada troço é um corredor com
+o seu plano; `n` é o menor com todos os voos em `≤ 0,95 · tempo útil` (a
+margem cobre as subidas do seguimento de terreno), a partir de
+`ceil(tempo total / limite)` e saltando para `ceil(n · pior / limite)`
+quando um voo não cabe (as viragens nas pontas crescem com `n`); tecto de
+60 voos. Como cada passagem se prolonga meia pegada em cada ponta
+(M2-E12), troços vizinhos sobrepõem-se uma pegada inteira no corte. Cada
+voo descola da base mais próxima do seu troço (cota da zona dela), ou à
+cota mínima do relevo debaixo do troço, e tem o seu seguimento de terreno;
+a rota de todos junta-se na cota comum (a menor das referências), com
+`breaks` onde começa cada voo, para a vista 3D e as verificações, como os
+blocos da área. Exporta-se um KMZ por voo num ZIP. As estatísticas, as
+baterias do projecto e o preflight medem cada voo da sua base: a bateria
+pelo pior voo com o seu trânsito (`worstFlightS`; sem bases, o voo mais
+longo, `longestFlightS`), o alcance visual pelo pior voo e a distância à
+base pelo voo mais longe da sua. A deslocação até cada troço não entra no
+tamanho: num corredor longo o piloto muda de sítio ao longo do eixo, e o
+voo que não cabe com a sua deslocação fica a vermelho e com aviso.
+
 Seguimento de terreno (`src/mission/corridorTerrain.js`): o motor da área
 (§5) aplicado às passagens. Cada passagem é uma polilinha com dobras;
 cada troço entre vértices consecutivos é perfilado à parte (densificação,
@@ -981,7 +1059,8 @@ Parâmetros: raio `R` (30 m por omissão, o recomendado pelo UgCS e usado
 no estudo), sobreposição entre círculos `p` (50 % por omissão), pitch do
 gimbal fixo (−45° por omissão; o UgCS aceita 45 a 70), velocidade própria
 e rumo das fiadas (por omissão a aresta mais longa). A altura e a
-sobreposição frontal são as do separador Área.
+sobreposição frontal são as do separador Área, ou as próprias do circular
+(`circularConfig.ownParams`, que começa nos valores da área).
 
 ```
 s     = 2R · (1 − p)                              passo entre centros
@@ -1069,7 +1148,7 @@ avaliado); calibração do tempo em voo.
 Inspecção (`src/utils/inspect.js`): ordem manual com sugestão gulosa de
 vizinho mais próximo (distância horizontal, sem altura, sem regresso à
 base); cada ponto com altura (30 m por omissão), rumo (ausente = segue a
-rota), pitch e foto.
+rota), pitch, foto e espera (`hoverS`: acção `hover` antes do disparo).
 
 GCPs (`src/utils/gcp.js`), com base em Martínez-Carricondo et al. (2018)
 e Sanz-Ablanedo et al. (2018): número sugerido
@@ -1107,12 +1186,25 @@ Coordenadas a 8 casas decimais. Alturas: `heightMode` e
 `executeHeight` (waylines) e `height` + `ellipsoidHeight` (template) com o
 mesmo valor `h ?? altitude`; `useGlobalHeight` = 0 quando o waypoint tem
 altura própria. Rumo: `followWayline`, ou `smoothTransition` com o ângulo
-normalizado de [0, 360) para [−180, 180]. Gimbal: grupo `gimbalRotate` no
-waypoint 0 (omitido com LiDAR) e por waypoint quando indicado.
+normalizado de [0, 360) para [−180, 180]; o rumo fixo da grelha da área
+(«Rumo da aeronave: fixo») escreve o mesmo ângulo em `smoothTransition` em
+todos os waypoints da rota e de cada bloco — é o modo que a especificação
+manda usar com um ângulo (`waypointHeadingAngle` obrigatório em
+`smoothTransition`; `fixed` não leva ângulo). Gimbal: grupo `gimbalRotate`
+no waypoint 0 (omitido com LiDAR) e por waypoint quando indicado. Espera
+por waypoint (`hoverS`): acção `hover` com `hoverTime` (> 0 s em todas as
+aeronaves, common-element.md), depois do `gimbalRotate` e antes do
+`takePhoto` do mesmo grupo. Disparo por tempo: com o intervalo manual em
+segundos, `photoIntervalS` vai tal qual para o `actionTriggerParam`; sem
+ele, `interval / v` por defeito à décima (§6), o valor que o painel mostra.
 `globalRTHHeight = min(1500, max(100, ceil(tecto da rota) + 20))`, com o
 tecto = máximo entre a altitude nominal e todas as alturas dos waypoints
-(uma missão num planalto 250 m acima da descolagem tem waypoints a ~350 m).
-`takeOffSecurityHeight` 30 m por omissão.
+(uma missão num planalto 250 m acima da descolagem tem waypoints a ~350 m);
+`takeOffSecurityHeight` 30 m. As duas alturas podem ser escritas pelo
+piloto nas acções de segurança (`safety.takeOffSecurityHeightM`, de 1,2 a
+1500 m como a especificação; `safety.rthHeightM`, de 20 a 1500 m, sem
+limite na tabela): valem para todos os voos e entram nas verificações da
+deslocação (`worstTransit`, `rthByFlight`).
 
 Acções de segurança (`src/mission/safety.js`), escolhidas no cartão «Bases
 e segurança» da área e no cartão «Acções de segurança» dos outros modos, e
@@ -1149,7 +1241,7 @@ Validação na fronteira (`validateExportParams`), que lança
 ≤ 65536, coordenadas finitas em [−180, 180] × [−90, 90], alturas finitas,
 altitude finita > 0, velocidade em (0, 30] m/s, enums WPML numéricos,
 `photoIntervalM ≥ 0`, RTH em (0, 1500], pitch em [−120, 60], rumos em
-[−180, 360), `takeOffSecurityHeight` em (0, 200], intervalos de disparo
+[−180, 360), `takeOffSecurityHeight` em [1,2, 1500], intervalos de disparo
 inteiros, crescentes e dentro da rota. Caracteres XML ilegais e substitutos
 isolados são retirados dos textos. Blocos: um KMZ por voo num zip, com
 waypoints, acções e intervalos de disparo locais ao bloco (nomes em
@@ -1236,7 +1328,7 @@ coerência entre os dois ficheiros e empacotamento do KMZ. Tudo o que a app
 escreve fora das tabelas está na lista `ALLOW` do validador com a prova
 (81 KMZ reais, voos): um elemento novo sem prova faz o teste falhar.
 
-A matriz (M3-T11) tem 60 casos: a área por distância, por tempo, por
+A matriz (M3-T11) tem 58 casos: a área por distância, por tempo, por
 waypoint e com terreno em cinco pares aeronave/payload, LiDAR em área e em
 corredor (M300 + Mapper+), corredor por distância e por waypoint no M3E, no
 M4T e no M300 + P1, fachada no M3E, no M4T térmico e no M300 + P1, órbita
@@ -1551,6 +1643,12 @@ relevo visto do ponto da base (aviso a partir de 5 %, nota abaixo,
 ~420 m»), e parte à vista com o relevo em 60 % da zona de Fresnel do rádio
 («sinal de rádio em risco», a mesma regra). Nada enquanto se calcula, com a
 base fora do relevo ou só com pontos desconhecidos.
+
+Descolagem da face e da órbita numa base sem cota conhecida (§8):
+bloqueio (`takeoff-base-missing`, `takeoff-terrain-missing`,
+`takeoff-ref-outside-terrain`). Corredor partido em voos (§9): a bateria
+conta-se pelo pior voo com o trânsito da sua base (`worstFlightS`), ou
+pelo mais longo sem bases (`longestFlightS`), nunca pela soma.
 
 ## 15. Tabela de constantes e tolerâncias
 

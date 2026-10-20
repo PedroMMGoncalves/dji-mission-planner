@@ -1,4 +1,5 @@
 import { useT } from '../i18n.jsx'
+import NumberInput from './NumberInput.jsx'
 import { Card, CardColumn, SafetyCard } from './Cards.jsx'
 import { useRef } from 'react'
 import {
@@ -24,21 +25,6 @@ function Field({ label, suffix = null, children }) {
       {children}
       {suffix && <span className="w-8 text-xs text-slate-400">{suffix}</span>}
     </label>
-  )
-}
-
-/** @param {{value: any, onChange: (v: any) => void, min?: number, max?: number, step?: number}} props */
-function NumberInput({ value, onChange, min, max, step = 1 }) {
-  return (
-    <input
-      type="number"
-      className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-      value={value}
-      min={min}
-      max={max}
-      step={step}
-      onChange={(e) => onChange(Number(e.target.value))}
-    />
   )
 }
 
@@ -87,6 +73,10 @@ export default function CorridorPanel({
   rthInfo = null,
   // altitude e sobreposições do separador Área, que o corredor usa (M3-U7)
   areaParams = null,
+  // divisão em voos (useCorridorMission): os voos, ou o erro
+  corridorSplit = null,
+  // tempo útil por voo (min), para o resumo dos voos
+  usableMin = null,
   // relevo e seguimento de terreno (partilhados com a área)
   terrain,
   corridorCovers,
@@ -192,6 +182,69 @@ export default function CorridorPanel({
             step={0.5}
           />
         </Field>
+        {/* divisão em voos: um só, ou troços do eixo que cabem na bateria */}
+        <Field label={t('co.split.title')}>
+          <select
+            data-testid="corridor-split"
+            className="w-32 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+            value={corridorConfig.split === 'battery' ? 'battery' : 'none'}
+            onChange={(e) => setCorridorParam('split', e.target.value)}
+          >
+            <option value="none">{t('co.split.none')}</option>
+            <option value="battery">{t('co.split.battery')}</option>
+          </select>
+        </Field>
+        {corridorConfig.split === 'battery' && (
+          <p className="mb-2 text-xs leading-relaxed text-slate-400">{t('co.split.hint')}</p>
+        )}
+        {/* altura e sobreposições próprias, ou as do separador Área */}
+        <label className="mb-2 mt-1 flex items-center gap-2 text-sm text-slate-300">
+          <input
+            type="checkbox"
+            data-testid="corridor-own-params"
+            checked={corridorConfig.ownParams === true}
+            onChange={(e) => {
+              // ao ligar, começa nos valores da área
+              if (e.target.checked && areaParams) {
+                setCorridorParam('altitude', areaParams.altitude)
+                setCorridorParam('frontOverlap', areaParams.frontOverlap)
+                setCorridorParam('sideOverlap', areaParams.sideOverlap)
+              }
+              setCorridorParam('ownParams', e.target.checked)
+            }}
+          />
+          {t('co.params.own')}
+        </label>
+        {corridorConfig.ownParams === true && (
+          <>
+            <Field label={t('co.params.altitude')} suffix="m">
+              <NumberInput
+                value={corridorConfig.altitude}
+                onChange={(v) => setCorridorParam('altitude', Math.max(5, Math.min(1500, v)))}
+                min={5}
+                max={1500}
+              />
+            </Field>
+            {!isLidar && (
+              <Field label={t('co.params.frontOverlap')} suffix="%">
+                <NumberInput
+                  value={corridorConfig.frontOverlap}
+                  onChange={(v) => setCorridorParam('frontOverlap', Math.max(10, Math.min(95, v)))}
+                  min={10}
+                  max={95}
+                />
+              </Field>
+            )}
+            <Field label={t('co.params.sideOverlap')} suffix="%">
+              <NumberInput
+                value={corridorConfig.sideOverlap}
+                onChange={(v) => setCorridorParam('sideOverlap', Math.max(10, Math.min(95, v)))}
+                min={10}
+                max={95}
+              />
+            </Field>
+          </>
+        )}
 
         {!isLidar && (
           <>
@@ -408,7 +461,34 @@ export default function CorridorPanel({
             )}
             <Row label={t('co.plan.distance')} value={`${fmt(stats.pathLengthM)} m`} />
             <Row label={t('co.plan.time')} value={duration(stats.flightTimeS)} />
-            {areaParams && (
+            {corridorConfig.split === 'battery' && corridorSplit?.error === 'too-many-flights' && (
+              <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs leading-relaxed text-red-300">
+                ⚠ {t(`co.split.err.${corridorSplit.error}`)}
+              </p>
+            )}
+            {corridorPlan?.flights?.length > 1 && (
+              <div data-testid="corridor-flights" className="mt-2 text-xs text-slate-300">
+                <p className="mb-1">
+                  {t('co.split.summary', {
+                    n: corridorPlan.flights.length,
+                    max: duration(corridorPlan.stats.longestFlightS),
+                    usable: Number.isFinite(usableMin) ? Math.round(usableMin) : '—',
+                  })}
+                </p>
+                <ul className="space-y-0.5 text-slate-400">
+                  {corridorPlan.flights.map((f) => (
+                    <li key={f.label}>
+                      {t('co.split.flight', {
+                        label: f.label,
+                        time: duration(f.route.stats?.flightTimeS),
+                        base: f.base?.label ?? '—',
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {areaParams && corridorConfig.ownParams !== true && (
               <p className="mt-2 text-xs leading-relaxed text-slate-400">
                 {t('co.plan.fromArea', {
                   h: areaParams.altitude,

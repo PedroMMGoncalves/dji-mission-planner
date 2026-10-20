@@ -132,8 +132,8 @@ const fasesDe = (ctx) => [
         itens: [
           it(
             bi(
-              'Firmware do UAV actualizado — versão estável',
-              'UAV firmware up to date — stable release',
+              'Firmware do UAS actualizado — versão estável',
+              'UAS firmware up to date — stable release',
             ),
             bi(
               'Não actualizar em campo, apenas em base',
@@ -155,8 +155,8 @@ const fasesDe = (ctx) => [
           it(
             bi('Plano de voo carregado e validado', 'Flight plan uploaded and validated'),
             bi(
-              `Sobreposição do plano: ${ctx.front}/${ctx.side} % (mínimo habitual 60/50 %)`,
-              `Plan overlap: ${ctx.front}/${ctx.side} % (usual minimum 60/50 %)`,
+              `Sobreposição do plano: ${ctx.front}/${ctx.side} % (mínimo habitual 60 / 50 %)`,
+              `Plan overlap: ${ctx.front}/${ctx.side} % (usual minimum 60 / 50 %)`,
             ),
             true,
           ),
@@ -262,8 +262,8 @@ const fasesDe = (ctx) => [
         itens: [
           it(
             bi(
-              'Altitude de segurança acima de obstáculos definida',
-              'Safe altitude above obstacles defined',
+              'Altura de segurança acima dos obstáculos definida',
+              'Safe height above obstacles defined',
             ),
           ),
           it(
@@ -335,7 +335,7 @@ const fasesDe = (ctx) => [
           ),
           it(
             bi(
-              'Autorização de sobrevoo da faixa e do domínio público envolvido',
+              'Autorização de sobrevoo do corredor e do domínio público envolvido',
               'Overflight permission for the corridor and the public domain crossed',
             ),
             null,
@@ -369,7 +369,7 @@ const fasesDe = (ctx) => [
                 it(
                   bi(
                     'Altura única validada contra o ponto mais alto de todo o traçado',
-                    'Single altitude validated against the highest point of the whole route',
+                    'Single height validated against the highest point of the whole route',
                   ),
                   bi(
                     'Modo nadir sem seguimento de terreno: a cota de descolagem é a referência de tudo',
@@ -462,8 +462,8 @@ const fasesDe = (ctx) => [
         itens: [
           it(
             bi(
-              'Bateria monitorizada: regressar com a reserva com que o tempo útil foi medido (15-20 %); o plano já a desconta',
-              'Battery monitored: return with the reserve the useful time was measured with (15-20 %); the plan already deducts it',
+              'Bateria monitorizada: regressar com a reserva com que o tempo útil foi medido (15–20 %); o plano já a desconta',
+              'Battery monitored: return with the reserve the usable time was measured with (15–20 %); the plan already deducts it',
             ),
             null,
             true,
@@ -521,14 +521,14 @@ const fasesDe = (ctx) => [
         appliesTo: 'lidar',
         itens: [
           it(
-            bi('Base GNSS a registar antes da descolagem', 'GNSS base logging before takeoff'),
+            bi('Base GNSS a registar antes da descolagem', 'GNSS base logging before take-off'),
             bi('Confirmar gravação e taxa (≥ 1 Hz)', 'Confirm recording and rate (≥ 1 Hz)'),
             true,
           ),
           it(
             bi(
               'Alinhamento estático do IMU antes de descolar',
-              'Static IMU alignment before takeoff',
+              'Static IMU alignment before take-off',
             ),
             bi(
               'Scanner ligado, plataforma imóvel (~1–3 min)',
@@ -538,7 +538,7 @@ const fasesDe = (ctx) => [
           ),
           it(
             bi(
-              'Manobras de calibração antes das fiadas',
+              'Manobras de calibração antes das faixas',
               'Calibration manoeuvres before the lines',
             ),
             bi(
@@ -549,7 +549,7 @@ const fasesDe = (ctx) => [
           ),
           it(
             bi(
-              'Manobras de calibração depois das fiadas',
+              'Manobras de calibração depois das faixas',
               'Calibration manoeuvres after the lines',
             ),
           ),
@@ -557,11 +557,11 @@ const fasesDe = (ctx) => [
         ],
       },
       // Grupo condicional (R2.6): só aparece com uma missão de fachada
-      // ativa (appliesTo 'face'). Acrescentado DEPOIS do grupo LiDAR para
+      // activa (appliesTo 'face'). Acrescentado DEPOIS do grupo LiDAR para
       // não deslocar índices de grupos já publicados — o estado gravado é
       // indexado por fase/grupo/item. Textos provisórios, o Pedro afina.
       {
-        titulo: bi('Fachada / face', 'Face mode'),
+        titulo: bi('Modo Face', 'Face mode'),
         appliesTo: 'face',
         itens: [
           it(
@@ -578,7 +578,7 @@ const fasesDe = (ctx) => [
               'GNSS shadowing / multipath near the face assessed',
             ),
             bi(
-              'Faces altas bloqueiam constelação — vigiar nº de satélites',
+              'Faces altas bloqueiam constelação — vigiar o n.º de satélites',
               'High faces block the constellation — watch satellite count',
             ),
             true,
@@ -602,12 +602,12 @@ const fasesDe = (ctx) => [
           ),
           it(
             bi(
-              'Standoff confirmado com o conhecimento mais recente da superfície',
+              'Afastamento confirmado com o conhecimento mais recente da superfície',
               'Standoff confirmed against the newest surface knowledge',
             ),
             bi(
-              'DSM local se existir; sem DSM o standoff segue por verificar',
-              'Local DSM when available; without it the standoff stays unverified',
+              'Modelo local (MDT/MDS) se existir; sem ele o afastamento fica por verificar',
+              'Local DTM/DSM when available; without it the standoff stays unverified',
             ),
             true,
           ),
@@ -623,7 +623,7 @@ const fasesDe = (ctx) => [
         itens: [
           it(
             bi(
-              'Obstáculos verticais na faixa levantados',
+              'Obstáculos verticais no corredor levantados',
               'Vertical obstacles in the corridor surveyed',
             ),
             bi(
@@ -701,7 +701,7 @@ const fasesDe = (ctx) => [
             true,
           ),
           it(
-            bi('Nº de imagens verificado vs. plano', 'Image count checked against the plan'),
+            bi('N.º de imagens verificado vs. plano', 'Image count checked against the plan'),
             null,
             true,
           ),
@@ -798,7 +798,7 @@ const fasesDe = (ctx) => [
               'Continuous coverage verified on the bends',
             ),
             bi(
-              'A faixa desenhada mostra a largura pedida, não a coberta',
+              'O corredor desenhado mostra a largura pedida, não a coberta',
               'The drawn band shows the requested width, not the covered one',
             ),
             true,
@@ -844,7 +844,7 @@ const ACENTOS = {
 /** Strings de interface — dicionário interno a esta página. */
 const UI = {
   back: bi('← Voltar ao planeador', '← Back to planner'),
-  title: bi('Checklist de Campo UAV', 'UAV Field Checklist'),
+  title: bi('Checklist de Campo UAS', 'UAS Field Checklist'),
   subtitle: bi(
     'Pré-campo · Durante · Pós-campo + Relatório de missão',
     'Pre-field · In-field · Post-field + Mission report',
@@ -865,7 +865,7 @@ const UI = {
   ),
   missionSection: bi('Identificação da missão', 'Mission identification'),
   flightsSection: bi('Registo de voos', 'Flight log'),
-  gcpSection: bi('Pontos de controlo — GCPs', 'Ground control points — GCPs'),
+  gcpSection: bi('GCPs', 'GCPs'),
   notesSection: bi('Notas de missão', 'Mission notes'),
   addFlight: bi('+ Voo', '+ Flight'),
   addGcp: bi('+ GCP', '+ GCP'),
@@ -901,7 +901,7 @@ const CAMPOS_MISSAO = [
   },
   {
     key: 'plataforma',
-    label: bi('Plataforma UAV', 'UAV platform'),
+    label: bi('Plataforma UAS', 'UAS platform'),
     placeholder: bi('Modelo', 'Model'),
   },
   {
@@ -919,7 +919,7 @@ const COLS_VOO = [
   { key: 'duracao', label: bi('Duração (min)', 'Duration (min)'), w: 'w-24' },
   { key: 'baterias', label: bi('Bateria(s)', 'Battery(ies)'), w: 'w-28' },
   { key: 'area', label: bi('Área (ha)', 'Area (ha)'), w: 'w-24' },
-  { key: 'imagens', label: bi('Nº imagens', 'No. of images'), w: 'w-24' },
+  { key: 'imagens', label: bi('N.º imagens', 'No. of images'), w: 'w-24' },
   { key: 'sensor', label: bi('Sensor', 'Sensor'), w: 'w-32' },
   { key: 'meteo', label: bi('Meteo', 'Weather'), w: 'w-32' },
   { key: 'obs', label: bi('Observações', 'Remarks'), w: 'w-64' },
@@ -931,7 +931,7 @@ const COLS_GCP = [
   { key: 'lat', label: bi('Latitude', 'Latitude'), w: 'w-32' },
   { key: 'lon', label: bi('Longitude', 'Longitude'), w: 'w-32' },
   { key: 'alt', label: bi('Altitude (m)', 'Altitude (m)'), w: 'w-24' },
-  { key: 'crs', label: bi('Datum-CRS', 'Datum-CRS'), w: 'w-32' },
+  { key: 'crs', label: bi('Datum-SRC', 'Datum-CRS'), w: 'w-32' },
   { key: 'metodo', label: bi('Método', 'Method'), w: 'w-28' },
   { key: 'incerteza', label: bi('Incerteza (m)', 'Uncertainty (m)'), w: 'w-24' },
   { key: 'obs', label: bi('Observações', 'Remarks'), w: 'w-56' },

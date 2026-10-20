@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { useT } from '../i18n.jsx'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
+import LayerLegend from './LayerLegend.jsx'
 import { fillTerrainGaps } from '../utils/terrainGrid.js'
 
 /**
@@ -200,6 +201,18 @@ function makeLabelSprite(text, worldHeight, color = '#facc15') {
 }
 
 const BTN = 'rounded bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700'
+
+/** Camadas da cena na legenda: um THREE.Group por chave (só as que têm conteúdo). */
+const LEGEND_3D = [
+  { key: 'terrain', label: 'legend.terrain', kind: 'area', color: '#a3a3a3' },
+  { key: 'area', label: 'legend.area', kind: 'line', color: '#ffffff' },
+  { key: 'blocks', label: 'legend.blocks', kind: 'line', color: '#22d3ee' },
+  { key: 'route', label: 'legend.route', kind: 'line', color: '#fbbf24' },
+  { key: 'waypoints', label: 'legend.waypoints', kind: 'dot', color: '#22d3ee' },
+  { key: 'photos', label: 'legend.photos', kind: 'dot', color: '#fde68a' },
+  { key: 'bases', label: 'legend.bases', kind: 'marker', color: '#f59e0b' },
+  { key: 'gcps', label: 'legend.gcps', kind: 'marker', color: '#facc15' },
+]
 const EXAG_OPTIONS = [
   { value: 1, label: '1×' },
   { value: 1.5, label: '1,5×' },
@@ -231,6 +244,12 @@ export default function Map3D({
   const [imagery, setImagery] = useState('loading') // 'loading' | 'ok' | 'fallback'
   // um browser sem WebGL: a mensagem fica na janela, o planeador continua (M3-C4)
   const [glError, setGlError] = useState(null)
+  // legenda: aberta, camadas escondidas (um ref para a cena reconstruída as
+  // repor) e as que têm conteúdo
+  const [legendOpen, setLegendOpen] = useState(false)
+  const [hiddenLayers, setHiddenLayers] = useState(() => new Set())
+  const hiddenRef = useRef(hiddenLayers)
+  const [presentLayers, setPresentLayers] = useState(/** @type {string[]} */ ([]))
 
   // Escrito num efeito e não durante o render: mutar um ref no corpo do
   // componente é inseguro com renderização concorrente (React pode repetir
@@ -407,7 +426,14 @@ export default function Map3D({
 
     const terrainMat = track(new THREE.MeshLambertMaterial({ vertexColors: true }))
     const terrainMesh = new THREE.Mesh(terrainGeo, terrainMat)
-    scene.add(terrainMesh)
+    // um grupo por camada da legenda (THREE.Group.visible esconde-o inteiro)
+    /** @type {Record<string, THREE.Group>} */
+    const layer3d = {}
+    for (const l of LEGEND_3D) {
+      layer3d[l.key] = new THREE.Group()
+      scene.add(layer3d[l.key])
+    }
+    layer3d.terrain.add(terrainMesh)
 
     /* --- luzes ---------------------------------------------------------- */
     scene.add(new THREE.AmbientLight(0xffffff, 0.6))
@@ -492,7 +518,7 @@ export default function Map3D({
           ? new THREE.LineBasicMaterial({ vertexColors: true })
           : new THREE.LineBasicMaterial({ color: '#22d3ee' }),
       )
-      scene.add(new THREE.LineSegments(pathGeo, pathMat))
+      layer3d.route.add(new THREE.LineSegments(pathGeo, pathMat))
       // segundo passe ligeiramente acima, para contraste sobre o relevo
       // (amarelo; com as cores dos voos, branco ténue para não as misturar)
       const glowMat = track(
@@ -504,7 +530,7 @@ export default function Map3D({
       )
       const glow = new THREE.LineSegments(pathGeo, glowMat)
       glow.position.z = unit * 0.25
-      scene.add(glow)
+      layer3d.route.add(glow)
     }
 
     if (wps.length > 0 && wps.length <= MAX_WP_SPHERES) {
@@ -521,7 +547,7 @@ export default function Map3D({
           wpInstances.setColorAt(i, c.set(pieceColors[piece] || '#22d3ee'))
         }
       }
-      scene.add(wpInstances)
+      layer3d.waypoints.add(wpInstances)
     }
 
     if (wps.length > 0) {
@@ -530,7 +556,7 @@ export default function Map3D({
       const endMat = track(new THREE.MeshLambertMaterial({ color: '#ef4444' }))
       startMarker = new THREE.Mesh(markerGeo, startMat)
       endMarker = new THREE.Mesh(markerGeo, endMat)
-      scene.add(startMarker, endMarker)
+      layer3d.route.add(startMarker, endMarker)
     }
 
     /* --- fotos: onde a aeronave dispara, sobre a rota -------------------- */
@@ -550,13 +576,13 @@ export default function Map3D({
       const photoMat = track(new THREE.MeshLambertMaterial({ color: '#fde68a' }))
       photoInstances = new THREE.InstancedMesh(photoGeo, photoMat, photoList.length)
       photoInstances.instanceMatrix.setUsage(THREE.DynamicDrawUsage)
-      scene.add(photoInstances)
+      layer3d.photos.add(photoInstances)
     }
 
     /* --- linhas drapejadas no terreno (área, blocos, zonas) ------------- */
     // { geo, z }: cotas SEM exagero, reescaladas em applyExaggeration
     const draped = []
-    const drape = (lonlats, color, opacity, liftM = 2) => {
+    const drape = (lonlats, color, opacity, liftM = 2, target = layer3d.area) => {
       if (!Array.isArray(lonlats) || lonlats.length < 3) return
       // densifica cada aresta para a linha acompanhar o relevo
       const closed = [...lonlats, lonlats[0]]
@@ -581,7 +607,7 @@ export default function Map3D({
       const geo = track(new THREE.BufferGeometry())
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3))
       const mat = track(new THREE.LineBasicMaterial({ color, transparent: true, opacity }))
-      scene.add(new THREE.LineLoop(geo, mat))
+      target.add(new THREE.LineLoop(geo, mat))
       draped.push({ geo, z })
     }
 
@@ -592,7 +618,7 @@ export default function Map3D({
     const blockList = (Array.isArray(blocks3d) ? blocks3d : []).filter(
       (b) => Array.isArray(b?.ring) && b.ring.length >= 3,
     )
-    for (const b of blockList) drape(b.ring, b.color || '#22d3ee', 0.95, 3)
+    for (const b of blockList) drape(b.ring, b.color || '#22d3ee', 0.95, 3, layer3d.blocks)
 
     /* --- objetos ao nível do solo (base, GCPs, etiquetas) ---------------- */
     // { obj, groundZ, lift }: z = groundZ × exagero + lift
@@ -624,14 +650,14 @@ export default function Map3D({
       cap.position.z = unit * 3
       group.add(mast, cap)
       group.position.set(bx, by, 0)
-      scene.add(group)
+      layer3d.bases.add(group)
       const ground = elevAt(basePoint[0], basePoint[1])
       groundObjects.push({ obj: group, groundZ: ground, lift: unit * 0.4 })
       if (base.label) {
         const sprite = makeLabelSprite(String(base.label), unit * 2.4, color)
         if (sprite) {
           sprite.position.set(bx, by, 0)
-          scene.add(sprite)
+          layer3d.bases.add(sprite)
           track(sprite.material.map)
           track(sprite.material)
           groundObjects.push({ obj: sprite, groundZ: ground, lift: unit * 5.2 })
@@ -648,7 +674,7 @@ export default function Map3D({
             basePoint[1] + (base.radiusM * Math.cos(a)) / M_PER_DEG_LAT,
           ])
         }
-        drape(circle, color, 0.9, 2)
+        drape(circle, color, 0.9, 2, layer3d.bases)
       }
     }
 
@@ -669,7 +695,7 @@ export default function Map3D({
         const sprite = makeLabelSprite(String(b.label), unit * 1.8, b.color || '#facc15')
         if (!sprite) continue
         sprite.position.set(x, y, 0)
-        scene.add(sprite)
+        layer3d.blocks.add(sprite)
         track(sprite.material.map)
         track(sprite.material)
         groundObjects.push({
@@ -690,14 +716,14 @@ export default function Map3D({
         const ground = elevAt(p[0], p[1])
         const mesh = new THREE.Mesh(gcpGeo, gcpMat)
         mesh.position.set(x, y, 0)
-        scene.add(mesh)
+        layer3d.gcps.add(mesh)
         groundObjects.push({ obj: mesh, groundZ: ground, lift: unit * 0.7 })
 
         if (g.id != null && gcps.length <= 60) {
           const sprite = makeLabelSprite(String(g.id), unit * 1.6)
           if (sprite) {
             sprite.position.set(x, y, 0)
-            scene.add(sprite)
+            layer3d.gcps.add(sprite)
             track(sprite.material.map)
             track(sprite.material)
             groundObjects.push({ obj: sprite, groundZ: ground, lift: unit * 2.6 })
@@ -819,7 +845,14 @@ export default function Map3D({
     currentExag = 0
     applyExaggeration(exagRef.current)
     resetView()
-    apiRef.current = { applyExaggeration, resetView }
+    // camadas: a visibilidade escolhida na legenda (também depois de a cena
+    // ser reconstruída) e as que têm conteúdo
+    const setLayerVisible = (key, visible) => {
+      if (layer3d[key]) layer3d[key].visible = visible
+    }
+    for (const key of Object.keys(layer3d)) setLayerVisible(key, !hiddenRef.current.has(key))
+    setPresentLayers(LEGEND_3D.filter((l) => layer3d[l.key].children.length > 0).map((l) => l.key))
+    apiRef.current = { applyExaggeration, resetView, setLayerVisible }
 
     /* --- textura de satélite (assíncrona, com plano B) -------------------- */
     let cancelled = false
@@ -890,12 +923,29 @@ export default function Map3D({
     apiRef.current?.applyExaggeration(exag)
   }, [exag, sig])
 
+  // Legenda: mostrar/esconder camadas na cena viva (e lembrar para a próxima)
+  useEffect(() => {
+    hiddenRef.current = hiddenLayers
+    for (const l of LEGEND_3D) apiRef.current?.setLayerVisible?.(l.key, !hiddenLayers.has(l.key))
+  }, [hiddenLayers])
+  const legendItems = LEGEND_3D.filter((l) => presentLayers.includes(l.key)).map((l) => ({
+    ...l,
+    label: t(l.label),
+  }))
+  const toggleLayer = (key) =>
+    setHiddenLayers((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+
   const status =
     imagery === 'ok'
-      ? 'Imagens © Esri'
+      ? t('map3d.imageryOk')
       : imagery === 'loading'
-        ? 'A carregar imagens…'
-        : 'Relevo sombreado (sem imagens)'
+        ? t('map3d.imageryLoading')
+        : t('map3d.imageryFallback')
 
   return (
     <div className="fixed inset-0 z-[2000] flex flex-col bg-slate-950">
@@ -931,6 +981,17 @@ export default function Map3D({
 
       <div className="relative min-h-0 flex-1">
         <div ref={hostRef} className="absolute inset-0" />
+        {!glError && hasTerrain && (
+          <LayerLegend
+            items={legendItems}
+            hidden={hiddenLayers}
+            onToggle={toggleLayer}
+            open={legendOpen}
+            onOpenChange={setLegendOpen}
+            className="absolute right-2 top-2 z-10 max-w-[14rem]"
+            testId="map3d-legend"
+          />
+        )}
         {glError ? (
           <div
             data-testid="map3d-error"
@@ -940,11 +1001,11 @@ export default function Map3D({
           </div>
         ) : hasTerrain ? (
           <div className="pointer-events-none absolute bottom-2 left-3 text-xs text-slate-400">
-            Arrastar: rodar · Roda do rato: zoom · Botão direito: deslocar · Esc: fechar
+            {t('map3d.controlsHint')}
           </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-slate-400">
-            Sem modelo de terreno carregado — descarregue o relevo da área para ver a missão em 3D.
+            {t('map3d.noTerrain')}
           </div>
         )}
       </div>

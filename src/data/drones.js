@@ -363,7 +363,7 @@ export const MISSION_PRESETS = [
   {
     id: 'ortho-quality',
     appliesTo: 'camera',
-    name: { pt: 'Ortofoto 2D · Qualidade', en: '2D Ortho · Quality' },
+    name: { pt: 'Ortomosaico 2D · Qualidade', en: '2D Orthomosaic · Quality' },
     desc: {
       pt: 'Cartografia de referência: 80/70% de sobreposição, gimbal a nadir.',
       en: 'Reference mapping: 80/70% overlap, nadir gimbal.',
@@ -374,7 +374,7 @@ export const MISSION_PRESETS = [
   {
     id: 'ortho-fast',
     appliesTo: 'camera',
-    name: { pt: 'Ortofoto 2D · Rápida', en: '2D Ortho · Fast' },
+    name: { pt: 'Ortomosaico 2D · Rápido', en: '2D Orthomosaic · Fast' },
     desc: {
       pt: 'Reconhecimento expedito: 70/60%, velocidade alta.',
       en: 'Quick reconnaissance: 70/60% overlap, high speed.',
@@ -387,7 +387,7 @@ export const MISSION_PRESETS = [
     name: { pt: 'Modelo 3D · Dupla grelha', en: '3D Model · Crosshatch' },
     desc: {
       pt: 'Reconstrução 3D: dupla grelha perpendicular com câmara oblíqua a −60°.',
-      en: '3D reconstruction: perpendicular double grid with the camera at −60°.',
+      en: '3D reconstruction: perpendicular crosshatch with the camera at −60°.',
     },
     values: { frontOverlap: 80, sideOverlap: 75, speed: 6, gimbalPitch: -60, crosshatch: true },
   },
