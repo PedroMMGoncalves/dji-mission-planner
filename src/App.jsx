@@ -1,26 +1,15 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import MapView from './components/MapView.jsx'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ControlPanel from './components/ControlPanel.jsx'
 import CorridorPanel from './components/CorridorPanel.jsx'
 import CircularPanel from './components/CircularPanel.jsx'
 import MissionModeSelector from './components/MissionModeSelector.jsx'
 import FacePanel from './components/FacePanel.jsx'
 import OrbitPanel from './components/OrbitPanel.jsx'
-import ProjectSummary from './components/ProjectSummary.jsx'
-import StatsPanel from './components/StatsPanel.jsx'
 import ChecklistPage from './components/ChecklistPage.jsx'
-import HelpModal from './components/HelpModal.jsx'
-import ErrorBoundary from './components/ErrorBoundary.jsx'
-import SettingsModal from './components/SettingsModal.jsx'
-import DisclaimerModal, {
-  acceptDisclaimer,
-  disclaimerAccepted,
-} from './components/DisclaimerModal.jsx'
-
-// carregados sob demanda
-const Map3D = lazy(() => import('./components/Map3D.jsx'))
-const MissionReport = lazy(() => import('./components/MissionReport.jsx'))
-const ElevationProfile = lazy(() => import('./components/ElevationProfile.jsx'))
+import AppOverlays from './components/AppOverlays.jsx'
+import MapPane from './components/MapPane.jsx'
+import AppHeader from './components/AppHeader.jsx'
+import { acceptDisclaimer, disclaimerAccepted } from './components/DisclaimerModal.jsx'
 import { nearestBase } from './mission/bases.js'
 import { MissionExportError } from './utils/exporters.js'
 import { useHardware } from './hooks/useHardware.js'
@@ -47,20 +36,8 @@ import { useProjectSession } from './hooks/useProjectSession.js'
 import { DEFAULT_MISSION_NAME } from './mission/defaults.js'
 import { checkFaceClearance } from './utils/faceMode.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from './utils/units.js'
-import { serializeProject } from './mission/project.js'
 import { DEFAULT_SAFETY } from './mission/safety.js'
-import { PreflightList, PreflightPill } from './components/PreflightBar.jsx'
-import {
-  FlagGB,
-  FlagPT,
-  IconCheck,
-  IconCube,
-  IconDrone,
-  IconDownload,
-  IconGear,
-} from './components/Icons.jsx'
 
-const FLAG_BY_LANG = { pt: FlagPT, en: FlagGB }
 /** Camada «Bacias de visão» ligada neste aparelho ('1') ou não. */
 const VIEWSHED_LAYER_KEY = 'dji-mission-planner:viewshedLayer'
 
@@ -1194,133 +1171,33 @@ function AppInner({ lang, setLang }) {
 
   return (
     <div className="flex h-full flex-col bg-slate-950 text-slate-100">
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-800 bg-slate-950 px-4 py-2.5">
-        <div className="flex items-center gap-2.5">
-          <IconDrone className="h-7 w-7 text-sky-400" />
-          <div>
-            <h1 className="text-base font-semibold tracking-tight">
-              DJI Mission Planner{' '}
-              <span className="text-xs font-normal text-slate-400">
-                v{import.meta.env.APP_VERSION}
-              </span>
-            </h1>
-            {/* em ecrãs estreitos (tablet no campo) o subtítulo dá lugar aos botões */}
-            <p className="hidden text-xs text-slate-400 xl:block">{t('app.subtitle')}</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <button
-            onClick={() => setShow3d(true)}
-            disabled={
-              !(
-                terrain.status === 'ready' &&
-                view3d &&
-                (missionMode !== 'area' || (terrainCovers && planOk))
-              )
-            }
-            title={terrain.status === 'ready' ? t('app.view3dReady') : t('app.view3dNotReady')}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <IconCube /> {t('app.view3d')}
-          </button>
-          <button
-            onClick={() => setShowReport(true)}
-            disabled={!planOk}
-            title={t('app.reportTitle')}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {t('app.report')}
-          </button>
-          <button
-            onClick={() => setView('checklist')}
-            title={t('app.checklistTitle')}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-amber-500 hover:text-amber-300"
-          >
-            <IconCheck /> {t('app.checklist')}
-          </button>
-          <button
-            onClick={handleExportKML}
-            disabled={!canExportKML}
-            title={exportKmlTitle}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <IconDownload /> {t('app.exportKml')}
-          </button>
-          <PreflightPill
-            items={preflight}
-            open={showPreflight}
-            onToggle={() => setShowPreflight((v) => !v)}
-            mode={missionMode}
-          />
-          <button
-            // no modo circular o KMZ do cabecalho e a missao circular: o
-            // preflight ao lado e o dela, e a grelha da area exporta-se no
-            // separador Area
-            onClick={gated(modeExport)}
-            disabled={!modePlanOk || exportBlocked}
-            title={t('app.exportWpmlTitle')}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded bg-sky-700 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <IconDownload /> {t('app.exportWpml')}
-          </button>
-
-          {/* configuração, ajuda e língua encostados à direita */}
-          <div className="flex items-center gap-2 border-l border-slate-800 pl-3">
-            <button
-              onClick={() => setShowSettings(true)}
-              title={t('app.settingsTitle')}
-              aria-label={t('app.settings')}
-              data-testid="open-settings"
-              className="flex items-center gap-1.5 whitespace-nowrap rounded border border-slate-700 px-2.5 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
-            >
-              <IconGear />
-            </button>
-            <button
-              onClick={() => setShowHelp(true)}
-              title={t('app.helpTitle')}
-              className="flex items-center gap-1.5 whitespace-nowrap rounded border border-slate-700 px-3 py-1.5 text-sm font-medium text-slate-300 transition-colors hover:border-sky-500 hover:text-sky-300"
-            >
-              ?
-            </button>
-            <div className="flex overflow-hidden rounded border border-slate-700">
-              {LANGS.map(({ code, label }) => {
-                const Flag = FLAG_BY_LANG[code]
-                return (
-                  <button
-                    key={code}
-                    onClick={() => setLang(code)}
-                    title={label}
-                    className={`px-2 py-1.5 leading-none transition-opacity ${
-                      lang === code ? 'bg-slate-700' : 'opacity-40 hover:opacity-90'
-                    }`}
-                  >
-                    <Flag />
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {showPreflight && <PreflightList items={preflight} actions={terrainActions} />}
-
-      {exportError && (
-        <div
-          role="alert"
-          className="flex items-start gap-2 border-b border-red-800 bg-red-950/60 px-4 py-2 text-xs text-red-200"
-        >
-          <span className="font-semibold">⚠ {t('export.failed')}</span>
-          <span>{t(`export.err.${exportError.code}`, { d: exportError.detail })}</span>
-          <button
-            onClick={() => setExportError(null)}
-            className="ml-auto rounded border border-red-700 px-2 py-0.5 font-medium hover:bg-red-900"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
+      <AppHeader
+        setShow3d={setShow3d}
+        terrain={terrain}
+        view3d={view3d}
+        missionMode={missionMode}
+        terrainCovers={terrainCovers}
+        planOk={planOk}
+        setShowReport={setShowReport}
+        setView={setView}
+        handleExportKML={handleExportKML}
+        canExportKML={canExportKML}
+        exportKmlTitle={exportKmlTitle}
+        preflight={preflight}
+        showPreflight={showPreflight}
+        setShowPreflight={setShowPreflight}
+        gated={gated}
+        modeExport={modeExport}
+        modePlanOk={modePlanOk}
+        exportBlocked={exportBlocked}
+        setShowSettings={setShowSettings}
+        setShowHelp={setShowHelp}
+        setLang={setLang}
+        lang={lang}
+        terrainActions={terrainActions}
+        exportError={exportError}
+        setExportError={setExportError}
+      />
       <div className="flex min-h-0 flex-1">
         <div className="flex h-full shrink-0 flex-col">
           <MissionModeSelector mode={missionMode} onChange={changeMissionMode} />
@@ -1643,210 +1520,121 @@ function AppInner({ lang, setLang }) {
           </div>
         </div>
 
-        <main className="relative min-w-0 flex-1">
-          <ProjectSummary summary={projectSummary} />
-          <MapView
-            mode={mode}
-            draftVertices={draftVertices}
-            ring={ring}
-            holes={holes}
-            valid={validation.valid}
-            kinks={validation.kinks}
-            anchorCenter={anchor.center}
-            bases={baseRows}
-            selectedBaseId={selectedBaseId}
-            onBaseSelect={handleBaseSelect}
-            baseLayout={missionMode === 'area' ? baseLayout : null}
-            assignMode={assignMode}
-            onBlockClick={handleBlockClick}
-            // no modo circular a grelha da area ficava por cima dos circulos
-            plan={missionMode === 'circular' ? null : planOk}
-            blocks={missionMode === 'circular' ? null : blocks}
-            gridCells={gridCells}
-            tiles={tiles}
-            disabledTiles={disabledTiles}
-            onTileToggle={handleTileClick}
-            gcps={gcps}
-            onGcpDrag={handleGcpDrag}
-            photoPoints={mapPhotoPoints}
-            inspectPoints={inspectPoints}
-            onInspectDrag={handleInspectDrag}
-            facePreview={facePreview}
-            corridorPreview={corridorPreview}
-            orbitPreview={orbitPreview}
-            circularPreview={circularPreview}
-            onOrbitPoiDrag={handleOrbitPoiDrag}
-            fitKey={fitKey}
-            editable={!gridCells && split.mode !== 'tiles' && split.mode !== 'battery'}
-            areaMovable={missionMode === 'area' || missionMode === 'circular'}
-            onMapClick={handleMapClick}
-            onVertexDrag={handleVertexDrag}
-            onVertexInsert={handleVertexInsert}
-            onVertexDelete={handleVertexDelete}
-            onAreaMove={handleAreaMove}
-            onBaseDrag={handleBaseDrag}
-            onFinishDraw={handleFinishAny}
-            viewsheds={missionMode === 'area' ? viewshedByBlock : null}
-            viewshedLayerOn={viewshedLayerOn}
-            onViewshedLayer={setViewshedLayerOn}
-          />
-          <StatsPanel
-            uncertainty={uncertainty}
-            gsd={gsd}
-            gimbalPitch={gsdPitch}
-            footprint={footprint}
-            spacing={spacing}
-            pointDensity={pointDensity}
-            interval={interval}
-            intervalS={trigger.seconds}
-            intervalManual={trigger.manual}
-            triggerMode={params.triggerMode}
-            speed={speed}
-            missionMode={missionMode}
-            stats={modeStats}
-            ops={statsOps}
-            shutterWarn={Boolean(
-              missionMode === 'circular'
-                ? circularTriggerWarn
-                : missionMode === 'corridor'
-                  ? corridorTriggerWarn
-                  : missionMode === 'area'
-                    ? triggerWarn
-                    : null,
-            )}
-            baseDistance={missionMode === 'area' && bases.length <= 1 ? areaBaseDistance : null}
-          />
-        </main>
+        <MapPane
+          projectSummary={projectSummary}
+          mode={mode}
+          draftVertices={draftVertices}
+          ring={ring}
+          holes={holes}
+          validation={validation}
+          anchor={anchor}
+          bases={bases}
+          baseRows={baseRows}
+          selectedBaseId={selectedBaseId}
+          handleBaseSelect={handleBaseSelect}
+          baseLayout={baseLayout}
+          missionMode={missionMode}
+          assignMode={assignMode}
+          handleBlockClick={handleBlockClick}
+          planOk={planOk}
+          blocks={blocks}
+          gridCells={gridCells}
+          tiles={tiles}
+          disabledTiles={disabledTiles}
+          handleTileClick={handleTileClick}
+          gcps={gcps}
+          handleGcpDrag={handleGcpDrag}
+          mapPhotoPoints={mapPhotoPoints}
+          inspectPoints={inspectPoints}
+          handleInspectDrag={handleInspectDrag}
+          facePreview={facePreview}
+          corridorPreview={corridorPreview}
+          orbitPreview={orbitPreview}
+          circularPreview={circularPreview}
+          handleOrbitPoiDrag={handleOrbitPoiDrag}
+          fitKey={fitKey}
+          split={split}
+          handleMapClick={handleMapClick}
+          handleVertexDrag={handleVertexDrag}
+          handleVertexInsert={handleVertexInsert}
+          handleVertexDelete={handleVertexDelete}
+          handleAreaMove={handleAreaMove}
+          handleBaseDrag={handleBaseDrag}
+          handleFinishAny={handleFinishAny}
+          viewshedByBlock={viewshedByBlock}
+          viewshedLayerOn={viewshedLayerOn}
+          setViewshedLayerOn={setViewshedLayerOn}
+          uncertainty={uncertainty}
+          gsd={gsd}
+          gsdPitch={gsdPitch}
+          footprint={footprint}
+          spacing={spacing}
+          pointDensity={pointDensity}
+          interval={interval}
+          trigger={trigger}
+          params={params}
+          speed={speed}
+          modeStats={modeStats}
+          statsOps={statsOps}
+          circularTriggerWarn={circularTriggerWarn}
+          corridorTriggerWarn={corridorTriggerWarn}
+          triggerWarn={triggerWarn}
+          areaBaseDistance={areaBaseDistance}
+        />
       </div>
 
-      {showHelp && (
-        <HelpModal
-          onClose={() => setShowHelp(false)}
-          onShowDisclaimer={() => {
-            setShowHelp(false)
-            setDisclaimer('review')
-          }}
-        />
-      )}
-      {showSettings && (
-        <SettingsModal
-          equipment={equipment}
-          setEquipment={setEquipment}
-          initialAircraftId={drone.aircraftId}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
-      {disclaimer && (
-        <DisclaimerModal
-          lang={lang}
-          setLang={setLang}
-          onAccept={closeDisclaimer}
-          dismissable={disclaimer === 'review'}
-        />
-      )}
-
-      {showProfile && terrain.status === 'ready' && view3d && (
-        <ErrorBoundary onClose={() => setShowProfile(false)}>
-          <Suspense fallback={null}>
-            <ElevationProfile
-              terrain={terrain.data}
-              waypoints={view3d.waypoints}
-              breaks={view3d.breaks ?? null}
-              refElev={view3d.refElev ?? 0}
-              reference={
-                missionMode === 'area'
-                  ? reference
-                  : missionMode === 'corridor'
-                    ? corridorReference
-                    : missionMode === 'circular'
-                      ? circularReference
-                      : null
-              }
-              blocks={profileBlocks}
-              onClose={() => setShowProfile(false)}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {showReport && planOk && (
-        <ErrorBoundary onClose={() => setShowReport(false)}>
-          <Suspense
-            fallback={
-              <div className="fixed inset-0 z-[2500] flex items-center justify-center bg-slate-950/90 text-sm text-slate-300">
-                {t('app.loadingReport')}
-              </div>
-            }
-          >
-            <MissionReport
-              missionName={missionName}
-              droneLabel={hardwareLabel}
-              inspectPoints={inspectPoints}
-              // a mesma velocidade limitada que entra no plano e no ficheiro
-              params={params.speed === speed ? params : { ...params, speed }}
-              spacing={spacing}
-              interval={interval}
-              gsd={gsd}
-              stats={planOk.stats}
-              blocks={blocks}
-              ring={ring}
-              basePoints={bases.map((b) => b.point)}
-              baseSheets={missionMode === 'area' ? fieldSheets : []}
-              terrainFollowOn={Boolean(terrainFollow?.enabled)}
-              rthInfo={rthInfo}
-              daySheets={missionMode === 'area' ? fieldSheetsDay : null}
-              gcps={gcps}
-              lines={planOk.lines}
-              reproducibility={{
-                version: import.meta.env.APP_VERSION,
-                projectJson: JSON.stringify(serializeProject(projectState)),
-                uncertainty,
-                blur,
-                terrainDatum: terrain.data?.verticalDatum ?? null,
-                preflight,
-              }}
-              onClose={() => setShowReport(false)}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {show3d && terrain.status === 'ready' && view3d && (
-        <ErrorBoundary onClose={() => setShow3d(false)}>
-          <Suspense
-            fallback={
-              <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-950/90 text-sm text-slate-300">
-                {t('app.loading3d')}
-              </div>
-            }
-          >
-            <Map3D
-              terrain={terrain.data}
-              ring={
-                missionMode === 'area' || missionMode === 'circular'
-                  ? ring
-                  : missionMode === 'corridor'
-                    ? (corridorPreview?.buffer ?? null)
-                    : null
-              }
-              waypoints={view3d.waypoints}
-              refElev={view3d.refElev}
-              breaks={view3d.breaks ?? null}
-              pieceColors={view3dColors?.pieces ?? null}
-              blocks3d={view3dColors?.blocks ?? null}
-              bases3d={baseRows.map((b) => ({
-                point: b.point,
-                label: b.label,
-                color: b.color,
-                radiusM: b.radiusM,
-              }))}
-              gcps={missionMode === 'area' ? gcps : null}
-              photos={photos3d}
-              onClose={() => setShow3d(false)}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
+      <AppOverlays
+        showHelp={showHelp}
+        setShowHelp={setShowHelp}
+        setDisclaimer={setDisclaimer}
+        showSettings={showSettings}
+        equipment={equipment}
+        setEquipment={setEquipment}
+        drone={drone}
+        setShowSettings={setShowSettings}
+        disclaimer={disclaimer}
+        lang={lang}
+        setLang={setLang}
+        closeDisclaimer={closeDisclaimer}
+        showProfile={showProfile}
+        terrain={terrain}
+        view3d={view3d}
+        setShowProfile={setShowProfile}
+        reference={reference}
+        missionMode={missionMode}
+        corridorReference={corridorReference}
+        circularReference={circularReference}
+        blocks={blocks}
+        profileBlocks={profileBlocks}
+        showReport={showReport}
+        planOk={planOk}
+        setShowReport={setShowReport}
+        missionName={missionName}
+        hardwareLabel={hardwareLabel}
+        inspectPoints={inspectPoints}
+        params={params}
+        speed={speed}
+        spacing={spacing}
+        interval={interval}
+        gsd={gsd}
+        ring={ring}
+        bases={bases}
+        fieldSheets={fieldSheets}
+        terrainFollow={terrainFollow}
+        rthInfo={rthInfo}
+        fieldSheetsDay={fieldSheetsDay}
+        gcps={gcps}
+        projectState={projectState}
+        uncertainty={uncertainty}
+        blur={blur}
+        preflight={preflight}
+        show3d={show3d}
+        setShow3d={setShow3d}
+        corridorPreview={corridorPreview}
+        view3dColors={view3dColors}
+        baseRows={baseRows}
+        photos3d={photos3d}
+      />
     </div>
   )
 }
