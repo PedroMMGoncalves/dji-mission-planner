@@ -88,8 +88,9 @@ function InstrucoesPt() {
           e passo. Captura em fotografia (anéis, uma foto por waypoint), vídeo (espiral contínua a
           gravar, com o gimbal a rodar sem degraus) ou{' '}
           <strong>várias inclinações (com paragem)</strong>: a aeronave pára em cada ponto e tira
-          uma foto por inclinação (por omissão −45°, 0° e o limite do gimbal menos 5°). Exporta
-          missão única ou um KMZ por nível (ZIP). Como a face, pode descolar numa base.
+          uma foto por inclinação (por omissão −45°, 0° e o limite do gimbal menos 5°). Exporta a
+          missão única («Exportar WPML Avançado (KMZ)») ou um KMZ por nível (ZIP). Como a face, pode
+          descolar numa base.
         </Li>
         <Li>
           <strong>Circular</strong> — grelha de círculos sobrepostos sobre a mesma área do modo

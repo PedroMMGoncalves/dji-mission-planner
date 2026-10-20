@@ -127,7 +127,8 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
   (mais inclinado nos níveis altos).
 - ☐ Ajustar o **GSD pretendido no alvo**.
   **Esperado:** o raio recalcula-se em conformidade.
-- ☐ Exportar missão única; reimportar o KMZ no modo Área.
+- ☐ **Exportar WPML Avançado (KMZ)** (a missão única); reimportar o KMZ no
+  modo Área.
   **Esperado:** `<missao>_orbit_nN.kmz` com
   `toPointAndPassWithContinuityCurvature` em todos os waypoints; o
   reimport reconstrói um contorno em redor do círculo sem erro.
@@ -252,8 +253,8 @@ tablet real):
   por base (`base-A/`, `base-B/`…), cada uma com os seus voos pela ordem de
   voo (`..._B-3.kmz`, `..._B-4.kmz`, com zeros a partir de 10 voos); **Todos
   os voos (ZIP)** dá `..._voos.zip` com todos soltos; **Um voo (KMZ)** com B-3
-  dá `..._B-3.kmz`; o botão de exportar do cabeçalho descarrega os dois ZIP
-  (o browser pode pedir licença para descarregar vários ficheiros). Com um
+  dá `..._B-3.kmz`; o botão de exportar do cabeçalho diz **(ZIP)** e
+  descarrega o ZIP por base; o cartão 7 não repete esse botão. Com um
   bloqueio no preflight ficam todos desactivados.
 - ☐ **Bases e blocos (KML)** aberto no Google Earth (ou no telemóvel).
   **Esperado:** pontos «Base A» e «Base B» com a ficha ao clicar, círculos
