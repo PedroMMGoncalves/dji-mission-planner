@@ -72,7 +72,12 @@ export default {
     pt: '{n} necessários · {s} na equipa',
     en: '{n} needed · {s} in the team',
   },
+  'cards.summary.setsValueOne': {
+    pt: '1 necessário · {s} na equipa',
+    en: '1 needed · {s} in the team',
+  },
   'cards.summary.setsUnknown': { pt: '{n} necessários', en: '{n} needed' },
+  'cards.summary.setsUnknownOne': { pt: '1 necessário', en: '1 needed' },
   'cards.summary.longest': {
     pt: 'Voo mais longo / tempo útil',
     en: 'Longest flight / usable time',

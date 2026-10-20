@@ -1,4 +1,5 @@
 import { useT } from '../i18n.jsx'
+import { rangeText, tCount } from '../i18n/format.js'
 
 /**
  * Modelo de relevo das bacias de visão em texto: «relevo global ~30 m»,
@@ -105,8 +106,15 @@ export default function BaseFieldSheets({ sheets, day = null, cardClass = '', ta
           className={`mb-2 text-sm ${day.short ? 'text-amber-300' : 'text-slate-200'}`}
         >
           {day.sets != null
-            ? t('bases.sheet.day', { flights: day.flights, sets: day.flights, team: day.sets })
-            : t('bases.sheet.dayUnknown', { flights: day.flights, sets: day.flights })}
+            ? tCount(t, 'bases.sheet.day', day.flights, {
+                flights: day.flights,
+                sets: day.flights,
+                team: day.sets,
+              })
+            : tCount(t, 'bases.sheet.dayUnknown', day.flights, {
+                flights: day.flights,
+                sets: day.flights,
+              })}
         </p>
       )}
       {sheets.map((s) => (
@@ -194,8 +202,13 @@ export default function BaseFieldSheets({ sheets, day = null, cardClass = '', ta
                 <th className={head}>{t('bases.sheet.batteries')}</th>
                 <td className={`${cell} ${s.sets.short ? 'text-amber-300' : ''}`}>
                   {s.sets.sets != null
-                    ? t('bases.sheet.setsKnown', { flights: s.sets.flights, sets: s.sets.sets })
-                    : t('bases.sheet.setsUnknown', { flights: s.sets.flights })}
+                    ? tCount(t, 'bases.sheet.setsKnown', s.sets.flights, {
+                        flights: s.sets.flights,
+                        sets: s.sets.sets,
+                      })
+                    : tCount(t, 'bases.sheet.setsUnknown', s.sets.flights, {
+                        flights: s.sets.flights,
+                      })}
                   {s.sets.short ? ` — ${t('bases.sheet.setsShort')}` : ''}
                 </td>
               </tr>
@@ -249,8 +262,9 @@ export default function BaseFieldSheets({ sheets, day = null, cardClass = '', ta
                   <td className={`${cell} font-mono`} data-testid="base-sheet-heights">
                     {f.h1M != null
                       ? t('bases.sheet.heightsValue', {
-                          h1: Math.round(f.h1M),
-                          hmax: Math.round(f.hmaxM ?? f.h1M),
+                          // um só valor quando a do 1.º waypoint e a máxima
+                          // coincidem (antes «150–150 m»)
+                          range: rangeText(f.h1M, f.hmaxM ?? f.h1M, Math.round),
                         })
                       : '—'}
                   </td>

@@ -177,8 +177,8 @@ export default {
   'bases.sheet.rth': { pt: 'Regresso (RTH)', en: 'Return (RTH)' },
   'bases.sheet.heights': { pt: 'Altura no comando', en: 'Height on the controller' },
   'bases.sheet.heightsValue': {
-    pt: '{h1}–{hmax} m (rel. à descolagem)',
-    en: '{h1}–{hmax} m (rel. to take-off)',
+    pt: '{range} m (rel. à descolagem)',
+    en: '{range} m (rel. to take-off)',
   },
   'bases.sheet.pctUseful': { pt: '% do tempo útil', en: '% of usable time' },
   'bases.sheet.params': { pt: 'Parâmetros', en: 'Parameters' },
@@ -190,9 +190,17 @@ export default {
     pt: 'Dia: {flights} voos · conjuntos de baterias: {sets} necessários · {team} na equipa',
     en: 'Day: {flights} flights · battery sets: {sets} needed · {team} in the team',
   },
+  'bases.sheet.dayOne': {
+    pt: 'Dia: 1 voo · conjuntos de baterias: 1 necessário · {team} na equipa',
+    en: 'Day: 1 flight · battery sets: 1 needed · {team} in the team',
+  },
   'bases.sheet.dayUnknown': {
     pt: 'Dia: {flights} voos · conjuntos de baterias: {sets} necessários (conjuntos da equipa por definir na Configuração)',
     en: 'Day: {flights} flights · battery sets: {sets} needed (team’s sets not set in Settings)',
+  },
+  'bases.sheet.dayUnknownOne': {
+    pt: 'Dia: 1 voo · conjuntos de baterias: 1 necessário (conjuntos da equipa por definir na Configuração)',
+    en: 'Day: 1 flight · battery sets: 1 needed (team’s sets not set in Settings)',
   },
   'bases.sheet.rthValue': {
     pt: '{rth} m acima da descolagem (a maior entre os voos desta base) · altura de segurança na descolagem: {takeoff} m',
@@ -203,9 +211,17 @@ export default {
     pt: '{flights} necessários · {sets} na equipa',
     en: '{flights} needed · {sets} in the team',
   },
+  'bases.sheet.setsKnownOne': {
+    pt: '1 necessário · {sets} na equipa',
+    en: '1 needed · {sets} in the team',
+  },
   'bases.sheet.setsUnknown': {
     pt: '{flights} necessários (conjuntos da equipa por definir na Configuração)',
     en: '{flights} needed (team’s sets not set in Settings)',
+  },
+  'bases.sheet.setsUnknownOne': {
+    pt: '1 necessário (conjuntos da equipa por definir na Configuração)',
+    en: '1 needed (team’s sets not set in Settings)',
   },
   'bases.sheet.setsShort': {
     pt: 'recarregar no campo ou voltar noutro dia',

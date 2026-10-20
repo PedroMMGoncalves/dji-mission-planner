@@ -31,6 +31,15 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   voos ganha a coluna «Previsto (min)», antes da duração, que a importação
   preenche; a duração fica em branco para o piloto. As checklists gravadas
   antes abrem com a coluna nova vazia; o JSON e a impressão levam-na.
+- **«1 necessário» e intervalos com as pontas iguais.** Os conjuntos de
+  baterias diziam «1 necessários» (painel de métricas, cartão 7, ficha de
+  campo e linha do dia, que dizia também «1 voos»): com um voo passam ao
+  singular. A ficha dizia «150–150 m (rel. à descolagem)» quando a altura
+  do 1.º waypoint é a máxima: fica «150 m», e o mesmo para os outros
+  intervalos que podiam sair com as duas pontas iguais depois do
+  arredondamento (GSD e sobreposição efectiva nas métricas e no relatório,
+  altura AGL no relatório, cotas do terreno e altura acima do solo nos
+  painéis).
 
 ### Interno (repartição do `App.jsx`)
 

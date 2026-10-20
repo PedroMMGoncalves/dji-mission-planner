@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../i18n.jsx'
+import { rangeText, tCount } from '../i18n/format.js'
 
 const STATS_COLLAPSED_KEY = 'dji-mission-planner:stats:collapsed'
 
@@ -112,6 +113,13 @@ export default function StatsPanel({
   // área; na área mostra-se tudo, como sempre
   const omit = (v) => missionMode !== 'area' && v == null
   const count = countOf(missionMode, stats)
+  // o intervalo [pior, melhor] do GSD só quando, a 2 casas, ainda é um
+  // intervalo: com RTK e terreno plano as pontas caíam no próprio valor e
+  // o mosaico dizia «2.69 (2.69–2.69)»
+  const f2 = (v) => v.toFixed(2)
+  const gsdRange =
+    gsd != null && uncertainty?.gsd ? rangeText(uncertainty.gsd[0], uncertainty.gsd[1], f2) : null
+  const gsdRangeShown = gsdRange != null && gsdRange !== f2(gsd) ? gsdRange : null
   // recolhível (M3-U23): 16 mosaicos tapam ~450 px do mapa num tablet
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -169,14 +177,14 @@ export default function StatsPanel({
               label={t(gimbalPitch === -90 ? 'stats.gsd' : 'stats.gsdCentre')}
               value={
                 gsd != null
-                  ? uncertainty?.gsd
-                    ? `${gsd.toFixed(2)} (${uncertainty.gsd[0].toFixed(2)}–${uncertainty.gsd[1].toFixed(2)}) cm/px`
-                    : `${gsd.toFixed(2)} cm/px`
+                  ? gsdRangeShown
+                    ? `${f2(gsd)} (${gsdRangeShown}) cm/px`
+                    : `${f2(gsd)} cm/px`
                   : t('stats.gsdOblique')
               }
               hint={
                 gimbalPitch === -90
-                  ? uncertainty?.gsd
+                  ? gsdRangeShown
                     ? t('stats.gsdRangeHint')
                     : undefined
                   : t('stats.gsdCentreHint')
@@ -192,7 +200,7 @@ export default function StatsPanel({
         {missionMode === 'area' && uncertainty?.front && uncertainty?.side && (
           <Stat
             label={t('stats.overlapRange')}
-            value={`${Math.round(uncertainty.front[0])}–${Math.round(uncertainty.front[1])} / ${Math.round(uncertainty.side[0])}–${Math.round(uncertainty.side[1])} %`}
+            value={`${rangeText(uncertainty.front[0], uncertainty.front[1], Math.round)} / ${rangeText(uncertainty.side[0], uncertainty.side[1], Math.round)} %`}
             hint={t('stats.overlapRangeHint')}
           />
         )}
@@ -278,8 +286,8 @@ export default function StatsPanel({
             label={t('stats.batteries')}
             value={
               ops.sets == null
-                ? t('stats.setsNeeded', { n: ops.flights })
-                : t('stats.setsVs', { n: ops.flights, s: ops.sets })
+                ? tCount(t, 'stats.setsNeeded', ops.flights, { n: ops.flights })
+                : tCount(t, 'stats.setsVs', ops.flights, { n: ops.flights, s: ops.sets })
             }
             tone={ops.short ? 'near' : 'ok'}
             hint={ops.short ? t('stats.setsShortHint') : undefined}

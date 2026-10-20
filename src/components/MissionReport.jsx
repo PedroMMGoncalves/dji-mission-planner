@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLang, useT } from '../i18n.jsx'
+import { rangeText } from '../i18n/format.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
 import BaseFieldSheets from './BaseFieldSheets.jsx'
 import { rthRangeLabel } from '../mission/transitLegs.js'
@@ -898,19 +899,30 @@ export default function MissionReport({
                         {reproducibility.uncertainty.inputs.horizontalM} m H
                       </td>
                     </tr>
+                    {/* um só valor quando as duas pontas, arredondadas, coincidem */}
                     <tr>
                       <td className="pr-3 text-slate-400">{L(UI.rAgl)}</td>
                       <td className="font-mono">
-                        {fmt(reproducibility.uncertainty.agl[0], 1)} –{' '}
-                        {fmt(reproducibility.uncertainty.agl[1], 1)} m
+                        {rangeText(
+                          reproducibility.uncertainty.agl[0],
+                          reproducibility.uncertainty.agl[1],
+                          (v) => fmt(v, 1),
+                          ' – ',
+                        )}{' '}
+                        m
                       </td>
                     </tr>
                     {reproducibility.uncertainty.gsd && (
                       <tr>
                         <td className="pr-3 text-slate-400">{L(UI.rGsd)}</td>
                         <td className="font-mono">
-                          {fmt(reproducibility.uncertainty.gsd[0], 2)} –{' '}
-                          {fmt(reproducibility.uncertainty.gsd[1], 2)} cm/px
+                          {rangeText(
+                            reproducibility.uncertainty.gsd[0],
+                            reproducibility.uncertainty.gsd[1],
+                            (v) => fmt(v, 2),
+                            ' – ',
+                          )}{' '}
+                          cm/px
                         </td>
                       </tr>
                     )}
@@ -918,10 +930,18 @@ export default function MissionReport({
                       <tr>
                         <td className="pr-3 text-slate-400">{L(UI.rOverlap)}</td>
                         <td className="font-mono">
-                          {fmt(reproducibility.uncertainty.front[0], 0)}–
-                          {fmt(reproducibility.uncertainty.front[1], 0)} % /{' '}
-                          {fmt(reproducibility.uncertainty.side[0], 0)}–
-                          {fmt(reproducibility.uncertainty.side[1], 0)} %
+                          {rangeText(
+                            reproducibility.uncertainty.front[0],
+                            reproducibility.uncertainty.front[1],
+                            (v) => fmt(v, 0),
+                          )}{' '}
+                          % /{' '}
+                          {rangeText(
+                            reproducibility.uncertainty.side[0],
+                            reproducibility.uncertainty.side[1],
+                            (v) => fmt(v, 0),
+                          )}{' '}
+                          %
                         </td>
                       </tr>
                     )}

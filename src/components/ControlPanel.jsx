@@ -29,6 +29,7 @@ import {
 } from './Cards.jsx'
 import { errorText, terrainErrorText as terrainErrText } from '../utils/appError.js'
 import { batteryLabel } from '../mission/equipment.js'
+import { rangeText, tCount } from '../i18n/format.js'
 import { notesSince } from '../data/versionNotes.js'
 import { versionBefore } from '../mission/project.js'
 
@@ -875,8 +876,7 @@ export default function ControlPanel({
                 }`}
               >
                 {t('cp.flight.aglOverArea', {
-                  min: Math.round(routeClearance.minM),
-                  max: Math.round(routeClearance.maxM),
+                  range: rangeText(routeClearance.minM, routeClearance.maxM, Math.round),
                 })}
               </p>
             )}
@@ -1040,8 +1040,7 @@ export default function ControlPanel({
             {terrainFollow.enabled && terrainResult && !terrainResult.error && (
               <div className="mt-1 rounded border border-slate-800 bg-slate-900/60 p-2 text-xs leading-relaxed text-slate-400">
                 {t('cp.terrain.result', {
-                  min: Math.round(terrainResult.elevMin),
-                  max: Math.round(terrainResult.elevMax),
+                  range: rangeText(terrainResult.elevMin, terrainResult.elevMax, Math.round),
                   n: terrainResult.waypoints.length,
                   ref: Math.round(terrainResult.refElev),
                 })}
@@ -1320,9 +1319,14 @@ export default function ControlPanel({
               [
                 t('cards.summary.sets'),
                 setsCheck && setsCheck.sets != null
-                  ? t('cards.summary.setsValue', { n: setsCheck.flights, s: setsCheck.sets })
+                  ? tCount(t, 'cards.summary.setsValue', setsCheck.flights, {
+                      n: setsCheck.flights,
+                      s: setsCheck.sets,
+                    })
                   : setsCheck
-                    ? t('cards.summary.setsUnknown', { n: setsCheck.flights })
+                    ? tCount(t, 'cards.summary.setsUnknown', setsCheck.flights, {
+                        n: setsCheck.flights,
+                      })
                     : '—',
               ],
               ...(ops?.longest

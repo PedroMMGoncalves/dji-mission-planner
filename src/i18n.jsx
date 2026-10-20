@@ -268,7 +268,9 @@ const BASE_DICT = {
   'stats.flightsBases': { pt: '{n} · {b} bases', en: '{n} · {b} bases' },
   'stats.batteries': { pt: 'Conjuntos de baterias', en: 'Battery sets' },
   'stats.setsNeeded': { pt: '{n} necessários', en: '{n} needed' },
+  'stats.setsNeededOne': { pt: '1 necessário', en: '1 needed' },
   'stats.setsVs': { pt: '{n} necessários · {s} na equipa', en: '{n} needed · {s} in the team' },
+  'stats.setsVsOne': { pt: '1 necessário · {s} na equipa', en: '1 needed · {s} in the team' },
   'stats.setsShortHint': {
     pt: 'A missão pede mais voos do que os conjuntos de baterias que a equipa tem: conte com recarregar no campo.',
     en: 'The mission needs more flights than the battery sets the team has: plan on recharging in the field.',

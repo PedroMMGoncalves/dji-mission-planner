@@ -152,8 +152,8 @@ export default {
     en: 'AGL height (follows terrain)',
   },
   'cp.flight.aglOverArea': {
-    pt: 'Sobre a área: {min}–{max} m acima do solo (sem seguir terreno, a altura é fixa em relação à descolagem).',
-    en: 'Over the area: {min}–{max} m above ground (without terrain following, the height is fixed relative to take-off).',
+    pt: 'Sobre a área: {range} m acima do solo (sem seguir terreno, a altura é fixa em relação à descolagem).',
+    en: 'Over the area: {range} m above ground (without terrain following, the height is fixed relative to take-off).',
   },
   'cp.flight.gsdTarget': { pt: 'GSD alvo', en: 'Target GSD' },
   'cp.flight.altWarnPre': { pt: 'Acima de', en: 'Above' },
@@ -483,8 +483,8 @@ export default {
     en: 'Terrain following failed: {msg}',
   },
   'cp.terrain.result': {
-    pt: 'Cotas do terreno {min}–{max} m · {n} waypoints com altura própria (cota de referência {ref} m).',
-    en: 'Terrain elevation {min}–{max} m · {n} waypoints with individual heights (reference elevation {ref} m).',
+    pt: 'Cotas do terreno {range} m · {n} waypoints com altura própria (cota de referência {ref} m).',
+    en: 'Terrain elevation {range} m · {n} waypoints with individual heights (reference elevation {ref} m).',
   },
   'cp.terrain.sourceHint': {
     pt: 'Fonte: Terrarium/AWS (~30 m). As alturas por waypoint são relativas ao ponto de descolagem — marque a base no local real de descolagem e valide no Pilot 2.',

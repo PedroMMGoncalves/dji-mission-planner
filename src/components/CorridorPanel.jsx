@@ -12,6 +12,7 @@ import {
   IconTrash,
 } from './Icons.jsx'
 import { errorText, terrainErrorText as terrainErrText } from '../utils/appError.js'
+import { rangeText } from '../i18n/format.js'
 
 /**
  * E5.1: painel do modo corredor (cobertura de infraestruturas lineares a
@@ -396,8 +397,7 @@ export default function CorridorPanel({
         {tfOk && (
           <div className="mt-2 rounded border border-slate-800 bg-slate-900/60 p-2 text-xs leading-relaxed text-slate-400">
             {t('cp.terrain.result', {
-              min: Math.round(tfOk.elevMin),
-              max: Math.round(tfOk.elevMax),
+              range: rangeText(tfOk.elevMin, tfOk.elevMax, Math.round),
               n: tfOk.waypoints.length,
               ref: Math.round(tfOk.refElev),
             })}

@@ -2355,10 +2355,12 @@ await scenario('bases-exportar-por-base', async () => {
       /descolar até \d+ m do ponto/.test(sB.text) &&
       /voo entre 0 e \+\d+ m acima do planeado/.test(sB.text) &&
       /Distância VLOS/i.test(sB.text) &&
-      /necessários/.test(sB.text) &&
+      // «1 necessário» com um voo, «N necessários» com mais
+      /necessários?/.test(sB.text) &&
       // M3-U10: alturas no comando, % do útil e os parâmetros do plano
       /Altura no comando/i.test(sB.text) &&
-      /\d+–\d+ m \(rel\. à descolagem\)/.test(sB.text) &&
+      // «150–180 m», ou um só valor quando a do 1.º waypoint é a máxima
+      /\d+(–\d+)? m \(rel\. à descolagem\)/.test(sB.text) &&
       /\d+ %/.test(sB.text) &&
       /altura \d+ m · [\d.]+ m\/s · sobreposição \d+\/\d+ %/.test(sB.text) &&
       sB.flights.join(',') === wantB.join(',') &&
@@ -2368,7 +2370,7 @@ await scenario('bases-exportar-por-base', async () => {
   check(
     'checklist: a linha do dia soma os voos de todas as bases contra os conjuntos da equipa',
     (await sec.getByTestId('sheets-day').count()) === 1 &&
-      /Dia: \d+ voos · conjuntos de baterias: \d+ necessários/.test(
+      /Dia: \d+ voos? · conjuntos de baterias: \d+ necessários?/.test(
         await sec.getByTestId('sheets-day').innerText(),
       ),
     await sec
