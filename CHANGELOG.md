@@ -601,6 +601,25 @@ que os textos diziam mal e os identificadores que não batiam certo.
   direito; `aria-label` nas setas e no ✕ dos pontos de inspecção; a `select`
   das paragens mais larga.
 
+### Dependências (Outubro de 2026)
+
+- **React 19** (`react` e `react-dom` 18.3 → 19.3, com os tipos 19): sem
+  alterações no código — a aplicação já usava `createRoot`, sem
+  `defaultProps`, `propTypes` nem refs por nome; a cadeia completa e os E2E
+  passam. O `react-dom` 19 é 77 KB maior.
+- **three 0.170 → 0.186** (a vista 3D): nenhuma das mudanças de API das 16
+  versões toca nas classes que o `Map3D` usa (renderer, cena, câmara,
+  `OrbitControls`, malhas Lambert, linhas, sprites, texturas de canvas,
+  instâncias); a vista cresce 54 KB. **jszip** 3.10.2 (corrige o suporte de
+  Blob em Node, que os testes usam) e **proj4** 2.22.
+- **vitest 5** e o grupo de ferramentas de desenvolvimento (vite 8.3,
+  prettier 3.9.10, playwright 1.64, fast-check 4.10, …).
+- O orçamento do bundle sobe de 2250 para 2400 KB, pelo React 19 e pelo
+  three (o total vai em 2354 KB); o `check-bundle-size.mjs` continua a
+  obrigar a uma decisão por cada subida.
+- Por fazer: **eslint 10** espera que o `eslint-plugin-react` o aceite (a
+  7.37.5 declara eslint ≤ 9).
+
 ### Infra-estrutura (CI)
 
 - Os runners ficam fixos em `ubuntu-24.04` (o `ubuntu-latest` passa a

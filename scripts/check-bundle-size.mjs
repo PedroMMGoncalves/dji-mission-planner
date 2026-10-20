@@ -16,7 +16,10 @@ import { fileURLToPath } from 'node:url'
 // 2200 → 2250 no pacote R-B da revisão do código (2026-10): o dicionário dos
 // erros com código (41 mensagens PT/EN) e os textos do preflight; nenhuma
 // dependência nova. O total ia em 2203 KB.
-const BUDGET_KB = 2250
+// 2250 → 2400 nas actualizações de Outubro de 2026: React 19 (o react-dom
+// cresce 77 KB) e three 0.186 (a vista 3D cresce 54 KB). O total ia em
+// 2354 KB; o orçamento continua a obrigar a uma decisão por cada subida.
+const BUDGET_KB = 2400
 // fileURLToPath e não .pathname: este descodifica percent-encoding e trata
 // os caminhos do Windows, o outro devolve-os em bruto.
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))
