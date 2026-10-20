@@ -21,23 +21,8 @@ import DisclaimerModal, {
 const Map3D = lazy(() => import('./components/Map3D.jsx'))
 const MissionReport = lazy(() => import('./components/MissionReport.jsx'))
 const ElevationProfile = lazy(() => import('./components/ElevationProfile.jsx'))
-import {
-  AIRCRAFT,
-  PAYLOADS,
-  positioningError,
-  DEFAULT_CUSTOM_SENSOR,
-  DEFAULT_SELECTION,
-  MISSION_PRESETS,
-  aglCapWarning,
-} from './data/drones.js'
-import {
-  aircraftEquipmentFor,
-  flightsVsSets,
-  loadEquipment,
-  resolveMissionBattery,
-  saveEquipment,
-  vlosFor,
-} from './mission/equipment.js'
+import { positioningError, MISSION_PRESETS, aglCapWarning } from './data/drones.js'
+import { flightsVsSets } from './mission/equipment.js'
 import { opsSummary } from './mission/opsSummary.js'
 import {
   addBase,
@@ -70,7 +55,6 @@ import {
   findOptimalDirection,
   lidarPointDensity,
   lineSpacing,
-  resolveSensor,
   ringToPolygon,
   squareFlightTimeS,
 } from './utils/geo.js'
@@ -81,6 +65,7 @@ import {
   buildFilesZip,
   downloadBlob,
 } from './utils/exporters.js'
+import { useHardware } from './hooks/useHardware.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission, useCorridorRoute } from './hooks/useCorridorMission.js'
@@ -99,7 +84,6 @@ import { hasBlockers } from './mission/preflight.js'
 import { preflightFor } from './mission/preflightFor.js'
 import { routeClearance, terrainHolesAlong } from './mission/clearance.js'
 import { rthByFlight, transitLegs, worstTransit } from './mission/transitLegs.js'
-import { missionWpml } from './mission/missionWpml.js'
 import { blockWorstTransitM, blockWorstVlosM } from './mission/takeoffZones.js'
 import { checkFaceClearance } from './utils/faceMode.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from './utils/units.js'
@@ -127,14 +111,7 @@ const FLAG_BY_LANG = { pt: FlagPT, en: FlagGB }
 /** Camada «Bacias de visão» ligada neste aparelho ('1') ou não. */
 const VIEWSHED_LAYER_KEY = 'dji-mission-planner:viewshedLayer'
 
-/** localStorage, ou null quando o browser o recusa (modo privado, cookies bloqueados). */
-function browserStorage() {
-  try {
-    return window.localStorage
-  } catch {
-    return null
-  }
-}
+import { browserStorage } from './utils/browserStorage.js'
 import { LANGS, LangContext, useT } from './i18n.jsx'
 import { terrainErrorText } from './utils/appError.js'
 import { isVerifiedFlight } from './data/validation.js'
@@ -204,24 +181,36 @@ function AppInner({ lang, setLang }) {
   const [missionName, setMissionName] = useState(DEFAULT_MISSION_NAME)
   // acções de segurança (fim da missão, sinal perdido) de todos os modos
   const [safety, setSafety] = useState(() => ({ ...DEFAULT_SAFETY }))
-  // seleção de hardware: aeronave + payload (T1.1)
-  const [drone, setDrone] = useState(
-    () =>
-      /** @type {{aircraftId: string, payloadId: string, rtk?: boolean}} */ ({
-        ...DEFAULT_SELECTION,
-      }),
-  )
-  const [custom, setCustom] = useState(DEFAULT_CUSTOM_SENSOR)
-  // afinações por payload (T1.2): { [payloadId]: { effectiveFov } }
-  const [payloadTuning, setPayloadTuning] = useState(
-    /** @type {Record<string, {effectiveFov?: number}>} */ ({}),
-  )
-  // Equipamento (Configuração): baterias com tempo útil, VLOS e zona de
-  // descolagem por aeronave. Vive no browser, à parte do projecto.
-  const [equipment, setEquipment] = useState(() => loadEquipment(browserStorage()))
-  useEffect(() => {
-    saveEquipment(browserStorage(), equipment)
-  }, [equipment])
+  // aeronave, payload, equipamento e bateria da missão (src/hooks/useHardware.js)
+  const {
+    drone,
+    setDrone,
+    custom,
+    setCustom,
+    payloadTuning,
+    setPayloadTuning,
+    equipment,
+    setEquipment,
+    zoneConfig,
+    setMissionBattery,
+    aircraftRef,
+    aircraft,
+    payload,
+    vlosM,
+    speedRange,
+    hardwareLabel,
+    effectiveFov,
+    activePayload,
+    sensor,
+    setEffectiveFov,
+    missionBatteryType,
+    batteryMin,
+    batteryOverridden,
+    setMissionBatteryId,
+    setUsefulMin,
+    wpml,
+    equipmentBatteries,
+  } = useHardware()
   const [showSettings, setShowSettings] = useState(false)
   // bacias de visão: vegetação e obstáculos a somar a um MDT (por missão,
   // no projecto: dependem do sítio)
@@ -242,18 +231,6 @@ function AppInner({ lang, setLang }) {
       /* ignora */
     }
   }, [viewshedLayerOn])
-  // zona de descolagem das bases (Configuração): raio e desnível máximo
-  const zoneConfig = useMemo(
-    () => ({ radiusM: equipment.zoneRadiusM, maxReliefM: equipment.zoneMaxReliefM }),
-    [equipment.zoneRadiusM, equipment.zoneMaxReliefM],
-  )
-  // bateria da missão: tipo e tempo útil acertado para o dia (null = o da
-  // bateria); só vale para a aeronave em que foi escolhida
-  const [missionBattery, setMissionBattery] = useState(() => ({
-    aircraftId: null,
-    batteryId: null,
-    usefulMin: null,
-  }))
   const [params, setParams] = useState(() => ({ ...DEFAULT_PARAMS }))
   const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect' | 'face'
   // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
@@ -332,40 +309,29 @@ function AppInner({ lang, setLang }) {
   const [showProfile, setShowProfile] = useState(false)
   const [showPreflight, setShowPreflight] = useState(false)
 
-  const aircraftRef = useRef(null)
-  const setParam = useCallback((key, value) => {
-    setParams((p) => {
-      if (!Number.isFinite(value) && typeof value === 'number') return p
-      // a velocidade é sempre limitada aos limites da aeronave selecionada
-      if (key === 'speed') {
-        const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
-        value = Math.min(r.max, Math.max(r.min, value))
-      }
-      // os outros parâmetros numéricos dentro dos seus limites (M3-C9)
-      return { ...p, [key]: clampParam(key, value) }
-    })
-  }, [])
+  const setParam = useCallback(
+    (key, value) => {
+      setParams((p) => {
+        if (!Number.isFinite(value) && typeof value === 'number') return p
+        // a velocidade é sempre limitada aos limites da aeronave selecionada
+        if (key === 'speed') {
+          const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
+          value = Math.min(r.max, Math.max(r.min, value))
+        }
+        // os outros parâmetros numéricos dentro dos seus limites (M3-C9)
+        return { ...p, [key]: clampParam(key, value) }
+      })
+    },
+    [aircraftRef],
+  )
 
   /* ------------------- Pipeline de cálculo (memo) -------------------- */
-  const aircraft = AIRCRAFT[drone.aircraftId]
-  const payload = PAYLOADS[drone.payloadId]
-  // alcance visual da aeronave (Configuração): bases e blocos
-  const vlosM = vlosFor(equipment, drone.aircraftId)
-  // Escrito num efeito e não durante o render: mutar um ref no corpo do
-  // componente é inseguro com renderização concorrente (React pode repetir ou
-  // descartar o render). aircraftRef só é lido dentro de callbacks, por acção
-  // do utilizador, sempre depois de o efeito ter corrido.
-  useEffect(() => {
-    aircraftRef.current = aircraft
-  })
-
   // A velocidade gravada pode ficar fora dos limites quando a aeronave muda —
   // pelo selector, por carregar um projecto ou por aplicar um preset. Em vez
   // de a corrigir com um efeito (um render extra e uma cascata de estado),
   // limita-se aqui, no render: é este o valor que o painel mostra e que entra
   // no plano, nas estatísticas e na exportação. A escrita já vinha limitada
   // por setParam, pelo que isto só actua quando a aeronave muda por baixo.
-  const speedRange = aircraft.speedRange ?? { min: 1, max: 20 }
   const speed = Math.min(speedRange.max, Math.max(speedRange.min, params.speed))
 
   // Mesma regra para o corredor, que tem o seu proprio campo de velocidade: o
@@ -373,71 +339,6 @@ function AppInner({ lang, setLang }) {
   // limitar, o WPML saia com autoFlightSpeed acima do que a aeronave faz e o
   // tempo estimado ficava optimista — e e desse tempo que sai o numero de
   // baterias que o operador leva para o campo.
-
-  // rótulo composto para o relatório/checklist: a aeronave, e o payload
-  // quando a aeronave tem mais do que um montável
-  const hardwareLabel =
-    aircraft.payloads.length > 1 ? `${aircraft.label} + ${payload.label}` : aircraft.label
-
-  // payload ativo com a afinação aplicada: um LiDAR pode voar com um corte
-  // de trabalho do feixe (effectiveFov) mais estreito do que o nominal
-  const effectiveFov = payloadTuning[drone.payloadId]?.effectiveFov ?? null
-  const activePayload = useMemo(
-    () => (payload.type === 'lidar' && effectiveFov ? { ...payload, effectiveFov } : payload),
-    [payload, effectiveFov],
-  )
-  const sensor = useMemo(() => resolveSensor(activePayload, custom), [activePayload, custom])
-
-  const setEffectiveFov = useCallback(
-    (value) => {
-      setPayloadTuning((m) => {
-        const pid = drone.payloadId
-        const nominal = PAYLOADS[pid]?.fov
-        // clamp to ]5, nominal]; at (or above) nominal the override is removed
-        if (!Number.isFinite(value) || !nominal || value >= nominal) {
-          const { [pid]: _drop, ...rest } = m
-          return rest
-        }
-        return { ...m, [pid]: { ...m[pid], effectiveFov: Math.max(5, value) } }
-      })
-    },
-    [drone.payloadId],
-  )
-
-  // Tempo útil por voo efectivo (min): o acerto da missão, senão o da
-  // bateria escolhida no equipamento. JÁ inclui a reserva de aterragem, por
-  // isso entra em todo o lado como `batteryMin` com split.reservePct a 0
-  // (blocos, lado do quadrado, preflight, resumo, circular).
-  const {
-    battery: missionBatteryType,
-    usefulMin: batteryMin,
-    overridden: batteryOverridden,
-  } = resolveMissionBattery(equipment, drone.aircraftId, missionBattery)
-  const setMissionBatteryId = useCallback(
-    (batteryId) => setMissionBattery({ aircraftId: drone.aircraftId, batteryId, usefulMin: null }),
-    [drone.aircraftId],
-  )
-  // editar para o valor da bateria (ou um valor inválido) volta a segui-la
-  const setUsefulMin = useCallback(
-    (value) => {
-      const id = missionBatteryType.id
-      const own = missionBatteryType.usefulMin
-      setMissionBattery({
-        aircraftId: drone.aircraftId,
-        batteryId: id,
-        usefulMin:
-          !Number.isFinite(value) || value <= 0 || value === own
-            ? null
-            : Math.min(120, Math.max(1, value)),
-      })
-    },
-    [drone.aircraftId, missionBatteryType],
-  )
-
-  // Enums WPML: aeronave + payload; o editor custom substitui o enum do
-  // payload sempre, e o da aeronave apenas quando a aeronave é CUSTOM
-  // (num M300 com payload custom o droneEnumValue continua a ser o do M300)
-  const wpml = useMemo(() => missionWpml(aircraft, payload, custom), [aircraft, payload, custom])
 
   const footprint = useMemo(
     () => computeFootprint(sensor, params.altitude),
@@ -634,18 +535,21 @@ function AppInner({ lang, setLang }) {
 
   /* ------------------ Modo área, parte 1: geometria ------------------- */
   // Reimportar um WPML devolve nome, altitude e velocidade da missão antiga
-  const onImportedMission = useCallback(({ name, altitude, speed: s }) => {
-    if (name) setMissionName(name)
-    setParams((p) => {
-      const next = { ...p }
-      if (Number.isFinite(altitude)) next.altitude = altitude
-      if (Number.isFinite(s)) {
-        const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
-        next.speed = Math.min(r.max, Math.max(r.min, s))
-      }
-      return next
-    })
-  }, [])
+  const onImportedMission = useCallback(
+    ({ name, altitude, speed: s }) => {
+      if (name) setMissionName(name)
+      setParams((p) => {
+        const next = { ...p }
+        if (Number.isFinite(altitude)) next.altitude = altitude
+        if (Number.isFinite(s)) {
+          const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
+          next.speed = Math.min(r.max, Math.max(r.min, s))
+        }
+        return next
+      })
+    },
+    [aircraftRef],
+  )
   const {
     ring,
     holes,
@@ -1146,9 +1050,8 @@ function AppInner({ lang, setLang }) {
   })
   const viewshedByBlock = viewJobs.length ? viewsheds.byBlock : null
 
-  // tipos de bateria da aeronave (selector da missão) e voos contra os
-  // conjuntos que a equipa tem — o aviso só aparece com a contagem conhecida
-  const equipmentBatteries = aircraftEquipmentFor(equipment, drone.aircraftId).batteries
+  // voos contra os conjuntos de baterias que a equipa tem — o aviso só
+  // aparece com a contagem conhecida
   const setsCheck = blocks?.length
     ? flightsVsSets(equipment, drone.aircraftId, missionBatteryType.id, blocks.length)
     : null
