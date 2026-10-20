@@ -601,6 +601,15 @@ que os textos diziam mal e os identificadores que não batiam certo.
   direito; `aria-label` nas setas e no ✕ dos pontos de inspecção; a `select`
   das paragens mais larga.
 
+### Infra-estrutura (CI)
+
+- Os runners ficam fixos em `ubuntu-24.04` (o `ubuntu-latest` passa a
+  Ubuntu 26 a partir de 19 de Outubro de 2026; os E2E dependem do Chromium
+  do Playwright e das suas bibliotecas); `codeql-action` 4.39.0 nos dois
+  passos ao mesmo tempo (o Dependabot subia `init` e `analyze` em PRs
+  separados, e a análise falhava com versões diferentes); `setup-node`
+  7.1.0 e `deploy-pages` 5.0.1.
+
 ### Corrigido (revisão do código, pacote R-D, segunda parte: estrutura e testes)
 
 - **O typecheck cobre toda a `src/`** (M3-C14): `tsconfig.json` inclui o
