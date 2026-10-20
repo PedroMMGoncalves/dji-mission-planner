@@ -1024,7 +1024,7 @@ function bboxFrom(x0, y0, x1, y1) {
   )
   check('cache de tiles: isOffline sem navigator e null', isOffline() === null)
 
-  const { describeVerticalDatum, needsUnitConversion } =
+  const { describeVerticalDatum, needsUnitConversion, verticalDatumLabel } =
     await import('./src/utils/verticalDatum.js')
   const egm = describeVerticalDatum({ VerticalCSTypeGeoKey: 5773, VerticalUnitsGeoKey: 9002 })
   check(
@@ -1048,6 +1048,18 @@ function bboxFrom(x0, y0, x1, y1) {
     describeVerticalDatum({ VerticalUnitsGeoKey: 9999 }).unitLabel.includes('9999'),
   )
   check('datum: sem chaves e desconhecido', describeVerticalDatum(undefined).kind === 'unknown')
+  // o datum em texto (painel da area e relatorio), com um `t` que devolve as
+  // chaves: a base, «(assumido)» so fora do desconhecido, e a unidade
+  const tChave = (k, v = {}) => `${k}${v.model ? `[${v.model}]` : ''}${v.unit ? `[${v.unit}]` : ''}`
+  check(
+    'datum: texto do desconhecido sem segundo assumido, e conversao de unidade',
+    verticalDatumLabel(describeVerticalDatum(undefined), tChave) === 'cp.terrain.datumUnknown' &&
+      verticalDatumLabel(egm, tChave) === 'cp.terrain.datumOrtho[EGM96]cp.terrain.datumUnit[ft]' &&
+      verticalDatumLabel(
+        { kind: 'ellipsoidal', model: 'WGS84', assumed: true, unitFactor: 1 },
+        tChave,
+      ) === 'cp.terrain.datumEllip[WGS84]cp.terrain.datumAssumed',
+  )
 }
 
 /* ZIP dos voos: um KMZ por voo, pela ordem dada, com o nome do voo no

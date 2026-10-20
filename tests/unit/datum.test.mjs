@@ -3,10 +3,12 @@
  * GeoTIFF declaram, o que se assume quando nao declaram, e as unidades.
  */
 import { describe, expect, test } from 'vitest'
+import { translate } from '../../src/i18n.jsx'
 import {
   TERRARIUM_DATUM,
   describeVerticalDatum,
   needsUnitConversion,
+  verticalDatumLabel,
 } from '../../src/utils/verticalDatum.js'
 
 describe('datum vertical', () => {
@@ -59,5 +61,32 @@ describe('datum vertical', () => {
     })
     expect(describeVerticalDatum(null).kind).toBe('unknown')
     expect(TERRARIUM_DATUM).toMatchObject({ kind: 'orthometric', model: 'EGM96', assumed: true })
+  })
+})
+
+describe('datum vertical em texto (painel da área e relatório)', () => {
+  const pt = (key, v) => translate('pt', key, v)
+  const en = (key, v) => translate('en', key, v)
+
+  test('declarado, assumido e por declarar, na língua da interface', () => {
+    expect(verticalDatumLabel(describeVerticalDatum({ VerticalCSTypeGeoKey: 5773 }), pt)).toBe(
+      'ortométrico, EGM96',
+    )
+    expect(verticalDatumLabel(TERRARIUM_DATUM, pt)).toBe('ortométrico, EGM96 (assumido)')
+    expect(verticalDatumLabel({ kind: 'ellipsoidal', model: 'WGS84', unitFactor: 1 }, pt)).toBe(
+      'ELIPSOIDAL, WGS84',
+    )
+    // sem GeoKeys verticais: o texto, não o código («unknown», que o
+    // relatório mostrava), e sem um segundo «(assumido)»
+    const desconhecido = describeVerticalDatum(null)
+    expect(verticalDatumLabel(desconhecido, pt)).toBe('não declarado (assumido ortométrico)')
+    expect(verticalDatumLabel(desconhecido, en)).toBe('not declared (assumed orthometric)')
+  })
+
+  test('com unidade que não é o metro, diz a conversão', () => {
+    const ft = describeVerticalDatum({ VerticalCSTypeGeoKey: 5773, VerticalUnitsGeoKey: 9002 })
+    expect(verticalDatumLabel(ft, pt)).toBe(
+      'ortométrico, EGM96, valores em ft convertidos para metros',
+    )
   })
 })
