@@ -144,119 +144,43 @@ function fmtTime(s) {
  * `inventario-painel-area` verifica-os todos, no cartão ou na gaveta.
  */
 export default function ControlPanel({
+  // grupos do App (o resultado de cada hook), desfeitos abaixo nos nomes que o corpo usa
+  hw,
+  areaParams,
+  geom,
+  area,
+  terrainState,
+  inspect,
+  session,
+  areaTools,
+  baseActions,
+  safetyChecks,
   missionName,
   setMissionName,
-  drone,
-  setDrone,
-  custom,
-  setCustom,
-  effectiveFov,
-  onEffectiveFov,
   params,
-  setParam,
   mode,
   draftCount,
   hasRing,
-  validation,
   planError,
   planErrorCells,
-  anchor,
-  setAnchorParam,
   hasBase,
-  refAzimuth,
-  split,
-  setSplitParam,
-  batteries = [],
-  battery = null,
-  usefulMin,
-  usefulOverridden = false,
-  onBatteryId,
-  onUsefulMin,
   setsCheck = null,
   onOpenSettings,
-  blocks,
   gridActive,
   tilesTotal,
-  tilesError,
-  tileSide,
-  gsd,
-  onGsdTarget,
-  presets,
-  onApplyPreset,
-  triggerWarn,
-  // intervalo de disparo efectivo e sobreposição frontal resultante (triggerInterval)
-  trigger = null,
-  waypointWarn,
   aglWarn,
-  importState,
-  importError,
-  // o projecto que não abriu: no cartão 1, junto do botão (M3-U18)
-  projectError = null,
-  // o projecto aberto foi gravado por uma versão anterior (M3-U17): {saved, now}
-  projectVersion = null,
-  onDismissVersionNote = null,
   // resumo operacional (voos, conjuntos, voo mais longo), para o cartão 7 (M3-U13)
   ops = null,
-  // margem em metros (M3-U22) e minutos de um quadrado (M3-U20)
-  bufferM = 0,
-  squareMinutes = null,
-  // folga ao solo da rota (min/max), para o intervalo AGL sobre a área (M3-U2)
-  routeClearance = null,
-  // altura de regresso (RTH) e subida de descolagem escritas no KMZ (M3-U3)
-  rthInfo = null,
   // os primeiros bloqueios do preflight, ditos no cartão 7 (M3-U6)
   preflightBlockers = [],
   onShowPreflight = null,
-  importWarning = null,
-  importParts = null,
-  onImportUseAll = null,
-  onImportFile,
-  onImportCrs,
-  onImportCancel,
-  onProjectExport,
-  onProjectImport,
-  onTilesUndo,
-  onTilesRestoreAll,
-  terrain,
-  terrainCovers,
-  terrainFollow,
-  setTerrainFollow,
-  onLoadTerrain,
-  onImportDem,
-  demSurface = 'dtm',
   rememberedDem = null,
-  onDemSurface = null,
   onShowProfile,
-  terrainResult,
-  slopeHint,
-  onApplySlopeAngle,
-  gcpConfig,
-  setGcpConfig,
-  gcpAutoCount,
-  gcpInfo,
-  onExportGcps,
-  inspectPoints,
-  onStartInspect,
-  onInspectUpdate,
-  onInspectRemove,
-  onInspectMove,
-  onInspectReorder,
-  onInspectSuggestOrder,
   onExportInspection,
   inspectTerrainOk = true,
   onUndoVertex,
-  onStartDraw,
-  onStartAnchor,
-  onStartBase,
-  onRemoveBase,
-  onSetAngleRelative,
-  onSetAngleOptimal,
-  onFinishDraw,
-  onClear,
   // bases múltiplas: props de BasesPanel (null esconde a lista)
   basesPanel = null,
-  // voos por bloco (layoutBlocks): rótulo "A-1" e cor da base
-  baseLayout = null,
   // orientação efectiva dos quadrados (segue as faixas, ou a manual)
   tileOrientation = null,
   zoneRadiusM = 100,
@@ -267,12 +191,117 @@ export default function ControlPanel({
   summary = null,
   onExportMission = null,
   canExportMission = false,
-  onExportArea = null,
-  canExportArea = false,
   // avisos do KML da área: buracos, partes e células desactivadas que ficam
   // de fora ou dentro do polígono (K-B1, K-E1, K-M8 da revisão)
   exportAreaNotes = [],
 }) {
+  const {
+    drone,
+    setDrone,
+    custom,
+    setCustom,
+    effectiveFov,
+    setEffectiveFov: onEffectiveFov,
+    equipmentBatteries: batteries = [],
+    missionBatteryType: battery = null,
+    batteryMin: usefulMin,
+    batteryOverridden: usefulOverridden = false,
+    setMissionBatteryId: onBatteryId,
+    setUsefulMin: onUsefulMin,
+  } = hw
+  const {
+    setParam,
+    gsd,
+    setAltitudeFromGsd: onGsdTarget,
+    flightPresets: presets,
+    applyPreset: onApplyPreset,
+    triggerWarn,
+    // intervalo de disparo efectivo e sobreposição frontal resultante (triggerInterval)
+    trigger = null,
+  } = areaParams
+  const {
+    validation,
+    anchor,
+    setAnchorParam,
+    refAzimuth,
+    split,
+    setSplitParam,
+    tilesError,
+    tileSide,
+    importState,
+    importError,
+    importWarning = null,
+    importParts = null,
+    useAllImportedParts: onImportUseAll = null,
+    handleImportFile: onImportFile,
+    handleImportCrs: onImportCrs,
+    cancelImport: onImportCancel,
+    undoEdit: onTilesUndo,
+    restoreAllTiles: onTilesRestoreAll,
+    startDraw: onStartDraw,
+    startAnchor: onStartAnchor,
+    handleFinishDraw: onFinishDraw,
+    clearAll: onClear,
+  } = geom
+  const {
+    blocks,
+    waypointWarn,
+    terrainResult,
+    gcpConfig,
+    setGcpConfig,
+    gcpAutoCount,
+    gcpInfo,
+    handleExportGcps: onExportGcps,
+    // voos por bloco (layoutBlocks): rótulo "A-1" e cor da base
+    baseLayout = null,
+    // cartão 7: exportação do KML da área
+    handleExportKML: onExportArea = null,
+    canExportKML: canExportArea = false,
+  } = area
+  const {
+    terrain,
+    terrainCovers,
+    terrainFollow,
+    setTerrainFollow,
+    handleLoadTerrain: onLoadTerrain,
+    handleImportDem: onImportDem,
+    demSurface = 'dtm',
+    setDemSurface: onDemSurface = null,
+    slopeHint,
+  } = terrainState
+  const {
+    inspectPoints,
+    startInspect: onStartInspect,
+    updateInspectPoint: onInspectUpdate,
+    removeInspectPoint: onInspectRemove,
+    moveInspectPoint: onInspectMove,
+    reorderInspectPoints: onInspectReorder,
+    suggestInspectOrder: onInspectSuggestOrder,
+  } = inspect
+  const {
+    // o projecto que não abriu: no cartão 1, junto do botão (M3-U18)
+    projectError = null,
+    // o projecto aberto foi gravado por uma versão anterior (M3-U17): {saved, now}
+    projectVersion = null,
+    dismissVersionNote: onDismissVersionNote = null,
+    exportProject: onProjectExport,
+    importProject: onProjectImport,
+  } = session
+  const {
+    // margem em metros (M3-U22) e minutos de um quadrado (M3-U20)
+    bufferM = 0,
+    squareMinutes = null,
+    applySlopeAngle: onApplySlopeAngle,
+    setAngleRelative: onSetAngleRelative,
+    setAngleOptimal: onSetAngleOptimal,
+  } = areaTools
+  const { startBase: onStartBase, removeBase: onRemoveBase } = baseActions
+  const {
+    // folga ao solo da rota (min/max), para o intervalo AGL sobre a área (M3-U2)
+    clearance: routeClearance = null,
+    // altura de regresso (RTH) e subida de descolagem escritas no KMZ (M3-U3)
+    rthInfo = null,
+  } = safetyChecks
   const t = useT()
   const lang = useLang()
   // E1.3: arrastar-e-largar na lista de pontos de inspecção (as setas

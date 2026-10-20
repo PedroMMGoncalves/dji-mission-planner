@@ -1312,113 +1312,43 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'area' && (
               <ControlPanel
+                hw={hw}
+                areaParams={areaParams}
+                geom={geom}
+                area={area}
+                terrainState={terrainState}
+                inspect={inspect}
+                session={session}
+                areaTools={areaTools}
+                baseActions={baseActions}
+                safetyChecks={safetyChecks}
                 missionName={missionName}
                 setMissionName={setMissionName}
-                drone={drone}
-                setDrone={setDrone}
-                custom={custom}
-                setCustom={setCustom}
-                effectiveFov={effectiveFov}
-                onEffectiveFov={setEffectiveFov}
                 // o painel lê params.speed directamente; recebe-o já limitado aos
                 // limites da aeronave, sem que o estado guardado seja reescrito
                 params={params.speed === speed ? params : { ...params, speed }}
-                setParam={setParam}
                 mode={mode}
                 draftCount={draftVertices.length}
                 hasRing={Boolean(ring)}
-                validation={validation}
                 planError={plan?.error ?? null}
                 planErrorCells={plan?.cells ?? null}
-                anchor={anchor}
-                setAnchorParam={setAnchorParam}
                 hasBase={bases.length > 0}
-                refAzimuth={refAzimuth}
-                split={split}
-                setSplitParam={setSplitParam}
-                batteries={equipmentBatteries}
-                battery={missionBatteryType}
-                usefulMin={batteryMin}
-                usefulOverridden={batteryOverridden}
-                onBatteryId={setMissionBatteryId}
-                onUsefulMin={setUsefulMin}
                 setsCheck={setsCheck}
                 onOpenSettings={() => setShowSettings(true)}
-                blocks={blocks}
                 gridActive={Boolean(gridCells)}
                 tilesTotal={tiles?.length ?? null}
-                tilesError={tilesError}
-                tileSide={tileSide}
-                gsd={gsd}
-                onGsdTarget={setAltitudeFromGsd}
-                presets={flightPresets}
-                onApplyPreset={applyPreset}
-                triggerWarn={triggerWarn}
-                trigger={trigger}
-                waypointWarn={waypointWarn}
                 aglWarn={aglWarn}
-                importState={importState}
-                importError={importError}
-                projectError={projectError}
-                projectVersion={projectVersion}
-                onDismissVersionNote={dismissVersionNote}
                 ops={statsOps}
-                bufferM={bufferM}
-                squareMinutes={squareMinutes}
-                routeClearance={clearance}
-                rthInfo={rthInfo}
                 preflightBlockers={preflight
                   .filter((i) => i.level === 'block')
                   .slice(0, 2)
                   .map((i) => t(`preflight.${i.code}`, i.params))}
                 onShowPreflight={() => setShowPreflight(true)}
-                importWarning={importWarning}
-                importParts={importParts}
-                onImportUseAll={useAllImportedParts}
-                onImportFile={handleImportFile}
-                onImportCrs={handleImportCrs}
-                onImportCancel={cancelImport}
-                onProjectExport={exportProject}
-                onProjectImport={importProject}
-                onTilesUndo={undoEdit}
-                onTilesRestoreAll={restoreAllTiles}
-                terrain={terrain}
-                terrainCovers={terrainCovers}
-                terrainFollow={terrainFollow}
-                setTerrainFollow={setTerrainFollow}
-                onLoadTerrain={handleLoadTerrain}
-                onImportDem={handleImportDem}
-                demSurface={demSurface}
-                onDemSurface={setDemSurface}
                 rememberedDem={demFileLabel ? null : demMemory}
                 onShowProfile={() => setShowProfile(true)}
-                terrainResult={terrainResult}
-                slopeHint={slopeHint}
-                onApplySlopeAngle={applySlopeAngle}
-                gcpConfig={gcpConfig}
-                setGcpConfig={setGcpConfig}
-                gcpAutoCount={gcpAutoCount}
-                gcpInfo={gcpInfo}
-                onExportGcps={handleExportGcps}
-                inspectPoints={inspectPoints}
-                onStartInspect={startInspect}
-                onInspectUpdate={updateInspectPoint}
-                onInspectRemove={removeInspectPoint}
-                onInspectMove={moveInspectPoint}
-                onInspectReorder={reorderInspectPoints}
-                onInspectSuggestOrder={suggestInspectOrder}
                 onExportInspection={exportInspection}
                 inspectTerrainOk={inspectTerrainOk}
                 onUndoVertex={removeLastDraftVertex}
-                onStartDraw={startDraw}
-                onStartAnchor={startAnchor}
-                onStartBase={startBase}
-                onRemoveBase={removeBase}
-                onSetAngleRelative={setAngleRelative}
-                onSetAngleOptimal={setAngleOptimal}
-                onFinishDraw={handleFinishDraw}
-                onClear={clearAll}
-                baseLayout={baseLayout}
                 tileOrientation={tiles ? tileOrientation : null}
                 zoneRadiusM={equipment.zoneRadiusM}
                 safety={safety}
@@ -1431,8 +1361,6 @@ function AppInner({ lang, setLang }) {
                 }}
                 onExportMission={gated(handleExportKMZ)}
                 canExportMission={canExportKMZ && !exportBlocked}
-                onExportArea={handleExportKML}
-                canExportArea={canExportKML}
                 exportAreaNotes={areaKmlNotes}
                 basesPanel={{
                   rows: baseRows,
