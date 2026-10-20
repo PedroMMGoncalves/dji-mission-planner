@@ -30,6 +30,7 @@ import {
 import { errorText, terrainErrorText as terrainErrText } from '../utils/appError.js'
 import { verticalDatumLabel } from '../utils/verticalDatum.js'
 import { batteryLabel } from '../mission/equipment.js'
+import { terrainWaypointCount } from '../mission/blocks.js'
 import { missionExportLabel, rangeText, tCount } from '../i18n/format.js'
 import { notesSince } from '../data/versionNotes.js'
 import { versionBefore } from '../mission/project.js'
@@ -1034,7 +1035,8 @@ export default function ControlPanel({
               <div className="mt-1 rounded border border-slate-800 bg-slate-900/60 p-2 text-xs leading-relaxed text-slate-400">
                 {t('cp.terrain.result', {
                   range: rangeText(terrainResult.elevMin, terrainResult.elevMax, Math.round),
-                  n: terrainResult.waypoints.length,
+                  // com blocos, só os waypoints dos voos (sem os troços entre blocos)
+                  n: terrainWaypointCount(terrainResult),
                   ref: Math.round(terrainResult.refElev),
                 })}
                 {terrainResult.warnings?.map((w, i) => (

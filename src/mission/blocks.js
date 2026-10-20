@@ -127,6 +127,22 @@ export function flightsRouteStats(flights, { speed, waypointStops = 'corners' })
  * @param {{blocks?: any[]|null, terrainResult?: any,
  *   speed: number, waypointStops?: string}} opts
  */
+/**
+ * Quantos waypoints levam altura própria com seguimento de terreno: com
+ * blocos, os dos voos (`blocks3`, os que vão nos KMZ), sem os pontos que o
+ * relevo pôs nos troços entre blocos, que não se voam; sem blocos, os da rota
+ * inteira. O painel contava a rota de toda a área (612 para 589 voados em 20
+ * blocos de 500 m).
+ * @param {any} terrainResult resultado de planTerrainFollow (ou null / com erro)
+ * @returns {number}
+ */
+export function terrainWaypointCount(terrainResult) {
+  if (!terrainResult || terrainResult.error) return 0
+  if (Array.isArray(terrainResult.blocks3))
+    return terrainResult.blocks3.reduce((n, b) => n + (b.waypoints?.length ?? 0), 0)
+  return terrainResult.waypoints?.length ?? 0
+}
+
 export function areaRouteStats(
   plan,
   { blocks = null, terrainResult = null, speed, waypointStops = 'corners' },

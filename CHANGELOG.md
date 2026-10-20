@@ -71,7 +71,8 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   128,5 km e 3 h 55 min para 116,3 km e 3 h 33 min voados (+10 %); o corte
   da serpentina por faixas contava-os também sem seguimento de terreno
   (+1–2 %). Os ficheiros exportados, o preflight e o tempo de cada voo não
-  mudam.
+  mudam. O cartão 3 contava também os pontos desses troços nos «waypoints
+  com altura própria» (612 para 589 voados): passa a contar os dos voos.
 
 ### Interno (repartição do `App.jsx`)
 

@@ -10,7 +10,12 @@
  * contava-os também sem seguimento de terreno.
  */
 import { describe, expect, test } from 'vitest'
-import { areaRouteStats, flightsRouteStats, planBlocks } from '../../src/mission/blocks.js'
+import {
+  areaRouteStats,
+  flightsRouteStats,
+  planBlocks,
+  terrainWaypointCount,
+} from '../../src/mission/blocks.js'
 import { planArea } from '../../src/mission/areaPlan.js'
 import { planTerrainFollow } from '../../src/mission/terrainFollow.js'
 import { buildAreaExport } from '../../src/mission/areaExport.js'
@@ -252,5 +257,26 @@ describe('totais de uma missão dividida: a soma dos voos', () => {
     const uno = planMissionFromProject({ ...n, split: { ...n.split, mode: 'none' } })
     expect(uno.blocks).toBeNull()
     expect(uno.planOk.stats.pathLengthM).toBeGreaterThan(p.planOk.stats.pathLengthM)
+  })
+})
+
+describe('waypoints com altura própria: os dos voos', () => {
+  test('com blocos, a soma dos waypoints de cada voo, sem os pontos dos troços entre blocos', () => {
+    const { plan, blocks } = mosaicMission()
+    const tf = planTerrainFollow(terrain, plan, { blocks, refElev: 100, agl: 100, toleranceM: 2 })
+    expect(tf.error).toBeUndefined()
+    const voados = tf.blocks3.reduce((n, b) => n + b.waypoints.length, 0)
+    expect(terrainWaypointCount(tf)).toBe(voados)
+    // a rota inteira leva também os troços entre blocos: nunca menos pontos
+    expect(terrainWaypointCount(tf)).toBeLessThanOrEqual(tf.waypoints.length)
+  })
+
+  test('sem blocos, a rota inteira; sem resultado ou com erro, zero', () => {
+    const { plan } = mosaicMission()
+    const tf = planTerrainFollow(terrain, plan, { refElev: 100, agl: 100, toleranceM: 2 })
+    expect(tf.blocks3).toBeNull()
+    expect(terrainWaypointCount(tf)).toBe(tf.waypoints.length)
+    expect(terrainWaypointCount(null)).toBe(0)
+    expect(terrainWaypointCount({ error: 'terrain-failed' })).toBe(0)
   })
 })
