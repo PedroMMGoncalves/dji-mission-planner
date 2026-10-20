@@ -1,0 +1,184 @@
+{
+  "area-bases": {
+    "preflight": "⚠ A esta velocidade o arrastamento a 1/500 s é de 1.6 px (2.0 cm): fixe uma exposição mais curta ou reduza a velocidade. ⚠ Zona da base A reduzida a 90 m (pedidos 100 m): 10 m de desnível a 100 m da base. Descolar até 100 m do ponto pode pôr o voo 1 m mais baixo do que o planeado: descole a menos de 90 m, ou mova a base para um sítio plano. ⚠ Zona da base B reduzida a 70 m (pedidos 100 m): 11 m de desnível a 80 m da base. Descolar até 100 m do ponto pode pôr o voo 2 m mais baixo do que o planeado: descole a menos de 70 m, ou mova a base para um sítio plano. ⚠ Zona da base C reduzida a 50 m (pedidos 100 m): 12 m de desnível a 60 m da base. Descolar até 100 m do ponto pode pôr o voo 11 m mais baixo do que o planeado: descole a menos de 50 m, ou mova a base para um sítio plano. ⚠ Zona da base E reduzida a 80 m (pedidos 100 m): 10 m de desnível a 90 m da base. Descolar até 100 m do ponto pode pôr o voo 1 m mais baixo do que o planeado: descole a menos de 80 m, ou mova a base para um sítio plano. ⚠ Zona da base F reduzida a 70 m (pedidos 100 m): 10 m de desnível a 80 m da base. Descolar até 100 m do ponto pode pôr o voo 5 m mais baixo do que o planeado: descole a menos de 70 m, ou mova a base para um sítio plano. ⓘ O regresso (RTH) a 274 m acima da descolagem passa os 120 m da categoria aberta junto à base. ⓘ Primeiro voo desta combinação (DJI Matrice 300 RTK + Zenmuse P1, Área): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). ⓘ As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
+    "metricas": "Recolher as métricas QUALIDADE GSD 1.25 (1.18–1.32) cm/px SOBREPOSIÇÃO EFECTIVA 77–83 / 67–73 % PEGADA NO SOLO 103 × 69 m ESPAÇAMENTO ENTRE FAIXAS 30.8 m INTERVALO DE DISPARO 13.7 m VOO ÁREA 451.96 ha N.º DE FAIXAS 295 WAYPOINTS 590 DISTÂNCIA TOTAL 169.16 km N.º DE FOTOS 11368 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 5 h 11 min OPERAÇÃO VOOS 20 · 7 bases CONJUNTOS DE BATERIAS 20 necessários VOO MAIS LONGO / TEMPO ÚTIL F-18 18:52 / 25:00 TEMPO TOTAL COM DESLOCAÇÕES 5 h 27 min",
+    "bases": [
+      "A Base A Raio voos A-1, A-2 Atribuir blocos a esta base Vista: A-1 100 %, A-2 100 % zona reduzida a 90 m (pedidos 100 m): 10 m de desnível a 100 m cota de referência 168 m · voo entre 0 e +9 m acima do planeado",
+      "B Base B Raio voos B-3, B-4, B-5, B-6, B-7 Atribuir blocos a esta base Vista: B-3 100 %, B-4 100 %, B-5 100 %, B-6 100 %, B-7 100 % zona reduzida a 70 m (pedidos 100 m): 11 m de desnível a 80 m cota de referência 195 m · voo entre 0 e +10 m acima do planeado",
+      "C Base C Raio voos C-8 Atribuir blocos a esta base Vista: C-8 100 % zona reduzida a 50 m (pedidos 100 m): 12 m de desnível a 60 m cota de referência 266 m · voo entre 0 e +10 m acima do planeado",
+      "D Base D Raio voos D-9, D-10, D-11, D-12 Atribuir blocos a esta base Vista: D-9 100 % (olhos a 65 m N da base), D-10 100 %, D-11 100 %, D-12 100 % zona 100 m cota de referência 229 m · voo entre 0 e +10 m acima do planeado",
+      "E Base E Raio voos E-13, E-14 Atribuir blocos a esta base Vista: E-13 100 %, E-14 100 % zona reduzida a 80 m (pedidos 100 m): 10 m de desnível a 90 m cota de referência 248 m · voo entre 0 e +9 m acima do planeado",
+      "F Base F Raio voos F-15, F-16, F-17, F-18 Atribuir blocos a esta base Vista: F-15 100 % (olhos a 45 m S da base), F-16 100 %, F-17 100 %, F-18 100 % zona reduzida a 70 m (pedidos 100 m): 10 m de desnível a 80 m cota de referência 352 m · voo entre 0 e +9 m acima do planeado",
+      "G Base G Raio voos G-19, G-20 Atribuir blocos a esta base Vista: G-19 100 %, G-20 100 % zona 100 m cota de referência 288 m · voo entre 0 e +10 m acima do planeado"
+    ],
+    "blocos": [
+      "A-1 20.2 ha 6.5 km 15 min",
+      "A-2 24.9 ha 8.0 km 18 min",
+      "B-3 24.9 ha 8.5 km 19 min",
+      "B-4 25.0 ha 8.0 km 18 min",
+      "B-5 25.0 ha 8.5 km 18 min",
+      "B-6 20.3 ha 6.5 km 15 min",
+      "B-7 25.0 ha 8.5 km 19 min",
+      "C-8 20.2 ha 6.5 km 14 min",
+      "D-9 20.3 ha 6.5 km 15 min",
+      "D-10 25.0 ha 8.0 km 17 min",
+      "D-11 20.3 ha 6.5 km 14 min",
+      "D-12 20.3 ha 6.5 km 15 min",
+      "E-13 20.3 ha 6.5 km 15 min",
+      "E-14 20.2 ha 6.5 km 15 min",
+      "F-15 25.0 ha 8.0 km 17 min",
+      "F-16 25.0 ha 8.5 km 18 min",
+      "F-17 20.3 ha 6.5 km 15 min",
+      "F-18 24.9 ha 8.5 km 19 min",
+      "G-19 24.9 ha 8.0 km 18 min",
+      "G-20 20.2 ha 6.5 km 14 min"
+    ],
+    "kmz": {
+      "base-A/missao-drone_area-tf_A-01.kmz/wpmz/template.kml": "fa67ccdf3aec42c7",
+      "base-A/missao-drone_area-tf_A-01.kmz/wpmz/waylines.wpml": "4fb273c78d6d0dfe",
+      "base-A/missao-drone_area-tf_A-02.kmz/wpmz/template.kml": "92ac508d423592c1",
+      "base-A/missao-drone_area-tf_A-02.kmz/wpmz/waylines.wpml": "0e684b3a01f37f8d",
+      "base-B/missao-drone_area-tf_B-03.kmz/wpmz/template.kml": "ebbfc0f12d5ff09c",
+      "base-B/missao-drone_area-tf_B-03.kmz/wpmz/waylines.wpml": "a7a793fda569d42e",
+      "base-B/missao-drone_area-tf_B-04.kmz/wpmz/template.kml": "922e2158018b4333",
+      "base-B/missao-drone_area-tf_B-04.kmz/wpmz/waylines.wpml": "d0bf17713910a0ea",
+      "base-B/missao-drone_area-tf_B-05.kmz/wpmz/template.kml": "de09ee2c4a514379",
+      "base-B/missao-drone_area-tf_B-05.kmz/wpmz/waylines.wpml": "8fd3e74c491cbee9",
+      "base-B/missao-drone_area-tf_B-06.kmz/wpmz/template.kml": "e40f5535fd250d5c",
+      "base-B/missao-drone_area-tf_B-06.kmz/wpmz/waylines.wpml": "576e1c5615a29455",
+      "base-B/missao-drone_area-tf_B-07.kmz/wpmz/template.kml": "fc8ff91c5713f403",
+      "base-B/missao-drone_area-tf_B-07.kmz/wpmz/waylines.wpml": "cdcfcafb608bb747",
+      "base-C/missao-drone_area-tf_C-08.kmz/wpmz/template.kml": "b03c8811ea18724b",
+      "base-C/missao-drone_area-tf_C-08.kmz/wpmz/waylines.wpml": "c9031d0b957dd661",
+      "base-D/missao-drone_area-tf_D-09.kmz/wpmz/template.kml": "0f2fbd229148acb8",
+      "base-D/missao-drone_area-tf_D-09.kmz/wpmz/waylines.wpml": "28814e85954f92d2",
+      "base-D/missao-drone_area-tf_D-10.kmz/wpmz/template.kml": "0681601b54604d8d",
+      "base-D/missao-drone_area-tf_D-10.kmz/wpmz/waylines.wpml": "d819d19567c58132",
+      "base-D/missao-drone_area-tf_D-11.kmz/wpmz/template.kml": "2356fe2c7c23ed4a",
+      "base-D/missao-drone_area-tf_D-11.kmz/wpmz/waylines.wpml": "86410d8121728d99",
+      "base-D/missao-drone_area-tf_D-12.kmz/wpmz/template.kml": "f95d3c78a0178b44",
+      "base-D/missao-drone_area-tf_D-12.kmz/wpmz/waylines.wpml": "261ecf869629970b",
+      "base-E/missao-drone_area-tf_E-13.kmz/wpmz/template.kml": "ddef7d94de6194a2",
+      "base-E/missao-drone_area-tf_E-13.kmz/wpmz/waylines.wpml": "586b57932401cec6",
+      "base-E/missao-drone_area-tf_E-14.kmz/wpmz/template.kml": "04b51eef6a78c71c",
+      "base-E/missao-drone_area-tf_E-14.kmz/wpmz/waylines.wpml": "c9477d4988ea841c",
+      "base-F/missao-drone_area-tf_F-15.kmz/wpmz/template.kml": "2cc545e86c8286cc",
+      "base-F/missao-drone_area-tf_F-15.kmz/wpmz/waylines.wpml": "862ecb5957e0b4d7",
+      "base-F/missao-drone_area-tf_F-16.kmz/wpmz/template.kml": "e20214f4634a5e81",
+      "base-F/missao-drone_area-tf_F-16.kmz/wpmz/waylines.wpml": "7d5ee9e89e5b12c9",
+      "base-F/missao-drone_area-tf_F-17.kmz/wpmz/template.kml": "aae5650967c72b8f",
+      "base-F/missao-drone_area-tf_F-17.kmz/wpmz/waylines.wpml": "1d68246fcfa4bff1",
+      "base-F/missao-drone_area-tf_F-18.kmz/wpmz/template.kml": "1e60ed5ef7ecedcc",
+      "base-F/missao-drone_area-tf_F-18.kmz/wpmz/waylines.wpml": "90ba1c5202ba2432",
+      "base-G/missao-drone_area-tf_G-19.kmz/wpmz/template.kml": "f70c76549ad8e461",
+      "base-G/missao-drone_area-tf_G-19.kmz/wpmz/waylines.wpml": "a55e0e5e8171e3e8",
+      "base-G/missao-drone_area-tf_G-20.kmz/wpmz/template.kml": "d5c180f0fb438507",
+      "base-G/missao-drone_area-tf_G-20.kmz/wpmz/waylines.wpml": "61b6391349218e46"
+    },
+    "basesKml": {
+      "impressao-bases.kml": "faca13ce59b1f1a8"
+    },
+    "kmlPorBase": {
+      "base-A/mapa/missao-drone_mapa_base-A.kml": "190114e0a5be1a9d",
+      "base-A/missao-drone_poligono_A-01.kml": "7c16dbdceaa6d3fd",
+      "base-A/missao-drone_poligono_A-02.kml": "91d887cec97bc53b",
+      "base-B/mapa/missao-drone_mapa_base-B.kml": "2f41caf8d8a5c3ff",
+      "base-B/missao-drone_poligono_B-03.kml": "3cbce848369577c5",
+      "base-B/missao-drone_poligono_B-04.kml": "a5667f810749b19f",
+      "base-B/missao-drone_poligono_B-05.kml": "2645a5f51207795e",
+      "base-B/missao-drone_poligono_B-06.kml": "75d2963a5b7516ac",
+      "base-B/missao-drone_poligono_B-07.kml": "33e179d4fffbca11",
+      "base-C/mapa/missao-drone_mapa_base-C.kml": "a66f2757968bf767",
+      "base-C/missao-drone_poligono_C-08.kml": "65b933cadad6f6bf",
+      "base-D/mapa/missao-drone_mapa_base-D.kml": "9a8f466ef8eaac29",
+      "base-D/missao-drone_poligono_D-09.kml": "3fde80758dcb1103",
+      "base-D/missao-drone_poligono_D-10.kml": "dec66dd0d28e5b1b",
+      "base-D/missao-drone_poligono_D-11.kml": "b0445bf69345dea4",
+      "base-D/missao-drone_poligono_D-12.kml": "0cb539f7812ad29e",
+      "base-E/mapa/missao-drone_mapa_base-E.kml": "8a01b08083f2625b",
+      "base-E/missao-drone_poligono_E-13.kml": "e947d9842b84855b",
+      "base-E/missao-drone_poligono_E-14.kml": "61839e611ebaeb66",
+      "base-F/mapa/missao-drone_mapa_base-F.kml": "8e76ff3614412c5b",
+      "base-F/missao-drone_poligono_F-15.kml": "5cddd1368f86f534",
+      "base-F/missao-drone_poligono_F-16.kml": "ba43d549b0eafaf7",
+      "base-F/missao-drone_poligono_F-17.kml": "96dbab98ae560939",
+      "base-F/missao-drone_poligono_F-18.kml": "f79dc69809808748",
+      "base-G/mapa/missao-drone_mapa_base-G.kml": "b22d99a5bfb4cbce",
+      "base-G/missao-drone_poligono_G-19.kml": "db9e50bd1b146f47",
+      "base-G/missao-drone_poligono_G-20.kml": "df2f4f6f52fc0d2c"
+    }
+  },
+  "area-simples": {
+    "preflight": "ⓘ Sem ponto de base: a deslocação não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota. ⓘ As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
+    "metricas": "Recolher as métricas QUALIDADE GSD 2.69 (2.67–2.70) cm/px SOBREPOSIÇÃO EFECTIVA 78–82 / 69–71 % PEGADA NO SOLO 142 × 107 m ESPAÇAMENTO ENTRE FAIXAS 42.5 m INTERVALO DE DISPARO 21.3 m VOO ÁREA 12.55 ha N.º DE FAIXAS 6 WAYPOINTS 12 DISTÂNCIA TOTAL 3.21 km N.º DE FOTOS 151 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 5 min 50 s OPERAÇÃO VOOS 1 CONJUNTOS DE BATERIAS 1 necessários VOO / TEMPO ÚTIL 5:50 / 30:00",
+    "bases": [],
+    "blocos": [],
+    "kmz": {
+      "wpmz/template.kml": "8de5cf9d97a03387",
+      "wpmz/waylines.wpml": "77e79d97045bae40"
+    },
+    "kml": {
+      "impressao-area.kml": "ec3c42bc86706d8e"
+    }
+  },
+  "circular": {
+    "preflight": "⚠ 3213 waypoints numa só rota: o Pilot 2 importa lentamente; considere dividir em blocos. ⚠ Tempo estimado de 93.2 min excede o tempo útil por voo (30 min, já com a reserva de aterragem): divida em blocos. ⓘ Sem ponto de base: a deslocação não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota. ⓘ Primeiro voo desta combinação (DJI Mavic 3 Enterprise (M3E) + Wide RGB, Circular): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). ⓘ As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
+    "metricas": "Recolher as métricas QUALIDADE GSD 2.69 (2.67–2.70) cm/px PEGADA NO SOLO 142 × 107 m ESPAÇAMENTO ENTRE FAIXAS 42.5 m INTERVALO DE DISPARO 21.3 m VOO ÁREA 12.55 ha N.º DE CÍRCULOS 153 WAYPOINTS 3213 DISTÂNCIA TOTAL 33.27 km N.º DE FOTOS 3060 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 1 h 33 min OPERAÇÃO VOOS 4 CONJUNTOS DE BATERIAS 4 necessários VOO MAIS LONGO / TEMPO ÚTIL 29:41 / 30:00 TEMPO TOTAL COM DESLOCAÇÕES 1 h 33 min",
+    "bases": [],
+    "blocos": [],
+    "kmz": {
+      "wpmz/template.kml": "ea43a41addfbc033",
+      "wpmz/waylines.wpml": "8fed8e645211469d"
+    }
+  },
+  "corredor-partido": {
+    "preflight": "⚠ A rota chega a 1472 m da base no pior ponto da zona, acima da distância VLOS da aeronave (500 m). Mova a base, divida a área em blocos com bases, ou voe com observadores. ⓘ Primeiro voo desta combinação (DJI Mavic 3 Enterprise (M3E) + Wide RGB, Corredor): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). ⓘ As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
+    "metricas": "Recolher as métricas QUALIDADE GSD 2.69 (2.67–2.70) cm/px PEGADA NO SOLO 142 × 107 m ESPAÇAMENTO ENTRE FAIXAS 42.5 m INTERVALO DE DISPARO 21.3 m VOO N.º DE PASSAGENS 10 WAYPOINTS 70 DISTÂNCIA TOTAL 31.38 km N.º DE FOTOS 1438 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 1 h 08 min OPERAÇÃO VOOS 3 · 2 bases CONJUNTOS DE BATERIAS 3 necessários VOO MAIS LONGO / TEMPO ÚTIL C-3 27:23 / 30:00 TEMPO TOTAL COM DESLOCAÇÕES 1 h 18 min",
+    "bases": [],
+    "blocos": [],
+    "kmz": {
+      "missao-drone_C-1_corridor_n10.kmz/wpmz/template.kml": "ab3d129db3ee44b4",
+      "missao-drone_C-1_corridor_n10.kmz/wpmz/waylines.wpml": "801fac2702aa5f4e",
+      "missao-drone_C-2_corridor_n10.kmz/wpmz/template.kml": "64c8249f8fed231b",
+      "missao-drone_C-2_corridor_n10.kmz/wpmz/waylines.wpml": "94f9fec0505d29f0",
+      "missao-drone_C-3_corridor_n10.kmz/wpmz/template.kml": "f081b4b52bfc8a02",
+      "missao-drone_C-3_corridor_n10.kmz/wpmz/waylines.wpml": "a10bc2702552cf7f"
+    }
+  },
+  "face": {
+    "preflight": "⚠ Afastamento à face não verificado contra o terreno: sem MDT/MDS local, os tiles globais não têm resolução à escala de uma face. Importe um GeoTIFF no separador Área, cartão 2 (Área e relevo), para a verificação de folga. ⚠ Folga mínima ao solo de 8 m, abaixo de 15 m. Suba a altura de voo ou ligue «Seguir terreno». ⓘ Primeiro voo desta combinação (DJI Mavic 3 Enterprise (M3E) + Wide RGB, Face): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). ⓘ As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
+    "metricas": "Recolher as métricas QUALIDADE GSD 0.40 cm/px VOO N.º DE PASSAGENS 2 WAYPOINTS 50 DISTÂNCIA TOTAL 266.3 m N.º DE FOTOS 150 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 7 min 33 s OPERAÇÃO VOOS 1 · 1 bases CONJUNTOS DE BATERIAS 1 necessários VOO / TEMPO ÚTIL 7:33 / 30:00",
+    "bases": [],
+    "blocos": [],
+    "kmz": {
+      "wpmz/template.kml": "fc43a6e40025680a",
+      "wpmz/waylines.wpml": "3dd254e3cf3ad438"
+    }
+  },
+  "inspeccao": {
+    "kmz": {
+      "wpmz/template.kml": "9878e598f67bb755",
+      "wpmz/waylines.wpml": "df0f24ced0c1bbdc"
+    }
+  },
+  "orbita-varias": {
+    "preflight": "ⓘ Primeiro voo desta combinação (DJI Mavic 3 Enterprise (M3E) + Wide RGB, Órbita): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). ⓘ As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
+    "metricas": "Recolher as métricas QUALIDADE GSD 1.34 cm/px VOO N.º DE NÍVEIS 3 WAYPOINTS 70 DISTÂNCIA TOTAL 952.8 m N.º DE FOTOS 210 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 13 min 41 s OPERAÇÃO VOOS 1 · 1 bases CONJUNTOS DE BATERIAS 1 necessários VOO / TEMPO ÚTIL 13:41 / 30:00",
+    "bases": [],
+    "blocos": [],
+    "kmz": {
+      "wpmz/template.kml": "caeb9ebc1569e6e6",
+      "wpmz/waylines.wpml": "251e1c3fcc207a20"
+    }
+  },
+  "orbita-video": {
+    "preflight": "ⓘ Primeiro voo desta combinação (DJI Mavic 3 Enterprise (M3E) + Wide RGB, Órbita): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). ⓘ As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
+    "metricas": "Recolher as métricas QUALIDADE GSD 1.34 cm/px VOO N.º DE NÍVEIS 2 WAYPOINTS 24 DISTÂNCIA TOTAL 313.5 m N.º DE FOTOS 0 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 1 min 03 s OPERAÇÃO VOOS 1 · 1 bases CONJUNTOS DE BATERIAS 1 necessários VOO / TEMPO ÚTIL 1:03 / 30:00",
+    "bases": [],
+    "blocos": [],
+    "kmz": {
+      "wpmz/template.kml": "b979c308e3f0f324",
+      "wpmz/waylines.wpml": "714105e11e31c45f"
+    }
+  }
+}

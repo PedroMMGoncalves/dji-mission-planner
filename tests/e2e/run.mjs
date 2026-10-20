@@ -34,6 +34,7 @@ import {
   toM,
 } from './fixtures.mjs'
 import { analyseRoute, readRoutes } from './kmz.mjs'
+import { conferir, gravarReferencia, impressaoFicheiro } from './impressoes.mjs'
 
 const PORT = Number(process.env.E2E_PORT ?? 4173)
 const URL = `http://127.0.0.1:${PORT}/dji-mission-planner/`
@@ -5004,7 +5005,230 @@ await scenario('erros-de-importacao-junto-do-botao', async () => {
   return { page }
 })
 
+/* ---- impressões digitais (repartição do App.jsx) ------------------------- */
+// Um projecto fixo por modo; do que a interface mostra e exporta guarda-se
+// uma impressão (tests/e2e/impressoes.mjs) que cada passo da repartição do
+// App.jsx em hooks e componentes tem de reproduzir. Os projectos entram pelo
+// armazenamento, em coordenadas exactas, para não dependerem de cliques no
+// mapa; a área com bases segue o caminho do operador (mosaico por bateria,
+// «Propor bases»), sobre o MDT do cenário.
+
+const PENDENTE = /A carregar o relevo…|A propor bases…|a calcular…/
+
+/** O que os painéis mostram: preflight, métricas, bases e blocos. */
+const lerEcra = (page) =>
+  page.evaluate((pend) => {
+    const limpo = (s) => (s ?? '').replace(/\s+/g, ' ').trim()
+    const txt = (sel) => limpo(document.querySelector(sel)?.innerText)
+    const todos = (sel) => [...document.querySelectorAll(sel)].map((e) => limpo(e.innerText))
+    return {
+      pendente: new RegExp(pend).test(document.body.innerText),
+      preflight: txt('[data-testid="preflight-list"]'),
+      metricas: txt('[data-testid="stats-panel"]'),
+      bases: todos('[data-testid="base-row"]'),
+      blocos: todos('[data-testid="block-row"]'),
+    }
+  }, PENDENTE.source)
+
+/** Os painéis estáveis durante 1,5 s, sem nada a meio (relevo, zonas, bacias de visão). */
+async function ecraEstavel(page) {
+  if ((await page.getByTestId('preflight-list').count()) === 0)
+    await page.getByTestId('preflight-pill').click()
+  const toggle = page.getByTestId('stats-toggle')
+  if ((await toggle.count()) > 0 && (await toggle.getAttribute('aria-expanded')) === 'false')
+    await toggle.click()
+  const t0 = Date.now()
+  let antes = null
+  let desde = 0
+  while (Date.now() - t0 < 45000) {
+    const agora = await lerEcra(page)
+    const chave = JSON.stringify(agora)
+    if (agora.pendente || chave !== antes) {
+      antes = chave
+      desde = Date.now()
+    } else if (Date.now() - desde >= 1500) {
+      const { pendente: _p, ...resto } = agora
+      return resto
+    }
+    await page.waitForTimeout(250)
+  }
+  throw new Error('os painéis não estabilizaram em 45 s')
+}
+
+/**
+ * Abre a missão, muda o projecto gravado (os objectos fundem-se com os que lá
+ * estão, o resto substitui) e recarrega.
+ */
+async function comProjecto(opts, muda) {
+  const { page, errors } = await openMission(opts)
+  await page.waitForTimeout(1200) // autosave com debounce de 500 ms
+  await page.evaluate((muda) => {
+    const k = 'dji-mission-planner:project:v1'
+    const p = JSON.parse(localStorage.getItem(k))
+    for (const [key, v] of Object.entries(muda))
+      p[key] = v && typeof v === 'object' && !Array.isArray(v) ? { ...(p[key] ?? {}), ...v } : v
+    localStorage.setItem(k, JSON.stringify(p))
+  }, muda)
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByTestId('preflight-pill').waitFor({ state: 'attached', timeout: 20000 })
+  return { page, errors }
+}
+
+const KMZ_CABECALHO = { name: /Exportar WPML Avançado \(KMZ\)|Export Advanced WPML \(KMZ\)/ }
+const BASE_A = { id: 'imp-a', label: 'A', point: toLL(700, 700), radiusM: null }
+
+/** Exporta pelo botão do cabeçalho e junta a impressão do ficheiro à do ecrã. */
+async function impressaoModo(page, ficheiro) {
+  await exportReady(page)
+  const ecra = await ecraEstavel(page)
+  const [, f] = await download(page, page.getByRole('button', KMZ_CABECALHO), join(OUT, ficheiro))
+  return { ...ecra, kmz: await impressaoFicheiro(f) }
+}
+
+await scenario('impressao-area-bases', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await configure(page, { tf: true, split: 'Bateria' })
+  await proposeAndWait(page)
+  await zonesReady(page)
+  const agora = await impressaoModo(page, 'impressao-area-bases.zip')
+  const panel = page.getByTestId('flight-exports')
+  const [, kml] = await download(
+    page,
+    panel.getByTestId('export-bases-kml'),
+    join(OUT, 'impressao-bases.kml'),
+  )
+  const [, porBase] = await download(
+    page,
+    panel.getByTestId('export-kml-by-base'),
+    join(OUT, 'impressao-kml-por-base.zip'),
+  )
+  agora.basesKml = await impressaoFicheiro(kml)
+  agora.kmlPorBase = await impressaoFicheiro(porBase)
+  conferir('area-bases', agora, check, OUT)
+  check('impressão da área com bases: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+await scenario('impressao-area-simples', async () => {
+  const { page, errors } = await openMission({ area: fx.hill, dem: false })
+  const agora = await impressaoModo(page, 'impressao-area.kmz')
+  agora.kml = await impressaoFicheiro(
+    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'impressao-area.kml')),
+  )
+  conferir('area-simples', agora, check, OUT)
+  check('impressão da área simples: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+await scenario('impressao-corredor-partido', async () => {
+  const { page, errors } = await comProjecto(
+    { area: fx.rect, dem: false },
+    {
+      missionMode: 'corridor',
+      corridorConfig: {
+        centreline: [toLL(300, 300), toLL(1500, 900), toLL(2600, 1700)],
+        bufferM: 250,
+        split: 'battery',
+      },
+      bases: [BASE_A, { id: 'imp-b', label: 'B', point: toLL(2650, 1800), radiusM: null }],
+    },
+  )
+  conferir('corredor-partido', await impressaoModo(page, 'impressao-corredor.zip'), check, OUT)
+  check('impressão do corredor: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+await scenario('impressao-face', async () => {
+  const { page, errors } = await comProjecto(
+    { area: fx.rect, dem: false },
+    {
+      missionMode: 'face',
+      faceConfig: {
+        baseline: [toLL(800, 800), toLL(880, 800), toLL(880, 860)],
+        heightM: 20,
+        standoffM: 15,
+        side: 'left',
+        capture: 'multi',
+        takeoffBaseId: BASE_A.id,
+      },
+      bases: [BASE_A],
+    },
+  )
+  conferir('face', await impressaoModo(page, 'impressao-face.kmz'), check, OUT)
+  check('impressão da face: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+for (const [caso, orbita] of [
+  ['orbita-video', { capture: 'video', levelCount: 2, levelStepM: 15 }],
+  ['orbita-varias', { capture: 'multi', hoverS: 1, takeoffBaseId: BASE_A.id }],
+])
+  await scenario(`impressao-${caso}`, async () => {
+    const { page, errors } = await comProjecto(
+      { area: fx.rect, dem: false },
+      {
+        missionMode: 'orbit',
+        orbitConfig: { poi: toLL(1400, 1000), radiusM: 50, ...orbita },
+        bases: [BASE_A],
+      },
+    )
+    conferir(caso, await impressaoModo(page, `impressao-${caso}.kmz`), check, OUT)
+    check(`impressão ${caso}: sem erros de página`, errors.length === 0, errors.join(' | '))
+    await page.close()
+    return { page }
+  })
+
+await scenario('impressao-circular', async () => {
+  const { page, errors } = await comProjecto(
+    { area: fx.hill, dem: false },
+    { missionMode: 'circular', circularConfig: { enabled: true } },
+  )
+  conferir('circular', await impressaoModo(page, 'impressao-circular.kmz'), check, OUT)
+  check('impressão do circular: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+await scenario('impressao-inspeccao', async () => {
+  const { page, errors } = await comProjecto(
+    { area: fx.hill, dem: false },
+    {
+      inspectPoints: [
+        { id: 1, point: toLL(1050, 1050), heightM: 30, photo: true },
+        { id: 2, point: toLL(1250, 1150), heightM: 45, gimbalPitch: -30, photo: true },
+        { id: 3, point: toLL(1450, 1200), heightM: 30, heading: 90, photo: true, hoverS: 2 },
+      ],
+    },
+  )
+  await openDrawer(page, 'extras')
+  await page.waitForFunction(
+    () =>
+      [...document.querySelectorAll('button')].some(
+        (b) => /^(Exportar KMZ|Export KMZ)$/.test(b.textContent.trim()) && !b.disabled,
+      ),
+    null,
+    { timeout: 40000 },
+  )
+  const kmz = await impressaoFicheiro(
+    await panelExport(page, /^Exportar KMZ$|^Export KMZ$/, join(OUT, 'impressao-inspeccao.kmz')),
+  )
+  conferir('inspeccao', { kmz }, check, OUT)
+  check('impressão da inspecção: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 /* ---- fim ----------------------------------------------------------------- */
+gravarReferencia()
 await browser.close()
 stopServer()
 if (ONLY) {
