@@ -110,6 +110,7 @@ function AppInner({ lang, setLang }) {
   // acções de segurança (fim da missão, sinal perdido) de todos os modos
   const [safety, setSafety] = useState(() => ({ ...DEFAULT_SAFETY }))
   // aeronave, payload, equipamento e bateria da missão (src/hooks/useHardware.js)
+  const hw = useHardware()
   const {
     drone,
     setDrone,
@@ -138,7 +139,7 @@ function AppInner({ lang, setLang }) {
     setUsefulMin,
     wpml,
     equipmentBatteries,
-  } = useHardware()
+  } = hw
   const [showSettings, setShowSettings] = useState(false)
   // bacias de visão: vegetação e obstáculos a somar a um MDT (por missão,
   // no projecto: dependem do sítio)
@@ -165,6 +166,7 @@ function AppInner({ lang, setLang }) {
   // pontos de inspeção (R2.9): waypoints avulsos com rumo/pitch/foto próprios
   const [draftVertices, setDraftVertices] = useState([])
   // bases de descolagem: estado, Ctrl+Z e a última proposta (src/hooks/useBases.js)
+  const basesState = useBasesState()
   const {
     bases,
     setBases,
@@ -175,7 +177,7 @@ function AppInner({ lang, setLang }) {
     basesHistory,
     baseProposal,
     setBaseProposal,
-  } = useBasesState()
+  } = basesState
   const [exportError, setExportError] = useState(null)
   // a versão que gravou o projecto aberto (M3-U17): o cartão 1 diz o que mudou
   // desde então; null depois de lido ou quando é a actual
@@ -217,6 +219,14 @@ function AppInner({ lang, setLang }) {
   /* ------------------- Pipeline de cálculo (memo) -------------------- */
   // parâmetros de voo da área: pegada, espaçamento, intervalo, GSD e avisos
   // do obturador (src/hooks/useAreaParams.js)
+  const areaParams = useAreaParams({
+    aircraftRef,
+    speedRange,
+    sensor,
+    payload,
+    aircraftId: drone.aircraftId,
+    setMissionName,
+  })
   const {
     params,
     setParams,
@@ -235,31 +245,10 @@ function AppInner({ lang, setLang }) {
     flightPresets,
     applyPreset,
     setAltitudeFromGsd,
-  } = useAreaParams({
-    aircraftRef,
-    speedRange,
-    sensor,
-    payload,
-    aircraftId: drone.aircraftId,
-    setMissionName,
-  })
+  } = areaParams
 
   /* ------------------------- Modo corredor ---------------------------- */
-  const {
-    corridorConfig,
-    setCorridorConfig,
-    setCorridorParam,
-    corridorSpeed,
-    corridorTriggerWarn,
-    corridorFlight,
-    corridorSplit,
-    corridorPlan: corridorPlanFlat,
-    corridorBbox,
-    corridorPreview,
-    startCorridorDraw,
-    handleFinishCorridor,
-    clearCorridorAxis,
-  } = useCorridorMission({
+  const corridor = useCorridorMission({
     draftVertices,
     sensor,
     speedRange,
@@ -274,8 +263,33 @@ function AppInner({ lang, setLang }) {
     avisoIntervalo,
     usableMin: batteryMin,
   })
+  const {
+    corridorConfig,
+    setCorridorConfig,
+    setCorridorParam,
+    corridorSpeed,
+    corridorTriggerWarn,
+    corridorFlight,
+    corridorSplit,
+    corridorPlan: corridorPlanFlat,
+    corridorBbox,
+    corridorPreview,
+    startCorridorDraw,
+    handleFinishCorridor,
+    clearCorridorAxis,
+  } = corridor
 
   /* ------------------------ Modo órbita (E1.2) ------------------------ */
+  const orbit = useOrbitMission({
+    sensor,
+    missionMode,
+    missionName,
+    wpml,
+    safety,
+    bases,
+    setMode,
+    runExport,
+  })
   const {
     orbitConfig,
     setOrbitConfig,
@@ -289,29 +303,10 @@ function AppInner({ lang, setLang }) {
     orbitPreview,
     handleExportOrbitSingle,
     handleExportOrbitPerLevel,
-  } = useOrbitMission({
-    sensor,
-    missionMode,
-    missionName,
-    wpml,
-    safety,
-    bases,
-    setMode,
-    runExport,
-  })
+  } = orbit
 
   /* ----------------------- Modo fachada (E1.1) ------------------------ */
-  const {
-    faceConfig,
-    setFaceConfig,
-    setFaceParam,
-    startFaceDraw,
-    handleFinishFace,
-    clearFaceBaseline,
-    facePlan,
-    facePreview,
-    handleExportFace,
-  } = useFaceMission({
+  const face = useFaceMission({
     draftVertices,
     sensor,
     missionMode,
@@ -322,8 +317,31 @@ function AppInner({ lang, setLang }) {
     setDraftVertices,
     runExport,
   })
+  const {
+    faceConfig,
+    setFaceConfig,
+    setFaceParam,
+    startFaceDraw,
+    handleFinishFace,
+    clearFaceBaseline,
+    facePlan,
+    facePreview,
+    handleExportFace,
+  } = face
 
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
+  const inspect = useInspection({
+    bases,
+    altitude: params.altitude,
+    speed,
+    gimbalPitch: params.gimbalPitch,
+    sensorType: sensor.type,
+    missionName,
+    wpml,
+    safety,
+    setMode,
+    runExport,
+  })
   const {
     inspectPoints,
     setInspectPoints,
@@ -337,20 +355,38 @@ function AppInner({ lang, setLang }) {
     suggestInspectOrder,
     handleInspectDrag,
     handleExportInspection,
-  } = useInspection({
-    bases,
-    altitude: params.altitude,
-    speed,
-    gimbalPitch: params.gimbalPitch,
-    sensorType: sensor.type,
-    missionName,
-    wpml,
-    safety,
-    setMode,
-    runExport,
-  })
+  } = inspect
 
   /* ------------------ Modo área, parte 1: geometria ------------------- */
+  const geom = useAreaGeometry({
+    draftVertices,
+    mode,
+    setMode,
+    setDraftVertices,
+    // os quadrados seguem as faixas: o ângulo que o plano usa
+    lineAngle: params.angle,
+    zoneRadiusM: equipment.zoneRadiusM,
+    speed,
+    spacing,
+    batteryMin,
+    passes: params.crosshatch ? (params.includeNadir ? 3 : 2) : 1,
+    // prolongamento, fiada e margem: o lado por bateria conta o que a
+    // célula voa além do quadrado
+    overshootM: Math.max(0, params.overshoot || 0),
+    tieLine: Boolean(params.tieLine),
+    bufferPct: Math.max(0, params.bufferPct || 0),
+    // foto por waypoint com paragem em todos: uma paragem a cada intervalo
+    stopEveryM:
+      params.waypointStops === 'all' &&
+      sensor.type === 'camera' &&
+      params.triggerMode === 'waypoint' &&
+      interval > 0
+        ? interval
+        : 0,
+    onImportedMission,
+    t,
+    history: basesHistory,
+  })
   const {
     ring,
     holes,
@@ -395,35 +431,7 @@ function AppInner({ lang, setLang }) {
     fitKey,
     setFitKey,
     applyProjectGeometry,
-  } = useAreaGeometry({
-    draftVertices,
-    mode,
-    setMode,
-    setDraftVertices,
-    // os quadrados seguem as faixas: o ângulo que o plano usa
-    lineAngle: params.angle,
-    zoneRadiusM: equipment.zoneRadiusM,
-    speed,
-    spacing,
-    batteryMin,
-    passes: params.crosshatch ? (params.includeNadir ? 3 : 2) : 1,
-    // prolongamento, fiada e margem: o lado por bateria conta o que a
-    // célula voa além do quadrado
-    overshootM: Math.max(0, params.overshoot || 0),
-    tieLine: Boolean(params.tieLine),
-    bufferPct: Math.max(0, params.bufferPct || 0),
-    // foto por waypoint com paragem em todos: uma paragem a cada intervalo
-    stopEveryM:
-      params.waypointStops === 'all' &&
-      sensor.type === 'camera' &&
-      params.triggerMode === 'waypoint' &&
-      interval > 0
-        ? interval
-        : 0,
-    onImportedMission,
-    t,
-    history: basesHistory,
-  })
+  } = geom
 
   /* ------------------------------ Terreno ----------------------------- */
   // Caixa da rota exportada do separador aberto, calculada mais abaixo (a
@@ -494,6 +502,14 @@ function AppInner({ lang, setLang }) {
     () => terrainTargetKey.split('|').map((k) => (k ? k.split(',').map(Number) : null)),
     [terrainTargetKey],
   )
+  const terrainState = useTerrain({
+    ring,
+    ringBbox,
+    ringValid: validation.valid,
+    targetBbox: terrainTarget,
+    activeBbox: terrainActive,
+    rememberedDem: demMemory,
+  })
   const {
     terrain,
     terrainFollow,
@@ -505,14 +521,7 @@ function AppInner({ lang, setLang }) {
     demSurface,
     setDemSurface,
     demFileLabel,
-  } = useTerrain({
-    ring,
-    ringBbox,
-    ringValid: validation.valid,
-    targetBbox: terrainTarget,
-    activeBbox: terrainActive,
-    rememberedDem: demMemory,
-  })
+  } = terrainState
 
   // Pontos de inspecção: missão própria, fora do preflight da área, mas com a
   // mesma regra, sem relevo sobre os pontos não se exporta
@@ -548,14 +557,7 @@ function AppInner({ lang, setLang }) {
     [bases, corridorPlanFlat, corridorConfig.centreline],
   )
   const circularBase = useMemo(() => nearestBase(bases, ring), [bases, ring])
-  const {
-    corridorRoute: corridorPlan,
-    corridorTerrain,
-    corridorReference,
-    corridorCovers,
-    corridorBaseDistance,
-    handleExportCorridor,
-  } = useCorridorRoute({
+  const corridorOnTerrain = useCorridorRoute({
     corridorPlan: corridorPlanFlat,
     corridorConfig,
     corridorSpeed,
@@ -574,8 +576,45 @@ function AppInner({ lang, setLang }) {
     sensorType: sensor.type,
     runExport,
   })
+  const {
+    corridorRoute: corridorPlan,
+    corridorTerrain,
+    corridorReference,
+    corridorCovers,
+    corridorBaseDistance,
+    handleExportCorridor,
+  } = corridorOnTerrain
 
   /* ---------- Modo área, parte 2: plano, blocos, GCPs, exportação ------ */
+  const area = useAreaMission({
+    ring,
+    holes,
+    validation,
+    activeCells,
+    activeCellIds,
+    activeCellHoles,
+    tiles,
+    gridCells,
+    bases,
+    blockBaseState,
+    zoneConfig,
+    vlosM,
+    params,
+    spacing,
+    interval,
+    intervalS: trigger.seconds,
+    speed,
+    batteryMin,
+    split,
+    sensor,
+    wpml,
+    safety,
+    missionName,
+    terrain,
+    terrainFollow,
+    terrainCovers,
+    runExport,
+  })
   const {
     gcpConfig,
     setGcpConfig,
@@ -607,59 +646,12 @@ function AppInner({ lang, setLang }) {
     flightFiles,
     exportBaseName,
     safeName: areaSafeName,
-  } = useAreaMission({
-    ring,
-    holes,
-    validation,
-    activeCells,
-    activeCellIds,
-    activeCellHoles,
-    tiles,
-    gridCells,
-    bases,
-    blockBaseState,
-    zoneConfig,
-    vlosM,
-    params,
-    spacing,
-    interval,
-    intervalS: trigger.seconds,
-    speed,
-    batteryMin,
-    split,
-    sensor,
-    wpml,
-    safety,
-    missionName,
-    terrain,
-    terrainFollow,
-    terrainCovers,
-    runExport,
-  })
+  } = area
 
   /* --------------- Modo circular (circlegrammetry) -------------------- */
   // Sobre o mesmo poligono da area: herda o relevo, a cota de referencia e
   // o seguimento de terreno; a geometria e os blocos sao proprios.
-  const {
-    circularConfig,
-    setCircularConfig,
-    setCircularParam,
-    circularSpeed,
-    circularFlight,
-    circularTriggerWarn,
-    circularPlan,
-    circularAdvice,
-    circularReference,
-    circularTerrain,
-    circularCovers,
-    enableCircular,
-    removeCircular,
-    circularBlocks,
-    circularUsableMin,
-    circularPreview,
-    handleExportCircularSingle,
-    handleExportCircularBlocks,
-  } = useCircularMission({
+  const circular = useCircularMission({
     ring,
     holes,
     validation,
@@ -681,23 +673,30 @@ function AppInner({ lang, setLang }) {
     runExport,
     avisoIntervalo,
   })
+  const {
+    circularConfig,
+    setCircularConfig,
+    setCircularParam,
+    circularSpeed,
+    circularFlight,
+    circularTriggerWarn,
+    circularPlan,
+    circularAdvice,
+    circularReference,
+    circularTerrain,
+    circularCovers,
+    enableCircular,
+    removeCircular,
+    circularBlocks,
+    circularUsableMin,
+    circularPreview,
+    handleExportCircularSingle,
+    handleExportCircularBlocks,
+  } = circular
 
   // trânsitos, alcance visual, voos contra as baterias, métricas e resumo do
   // projecto (src/hooks/useMissionOps.js)
-  const {
-    areaBasePoint,
-    perBlockBases,
-    areaBaseDistance,
-    areaRouteOps,
-    corridorRouteOps,
-    circularRouteOps,
-    circularBaseDistance,
-    setsCheck,
-    circularSetsCheck,
-    modeStats,
-    statsOps,
-    projectSummary,
-  } = useMissionOps({
+  const ops = useMissionOps({
     baseLayout,
     refBase,
     blocks,
@@ -722,9 +721,23 @@ function AppInner({ lang, setLang }) {
     batteryMin,
     split,
   })
+  const {
+    areaBasePoint,
+    perBlockBases,
+    areaBaseDistance,
+    areaRouteOps,
+    corridorRouteOps,
+    circularRouteOps,
+    circularBaseDistance,
+    setsCheck,
+    circularSetsCheck,
+    modeStats,
+    statsOps,
+    projectSummary,
+  } = ops
 
   // bacias de visão dos blocos com bases (src/hooks/useBaseViewsheds.js)
-  const { viewTerrain, viewshedTf, viewsheds, viewshedByBlock } = useBaseViewsheds({
+  const viewshedState = useBaseViewsheds({
     bases,
     missionMode,
     perBlockBases,
@@ -740,27 +753,13 @@ function AppInner({ lang, setLang }) {
     params,
     equipment,
   })
+  const { viewTerrain, viewshedTf, viewsheds, viewshedByBlock } = viewshedState
 
   // bases: zonas no painel, arrasto, remoção, raio, «Propor bases» e
   // atribuição de blocos (src/hooks/useBases.js)
   const overlayOpen =
     show3d || showProfile || showHelp || showReport || showSettings || Boolean(disclaimer)
-  const {
-    baseRows,
-    handleBaseDrag,
-    startBase,
-    removeBaseById,
-    removeBase,
-    setBaseRadiusById,
-    proposeBasesForBlocks,
-    cancelProposal,
-    proposing,
-    proposeProgress,
-    assignMode,
-    handleTileClick,
-    handleBlockClick,
-    handleBaseSelect,
-  } = useBaseActions({
+  const baseActions = useBaseActions({
     bases,
     setBases,
     blockBaseState,
@@ -795,56 +794,64 @@ function AppInner({ lang, setLang }) {
     vlosM,
     overlayOpen,
   })
+  const {
+    baseRows,
+    handleBaseDrag,
+    startBase,
+    removeBaseById,
+    removeBase,
+    setBaseRadiusById,
+    proposeBasesForBlocks,
+    cancelProposal,
+    proposing,
+    proposeProgress,
+    assignMode,
+    handleTileClick,
+    handleBlockClick,
+    handleBaseSelect,
+  } = baseActions
 
   // cliques, duplo clique e teclado no mapa, troca de separador
   // (src/hooks/useMapInteractions.js)
-  const { handleMapClick, changeMissionMode, handleFinishAny, removeLastDraftVertex } =
-    useMapInteractions({
-      handleAreaClick,
-      mode,
-      bases,
-      pushHistory,
-      setBases,
-      setSelectedBaseId,
-      setMode,
-      setDraftVertices,
-      setOrbitConfig,
-      addInspectPoint,
-      setMissionMode,
-      enableCircular,
-      handleFinishFace,
-      handleFinishCorridor,
-      handleFinishDraw,
-    })
+  const mapActions = useMapInteractions({
+    handleAreaClick,
+    mode,
+    bases,
+    pushHistory,
+    setBases,
+    setSelectedBaseId,
+    setMode,
+    setDraftVertices,
+    setOrbitConfig,
+    addInspectPoint,
+    setMissionMode,
+    enableCircular,
+    handleFinishFace,
+    handleFinishCorridor,
+    handleFinishDraw,
+  })
+  const { handleMapClick, changeMissionMode, handleFinishAny, removeLastDraftVertex } = mapActions
 
   // atalhos da área: direcção das linhas, margem em metros, minutos de um
   // quadrado (src/hooks/useAreaTools.js)
-  const { applySlopeAngle, bufferM, squareMinutes, setAngleRelative, setAngleOptimal } =
-    useAreaTools({
-      slopeHint,
-      setParams,
-      ring,
-      params,
-      holes,
-      speed,
-      spacing,
-      photoMode,
-      interval,
-      refAzimuth,
-      validation,
-    })
+  const areaTools = useAreaTools({
+    slopeHint,
+    setParams,
+    ring,
+    params,
+    holes,
+    speed,
+    spacing,
+    photoMode,
+    interval,
+    refAzimuth,
+    validation,
+  })
+  const { applySlopeAngle, bufferM, squareMinutes, setAngleRelative, setAngleOptimal } = areaTools
 
   // a rota que sairia no KMZ do separador aberto, a vista 3D, as fotos no
   // mapa e no 3D e os blocos do perfil (src/hooks/useActiveRoute.js)
-  const {
-    faceTakeoff,
-    orbitTakeoff,
-    view3d,
-    photos3d,
-    mapPhotoPoints,
-    view3dColors,
-    profileBlocks,
-  } = useActiveRoute({
+  const routeView = useActiveRoute({
     missionMode,
     terrain,
     facePlan,
@@ -870,10 +877,19 @@ function AppInner({ lang, setLang }) {
     zoneConfig,
     setRouteBox,
   })
+  const {
+    faceTakeoff,
+    orbitTakeoff,
+    view3d,
+    photos3d,
+    mapPhotoPoints,
+    view3dColors,
+    profileBlocks,
+  } = routeView
 
   // folga ao solo, buracos do relevo, trânsitos e RTH da rota que sairia no
   // KMZ (src/hooks/useRouteChecks.js)
-  const { clearance, terrainHoles, transitClearanceInfo, rthInfo } = useRouteChecks({
+  const safetyChecks = useRouteChecks({
     terrain,
     view3d,
     bases,
@@ -889,16 +905,10 @@ function AppInner({ lang, setLang }) {
     safety,
     params,
   })
+  const { clearance, terrainHoles, transitClearanceInfo, rthInfo } = safetyChecks
 
   // fichas de campo, linha do dia e KML das bases (src/hooks/useFieldSheets.js)
-  const {
-    fieldSheets,
-    fieldSheetsDay,
-    areaKmlNotes,
-    exportKmlTitle,
-    handleExportBasesKml,
-    handleExportKmlByBase,
-  } = useFieldSheets({
+  const sheets = useFieldSheets({
     missionMode,
     corridorFlight,
     corridorSpeed,
@@ -947,81 +957,90 @@ function AppInner({ lang, setLang }) {
     spacing,
     ring,
   })
+  const {
+    fieldSheets,
+    fieldSheetsDay,
+    areaKmlNotes,
+    exportKmlTitle,
+    handleExportBasesKml,
+    handleExportKmlByBase,
+  } = sheets
 
   // o preflight do separador aberto: avisos, bloqueios e o que os alimenta
   // (src/hooks/usePreflight.js)
+  const preflightState = usePreflight({
+    baseLayout,
+    view3d,
+    blocks,
+    t,
+    missionMode,
+    plan,
+    corridorPlan,
+    circularPlan,
+    facePlan,
+    orbitPlan,
+    payload,
+    corridorReference,
+    circularReference,
+    perBlockBases,
+    zones,
+    refBase,
+    clearance,
+    terrain,
+    faceConfig,
+    circularConfig,
+    params,
+    inspectPoints,
+    terrainFollow,
+    terrainResult,
+    aircraft,
+    drone,
+    planOk,
+    areaBasePoint,
+    sensor,
+    gsdPitch,
+    spacing,
+    interval,
+    gsd,
+    speed,
+    orbitConfig,
+    circularSpeed,
+    avisoIntervalo,
+    photoMode,
+    terrainCovers,
+    areaBaseDistance,
+    areaRouteOps,
+    viewshedByBlock,
+    vlosM,
+    batteryMin,
+    split,
+    triggerWarn,
+    terrainHoles,
+    transitClearanceInfo,
+    reference,
+    rthInfo,
+    corridorTriggerWarn,
+    corridorConfig,
+    corridorCovers,
+    corridorTerrain,
+    corridorBase,
+    corridorBaseDistance,
+    corridorRouteOps,
+    corridorSpeed,
+    circularTriggerWarn,
+    circularCovers,
+    circularTerrain,
+    circularBase,
+    circularBaseDistance,
+    circularRouteOps,
+    dsmLoaded,
+    faceClearance,
+    faceTakeoff,
+    orbitTakeoff,
+    handleLoadTerrain,
+  })
   const { preflight, aglWarn, uncertainty, blur, orbitTriggerWarn, exportBlocked, terrainActions } =
-    usePreflight({
-      baseLayout,
-      view3d,
-      blocks,
-      t,
-      missionMode,
-      plan,
-      corridorPlan,
-      circularPlan,
-      facePlan,
-      orbitPlan,
-      payload,
-      corridorReference,
-      circularReference,
-      perBlockBases,
-      zones,
-      refBase,
-      clearance,
-      terrain,
-      faceConfig,
-      circularConfig,
-      params,
-      inspectPoints,
-      terrainFollow,
-      terrainResult,
-      aircraft,
-      drone,
-      planOk,
-      areaBasePoint,
-      sensor,
-      gsdPitch,
-      spacing,
-      interval,
-      gsd,
-      speed,
-      orbitConfig,
-      circularSpeed,
-      avisoIntervalo,
-      photoMode,
-      terrainCovers,
-      areaBaseDistance,
-      areaRouteOps,
-      viewshedByBlock,
-      vlosM,
-      batteryMin,
-      split,
-      triggerWarn,
-      terrainHoles,
-      transitClearanceInfo,
-      reference,
-      rthInfo,
-      corridorTriggerWarn,
-      corridorConfig,
-      corridorCovers,
-      corridorTerrain,
-      corridorBase,
-      corridorBaseDistance,
-      corridorRouteOps,
-      corridorSpeed,
-      circularTriggerWarn,
-      circularCovers,
-      circularTerrain,
-      circularBase,
-      circularBaseDistance,
-      circularRouteOps,
-      dsmLoaded,
-      faceClearance,
-      faceTakeoff,
-      orbitTakeoff,
-      handleLoadTerrain,
-    })
+    preflightState
 
   // Exportação da missão do SEPARADOR ABERTO, sempre atrás do preflight dela:
   // o botão do cabeçalho e os botões de cada painel. Antes o cabeçalho
@@ -1063,14 +1082,7 @@ function AppInner({ lang, setLang }) {
       setGcpConfig((c) => ({ ...c, manual: { ...(c.manual ?? {}), [String(id)]: point } })),
     [setGcpConfig],
   )
-  const {
-    projectState,
-    exportProject,
-    importProject,
-    projectVersion,
-    dismissVersionNote,
-    projectError,
-  } = useProjectSession({
+  const session = useProjectSession({
     values: {
       missionName,
       drone,
@@ -1131,6 +1143,14 @@ function AppInner({ lang, setLang }) {
     onLoaded: fitToArea,
     t,
   })
+  const {
+    projectState,
+    exportProject,
+    importProject,
+    projectVersion,
+    dismissVersionNote,
+    projectError,
+  } = session
 
   // Os blocos sob demanda (vista 3D, relatório, perfil) pedem-se depois do
   // arranque, para ficarem na cache do browser antes de se ir para o campo
