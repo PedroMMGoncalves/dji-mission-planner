@@ -5061,7 +5061,23 @@ async function ecraEstavel(page) {
  */
 async function comProjecto(opts, muda) {
   const { page, errors } = await openMission(opts)
-  await page.waitForTimeout(1200) // autosave com debounce de 500 ms
+  // o projecto gravado já com a área e sem gravação por fazer (estável 1 s):
+  // uma gravação automática atrasada (debounce de 500 ms) num runner lento
+  // reescrevia a mudança antes do recarregamento
+  await page.waitForFunction(
+    () => {
+      const raw = localStorage.getItem('dji-mission-planner:project:v1')
+      const agora = performance.now()
+      if (!raw || !JSON.parse(raw)?.ring || raw !== window.__projectoAntes) {
+        window.__projectoAntes = raw
+        window.__projectoDesde = agora
+        return false
+      }
+      return agora - window.__projectoDesde >= 1000
+    },
+    null,
+    { timeout: 20000, polling: 100 },
+  )
   await page.evaluate((muda) => {
     const k = 'dji-mission-planner:project:v1'
     const p = JSON.parse(localStorage.getItem(k))
