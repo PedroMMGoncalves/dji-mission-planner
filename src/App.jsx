@@ -1096,7 +1096,6 @@ function AppInner({ lang, setLang }) {
 
       <AppOverlays
         hw={hw}
-        basesState={basesState}
         areaParams={areaParams}
         corridor={corridor}
         inspect={inspect}

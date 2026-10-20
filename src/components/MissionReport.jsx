@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLang, useT } from '../i18n.jsx'
 import { rangeText } from '../i18n/format.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
+import { verticalDatumLabel } from '../utils/verticalDatum.js'
 import BaseFieldSheets from './BaseFieldSheets.jsx'
 import { rthRangeLabel } from '../mission/transitLegs.js'
 
@@ -106,7 +107,7 @@ const UI = {
   noStats: bi('Plano ainda não gerado.', 'Plan not generated yet.'),
 
   blocksTitle: bi('Blocos de voo', 'Flight blocks'),
-  bBlock: bi('Bloco', 'Block'),
+  bBlock: bi('Voo', 'Flight'),
   bArea: bi('Área (ha)', 'Area (ha)'),
   bDistance: bi('Distância (km)', 'Distance (km)'),
   bTime: bi('Tempo (min)', 'Time (min)'),
@@ -416,17 +417,40 @@ function drawFlightLines(ctx, view, groups) {
   ctx.restore()
 }
 
-/** Número do bloco num círculo, no meio da primeira faixa do bloco. */
+/** Caminho de um rectângulo de cantos redondos. */
+function roundedRect(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2)
+  ctx.beginPath()
+  ctx.moveTo(x + rr, y)
+  ctx.lineTo(x + w - rr, y)
+  ctx.arcTo(x + w, y, x + w, y + rr, rr)
+  ctx.lineTo(x + w, y + h - rr)
+  ctx.arcTo(x + w, y + h, x + w - rr, y + h, rr)
+  ctx.lineTo(x + rr, y + h)
+  ctx.arcTo(x, y + h, x, y + h - rr, rr)
+  ctx.lineTo(x, y + rr)
+  ctx.arcTo(x, y, x + rr, y, rr)
+  ctx.closePath()
+}
+
+/**
+ * O rótulo do voo («A-1», o mesmo do mapa do planeador e das fichas) numa
+ * pastilha na cor do bloco, no meio da primeira faixa do bloco.
+ */
 function drawBlockBadges(ctx, view, groups) {
   if (groups.length < 2) return
   ctx.save()
+  ctx.font = 'bold 13px system-ui, -apple-system, "Segoe UI", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
   for (const g of groups) {
     const first = g.lines[0]
     if (!first) continue
     const mid = [(first[0][0] + first[1][0]) / 2, (first[0][1] + first[1][1]) / 2]
     const [x, y] = view.project(mid)
-    ctx.beginPath()
-    ctx.arc(x, y, 13, 0, Math.PI * 2)
+    const w = Math.max(26, ctx.measureText(g.label).width + 14)
+    const h = 24
+    roundedRect(ctx, x - w / 2, y - h / 2, w, h, h / 2)
     ctx.fillStyle = '#ffffff'
     ctx.fill()
     ctx.strokeStyle = HALO
@@ -435,31 +459,37 @@ function drawBlockBadges(ctx, view, groups) {
     ctx.strokeStyle = g.color
     ctx.lineWidth = 2.5
     ctx.stroke()
-    ctx.save()
-    ctx.font = 'bold 14px system-ui, -apple-system, "Segoe UI", sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
     ctx.fillStyle = '#0f172a'
-    ctx.fillText(String(g.id), x, y + 0.5)
-    ctx.restore()
+    ctx.fillText(g.label, x, y + 0.5)
   }
   ctx.restore()
 }
 
-function drawBase(ctx, view, basePoint) {
-  const [x, y] = view.project(basePoint)
+/**
+ * Uma base como o pino do mapa do planeador: círculo na cor da base com a
+ * letra, anel branco e contorno escuro (ver .base-pin em index.css).
+ */
+function drawBase(ctx, view, base) {
+  const [x, y] = view.project(base.point)
   ctx.save()
   ctx.beginPath()
-  ctx.arc(x, y, 12, 0, Math.PI * 2)
-  ctx.fillStyle = 'rgba(2, 6, 23, 0.55)'
+  ctx.arc(x, y, 15, 0, Math.PI * 2)
+  ctx.fillStyle = '#ffffff'
   ctx.fill()
   ctx.beginPath()
-  ctx.arc(x, y, 7, 0, Math.PI * 2)
-  ctx.fillStyle = BASE_COLOR
+  ctx.arc(x, y, 13, 0, Math.PI * 2)
+  ctx.fillStyle = base.color || BASE_COLOR
   ctx.fill()
   ctx.lineWidth = 2
-  ctx.strokeStyle = '#ffffff'
+  ctx.strokeStyle = '#0f172a'
   ctx.stroke()
+  if (base.label) {
+    ctx.font = 'bold 13px system-ui, -apple-system, "Segoe UI", sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = '#0f172a'
+    ctx.fillText(String(base.label), x, y + 0.5)
+  }
   ctx.restore()
 }
 
@@ -506,32 +536,43 @@ const blockColor = (id, idx) =>
   ]
 
 /**
- * Agrupa as faixas por bloco para colorir o mapa.
+ * O rótulo e a cor de um bloco, como no mapa do planeador (MapView): o
+ * rótulo do voo de layoutBlocks («A-1»; sem bases, o número) e, com bases,
+ * a cor da base do bloco; sem elas, uma cor por bloco. O relatório dava
+ * três nomes ao mesmo voo (1, B01 e A-1) e a mesma cor laranja a todas as
+ * bases.
+ */
+const flightLabelOf = (byBlock, id) => String(byBlock?.[id]?.flightLabel || id)
+const flightColorOf = (byBlock, id, idx) => byBlock?.[id]?.color ?? blockColor(id, idx)
+
+/**
+ * Agrupa as faixas por bloco para colorir o mapa, com o rótulo e a cor do
+ * planeador (`byBlock`, de layoutBlocks).
  *
  * Se os blocos trouxerem as suas próprias faixas (`block.lines`), usa-as
  * directamente. Caso contrário reparte a lista global — que vem na mesma ordem
  * de voo em serpentina usada por splitIntoBlocks — pelo comprimento acumulado
  * de cada bloco (`lengthM`), o que reproduz exactamente a partição original.
  */
-function groupLinesByBlock(lines, blocks) {
+function groupLinesByBlock(lines, blocks, byBlock = null) {
   const segs = Array.isArray(lines) ? lines.filter((s) => Array.isArray(s) && s.length >= 2) : []
   if (segs.length === 0) return []
   if (!Array.isArray(blocks) || blocks.length === 0) {
-    return [{ id: 1, color: LINE_COLOR, lines: segs }]
+    return [{ id: 1, label: '1', color: LINE_COLOR, lines: segs }]
+  }
+  const groupOf = (b, i) => {
+    const id = b.id ?? i + 1
+    return { id, label: flightLabelOf(byBlock, id), color: flightColorOf(byBlock, b.id, i) }
   }
 
   if (blocks.every((b) => Array.isArray(b?.lines) && b.lines.length > 0)) {
-    return blocks.map((b, i) => ({
-      id: b.id ?? i + 1,
-      color: blockColor(b.id, i),
-      lines: b.lines,
-    }))
+    return blocks.map((b, i) => ({ ...groupOf(b, i), lines: b.lines }))
   }
 
   const groups = []
   let idx = 0
   let acc = 0
-  let cur = { id: blocks[0].id ?? 1, color: blockColor(blocks[0].id, 0), lines: [] }
+  let cur = { ...groupOf(blocks[0], 0), lines: [] }
   for (const seg of segs) {
     const len = segLengthM(seg)
     const budget = Number.isFinite(blocks[idx]?.lengthM) ? blocks[idx].lengthM : Infinity
@@ -539,7 +580,7 @@ function groupLinesByBlock(lines, blocks) {
       groups.push(cur)
       idx += 1
       acc = 0
-      cur = { id: blocks[idx].id ?? idx + 1, color: blockColor(blocks[idx].id, idx), lines: [] }
+      cur = { ...groupOf(blocks[idx], idx), lines: [] }
     }
     cur.lines.push(seg)
     acc += len
@@ -556,7 +597,6 @@ const fmt = (v, d, unit) => (fin(v) ? `${v.toFixed(d)}${unit ? ` ${unit}` : ''}`
 const fmtInt = (v) => (fin(v) ? String(Math.round(v)) : DASH)
 const fmtKm = (m) => (fin(m) ? (m / 1000).toFixed(2) : DASH)
 const fmtMin = (s) => (fin(s) ? (s / 60).toFixed(0) : DASH)
-const blockLabel = (id, i) => `B${String(fin(id) ? id : i + 1).padStart(2, '0')}`
 
 /* --------------------------- Subcomponentes --------------------------- */
 
@@ -615,7 +655,10 @@ export default function MissionReport({
   stats,
   blocks,
   ring,
-  basePoints = null,
+  // as bases do planeador (summarizeBases): ponto, letra e cor
+  bases = null,
+  // voos por bloco (layoutBlocks): rótulo «A-1» e cor da base de cada bloco
+  baseLayout = null,
   // ficha de campo por base (baseFieldSheets), com a área dividida e bases
   baseSheets = [],
   // «Altura acima da descolagem» ou «Altura AGL (segue o terreno)» (M3-U2)
@@ -666,7 +709,8 @@ export default function MissionReport({
   }, [onClose])
 
   /* ----------------------- Composição do mapa (canvas) ---------------------- */
-  const groups = useMemo(() => groupLinesByBlock(lines, blocks), [lines, blocks])
+  const byBlock = baseLayout?.byBlock ?? null
+  const groups = useMemo(() => groupLinesByBlock(lines, blocks, byBlock), [lines, blocks, byBlock])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -686,10 +730,11 @@ export default function MissionReport({
         drawFlightLines(ctx, view, groups)
         drawBlockBadges(ctx, view, groups)
       }
-      // todas as bases do projecto (pontos marcados)
-      for (const bp of basePoints ?? []) {
+      // todas as bases do projecto, cada uma com a sua cor e letra
+      for (const b of bases ?? []) {
+        const bp = b?.point
         if (Array.isArray(bp) && Number.isFinite(bp[0]) && Number.isFinite(bp[1]))
-          drawBase(ctx, view, bp)
+          drawBase(ctx, view, b)
       }
       if (Array.isArray(gcps) && gcps.length > 0) drawGcps(ctx, view, gcps)
     }
@@ -730,7 +775,7 @@ export default function MissionReport({
       })
       pending.clear()
     }
-  }, [ring, groups, basePoints, gcps])
+  }, [ring, groups, bases, gcps])
 
   /* ---------------------------- Dados derivados ---------------------------- */
   const p = params || {}
@@ -768,6 +813,12 @@ export default function MissionReport({
     ? gcps.filter((g) => Array.isArray(g?.point) && fin(g.point[0]) && fin(g.point[1]))
     : []
 
+  // a tabela pela ordem de voo (como a lista de blocos do planeador)
+  const blockRows = Array.isArray(blocks)
+    ? [...blocks].sort(
+        (a, b) => (byBlock?.[a.id]?.flight ?? a.id) - (byBlock?.[b.id]?.flight ?? b.id),
+      )
+    : []
   const blockTotals = Array.isArray(blocks)
     ? blocks.reduce(
         (acc, b) => ({
@@ -963,11 +1014,7 @@ export default function MissionReport({
                   <tr>
                     <td className="pr-3 text-slate-400">{L(UI.rDatum)}</td>
                     <td className="font-mono">
-                      {reproducibility.terrainDatum.kind}
-                      {reproducibility.terrainDatum.model
-                        ? ` · ${reproducibility.terrainDatum.model}`
-                        : ''}
-                      {reproducibility.terrainDatum.assumed ? ' (assumido)' : ''}
+                      {verticalDatumLabel(reproducibility.terrainDatum, t)}
                     </td>
                   </tr>
                 )}
@@ -979,8 +1026,18 @@ export default function MissionReport({
                       ? reproducibility.preflight
                           .filter((i) => i.level !== 'info')
                           .map((i, k) => (
+                            // a mensagem traduzida, como na lista do preflight
+                            // (PreflightBar), e não o código com um glifo
                             <div key={k}>
-                              {i.level === 'block' ? '⛔' : '⚠'} {i.code}
+                              <span className="uppercase text-slate-400">
+                                {t(
+                                  i.level === 'block'
+                                    ? 'preflight.word.blocker'
+                                    : 'preflight.word.warning',
+                                )}
+                              </span>
+                              {' · '}
+                              {t(`preflight.${i.code}`, i.params)}
                             </div>
                           ))
                       : L(UI.rPreflightOk)}
@@ -1011,14 +1068,18 @@ export default function MissionReport({
                 </tr>
               </thead>
               <tbody>
-                {blocks.map((b, i) => (
-                  <tr key={b.id ?? i}>
+                {blockRows.map((b, i) => (
+                  <tr
+                    key={b.id ?? i}
+                    data-testid="report-block-row"
+                    data-flight={flightLabelOf(byBlock, b.id ?? i + 1)}
+                  >
                     <td className="border border-slate-800 px-2 py-[3px] font-mono text-xs text-slate-200">
                       <span
                         className="rep-swatch mr-1.5 inline-block h-2 w-2 rounded-full align-middle"
-                        style={{ backgroundColor: blockColor(b.id, i) }}
+                        style={{ backgroundColor: flightColorOf(byBlock, b.id, i) }}
                       />
-                      {blockLabel(b.id, i)}
+                      {flightLabelOf(byBlock, b.id ?? i + 1)}
                     </td>
                     <td className="border border-slate-800 px-2 py-[3px] font-mono text-xs text-slate-100">
                       {fmt(b.areaHa, 2)}

@@ -28,6 +28,7 @@ import {
   useDrawers,
 } from './Cards.jsx'
 import { errorText, terrainErrorText as terrainErrText } from '../utils/appError.js'
+import { verticalDatumLabel } from '../utils/verticalDatum.js'
 import { batteryLabel } from '../mission/equipment.js'
 import { missionExportLabel, rangeText, tCount } from '../i18n/format.js'
 import { notesSince } from '../data/versionNotes.js'
@@ -109,19 +110,6 @@ function MosaicOrientation({ split, setSplitParam, tileOrientation }) {
       )}
     </div>
   )
-}
-
-/** Etiqueta do datum vertical de uma fonte de relevo (ver utils/verticalDatum.js). */
-function datumLabel(d, t) {
-  const base =
-    d.kind === 'ellipsoidal'
-      ? t('cp.terrain.datumEllip', { model: d.model })
-      : d.kind === 'orthometric'
-        ? t('cp.terrain.datumOrtho', { model: d.model })
-        : t('cp.terrain.datumUnknown')
-  const assumed = d.assumed && d.kind !== 'unknown' ? t('cp.terrain.datumAssumed') : ''
-  const unit = d.unitFactor !== 1 ? t('cp.terrain.datumUnit', { unit: d.unitLabel }) : ''
-  return `${base}${assumed}${unit}`
 }
 
 /** Duração: «12 min 05 s», ou «17 h 19 min» a partir de uma hora. */
@@ -1652,7 +1640,9 @@ export default function ControlPanel({
             )}
           {terrain.status === 'ready' && terrain.data?.verticalDatum && (
             <p className="mt-1 text-xs text-slate-400" data-testid="terrain-datum">
-              {t('cp.terrain.datum', { datum: datumLabel(terrain.data.verticalDatum, t) })}
+              {t('cp.terrain.datum', {
+                datum: verticalDatumLabel(terrain.data.verticalDatum, t),
+              })}
             </p>
           )}
         </DrawerGroup>

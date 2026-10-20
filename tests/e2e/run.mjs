@@ -2408,6 +2408,16 @@ await scenario('bases-exportar-por-base', async () => {
     'relatório: ficha por base',
     (await rep.getByTestId('base-sheet').count()) === withFlights.length,
   )
+  // a tabela dos blocos com os rótulos dos voos do planeador (A-1…), pela
+  // ordem de voo — dizia B01… enquanto o mapa dizia 1… e as fichas A-1…
+  const repFlights = await page
+    .getByTestId('report-block-row')
+    .evaluateAll((els) => els.map((e) => e.dataset.flight))
+  check(
+    'relatório: a tabela dos blocos usa os rótulos dos voos, pela ordem de voo',
+    repFlights.join(',') === order.join(','),
+    `${repFlights.join(' ')} / ${order.join(' ')}`,
+  )
   check('por base: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }

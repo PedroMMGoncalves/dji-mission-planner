@@ -98,3 +98,24 @@ export function describeVerticalDatum(geoKeys) {
 
 /** A conversão de unidade altera os valores? */
 export const needsUnitConversion = (datum) => Math.abs((datum?.unitFactor ?? 1) - 1) > 1e-12
+
+/**
+ * O datum em texto, na língua da interface: «ortométrico, EGM96 (assumido)»,
+ * «ELIPSOIDAL, WGS84», «não declarado (assumido ortométrico)», e a conversão
+ * de unidade quando a há. O mesmo no painel da área e no relatório (que
+ * mostrava o código, «unknown»).
+ * @param {{kind: string, model?: string|null, assumed?: boolean, unitFactor?: number,
+ *   unitLabel?: string}} d
+ * @param {(key: string, vars?: Record<string, any>) => string} t
+ */
+export function verticalDatumLabel(d, t) {
+  const base =
+    d.kind === 'ellipsoidal'
+      ? t('cp.terrain.datumEllip', { model: d.model })
+      : d.kind === 'orthometric'
+        ? t('cp.terrain.datumOrtho', { model: d.model })
+        : t('cp.terrain.datumUnknown')
+  const assumed = d.assumed && d.kind !== 'unknown' ? t('cp.terrain.datumAssumed') : ''
+  const unit = d.unitFactor !== 1 ? t('cp.terrain.datumUnit', { unit: d.unitLabel }) : ''
+  return `${base}${assumed}${unit}`
+}

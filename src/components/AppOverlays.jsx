@@ -4,7 +4,7 @@
  * vista 3D), cada uma com a sua ErrorBoundary.
  */
 import { useT } from '../i18n.jsx'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useMemo } from 'react'
 import { serializeProject } from '../mission/project.js'
 import HelpModal from './HelpModal.jsx'
 import SettingsModal from './SettingsModal.jsx'
@@ -18,7 +18,6 @@ const ElevationProfile = lazy(() => import('./ElevationProfile.jsx'))
 
 export default function AppOverlays({
   hw,
-  basesState,
   areaParams,
   corridor,
   inspect,
@@ -52,16 +51,21 @@ export default function AppOverlays({
   setShow3d,
 }) {
   const { equipment, setEquipment, drone, hardwareLabel } = hw
-  const { bases } = basesState
   const { params, speed, spacing, interval, gsd } = areaParams
   const { corridorPreview } = corridor
   const { inspectPoints } = inspect
   const { ring } = geom
   const { terrain, terrainFollow } = terrainState
   const { corridorReference } = corridorOnTerrain
-  const { reference, blocks, planOk, gcps } = area
+  const { reference, blocks, planOk, gcps, baseLayout } = area
   const { circularReference } = circular
   const { baseRows } = baseActions
+  // as bases como o mapa as desenha (summarizeBases): ponto, letra e cor;
+  // memorizadas para o relatório não recompor o mapa a cada render
+  const reportBases = useMemo(
+    () => baseRows.map((b) => ({ point: b.point, label: b.label, color: b.color })),
+    [baseRows],
+  )
   const { view3d, profileBlocks, view3dColors, photos3d } = routeView
   const { rthInfo } = safetyChecks
   const { fieldSheets, fieldSheetsDay } = sheets
@@ -141,7 +145,8 @@ export default function AppOverlays({
               stats={planOk.stats}
               blocks={blocks}
               ring={ring}
-              basePoints={bases.map((b) => b.point)}
+              bases={reportBases}
+              baseLayout={baseLayout}
               baseSheets={missionMode === 'area' ? fieldSheets : []}
               terrainFollowOn={Boolean(terrainFollow?.enabled)}
               rthInfo={rthInfo}

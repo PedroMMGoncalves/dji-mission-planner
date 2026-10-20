@@ -51,6 +51,14 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   voos, o botão «Exportar os voos por base (ZIP)» repetia o «Todos os
   voos por base (ZIP)» de «Exportar voos» logo acima: sai; sem divisão o
   botão da missão fica, e «Área em KML» também.
+- **Relatório: um nome e uma cor por voo.** O relatório numerava os voos
+  1…20 no mapa, B01…B20 na tabela e A-1…G-20 nas fichas de campo, com
+  todas as bases num ponto laranja e os blocos nas cores dos blocos. Passa
+  a usar os rótulos dos voos do planeador (A-1…) no mapa e na tabela (pela
+  ordem de voo), a desenhar cada base com a sua cor e letra, e a colorir
+  os blocos como o mapa (a cor da base de cada um). A linha do preflight
+  mostra as mensagens traduzidas em vez dos códigos («base-zone-drop») com
+  um glifo, e o datum vertical sai na língua da interface («unknown»).
 
 ### Interno (repartição do `App.jsx`)
 
