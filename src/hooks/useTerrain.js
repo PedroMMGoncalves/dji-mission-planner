@@ -43,14 +43,14 @@ function terrainCoversBox(terrain, box) {
  * enquanto o relevo não cobrir a rota.
  */
 export function useTerrain({
-  ring,
-  ringBbox: areaBbox,
+  geom,
   ringValid,
   targetBbox = null,
   activeBbox = null,
   // nome e tipo (MDT/MDS) do ficheiro de relevo do projecto aberto
   rememberedDem = null,
 }) {
+  const { ring, ringBbox: areaBbox } = geom
   const ringBbox = targetBbox ?? areaBbox
   // o MDT importado recorta-se só para o separador aberto: recortar de novo
   // o ficheiro é barato e a união de todas as geometrias (área e um

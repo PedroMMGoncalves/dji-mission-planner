@@ -29,8 +29,8 @@ import { exportBlocksZip } from '../utils/exporters.js'
 const FLIGHT_COLORS = ['#fde047', '#38bdf8', '#f472b6', '#a3e635', '#fb923c', '#c4b5fd']
 
 export function useCorridorMission({
-  sensor,
-  speedRange,
+  hw,
+  areaParams,
   // altura e sobreposições do separador Área: valem quando o corredor não
   // tem as suas (corridorConfig.ownParams)
   altitude: areaAltitude,
@@ -40,11 +40,15 @@ export function useCorridorMission({
   setMode,
   setDraftVertices,
   draftVertices = [],
-  // (intervaloM, velocidade) → aviso do obturador ou null
-  avisoIntervalo,
-  // tempo útil por voo (min), para a divisão em voos por bateria
-  usableMin = null,
 }) {
+  const {
+    sensor,
+    speedRange,
+    // tempo útil por voo (min), para a divisão em voos por bateria
+    batteryMin: usableMin = null,
+  } = hw
+  // (intervaloM, velocidade) → aviso do obturador ou null
+  const { avisoIntervalo } = areaParams
   const [corridorConfig, setCorridorConfig] = useState(DEFAULT_CORRIDOR_CONFIG)
 
   // A velocidade guardada pode exceder a aeronave (o painel aceita até
@@ -217,28 +221,35 @@ const COVER_MARGIN_DEG = 0.001
  * seguimento de terreno depende do relevo carregado.
  */
 export function useCorridorRoute({
-  corridorPlan: planFlat,
-  corridorConfig,
-  corridorSpeed,
-  terrain,
-  terrainFollow,
+  corridor,
+  terrainState,
+  hw,
   basePoint,
-  // zona de descolagem da base (radius/maxRelief do equipamento): a cota de
-  // referência é a mínima da zona, como na área
-  zoneConfig = null,
   baseRadiusM = null,
   altitude,
   interval,
   missionName,
-  wpml,
   // acções de segurança da missão (src/mission/safety.js)
   safety = null,
   sensorType,
   runExport,
-  // divisão em voos (parte 1) e as bases do projecto: cada voo com a sua
-  corridorSplit = null,
+  // as bases do projecto: cada voo da divisão com a sua
   bases = [],
 }) {
+  const {
+    corridorPlan: planFlat,
+    corridorConfig,
+    corridorSpeed,
+    // divisão em voos (parte 1)
+    corridorSplit = null,
+  } = corridor
+  const { terrain, terrainFollow } = terrainState
+  const {
+    // zona de descolagem da base (radius/maxRelief do equipamento): a cota de
+    // referência é a mínima da zona, como na área
+    zoneConfig = null,
+    wpml,
+  } = hw
   const planOk = planFlat && !planFlat.error ? planFlat : null
 
   // o relevo carregado cobre a rota (com margem para os lados da faixa)?

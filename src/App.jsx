@@ -249,9 +249,9 @@ function AppInner({ lang, setLang }) {
 
   /* ------------------------- Modo corredor ---------------------------- */
   const corridor = useCorridorMission({
+    hw,
+    areaParams,
     draftVertices,
-    sensor,
-    speedRange,
     // a altura e as sobreposições da área valem quando o corredor não tem as
     // suas; o intervalo do corredor é sempre o automático (o manual é da área)
     altitude: params.altitude,
@@ -260,8 +260,6 @@ function AppInner({ lang, setLang }) {
     missionMode,
     setMode,
     setDraftVertices,
-    avisoIntervalo,
-    usableMin: batteryMin,
   })
   const {
     corridorConfig,
@@ -281,10 +279,9 @@ function AppInner({ lang, setLang }) {
 
   /* ------------------------ Modo órbita (E1.2) ------------------------ */
   const orbit = useOrbitMission({
-    sensor,
+    hw,
     missionMode,
     missionName,
-    wpml,
     safety,
     bases,
     setMode,
@@ -307,11 +304,10 @@ function AppInner({ lang, setLang }) {
 
   /* ----------------------- Modo fachada (E1.1) ------------------------ */
   const face = useFaceMission({
+    hw,
     draftVertices,
-    sensor,
     missionMode,
     missionName,
-    wpml,
     safety,
     setMode,
     setDraftVertices,
@@ -331,13 +327,13 @@ function AppInner({ lang, setLang }) {
 
   /* --------------------- Pontos de inspeção (R2.9) -------------------- */
   const inspect = useInspection({
+    hw,
     bases,
     altitude: params.altitude,
     speed,
     gimbalPitch: params.gimbalPitch,
     sensorType: sensor.type,
     missionName,
-    wpml,
     safety,
     setMode,
     runExport,
@@ -359,6 +355,8 @@ function AppInner({ lang, setLang }) {
 
   /* ------------------ Modo área, parte 1: geometria ------------------- */
   const geom = useAreaGeometry({
+    areaParams,
+    basesState,
     draftVertices,
     mode,
     setMode,
@@ -366,8 +364,6 @@ function AppInner({ lang, setLang }) {
     // os quadrados seguem as faixas: o ângulo que o plano usa
     lineAngle: params.angle,
     zoneRadiusM: equipment.zoneRadiusM,
-    speed,
-    spacing,
     batteryMin,
     passes: params.crosshatch ? (params.includeNadir ? 3 : 2) : 1,
     // prolongamento, fiada e margem: o lado por bateria conta o que a
@@ -383,9 +379,7 @@ function AppInner({ lang, setLang }) {
       interval > 0
         ? interval
         : 0,
-    onImportedMission,
     t,
-    history: basesHistory,
   })
   const {
     ring,
@@ -503,8 +497,7 @@ function AppInner({ lang, setLang }) {
     [terrainTargetKey],
   )
   const terrainState = useTerrain({
-    ring,
-    ringBbox,
+    geom,
     ringValid: validation.valid,
     targetBbox: terrainTarget,
     activeBbox: terrainActive,
@@ -558,20 +551,15 @@ function AppInner({ lang, setLang }) {
   )
   const circularBase = useMemo(() => nearestBase(bases, ring), [bases, ring])
   const corridorOnTerrain = useCorridorRoute({
-    corridorPlan: corridorPlanFlat,
-    corridorConfig,
-    corridorSpeed,
-    terrain,
-    terrainFollow,
+    corridor,
+    terrainState,
+    hw,
     basePoint: corridorBase?.point ?? null,
-    zoneConfig,
     baseRadiusM: corridorBase?.radiusM ?? null,
     altitude: corridorFlight.altitude,
     interval: corridorFlight.interval,
-    corridorSplit,
     bases,
     missionName,
-    wpml,
     safety,
     sensorType: sensor.type,
     runExport,
@@ -587,32 +575,14 @@ function AppInner({ lang, setLang }) {
 
   /* ---------- Modo área, parte 2: plano, blocos, GCPs, exportação ------ */
   const area = useAreaMission({
-    ring,
-    holes,
-    validation,
-    activeCells,
-    activeCellIds,
-    activeCellHoles,
-    tiles,
-    gridCells,
-    bases,
-    blockBaseState,
-    zoneConfig,
-    vlosM,
-    params,
-    spacing,
-    interval,
+    geom,
+    basesState,
+    hw,
+    areaParams,
+    terrainState,
     intervalS: trigger.seconds,
-    speed,
-    batteryMin,
-    split,
-    sensor,
-    wpml,
     safety,
     missionName,
-    terrain,
-    terrainFollow,
-    terrainCovers,
     runExport,
   })
   const {
@@ -652,26 +622,19 @@ function AppInner({ lang, setLang }) {
   // Sobre o mesmo poligono da area: herda o relevo, a cota de referencia e
   // o seguimento de terreno; a geometria e os blocos sao proprios.
   const circular = useCircularMission({
-    ring,
-    holes,
-    validation,
-    sensor,
+    geom,
+    hw,
+    terrainState,
+    areaParams,
     altitude: params.altitude,
     frontOverlap: params.frontOverlap,
-    speedRange,
     missionName,
-    wpml,
     safety,
-    terrain,
-    terrainFollow,
     basePoint: circularBase?.point ?? null,
-    zoneConfig,
     baseRadiusM: circularBase?.radiusM ?? null,
-    batteryMin,
     reservePct: split.reservePct,
     missionMode,
     runExport,
-    avisoIntervalo,
   })
   const {
     circularConfig,

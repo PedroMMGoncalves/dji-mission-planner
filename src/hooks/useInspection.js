@@ -13,18 +13,19 @@ import { nearestBase } from '../mission/bases.js'
  * pontos (com uma só base, essa — como antes).
  */
 export function useInspection({
+  hw,
   bases = [],
   altitude,
   speed,
   gimbalPitch,
   sensorType,
   missionName,
-  wpml,
   // acções de segurança da missão (src/mission/safety.js)
   safety = null,
   setMode,
   runExport,
 }) {
+  const { wpml } = hw
   const [inspectPoints, setInspectPoints] = useState([])
   const inspectSeqRef = useRef(1)
 

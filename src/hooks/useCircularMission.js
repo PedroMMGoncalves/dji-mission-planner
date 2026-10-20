@@ -22,32 +22,35 @@ import { usableBatteryMin } from '../mission/preflight.js'
 import { exportBlocksZip, exportWPMLKmz } from '../utils/exporters.js'
 
 export function useCircularMission({
-  ring,
-  holes = null,
-  validation,
-  sensor,
+  geom,
+  hw,
+  terrainState,
+  areaParams,
   // altura e sobreposição frontal do separador Área: valem quando o
   // circular não tem as suas (circularConfig.ownParams)
   altitude: areaAltitude,
   frontOverlap: areaFrontOverlap,
-  speedRange,
   missionName,
-  wpml,
   // acções de segurança da missão (src/mission/safety.js)
   safety = null,
-  terrain,
-  terrainFollow,
   basePoint,
-  // zona de descolagem da base: a cota de referência é a mínima da zona
-  zoneConfig = null,
   baseRadiusM = null,
-  batteryMin,
   reservePct,
   missionMode,
   runExport,
-  // (intervaloM, velocidade) → aviso do obturador ou null
-  avisoIntervalo,
 }) {
+  const { ring, holes = null, validation } = geom
+  const {
+    sensor,
+    speedRange,
+    wpml,
+    // zona de descolagem da base: a cota de referência é a mínima da zona
+    zoneConfig = null,
+    batteryMin,
+  } = hw
+  const { terrain, terrainFollow } = terrainState
+  // (intervaloM, velocidade) → aviso do obturador ou null
+  const { avisoIntervalo } = areaParams
   const [circularConfig, setCircularConfig] = useState(() => ({ ...DEFAULT_CIRCULAR_CONFIG }))
 
   const setCircularParam = useCallback((key, value) => {

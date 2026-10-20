@@ -38,28 +38,32 @@ import { finishDraft } from '../mission/draft.js'
 
 /**
  * @param {object} args
+ * @param {object} args.areaParams parâmetros de voo da área (useAreaParams)
+ * @param {number} args.areaParams.speed velocidade efectiva (m/s)
+ * @param {number} args.areaParams.spacing espaçamento entre linhas (m)
+ * @param {Function} args.areaParams.onImportedMission reimportação de um WPML: recebe {name, altitude, speed}
+ * @param {object} args.basesState as bases do App (useBasesState)
+ * @param {{capture: () => any, restore: (snapshot: any) => void}} [args.basesState.basesHistory]
+ *   estado de fora do hook que entra no mesmo histórico (as bases e as
+ *   atribuições manuais, no App): `capture` dá o instantâneo antes de uma
+ *   edição, `restore` repõe-no ao desfazer
  * @param {string} args.mode modo de interacção corrente ('draw' | 'anchor' | ...)
  * @param {Function} args.setMode
  * @param {Function} args.setDraftVertices
  * @param {number[][]} [args.draftVertices] os vértices do desenho em curso (concluir lê-os)
  * @param {number} args.lineAngle ângulo das faixas (°), que os quadrados seguem por omissão
  * @param {number} [args.zoneRadiusM] raio da zona de descolagem (trânsito de dimensionamento)
- * @param {number} args.speed velocidade efectiva (m/s)
- * @param {number} args.spacing espaçamento entre linhas (m)
  * @param {number} args.batteryMin tempo útil por voo (min, já com a reserva de aterragem; split.reservePct é 0)
  * @param {number} args.passes número de passagens (1, 2 ou 3 com nadir extra)
  * @param {number} [args.stopEveryM] paragem a cada X m ao longo da faixa (0 = só nos cantos)
  * @param {number} [args.overshootM] prolongamento das faixas (o lado por bateria conta-o)
  * @param {boolean} [args.tieLine] fiada de amarração (idem)
  * @param {number} [args.bufferPct] margem em % de √área (idem)
- * @param {Function} args.onImportedMission reimportação de um WPML: recebe {name, altitude, speed}
  * @param {Function} args.t tradução
- * @param {{capture: () => any, restore: (snapshot: any) => void}} [args.history]
- *   estado de fora do hook que entra no mesmo histórico (as bases e as
- *   atribuições manuais, no App): `capture` dá o instantâneo antes de uma
- *   edição, `restore` repõe-no ao desfazer
  */
 export function useAreaGeometry({
+  areaParams,
+  basesState,
   mode,
   setMode,
   setDraftVertices,
@@ -68,8 +72,6 @@ export function useAreaGeometry({
   draftVertices = [],
   lineAngle = 0,
   zoneRadiusM = 100,
-  speed,
-  spacing,
   batteryMin,
   passes,
   stopEveryM = 0,
@@ -77,10 +79,10 @@ export function useAreaGeometry({
   overshootM = 0,
   tieLine = false,
   bufferPct = 0,
-  onImportedMission,
   t,
-  history = null,
 }) {
+  const { speed, spacing, onImportedMission } = areaParams
+  const { basesHistory: history = null } = basesState
   const [ring, setRing] = useState(null) // anel aberto [[lon,lat], ...]
   const [holes, setHoles] = useState([]) // anéis interiores importados (buracos), não editáveis
   const [importParts, setImportParts] = useState(null) // partes a mais de um MultiPolygon, para usar como células

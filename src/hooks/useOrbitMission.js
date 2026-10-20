@@ -14,10 +14,9 @@ import { planForTakeoff } from '../mission/takeoffRef.js'
 import { exportBlocksZip, exportWPMLKmz } from '../utils/exporters.js'
 
 export function useOrbitMission({
-  sensor,
+  hw,
   missionMode,
   missionName,
-  wpml,
   // acções de segurança da missão (src/mission/safety.js)
   safety = null,
   // bases do projecto: a órbita começa no rumo POI → base mais próxima
@@ -25,6 +24,7 @@ export function useOrbitMission({
   setMode,
   runExport,
 }) {
+  const { sensor, wpml } = hw
   const [orbitConfig, setOrbitConfig] = useState(() => ({ ...DEFAULT_ORBIT_CONFIG }))
 
   // A órbita começa no rumo do POI para a base mais próxima (M2-E13): com a

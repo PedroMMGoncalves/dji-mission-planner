@@ -55,36 +55,40 @@ const NO_MAP = Object.freeze({})
  * (`manualLost`) para o painel o dizer.
  */
 export function useAreaMission({
-  ring,
-  holes = null,
-  validation,
-  activeCells,
-  activeCellIds = null,
-  activeCellHoles = null,
-  tiles = null,
-  gridCells = null,
-  bases = [],
-  blockBaseState = { key: null, map: {}, cells: null, ring: null, lost: 0 },
-  zoneConfig = { radiusM: 100, maxReliefM: 10 },
-  vlosM = 500,
-  params,
-  spacing,
-  interval,
+  geom,
+  basesState,
+  hw,
+  areaParams,
+  terrainState,
   // segundos do disparo por tempo que vão para o ficheiro (triggerInterval)
   intervalS = null,
-  speed,
-  batteryMin,
-  split,
-  sensor,
-  wpml,
   // acções de segurança da missão (src/mission/safety.js)
   safety = null,
   missionName,
-  terrain,
-  terrainFollow,
-  terrainCovers,
   runExport,
 }) {
+  const {
+    ring,
+    holes = null,
+    validation,
+    activeCells,
+    activeCellIds = null,
+    activeCellHoles = null,
+    tiles = null,
+    gridCells = null,
+    split,
+  } = geom
+  const { bases = [], blockBaseState = { key: null, map: {}, cells: null, ring: null, lost: 0 } } =
+    basesState
+  const {
+    zoneConfig = { radiusM: 100, maxReliefM: 10 },
+    vlosM = 500,
+    batteryMin,
+    sensor,
+    wpml,
+  } = hw
+  const { params, spacing, interval, speed } = areaParams
+  const { terrain, terrainFollow, terrainCovers } = terrainState
   const [gcpConfig, setGcpConfig] = useState(() => ({ ...DEFAULT_GCP_CONFIG }))
 
   // B: disparo por waypoint só com câmara e intervalo válido; com LiDAR ou

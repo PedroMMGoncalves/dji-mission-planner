@@ -14,10 +14,9 @@ import { finishDraft } from '../mission/draft.js'
 import { planForTakeoff } from '../mission/takeoffRef.js'
 
 export function useFaceMission({
-  sensor,
+  hw,
   missionMode,
   missionName,
-  wpml,
   // acções de segurança da missão (src/mission/safety.js)
   safety = null,
   setMode,
@@ -25,6 +24,7 @@ export function useFaceMission({
   draftVertices = [],
   runExport,
 }) {
+  const { sensor, wpml } = hw
   const [faceConfig, setFaceConfig] = useState(() => ({ ...DEFAULT_FACE_CONFIG }))
 
   const setFaceParam = useCallback((key, value) => {
