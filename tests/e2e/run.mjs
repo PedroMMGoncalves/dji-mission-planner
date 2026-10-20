@@ -1803,6 +1803,41 @@ async function proposeAndWait(page) {
   )
   await page.waitForTimeout(800)
 }
+/**
+ * As zonas das bases com cota e o relevo sem recorte em curso, estável
+ * durante 800 ms. Com bases novas (ou uma base arrastada) a caixa do MDT
+ * importado muda e o ficheiro é recortado de novo 300 ms depois; enquanto se
+ * relê, as zonas ficam sem cota. Lia-se a uma hora fixa, e num runner lento
+ * a leitura caía nesse intervalo (A:null … no CI de 1d59144).
+ */
+async function zonesReady(page) {
+  await page.evaluate(() => {
+    window.__zonasOkDesde = null
+  })
+  await page
+    .waitForFunction(
+      () => {
+        const dem = [...document.querySelectorAll('button')].find((b) =>
+          /Importar MDT|Import DTM/.test(b.textContent),
+        )
+        const ok =
+          (!dem || !dem.disabled) &&
+          [...document.querySelectorAll('[data-testid="base-row"]')].every(
+            (r) => r.dataset.refElev !== '',
+          )
+        const now = performance.now()
+        if (!ok) {
+          window.__zonasOkDesde = null
+          return false
+        }
+        if (window.__zonasOkDesde == null) window.__zonasOkDesde = now
+        return now - window.__zonasOkDesde >= 800
+      },
+      null,
+      { timeout: 20000, polling: 100 },
+    )
+    .catch(() => {})
+}
 async function dragMarker(page, locator, dx, dy) {
   const box = await locator.boundingBox()
   const x = box.x + box.width / 2
@@ -1865,6 +1900,7 @@ await scenario('bases-multiplas', async () => {
   )
 
   await proposeAndWait(page)
+  await zonesReady(page)
   let rows = await baseRows(page)
   check(
     'bases: "Propor bases" dá pelo menos duas bases',
@@ -1931,6 +1967,7 @@ await scenario('bases-multiplas', async () => {
   const before = rows.find((r) => r.label === 'A')
   const pt0 = (await savedProject(page))?.bases?.find((b) => b.label === 'A')?.point
   await dragMarker(page, pin('A'), 90, -60)
+  await zonesReady(page)
   rows = await baseRows(page)
   const after = rows.find((r) => r.label === 'A')
   const pt1 = (await savedProject(page))?.bases?.find((b) => b.label === 'A')?.point
@@ -2016,6 +2053,7 @@ await scenario('bases-exportar-por-base', async () => {
     .selectOption('M300RTK')
   await configure(page, { tf: true, split: 'Bateria' })
   await proposeAndWait(page)
+  await zonesReady(page)
   await exportReady(page)
   const rows = await baseRows(page)
   const order = await page
@@ -3132,7 +3170,17 @@ await scenario('bacias-visao-cumeada', async () => {
     back.noteText,
   )
   await page.getByTestId('dem-surface-dsm').click()
-  await page.waitForTimeout(800)
+  // a gravação automática espera 500 ms depois da última mudança, e num
+  // runner ocupado chegava depois dos 800 ms fixos de antes
+  await page
+    .waitForFunction(
+      () =>
+        JSON.parse(localStorage.getItem('dji-mission-planner:project:v1') ?? 'null')?.demFile
+          ?.surface === 'dsm',
+      null,
+      { timeout: 10000 },
+    )
+    .catch(() => {})
   check(
     'cumeada: marcado como MDS, o projecto grava-o',
     (await savedProject(page))?.demFile?.surface === 'dsm',
@@ -3271,6 +3319,7 @@ await scenario('propor-bases-sitio-alto', async () => {
       await page.waitForTimeout(1200)
     }
     await proposeAndWait(page)
+    await zonesReady(page)
     rows = await baseRows(page)
     const at = toM(...(await savedBase(page, 'A')).point)
     check(
