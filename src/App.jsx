@@ -21,7 +21,7 @@ import DisclaimerModal, {
 const Map3D = lazy(() => import('./components/Map3D.jsx'))
 const MissionReport = lazy(() => import('./components/MissionReport.jsx'))
 const ElevationProfile = lazy(() => import('./components/ElevationProfile.jsx'))
-import { positioningError, MISSION_PRESETS, aglCapWarning } from './data/drones.js'
+import { positioningError, aglCapWarning } from './data/drones.js'
 import { flightsVsSets } from './mission/equipment.js'
 import { opsSummary } from './mission/opsSummary.js'
 import {
@@ -35,7 +35,6 @@ import {
 } from './mission/bases.js'
 import { blockRing, summarizeBases, convexHull } from './mission/baseLayout.js'
 import { activeRoute } from './mission/activeRoute.js'
-import { triggerInterval } from './mission/triggerInterval.js'
 import { takeoffReference } from './mission/takeoffRef.js'
 import { photoPositions2d, photosAtWaypoints, photosOnRoute } from './mission/photoPoints.js'
 import {
@@ -49,12 +48,9 @@ import { blocksKmlByBase } from './mission/blocksKml.js'
 import {
   aggregatePlans,
   bufferDistanceMeters,
-  computeFootprint,
   computeGSD,
   distanceToArea,
   findOptimalDirection,
-  lidarPointDensity,
-  lineSpacing,
   ringToPolygon,
   squareFlightTimeS,
 } from './utils/geo.js'
@@ -66,6 +62,7 @@ import {
   downloadBlob,
 } from './utils/exporters.js'
 import { useHardware } from './hooks/useHardware.js'
+import { useAreaParams } from './hooks/useAreaParams.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
 import { useCorridorMission, useCorridorRoute } from './hooks/useCorridorMission.js'
@@ -79,7 +76,7 @@ import { useProjectSession } from './hooks/useProjectSession.js'
 import { terrainIdentity, useViewsheds } from './hooks/useViewsheds.js'
 import { useBaseProposal } from './hooks/useBaseProposal.js'
 import { viewshedJobs, viewshedTerrainModel } from './mission/viewshedPlan.js'
-import { DEFAULT_MISSION_NAME, DEFAULT_PARAMS, clampParam } from './mission/defaults.js'
+import { DEFAULT_MISSION_NAME } from './mission/defaults.js'
 import { hasBlockers } from './mission/preflight.js'
 import { preflightFor } from './mission/preflightFor.js'
 import { routeClearance, terrainHolesAlong } from './mission/clearance.js'
@@ -231,7 +228,6 @@ function AppInner({ lang, setLang }) {
       /* ignora */
     }
   }, [viewshedLayerOn])
-  const [params, setParams] = useState(() => ({ ...DEFAULT_PARAMS }))
   const [mode, setMode] = useState('idle') // 'idle' | 'draw' | 'anchor' | 'base' | 'inspect' | 'face'
   // tipo de missão activo (E1.0, modelo A): troca a ferramenta e o painel
   const [missionMode, setMissionMode] = useState('area') // 'area' | 'face' | 'orbit' | 'corridor'
@@ -309,124 +305,36 @@ function AppInner({ lang, setLang }) {
   const [showProfile, setShowProfile] = useState(false)
   const [showPreflight, setShowPreflight] = useState(false)
 
-  const setParam = useCallback(
-    (key, value) => {
-      setParams((p) => {
-        if (!Number.isFinite(value) && typeof value === 'number') return p
-        // a velocidade é sempre limitada aos limites da aeronave selecionada
-        if (key === 'speed') {
-          const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
-          value = Math.min(r.max, Math.max(r.min, value))
-        }
-        // os outros parâmetros numéricos dentro dos seus limites (M3-C9)
-        return { ...p, [key]: clampParam(key, value) }
-      })
-    },
-    [aircraftRef],
-  )
-
   /* ------------------- Pipeline de cálculo (memo) -------------------- */
-  // A velocidade gravada pode ficar fora dos limites quando a aeronave muda —
-  // pelo selector, por carregar um projecto ou por aplicar um preset. Em vez
-  // de a corrigir com um efeito (um render extra e uma cascata de estado),
-  // limita-se aqui, no render: é este o valor que o painel mostra e que entra
-  // no plano, nas estatísticas e na exportação. A escrita já vinha limitada
-  // por setParam, pelo que isto só actua quando a aeronave muda por baixo.
-  const speed = Math.min(speedRange.max, Math.max(speedRange.min, params.speed))
+  // parâmetros de voo da área: pegada, espaçamento, intervalo, GSD e avisos
+  // do obturador (src/hooks/useAreaParams.js)
+  const {
+    params,
+    setParams,
+    setParam,
+    speed,
+    footprint,
+    spacing,
+    trigger,
+    interval,
+    gsdPitch,
+    gsd,
+    pointDensity,
+    triggerWarn,
+    avisoIntervalo,
+    onImportedMission,
+    flightPresets,
+    applyPreset,
+    setAltitudeFromGsd,
+  } = useAreaParams({
+    aircraftRef,
+    speedRange,
+    sensor,
+    payload,
+    aircraftId: drone.aircraftId,
+    setMissionName,
+  })
 
-  // Mesma regra para o corredor, que tem o seu proprio campo de velocidade: o
-  // painel aceita ate 25 m/s (normalizeCorridorConfig) e um M3E voa 15. Sem
-  // limitar, o WPML saia com autoFlightSpeed acima do que a aeronave faz e o
-  // tempo estimado ficava optimista — e e desse tempo que sai o numero de
-  // baterias que o operador leva para o campo.
-
-  const footprint = useMemo(
-    () => computeFootprint(sensor, params.altitude),
-    [sensor, params.altitude],
-  )
-  // Espaçamento e intervalo de disparo mantêm-se nadir-based mesmo com o
-  // gimbal oblíquo — decisão deliberada (R2.4): a pegada oblíqua no chão é
-  // maior do que a nadir, pelo que a sobreposição real fica sempre ≥ à
-  // pedida (erro conservador). Só o GSD apresentado usa o alcance inclinado.
-  const spacing = useMemo(
-    () =>
-      params.spacingMode === 'manual'
-        ? Math.max(1, params.manualSpacing)
-        : lineSpacing(footprint.across, params.sideOverlap),
-    [footprint, params.sideOverlap, params.spacingMode, params.manualSpacing],
-  )
-  // intervalo de disparo: automático (pela sobreposição frontal) ou o que o
-  // piloto escreve, em metros ou em segundos (src/mission/triggerInterval.js);
-  // `interval` é o efectivo, em metros, que o plano, as fotos e os avisos usam
-  const trigger = useMemo(
-    () =>
-      triggerInterval({
-        footprintAlong: footprint.along,
-        frontOverlapPct: params.frontOverlap,
-        triggerMode: params.triggerMode,
-        intervalMode: sensor.type === 'camera' ? params.intervalMode : 'auto',
-        manualIntervalM: params.manualIntervalM,
-        manualIntervalS: params.manualIntervalS,
-        speed,
-      }),
-    [
-      footprint,
-      params.frontOverlap,
-      params.triggerMode,
-      params.intervalMode,
-      params.manualIntervalM,
-      params.manualIntervalS,
-      sensor.type,
-      speed,
-    ],
-  )
-  const interval = trigger.intervalM
-  // com a passagem nadir extra (R2.10) o produto orto é governado pelo GSD
-  // nadir — é esse que se mostra e que serve de alvo
-  const gsdPitch = params.crosshatch && params.includeNadir ? -90 : params.gimbalPitch
-  const gsd = useMemo(
-    () => computeGSD(sensor, params.altitude, gsdPitch),
-    [sensor, params.altitude, gsdPitch],
-  )
-
-  // densidade de pontos LiDAR no solo (T2.1) — só para payloads com PRR
-  const pointDensity = useMemo(
-    () =>
-      sensor.type === 'lidar' && payload.maxPrr
-        ? lidarPointDensity({
-            prr: payload.maxPrr,
-            speed: speed,
-            swathM: footprint.across,
-            spacingM: spacing,
-          })
-        : null,
-    [sensor.type, payload, speed, footprint, spacing],
-  )
-
-  // intervalo entre fotos abaixo do que o obturador consegue?
-  const avisoObturador = useCallback(
-    (v) => {
-      if (interval == null || !(v > 0)) return null
-      const minS = payload.minTriggerS ?? 0.7
-      const actualS = interval / v
-      if (actualS >= minS) return null
-      return { actualS, minS, maxSpeed: interval / minS }
-    },
-    [interval, payload],
-  )
-  const triggerWarn = useMemo(() => avisoObturador(speed), [avisoObturador, speed])
-  // o mesmo aviso para um intervalo que não é o da área (as fotos ao longo
-  // de um círculo no modo circular)
-  const avisoIntervalo = useCallback(
-    (intervalM, v) => {
-      if (!(intervalM > 0) || !(v > 0)) return null
-      const minS = payload.minTriggerS ?? 0.7
-      const actualS = intervalM / v
-      if (actualS >= minS) return null
-      return { actualS, minS, maxSpeed: intervalM / minS }
-    },
-    [payload],
-  )
   /* ------------------------- Modo corredor ---------------------------- */
   const {
     corridorConfig,
@@ -534,22 +442,6 @@ function AppInner({ lang, setLang }) {
   })
 
   /* ------------------ Modo área, parte 1: geometria ------------------- */
-  // Reimportar um WPML devolve nome, altitude e velocidade da missão antiga
-  const onImportedMission = useCallback(
-    ({ name, altitude, speed: s }) => {
-      if (name) setMissionName(name)
-      setParams((p) => {
-        const next = { ...p }
-        if (Number.isFinite(altitude)) next.altitude = altitude
-        if (Number.isFinite(s)) {
-          const r = aircraftRef.current?.speedRange ?? { min: 1, max: 20 }
-          next.speed = Math.min(r.max, Math.max(r.min, s))
-        }
-        return next
-      })
-    },
-    [aircraftRef],
-  )
   const {
     ring,
     holes,
@@ -1234,7 +1126,7 @@ function AppInner({ lang, setLang }) {
 
   const applySlopeAngle = useCallback(() => {
     if (slopeHint) setParams((p) => ({ ...p, angle: Math.round(slopeHint.contourAzimuthDeg) }))
-  }, [slopeHint])
+  }, [slopeHint, setParams])
 
   // E3.2: agregado do projecto quando coexistem varios planos
   const projectSummary = useMemo(
@@ -2588,51 +2480,13 @@ function AppInner({ lang, setLang }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedBaseId, mode, overlayOpen])
 
-  // Catálogo de presets de missão aplicáveis ao sensor ativo, com a
-  // velocidade já resolvida para a aeronave selecionada
-  const flightPresets = useMemo(() => {
-    const kind = sensor.type === 'lidar' ? 'lidar' : 'camera'
-    return MISSION_PRESETS.filter((p) => p.appliesTo === kind).map((p) => ({
-      id: p.id,
-      name: p.name,
-      desc: p.desc,
-      values: {
-        ...p.values,
-        speed: p.speedByProfile?.[drone.aircraftId] ?? p.values.speed,
-      },
-    }))
-  }, [sensor.type, drone.aircraftId])
-
-  const applyPreset = useCallback(
-    (presetId) => {
-      const preset = flightPresets.find((p) => p.id === presetId)
-      if (preset) setParams((prev) => ({ ...prev, ...preset.values }))
-    },
-    [flightPresets],
-  )
-
-  // GSD alvo → altitude (inverso do cálculo do GSD, com o mesmo alcance
-  // inclinado do gimbal oblíquo)
-  const setAltitudeFromGsd = useCallback(
-    (gsdTarget) => {
-      if (sensor.type !== 'camera' || !sensor.imageWidth || !(gsdTarget > 0)) return
-      const absPitch = Math.max(20, Math.min(90, Math.abs(gsdPitch)))
-      const slantToAlt = Math.sin((absPitch * Math.PI) / 180)
-      const alt =
-        ((gsdTarget * sensor.focalLength * sensor.imageWidth) / (sensor.sensorWidth * 100)) *
-        slantToAlt
-      setParams((p) => ({ ...p, altitude: Math.round(alt * 10) / 10 }))
-    },
-    [sensor, gsdPitch],
-  )
-
   // Atalhos de direção das linhas relativamente ao bloco/aresta de referência
   const setAngleRelative = useCallback(
     (offsetDeg) => {
       if (refAzimuth == null) return
       setParams((p) => ({ ...p, angle: Math.round((refAzimuth + offsetDeg) % 360) }))
     },
-    [refAzimuth],
+    [refAzimuth, setParams],
   )
 
   // Direção ótima (T3.2): menor número de troços dentro do polígono real
@@ -2640,7 +2494,7 @@ function AppInner({ lang, setLang }) {
     if (!ring || !validation.valid) return
     const best = findOptimalDirection(ring, spacing)
     if (best != null) setParams((p) => ({ ...p, angle: Math.round(best) }))
-  }, [ring, validation.valid, spacing])
+  }, [ring, validation.valid, spacing, setParams])
 
   /* ----------------------------- Layout ------------------------------ */
   if (view === 'checklist') {
