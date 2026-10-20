@@ -84,11 +84,11 @@ export function Card({ id, n, title, children, more = null }) {
     >
       <h2
         id={`card-${id}-title`}
-        className="flex items-center gap-2 px-3 pb-2 pt-3 text-[11px] font-semibold uppercase tracking-widest text-sky-400"
+        className="flex items-center gap-2 px-3 pb-2 pt-3 text-xs font-semibold uppercase tracking-widest text-sky-400"
       >
         <span
           aria-hidden="true"
-          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/15 font-mono text-[11px] text-sky-300"
+          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/15 font-mono text-xs text-sky-300"
         >
           {n}
         </span>
@@ -146,7 +146,7 @@ export function Drawer({ id, title, open, onClose, children }) {
       <div className="flex items-center justify-between gap-2 border-b border-slate-800 px-4 py-2">
         <h2
           id={`drawer-${id}-title`}
-          className="text-[11px] font-semibold uppercase tracking-widest text-sky-400"
+          className="text-xs font-semibold uppercase tracking-widest text-sky-400"
         >
           {t('cards.drawerTitle', { title })}
         </h2>
@@ -171,7 +171,7 @@ export function DrawerGroup({ title, children }) {
   return (
     <div className="mb-4 border-b border-slate-800 pb-4 last:mb-0 last:border-b-0 last:pb-0">
       {title && (
-        <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
           {title}
         </h3>
       )}
@@ -212,7 +212,7 @@ export function SafetyActions({ safety, onChange }) {
             </option>
           ))}
         </select>
-        <p id="safety-finish-hint" className="mt-1 text-[11px] leading-relaxed text-slate-500">
+        <p id="safety-finish-hint" className="mt-1 text-xs leading-relaxed text-slate-400">
           {t('safety.finishHint')}
         </p>
       </div>
@@ -236,7 +236,7 @@ export function SafetyActions({ safety, onChange }) {
         </select>
         <p
           id="safety-rc-lost-hint"
-          className={`mt-1 text-[11px] leading-relaxed ${stopped ? 'text-slate-500' : 'text-amber-300'}`}
+          className={`mt-1 text-xs leading-relaxed ${stopped ? 'text-slate-400' : 'text-amber-300'}`}
         >
           {t(stopped ? 'safety.rcLostHint' : 'safety.rcLostContinueHint')}
         </p>
@@ -260,7 +260,7 @@ export function SafetyActions({ safety, onChange }) {
             </option>
           ))}
         </select>
-        <p id="safety-rc-action-hint" className="mt-1 text-[11px] leading-relaxed text-slate-500">
+        <p id="safety-rc-action-hint" className="mt-1 text-xs leading-relaxed text-slate-400">
           {t('safety.rcLostActionHint')}
         </p>
       </div>
@@ -276,9 +276,9 @@ export function RthLine({ info }) {
   const t = useT()
   if (!info) return null
   return (
-    <p data-testid="safety-rth" className="mt-2 text-[11px] leading-relaxed text-slate-300">
+    <p data-testid="safety-rth" className="mt-2 text-xs leading-relaxed text-slate-300">
       {t('safety.rth', { rth: rthRangeLabel(info), takeoff: info.takeoffM })}
-      <span className="block text-slate-500">{t('safety.rthHint')}</span>
+      <span className="block text-slate-400">{t('safety.rthHint')}</span>
     </p>
   )
 }

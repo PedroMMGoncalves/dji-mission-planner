@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useLang, useT } from '../i18n.jsx'
+import { VERSION_NOTES } from '../data/versionNotes.js'
 
 /** Chip de tecla/acção, estilo visualizador de mapas. */
 function Kbd({ children }) {
   return (
-    <kbd className="rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 font-mono text-[11px] text-slate-200">
+    <kbd className="rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-slate-200">
       {children}
     </kbd>
   )
@@ -12,7 +13,7 @@ function Kbd({ children }) {
 
 function H({ children }) {
   return (
-    <h3 className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-widest text-sky-400 first:mt-0">
+    <h3 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-widest text-sky-400 first:mt-0">
       {children}
     </h3>
   )
@@ -271,10 +272,10 @@ function InstrucoesPt() {
           <strong>Exportar voos</strong> (cartão 7, Resumo e exportar) — «Todos os voos (ZIP)»
           (…_voos.zip, todos soltos), «Todos os voos por base (ZIP)» (…_voos-por-base.zip, uma pasta
           por base: com vários pilotos, cada um leva as pastas das suas bases) ou «Um voo (KMZ)».
-          Com bases, o botão de exportar do cabeçalho descarrega os dois ZIP. A checklist de campo e
-          o relatório trazem a ficha de cada base (coordenadas com ligação para os mapas, zona,
-          cota, voos com os ficheiros, baterias); «Bases e blocos (KML)» leva as bases, as zonas e
-          os blocos com o rótulo do voo para o Google Earth ou o telemóvel.
+          Com bases, o botão de exportar do cabeçalho descarrega o ZIP por base. A checklist de
+          campo e o relatório trazem a ficha de cada base (coordenadas com ligação para os mapas,
+          zona, cota, voos com os ficheiros, baterias); «Bases e blocos (KML)» leva as bases, as
+          zonas e os blocos com o rótulo do voo para o Google Earth ou o telemóvel.
         </Li>
         <Li>
           <strong>Acções de segurança</strong> (cartão 5 da área, e um cartão próprio nos outros
@@ -297,7 +298,29 @@ function InstrucoesPt() {
           em ficheiro.
         </Li>
       </ul>
+      <H>O que mudou</H>
+      <p className="leading-relaxed">
+        O projecto grava a versão da aplicação; ao reabri-lo com uma versão mais recente, o cartão 1
+        lista o que mudou no plano desde então (o quadrado ou o voo com o mesmo rótulo pode já não
+        ser o mesmo). A mesma lista:
+      </p>
+      <WhatChanged lang="pt" />
     </>
+  )
+}
+
+/** As notas de versão (src/data/versionNotes.js), por versão. */
+function WhatChanged({ lang }) {
+  return (
+    <ul className="list-disc pl-5">
+      {VERSION_NOTES.flatMap((n) =>
+        (lang === 'en' ? n.en : n.pt).map((txt, i) => (
+          <Li key={`${n.version}-${i}`}>
+            <span className="font-mono text-xs text-slate-400">{n.version}</span> {txt}
+          </Li>
+        )),
+      )}
+    </ul>
   )
 }
 
@@ -547,10 +570,10 @@ function InstrucoesEn() {
           <strong>Export flights</strong> (card 7, Summary and export) — “All flights (ZIP)”
           (…_voos.zip, all loose), “All flights by base (ZIP)” (…_voos-por-base.zip, one folder per
           base: with several pilots, each takes the folders of their bases) or “One flight (KMZ)”.
-          With bases, the header export button downloads both ZIPs. The field checklist and the
-          report carry a sheet per base (coordinates with a maps link, zone, reference elevation,
-          flights with their files, batteries); “Bases and blocks (KML)” takes the bases, zones and
-          blocks labelled with their flight to Google Earth or a phone.
+          With bases, the header export button downloads the ZIP by base. The field checklist and
+          the report carry a sheet per base (coordinates with a maps link, zone, reference
+          elevation, flights with their files, batteries); “Bases and blocks (KML)” takes the bases,
+          zones and blocks labelled with their flight to Google Earth or a phone.
         </Li>
         <Li>
           <strong>Safety actions</strong> (card 5 of the area, and a card of their own in the other
@@ -572,6 +595,13 @@ function InstrucoesEn() {
           The project auto-saves in the browser; use “Save/Open project” to archive it as a file.
         </Li>
       </ul>
+      <H>What changed</H>
+      <p className="leading-relaxed">
+        The project records the application version; when reopened with a newer one, card 1 lists
+        what changed in the plan since then (the square or flight with the same label may no longer
+        be the same one). The same list:
+      </p>
+      <WhatChanged lang="en" />
     </>
   )
 }

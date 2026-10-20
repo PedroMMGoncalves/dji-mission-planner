@@ -34,7 +34,7 @@ const BUTTON =
 
 function H({ children }) {
   return (
-    <h3 className="mb-2 mt-5 text-[11px] font-semibold uppercase tracking-widest text-sky-400 first:mt-0">
+    <h3 className="mb-2 mt-5 text-xs font-semibold uppercase tracking-widest text-sky-400 first:mt-0">
       {children}
     </h3>
   )
@@ -226,11 +226,11 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                   edit((eq) => updateAircraftEquipment(eq, aircraftId, { vlosM: v }))
                 }
               />
-              <span className="w-8 text-xs text-slate-500">m</span>
+              <span className="w-8 text-xs text-slate-400">m</span>
             </div>
-            <p className="mb-3 text-[11px] leading-relaxed text-slate-500">{t('set.vlosHint')}</p>
+            <p className="mb-3 text-xs leading-relaxed text-slate-400">{t('set.vlosHint')}</p>
 
-            <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
+            <p className="mb-1 text-xs uppercase tracking-wider text-slate-400">
               {t('set.batteriesTitle')}
             </p>
             <ul className="space-y-2" data-testid="settings-batteries">
@@ -277,7 +277,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                             )
                           }
                         />
-                        <span className="text-xs text-slate-500">min</span>
+                        <span className="text-xs text-slate-400">min</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <label htmlFor={`${pre}-count`} className="text-xs text-slate-400">
@@ -311,7 +311,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                         {t('set.default')}
                       </label>
                       {b.estimated && (
-                        <span className="text-[11px] italic text-amber-300/90">
+                        <span className="text-xs italic text-amber-300/90">
                           {t('set.estimated')}
                         </span>
                       )}
@@ -339,9 +339,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
             >
               {t('set.add')}
             </button>
-            <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-              {t('set.batteriesHint')}
-            </p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-400">{t('set.batteriesHint')}</p>
           </div>
 
           <H>{t('set.zoneTitle')}</H>
@@ -356,11 +354,9 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
               step={10}
               onCommit={(v) => edit((eq) => ({ ...eq, zoneRadiusM: v }))}
             />
-            <span className="w-8 text-xs text-slate-500">m</span>
+            <span className="w-8 text-xs text-slate-400">m</span>
           </div>
-          <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
-            {t('set.zoneRadiusHint')}
-          </p>
+          <p className="mb-3 text-xs leading-relaxed text-slate-400">{t('set.zoneRadiusHint')}</p>
           <div className="mb-1 flex items-center gap-2">
             <label htmlFor="set-zone-relief" className="flex-1">
               {t('set.zoneRelief')}
@@ -371,11 +367,9 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
               limits={L.zoneMaxReliefM}
               onCommit={(v) => edit((eq) => ({ ...eq, zoneMaxReliefM: v }))}
             />
-            <span className="w-8 text-xs text-slate-500">m</span>
+            <span className="w-8 text-xs text-slate-400">m</span>
           </div>
-          <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
-            {t('set.zoneReliefHint')}
-          </p>
+          <p className="mb-3 text-xs leading-relaxed text-slate-400">{t('set.zoneReliefHint')}</p>
           <div className="mb-1 flex items-center gap-2">
             <label htmlFor="set-max-flights" className="flex-1">
               {t('set.maxFlightsPerBase')}
@@ -387,9 +381,9 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
               integer
               onCommit={(v) => edit((eq) => ({ ...eq, maxFlightsPerBase: v }))}
             />
-            <span className="w-8 text-xs text-slate-500" />
+            <span className="w-8 text-xs text-slate-400" />
           </div>
-          <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
+          <p className="mb-3 text-xs leading-relaxed text-slate-400">
             {t('set.maxFlightsPerBaseHint')}
           </p>
 
@@ -405,11 +399,9 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
               step={0.1}
               onCommit={(v) => edit((eq) => ({ ...eq, eyeHeightM: v }))}
             />
-            <span className="w-8 text-xs text-slate-500">m</span>
+            <span className="w-8 text-xs text-slate-400">m</span>
           </div>
-          <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
-            {t('set.eyeHeightHint')}
-          </p>
+          <p className="mb-3 text-xs leading-relaxed text-slate-400">{t('set.eyeHeightHint')}</p>
           <div className="mb-1 flex items-center gap-2">
             <label htmlFor="set-antenna-height" className="flex-1">
               {t('set.antennaHeight')}
@@ -421,9 +413,9 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
               step={0.1}
               onCommit={(v) => edit((eq) => ({ ...eq, antennaHeightM: v }))}
             />
-            <span className="w-8 text-xs text-slate-500">m</span>
+            <span className="w-8 text-xs text-slate-400">m</span>
           </div>
-          <p className="mb-3 text-[11px] leading-relaxed text-slate-500">
+          <p className="mb-3 text-xs leading-relaxed text-slate-400">
             {t('set.antennaHeightHint')}
           </p>
 
@@ -511,7 +503,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
           <button
             type="button"
             onClick={close}
-            className="min-h-[44px] rounded bg-sky-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500"
+            className="min-h-[44px] rounded bg-sky-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700"
           >
             {t('set.close')}
           </button>

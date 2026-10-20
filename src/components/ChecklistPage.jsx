@@ -88,7 +88,13 @@ function useL() {
 /** Atalho para declarar um item: texto, nota opcional, crítico opcional. */
 const it = (texto, nota = null, critico = false) => ({ texto, nota, critico })
 
-const FASES = [
+/**
+ * As fases e os itens, com os textos tirados do plano (M3-U11): a
+ * sobreposição planeada, os GCPs planeados, a reserva com que o tempo útil
+ * foi medido, e o item da altura única só sem seguir terreno. `ctx`:
+ * {front, side, gcps, terrainFollowOn}.
+ */
+const fasesDe = (ctx) => [
   {
     id: 'pre',
     titulo: bi('Pré-campo', 'Pre-field'),
@@ -148,7 +154,10 @@ const FASES = [
           ),
           it(
             bi('Plano de voo carregado e validado', 'Flight plan uploaded and validated'),
-            bi('Overlap lateral ≥ 70%, frontal ≥ 80%', 'Side overlap ≥ 70%, forward overlap ≥ 80%'),
+            bi(
+              `Sobreposição do plano: ${ctx.front}/${ctx.side} % (mínimo habitual 60/50 %)`,
+              `Plan overlap: ${ctx.front}/${ctx.side} % (usual minimum 60/50 %)`,
+            ),
             true,
           ),
         ],
@@ -241,8 +250,8 @@ const FASES = [
           it(
             bi('Targets GCP preparados e identificados', 'GCP targets prepared and labelled'),
             bi(
-              'Contraste com o terreno; mínimo 5 por bloco',
-              'Contrast against the ground; minimum 5 per block',
+              `Contraste com o terreno; ${ctx.gcps} planeado(s) no cartão 6`,
+              `Contrast against the ground; ${ctx.gcps} planned on card 6`,
             ),
           ),
           it(bi('Cartografia de base da área disponível', 'Base mapping of the area available')),
@@ -342,17 +351,33 @@ const FASES = [
               'The corridor does not split by battery — the points are planned by hand',
             ),
           ),
-          it(
-            bi(
-              'Altura única validada contra o ponto mais alto de todo o traçado',
-              'Single altitude validated against the highest point of the whole route',
-            ),
-            bi(
-              'Modo nadir sem seguimento de terreno: a cota de descolagem é a referência de tudo',
-              'Nadir only, no terrain following: the take-off elevation is the reference throughout',
-            ),
-            true,
-          ),
+          ...(ctx.terrainFollowOn
+            ? [
+                it(
+                  bi(
+                    'Alturas a seguir o terreno validadas contra o relevo (perfil e folga ao solo)',
+                    'Terrain-following heights validated against the relief (profile and ground clearance)',
+                  ),
+                  bi(
+                    'Modo nadir com seguimento de terreno: cada waypoint leva a sua altura; a cota de descolagem é a referência',
+                    'Nadir with terrain following: each waypoint carries its own height; the take-off elevation is the reference',
+                  ),
+                  true,
+                ),
+              ]
+            : [
+                it(
+                  bi(
+                    'Altura única validada contra o ponto mais alto de todo o traçado',
+                    'Single altitude validated against the highest point of the whole route',
+                  ),
+                  bi(
+                    'Modo nadir sem seguimento de terreno: a cota de descolagem é a referência de tudo',
+                    'Nadir only, no terrain following: the take-off elevation is the reference throughout',
+                  ),
+                  true,
+                ),
+              ]),
         ],
       },
     ],
@@ -437,8 +462,8 @@ const FASES = [
         itens: [
           it(
             bi(
-              'Bateria monitorizada — retorno se < 30%',
-              'Battery monitored — return home if < 30%',
+              'Bateria monitorizada: regressar com a reserva com que o tempo útil foi medido (15-20 %); o plano já a desconta',
+              'Battery monitored: return with the reserve the useful time was measured with (15-20 %); the plan already deducts it',
             ),
             null,
             true,
@@ -934,7 +959,7 @@ const hoje = () => new Date().toISOString().slice(0, 10)
 
 function Titulo({ children, className = '' }) {
   return (
-    <h2 className={`text-[11px] font-semibold uppercase tracking-widest text-sky-400 ${className}`}>
+    <h2 className={`text-xs font-semibold uppercase tracking-widest text-sky-400 ${className}`}>
       {children}
     </h2>
   )
@@ -943,7 +968,7 @@ function Titulo({ children, className = '' }) {
 function Botao({ children, onClick, tom = 'neutro', disabled }) {
   const tons = {
     neutro: 'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700',
-    primario: 'bg-emerald-600 text-white hover:bg-emerald-500 border border-emerald-600',
+    primario: 'bg-emerald-700 text-white hover:bg-emerald-700 border border-emerald-600',
     aviso:
       'bg-slate-800 text-slate-300 hover:bg-red-900/60 hover:text-red-200 border border-slate-700',
   }
@@ -962,7 +987,7 @@ function Botao({ children, onClick, tom = 'neutro', disabled }) {
 function CampoTexto({ label, value, onChange, placeholder, type = 'text' }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">{label}</span>
+      <span className="font-mono text-xs uppercase tracking-wider text-slate-400">{label}</span>
       <input
         type={type}
         value={value}
@@ -997,7 +1022,7 @@ function ItemChecklist({ item, feito, onToggle, acento }) {
         className="chk-item flex w-full items-start gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-slate-800/50"
       >
         <span
-          className={`chk-box mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border text-[10px] font-bold leading-none ${
+          className={`chk-box mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border text-xs font-bold leading-none ${
             feito ? acento.caixa : 'border-slate-600 bg-slate-950 text-transparent'
           }`}
         >
@@ -1006,7 +1031,7 @@ function ItemChecklist({ item, feito, onToggle, acento }) {
         <span className="min-w-0 flex-1">
           <span
             className={`chk-text block text-[13px] leading-snug ${
-              feito ? 'text-slate-500 line-through' : 'text-slate-200'
+              feito ? 'text-slate-400 line-through' : 'text-slate-200'
             }`}
           >
             {L(item.texto)}
@@ -1017,7 +1042,7 @@ function ItemChecklist({ item, feito, onToggle, acento }) {
             )}
           </span>
           {item.nota && (
-            <span className="chk-note mt-0.5 block font-mono text-[10px] leading-tight text-slate-500">
+            <span className="chk-note mt-0.5 block font-mono text-xs leading-tight text-slate-400">
               {L(item.nota)}
             </span>
           )}
@@ -1032,7 +1057,7 @@ function BarraProgresso({ feitos, total, acento }) {
   const pct = total ? Math.round((feitos / total) * 100) : 0
   return (
     <div className="mt-3 border-t border-slate-800 pt-3">
-      <div className="mb-1 flex items-baseline justify-between font-mono text-[10px] text-slate-400">
+      <div className="mb-1 flex items-baseline justify-between font-mono text-xs text-slate-400">
         <span>
           {feitos}/{total} {L(UI.items)}
         </span>
@@ -1068,7 +1093,7 @@ function ColunaFase({ fase, checked, onToggle, sensorType, faceMode, corridorMod
     <section className="chk-coluna flex flex-col rounded-lg border border-slate-800 bg-slate-900 p-4">
       <div className="mb-3 flex items-center gap-2">
         <span className={`h-3 w-1 rounded-full ${acento.risca}`} />
-        <h2 className={`text-[11px] font-semibold uppercase tracking-widest ${acento.titulo}`}>
+        <h2 className={`text-xs font-semibold uppercase tracking-widest ${acento.titulo}`}>
           {L(fase.titulo)}
         </h2>
       </div>
@@ -1079,7 +1104,7 @@ function ColunaFase({ fase, checked, onToggle, sensorType, faceMode, corridorMod
           (grupo, gi) =>
             groupApplies(grupo, sensorType, { face: faceMode, corridor: corridorMode }) && (
               <div key={`${fase.id}.${gi}`} className="chk-grupo">
-                <h3 className="mb-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                <h3 className="mb-1 font-mono text-xs uppercase tracking-wider text-slate-400">
                   {L(grupo.titulo)}
                 </h3>
                 <ul className="space-y-0.5">
@@ -1128,7 +1153,7 @@ function Tabela({ titulo, cols, linhas, onCell, onAdd, onRemove, extra, minWidth
               {cols.map((c) => (
                 <th
                   key={c.key}
-                  className={`border border-slate-800 bg-slate-950 px-2 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-400 ${c.w}`}
+                  className={`border border-slate-800 bg-slate-950 px-2 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-slate-400 ${c.w}`}
                 >
                   {L(c.label)}
                 </th>
@@ -1167,7 +1192,7 @@ function Tabela({ titulo, cols, linhas, onCell, onAdd, onRemove, extra, minWidth
 function CaixaNota({ label, value, onChange }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">{label}</span>
+      <span className="font-mono text-xs uppercase tracking-wider text-slate-400">{label}</span>
       <textarea
         rows={4}
         value={value}
@@ -1191,7 +1216,12 @@ export default function ChecklistPage({
   flightLabels = null,
   // ficha de campo por base (baseFieldSheets), com a área dividida e bases
   baseSheets = [],
+  // a linha do dia por cima das fichas (daySummary)
+  daySheets = null,
   plannedGcps = [],
+  // sobreposições do plano e seguimento de terreno, para os itens (M3-U11)
+  params = null,
+  terrainFollowOn = false,
   // acções de segurança escritas no KMZ (src/mission/safety.js)
   safety = null,
   // altura de regresso (RTH) e subida de descolagem escritas no KMZ (M3-U3)
@@ -1201,6 +1231,16 @@ export default function ChecklistPage({
   const lang = useLang()
   const t = useT()
   const L = (v) => tr(v, lang)
+  const FASES = useMemo(
+    () =>
+      fasesDe({
+        front: Number.isFinite(params?.frontOverlap) ? params.frontOverlap : '—',
+        side: Number.isFinite(params?.sideOverlap) ? params.sideOverlap : '—',
+        gcps: plannedGcps?.length ?? 0,
+        terrainFollowOn: Boolean(terrainFollowOn),
+      }),
+    [params?.frontOverlap, params?.sideOverlap, plannedGcps?.length, terrainFollowOn],
+  )
 
   // O estado gravado é lido UMA vez e semeia todos os átomos abaixo
   const [{ dados: guardado, outra: guardadoDeOutra }] = useState(() => lerGuardado(missionName))
@@ -1321,7 +1361,7 @@ export default function ChecklistPage({
       total += itens.length
     })
     return { porFase, feitos, total }
-  }, [checked, lang, sensorType, faceMode, corridorMode])
+  }, [checked, lang, sensorType, faceMode, corridorMode, FASES])
 
   const importarBlocos = () => {
     if (!blocks || blocks.length === 0) return
@@ -1467,7 +1507,7 @@ export default function ChecklistPage({
             </div>
 
             <div className="no-print flex flex-wrap items-center gap-2">
-              <span className="mr-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+              <span className="mr-1 font-mono text-xs uppercase tracking-wider text-slate-400">
                 {resumo.feitos}/{resumo.total} · {pctGlobal}%
               </span>
               <Botao onClick={exportarJSON} tom="primario">
@@ -1537,6 +1577,7 @@ export default function ChecklistPage({
           >
             <Titulo className="mb-3">{t('bases.sheet.title')}</Titulo>
             <BaseFieldSheets
+              day={daySheets}
               sheets={baseSheets}
               cardClass="chk-base bg-slate-950"
               tableClass="chk-base-tabela"
@@ -1622,7 +1663,7 @@ export default function ChecklistPage({
             {ASSINATURAS.map((papel) => (
               <div key={papel.pt}>
                 <div className="h-8 border-b border-slate-600" />
-                <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-400">
                   {L(papel)}
                 </p>
               </div>
@@ -1630,7 +1671,7 @@ export default function ChecklistPage({
           </div>
         </section>
 
-        <p className="no-print mt-6 text-center font-mono text-[10px] text-slate-600">
+        <p className="no-print mt-6 text-center font-mono text-xs text-slate-600">
           {L(UI.autosave)}
         </p>
       </div>

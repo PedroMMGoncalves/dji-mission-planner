@@ -19,8 +19,10 @@ U4, U6, U8, U12, C10, C11/U18, U21 + T15 + C12a, T5, T10) aplicado, com
 `tests/unit/preflight-limiares.test.mjs`, `src/utils/appError.js` e
 `src/i18n/dict.errors.js`; de U21 ficam de fora, de propósito, a formatação
 pt-PT dos números (os números do painel seguem os dos ficheiros e das
-medições) e o nome por omissão com data. R-D a seguir. Os achados das duas
-primeiras vagas não se repetem aqui.
+medições) e o nome por omissão com data. R-D em duas partes: a primeira
+(campo e textos: U7, U10, U11, U13, U14, U15, U16, U17, U19, U20, U22, U23)
+aplicada; a segunda (estrutura e testes: C12b/c, C13, C14, C15, T6, T9, T11,
+T12, T16) a seguir. Os achados das duas primeiras vagas não se repetem aqui.
 
 ## 1. Método
 

@@ -545,6 +545,62 @@ que os textos diziam mal e os identificadores que não batiam certo.
   (`tests/unit/preflight-limiares.test.mjs`); `baseZoneFor` (M3-T10) com um
   patamar a 200 m e 196 m à volta.
 
+### Corrigido (revisão do código, pacote R-D, primeira parte: campo e textos)
+
+- **Bateria e tempo útil em todas as divisões** (M3-U7): o tipo de bateria e
+  o tempo útil por voo, que decidem os avisos e a cor do voo mais longo,
+  estão no cartão 4 em «Nenhuma», «Faixas» e «Mosaico», não só em «Bateria»;
+  «Área máx. por bloco» passa da gaveta para o cartão; o corredor diz a
+  altitude e as sobreposições que usa (as do separador Área, cartão 3).
+- **A ficha de campo completa, e para todos os modos** (M3-U10): por voo
+  «Altura no comando: {h1}–{hmax} m» (a do KMZ) e a percentagem do tempo útil
+  (a âmbar acima de 90 %); por base os parâmetros que o piloto confere no
+  Pilot 2 e o RTH; no topo a linha do dia (voos de todas as bases contra os
+  conjuntos da equipa); uma rota única, um corredor ou um circular com a base
+  marcada levam a base para o papel.
+- **A checklist tirada do plano** (M3-U11): «Sobreposição do plano: {f}/{s} %
+  (mínimo habitual 60/50 %)» em vez de «≥ 70/80 %»; «regressar com a reserva
+  com que o tempo útil foi medido» em vez de «retorno se < 30 %» (cada bloco
+  seria interrompido antes do fim); «{n} GCPs planeados» em vez de «mínimo 5
+  por bloco»; o item da altura única só sem seguir terreno.
+- **Painel de métricas** (M3-U13, M3-U23): as dicas dos mosaicos voltam a
+  aparecer (recebem o rato; os espaços entre eles continuam a deixar passar
+  os cliques para o mapa); «Tempo na rota (sem trânsito)» e «Tempo total com
+  trânsitos», com o mesmo formato; o cartão 7 ganha «Voo mais longo / útil»;
+  o painel recolhe-se («Recolher as métricas», lembrado neste aparelho).
+- **Uma frase para os conjuntos de baterias** (M3-U14): «{n} precisos · {s} na
+  equipa» no painel, no cartão 7 e nas fichas.
+- **Glossário** (M3-U15): em EN «base» em vez de «home point» (o Home Point
+  do DJI é o ponto gravado ao descolar) e «take-off» sempre.
+- **Um clique, um ficheiro** (M3-U16): com bases o botão do cabeçalho e o do
+  cartão 7 descarregam só o ZIP por base (o rótulo di-lo); o ZIP dos voos
+  soltos e cada voo à parte continuam em «Exportar voos». Antes saíam dois
+  ZIP com os mesmos KMZ, e cada voo aparecia duas vezes no Pilot 2.
+- **A versão da aplicação no projecto** (M3-U17): `appVersion` no ficheiro e
+  no esquema; ao reabrir um projecto gravado por uma versão anterior o
+  cartão 1 lista o que mudou no plano desde então (quadrados por bateria,
+  bloqueios novos, pontos por círculo, órbita, identificador de voo, RTH);
+  a ajuda tem a mesma lista («O que mudou»).
+- **QA e primeiro voo** (M3-U19): o manual de QA refaz o §4 (bateria por
+  aeronave e acerto por missão) e o §8 (o corredor segue o terreno) e ganha
+  «Primeiro voo de cada modo» (lente do M4T, M300 colinear, acções e rumos,
+  foto sem paragem, alturas no comando); fora das combinações com KMZ
+  confirmado (`src/data/validation.js`, a matriz de VALIDACAO §5) o preflight
+  põe a nota «Primeiro voo desta combinação».
+- **A dica da grelha diz minutos** (M3-U20): «{s}×{s} m (≈{min} min com os
+  parâmetros actuais)» em vez de «≈1 bateria» (um quadrado de 250 m dura 3
+  min no M3E e 6 no P1, contra 25-32 min úteis); «6 blocos» em vez de «6
+  baterias», com a remissão para a divisão «Bateria».
+- **Margem em metros** (M3-U22): «= {m} m para cada lado» ao lado das
+  percentagens (o Pilot 2 e o UgCS pedem metros); a dica das paragens dá os
+  nomes WPML do Pilot 2 (`waypointTurnMode`); em EN «Forward overlap» sempre.
+- **Contraste e alvos tácteis** (M3-U23): dicas e rótulos secundários a
+  `slate-400` e 12 px; botões de exportar em `sky-700`/`emerald-700`;
+  vértices e pontos intermédios com 24/18 px de alvo (o visual fica igual);
+  retirar um vértice também por toque longo (600 ms), não só com o clique
+  direito; `aria-label` nas setas e no ✕ dos pontos de inspecção; a `select`
+  das paragens mais larga.
+
 ## 1.4.2 — 2026-10-08
 
 ### Alterado (desenho)

@@ -89,7 +89,7 @@ export default {
   },
   'cp.inspect.hint': {
     pt: 'Missão própria, independente da grelha: rumo e pitch por ponto, uma foto por ponto marcado. As alturas são relativas ao ponto de descolagem.',
-    en: 'A mission of its own, independent of the grid: per-point heading and pitch, one photo per marked point. Heights are relative to the takeoff point.',
+    en: 'A mission of its own, independent of the grid: per-point heading and pitch, one photo per marked point. Heights are relative to the take-off point.',
   },
   'cp.terrain.slopeHint': {
     pt: 'Encosta média de {slope}° a descer para {az}°. Para encostas íngremes com terrain follow: linhas ao longo das curvas de nível ({lines}°). A câmara fica a nadir: com o rumo a seguir a rota, uma câmara oblíqua inclinava-se ao longo da curva de nível, não para a encosta.',
@@ -162,7 +162,7 @@ export default {
     en: '— exceeds the general Open category limit (EU); specific authorisation is required.',
   },
   'cp.flight.speed': { pt: 'Velocidade', en: 'Speed' },
-  'cp.flight.frontOverlap': { pt: 'Sobreposição frontal', en: 'Front overlap' },
+  'cp.flight.frontOverlap': { pt: 'Sobreposição frontal', en: 'Forward overlap' },
   'cp.flight.sideOverlap': { pt: 'Sobreposição lateral', en: 'Side overlap' },
   'cp.flight.manualSpacing': {
     pt: 'Espaçamento manual entre linhas',
@@ -181,8 +181,8 @@ export default {
   'cp.flight.stopsCorners': { pt: 'Só nos cantos', en: 'Corners only' },
   'cp.flight.stopsAll': { pt: 'Em todos', en: 'At every waypoint' },
   'cp.flight.stopsHint': {
-    pt: 'Só nos cantos: a aeronave pára no fim de cada faixa e passa sem parar pelas fotos e pelos vértices do terreno. Em todos: pára em cada waypoint (pouca luz, exposições longas), e o tempo previsto conta as paragens.',
-    en: 'Corners only: the aircraft stops at the end of each strip and flies through photo points and terrain vertices. At every waypoint: it stops at each one (low light, long exposures), and the estimated time counts the stops.',
+    pt: 'Só nos cantos: a aeronave pára no fim de cada faixa e passa sem parar pelas fotos e pelos vértices do terreno (no Pilot 2, waypointTurnMode coordinateTurn nesses pontos). Em todos: pára em cada waypoint (toPointAndStopWithDiscontinuityCurvature; pouca luz, exposições longas), e o tempo previsto conta as paragens.',
+    en: 'Corners only: the aircraft stops at the end of each strip and flies through photo points and terrain vertices (in Pilot 2, waypointTurnMode coordinateTurn at those points). At every waypoint: it stops at each one (toPointAndStopWithDiscontinuityCurvature; low light, long exposures), and the estimated time counts the stops.',
   },
   'cp.flight.waypointWarn': {
     pt: '{n} waypoints num só bloco — acima de 2000 a importação no Pilot 2 fica lenta; aumente o intervalo ou divida em blocos.',
@@ -225,6 +225,13 @@ export default {
     pt: 'Expansão das Linhas (Buffer)',
     en: 'Flight Line Expansion (Buffer)',
   },
+  'cp.buffer.metres': {
+    pt: '= {m} m para cada lado ({pct} % de √área ÷ 2; o Pilot 2 e o UgCS pedem metros)',
+    en: '= {m} m on each side ({pct} % of √area ÷ 2; Pilot 2 and UgCS ask for metres)',
+  },
+  'cp.inspect.moveUp': { pt: 'Subir o ponto {n} na ordem', en: 'Move point {n} up' },
+  'cp.inspect.moveDown': { pt: 'Descer o ponto {n} na ordem', en: 'Move point {n} down' },
+  'cp.inspect.remove': { pt: 'Retirar o ponto {n}', en: 'Remove point {n}' },
 
   /* ---- Área de levantamento ---- */
   'cp.area.title': { pt: 'Área de Levantamento', en: 'Survey Area' },
@@ -274,7 +281,7 @@ export default {
   'cp.area.markBase': { pt: 'Marcar base', en: 'Set base' },
   'cp.area.baseTitle': {
     pt: 'Marcar o ponto de descolagem / posição do operador',
-    en: 'Set the takeoff point / operator position',
+    en: 'Set the take-off point / operator position',
   },
   'cp.area.removeBase': { pt: 'Remover base', en: 'Remove base' },
   'cp.area.baseHint': {
@@ -304,8 +311,8 @@ export default {
   'cp.area.quickSizes': { pt: 'Tamanhos rápidos', en: 'Quick sizes' },
   'cp.area.sizeTitle': { pt: '{s}×{s} m', en: '{s}×{s} m' },
   'cp.area.sizeTitleBattery': {
-    pt: '{s}×{s} m (≈1 bateria)',
-    en: '{s}×{s} m (≈1 battery)',
+    pt: '{s}×{s} m (≈{min} min com os parâmetros actuais)',
+    en: '{s}×{s} m (≈{min} min with the current parameters)',
   },
   'cp.area.side': { pt: 'Lado', en: 'Side' },
   'cp.area.length': { pt: 'Comprimento', en: 'Length' },
@@ -318,8 +325,8 @@ export default {
   'cp.area.cols': { pt: 'Colunas (∥ orientação)', en: 'Columns (∥ orientation)' },
   'cp.area.rows': { pt: 'Linhas (⊥ orientação)', en: 'Rows (⊥ orientation)' },
   'cp.area.gridHint': {
-    pt: 'Com mais de 1 célula, cada célula torna-se um bloco de voo numerado (ex.: 3×2 quadrados de 250 m = 6 baterias). Use o buffer para criar sobreposição entre células.',
-    en: 'With more than 1 cell, each cell becomes a numbered flight block (e.g. 3×2 squares of 250 m = 6 batteries). Use the buffer to create overlap between cells.',
+    pt: 'Com mais de 1 célula, cada célula torna-se um bloco de voo numerado (ex.: 3×2 quadrados de 250 m = 6 blocos; para os dimensionar pela bateria use a divisão «Bateria», cartão 4). Use o buffer para criar sobreposição entre células.',
+    en: 'With more than 1 cell, each cell becomes a numbered flight block (e.g. 3×2 squares of 250 m = 6 blocks; to size them by battery use the "Battery" split, card 4). Use the buffer to create overlap between cells.',
   },
   'cp.area.editHintA': {
     pt: 'Edição: arraste os vértices · arraste os pontos intermédios para',
@@ -495,7 +502,7 @@ export default {
   },
   'cp.terrain.sourceHint': {
     pt: 'Fonte: Terrarium/AWS (~30 m). As alturas por waypoint são relativas ao ponto de descolagem — marque a base no local real de descolagem e valide no Pilot 2.',
-    en: 'Source: Terrarium/AWS (~30 m). Waypoint heights are relative to the takeoff point — set the base at the actual takeoff location and validate in Pilot 2.',
+    en: 'Source: Terrarium/AWS (~30 m). Waypoint heights are relative to the take-off point — set the base at the actual take-off location and validate in Pilot 2.',
   },
   'cp.terrain.cacheHint': {
     pt: '{hits} de {total} tiles vieram da cache local (as áreas já vistas carregam sem rede).',
@@ -522,7 +529,7 @@ export default {
   },
   'cp.terrain.sourceHintFile': {
     pt: 'Fonte: MDT local {label} ({res} m). As alturas por waypoint são relativas ao ponto de descolagem — marque a base no local real de descolagem e valide no Pilot 2.',
-    en: 'Source: local DTM {label} ({res} m). Waypoint heights are relative to the takeoff point — set the base at the actual takeoff location and validate in Pilot 2.',
+    en: 'Source: local DTM {label} ({res} m). Waypoint heights are relative to the take-off point — set the base at the actual take-off location and validate in Pilot 2.',
   },
 
   /* ---- GCPs ---- */

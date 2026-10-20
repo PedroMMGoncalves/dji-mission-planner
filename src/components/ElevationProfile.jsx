@@ -145,7 +145,7 @@ function Metric({
 }) {
   return (
     <div className={`rounded border px-2.5 py-1.5 ${box}`}>
-      <div className="text-[10px] uppercase tracking-widest text-slate-400">{label}</div>
+      <div className="text-xs uppercase tracking-widest text-slate-400">{label}</div>
       <div className={`text-sm font-medium tabular-nums ${text}`}>{value}</div>
     </div>
   )
@@ -265,7 +265,7 @@ export default function ElevationProfile({
         {/* Cabeçalho */}
         <div className="flex items-start gap-3 border-b border-slate-700 px-5 py-3">
           <div className="min-w-0">
-            <h2 className="text-[11px] font-semibold uppercase tracking-widest text-sky-400">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-sky-400">
               {L(TXT.title)}
             </h2>
             <p className="mt-0.5 text-xs text-slate-400">{L(TXT.subtitle)}</p>
@@ -283,7 +283,7 @@ export default function ElevationProfile({
           {/* Seletor de bloco */}
           {blockList.length > 0 && (
             <div className="mb-3 flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-[10px] uppercase tracking-widest text-slate-400">
+              <span className="mr-1 text-xs uppercase tracking-widest text-slate-400">
                 {L(TXT.selection)}
               </span>
               {[
@@ -511,7 +511,7 @@ export default function ElevationProfile({
               </div>
 
               {/* Legenda */}
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-400">
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400">
                 <Swatch color="#22d3ee">{L(TXT.flight)}</Swatch>
                 <Swatch color="#f59e0b">{L(TXT.terrain)}</Swatch>
                 <Swatch color={tone.stroke} dashed>

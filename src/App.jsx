@@ -50,21 +50,29 @@ import {
   setBaseRadius,
 } from './mission/bases.js'
 import { blockRing, blocksViewRoute, summarizeBases, convexHull } from './mission/baseLayout.js'
-import { baseFieldSheets } from './mission/fieldSheet.js'
+import {
+  baseFieldSheets,
+  daySummary,
+  heightsOfWaypoints,
+  singleRouteSheet,
+} from './mission/fieldSheet.js'
 import { buildBasesKML } from './mission/basesKml.js'
 import { blocksKmlByBase } from './mission/blocksKml.js'
 import {
   aggregatePlans,
-  normalizeTriggerMode,
-  normalizeWaypointStops,
+  bufferDistanceMeters,
   computeFootprint,
   computeGSD,
   distanceToArea,
   findOptimalDirection,
   lidarPointDensity,
   lineSpacing,
+  normalizeTriggerMode,
+  normalizeWaypointStops,
   photoInterval,
   resolveSensor,
+  ringToPolygon,
+  squareFlightTimeS,
 } from './utils/geo.js'
 import {
   DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
@@ -137,6 +145,8 @@ function browserStorage() {
 }
 import { LANGS, LangContext, useT } from './i18n.jsx'
 import { terrainErrorText } from './utils/appError.js'
+import { isVerifiedFlight } from './data/validation.js'
+import { APP_VERSION, versionBefore } from './mission/project.js'
 
 /** Bases a menos de ~3 km da caixa da área: entram na caixa do relevo (a cota da zona). */
 function basePointsNear(bases, ring) {
@@ -287,6 +297,9 @@ function AppInner({ lang, setLang }) {
   // a última proposta: {added, outOfVlos, poorSites} ou {cancelled: true}
   const [baseProposal, setBaseProposal] = useState(null)
   const [exportError, setExportError] = useState(null)
+  // a versão que gravou o projecto aberto (M3-U17): o cartão 1 diz o que mudou
+  // desde então; null depois de lido ou quando é a actual
+  const [projectVersion, setProjectVersion] = useState(null)
 
   /**
    * E4.1: nenhuma exportação escreve um ficheiro com valores inválidos. O
@@ -1496,8 +1509,104 @@ function AppInner({ lang, setLang }) {
     }
   }, [transitLegsInfo, view3d, missionMode, params.altitude])
 
+  // os parâmetros que o piloto confere no Pilot 2, na ficha (M3-U10)
+  const sheetParams = useMemo(
+    () => ({
+      altitudeM: params.altitude,
+      speedMS: speed,
+      frontPct: params.frontOverlap,
+      sidePct: params.sideOverlap,
+      gsdCm: Number.isFinite(gsd) ? gsd : null,
+    }),
+    [params.altitude, params.frontOverlap, params.sideOverlap, speed, gsd],
+  )
+  // a ficha de uma rota única com a base marcada (área sem blocos, corredor,
+  // circular): a mesma forma das fichas por base, com um só voo (M3-U10)
+  const singleSheet = useMemo(() => {
+    if (perBlockBases) return null
+    const pick =
+      missionMode === 'area'
+        ? {
+            base: refBase,
+            zone: refBase ? zones[refBase.id] : null,
+            ops: areaRouteOps,
+            timeS: planOk?.stats?.flightTimeS,
+            file: `${exportBaseName}.kmz`,
+          }
+        : missionMode === 'corridor'
+          ? {
+              base: corridorBase,
+              zone: corridorReference?.zone ?? null,
+              ops: corridorRouteOps,
+              timeS: modeStats?.flightTimeS,
+              file: null,
+            }
+          : missionMode === 'circular'
+            ? {
+                base: circularBase,
+                zone: circularReference?.zone ?? null,
+                ops: circularRouteOps,
+                timeS: modeStats?.flightTimeS,
+                file: null,
+              }
+            : null
+    if (!pick?.base?.point || !Number.isFinite(pick.timeS)) return null
+    const z = pick.zone && !pick.zone.error ? pick.zone : null
+    return singleRouteSheet({
+      label: pick.base.label ?? 'A',
+      color: pick.base.color ?? null,
+      point: pick.base.point,
+      radiusM: z?.radiusM ?? pick.base.radiusM ?? equipment.zoneRadiusM,
+      requestedRadiusM: z?.requestedRadiusM ?? null,
+      reduced: Boolean(z?.reduced),
+      cause: z?.cause ?? null,
+      noTerrain: Boolean(pick.zone?.error),
+      refElev: z?.refElev ?? view3d?.refElev ?? null,
+      gainM: z?.gainM ?? null,
+      flightLabel: '1',
+      file: pick.file,
+      flightS: pick.timeS,
+      transitS: pick.ops?.transitS ?? 0,
+      vlosM,
+      worstVlosM: pick.ops?.vlosWorstM ?? null,
+      rthM: rthInfo?.maxM ?? null,
+      takeoffM: DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+      heights: heightsOfWaypoints(view3d?.waypoints, params.altitude),
+      usefulS: batteryMin > 0 ? batteryMin * 60 : null,
+      params: sheetParams,
+      equipment,
+      aircraftId: drone.aircraftId,
+      batteryId: missionBatteryType.id,
+      baseWord: t('bases.label', { label: '' }).trim(),
+    })
+  }, [
+    perBlockBases,
+    missionMode,
+    refBase,
+    zones,
+    areaRouteOps,
+    planOk,
+    exportBaseName,
+    corridorBase,
+    corridorReference,
+    corridorRouteOps,
+    circularBase,
+    circularReference,
+    circularRouteOps,
+    modeStats,
+    equipment,
+    view3d,
+    vlosM,
+    rthInfo,
+    params.altitude,
+    batteryMin,
+    sheetParams,
+    drone.aircraftId,
+    missionBatteryType.id,
+    t,
+  ])
   // ficha de campo por base (checklist, relatório e KML «Bases e blocos»):
-  // só com a área dividida em blocos e bases marcadas
+  // com a área dividida em blocos e bases marcadas, ou a rota única com base
   const fieldSheets = useMemo(
     () =>
       perBlockBases
@@ -1515,8 +1624,17 @@ function AppInner({ lang, setLang }) {
             viewTerrain,
             rthByFlight: rthInfo?.byFlight ?? null,
             takeoffM: DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
+            heightsOf: (id) => {
+              const tfOk = terrainResult && !terrainResult.error
+              const src = tfOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks
+              return heightsOfWaypoints(src?.find((b) => b.id === id)?.waypoints, params.altitude)
+            },
+            usefulS: batteryMin > 0 ? batteryMin * 60 : null,
+            params: sheetParams,
           })
-        : [],
+        : singleSheet
+          ? [singleSheet]
+          : [],
     [
       viewshedByBlock,
       viewTerrain,
@@ -1531,7 +1649,22 @@ function AppInner({ lang, setLang }) {
       missionBatteryType.id,
       t,
       rthInfo,
+      terrainResult,
+      params.altitude,
+      batteryMin,
+      sheetParams,
+      singleSheet,
     ],
+  )
+  // a linha do dia por cima das fichas: todos os voos contra os conjuntos da equipa
+  const fieldSheetsDay = useMemo(
+    () =>
+      daySummary(fieldSheets, {
+        equipment,
+        aircraftId: drone.aircraftId,
+        batteryId: missionBatteryType.id,
+      }),
+    [fieldSheets, equipment, drone.aircraftId, missionBatteryType.id],
   )
   // avisos do KML da área (K-B1, K-E1 e K-M8 da revisão da exportação): o
   // ficheiro para o Pilot 2 leva só o anel exterior da maior parte, com as
@@ -1874,6 +2007,19 @@ function AppInner({ lang, setLang }) {
     const msg = t(key, { msg: terrainResult.detail ?? '' })
     return { ...terrainResult, error: msg === key ? String(terrainResult.error) : msg }
   }, [terrainResult, t])
+  // primeiro voo de uma combinação aeronave + payload + modo sem KMZ confirmado
+  // na matriz (M3-U19): o preflight lembra o que confirmar
+  const unverified = useMemo(() => {
+    if (
+      isVerifiedFlight({
+        aircraftId: drone.aircraftId,
+        payloadId: drone.payloadId,
+        mode: missionMode,
+      })
+    )
+      return null
+    return { aircraft: aircraft.label, payload: payload.label, mode: t(`mode.${missionMode}`) }
+  }, [drone.aircraftId, drone.payloadId, missionMode, aircraft, payload, t])
   const preflight = useMemo(() => {
     if (missionMode === 'area') {
       return preflightArea({
@@ -1917,6 +2063,7 @@ function AppInner({ lang, setLang }) {
         routePoints: view3d?.waypoints ?? null,
         flightOfIndex,
         rthHeightM: rthInfo?.maxM ?? null,
+        unverified,
       })
     }
     const other = {
@@ -1932,6 +2079,7 @@ function AppInner({ lang, setLang }) {
       planErrorText,
       routePoints: view3d?.waypoints ?? null,
       rthHeightM: rthInfo?.maxM ?? null,
+      unverified,
     }
     if (missionMode === 'corridor')
       return preflightPlan({
@@ -2049,6 +2197,7 @@ function AppInner({ lang, setLang }) {
     view3d,
     dsmLoaded,
     faceClearance,
+    unverified,
     corridorRouteOps,
     circularRouteOps,
   ])
@@ -2098,6 +2247,12 @@ function AppInner({ lang, setLang }) {
   // fiada, a margem e o seguir terreno que nunca teve
   const applyNormalized = useCallback(
     (n) => {
+      // a versão que gravou: só interessa quando é anterior à actual (ou falta)
+      setProjectVersion(
+        APP_VERSION && (n.appVersion == null || versionBefore(n.appVersion, APP_VERSION))
+          ? { saved: n.appVersion ?? null, now: APP_VERSION }
+          : null,
+      )
       setMissionName(n.missionName || DEFAULT_MISSION_NAME)
       setDrone(n.drone ?? { ...DEFAULT_SELECTION })
       setCustom({ ...DEFAULT_CUSTOM_SENSOR, ...(n.custom ?? {}) })
@@ -2230,6 +2385,28 @@ function AppInner({ lang, setLang }) {
   // o erro de um projecto que não abre fica no cartão 1, junto de «Abrir
   // projecto» (M3-U18); o da área continua no cartão 2
   const [projectError, setProjectError] = useState(null)
+  // a margem em metros do contorno (M3-U22: o Pilot 2 e o UgCS pedem metros)
+  const bufferM = useMemo(
+    () =>
+      ring && params.bufferPct > 0
+        ? bufferDistanceMeters(ringToPolygon(ring, holes), params.bufferPct)
+        : 0,
+    [ring, holes, params.bufferPct],
+  )
+  // minutos de um quadrado com os parâmetros actuais (M3-U20)
+  const squareMinutes = useCallback(
+    (sideM) =>
+      squareFlightTimeS(sideM, {
+        speed,
+        spacingM: spacing,
+        passes: (params.crosshatch ? 2 : 1) + (params.includeNadir ? 1 : 0),
+        stopEveryM: photoMode === 'waypoint' && params.waypointStops === 'all' ? interval : 0,
+        overshootM: params.overshoot,
+        tieLine: params.tieLine,
+        bufferM,
+      }) / 60,
+    [speed, spacing, params, photoMode, interval, bufferM],
+  )
   const { exportProject, importProject } = useProject({
     state: projectState,
     missionName,
@@ -2495,6 +2672,9 @@ function AppInner({ lang, setLang }) {
         flightLabels={baseLayout?.byBlock ?? null}
         baseSheets={missionMode === 'area' ? fieldSheets : []}
         plannedGcps={gcps ?? []}
+        params={params}
+        terrainFollowOn={Boolean(terrainFollow?.enabled)}
+        daySheets={missionMode === 'area' ? fieldSheetsDay : null}
         safety={safety}
         rthInfo={rthInfo}
         onBack={() => setView('planner')}
@@ -2510,12 +2690,12 @@ function AppInner({ lang, setLang }) {
           <div>
             <h1 className="text-base font-semibold tracking-tight">
               DJI Mission Planner{' '}
-              <span className="text-[11px] font-normal text-slate-500">
+              <span className="text-xs font-normal text-slate-400">
                 v{import.meta.env.APP_VERSION}
               </span>
             </h1>
             {/* em ecrãs estreitos (tablet no campo) o subtítulo dá lugar aos botões */}
-            <p className="hidden text-[11px] text-slate-500 xl:block">{t('app.subtitle')}</p>
+            <p className="hidden text-xs text-slate-400 xl:block">{t('app.subtitle')}</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -2552,7 +2732,7 @@ function AppInner({ lang, setLang }) {
             onClick={handleExportKML}
             disabled={!canExportKML}
             title={exportKmlTitle}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded bg-emerald-700 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('app.exportKml')}
           </button>
@@ -2569,7 +2749,7 @@ function AppInner({ lang, setLang }) {
             onClick={gated(modeExport)}
             disabled={!modePlanOk || exportBlocked}
             title={t('app.exportWpmlTitle')}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded bg-sky-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded bg-sky-700 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('app.exportWpml')}
           </button>
@@ -2704,6 +2884,11 @@ function AppInner({ lang, setLang }) {
                 setTerrainFollow={setTerrainFollow}
                 corridorTerrain={corridorTerrain}
                 corridorReference={corridorReference}
+                areaParams={{
+                  altitude: params.altitude,
+                  frontOverlap: params.frontOverlap,
+                  sideOverlap: params.sideOverlap,
+                }}
                 hasBase={Boolean(corridorBase)}
                 onStartBase={startBase}
                 onRemoveBase={removeBase}
@@ -2804,6 +2989,11 @@ function AppInner({ lang, setLang }) {
                 importState={importState}
                 importError={importError}
                 projectError={projectError}
+                projectVersion={projectVersion}
+                onDismissVersionNote={() => setProjectVersion(null)}
+                ops={statsOps}
+                bufferM={bufferM}
+                squareMinutes={squareMinutes}
                 routeClearance={clearance}
                 rthInfo={rthInfo}
                 preflightBlockers={preflight
@@ -3068,6 +3258,7 @@ function AppInner({ lang, setLang }) {
               baseSheets={missionMode === 'area' ? fieldSheets : []}
               terrainFollowOn={Boolean(terrainFollow?.enabled)}
               rthInfo={rthInfo}
+              daySheets={missionMode === 'area' ? fieldSheetsDay : null}
               gcps={gcps}
               lines={planOk.lines}
               reproducibility={{

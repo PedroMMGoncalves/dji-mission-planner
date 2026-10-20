@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { useT } from '../i18n.jsx'
+
+const STATS_COLLAPSED_KEY = 'dji-mission-planner:stats:collapsed'
 
 /**
  * Painel de métricas calculadas, sobreposto ao mapa (canto inferior
@@ -39,9 +42,15 @@ function fmtClock(s) {
 const TONE = { ok: 'text-sky-300', near: 'text-amber-300', over: 'text-red-300' }
 
 function Stat({ label, value, hint, tone = 'ok', testId }) {
+  // os mosaicos recebem o rato (a dica do `title`); o contentor continua a
+  // deixar passar os cliques para o mapa entre eles (M3-U13)
   return (
-    <div className="rounded bg-slate-900/90 px-3 py-2" title={hint} data-testid={testId}>
-      <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
+    <div
+      className="pointer-events-auto rounded bg-slate-900/90 px-3 py-2"
+      title={hint}
+      data-testid={testId}
+    >
+      <div className="text-xs uppercase tracking-wider text-slate-400">{label}</div>
       <div className={`font-mono text-sm ${TONE[tone] ?? TONE.ok}`} data-tone={tone}>
         {value}
       </div>
@@ -52,7 +61,7 @@ function Stat({ label, value, hint, tone = 'ok', testId }) {
 function Group({ title, children }) {
   return (
     <>
-      <div className="col-span-full mt-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400 first:mt-0">
+      <div className="col-span-full mt-1 px-1 text-xs font-semibold uppercase tracking-widest text-slate-400 first:mt-0">
         {title}
       </div>
       {children}
@@ -93,11 +102,50 @@ export default function StatsPanel({
   const gridMode =
     missionMode === 'area' || missionMode === 'circular' || missionMode === 'corridor'
   const count = countOf(missionMode, stats)
+  // recolhível (M3-U23): 16 mosaicos tapam ~450 px do mapa num tablet
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(STATS_COLLAPSED_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+  const toggle = () => {
+    setCollapsed((v) => {
+      try {
+        localStorage.setItem(STATS_COLLAPSED_KEY, v ? '0' : '1')
+      } catch {
+        /* sem armazenamento: fica só nesta sessão */
+      }
+      return !v
+    })
+  }
+  const toggleBtn = (
+    <button
+      type="button"
+      data-testid="stats-toggle"
+      onClick={toggle}
+      aria-expanded={!collapsed}
+      className="pointer-events-auto col-span-full justify-self-end rounded border border-slate-700 bg-slate-900/90 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
+    >
+      {collapsed ? t('stats.show') : t('stats.hide')}
+    </button>
+  )
+  if (collapsed)
+    return (
+      <div
+        data-testid="stats-panel"
+        className="pointer-events-none absolute bottom-4 right-4 z-[1000] grid"
+      >
+        {toggleBtn}
+      </div>
+    )
   return (
     <div
       data-testid="stats-panel"
       className="pointer-events-none absolute bottom-4 right-4 z-[1000] grid max-w-md grid-cols-2 gap-1.5 sm:grid-cols-3"
     >
+      {toggleBtn}
       <Group title={t('stats.groupQuality')}>
         {pointDensity != null ? (
           <Stat

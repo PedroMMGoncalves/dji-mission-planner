@@ -475,8 +475,11 @@ export function useAreaMission({
   // o botão do cabeçalho: a missão inteira (todos os voos); com bases, os
   // dois ZIP (todos soltos e numa pasta por base)
   const hasBases = Boolean(baseLayout?.hasBases && blocks?.length)
+  // um clique, um ficheiro (M3-U16): com bases o ZIP por base (cada piloto
+  // leva as pastas das suas bases), sem bases o ZIP dos voos; os dois ZIP com
+  // os mesmos KMZ punham cada voo duas vezes no Pilot 2
   const handleExportKMZ = useCallback(
-    () => handleExportFlights({ kind: hasBases ? 'both' : 'all' }),
+    () => handleExportFlights({ kind: hasBases ? 'byBase' : 'all' }),
     [handleExportFlights, hasBases],
   )
 

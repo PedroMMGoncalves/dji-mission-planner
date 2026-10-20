@@ -407,6 +407,7 @@ export function usableBatteryMin(batteryMin, reservePct = 0) {
  * @param {number[][]|null} [c.routePoints] rota de verificação [lon, lat, h], para as coordenadas dos itens de rota
  * @param {((i: number) => string|null)|null} [c.flightOfIndex] voo a que um índice da rota pertence
  * @param {number|null} [c.rthHeightM] altura de regresso (RTH) escrita no KMZ (a maior, com vários voos)
+ * @param {{aircraft: string, payload: string, mode: string}|null} [c.unverified] combinação sem voo confirmado (M3-U19)
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
@@ -521,6 +522,7 @@ export function preflightArea(c) {
   out.push(...transitItems(c))
   out.push(...noBaseItems(c))
   out.push(...openCategoryItems(c))
+  out.push(...unverifiedItems(c))
   out.push(item('info', 'heights-relative'))
   return out
 }
@@ -596,6 +598,7 @@ export function preflightPlan(c) {
   if ('reference' in c) out.push(...noBaseItems(c))
   if (c.refZone?.zone) out.push(...zoneItems(c.refZone.label, c.refZone.zone))
   out.push(...openCategoryItems(c))
+  out.push(...unverifiedItems(c))
   out.push(item('info', 'heights-relative'))
   return out
 }
@@ -610,6 +613,18 @@ export const OPEN_CATEGORY_MAX_AGL_M = 120
  * exportada, sobre o relevo; `c.rthHeightM` a altura de regresso (a maior,
  * com vários voos) que o KMZ escreve.
  */
+/** Primeiro voo de uma combinação aeronave + payload + modo sem KMZ confirmado (M3-U19). */
+function unverifiedItems(c) {
+  if (!c.unverified) return []
+  return [
+    item('info', 'unverified-combo', {
+      aircraft: c.unverified.aircraft ?? '',
+      payload: c.unverified.payload ?? '',
+      mode: c.unverified.mode ?? '',
+    }),
+  ]
+}
+
 function openCategoryItems(c) {
   const out = []
   const m = c.aglMaxM

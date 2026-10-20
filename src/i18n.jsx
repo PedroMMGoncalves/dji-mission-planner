@@ -142,7 +142,7 @@ const BASE_DICT = {
   'app.exportKml': { pt: 'Exportar KML da área', en: 'Export area KML' },
   'map.moveArea': {
     pt: 'Arrastar para mover a área inteira (a base fica no sítio)',
-    en: 'Drag to move the whole area (the home point stays)',
+    en: 'Drag to move the whole area (the base stays)',
   },
   'map.closePolygon': {
     pt: 'Clique para fechar o polígono',
@@ -244,7 +244,7 @@ const BASE_DICT = {
     pt: 'Total (o disparo por distância cobre também o overshoot) e, entre parênteses, as fotos sobre a área.',
     en: 'Total (the distance trigger also fires along the overshoot) and, in parentheses, the photos over the area.',
   },
-  'stats.time': { pt: 'Tempo estimado', en: 'Estimated time' },
+  'stats.time': { pt: 'Tempo na rota (sem trânsito)', en: 'Time on route (no transit)' },
   'stats.baseToArea': { pt: 'Base → área', en: 'Base → area' },
   'stats.insideArea': { pt: 'dentro da área', en: 'inside the area' },
   'stats.groupQuality': { pt: 'Qualidade', en: 'Quality' },
@@ -257,10 +257,12 @@ const BASE_DICT = {
     en: 'Below the camera’s minimum interval at this speed: see the preflight.',
   },
   'stats.flights': { pt: 'Voos', en: 'Flights' },
+  'stats.hide': { pt: 'Recolher as métricas', en: 'Collapse the metrics' },
+  'stats.show': { pt: 'Métricas', en: 'Metrics' },
   'stats.flightsBases': { pt: '{n} · {b} bases', en: '{n} · {b} bases' },
-  'stats.batteries': { pt: 'Baterias', en: 'Batteries' },
-  'stats.setsNeeded': { pt: '{n} conj.', en: '{n} sets' },
-  'stats.setsVs': { pt: '{n} de {s} conj.', en: '{n} of {s} sets' },
+  'stats.batteries': { pt: 'Conjuntos de baterias', en: 'Battery sets' },
+  'stats.setsNeeded': { pt: '{n} precisos', en: '{n} needed' },
+  'stats.setsVs': { pt: '{n} precisos · {s} na equipa', en: '{n} needed · {s} in the team' },
   'stats.setsShortHint': {
     pt: 'A missão pede mais voos do que os conjuntos de baterias que a equipa tem.',
     en: 'The mission needs more flights than the battery sets the team has.',
@@ -271,7 +273,7 @@ const BASE_DICT = {
     pt: 'Com o trânsito desde a base, contra o tempo útil de uma bateria. Âmbar acima de 90 %, vermelho acima de 100 %.',
     en: 'Including transit from the base, against the useful time of one battery. Amber above 90 %, red above 100 %.',
   },
-  'stats.totalTime': { pt: 'Tempo total de voo', en: 'Total flight time' },
+  'stats.totalTime': { pt: 'Tempo total com trânsitos', en: 'Total time with transits' },
   'stats.totalTimeHint': {
     pt: 'Soma de todos os voos, com os trânsitos; sem trocas de bateria nem mudanças de base.',
     en: 'Sum of all flights, with transits; without battery swaps or base moves.',

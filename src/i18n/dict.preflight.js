@@ -169,19 +169,19 @@ export default {
   },
   'preflight.base-far': {
     pt: 'Base a {km} km da área: o trânsito conta na bateria e o regresso tem de o cobrir. Confirme que é o ponto real de descolagem.',
-    en: 'Home point {km} km from the area: the transit counts against the battery and the return has to cover it. Confirm it is the real take-off point.',
+    en: 'Base {km} km from the area: the transit counts against the battery and the return has to cover it. Confirm it is the real take-off point.',
   },
   'preflight.base-unreachable': {
     pt: 'Base a {km} km da área: só o trânsito de ida e volta leva {min} min, acima dos {usable} min úteis de uma bateria. Mova a base para junto da área.',
-    en: 'Home point {km} km from the area: the round trip alone takes {min} min, above the {usable} usable minutes of one battery. Move the home point next to the area.',
+    en: 'Base {km} km from the area: the round trip alone takes {min} min, above the {usable} usable minutes of one battery. Move the base next to the area.',
   },
   'preflight.base-no-terrain': {
     pt: 'A base está fora do relevo carregado: assumiu-se a descolagem à cota mínima da área ({elev} m) no perfil, no 3D, na folga ao solo e no seguimento de terreno. Mova a base para dentro do relevo para ter alturas exactas.',
-    en: 'The home point is outside the loaded elevation data: take-off is assumed at the lowest elevation of the area ({elev} m) for the profile, the 3D view, the ground clearance and terrain following. Move the home point inside the elevation data for exact heights.',
+    en: 'The base is outside the loaded elevation data: take-off is assumed at the lowest elevation of the area ({elev} m) for the profile, the 3D view, the ground clearance and terrain following. Move the base inside the elevation data for exact heights.',
   },
   'preflight.no-base-relief': {
     pt: 'Sem base numa área com {relief} m de desnível: assumiu-se a descolagem à cota mínima ({elev} m), o lado seguro. A descolar mais alto a rota fica mais alta do que o planeado (GSD pior); a descolar fora e abaixo da área, mais baixa. Marque a base para ter alturas exactas.',
-    en: 'No home point in an area with {relief} m of relief: take-off is assumed at the lowest elevation ({elev} m), the safe side. Taking off higher puts the route higher than planned (worse GSD); taking off outside and below the area, lower. Mark the home point for exact heights.',
+    en: 'No base in an area with {relief} m of relief: take-off is assumed at the lowest elevation ({elev} m), the safe side. Taking off higher puts the route higher than planned (worse GSD); taking off outside and below the area, lower. Mark the base for exact heights.',
   },
   'preflight.terrain-collision': {
     pt: 'A rota entra no relevo: {m} m abaixo do solo no pior ponto. Suba a altitude ou ligue seguir terreno.',
@@ -197,11 +197,11 @@ export default {
   },
   'preflight.transit-collision': {
     pt: 'O trânsito entre a base e a rota (voo {flight}) entra no relevo: {m} m abaixo do solo a {h} m acima da base. A aeronave sobe na descolagem à altura do 1.º waypoint (ou à de segurança) e voa a direito até ele; no fim regressa a {rth} m acima da descolagem (RTH, escrito no KMZ). Mova a base para o lado de cá do relevo ou aproxime-a da rota, suba a altitude, ou comece a rota noutro ponto.',
-    en: 'The transit between the home point and the route (flight {flight}) goes into the terrain: {m} m below ground at {h} m above the home point. The aircraft climbs at take-off to the first waypoint’s height (or the safety height) and flies straight to it; at the end it returns at {rth} m above take-off (the RTH written in the KMZ). Move the home point to this side of the terrain or closer to the route, raise the altitude, or start the route elsewhere.',
+    en: 'The transit between the base and the route (flight {flight}) goes into the terrain: {m} m below ground at {h} m above the base. The aircraft climbs at take-off to the first waypoint’s height (or the safety height) and flies straight to it; at the end it returns at {rth} m above take-off (the RTH written in the KMZ). Move the base to this side of the terrain or closer to the route, raise the altitude, or start the route elsewhere.',
   },
   'preflight.transit-low': {
     pt: 'Folga mínima de {m} m no trânsito entre a base e a rota (voo {flight}, a {h} m acima da base), abaixo de 15 m.',
-    en: 'Minimum clearance of {m} m on the transit between the home point and the route (flight {flight}, at {h} m above the home point), below 15 m.',
+    en: 'Minimum clearance of {m} m on the transit between the base and the route (flight {flight}, at {h} m above the base), below 15 m.',
   },
   'preflight.base-zone-partial': {
     pt: 'A zona da base {base} tem {n} pontos sem relevo: a cota mínima e o desnível só contam a parte com dados. Carregue relevo que cubra a zona inteira.',
@@ -215,9 +215,13 @@ export default {
     pt: 'Sem ponto de base: o trânsito não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota.',
     en: 'No base point: transit is not counted against the battery and heights refer to the minimum terrain elevation under the route.',
   },
+  'preflight.unverified-combo': {
+    pt: 'Primeiro voo desta combinação ({aircraft} + {payload}, {mode}): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (QA, «Primeiro voo de cada modo»).',
+    en: 'First flight of this combination ({aircraft} + {payload}, {mode}): no KMZ confirmed in Pilot 2 yet. On the first flight count the photos, check the heights and the lens, and record it in the compatibility matrix (QA, "First flight of each mode").',
+  },
   'preflight.open-category-rth': {
     pt: 'O regresso (RTH) a {rth} m acima da descolagem passa os {cap} m da categoria aberta junto à base.',
-    en: 'The return (RTH) at {rth} m above take-off exceeds the {cap} m of the Open category near the home point.',
+    en: 'The return (RTH) at {rth} m above take-off exceeds the {cap} m of the Open category near the base.',
   },
   'preflight.face-unverified': {
     pt: 'Afastamento da fachada não verificado contra o terreno: sem MDT/DSM local, os tiles globais não têm resolução à escala de uma face. Importe um GeoTIFF no separador Área, cartão 2 (Área e relevo), para a verificação de folga.',

@@ -562,10 +562,8 @@ function Section({ title, right, children, className = '' }) {
       className={`rep-block mb-3 rounded border border-slate-800 bg-slate-900 p-3 ${className}`}
     >
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <h2 className="text-[10px] font-semibold uppercase tracking-widest text-sky-400">
-          {title}
-        </h2>
-        {right && <span className="font-mono text-[9px] text-slate-500">{right}</span>}
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-sky-400">{title}</h2>
+        {right && <span className="font-mono text-[9px] text-slate-400">{right}</span>}
       </div>
       {children}
     </section>
@@ -578,10 +576,10 @@ function ParamTable({ rows }) {
       <tbody>
         {rows.map(([label, value]) => (
           <tr key={label}>
-            <th className="w-1/2 border border-slate-800 px-2 py-[3px] font-normal text-[11px] text-slate-400">
+            <th className="w-1/2 border border-slate-800 px-2 py-[3px] font-normal text-xs text-slate-400">
               {label}
             </th>
-            <td className="border border-slate-800 px-2 py-[3px] font-mono text-[11px] text-slate-100">
+            <td className="border border-slate-800 px-2 py-[3px] font-mono text-xs text-slate-100">
               {value}
             </td>
           </tr>
@@ -594,7 +592,7 @@ function ParamTable({ rows }) {
 function StatCell({ label, value }) {
   return (
     <div className="rep-stat rounded border border-slate-800 bg-slate-950 px-2 py-1.5">
-      <div className="text-[9px] uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="text-[9px] uppercase tracking-wider text-slate-400">{label}</div>
       <div className="font-mono text-[13px] text-sky-300">{value}</div>
     </div>
   )
@@ -620,6 +618,8 @@ export default function MissionReport({
   terrainFollowOn = false,
   // altura de regresso (RTH) e subida de descolagem escritas no KMZ (M3-U3)
   rthInfo = null,
+  // a linha do dia por cima das fichas (daySummary)
+  daySheets = null,
   gcps,
   lines,
   reproducibility = null,
@@ -797,18 +797,18 @@ export default function MissionReport({
         <header className="rep-header mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-3">
           <div className="min-w-0">
             <h1 className="text-lg font-semibold tracking-tight text-slate-100">{L(UI.title)}</h1>
-            <p className="mt-0.5 text-[11px] text-slate-500">{L(UI.subtitle)}</p>
-            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-[11px]">
+            <p className="mt-0.5 text-xs text-slate-400">{L(UI.subtitle)}</p>
+            <dl className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs">
               <div className="flex gap-1.5">
-                <dt className="uppercase tracking-wider text-slate-500">{L(UI.mission)}</dt>
+                <dt className="uppercase tracking-wider text-slate-400">{L(UI.mission)}</dt>
                 <dd className="font-mono text-slate-200">{missionName || L(UI.untitled)}</dd>
               </div>
               <div className="flex gap-1.5">
-                <dt className="uppercase tracking-wider text-slate-500">{L(UI.date)}</dt>
+                <dt className="uppercase tracking-wider text-slate-400">{L(UI.date)}</dt>
                 <dd className="font-mono text-slate-200">{dateText}</dd>
               </div>
               <div className="flex gap-1.5">
-                <dt className="uppercase tracking-wider text-slate-500">{L(UI.platform)}</dt>
+                <dt className="uppercase tracking-wider text-slate-400">{L(UI.platform)}</dt>
                 <dd className="font-mono text-slate-200">{droneLabel || DASH}</dd>
               </div>
             </dl>
@@ -818,7 +818,7 @@ export default function MissionReport({
             <button
               type="button"
               onClick={() => window.print()}
-              className="rounded border border-emerald-600 bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
+              className="rounded border border-emerald-600 bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-700"
             >
               {L(UI.print)}
             </button>
@@ -840,7 +840,7 @@ export default function MissionReport({
             height={CANVAS_H}
             className="block h-auto w-full rounded border border-slate-800 bg-slate-900"
           />
-          <figcaption className="mt-1 text-[9px] text-slate-500">
+          <figcaption className="mt-1 text-[9px] text-slate-400">
             {ring && ring.length >= 3 ? caption : L(UI.mapMissing)}
           </figcaption>
         </figure>
@@ -865,7 +865,7 @@ export default function MissionReport({
               <StatCell label={L(UI.sTime)} value={`${fmtMin(stats.flightTimeS)} min`} />
             </div>
           ) : (
-            <p className="text-[11px] text-slate-500">{L(UI.noStats)}</p>
+            <p className="text-xs text-slate-400">{L(UI.noStats)}</p>
           )}
         </Section>
 
@@ -875,20 +875,20 @@ export default function MissionReport({
             title={L(UI.reproTitle)}
             right={reproducibility.version ? `v${reproducibility.version}` : undefined}
           >
-            <table className="rep-table w-full border-collapse text-left text-[11px]">
+            <table className="rep-table w-full border-collapse text-left text-xs">
               <tbody>
                 <tr>
-                  <td className="pr-3 text-slate-500">{L(UI.rVersion)}</td>
+                  <td className="pr-3 text-slate-400">{L(UI.rVersion)}</td>
                   <td className="font-mono">{reproducibility.version ?? '—'}</td>
                 </tr>
                 <tr>
-                  <td className="pr-3 text-slate-500">{L(UI.rHash)}</td>
+                  <td className="pr-3 text-slate-400">{L(UI.rHash)}</td>
                   <td className="break-all font-mono">{projectHash ?? '—'}</td>
                 </tr>
                 {reproducibility.uncertainty && (
                   <>
                     <tr>
-                      <td className="pr-3 text-slate-500">{L(UI.rPositioning)}</td>
+                      <td className="pr-3 text-slate-400">{L(UI.rPositioning)}</td>
                       <td className="font-mono">
                         {reproducibility.uncertainty.inputs.mode === 'rtk' ? 'RTK' : 'GNSS'} · ±
                         {reproducibility.uncertainty.inputs.verticalM} m V · ±
@@ -896,7 +896,7 @@ export default function MissionReport({
                       </td>
                     </tr>
                     <tr>
-                      <td className="pr-3 text-slate-500">{L(UI.rAgl)}</td>
+                      <td className="pr-3 text-slate-400">{L(UI.rAgl)}</td>
                       <td className="font-mono">
                         {fmt(reproducibility.uncertainty.agl[0], 1)} –{' '}
                         {fmt(reproducibility.uncertainty.agl[1], 1)} m
@@ -904,7 +904,7 @@ export default function MissionReport({
                     </tr>
                     {reproducibility.uncertainty.gsd && (
                       <tr>
-                        <td className="pr-3 text-slate-500">{L(UI.rGsd)}</td>
+                        <td className="pr-3 text-slate-400">{L(UI.rGsd)}</td>
                         <td className="font-mono">
                           {fmt(reproducibility.uncertainty.gsd[0], 2)} –{' '}
                           {fmt(reproducibility.uncertainty.gsd[1], 2)} cm/px
@@ -913,7 +913,7 @@ export default function MissionReport({
                     )}
                     {reproducibility.uncertainty.front && reproducibility.uncertainty.side && (
                       <tr>
-                        <td className="pr-3 text-slate-500">{L(UI.rOverlap)}</td>
+                        <td className="pr-3 text-slate-400">{L(UI.rOverlap)}</td>
                         <td className="font-mono">
                           {fmt(reproducibility.uncertainty.front[0], 0)}–
                           {fmt(reproducibility.uncertainty.front[1], 0)} % /{' '}
@@ -926,7 +926,7 @@ export default function MissionReport({
                 )}
                 {Array.isArray(reproducibility.blur) && reproducibility.blur.length === 2 && (
                   <tr>
-                    <td className="pr-3 text-slate-500">{L(UI.rBlur)}</td>
+                    <td className="pr-3 text-slate-400">{L(UI.rBlur)}</td>
                     <td className="font-mono">
                       {fmt(reproducibility.blur[0].blurCm, 1)} cm ·{' '}
                       {fmt(reproducibility.blur[1].blurCm, 1)} cm
@@ -938,7 +938,7 @@ export default function MissionReport({
                 )}
                 {reproducibility.terrainDatum && (
                   <tr>
-                    <td className="pr-3 text-slate-500">{L(UI.rDatum)}</td>
+                    <td className="pr-3 text-slate-400">{L(UI.rDatum)}</td>
                     <td className="font-mono">
                       {reproducibility.terrainDatum.kind}
                       {reproducibility.terrainDatum.model
@@ -949,7 +949,7 @@ export default function MissionReport({
                   </tr>
                 )}
                 <tr>
-                  <td className="pr-3 align-top text-slate-500">{L(UI.rPreflight)}</td>
+                  <td className="pr-3 align-top text-slate-400">{L(UI.rPreflight)}</td>
                   <td className="font-mono">
                     {Array.isArray(reproducibility.preflight) &&
                     reproducibility.preflight.some((i) => i.level !== 'info')
@@ -965,7 +965,7 @@ export default function MissionReport({
                 </tr>
               </tbody>
             </table>
-            <p className="mt-2 text-[10px] text-slate-500">{L(UI.rNote)}</p>
+            <p className="mt-2 text-xs text-slate-400">{L(UI.rNote)}</p>
           </Section>
         )}
 
@@ -990,20 +990,20 @@ export default function MissionReport({
               <tbody>
                 {blocks.map((b, i) => (
                   <tr key={b.id ?? i}>
-                    <td className="border border-slate-800 px-2 py-[3px] font-mono text-[11px] text-slate-200">
+                    <td className="border border-slate-800 px-2 py-[3px] font-mono text-xs text-slate-200">
                       <span
                         className="rep-swatch mr-1.5 inline-block h-2 w-2 rounded-full align-middle"
                         style={{ backgroundColor: blockColor(b.id, i) }}
                       />
                       {blockLabel(b.id, i)}
                     </td>
-                    <td className="border border-slate-800 px-2 py-[3px] font-mono text-[11px] text-slate-100">
+                    <td className="border border-slate-800 px-2 py-[3px] font-mono text-xs text-slate-100">
                       {fmt(b.areaHa, 2)}
                     </td>
-                    <td className="border border-slate-800 px-2 py-[3px] font-mono text-[11px] text-slate-100">
+                    <td className="border border-slate-800 px-2 py-[3px] font-mono text-xs text-slate-100">
                       {fmtKm(b.lengthM)}
                     </td>
-                    <td className="border border-slate-800 px-2 py-[3px] font-mono text-[11px] text-slate-100">
+                    <td className="border border-slate-800 px-2 py-[3px] font-mono text-xs text-slate-100">
                       {fmtMin(b.timeS)}
                     </td>
                   </tr>
@@ -1011,16 +1011,16 @@ export default function MissionReport({
               </tbody>
               <tfoot>
                 <tr>
-                  <td className="border border-slate-800 bg-slate-950 px-2 py-[3px] text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  <td className="border border-slate-800 bg-slate-950 px-2 py-[3px] text-xs font-semibold uppercase tracking-wider text-slate-400">
                     {L(UI.bTotal)}
                   </td>
-                  <td className="border border-slate-800 bg-slate-950 px-2 py-[3px] font-mono text-[11px] text-sky-300">
+                  <td className="border border-slate-800 bg-slate-950 px-2 py-[3px] font-mono text-xs text-sky-300">
                     {fmt(blockTotals?.areaHa, 2)}
                   </td>
-                  <td className="border border-slate-800 bg-slate-950 px-2 py-[3px] font-mono text-[11px] text-sky-300">
+                  <td className="border border-slate-800 bg-slate-950 px-2 py-[3px] font-mono text-xs text-sky-300">
                     {fmtKm(blockTotals?.lengthM)}
                   </td>
-                  <td className="border border-slate-800 bg-slate-950 px-2 py-[3px] font-mono text-[11px] text-sky-300">
+                  <td className="border border-slate-800 bg-slate-950 px-2 py-[3px] font-mono text-xs text-sky-300">
                     {fmtMin(blockTotals?.timeS)}
                   </td>
                 </tr>
@@ -1035,10 +1035,11 @@ export default function MissionReport({
             data-testid="report-bases"
             className="rep-bases mb-3 rounded border border-slate-800 bg-slate-900 p-3"
           >
-            <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-sky-400">
+            <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-sky-400">
               {t('bases.sheet.title')}
             </h2>
             <BaseFieldSheets
+              day={daySheets}
               sheets={baseSheets}
               cardClass="rep-base bg-slate-950"
               tableClass="rep-table"
@@ -1051,7 +1052,7 @@ export default function MissionReport({
           <Section title={L(UI.gcpsTitle)} right={L(UI.gcpsNote)}>
             <ul className="rep-gcps grid grid-cols-2 gap-x-4 gap-y-0.5 sm:grid-cols-3">
               {validGcps.map((g, i) => (
-                <li key={g.id ?? i} className="flex items-baseline gap-1.5 font-mono text-[10px]">
+                <li key={g.id ?? i} className="flex items-baseline gap-1.5 font-mono text-xs">
                   <span className="shrink-0 text-amber-300">
                     {g.id ?? `GCP-${String(i + 1).padStart(2, '0')}`}
                   </span>
@@ -1089,19 +1090,19 @@ export default function MissionReport({
               <tbody>
                 {inspectPoints.map((p, i) => (
                   <tr key={p.id ?? i}>
-                    <td className="border border-slate-800 px-2 py-1 font-mono text-[10px] text-orange-300">
+                    <td className="border border-slate-800 px-2 py-1 font-mono text-xs text-orange-300">
                       {i + 1}
                     </td>
-                    <td className="border border-slate-800 px-2 py-1 text-[10px] text-slate-200">
+                    <td className="border border-slate-800 px-2 py-1 text-xs text-slate-200">
                       {p.label}
                     </td>
-                    <td className="border border-slate-800 px-2 py-1 font-mono text-[10px] text-slate-300">
+                    <td className="border border-slate-800 px-2 py-1 font-mono text-xs text-slate-300">
                       {p.point[1].toFixed(6)}, {p.point[0].toFixed(6)}
                     </td>
-                    <td className="border border-slate-800 px-2 py-1 font-mono text-[10px] text-slate-300">
+                    <td className="border border-slate-800 px-2 py-1 font-mono text-xs text-slate-300">
                       {Number.isFinite(p.heightM) ? p.heightM : '—'}
                     </td>
-                    <td className="border border-slate-800 px-2 py-1 text-[10px] text-slate-300">
+                    <td className="border border-slate-800 px-2 py-1 text-xs text-slate-300">
                       {p.photo === false ? L(UI.inspectNo) : L(UI.inspectYes)}
                     </td>
                   </tr>
@@ -1117,13 +1118,13 @@ export default function MissionReport({
             {[UI.sigPilot, UI.sigSupervisor].map((papel) => (
               <div key={papel.pt}>
                 <div className="rep-sig h-8 border-b border-slate-600" />
-                <p className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-500">
+                <p className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-400">
                   {L(papel)}
                 </p>
               </div>
             ))}
           </div>
-          <p className="mt-3 text-[10px] font-medium text-amber-400">{L(UI.warning)}</p>
+          <p className="mt-3 text-xs font-medium text-amber-400">{L(UI.warning)}</p>
         </footer>
       </div>
     </div>

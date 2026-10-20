@@ -79,7 +79,7 @@ export function PreflightList({ items, actions = null }) {
               <button
                 type="button"
                 onClick={actions[it.code].onClick}
-                className="ml-2 rounded border border-current px-2 py-0.5 text-[11px] font-medium hover:bg-white/10"
+                className="ml-2 rounded border border-current px-2 py-0.5 text-xs font-medium hover:bg-white/10"
               >
                 {actions[it.code].label}
               </button>

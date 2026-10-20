@@ -53,7 +53,34 @@ export default {
     en: 'Viewsheds appear here once the area is split into flights and there are bases.',
   },
   'cards.summary.flights': { pt: 'Voos', en: 'Flights' },
-  'cards.summary.sets': { pt: 'Voos / conjuntos de baterias', en: 'Flights / battery sets' },
+  'cards.summary.sets': { pt: 'Conjuntos de baterias', en: 'Battery sets' },
+  'cards.summary.setsValue': {
+    pt: '{n} precisos · {s} na equipa',
+    en: '{n} needed · {s} in the team',
+  },
+  'cards.summary.setsUnknown': { pt: '{n} precisos', en: '{n} needed' },
+  'cards.summary.longest': { pt: 'Voo mais longo / útil', en: 'Longest flight / useful' },
+  'cards.summary.exportMissionByBase': {
+    pt: 'Exportar os voos por base (ZIP)',
+    en: 'Export the flights by base (ZIP)',
+  },
+  'cards.summary.exportMissionByBaseTitle': {
+    pt: 'Um ZIP com uma pasta por base (cada piloto leva as pastas das suas bases); o ZIP com todos os voos soltos e cada voo à parte estão em «Exportar voos».',
+    en: 'One ZIP with a folder per base (each pilot takes the folders of their bases); the ZIP with all flights loose and each flight on its own are under "Export flights".',
+  },
+  'cards.versionNote': {
+    pt: 'Projecto gravado com a versão {v}; esta é a {now}. Desde então mudou:',
+    en: 'Project saved with version {v}; this is {now}. Since then:',
+  },
+  'cards.versionNoteOld': {
+    pt: 'Projecto gravado por uma versão anterior à {now}. Desde então mudou:',
+    en: 'Project saved by a version earlier than {now}. Since then:',
+  },
+  'cards.versionNoteHint': {
+    pt: 'Reveja o plano antes de reexportar: o quadrado ou o voo com o mesmo rótulo pode já não ser o mesmo.',
+    en: 'Review the plan before re-exporting: the square or flight with the same label may no longer be the same one.',
+  },
+  'cards.versionNoteClose': { pt: 'Entendido', en: 'Got it' },
   'cards.summary.exportMission': { pt: 'Exportar a missão (KMZ)', en: 'Export the mission (KMZ)' },
   'cards.summary.exportMissionTitle': {
     pt: 'A mesma exportação do botão «Exportar WPML Avançado (KMZ)» do cabeçalho, atrás do preflight.',

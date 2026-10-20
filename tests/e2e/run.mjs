@@ -1538,26 +1538,6 @@ async function download(page, locator, file) {
   return [dl.suggestedFilename(), file]
 }
 /** Os `n` ficheiros que um clique descarrega (guardados como `<prefixo>-<i>`). */
-async function downloads(page, locator, n, prefix) {
-  const got = []
-  const done = new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`só ${got.length}/${n} downloads`)), 30000)
-    const on = async (dl) => {
-      const file = `${prefix}-${got.length + 1}`
-      got.push([dl.suggestedFilename(), file, dl])
-      if (got.length === n) {
-        clearTimeout(timer)
-        page.off('download', on)
-        resolve()
-      }
-    }
-    page.on('download', on)
-  })
-  await locator.click()
-  await done
-  for (const [, file, dl] of got) await dl.saveAs(file)
-  return got.map(([name, file]) => [name, file])
-}
 /** Nomes dos KMZ dentro de um ZIP, pela ordem em que lá estão. */
 const zipOrder = async (file) =>
   Object.keys((await JSZip.loadAsync(readFileSync(file))).files).filter((n) => n.endsWith('.kmz'))
@@ -1913,16 +1893,13 @@ await scenario('bases-exportar-por-base', async () => {
     allName === `${prefix}_voos.zip` && all.map(flightOfFile).join(',') === order.join(','),
     `${allName}: ${all.join(' ')}`,
   )
-  // o cabeçalho com bases: os dois ZIP (todos soltos e por base)
-  const heads = await downloads(page, header, 2, join(OUT, 'cabecalho'))
-  const headAll = heads.find(([n]) => n === allName)
-  const headByBase = heads.find(([n]) => n === zipByBase)
+  // o cabeçalho com bases: um clique, um ficheiro — o ZIP por base (M3-U16);
+  // o dos voos soltos continua em «Exportar voos»
+  const [headName, headFile] = await download(page, header, join(OUT, 'cabecalho.zip'))
   check(
-    'todos: o botão do cabeçalho descarrega os dois ZIP (todos os voos e por base)',
-    Boolean(headAll && headByBase) &&
-      (await zipOrder(headAll[1])).join() === all.join() &&
-      (await zipOrder(headByBase[1])).join() === entries.join(),
-    heads.map(([n]) => n).join(' + '),
+    'todos: o botão do cabeçalho descarrega um só ZIP, o por base',
+    headName === zipByBase && (await zipOrder(headFile)).join() === entries.join(),
+    headName,
   )
 
   // KML de campo: bases, zonas, blocos com o rótulo do voo
@@ -1980,10 +1957,26 @@ await scenario('bases-exportar-por-base', async () => {
       /descolar até \d+ m do ponto/.test(sB.text) &&
       /voo entre 0 e \+\d+ m acima do planeado/.test(sB.text) &&
       /Alcance visual/i.test(sB.text) &&
-      /necessários/.test(sB.text) &&
+      /precisos/.test(sB.text) &&
+      // M3-U10: alturas no comando, % do útil e os parâmetros do plano
+      /Altura no comando/i.test(sB.text) &&
+      /\d+–\d+ m \(rel\. à descolagem\)/.test(sB.text) &&
+      /\d+ %/.test(sB.text) &&
+      /altitude \d+ m · [\d.]+ m\/s · sobreposição \d+\/\d+ %/.test(sB.text) &&
       sB.flights.join(',') === wantB.join(',') &&
       inB.every((n) => sB.text.includes(n.split('/').pop())),
     sB ? sB.text.replace(/\s+/g, ' ').slice(0, 300) : 'sem ficha',
+  )
+  check(
+    'checklist: a linha do dia soma os voos de todas as bases contra os conjuntos da equipa',
+    (await sec.getByTestId('sheets-day').count()) === 1 &&
+      /Dia: \d+ voos · conjuntos de baterias: \d+ precisos/.test(
+        await sec.getByTestId('sheets-day').innerText(),
+      ),
+    await sec
+      .getByTestId('sheets-day')
+      .innerText()
+      .catch(() => ''),
   )
   await page.getByRole('button', { name: /Voltar ao planeador|Back to planner/ }).click()
 
@@ -3207,12 +3200,16 @@ const INVENTARIO_EXTRAS = [
   ['extras', 'GCPs: Auto', inv.exact('Auto')],
   ['extras', 'exportar GCPs', inv.btn(/Exportar GCPs/)],
   ['extras', 'nome do ponto', (r) => r.locator('[draggable=true] input[type=text]')],
-  ['extras', 'ponto: subir', inv.exact('↑')],
-  ['extras', 'ponto: descer', inv.exact('↓')],
+  // com aria-label (M3-U23): o nome acessível diz o que a seta faz
+  ['extras', 'ponto: subir', inv.btn(/Subir o ponto 1|Move point 1 up/)],
+  ['extras', 'ponto: descer', inv.btn(/Descer o ponto 1|Move point 1 down/)],
   [
     'extras',
     'ponto: retirar',
-    (r) => r.locator('[draggable=true]').getByRole('button', { name: '✕' }),
+    (r) =>
+      r
+        .locator('[draggable=true]')
+        .getByRole('button', { name: /Retirar o ponto 1|Remove point 1/ }),
   ],
   [
     'extras',

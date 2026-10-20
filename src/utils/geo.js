@@ -390,6 +390,44 @@ export function squareSideForBattery({
 }
 
 /**
+ * Tempo de voo (s) de um quadrado de lado `sideM` com o modelo de
+ * squareSideForBattery, invertido: para a dica da grelha dizer «≈ N min com
+ * os parâmetros actuais» em vez de «≈ 1 bateria» (M3-U20: um quadrado de
+ * 250 m dura 3 min no M3E e 6 no P1, contra 25-32 min úteis).
+ * @param {number} sideM lado do quadrado do mosaico
+ * @param {Parameters<typeof squareSideForBattery>[0]} opts os mesmos de squareSideForBattery
+ */
+export function squareFlightTimeS(
+  sideM,
+  {
+    speed,
+    spacingM,
+    passes = 1,
+    stopEveryM = 0,
+    overshootM = 0,
+    tieLine = false,
+    bufferPct = 0,
+    bufferM = null,
+  },
+) {
+  if (!(sideM > 0)) return 0
+  const v = speed > 0 ? speed : 10
+  const s = Math.max(1, spacingM)
+  const k = Math.max(1, passes)
+  const o = Number.isFinite(overshootM) && overshootM > 0 ? overshootM : 0
+  const bM = Number.isFinite(bufferM) && bufferM > 0 ? bufferM : null
+  const f = 1 + (Number.isFinite(bufferPct) && bufferPct > 0 ? bufferPct : 0) / 100
+  const Lp = bM != null ? sideM + 2 * bM : sideM * f
+  const turnS = turnCostS(v)
+  const a1 = 1 / (s * v) + (stopEveryM > 0 ? stopCostS(1, v) / (s * stopEveryM) : 0)
+  const b1 = 2 / v + turnS / s + (2 * o) / (s * v)
+  const c1 = turnS
+  const bt = tieLine ? 1.5 / v : 0
+  const ct = tieLine ? (2 * o) / v + turnS : 0
+  return k * (a1 * Lp * Lp + b1 * Lp + c1) + bt * Lp + ct
+}
+
+/**
  * MOSAICO AUTOMÁTICO: cobre um polígono desenhado com quadrados de lado
  * `sizeM`, alinhados com o azimute `orientationDeg`. As células podem exceder
  * os limites do polígono (mantém-se qualquer célula que o interseta) — o

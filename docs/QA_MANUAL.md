@@ -64,13 +64,20 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 
 ## 4. Blocos e bateria por combinação (~1.5 min)
 
-- ☐ M300 RTK + payload **YellowScan Mapper+**; divisão por **bateria**.
-  **Esperado:** campo de bateria pré-preenchido com 55 min (defeito do M300);
-  editar para 38 → aparece o botão **Defeito**; trocar o payload para P1 →
-  o campo volta a 55 (o override ficou só na combinação Mapper+).
+- ☐ M300 RTK + payload **YellowScan Mapper+**; cartão 4 (Divisão), em qualquer
+  divisão. **Esperado:** «Tipo de bateria» na TB60 com 25 min úteis e
+  «Tempo útil por voo» a 25 (os valores da Configuração para o M300); mudar
+  para a TB65 dá 28 min; escrever 20 no tempo útil mostra «Repor (28)»; o
+  cartão de métricas e o preflight passam a comparar com 20 min.
+- ☐ Trocar o payload para P1. **Esperado:** o tempo útil continua o da
+  bateria escolhida (a bateria é da aeronave, não do payload); o acerto à mão
+  fica no projecto.
 - ☐ Ainda com Mapper+: subir a altitude acima de 100 m.
-  **Esperado:** aviso vermelho do tecto operacional (100 m AGL). O cartão de
-  métricas mostra **Densidade LiDAR** em vez de GSD.
+  **Esperado:** aviso âmbar do tecto operacional (100 m AGL) no cartão 3 e no
+  preflight. O cartão de métricas mostra **Densidade LiDAR** em vez de GSD.
+- ☐ Divisão «Bateria» com prolongamento 30 m, fiada e margem 10 %.
+  **Esperado:** quadrados mais pequenos do que sem esses extras; cada bloco
+  cabe no tempo útil (cartão 7, «Voo mais longo / útil» sem vermelho).
 - ☐ Checklist (com Mapper+ activo).
   **Esperado:** grupos **LiDAR** no pré-campo e no durante; com um perfil de
   câmara os grupos desaparecem e as contagens de progresso ajustam.
@@ -102,7 +109,7 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 - ☐ Sem GeoTIFF local carregado, observar os avisos.
   **Esperado:** aviso âmbar "afastamento NÃO verificado" (os tiles globais
   nunca validam uma face).
-- ☐ Importar um GeoTIFF local (modo Área → Terreno) que cubra a face —
+- ☐ Importar um GeoTIFF local (separador Área, cartão 2 «Área e relevo») que cubra a face —
   idealmente o DSM sintético de rampa dos testes de campo.
   **Esperado:** o aviso muda para folga verificada (verde) ou para a lista
   vermelha de passagens em conflito; subir o standoff limpa a lista.
@@ -133,25 +140,31 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 - ☐ Selector do topo → **Corredor**; Desenhar; clicar um eixo com uma curva
   larga (3–4 vértices, ~500 m); Concluir (ou duplo clique).
   **Esperado:** eixo desenhado, faixa ilustrativa da largura pedida e as
-  passagens paralelas; painel com o número de passagens, waypoints e tempo.
+  passagens paralelas; painel com o número de passagens, waypoints e tempo, e
+  a linha «Altitude … · sobreposição …/… % (do separador Área, cartão 3)».
 - ☐ Aumentar a **meia-largura** de 60 para 120 m.
   **Esperado:** o número de passagens cresce **uma de cada vez**, nunca aos
   saltos, e a faixa alarga em conformidade.
 - ☐ Desenhar um eixo com uma curva APERTADA (raio menor do que a
-  meia-largura) e ler o painel.
-  **Esperado:** aviso de passagens partidas, com a contagem; nenhuma
-  passagem desenha um laço sobre si própria no mapa.
+  meia-largura) e ler o painel e o preflight.
+  **Esperado:** aviso de passagens sem cobertura, com a contagem, no painel e
+  na lista do preflight; nenhuma passagem desenha um laço sobre si própria.
 - ☐ Trocar o **Disparo** entre «Por distância» e «Por waypoint».
   **Esperado:** por waypoint, a contagem de waypoints sobe e a de fotos
   iguala-a; por distância, volta aos extremos das passagens.
+- ☐ Ligar **Seguir terreno** (cartão Relevo e Base) sobre relevo carregado.
+  **Esperado:** as alturas de cada waypoint seguem o relevo (painel «waypoints
+  com altura própria»), o KMZ sai com `-tf` no nome e a folga ao solo mantém-se
+  em toda a rota; sem relevo a cobrir o eixo o preflight bloqueia.
 - ☐ Exportar WPML e abrir o KMZ.
   **Esperado:** `waylines.wpml` analisa, gimbal a −90 em todos os waypoints
   (o corredor é apenas nadir) e nenhum valor não-finito nas coordenadas.
-- ☐ Confirmar que **Seguir terreno** e a divisão por bateria não se aplicam.
-  **Esperado:** o corredor voa a altitude única — é limitação conhecida,
-  não defeito.
+- ☐ Confirmar que a divisão por bateria não se aplica ao corredor.
+  **Esperado:** o corredor é um só voo; o preflight avisa quando passa o
+  tempo útil (com o trânsito da base, se marcada).
 - ☐ Guardar o projecto, limpar tudo, reabrir.
-  **Esperado:** eixo, meia-largura e modo de disparo restaurados.
+  **Esperado:** eixo, meia-largura, modo de disparo e seguir terreno
+  restaurados.
 
 ## 9. Pontos de inspecção — ordem e persistência (~1.5 min)
 
@@ -332,6 +345,35 @@ tablet real):
   planeador.
 
 ---
+
+## 16. Primeiro voo de cada modo (~campo)
+
+Os ficheiros que o comando já aceitou estão na matriz de compatibilidade
+(`docs/VALIDACAO.md`, §5): M3E + grande-angular e M4T + grande-angular, na
+área. Fora dessas combinações o preflight põe a nota «Primeiro voo desta
+combinação». No primeiro voo de cada uma, e de cada modo, confirmar e
+registar na matriz:
+
+- ☐ **M4T térmica (B2)**: cada foto do KMZ leva a lente `ir`; no cartão
+  saem ficheiros `_T` (e não `_V`), uma por disparo; contar as fotos contra
+  o «Nº de fotos» do painel.
+- ☐ **M300 RTK (M3)**: três waypoints colineares nas pontas das faixas; a
+  rota voa a direito sem o comando os rejeitar, e o gimbal fica a −90.
+- ☐ **Template com acções e rumos (M2)**: o Pilot 2 abre a missão com as
+  acções de câmara por waypoint e os rumos escritos; conferir a primeira
+  foto e o rumo do primeiro waypoint contra o plano.
+- ☐ **Foto por waypoint sem paragem**: com «Paragem nos waypoints: só nos
+  cantos», confirmar que a foto dispara ao passar pelo ponto (contagem de
+  fotos igual à de waypoints); se não disparar, exportar com «Em todos».
+- ☐ **Alturas no comando**: a altura do primeiro waypoint que o comando
+  mostra é a da ficha de campo («Altura no comando») e do KMZ; o RTH do
+  cartão 5 é o que o comando propõe ao abrir a rota.
+- ☐ **Corredor, circular, órbita e fachada**: o KMZ aceite no comando, a
+  primeira passagem na posição e altura do plano, e as fotos a sair; fachada
+  e órbita com o rumo fixo escrito.
+
+Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
+«KMZ aceite», e o que falhou.
 
 Registo de execução:
 

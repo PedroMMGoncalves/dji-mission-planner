@@ -867,7 +867,7 @@ export default function Map3D({
     <div className="fixed inset-0 z-[2000] flex flex-col bg-slate-950">
       <div className="flex items-center gap-3 border-b border-slate-800 bg-slate-950/90 px-3 py-2">
         <span className="text-sm font-semibold text-slate-100">{t('map3d.title')}</span>
-        {hasTerrain && <span className="hidden text-xs text-slate-500 sm:inline">{status}</span>}
+        {hasTerrain && <span className="hidden text-xs text-slate-400 sm:inline">{status}</span>}
         <div className="ml-auto flex items-center gap-2">
           <span className="hidden text-xs text-slate-400 sm:inline">{t('map3d.exaggeration')}</span>
           <div className="flex overflow-hidden rounded border border-slate-700">
@@ -878,7 +878,7 @@ export default function Map3D({
                 onClick={() => setExag(opt.value)}
                 className={`px-2.5 py-1.5 text-sm ${
                   exag === opt.value
-                    ? 'bg-sky-600 text-white'
+                    ? 'bg-sky-700 text-white'
                     : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
                 }`}
               >
@@ -905,7 +905,7 @@ export default function Map3D({
             {t('map3d.noWebgl', { msg: glError })}
           </div>
         ) : hasTerrain ? (
-          <div className="pointer-events-none absolute bottom-2 left-3 text-xs text-slate-500">
+          <div className="pointer-events-none absolute bottom-2 left-3 text-xs text-slate-400">
             Arrastar: rodar · Roda do rato: zoom · Botão direito: deslocar · Esc: fechar
           </div>
         ) : (

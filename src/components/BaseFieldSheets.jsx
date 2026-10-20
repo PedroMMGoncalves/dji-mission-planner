@@ -80,7 +80,7 @@ export function flightViewText(t, view) {
  * texto das coordenadas, e as classes de impressão vêm de quem a usa.
  * @param {{sheets: any[], cardClass?: string, tableClass?: string}} props
  */
-export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '' }) {
+export default function BaseFieldSheets({ sheets, day = null, cardClass = '', tableClass = '' }) {
   const t = useT()
   const min = (s) => (Number.isFinite(s) ? Math.round(s / 60) : '—')
   const zoneText = (s) =>
@@ -94,11 +94,21 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
             at: Math.round(s.cause?.atM ?? 0),
           })
         : t('bases.kml.zone', { r: Math.round(s.radiusM) })
-  const cell = 'border border-slate-800 px-2 py-[3px] text-[11px]'
+  const cell = 'border border-slate-800 px-2 py-[3px] text-xs'
   const head =
     'border border-slate-800 bg-slate-950 px-2 py-[3px] text-left text-[9px] font-semibold uppercase tracking-wider text-slate-400'
   return (
     <div className="space-y-3" data-testid="base-sheets">
+      {day && (
+        <p
+          data-testid="sheets-day"
+          className={`mb-2 text-sm ${day.short ? 'text-amber-300' : 'text-slate-200'}`}
+        >
+          {day.sets != null
+            ? t('bases.sheet.day', { flights: day.flights, sets: day.flights, team: day.sets })
+            : t('bases.sheet.dayUnknown', { flights: day.flights, sets: day.flights })}
+        </p>
+      )}
       {sheets.map((s) => (
         <div
           key={s.id}
@@ -115,7 +125,7 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
               {t('bases.label', { label: s.label })}
             </span>
             {s.links && (
-              <span className="font-mono text-[11px] text-slate-300">
+              <span className="font-mono text-xs text-slate-300">
                 <a
                   href={s.links.https}
                   target="_blank"
@@ -128,7 +138,7 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
                 </a>{' '}
                 <a
                   href={s.links.geo}
-                  className="no-print text-[10px] text-slate-500 underline"
+                  className="no-print text-xs text-slate-400 underline"
                   title={t('bases.sheet.openGeo')}
                 >
                   {t('bases.sheet.openGeo')}
@@ -155,6 +165,20 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
                     : '—'}
                 </td>
               </tr>
+              {s.params && (
+                <tr>
+                  <th className={head}>{t('bases.sheet.params')}</th>
+                  <td className={cell} data-testid="base-sheet-params">
+                    {t('bases.sheet.paramsValue', {
+                      alt: Math.round(s.params.altitudeM),
+                      v: s.params.speedMS,
+                      f: s.params.frontPct,
+                      s: s.params.sidePct,
+                      gsd: Number.isFinite(s.params.gsdCm) ? s.params.gsdCm.toFixed(1) : '—',
+                    })}
+                  </td>
+                </tr>
+              )}
               <tr>
                 <th className={head}>{t('bases.sheet.rth')}</th>
                 <td className={cell} data-testid="base-sheet-rth">
@@ -205,6 +229,8 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
                 <th className={`${head} w-20`}>{t('bases.sheet.flight')}</th>
                 <th className={`${head} w-24`}>{t('bases.sheet.time')}</th>
                 <th className={`${head} w-28`}>{t('bases.sheet.transit')}</th>
+                <th className={`${head} w-32`}>{t('bases.sheet.heights')}</th>
+                <th className={`${head} w-20`}>{t('bases.sheet.pctUseful')}</th>
                 <th className={`${head} w-40`}>{t('bases.sheet.view')}</th>
                 <th className={head}>{t('bases.sheet.file')}</th>
               </tr>
@@ -220,6 +246,20 @@ export default function BaseFieldSheets({ sheets, cardClass = '', tableClass = '
                   </td>
                   <td className={`${cell} font-mono`}>{min(f.totalS)}</td>
                   <td className={`${cell} font-mono text-slate-400`}>{min(f.transitS)}</td>
+                  <td className={`${cell} font-mono`} data-testid="base-sheet-heights">
+                    {f.h1M != null
+                      ? t('bases.sheet.heightsValue', {
+                          h1: Math.round(f.h1M),
+                          hmax: Math.round(f.hmaxM ?? f.h1M),
+                        })
+                      : '—'}
+                  </td>
+                  <td
+                    className={`${cell} font-mono ${f.pctUseful > 90 ? 'text-amber-300' : ''}`}
+                    data-testid="base-sheet-pct"
+                  >
+                    {f.pctUseful != null ? `${f.pctUseful} %` : '—'}
+                  </td>
                   <td
                     data-testid="base-sheet-view"
                     data-visible-pct={f.view ? f.view.visiblePct : ''}

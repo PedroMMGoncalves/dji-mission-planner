@@ -60,10 +60,10 @@ export default function BasesPanel({
       className="mt-2 rounded border border-slate-800 bg-slate-900/60 p-2 text-xs text-slate-300"
     >
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           {t('bases.title')}
         </span>
-        <span className="text-[11px] text-slate-500">
+        <span className="text-xs text-slate-400">
           {t('bases.vlos', { m: vlosM })}
           {maxFlightsPerBase > 0 ? ` · ${t('bases.maxPerBase', { n: maxFlightsPerBase })}` : ''}
         </span>
@@ -95,7 +95,7 @@ export default function BasesPanel({
         )}
       </div>
       {proposal && (
-        <p data-testid="bases-proposal" className="mb-1.5 text-[11px] leading-relaxed text-sky-200">
+        <p data-testid="bases-proposal" className="mb-1.5 text-xs leading-relaxed text-sky-200">
           {proposal.cancelled
             ? t('bases.proposeCancelled')
             : proposal.added > 0
@@ -120,7 +120,7 @@ export default function BasesPanel({
         <div
           data-testid="bases-carry-lost"
           data-lost={carryLost}
-          className="mb-1.5 flex items-start gap-1.5 rounded border border-amber-800/60 bg-amber-950/30 px-1.5 py-1 text-[11px] leading-relaxed text-amber-200"
+          className="mb-1.5 flex items-start gap-1.5 rounded border border-amber-800/60 bg-amber-950/30 px-1.5 py-1 text-xs leading-relaxed text-amber-200"
         >
           <span className="flex-1">
             {carryLost === 1 ? t('bases.carryLostOne') : t('bases.carryLost', { n: carryLost })}
@@ -140,15 +140,15 @@ export default function BasesPanel({
       )}
 
       {rows.length === 0 && (
-        <p className="text-[11px] leading-relaxed text-slate-500">{t('bases.none')}</p>
+        <p className="text-xs leading-relaxed text-slate-400">{t('bases.none')}</p>
       )}
 
       {rows.length > 0 && hasBlocks && (
         <p
           data-testid="bases-click-hint"
           data-assign={assignMode ? 'on' : 'off'}
-          className={`mb-1.5 rounded px-1.5 py-1 text-[11px] leading-relaxed ${
-            assignMode ? 'bg-sky-950/60 text-sky-200' : 'text-slate-500'
+          className={`mb-1.5 rounded px-1.5 py-1 text-xs leading-relaxed ${
+            assignMode ? 'bg-sky-950/60 text-sky-200' : 'text-slate-400'
           }`}
         >
           {assignMode
@@ -210,7 +210,7 @@ export function FlightExports({
     'flex w-full items-center justify-center gap-1.5 rounded px-2 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40'
   return (
     <div data-testid="flight-exports" className="mt-2 border-t border-slate-800 pt-2">
-      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+      <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
         {t('bases.export.title')}
       </p>
       <div className="space-y-1.5">
@@ -225,7 +225,7 @@ export function FlightExports({
               file: `${flightsArchiveName(baseName, { kind: 'all' })}.zip`,
             })
           }
-          className={`${btn} bg-sky-700 text-white hover:bg-sky-600`}
+          className={`${btn} bg-sky-700 text-white hover:bg-sky-700`}
         >
           <IconDownload /> {t('bases.export.all')}
         </button>
@@ -271,7 +271,7 @@ export function FlightExports({
             {t('bases.export.one')}
           </button>
         </div>
-        <p className="text-[11px] leading-relaxed text-slate-500">
+        <p className="text-xs leading-relaxed text-slate-400">
           {t('bases.export.names', { example: files[0].file })}
         </p>
         {onExportKml && (
@@ -280,7 +280,7 @@ export function FlightExports({
             data-testid="export-bases-kml"
             onClick={onExportKml}
             title={t('bases.export.kmlTitle')}
-            className={`${btn} bg-emerald-700 text-white hover:bg-emerald-600`}
+            className={`${btn} bg-emerald-700 text-white hover:bg-emerald-700`}
           >
             <IconDownload /> {t('bases.export.kml')}
           </button>
@@ -321,11 +321,11 @@ export function ViewshedBox({
   return (
     <div data-testid="viewshed-box" className="mt-2 border-t border-slate-800 pt-2">
       <div className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           {t('bases.view.title')}
         </span>
         <label
-          className="flex items-center gap-1.5 text-[11px] text-slate-300"
+          className="flex items-center gap-1.5 text-xs text-slate-300"
           title={t('bases.view.layerTitle')}
         >
           <input
@@ -340,7 +340,7 @@ export function ViewshedBox({
       </div>
       {onObstacle && (
         <label
-          className="mb-1 flex items-center gap-1.5 text-[11px] text-slate-400"
+          className="mb-1 flex items-center gap-1.5 text-xs text-slate-400"
           title={t('bases.view.obstacleTitle')}
         >
           <span className="flex-1">{t('bases.view.obstacle')}</span>
@@ -360,18 +360,18 @@ export function ViewshedBox({
               const n = text.trim() === '' ? 0 : Number(text)
               if (Number.isFinite(n) && n >= 0 && n <= 60) onObstacle(n)
             }}
-            className="w-14 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right text-[11px] text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-40"
+            className="w-14 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right text-xs text-slate-100 focus:border-sky-500 focus:outline-none disabled:opacity-40"
           />
           <span>m</span>
         </label>
       )}
       {!terrain ? (
-        <p className="text-[11px] leading-relaxed text-slate-500">{t('bases.view.noTerrain')}</p>
+        <p className="text-xs leading-relaxed text-slate-400">{t('bases.view.noTerrain')}</p>
       ) : (
-        <p data-testid="viewshed-terrain" className="text-[11px] leading-relaxed text-slate-400">
+        <p data-testid="viewshed-terrain" className="text-xs leading-relaxed text-slate-400">
           {t('bases.view.model', { model: viewTerrainText(t, terrain) })}
           {running ? ` ${t('bases.view.pending')}` : ''}{' '}
-          <span className="text-slate-500">
+          <span className="text-slate-400">
             {viewCaveatText(t, terrain)} {t('bases.view.point')} {t('bases.view.radioRule')}
           </span>
         </p>
@@ -439,14 +439,14 @@ function BaseRow({
           className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
         >
           <span
-            className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-950 text-[11px] font-bold text-slate-950"
+            className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-slate-950 text-xs font-bold text-slate-950"
             style={{ backgroundColor: b.color }}
           >
             {b.label}
           </span>
-          <span className="text-[11px] text-slate-400">{t('bases.label', { label: b.label })}</span>
+          <span className="text-xs text-slate-400">{t('bases.label', { label: b.label })}</span>
         </button>
-        <label className="flex items-center gap-1 text-[11px] text-slate-500">
+        <label className="flex items-center gap-1 text-xs text-slate-400">
           {t('bases.radius')}
           <input
             type="number"
@@ -470,7 +470,7 @@ function BaseRow({
               if (text.trim() === '') onRadius(b.id, null, edit)
               else if (Number.isFinite(Number(text))) onRadius(b.id, Number(text), edit)
             }}
-            className="w-14 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right text-[11px] text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
+            className="w-14 rounded border border-slate-700 bg-slate-900 px-1 py-0.5 text-right text-xs text-slate-100 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none"
           />
         </label>
         <button
@@ -483,7 +483,7 @@ function BaseRow({
           <IconTrash />
         </button>
       </div>
-      <p className="mt-0.5 font-mono text-[11px] leading-relaxed text-slate-200">
+      <p className="mt-0.5 font-mono text-xs leading-relaxed text-slate-200">
         {b.flights.length
           ? t('bases.flights', { list: b.flights.join(', ') })
           : t('bases.noFlights')}
@@ -494,7 +494,7 @@ function BaseRow({
         (selected ? (
           <div
             data-testid="base-gather-on"
-            className="mt-1 flex items-center gap-1.5 rounded bg-sky-950/70 px-2 py-1 text-[11px] leading-relaxed text-sky-200"
+            className="mt-1 flex items-center gap-1.5 rounded bg-sky-950/70 px-2 py-1 text-xs leading-relaxed text-sky-200"
           >
             <span className="flex-1">{t('bases.gatherOn', { label: b.label })}</span>
             <button
@@ -512,7 +512,7 @@ function BaseRow({
             data-testid="base-gather"
             onClick={() => onSelect(b.id)}
             title={t('bases.gatherTitle', { label: b.label })}
-            className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-[11px] font-medium text-sky-200 transition-colors hover:bg-slate-700"
+            className="mt-1 w-full rounded bg-slate-800 px-2 py-1 text-xs font-medium text-sky-200 transition-colors hover:bg-slate-700"
           >
             {t('bases.gather')}
           </button>
@@ -526,7 +526,7 @@ function BaseRow({
             .map((v) => `${v.flight}:${v.eye ? Math.round(v.eye.shiftM) : 0}`)
             .join(',')}
           title={seen.some((v) => v.eye) ? t('bases.view.eyeTitle') : undefined}
-          className={`font-mono text-[11px] leading-relaxed ${
+          className={`font-mono text-xs leading-relaxed ${
             seen.some((v) => v.hidden > 0 || v.radioOnly > 0) ? 'text-amber-300' : 'text-slate-400'
           }`}
         >
@@ -551,14 +551,14 @@ function BaseRow({
         </p>
       )}
       <p
-        className={`text-[11px] leading-relaxed ${
-          b.noTerrain ? 'text-red-300' : b.reduced ? 'text-amber-300' : 'text-slate-500'
+        className={`text-xs leading-relaxed ${
+          b.noTerrain ? 'text-red-300' : b.reduced ? 'text-amber-300' : 'text-slate-400'
         }`}
       >
         {zoneText}
       </p>
       {b.refElev != null && (
-        <p className="text-[11px] leading-relaxed text-slate-400">
+        <p className="text-xs leading-relaxed text-slate-400">
           {t('bases.gain', { ref: Math.round(b.refElev), gain: Math.round(b.gainM ?? 0) })}
         </p>
       )}

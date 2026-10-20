@@ -15,7 +15,7 @@ function Field({ label, suffix, children }) {
     <label className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-300">
       <span className="flex-1">{label}</span>
       {children}
-      {suffix && <span className="w-8 text-xs text-slate-500">{suffix}</span>}
+      {suffix && <span className="w-8 text-xs text-slate-400">{suffix}</span>}
     </label>
   )
 }
@@ -112,7 +112,7 @@ export default function CircularPanel({
             )}
           </button>
         </div>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-slate-400">
           {drawing
             ? t('ci.area.hint', { n: draftCount })
             : hasRing
@@ -141,12 +141,10 @@ export default function CircularPanel({
             onChange={(v) => setCircularParam('overlapPct', Math.max(0, Math.min(90, v)))}
           />
         </Field>
-        <p className="mb-2 text-[11px] leading-relaxed text-slate-500">
-          {t('ci.params.overlapHint')}
-        </p>
+        <p className="mb-2 text-xs leading-relaxed text-slate-400">{t('ci.params.overlapHint')}</p>
         {advice && (
           <div
-            className="mb-3 rounded border border-sky-900/60 bg-sky-950/30 p-2 text-[11px] leading-relaxed text-sky-200"
+            className="mb-3 rounded border border-sky-900/60 bg-sky-950/30 p-2 text-xs leading-relaxed text-sky-200"
             data-testid="circular-advice"
           >
             {t('ci.advice', {
@@ -176,13 +174,13 @@ export default function CircularPanel({
             onChange={(v) => setCircularParam('gimbalPitch', Math.max(-90, Math.min(-20, v)))}
           />
         </Field>
-        <p className="mb-2 text-[11px] leading-relaxed text-slate-500">
+        <p className="mb-2 text-xs leading-relaxed text-slate-400">
           {t('ci.params.pitchHint', {
             d: Number.isFinite(axisGroundM) ? Math.round(axisGroundM) : '∞',
           })}
         </p>
         {triggerWarn && (
-          <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+          <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
             ⚠{' '}
             {t('cp.flight.triggerFast', {
               s: triggerWarn.actualS.toFixed(2),
@@ -217,7 +215,7 @@ export default function CircularPanel({
             }
           />
         </Field>
-        <p className="text-[11px] leading-relaxed text-slate-500">
+        <p className="text-xs leading-relaxed text-slate-400">
           {t('ci.params.altitudeNote', { h: altitude, f: frontOverlap })}
         </p>
         <label className="mt-3 flex items-center gap-2 text-sm text-slate-300">
@@ -230,9 +228,9 @@ export default function CircularPanel({
           />
           {t('ci.terrain.follow')}
         </label>
-        <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{t('ci.terrain.hint')}</p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-400">{t('ci.terrain.hint')}</p>
         {terrainReady && stats && !circularCovers && (
-          <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
+          <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-xs leading-relaxed text-amber-300">
             ⚠ {t('ci.terrain.outOfCoverage')}
           </p>
         )}
@@ -258,7 +256,7 @@ export default function CircularPanel({
             ⚠ {t(errorKey, { n: circularPlan.count ?? '', max: MAX_CIRCLES })}
           </p>
         )}
-        {!hasRing && !errorKey && <p className="text-xs text-slate-500">{t('ci.area.none')}</p>}
+        {!hasRing && !errorKey && <p className="text-xs text-slate-400">{t('ci.area.none')}</p>}
         {stats && (
           <div className="space-y-1 font-mono text-xs text-slate-300">
             <p>{t('ci.plan.circles', { n: stats.circleCount, pts: stats.pointsPerCircle })}</p>
@@ -301,7 +299,7 @@ export default function CircularPanel({
           <button
             onClick={onExportSingle}
             disabled={!stats || exportBlocked}
-            className="flex items-center justify-center gap-1.5 rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center justify-center gap-1.5 rounded bg-sky-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('ci.exportSingle')}
           </button>
@@ -314,11 +312,11 @@ export default function CircularPanel({
           </button>
         </div>
         {exportBlocked && (
-          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-[11px] leading-relaxed text-red-300">
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs leading-relaxed text-red-300">
             ⚠ {t('app.exportBlockedHint')}
           </p>
         )}
-        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{t('ci.exportHint')}</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{t('ci.exportHint')}</p>
         {onRemove && (
           <button
             onClick={onRemove}
@@ -327,7 +325,7 @@ export default function CircularPanel({
             <IconTrash /> {t('ci.remove')}
           </button>
         )}
-        <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{t('ci.removeHint')}</p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-400">{t('ci.removeHint')}</p>
       </Card>
     </CardColumn>
   )

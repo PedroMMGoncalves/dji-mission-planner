@@ -12,7 +12,7 @@ function Field({ label, suffix, children }) {
     <label className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-300">
       <span className="flex-1">{label}</span>
       {children}
-      {suffix && <span className="w-8 text-xs text-slate-500">{suffix}</span>}
+      {suffix && <span className="w-8 text-xs text-slate-400">{suffix}</span>}
     </label>
   )
 }
@@ -93,7 +93,7 @@ export default function FacePanel({
               <button
                 onClick={onFinishDraw}
                 disabled={draftCount < 2}
-                className="flex items-center justify-center gap-1.5 rounded bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex items-center justify-center gap-1.5 rounded bg-emerald-700 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <IconCheck /> {t('fp.baseline.finish')}
               </button>
@@ -101,7 +101,7 @@ export default function FacePanel({
           </div>
         )}
         {!cameraOk && (
-          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
             ⚠ {t('fp.cameraRequired')}
           </p>
         )}
@@ -135,7 +135,7 @@ export default function FacePanel({
             <option value="right">{t('fp.params.sideRight')}</option>
           </select>
         </Field>
-        <p className="mb-2 text-[11px] leading-relaxed text-slate-500">{t('fp.params.sideHint')}</p>
+        <p className="mb-2 text-xs leading-relaxed text-slate-400">{t('fp.params.sideHint')}</p>
         <Field label={t('fp.params.vOverlap')} suffix="%">
           <NumberInput
             value={faceConfig.verticalOverlapPct}
@@ -191,7 +191,7 @@ export default function FacePanel({
 
       <Card id="fachada-4" n={4} title={t('fp.plan.title')}>
         {!faceConfig.baseline && (
-          <p className="text-xs leading-relaxed text-slate-500">{t('fp.plan.noBaseline')}</p>
+          <p className="text-xs leading-relaxed text-slate-400">{t('fp.plan.noBaseline')}</p>
         )}
         {facePlan?.error && (
           <p className="rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
@@ -214,7 +214,7 @@ export default function FacePanel({
         )}
 
         {stats && stats.uncoveredBottomM > 0.5 && (
-          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
             ⚠{' '}
             {t('fp.warn.bottom', {
               floor: stats.minHeightM,
@@ -224,12 +224,12 @@ export default function FacePanel({
           </p>
         )}
         {stats && !dsmLoaded && (
-          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
             ⚠ {t('fp.warn.unverified')}
           </p>
         )}
         {stats && dsmLoaded && faceClearance && !faceClearance.ok && (
-          <p className="mt-2 rounded border border-red-800/60 bg-red-950/40 p-2 text-[11px] leading-relaxed text-red-200">
+          <p className="mt-2 rounded border border-red-800/60 bg-red-950/40 p-2 text-xs leading-relaxed text-red-200">
             ⚠{' '}
             {t('fp.warn.clearance', {
               passes: faceClearance.passes.join(', '),
@@ -238,29 +238,29 @@ export default function FacePanel({
           </p>
         )}
         {stats && dsmLoaded && faceClearance?.ok && (
-          <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">
+          <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-xs leading-relaxed text-emerald-200">
             {t('fp.warn.clearanceOk', { min: faceClearance.minClearanceM })}
           </p>
         )}
         {stats && dsmLoaded && faceClearance == null && (
-          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
             ⚠ {t('fp.warn.noData')}
           </p>
         )}
 
         {exportBlocked && (
-          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-[11px] leading-relaxed text-red-300">
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs leading-relaxed text-red-300">
             ⚠ {t('app.exportBlockedHint')}
           </p>
         )}
         <button
           onClick={onExport}
           disabled={!stats || exportBlocked}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-sky-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <IconDownload /> {t('fp.export')}
         </button>
-        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">{t('fp.exportHint')}</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{t('fp.exportHint')}</p>
       </Card>
     </CardColumn>
   )

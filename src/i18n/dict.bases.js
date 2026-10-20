@@ -181,17 +181,36 @@ export default {
     en: '{ref} m · flight between 0 and +{gain} m above plan',
   },
   'bases.sheet.rth': { pt: 'Regresso (RTH)', en: 'Return (RTH)' },
+  'bases.sheet.heights': { pt: 'Altura no comando', en: 'Height on the controller' },
+  'bases.sheet.heightsValue': {
+    pt: '{h1}–{hmax} m (rel. à descolagem)',
+    en: '{h1}–{hmax} m (rel. to take-off)',
+  },
+  'bases.sheet.pctUseful': { pt: '% do útil', en: '% of useful' },
+  'bases.sheet.params': { pt: 'Parâmetros', en: 'Parameters' },
+  'bases.sheet.paramsValue': {
+    pt: 'altitude {alt} m · {v} m/s · sobreposição {f}/{s} % · GSD {gsd} cm/px',
+    en: 'altitude {alt} m · {v} m/s · overlap {f}/{s} % · GSD {gsd} cm/px',
+  },
+  'bases.sheet.day': {
+    pt: 'Dia: {flights} voos · conjuntos de baterias: {sets} precisos · {team} na equipa',
+    en: 'Day: {flights} flights · battery sets: {sets} needed · {team} in the team',
+  },
+  'bases.sheet.dayUnknown': {
+    pt: 'Dia: {flights} voos · conjuntos de baterias: {sets} precisos (contagem da equipa por definir na Configuração)',
+    en: 'Day: {flights} flights · battery sets: {sets} needed (team count to be set in Settings)',
+  },
   'bases.sheet.rthValue': {
     pt: '{rth} m acima da descolagem (a maior entre os voos desta base) · subida na descolagem: {takeoff} m',
     en: '{rth} m above take-off (the highest among this base’s flights) · take-off climb: {takeoff} m',
   },
   'bases.sheet.batteries': { pt: 'Conjuntos de baterias', en: 'Battery sets' },
   'bases.sheet.setsKnown': {
-    pt: '{flights} necessários · a equipa tem {sets}',
-    en: '{flights} needed · the team has {sets}',
+    pt: '{flights} precisos · {sets} na equipa',
+    en: '{flights} needed · {sets} in the team',
   },
   'bases.sheet.setsUnknown': {
-    pt: '{flights} necessários (contagem da equipa por definir na Configuração)',
+    pt: '{flights} precisos (contagem da equipa por definir na Configuração)',
     en: '{flights} needed (team count not set in Settings)',
   },
   'bases.sheet.setsShort': {

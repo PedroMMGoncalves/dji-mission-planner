@@ -488,6 +488,26 @@ export default function MapView({
           const p = m.getLatLng()
           stateRef.current.onVertexDrag(i, [p.lng, p.lat])
         })
+        // toque longo (600 ms, sem arrastar) remove o vértice: a alternativa
+        // táctil ao clique direito (M3-U23)
+        const el = m.getElement()
+        if (el) {
+          let timer = null
+          const cancel = () => {
+            if (timer) clearTimeout(timer)
+            timer = null
+          }
+          L.DomEvent.on(el, 'touchstart', () => {
+            cancel()
+            timer = setTimeout(() => {
+              timer = null
+              stateRef.current.onVertexDelete?.(i)
+            }, 600)
+          })
+          L.DomEvent.on(el, 'touchend', cancel)
+          L.DomEvent.on(el, 'touchmove', cancel)
+          L.DomEvent.on(el, 'touchcancel', cancel)
+        }
         // clique direito remove o vértice (mínimo 3)
         m.on('contextmenu', (e) => {
           e.originalEvent?.preventDefault()

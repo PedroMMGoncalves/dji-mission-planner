@@ -13,7 +13,7 @@ function Field({ label, suffix, children }) {
     <label className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-300">
       <span className="flex-1">{label}</span>
       {children}
-      {suffix && <span className="w-8 text-xs text-slate-500">{suffix}</span>}
+      {suffix && <span className="w-8 text-xs text-slate-400">{suffix}</span>}
     </label>
   )
 }
@@ -82,7 +82,7 @@ export default function OrbitPanel({
         </div>
         {mode === 'orbit' && <p className="mt-2 text-xs text-slate-400">{t('op.poi.hint')}</p>}
         {orbitConfig.poi && (
-          <p className="mt-1.5 font-mono text-[11px] text-slate-400">
+          <p className="mt-1.5 font-mono text-xs text-slate-400">
             {orbitConfig.poi[1].toFixed(6)}, {orbitConfig.poi[0].toFixed(6)}
           </p>
         )}
@@ -94,7 +94,7 @@ export default function OrbitPanel({
             onChange={(v) => setOrbitParam('poiHeightM', v)}
           />
         </Field>
-        <p className="text-[11px] leading-relaxed text-slate-500">{t('op.poi.heightHint')}</p>
+        <p className="text-xs leading-relaxed text-slate-400">{t('op.poi.heightHint')}</p>
       </Card>
 
       {/* Captura: aneis com fotografia, ou espiral em video */}
@@ -120,7 +120,7 @@ export default function OrbitPanel({
             </button>
           ))}
         </div>
-        <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+        <p className="mt-2 text-xs leading-relaxed text-slate-400">
           {t(video ? 'op.capture.videoHint' : 'op.capture.photoHint')}
         </p>
       </Card>
@@ -189,7 +189,7 @@ export default function OrbitPanel({
         {triggerWarn && (
           <p
             data-testid="orbit-trigger-warn"
-            className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200"
+            className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200"
           >
             ⚠{' '}
             {t('cp.flight.triggerFast', {
@@ -208,7 +208,7 @@ export default function OrbitPanel({
           {t('op.geom.clockwise')}
         </label>
         {!cameraOk && (
-          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
             ⚠ {t('op.lidarNote')}
           </p>
         )}
@@ -225,7 +225,7 @@ export default function OrbitPanel({
 
       <Card id="orbita-5" n={5} title={t('op.plan.title')}>
         {!orbitConfig.poi && (
-          <p className="text-xs leading-relaxed text-slate-500">{t('op.plan.noPoi')}</p>
+          <p className="text-xs leading-relaxed text-slate-400">{t('op.plan.noPoi')}</p>
         )}
         {stats && (
           <div className="space-y-1 font-mono text-xs text-slate-300">
@@ -270,7 +270,7 @@ export default function OrbitPanel({
           <button
             onClick={onExportSingle}
             disabled={!stats || exportBlocked}
-            className="flex items-center justify-center gap-1.5 rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex items-center justify-center gap-1.5 rounded bg-sky-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {t('op.exportSingle')}
           </button>
@@ -283,11 +283,11 @@ export default function OrbitPanel({
           </button>
         </div>
         {exportBlocked && (
-          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-[11px] leading-relaxed text-red-300">
+          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs leading-relaxed text-red-300">
             ⚠ {t('app.exportBlockedHint')}
           </p>
         )}
-        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
+        <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
           {t(video ? 'op.exportHintVideo' : 'op.exportHint')}
         </p>
       </Card>

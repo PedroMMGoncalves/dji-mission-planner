@@ -48,7 +48,7 @@ export default {
     pt: 'Só nos cantos: pára no fim de cada troço e passa sem parar pelas fotos e pelas dobras das passagens. Em todos: pára em cada waypoint, e o tempo previsto conta as paragens.',
     en: 'Corners only: stops at the end of each run and flies through photo points and pass bends. At every waypoint: stops at each one, and the estimated time counts the stops.',
   },
-  'co.terrain.title': { pt: 'Relevo e Base', en: 'Terrain and Home Point' },
+  'co.terrain.title': { pt: 'Relevo e Base', en: 'Terrain and base' },
   'co.terrain.follow': {
     pt: 'Seguir terreno (cada passagem sobre o seu chão)',
     en: 'Follow terrain (each pass over its own ground)',
@@ -63,11 +63,11 @@ export default {
   },
   'co.terrain.refBase': {
     pt: 'Alturas relativas à base marcada, à cota {elev} m.',
-    en: 'Heights relative to the marked home point, at {elev} m.',
+    en: 'Heights relative to the marked base, at {elev} m.',
   },
   'co.terrain.refMin': {
     pt: 'Sem base sobre o relevo: alturas relativas à cota mínima debaixo da rota, {elev} m. Descolar mais acima põe o drone mais alto, nunca mais baixo.',
-    en: 'No home point on the terrain: heights relative to the minimum elevation under the route, {elev} m. Taking off higher puts the aircraft higher, never lower.',
+    en: 'No base on the terrain: heights relative to the minimum elevation under the route, {elev} m. Taking off higher puts the aircraft higher, never lower.',
   },
   'co.terrain.err.terrain-not-loaded': {
     pt: 'O relevo carregado não cobre o corredor.',
@@ -75,12 +75,16 @@ export default {
   },
   'co.terrain.err.ref-outside-terrain': {
     pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado.',
-    en: 'No reference elevation: neither the home point nor the route lies on the loaded terrain.',
+    en: 'No reference elevation: neither the base nor the route lies on the loaded terrain.',
   },
   'co.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
   'co.plan.length': { pt: 'Comprimento do eixo', en: 'Centreline length' },
   'co.plan.passes': { pt: '{n} passagens ({r} troços)', en: '{n} passes ({r} runs)' },
   'co.plan.width': { pt: 'Largura coberta', en: 'Covered width' },
+  'co.plan.fromArea': {
+    pt: 'Altitude {h} m · sobreposição {f}/{s} % (do separador Área, cartão 3).',
+    en: 'Altitude {h} m · overlap {f}/{s} % (from the Area tab, card 3).',
+  },
   'co.plan.spacing': { pt: 'Espaçamento', en: 'Line spacing' },
   'co.plan.waypoints': { pt: '{n} waypoints', en: '{n} waypoints' },
   'co.plan.photos': { pt: '{n} fotos', en: '{n} photos' },
@@ -219,7 +223,7 @@ export default {
   'fp.export': { pt: 'Exportar WPML (KMZ)', en: 'Export WPML (KMZ)' },
   'fp.exportHint': {
     pt: 'Alturas relativas ao ponto de descolagem: descole à cota do pé da face, ou ajuste as alturas. Rumo fixo e uma foto em cada waypoint.',
-    en: 'Heights relative to the takeoff point: take off at the face-foot elevation, or adjust heights. Fixed heading and one photo at every waypoint.',
+    en: 'Heights relative to the take-off point: take off at the face-foot elevation, or adjust heights. Fixed heading and one photo at every waypoint.',
   },
 
   /* ---- Painel de órbita (E1.2) ---- */
@@ -233,7 +237,7 @@ export default {
   'op.poi.height': { pt: 'Cota do centro do alvo', en: 'Target centre height' },
   'op.poi.heightHint': {
     pt: 'Acima do ponto de descolagem — o gimbal de cada nível aponta a esta cota.',
-    en: 'Above the takeoff point — each level’s gimbal aims at this height.',
+    en: 'Above the take-off point — each level’s gimbal aims at this height.',
   },
   'op.capture.title': { pt: 'Captura', en: 'Capture' },
   'op.capture.photo': { pt: 'Fotografia (anéis)', en: 'Photo (rings)' },
@@ -292,11 +296,11 @@ export default {
 
   'op.exportHint': {
     pt: 'Voo curvo contínuo (toPointAndPassWithContinuityCurvature), rumo ao POI e uma foto em cada waypoint. Alturas relativas ao ponto de descolagem.',
-    en: 'Continuous curved flight (toPointAndPassWithContinuityCurvature), heading at the POI and one photo per waypoint. Heights relative to the takeoff point.',
+    en: 'Continuous curved flight (toPointAndPassWithContinuityCurvature), heading at the POI and one photo per waypoint. Heights relative to the take-off point.',
   },
   'op.exportHintVideo': {
     pt: 'Voo curvo contínuo, rumo ao POI, gimbal a reapontar ao centro em cada ponto; grava do primeiro ao último ponto. Um só KMZ: a gravação não se fatia por nível. Alturas relativas ao ponto de descolagem.',
-    en: 'Continuous curved flight, heading at the POI, gimbal re-aimed at the centre at every point; records from the first to the last point. A single KMZ: the recording is not split per level. Heights relative to the takeoff point.',
+    en: 'Continuous curved flight, heading at the POI, gimbal re-aimed at the centre at every point; records from the first to the last point. A single KMZ: the recording is not split per level. Heights relative to the take-off point.',
   },
 
   /* ---- Painel circular (circlegrammetry) ---- */
@@ -365,7 +369,7 @@ export default {
   },
   'ci.terrain.err.ref-outside-terrain': {
     pt: 'Sem cota de referência: nem a base nem a rota estão sobre o relevo carregado.',
-    en: 'No reference elevation: neither the home point nor the route lies on the loaded terrain.',
+    en: 'No reference elevation: neither the base nor the route lies on the loaded terrain.',
   },
   'ci.terrain.err.terrain-nodata': {
     pt: '{n} círculo(s) sem nenhum dado de relevo: não há altura segura para eles.',
@@ -404,7 +408,7 @@ export default {
   },
   'ci.exportHint': {
     pt: 'Voo curvo contínuo, rumo ao centro do círculo, gimbal fixo e uma foto em cada ponto; cada círculo entra e sai pelo ponto virado ao anterior. Alturas relativas ao ponto de descolagem.',
-    en: 'Continuous curved flight, heading at the circle centre, fixed gimbal and one photo per point; each circle enters and exits at the point facing the previous one. Heights relative to the takeoff point.',
+    en: 'Continuous curved flight, heading at the circle centre, fixed gimbal and one photo per point; each circle enters and exits at the point facing the previous one. Heights relative to the take-off point.',
   },
   'ci.err.invalid-area': { pt: 'Polígono inválido.', en: 'Invalid polygon.' },
   'ci.err.invalid-radius': { pt: 'O raio tem de ser positivo.', en: 'Radius must be positive.' },

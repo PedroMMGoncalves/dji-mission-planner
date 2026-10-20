@@ -22,7 +22,7 @@ function Field({ label, suffix, children }) {
     <label className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-300">
       <span className="flex-1">{label}</span>
       {children}
-      {suffix && <span className="w-8 text-xs text-slate-500">{suffix}</span>}
+      {suffix && <span className="w-8 text-xs text-slate-400">{suffix}</span>}
     </label>
   )
 }
@@ -84,6 +84,8 @@ export default function CorridorPanel({
   safety = null,
   setSafety = () => {},
   rthInfo = null,
+  // altitude e sobreposições do separador Área, que o corredor usa (M3-U7)
+  areaParams = null,
   // relevo e seguimento de terreno (partilhados com a área)
   terrain,
   corridorCovers,
@@ -149,7 +151,7 @@ export default function CorridorPanel({
             )}
           </button>
         </div>
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-slate-400">
           {drawing
             ? t('co.axis.hint', { n: draftCount })
             : axis
@@ -168,10 +170,10 @@ export default function CorridorPanel({
             step={5}
           />
         </Field>
-        <p className="mb-3 text-xs text-slate-500">{t('co.params.bufferHint')}</p>
+        <p className="mb-3 text-xs text-slate-400">{t('co.params.bufferHint')}</p>
 
         {triggerWarn && (
-          <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+          <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
             ⚠{' '}
             {t('cp.flight.triggerFast', {
               s: triggerWarn.actualS.toFixed(2),
@@ -211,7 +213,7 @@ export default function CorridorPanel({
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-slate-500">{t('co.params.photoHint')}</p>
+            <p className="mt-2 text-xs text-slate-400">{t('co.params.photoHint')}</p>
           </>
         )}
 
@@ -235,7 +237,7 @@ export default function CorridorPanel({
             </button>
           ))}
         </div>
-        <p className="mt-2 text-xs text-slate-500">{t('co.params.stopsHint')}</p>
+        <p className="mt-2 text-xs text-slate-400">{t('co.params.stopsHint')}</p>
       </Card>
 
       {/* Relevo: seguimento de terreno por passagem */}
@@ -271,7 +273,7 @@ export default function CorridorPanel({
           />
         </div>
         {terrainReady && terrain.data?.source === 'file' && (
-          <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">
+          <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-xs leading-relaxed text-emerald-200">
             {t('cp.terrain.localDem')} <strong>{terrain.data.label}</strong>{' '}
             {t('cp.terrain.demGrid', {
               crs: terrain.data.crsCode,
@@ -285,7 +287,7 @@ export default function CorridorPanel({
           </p>
         )}
         {terrainReady && axis && !corridorCovers && (
-          <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
+          <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-xs leading-relaxed text-amber-300">
             ⚠ {t('co.terrain.outOfCoverage')}
           </p>
         )}
@@ -310,10 +312,10 @@ export default function CorridorPanel({
             />
           </Field>
         )}
-        <p className="text-xs text-slate-500">{t('co.terrain.hint')}</p>
+        <p className="text-xs text-slate-400">{t('co.terrain.hint')}</p>
 
         {tfOk && (
-          <div className="mt-2 rounded border border-slate-800 bg-slate-900/60 p-2 text-[11px] leading-relaxed text-slate-400">
+          <div className="mt-2 rounded border border-slate-800 bg-slate-900/60 p-2 text-xs leading-relaxed text-slate-400">
             {t('cp.terrain.result', {
               min: Math.round(tfOk.elevMin),
               max: Math.round(tfOk.elevMax),
@@ -355,7 +357,7 @@ export default function CorridorPanel({
         </div>
         {mode === 'base' && <p className="mt-2 text-xs text-slate-400">{t('cp.area.baseHint')}</p>}
         {corridorReference && Number.isFinite(corridorReference.elev) && (
-          <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+          <p className="mt-2 text-xs leading-relaxed text-slate-400">
             {t(corridorReference.source === 'base' ? 'co.terrain.refBase' : 'co.terrain.refMin', {
               elev: Math.round(corridorReference.elev),
             })}
@@ -384,7 +386,7 @@ export default function CorridorPanel({
             ⚠ {t(errorKey)}
           </p>
         )}
-        {!axis && !errorKey && <p className="text-xs text-slate-500">{t('co.axis.none')}</p>}
+        {!axis && !errorKey && <p className="text-xs text-slate-400">{t('co.axis.none')}</p>}
         {stats && (
           <div className="space-y-1.5">
             <Row label={t('co.plan.length')} value={`${fmt(stats.corridorLengthM)} m`} />
@@ -405,6 +407,15 @@ export default function CorridorPanel({
             )}
             <Row label={t('co.plan.distance')} value={`${fmt(stats.pathLengthM)} m`} />
             <Row label={t('co.plan.time')} value={duration(stats.flightTimeS)} />
+            {areaParams && (
+              <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                {t('co.plan.fromArea', {
+                  h: areaParams.altitude,
+                  f: areaParams.frontOverlap,
+                  s: areaParams.sideOverlap,
+                })}
+              </p>
+            )}
             {droppedPasses > 0 && (
               <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs leading-relaxed text-red-300">
                 ⚠ {t('co.plan.dropped', { n: droppedPasses })}
@@ -416,14 +427,14 @@ export default function CorridorPanel({
               </p>
             )}
             {exportBlocked && (
-              <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-[11px] leading-relaxed text-red-300">
+              <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs leading-relaxed text-red-300">
                 ⚠ {t('app.exportBlockedHint')}
               </p>
             )}
             <button
               onClick={onExport}
               disabled={exportBlocked}
-              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-sky-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-sky-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <IconDownload /> {t('co.plan.export')}
             </button>

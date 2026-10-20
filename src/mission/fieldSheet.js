@@ -53,7 +53,121 @@ const viewOf = (v) => (v?.summary?.status === 'ok' ? v.summary : null)
  * @property {import('./viewshedPlan.js').ViewSummary|null} view bacia de visão vista do ponto
  *   da base (null enquanto se calcula, ou sem relevo)
  * @property {number|null} rthM altura de regresso (RTH) escrita no KMZ deste voo
+ * @property {number|null} h1M altura do 1.º waypoint no KMZ (rel. à descolagem)
+ * @property {number|null} hmaxM altura máxima no KMZ
+ * @property {number|null} pctUseful percentagem do tempo útil (com trânsito)
  */
+
+/** Alturas do KMZ de um voo (relativas à descolagem): a do 1.º waypoint e a máxima. */
+function heightFields(h) {
+  return {
+    h1M: h && fin(h.h1M) ? h.h1M : null,
+    hmaxM: h && fin(h.hmaxM) ? h.hmaxM : null,
+  }
+}
+/** Percentagem do tempo útil que um voo (com trânsito) ocupa; null sem útil. */
+function pctOf(totalS, usefulS) {
+  return fin(usefulS) && usefulS > 0 && fin(totalS) ? Math.round((100 * totalS) / usefulS) : null
+}
+/** Alturas ({h1M, hmaxM}) de uma lista de waypoints [lon, lat, h]; null sem alturas. */
+export function heightsOfWaypoints(waypoints, fallbackM = null) {
+  const hs = (waypoints ?? []).map((w) => (fin(w?.[2]) ? w[2] : fallbackM)).filter((h) => fin(h))
+  if (hs.length === 0) return null
+  return { h1M: hs[0], hmaxM: Math.max(...hs) }
+}
+
+/**
+ * A ficha de uma rota única (área sem blocos, corredor, circular) com a base
+ * marcada: a mesma forma das fichas por base, com um só voo — antes só a
+ * área com blocos e bases levava a base para o papel (M3-U10).
+ * @param {Record<string, any>} a
+ * @returns {any}
+ */
+export function singleRouteSheet({
+  label = 'A',
+  color = null,
+  point,
+  radiusM = null,
+  requestedRadiusM = null,
+  reduced = false,
+  cause = null,
+  noTerrain = false,
+  refElev = null,
+  gainM = null,
+  flightLabel = '1',
+  file = null,
+  flightS = 0,
+  transitS = 0,
+  vlosM = null,
+  worstVlosM = null,
+  rthM = null,
+  takeoffM = null,
+  heights = null,
+  usefulS = null,
+  params = null,
+  equipment = null,
+  aircraftId = '',
+  batteryId = null,
+  baseWord = 'Base',
+}) {
+  if (!Array.isArray(point) || !fin(point[0]) || !fin(point[1])) return null
+  const totalS = (fin(flightS) ? flightS : 0) + (fin(transitS) ? transitS : 0)
+  const flight = {
+    blockId: 1,
+    flightLabel,
+    file,
+    flightS: fin(flightS) ? flightS : 0,
+    transitS: fin(transitS) ? transitS : 0,
+    totalS,
+    worstVlosM: fin(worstVlosM) ? worstVlosM : null,
+    withinVlos: !(fin(worstVlosM) && fin(vlosM) && worstVlosM > vlosM),
+    view: null,
+    rthM: fin(rthM) ? rthM : null,
+    ...heightFields(heights),
+    pctUseful: pctOf(totalS, usefulS),
+  }
+  return {
+    id: 'single',
+    label,
+    color,
+    point,
+    coords: formatLatLon(point),
+    links: mapLinks(point, `${baseWord} ${label}`),
+    radiusM,
+    requestedRadiusM,
+    reduced: Boolean(reduced),
+    cause,
+    noTerrain: Boolean(noTerrain),
+    refElev: fin(refElev) ? refElev : null,
+    gainM: fin(gainM) ? gainM : null,
+    rthM: fin(rthM) ? rthM : null,
+    takeoffM: fin(takeoffM) ? takeoffM : null,
+    params: params ?? null,
+    usefulS: fin(usefulS) ? usefulS : null,
+    flights: [flight],
+    totalS,
+    sets: flightsVsSets(equipment, aircraftId, batteryId, 1),
+    vlosM,
+    worstVlosM: fin(worstVlosM) ? worstVlosM : null,
+    viewTerrain: null,
+    viewPending: false,
+  }
+}
+
+/**
+ * A linha do dia, por cima das fichas: os voos de todas as bases contra os
+ * conjuntos de baterias da equipa (M3-U10, M3-U14) — cada ficha comparava os
+ * voos da sua base com os conjuntos da equipa inteira.
+ * @param {any[]} sheets
+ * @param {{equipment?: any, aircraftId?: string, batteryId?: string|null}} eq
+ * @returns {{flights: number, sets: number|null, short: boolean}|null}
+ */
+export function daySummary(sheets, { equipment = null, aircraftId = '', batteryId = null } = {}) {
+  const flights = (sheets ?? []).reduce((n, s) => n + (s.flights?.length ?? 0), 0)
+  if (flights === 0) return null
+  const r = flightsVsSets(equipment, aircraftId, batteryId, flights)
+  return { flights, sets: r.sets ?? null, short: Boolean(r.short) }
+}
 
 /**
  * Fichas das bases com voos, pela ordem dos rótulos.
@@ -71,6 +185,9 @@ const viewOf = (v) => (v?.summary?.status === 'ok' ? v.summary : null)
  * @param {import('./viewshedPlan.js').TerrainModel|null} [args.viewTerrain] relevo das bacias
  * @param {Array<{flight: string|null, rthM: number}>|null} [args.rthByFlight] RTH de cada voo (rthByFlight)
  * @param {number|null} [args.takeoffM] subida de descolagem escrita no KMZ
+ * @param {((id: any) => {h1M: number, hmaxM: number}|null)|null} [args.heightsOf] alturas do KMZ de cada bloco
+ * @param {number|null} [args.usefulS] tempo útil por voo (s)
+ * @param {any} [args.params] parâmetros do plano para a ficha (altitude, velocidade, sobreposições, GSD)
  */
 export function baseFieldSheets({
   rows,
@@ -88,6 +205,11 @@ export function baseFieldSheets({
   // e a subida de descolagem (M3-U3)
   rthByFlight = null,
   takeoffM = null,
+  // alturas do KMZ de cada bloco ({h1M, hmaxM}), tempo útil (s) e os
+  // parâmetros que o piloto confere no Pilot 2 (M3-U10)
+  heightsOf = null,
+  usefulS = null,
+  params = null,
 }) {
   if (!layout?.hasBases || !Array.isArray(blocks) || blocks.length === 0) return []
   const byId = new Map(blocks.map((b) => [b.id, b]))
@@ -119,6 +241,8 @@ export function baseFieldSheets({
           withinVlos: info.withinVlos !== false,
           view: viewOf(viewsheds?.[id]),
           rthM: rthOf(info.flightLabel || String(id)),
+          ...heightFields(typeof heightsOf === 'function' ? heightsOf(id) : null),
+          pctUseful: pctOf(flightS + transitS, usefulS),
         }
       })
       const worst = flights.map((f) => f.worstVlosM).filter(fin)
@@ -140,6 +264,8 @@ export function baseFieldSheets({
         // a maior altura de regresso entre os voos desta base
         rthM: rths.length ? Math.max(...rths) : null,
         takeoffM: fin(takeoffM) ? takeoffM : null,
+        params: params ?? null,
+        usefulS: fin(usefulS) ? usefulS : null,
         flights,
         totalS: flights.reduce((s, f) => s + f.totalS, 0),
         sets: flightsVsSets(equipment, aircraftId, batteryId, flights.length),

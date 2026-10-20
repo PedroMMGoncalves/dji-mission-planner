@@ -84,6 +84,29 @@ export const MISSION_MODES = ['area', 'face', 'orbit', 'corridor', 'circular']
 /** Geração do mosaico de quadrados: 2 = buildSquareMosaic (src/mission/squareMosaic.js). */
 export const MOSAIC_VERSION = 2
 
+/** Versão da aplicação (vite.config.js); nos testes em Node não há (null). */
+export const APP_VERSION = (() => {
+  // `import.meta.env.APP_VERSION` é definido pelo Vite (define); em Node não há
+  const env = /** @type {any} */ (import.meta).env
+  return env && typeof env.APP_VERSION === 'string' && env.APP_VERSION ? env.APP_VERSION : null
+})()
+
+/**
+ * a < b em versões «x.y.z»; uma versão em falta conta como a mais antiga
+ * (os projectos anteriores a esta marca não a trazem).
+ */
+export function versionBefore(a, b) {
+  const num = (v) =>
+    String(v ?? '0.0.0')
+      .split(/[^0-9]+/)
+      .map((x) => Number(x) || 0)
+  const [x, y] = [num(a), num(b)]
+  for (let i = 0; i < 3; i++) {
+    if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) < (y[i] ?? 0)
+  }
+  return false
+}
+
 /** Objecto serializável com tudo o que o projecto guarda (a mesma forma do autosave). */
 export function serializeProject(state) {
   const {
@@ -117,6 +140,9 @@ export function serializeProject(state) {
   return {
     $schema: PROJECT_SCHEMA_URL,
     version: PROJECT_VERSION,
+    // a versão da aplicação que gravou (M3-U17): ao reabrir com uma versão
+    // mais recente, o cartão 1 diz o que mudou no plano desde então
+    ...(APP_VERSION ? { appVersion: APP_VERSION } : {}),
     missionName,
     drone,
     custom,
@@ -252,6 +278,8 @@ export function normalizeProject(p) {
   out.holes = holes
   if (cells && cells.length) out.cells = cells
   out.areaOrigin = p.areaOrigin === 'draw' || p.areaOrigin === 'anchor' ? p.areaOrigin : null
+  if (typeof p.appVersion === 'string' && /^\d+\.\d+\.\d+/.test(p.appVersion))
+    out.appVersion = p.appVersion
   out.bases = Array.isArray(p.bases) ? normalizeBases(p.bases) : legacyBases(p.basePoint)
   out.blockBase = normalizeBlockBase(p.blockBase, out.bases)
   const disabled = new Set(

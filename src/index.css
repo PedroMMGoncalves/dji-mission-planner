@@ -21,12 +21,27 @@ body,
 
 /* Vértices editáveis do polígono */
 .vertex-handle {
+  /* alvo táctil de 24 px (M3-U23); o visual de 12 px fica no ::after */
+  width: 24px;
+  height: 24px;
+  margin-left: -12px !important;
+  margin-top: -12px !important;
+  border-radius: 9999px;
+  background: transparent;
+  position: relative;
+}
+.vertex-handle::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 6px;
   width: 12px;
   height: 12px;
   border-radius: 9999px;
   background: #38bdf8;
   border: 2px solid #0f172a;
   box-shadow: 0 0 0 1px #38bdf8;
+  box-sizing: border-box;
 }
 
 .anchor-handle {
@@ -40,12 +55,26 @@ body,
 
 /* Pontos intermédios das arestas — arrastar insere um vértice */
 .midpoint-handle {
+  width: 18px;
+  height: 18px;
+  margin-left: -9px !important;
+  margin-top: -9px !important;
+  border-radius: 9999px;
+  background: transparent;
+  position: relative;
+  opacity: 0.75;
+}
+.midpoint-handle::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 4px;
   width: 10px;
   height: 10px;
   border-radius: 9999px;
   background: rgba(15, 23, 42, 0.75);
   border: 2px solid #38bdf8;
-  opacity: 0.75;
+  box-sizing: border-box;
 }
 
 /* Etiquetas dos municípios (CAOP), dependentes da escala */

@@ -27,13 +27,15 @@ import {
 } from './Cards.jsx'
 import { errorText, terrainErrorText as terrainErrText } from '../utils/appError.js'
 import { batteryLabel } from '../mission/equipment.js'
+import { notesSince } from '../data/versionNotes.js'
+import { versionBefore } from '../mission/project.js'
 
 function Field({ label, suffix, children }) {
   return (
     <label className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-300">
       <span className="flex-1">{label}</span>
       {children}
-      {suffix && <span className="w-8 text-xs text-slate-500">{suffix}</span>}
+      {suffix && <span className="w-8 text-xs text-slate-400">{suffix}</span>}
     </label>
   )
 }
@@ -52,6 +54,16 @@ function terrainErrorText(res, t) {
  * altitude davam um plano a 1 m com 1882 faixas e outro a 12 m —, o campo
  * vazio valia 0 e os limites do campo não se aplicavam ao que se escrevia.
  */
+/** mm:ss (ou h:mm:ss), o mesmo formato do painel de métricas (M3-U13). */
+function fmtClock(sec) {
+  if (!Number.isFinite(sec)) return '—'
+  const tt = Math.round(sec)
+  const h = Math.floor(tt / 3600)
+  const m = Math.floor((tt % 3600) / 60)
+  const ss = String(tt % 60).padStart(2, '0')
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`
+}
+
 function NumberInput({ value, onChange, min, max, step = 1, wide, testId, label }) {
   const [draft, setDraft] = useState(null)
   const timer = useRef(null)
@@ -115,7 +127,7 @@ function MosaicOrientation({ split, setSplitParam, tileOrientation }) {
         <span className="flex-1">{t('cp.split.orientationAuto')}</span>
       </label>
       {auto ? (
-        <p className="text-[11px] leading-relaxed text-slate-500">
+        <p className="text-xs leading-relaxed text-slate-400">
           {t('cp.split.orientationAutoHint', {
             deg: Number.isFinite(tileOrientation) ? Math.round(tileOrientation) : '-',
           })}
@@ -214,6 +226,14 @@ export default function ControlPanel({
   importError,
   // o projecto que não abriu: no cartão 1, junto do botão (M3-U18)
   projectError = null,
+  // o projecto aberto foi gravado por uma versão anterior (M3-U17): {saved, now}
+  projectVersion = null,
+  onDismissVersionNote = null,
+  // resumo operacional (voos, conjuntos, voo mais longo), para o cartão 7 (M3-U13)
+  ops = null,
+  // margem em metros (M3-U22) e minutos de um quadrado (M3-U20)
+  bufferM = 0,
+  squareMinutes = null,
   // folga ao solo da rota (min/max), para o intervalo AGL sobre a área (M3-U2)
   routeClearance = null,
   // altura de regresso (RTH) e subida de descolagem escritas no KMZ (M3-U3)
@@ -339,7 +359,7 @@ export default function ControlPanel({
             placeholder={t('cp.mission.namePlaceholder')}
             aria-label={t('cards.missionName')}
           />
-          <p className="mt-1.5 text-[11px] text-slate-500">
+          <p className="mt-1.5 text-xs text-slate-400">
             {t('cp.mission.nameHintA')} (<span className="font-mono">.kml</span> /{' '}
             <span className="font-mono">.kmz</span>) {t('cp.mission.nameHintB')}
           </p>
@@ -369,6 +389,35 @@ export default function ControlPanel({
               }}
             />
           </div>
+          {projectVersion && (
+            <div
+              data-testid="project-version-note"
+              className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200"
+            >
+              <p className="font-semibold">
+                {projectVersion.saved
+                  ? t('cards.versionNote', { v: projectVersion.saved, now: projectVersion.now })
+                  : t('cards.versionNoteOld', { now: projectVersion.now })}
+              </p>
+              <ul className="mt-1 list-disc pl-4">
+                {notesSince(projectVersion.saved, versionBefore).flatMap((n) =>
+                  (lang === 'en' ? n.en : n.pt).map((txt, i) => (
+                    <li key={`${n.version}-${i}`}>{txt}</li>
+                  )),
+                )}
+              </ul>
+              <p className="mt-1 text-amber-300/90">{t('cards.versionNoteHint')}</p>
+              {onDismissVersionNote && (
+                <button
+                  type="button"
+                  onClick={onDismissVersionNote}
+                  className="mt-1.5 rounded border border-current px-2 py-0.5 text-xs font-medium hover:bg-white/10"
+                >
+                  {t('cards.versionNoteClose')}
+                </button>
+              )}
+            </div>
+          )}
           {projectError && (
             <p
               data-testid="project-error"
@@ -377,7 +426,7 @@ export default function ControlPanel({
               ⚠ {errorText(projectError, t)}
             </p>
           )}
-          <p className="mt-1.5 text-[11px] text-slate-500">{t('cp.mission.autosave')}</p>
+          <p className="mt-1.5 text-xs text-slate-400">{t('cp.mission.autosave')}</p>
           <div className="mt-3">
             <select
               className="mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
@@ -414,7 +463,7 @@ export default function ControlPanel({
 
             {aircraft.payloads.length > 1 && (
               <>
-                <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
+                <p className="mb-1 text-xs uppercase tracking-wider text-slate-400">
                   {t('cp.drone.payload')}
                 </p>
                 <select
@@ -433,7 +482,7 @@ export default function ControlPanel({
             )}
 
             {payload.type === 'camera' && (
-              <p className="text-xs leading-relaxed text-slate-500">
+              <p className="text-xs leading-relaxed text-slate-400">
                 {t('cp.drone.specs', {
                   camera: payload.desc,
                   w: payload.sensorWidth,
@@ -444,7 +493,7 @@ export default function ControlPanel({
               </p>
             )}
             {payload.type === 'lidar' && (
-              <p className="text-xs leading-relaxed text-slate-500">
+              <p className="text-xs leading-relaxed text-slate-400">
                 {t('cp.drone.lidarSpecs', {
                   desc: payload.desc,
                   fov: payload.fov,
@@ -457,7 +506,7 @@ export default function ControlPanel({
 
         {/* 2. Área e relevo */}
         <Card id="area" n={2} title={t('cards.area')} more={d.more('area')}>
-          <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
+          <p className="mb-1 text-xs uppercase tracking-wider text-slate-400">
             {t('cp.area.shape')}
           </p>
           <div className="grid grid-cols-3 gap-1.5">
@@ -536,7 +585,7 @@ export default function ControlPanel({
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => onImportCrs(document.getElementById('crs-select').value)}
-                  className="rounded bg-sky-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-500"
+                  className="rounded bg-sky-700 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700"
                 >
                   {t('cp.area.convert')}
                 </button>
@@ -565,7 +614,7 @@ export default function ControlPanel({
                 <button
                   type="button"
                   onClick={onImportUseAll}
-                  className="mt-1.5 block rounded border border-amber-700 px-2 py-1 text-[11px] font-medium text-amber-100 hover:bg-amber-900/60"
+                  className="mt-1.5 block rounded border border-amber-700 px-2 py-1 text-xs font-medium text-amber-100 hover:bg-amber-900/60"
                 >
                   {t('cp.area.importUseAll')}
                 </button>
@@ -593,7 +642,7 @@ export default function ControlPanel({
                 <button
                   onClick={onFinishDraw}
                   disabled={draftCount < 3}
-                  className="flex items-center justify-center gap-1.5 rounded bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex items-center justify-center gap-1.5 rounded bg-emerald-700 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <IconCheck /> {t('cp.area.finish')}
                 </button>
@@ -604,7 +653,7 @@ export default function ControlPanel({
           {mode === 'anchor' && (
             <div className="mt-2 space-y-1 rounded border border-slate-800 bg-slate-900/60 p-3">
               <p className="mb-2 text-xs text-slate-400">{t('cp.area.anchorHint')}</p>
-              <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
+              <p className="mb-1 text-xs uppercase tracking-wider text-slate-400">
                 {t('cp.area.quickSizes')}
               </p>
               <div className="mb-2 grid grid-cols-4 gap-1.5">
@@ -617,7 +666,10 @@ export default function ControlPanel({
                     }}
                     title={
                       s === 250
-                        ? t('cp.area.sizeTitleBattery', { s })
+                        ? t('cp.area.sizeTitleBattery', {
+                            s,
+                            min: squareMinutes ? Math.round(squareMinutes(s)) : '—',
+                          })
                         : t('cp.area.sizeTitle', { s })
                     }
                     className={`rounded px-1 py-1.5 text-xs font-medium transition-colors ${
@@ -668,7 +720,7 @@ export default function ControlPanel({
           )}
 
           {hasRing && mode !== 'draw' && !gridActive && split.mode !== 'tiles' && (
-            <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+            <p className="mt-2 text-xs leading-relaxed text-slate-400">
               {t('cp.area.editHintA')}{' '}
               <strong className="text-slate-400">{t('cp.area.editHintInsert')}</strong>{' '}
               {t('cp.area.editHintB')}{' '}
@@ -724,7 +776,7 @@ export default function ControlPanel({
             {rememberedDem && (
               <p
                 data-testid="dem-remembered"
-                className="mt-2 rounded border border-slate-700 bg-slate-900 p-2 text-[11px] leading-relaxed text-slate-300"
+                className="mt-2 rounded border border-slate-700 bg-slate-900 p-2 text-xs leading-relaxed text-slate-300"
               >
                 {t(
                   rememberedDem.surface === 'dsm'
@@ -736,7 +788,7 @@ export default function ControlPanel({
             )}
 
             {terrain.status === 'ready' && terrain.data?.source === 'file' && (
-              <div className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-[11px] leading-relaxed text-emerald-200">
+              <div className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-xs leading-relaxed text-emerald-200">
                 <p>
                   {t(demSurface === 'dsm' ? 'cp.terrain.localDsm' : 'cp.terrain.localDem')}{' '}
                   <strong>{terrain.data.label}</strong>{' '}
@@ -781,11 +833,11 @@ export default function ControlPanel({
               </p>
             )}
             {terrain.status === 'ready' && !terrainCovers && (
-              <p className="mt-2 rounded border border-red-700 bg-red-950/60 p-2 text-[11px] leading-relaxed text-red-300">
+              <p className="mt-2 rounded border border-red-700 bg-red-950/60 p-2 text-xs leading-relaxed text-red-300">
                 ⛔ {t('cp.terrain.outOfCoverage')}
               </p>
             )}
-            <p className="mt-1.5 text-[11px] text-slate-500">
+            <p className="mt-1.5 text-xs text-slate-400">
               {terrain.data?.source === 'file'
                 ? t('cp.terrain.sourceHintFile', {
                     label: terrain.data.label,
@@ -794,12 +846,12 @@ export default function ControlPanel({
                 : t('cp.terrain.sourceHint')}
             </p>
             {terrain.status === 'ready' && terrain.data?.verticalDatum?.kind === 'ellipsoidal' && (
-              <p className="mt-1.5 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+              <p className="mt-1.5 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
                 ⚠ {t('cp.terrain.datumEllipWarn')}
               </p>
             )}
             {slopeHint && (
-              <p className="mt-2 text-[11px] leading-relaxed text-sky-300">
+              <p className="mt-2 text-xs leading-relaxed text-sky-300">
                 {t('cards.slopeAvailable', { slope: Math.round(slopeHint.slopeDeg) })}
               </p>
             )}
@@ -824,7 +876,7 @@ export default function ControlPanel({
             Number.isFinite(routeClearance?.maxM) && (
               <p
                 data-testid="agl-over-area"
-                className={`-mt-1 mb-2 text-[11px] leading-relaxed ${
+                className={`-mt-1 mb-2 text-xs leading-relaxed ${
                   routeClearance.minM < params.altitude / 2 ? 'text-amber-300' : 'text-slate-400'
                 }`}
               >
@@ -845,12 +897,12 @@ export default function ControlPanel({
             </Field>
           )}
           {params.altitude > 120 && (
-            <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+            <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
               ⚠ {t('cp.flight.altWarnPre')} <strong>120 m AGL</strong> {t('cp.flight.altWarnPost')}
             </p>
           )}
           {aglWarn && (
-            <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+            <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
               ⚠{' '}
               {t('cp.flight.aglCapWarn', {
                 payload: payload.label,
@@ -872,7 +924,7 @@ export default function ControlPanel({
             />
           </Field>
           {triggerWarn && (
-            <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+            <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
               ⚠{' '}
               {t('cp.flight.triggerFast', {
                 s: triggerWarn.actualS.toFixed(2),
@@ -904,7 +956,7 @@ export default function ControlPanel({
               ⚠ {t('cp.flight.waypointWarn', { n: waypointWarn })}
             </p>
           )}
-          <p className="mb-1 mt-3 text-[11px] uppercase tracking-wider text-slate-500">
+          <p className="mb-1 mt-3 text-xs uppercase tracking-wider text-slate-400">
             {t('cp.orientation.title')}
           </p>
           <div className="flex items-center gap-3">
@@ -925,9 +977,9 @@ export default function ControlPanel({
               max={360}
               onChange={(v) => setParam('angle', Math.max(0, Math.min(360, v)))}
             />
-            <span className="text-xs text-slate-500">°</span>
+            <span className="text-xs text-slate-400">°</span>
           </div>
-          <p className="mt-1 text-[11px] text-slate-500">{t('cp.orientation.azimuthHint')}</p>
+          <p className="mt-1 text-xs text-slate-400">{t('cp.orientation.azimuthHint')}</p>
           <div className="mt-2 grid grid-cols-4 gap-1.5">
             {[
               { key: 'cp.orientation.parallel', offset: 0 },
@@ -954,7 +1006,7 @@ export default function ControlPanel({
             </button>
           </div>
           {refAzimuth != null && (
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-xs text-slate-400">
               {t('cp.orientation.reference', { deg: Math.round(refAzimuth) })}
             </p>
           )}
@@ -985,7 +1037,7 @@ export default function ControlPanel({
             )}
 
             {terrainFollow.enabled && terrainResult && !terrainResult.error && (
-              <div className="mt-1 rounded border border-slate-800 bg-slate-900/60 p-2 text-[11px] leading-relaxed text-slate-400">
+              <div className="mt-1 rounded border border-slate-800 bg-slate-900/60 p-2 text-xs leading-relaxed text-slate-400">
                 {t('cp.terrain.result', {
                   min: Math.round(terrainResult.elevMin),
                   max: Math.round(terrainResult.elevMax),
@@ -1010,7 +1062,7 @@ export default function ControlPanel({
         {/* 4. Divisão em voos */}
         <Card id="divisao" n={4} title={t('cards.split')} more={d.more('divisao')}>
           {gridActive && (
-            <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-[11px] leading-relaxed text-amber-200">
+            <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
               {t('cp.split.gridActive')}
             </p>
           )}
@@ -1038,7 +1090,7 @@ export default function ControlPanel({
           )}
           {!gridActive && split.mode === 'tiles' && (
             <div className="mt-2">
-              <p className="mb-1 text-[11px] uppercase tracking-wider text-slate-500">
+              <p className="mb-1 text-xs uppercase tracking-wider text-slate-400">
                 {t('cp.split.tileSideLabel')}
               </p>
               <div className="mb-2 grid grid-cols-4 gap-1.5">
@@ -1066,13 +1118,13 @@ export default function ControlPanel({
                 />
               </Field>
               {tilesError === 'too-many-cells' && (
-                <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
+                <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-xs leading-relaxed text-amber-300">
                   ⚠ {t('cp.split.tooManyCellsTile')}
                 </p>
               )}
             </div>
           )}
-          {!gridActive && split.mode === 'battery' && (
+          {!gridActive && (
             <div className="mt-2">
               <Field label={t('cp.split.batteryType')}>
                 <select
@@ -1110,7 +1162,7 @@ export default function ControlPanel({
                   )}
                 </div>
               </Field>
-              <p className="mb-2 text-[11px] leading-relaxed text-slate-500">
+              <p className="mb-2 text-xs leading-relaxed text-slate-400">
                 {t('cp.split.usefulHint')}{' '}
                 <button
                   type="button"
@@ -1125,8 +1177,22 @@ export default function ControlPanel({
                   <span className="text-amber-300/90"> {t('cp.split.estimated')}</span>
                 )}
               </p>
+            </div>
+          )}
+          {!gridActive && split.mode === 'area' && (
+            <Field label={t('cp.split.maxAreaPerBlock')} suffix="ha">
+              <NumberInput
+                value={split.maxAreaHa}
+                min={0.5}
+                step={0.5}
+                onChange={(v) => setSplitParam('maxAreaHa', v)}
+              />
+            </Field>
+          )}
+          {!gridActive && split.mode === 'battery' && (
+            <div className="mt-2">
               {tileSide != null && (
-                <p className="mb-2 rounded border border-sky-800 bg-sky-950/40 p-2 text-[11px] leading-relaxed text-sky-200">
+                <p className="mb-2 rounded border border-sky-800 bg-sky-950/40 p-2 text-xs leading-relaxed text-sky-200">
                   {t('cp.split.squareBlocks')}{' '}
                   <strong>
                     {tileSide} × {tileSide} m
@@ -1136,7 +1202,7 @@ export default function ControlPanel({
                 </p>
               )}
               {tilesError === 'too-many-cells' && (
-                <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-[11px] leading-relaxed text-amber-300">
+                <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-xs leading-relaxed text-amber-300">
                   ⚠ {t('cp.split.tooManyCellsBattery')}
                 </p>
               )}
@@ -1184,7 +1250,7 @@ export default function ControlPanel({
                     </div>
                   )
                 })}
-              <p className="pt-1 text-[11px] text-slate-500">{t('cp.split.exportHint')}</p>
+              <p className="pt-1 text-xs text-slate-400">{t('cp.split.exportHint')}</p>
             </div>
           )}
         </Card>
@@ -1217,7 +1283,7 @@ export default function ControlPanel({
           )}
           {basesPanel && <BasesPanel {...basesPanel} part="list" />}
           <div className="mt-3 border-t border-slate-800 pt-3">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
               {t('safety.title')}
             </p>
             <SafetyActions safety={safety} onChange={setSafety} />
@@ -1251,17 +1317,39 @@ export default function ControlPanel({
               [
                 t('cards.summary.sets'),
                 setsCheck && setsCheck.sets != null
-                  ? `${setsCheck.flights} / ${setsCheck.sets}`
-                  : '—',
+                  ? t('cards.summary.setsValue', { n: setsCheck.flights, s: setsCheck.sets })
+                  : setsCheck
+                    ? t('cards.summary.setsUnknown', { n: setsCheck.flights })
+                    : '—',
               ],
+              ...(ops?.longest
+                ? [
+                    [
+                      t('cards.summary.longest'),
+                      `${ops.flights > 1 && ops.longest.label ? `${ops.longest.label} ` : ''}${fmtClock(ops.longest.timeS)}${ops.usefulS ? ` / ${fmtClock(ops.usefulS)}` : ''}`,
+                      ops.level,
+                    ],
+                  ]
+                : []),
               [
                 t('stats.area'),
                 Number.isFinite(summary?.areaHa) ? `${summary.areaHa.toFixed(2)} ha` : '—',
               ],
-            ].map(([k, v]) => (
+            ].map(([k, v, tone]) => (
               <div key={k} className="rounded bg-slate-900/80 px-2 py-1.5">
-                <dt className="text-[10px] uppercase tracking-wider text-slate-500">{k}</dt>
-                <dd className="font-mono text-sm text-sky-300">{v}</dd>
+                <dt className="text-xs uppercase tracking-wider text-slate-400">{k}</dt>
+                <dd
+                  data-tone={tone ?? undefined}
+                  className={`font-mono text-sm ${
+                    tone === 'over'
+                      ? 'text-red-300'
+                      : tone === 'near'
+                        ? 'text-amber-300'
+                        : 'text-sky-300'
+                  }`}
+                >
+                  {v}
+                </dd>
               </div>
             ))}
           </dl>
@@ -1269,7 +1357,7 @@ export default function ControlPanel({
           {preflightBlockers.length > 0 && (
             <div
               data-testid="summary-blockers"
-              className="mt-3 rounded border border-red-800/60 bg-red-950/40 p-2 text-[11px] leading-relaxed text-red-200"
+              className="mt-3 rounded border border-red-800/60 bg-red-950/40 p-2 text-xs leading-relaxed text-red-200"
             >
               <p className="font-semibold">⛔ {t('cards.summary.blocked')}</p>
               {preflightBlockers.map((txt, i) => (
@@ -1281,7 +1369,7 @@ export default function ControlPanel({
                 <button
                   type="button"
                   onClick={onShowPreflight}
-                  className="mt-1.5 rounded border border-current px-2 py-0.5 text-[11px] font-medium hover:bg-white/10"
+                  className="mt-1.5 rounded border border-current px-2 py-0.5 text-xs font-medium hover:bg-white/10"
                 >
                   {t('cards.summary.seeAll')}
                 </button>
@@ -1298,10 +1386,19 @@ export default function ControlPanel({
                 data-testid="summary-export-mission"
                 onClick={onExportMission}
                 disabled={!canExportMission}
-                title={t('cards.summary.exportMissionTitle')}
-                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded bg-sky-600 px-2 text-xs font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+                title={t(
+                  baseLayout?.hasBases
+                    ? 'cards.summary.exportMissionByBaseTitle'
+                    : 'cards.summary.exportMissionTitle',
+                )}
+                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded bg-sky-700 px-2 text-xs font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <IconDownload /> {t('cards.summary.exportMission')}
+                <IconDownload />{' '}
+                {t(
+                  baseLayout?.hasBases
+                    ? 'cards.summary.exportMissionByBase'
+                    : 'cards.summary.exportMission',
+                )}
               </button>
             )}
             {onExportArea && (
@@ -1320,7 +1417,7 @@ export default function ControlPanel({
           {exportAreaNotes.length > 0 && (
             <p
               data-testid="summary-export-area-notes"
-              className="mt-2 text-[11px] leading-relaxed text-amber-300/90"
+              className="mt-2 text-xs leading-relaxed text-amber-300/90"
             >
               {exportAreaNotes.join(' ')}
             </p>
@@ -1356,7 +1453,7 @@ export default function ControlPanel({
                       ))}
                     </select>
                   </label>
-                  <p className="text-[11px] leading-relaxed text-slate-500">
+                  <p className="text-xs leading-relaxed text-slate-400">
                     {chosen ? (chosen.desc[lang] ?? chosen.desc.pt) : t('cp.preset.hint')}
                   </p>
                 </div>
@@ -1388,7 +1485,7 @@ export default function ControlPanel({
                     )}
                   </div>
                 </Field>
-                <p className="text-[11px] leading-relaxed text-slate-500">
+                <p className="text-xs leading-relaxed text-slate-400">
                   {t('cp.drone.effectiveFovHint')}
                 </p>
               </div>
@@ -1459,7 +1556,7 @@ export default function ControlPanel({
                   </Field>
                 )}
 
-                <p className="pt-1 text-[11px] text-slate-500">{t('cp.drone.wpmlEnums')}</p>
+                <p className="pt-1 text-xs text-slate-400">{t('cp.drone.wpmlEnums')}</p>
                 {/* on a real aircraft the drone enum is the aircraft's own;
                 only the CUSTOM aircraft exposes it for editing */}
                 {aircraft.id === 'CUSTOM' && (
@@ -1487,7 +1584,7 @@ export default function ControlPanel({
       <Drawer id="area" title={t('cards.area')} {...d.drawer('area')}>
         {mode === 'anchor' && (
           <DrawerGroup title={t('cards.anchorShape')}>
-            <p className="pb-1 pt-2 text-[11px] uppercase tracking-wider text-slate-500">
+            <p className="pb-1 pt-2 text-xs uppercase tracking-wider text-slate-400">
               {t('cp.area.blockGrid')}
             </p>
             <Field label={t('cp.area.cols')}>
@@ -1506,15 +1603,13 @@ export default function ControlPanel({
                 onChange={(v) => setAnchorParam('rows', v)}
               />
             </Field>
-            <p className="pt-1 text-[11px] leading-relaxed text-slate-500">
-              {t('cp.area.gridHint')}
-            </p>
+            <p className="pt-1 text-xs leading-relaxed text-slate-400">{t('cp.area.gridHint')}</p>
           </DrawerGroup>
         )}
         {slopeHint && (
           <DrawerGroup title={t('cards.slope')}>
             {slopeHint && (
-              <div className="mt-2 rounded border border-sky-800 bg-sky-950/40 p-2 text-[11px] leading-relaxed text-sky-200">
+              <div className="mt-2 rounded border border-sky-800 bg-sky-950/40 p-2 text-xs leading-relaxed text-sky-200">
                 {t('cp.terrain.slopeHint', {
                   slope: Math.round(slopeHint.slopeDeg),
                   az: Math.round(slopeHint.downhillAzimuthDeg),
@@ -1537,17 +1632,15 @@ export default function ControlPanel({
         <DrawerGroup title={t('cards.terrainSource')}>
           {terrainReady && (
             <>
-              <p className="mb-2 text-[11px] text-slate-400">{t('cards.terrainReload')}</p>
+              <p className="mb-2 text-xs text-slate-400">{t('cards.terrainReload')}</p>
               {terrainButtons}
             </>
           )}
-          <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
-            {t('cp.terrain.auto')}
-          </p>
+          <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{t('cp.terrain.auto')}</p>
           {terrain.status === 'ready' &&
             terrain.data?.cacheEnabled &&
             terrain.data.cachedCount > 0 && (
-              <p className="mt-1 text-[11px] text-slate-500">
+              <p className="mt-1 text-xs text-slate-400">
                 {t('cp.terrain.cacheHint', {
                   hits: terrain.data.cachedCount,
                   total: terrain.data.tileCount,
@@ -1555,7 +1648,7 @@ export default function ControlPanel({
               </p>
             )}
           {terrain.status === 'ready' && terrain.data?.verticalDatum && (
-            <p className="mt-1 text-[11px] text-slate-500" data-testid="terrain-datum">
+            <p className="mt-1 text-xs text-slate-400" data-testid="terrain-datum">
               {t('cp.terrain.datum', { datum: datumLabel(terrain.data.verticalDatum, t) })}
             </p>
           )}
@@ -1582,7 +1675,7 @@ export default function ControlPanel({
               />
             </Field>
           )}
-          <p className="mb-1 mt-2 text-[11px] uppercase tracking-wider text-slate-500">
+          <p className="mb-1 mt-2 text-xs uppercase tracking-wider text-slate-400">
             {t('cp.buffer.title')}
           </p>
           <div className="grid grid-cols-4 gap-1.5">
@@ -1600,6 +1693,11 @@ export default function ControlPanel({
               </button>
             ))}
           </div>
+          {params.bufferPct > 0 && bufferM > 0 && (
+            <p data-testid="buffer-metres" className="mt-1 text-xs text-slate-400">
+              {t('cp.buffer.metres', { m: Math.round(bufferM), pct: params.bufferPct })}
+            </p>
+          )}
         </DrawerGroup>
         <DrawerGroup title={t('cards.capture')}>
           <Field label={t('cp.flight.triggerBy')}>
@@ -1621,7 +1719,7 @@ export default function ControlPanel({
             </select>
           </Field>
           {payload.type === 'camera' && params.triggerMode === 'waypoint' && (
-            <p className="-mt-1 mb-2 text-[11px] leading-relaxed text-slate-400">
+            <p className="-mt-1 mb-2 text-xs leading-relaxed text-slate-400">
               {t('cp.flight.triggerWaypointHint')}
             </p>
           )}
@@ -1631,7 +1729,7 @@ export default function ControlPanel({
             <>
               <Field label={t('cp.flight.stops')}>
                 <select
-                  className="w-28 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+                  className="w-40 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
                   value={params.waypointStops === 'all' ? 'all' : 'corners'}
                   onChange={(e) => setParam('waypointStops', e.target.value)}
                 >
@@ -1639,7 +1737,7 @@ export default function ControlPanel({
                   <option value="all">{t('cp.flight.stopsAll')}</option>
                 </select>
               </Field>
-              <p className="-mt-1 mb-2 text-[11px] leading-relaxed text-slate-400">
+              <p className="-mt-1 mb-2 text-xs leading-relaxed text-slate-400">
                 {t('cp.flight.stopsHint')}
               </p>
             </>
@@ -1653,7 +1751,7 @@ export default function ControlPanel({
               onChange={(v) => setParam('gimbalPitch', Math.max(-90, Math.min(0, v)))}
             />
           </Field>
-          <p className="text-[11px] text-slate-500">{t('cp.flight.gimbalHint')}</p>
+          <p className="text-xs text-slate-400">{t('cp.flight.gimbalHint')}</p>
           <div className="mt-2">
             <Field label={t('cp.flight.overshoot')} suffix="m">
               <NumberInput
@@ -1664,9 +1762,7 @@ export default function ControlPanel({
                 onChange={(v) => setParam('overshoot', Math.max(0, Math.min(100, v)))}
               />
             </Field>
-            <p className="text-[11px] leading-relaxed text-slate-500">
-              {t('cp.flight.overshootHint')}
-            </p>
+            <p className="text-xs leading-relaxed text-slate-400">{t('cp.flight.overshootHint')}</p>
           </div>
         </DrawerGroup>
         <DrawerGroup title={t('cards.passes')}>
@@ -1679,7 +1775,7 @@ export default function ControlPanel({
             {t('cp.orientation.crosshatch')}
           </label>
           {params.crosshatch && (
-            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+            <p className="mt-1 text-xs leading-relaxed text-slate-400">
               {t('cp.orientation.crosshatchHint', { deg: (params.angle + 90) % 360 })}
             </p>
           )}
@@ -1694,7 +1790,7 @@ export default function ControlPanel({
             </label>
           )}
           {params.crosshatch && params.includeNadir && (
-            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+            <p className="mt-1 text-xs leading-relaxed text-slate-400">
               {t('cp.orientation.includeNadirHint')}
             </p>
           )}
@@ -1707,7 +1803,7 @@ export default function ControlPanel({
             {t('cp.orientation.tieLine')}
           </label>
           {params.tieLine && (
-            <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+            <p className="mt-1 text-xs leading-relaxed text-slate-400">
               {t('cp.orientation.tieLineHint')}
             </p>
           )}
@@ -1716,24 +1812,10 @@ export default function ControlPanel({
 
       <Drawer id="divisao" title={t('cards.split')} {...d.drawer('divisao')}>
         {gridActive && (
-          <p className="mb-2 text-[11px] leading-relaxed text-slate-400">
-            {t('cp.split.gridActive')}
-          </p>
+          <p className="mb-2 text-xs leading-relaxed text-slate-400">{t('cp.split.gridActive')}</p>
         )}
         {!gridActive && split.mode === 'none' && (
-          <p className="text-[11px] leading-relaxed text-slate-500">{t('cards.splitNone')}</p>
-        )}
-        {!gridActive && split.mode === 'area' && (
-          <DrawerGroup title={t('cp.split.modeArea')}>
-            <Field label={t('cp.split.maxAreaPerBlock')} suffix="ha">
-              <NumberInput
-                value={split.maxAreaHa}
-                min={0.5}
-                step={0.5}
-                onChange={(v) => setSplitParam('maxAreaHa', v)}
-              />
-            </Field>
-          </DrawerGroup>
+          <p className="text-xs leading-relaxed text-slate-400">{t('cards.splitNone')}</p>
         )}
         {!gridActive && split.mode === 'tiles' && (
           <DrawerGroup title={t('cards.cells')}>
@@ -1757,7 +1839,7 @@ export default function ControlPanel({
                 {t('cp.split.restoreAll')}
               </button>
             </div>
-            <p className="text-[11px] leading-relaxed text-slate-500">
+            <p className="text-xs leading-relaxed text-slate-400">
               {t('cp.split.tilesHintA')}{' '}
               <strong className="text-slate-400">{t('cp.split.clickCell')}</strong>{' '}
               {t('cp.split.tilesHintB')}
@@ -1804,7 +1886,7 @@ export default function ControlPanel({
                 {t('cp.split.restoreAll')}
               </button>
             </div>
-            <p className="text-[11px] leading-relaxed text-slate-500">
+            <p className="text-xs leading-relaxed text-slate-400">
               {t('cp.split.batteryHintA')}{' '}
               <strong className="text-slate-400">{t('cp.split.clickCell')}</strong>{' '}
               {t('cp.split.batteryHintB')}
@@ -1825,7 +1907,7 @@ export default function ControlPanel({
         {viewshed && basesPanel?.rows.length > 0 && basesPanel?.hasBlocks ? (
           <ViewshedBox {...viewshed} />
         ) : (
-          <p className="text-[11px] leading-relaxed text-slate-500">{t('cards.bases.noView')}</p>
+          <p className="text-xs leading-relaxed text-slate-400">{t('cards.bases.noView')}</p>
         )}
       </Drawer>
 
@@ -1865,7 +1947,7 @@ export default function ControlPanel({
                 </div>
               </Field>
               {gcpInfo && (
-                <p className="text-[11px] leading-relaxed text-slate-400">
+                <p className="text-xs leading-relaxed text-slate-400">
                   {t('cp.gcp.info', {
                     count: gcpInfo.count,
                     ha: gcpInfo.haPerGcp?.toFixed(1),
@@ -1877,13 +1959,11 @@ export default function ControlPanel({
               )}
               <button
                 onClick={onExportGcps}
-                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-500"
+                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded bg-emerald-700 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
               >
                 <IconDownload /> {t('cp.gcp.export')}
               </button>
-              <p className="mt-1.5 text-[11px] leading-relaxed text-slate-500">
-                {t('cp.gcp.hint')}
-              </p>
+              <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{t('cp.gcp.hint')}</p>
             </div>
           )}
         </DrawerGroup>
@@ -1939,6 +2019,7 @@ export default function ControlPanel({
                       onChange={(e) => onInspectUpdate(p.id, { label: e.target.value })}
                     />
                     <button
+                      aria-label={t('cp.inspect.moveUp', { n: i + 1 })}
                       onClick={() => onInspectMove(p.id, -1)}
                       disabled={i === 0}
                       className="rounded bg-slate-800 px-1.5 py-1 text-xs text-slate-300 hover:bg-slate-700 disabled:opacity-40"
@@ -1946,6 +2027,7 @@ export default function ControlPanel({
                       ↑
                     </button>
                     <button
+                      aria-label={t('cp.inspect.moveDown', { n: i + 1 })}
                       onClick={() => onInspectMove(p.id, 1)}
                       disabled={i === inspectPoints.length - 1}
                       className="rounded bg-slate-800 px-1.5 py-1 text-xs text-slate-300 hover:bg-slate-700 disabled:opacity-40"
@@ -1953,13 +2035,14 @@ export default function ControlPanel({
                       ↓
                     </button>
                     <button
+                      aria-label={t('cp.inspect.remove', { n: i + 1 })}
                       onClick={() => onInspectRemove(p.id)}
                       className="rounded bg-slate-800 px-1.5 py-1 text-xs text-slate-300 hover:bg-red-900/60 hover:text-red-200"
                     >
                       ✕
                     </button>
                   </div>
-                  <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-[11px] text-slate-400">
+                  <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-xs text-slate-400">
                     <label className="flex items-center gap-1">
                       {t('cp.inspect.height')}
                       <input
@@ -2009,7 +2092,7 @@ export default function ControlPanel({
                       />
                     </label>
                   </div>
-                  <label className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400">
+                  <label className="mt-1 flex items-center gap-1.5 text-xs text-slate-400">
                     <input
                       type="checkbox"
                       checked={p.photo !== false}
@@ -2032,17 +2115,17 @@ export default function ControlPanel({
                 <button
                   onClick={onExportInspection}
                   disabled={!inspectTerrainOk || inspectPoints.length < 2}
-                  className="flex items-center justify-center gap-1.5 rounded bg-sky-600 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex items-center justify-center gap-1.5 rounded bg-sky-700 px-2 py-1.5 text-xs font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <IconDownload /> {t('cp.inspect.export')}
                 </button>
               </div>
               {!inspectTerrainOk && (
-                <p className="text-[11px] leading-relaxed text-amber-300">
+                <p className="text-xs leading-relaxed text-amber-300">
                   {t('cp.inspect.noTerrain')}
                 </p>
               )}
-              <p className="text-[11px] leading-relaxed text-slate-500">{t('cp.inspect.hint')}</p>
+              <p className="text-xs leading-relaxed text-slate-400">{t('cp.inspect.hint')}</p>
             </div>
           )}
         </DrawerGroup>

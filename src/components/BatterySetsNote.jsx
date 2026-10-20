@@ -13,7 +13,7 @@ export default function BatterySetsNote({ check, battery }) {
   return (
     <p
       data-testid="sets-note"
-      className="mt-2 rounded border border-slate-700 bg-slate-800/60 p-2 text-[11px] leading-relaxed text-slate-300"
+      className="mt-2 rounded border border-slate-700 bg-slate-800/60 p-2 text-xs leading-relaxed text-slate-300"
     >
       {t('sets.short', { flights: check.flights, sets: check.sets, battery })}
     </p>
