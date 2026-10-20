@@ -1,4 +1,6 @@
 import { useT } from '../i18n.jsx'
+import AircraftPicker from './AircraftPicker.jsx'
+import ShotPitches from './ShotPitches.jsx'
 import NumberInput from './NumberInput.jsx'
 import { Card, CardColumn, SafetyCard, TakeoffSelect } from './Cards.jsx'
 import { IconCheck, IconDownload, IconPolygon, IconTrash } from './Icons.jsx'
@@ -19,6 +21,12 @@ function Field({ label, suffix = null, children }) {
 }
 
 export default function FacePanel({
+  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
+  drone = null,
+  setDrone = null,
+  sensor = null,
+  // intervalo do gimbal do payload activo, para as várias inclinações
+  gimbalRange = null,
   faceConfig,
   setFaceParam,
   facePlan,
@@ -46,6 +54,11 @@ export default function FacePanel({
 
   return (
     <CardColumn label={t('cards.panel')}>
+      {drone && setDrone && (
+        <Card id="fachada-aeronave" title={t('ap.title')}>
+          <AircraftPicker drone={drone} setDrone={setDrone} sensor={sensor} />
+        </Card>
+      )}
       {/* Baseline (pé da face) */}
       <Card id="fachada-1" n={1} title={t('fp.baseline.title')}>
         <div className="grid grid-cols-2 gap-2">
@@ -178,6 +191,33 @@ export default function FacePanel({
           />
         </Field>
         <p className="mb-2 text-xs leading-relaxed text-slate-400">{t('fp.params.hoverHint')}</p>
+        {/* captura: uma foto por ponto, ou várias inclinações com paragem */}
+        <label htmlFor="face-capture" className="mb-1 block text-sm text-slate-300">
+          {t('fp.capture.title')}
+        </label>
+        <select
+          id="face-capture"
+          data-testid="face-capture"
+          className="mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+          value={faceConfig.capture === 'multi' ? 'multi' : 'single'}
+          onChange={(e) => setFaceParam('capture', e.target.value)}
+        >
+          <option value="single">{t('fp.capture.single')}</option>
+          <option value="multi">{t('fp.capture.multi')}</option>
+        </select>
+        {faceConfig.capture === 'multi' && (
+          <>
+            <ShotPitches
+              pitches={faceConfig.multiPitches}
+              onChange={(list) => setFaceParam('multiPitches', list)}
+              range={gimbalRange}
+              testId="face-shots"
+            />
+            <p className="mb-2 text-xs leading-relaxed text-slate-400">
+              {t('fp.capture.multiHint')}
+            </p>
+          </>
+        )}
         <label className="mb-1 flex items-center gap-2 text-sm text-slate-300">
           <input
             type="checkbox"

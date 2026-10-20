@@ -202,6 +202,31 @@
           "type": "number",
           "minimum": 0
         },
+        "capture": {
+          "type": "string",
+          "enum": [
+            "single",
+            "multi"
+          ]
+        },
+        "multiPitches": {
+          "description": "Varias inclinacoes (com paragem): os angulos do gimbal em cada ponto, 1 a 5; null ou ausente = por omissao (-45, 0 e o limite de cima do gimbal menos 5).",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 5,
+              "items": {
+                "type": "number",
+                "minimum": -120,
+                "maximum": 60
+              }
+            }
+          ]
+        },
         "takeoffBaseId": {
           "description": "Descolagem: null ou ausente = no chao do alvo (pe da face, chao no POI); o id de uma base do projecto = alturas convertidas pela diferenca de cotas.",
           "oneOf": [
@@ -374,8 +399,31 @@
           "type": "string",
           "enum": [
             "photo",
-            "video"
+            "video",
+            "multi"
           ]
+        },
+        "multiPitches": {
+          "description": "Varias inclinacoes (com paragem): os angulos do gimbal em cada ponto, 1 a 5; null ou ausente = por omissao (-45, 0 e o limite de cima do gimbal menos 5).",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 5,
+              "items": {
+                "type": "number",
+                "minimum": -120,
+                "maximum": 60
+              }
+            }
+          ]
+        },
+        "hoverS": {
+          "type": "number",
+          "minimum": 0
         },
         "takeoffBaseId": {
           "description": "Descolagem: null ou ausente = no chao do alvo (pe da face, chao no POI); o id de uma base do projecto = alturas convertidas pela diferenca de cotas.",

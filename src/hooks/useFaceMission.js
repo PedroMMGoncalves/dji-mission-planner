@@ -5,6 +5,7 @@
  * utils/faceMode.js.
  */
 import { useCallback, useMemo, useState } from 'react'
+import { shotPitches } from '../mission/gimbal.js'
 import { DEFAULT_FACE_CONFIG, generateFacePlan } from '../utils/faceMode.js'
 import { headingTicks } from '../utils/preview.js'
 import { faceExportParams } from '../mission/exportParams.js'
@@ -64,8 +65,13 @@ export function useFaceMission({
       speed: faceConfig.speedMS,
       extendEnds: faceConfig.extendEnds,
       hoverS: faceConfig.hoverS,
+      // várias inclinações: as escritas ou as por omissão, no intervalo do gimbal
+      shots:
+        faceConfig.capture === 'multi'
+          ? shotPitches(faceConfig.multiPitches, wpml?.gimbalPitchRange)
+          : null,
     })
-  }, [faceConfig, sensor])
+  }, [faceConfig, sensor, wpml])
 
   const facePreview = useMemo(() => {
     if (missionMode !== 'face') return null

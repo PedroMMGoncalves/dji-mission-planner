@@ -428,6 +428,21 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
 - ☐ **Campos escritos devagar**: no RTH, escrever 150 tecla a tecla, com uma
   pausa entre teclas; no raio do circular, 30.
   **Esperado:** os campos ficam em 150 e 30 (antes davam 205 e 50).
+- ☐ **Aeronave e sensor nos outros modos**: na face, na órbita, no corredor
+  e no circular, mudar a aeronave e o payload no topo do painel.
+  **Esperado:** o cartão 1 da área mostra a mesma escolha; com um LiDAR, a
+  órbita e o circular não levam `takePhoto` no KMZ e o painel diz 0 fotos.
+- ☐ **Várias inclinações (órbita e face)**: «Várias inclinações (com
+  paragem)», ângulos por omissão.
+  **Esperado:** −45°, 0° e o limite do gimbal menos 5° (M3E 30°, P1 25°);
+  no KMZ, em cada ponto, `gimbalRotate` → `hover` (se houver espera) →
+  `takePhoto`, depois `gimbalRotate` → `takePhoto` por inclinação, e a
+  órbita em `toPointAndStopWithDiscontinuityCurvature`; fotos ×3. **Em
+  voo:** a aeronave pára e cada foto sai com a sua inclinação.
+- ☐ **Vídeo da órbita sem degraus**: exportar em vídeo.
+  **Esperado:** um `gimbalEvenlyRotate` por troço (`betweenAdjacentPoints`,
+  índices `i` e `i+1`) e um só `gimbalRotate` (o do waypoint 0). **Em
+  voo:** o gimbal desce de forma contínua, sem saltos entre pontos.
 - ☐ **Espera nos pontos de inspecção**: 3 s num ponto.
   **Esperado:** só esse ponto leva `hover`.
 - ☐ **Legenda e fotos**: abrir «Legenda» no mapa e na vista 3D, desligar

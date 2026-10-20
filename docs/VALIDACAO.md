@@ -196,6 +196,8 @@ confirmar em voo**:
 | `globalRTHHeight` escrito pelo piloto | 20 a 1500 m (recorte da app) | waylines-wpml.md l. 135: float, m, sem intervalo | que o comando usa o valor do ficheiro e o seu próprio limite |
 | `actionTriggerParam` com segundos escritos | intervalo manual em «Tempo» | common-element.md, l. 77: float > 0, «s or m» | que o disparo por tempo segue o valor (contar fotos) |
 | vários KMZ por corredor | corredor partido em voos | sem elemento próprio (`mappingStrip/cuttingDistance` é do mapeamento) | que cada KMZ do ZIP se importa e voa como um corredor normal |
+| `gimbalEvenlyRotate` com gatilho `betweenAdjacentPoints` | vídeo da órbita: um grupo por troço (`i`–`i+1`), ao ângulo do ponto seguinte | common-element.md, l. 76, 84 e 156–163: «The trigger must be betweenAdjacentPoints»; M300/M350, M30, M3E/M3T/M3M, M3D (o M4T não está na tabela, nem nenhuma acção) | que o gimbal roda sem degraus durante a gravação, também no M4T |
+| vários `gimbalRotate` + `takePhoto` no mesmo grupo | várias inclinações com paragem (órbita e face) | common-element.md: grupo em `sequence`, acções executadas por ordem | que cada foto sai com a sua inclinação e com a aeronave parada |
 
 ## 8. Ensaio a seco
 

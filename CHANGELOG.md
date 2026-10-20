@@ -6,6 +6,30 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Adicionado (órbita e face: aeronave no painel, várias inclinações, vídeo sem degraus)
+
+- **Aeronave e sensor no topo dos outros modos** (face, órbita, corredor e
+  circular): a mesma escolha do cartão 1 da área, uma por projecto. Antes
+  só se mudava no separador Área, e um modo sem câmara ficava sem fotos e
+  sem maneira de a escolher.
+- **Várias inclinações (com paragem)**, na órbita (terceiro modo de
+  captura) e na face: em cada ponto a aeronave pára, espera o tempo pedido
+  e tira uma foto por inclinação (`gimbalRotate` → `takePhoto`, num só grupo
+  em sequência). Inclinações editáveis (1 a 5); por omissão −45°, 0° e o
+  limite de cima do gimbal menos 5° (M3E e M4T 30°, P1 25°). Fotos e tempo
+  contam cada inclinação. **Por confirmar em voo.**
+- **Vídeo da órbita sem degraus**: o gimbal roda de forma uniforme ao
+  longo de cada troço até ao ângulo do ponto seguinte (`gimbalEvenlyRotate`,
+  gatilho `betweenAdjacentPoints`, como a especificação manda), com o
+  ângulo à décima; antes saltava 1° à chegada de alguns pontos. **Por
+  confirmar em voo**, também no M4T, que não está na tabela da DJI.
+
+### Corrigido (sem câmara, sem fotos)
+
+- Sem câmara activa (um LiDAR), a órbita e o circular contavam 0 fotos no
+  painel e o KMZ levava na mesma um `takePhoto` em cada ponto: deixam de o
+  levar.
+
 ### Corrigido (face com cantos: a exportação estava bloqueada)
 
 - **Uma face com cantos não exportava.** As fotografias extra que rodam o

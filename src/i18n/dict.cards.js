@@ -8,6 +8,20 @@ export default {
   'cards.panel': { pt: 'Painel da missão', en: 'Mission panel' },
   'cards.missionName': { pt: 'Nome da missão', en: 'Mission name' },
   'cards.aircraft': { pt: 'Aeronave', en: 'Aircraft' },
+  /* ---- Aeronave e sensor no topo dos outros modos (AircraftPicker) ---- */
+  'ap.title': { pt: 'Aeronave e sensor', en: 'Aircraft and sensor' },
+  'ap.camera': {
+    pt: '{camera} · focal {focal} mm · gimbal de {min}° a {max}°',
+    en: '{camera} · focal length {focal} mm · gimbal from {min}° to {max}°',
+  },
+  'ap.noCamera': {
+    pt: '{desc}: sem câmara, esta missão não tira fotos. Para fotografar, escolha um payload de câmara.',
+    en: '{desc}: no camera, so this mission takes no photos. To take photos, choose a camera payload.',
+  },
+  'ap.custom': {
+    pt: 'O sensor próprio edita-se no cartão 1 do separador Área.',
+    en: 'The custom sensor is edited in card 1 of the Area tab.',
+  },
   'cards.crs': { pt: 'Sistema de coordenadas do ficheiro', en: 'Coordinate system of the file' },
   'cards.lineAzimuth': { pt: 'Azimute das faixas (°)', en: 'Line azimuth (°)' },
   'cards.inspectName': { pt: 'Nome do ponto {n}', en: 'Name of point {n}' },

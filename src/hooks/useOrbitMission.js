@@ -3,6 +3,7 @@
  * um KMZ por nível). A geometria está em utils/orbit.js.
  */
 import * as turf from '@turf/turf'
+import { shotPitches } from '../mission/gimbal.js'
 import { useCallback, useMemo, useState } from 'react'
 import { nearestBase } from '../mission/bases.js'
 import { DEFAULT_ORBIT_CONFIG, generateOrbitPlan, orbitLevelsToBlocks } from '../utils/orbit.js'
@@ -68,9 +69,15 @@ export function useOrbitMission({
       clockwise: orbitConfig.clockwise,
       speed: orbitConfig.speedMS,
       capture: orbitConfig.capture,
+      // várias inclinações: as escritas ou as por omissão, no intervalo do gimbal
+      shots:
+        orbitConfig.capture === 'multi'
+          ? shotPitches(orbitConfig.multiPitches, wpml?.gimbalPitchRange)
+          : null,
+      hoverS: orbitConfig.hoverS,
       startBearingDeg,
     })
-  }, [orbitConfig, sensor, startBearingDeg])
+  }, [orbitConfig, sensor, startBearingDeg, wpml])
 
   const gsdAtRadius = useMemo(
     () => (sensor.type === 'camera' ? computeGSD(sensor, orbitConfig.radiusM) : null),

@@ -16,6 +16,7 @@ import {
 } from './Icons.jsx'
 import BatterySetsNote from './BatterySetsNote.jsx'
 import NumberInput from './NumberInput.jsx'
+import { droneForAircraft } from './AircraftPicker.jsx'
 import BasesPanel, { FlightExports, ViewshedBox } from './BasesPanel.jsx'
 import {
   Card,
@@ -397,14 +398,8 @@ export default function ControlPanel({
               className="mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
               value={drone.aircraftId}
               aria-label={t('cards.aircraft')}
-              onChange={(e) => {
-                const a = AIRCRAFT[e.target.value]
-                // keep the payload when the new aircraft also mounts it
-                setDrone({
-                  aircraftId: a.id,
-                  payloadId: a.payloads.includes(drone.payloadId) ? drone.payloadId : a.payloads[0],
-                })
-              }}
+              // keep the payload when the new aircraft also mounts it
+              onChange={(e) => setDrone(droneForAircraft(drone, e.target.value))}
             >
               {Object.values(AIRCRAFT).map((a) => (
                 <option key={a.id} value={a.id}>

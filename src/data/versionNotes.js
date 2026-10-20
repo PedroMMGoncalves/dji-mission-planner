@@ -17,6 +17,8 @@ export const VERSION_NOTES = [
       'Um só identificador de voo (o do mapa e do ficheiro); os blocos sem base deixam de ter «B04» e «Bloco 4».',
       'Altura de regresso (RTH) e altura de segurança na descolagem escritas no KMZ, agora à vista no cartão 5, na ficha e na checklist.',
       'Face: nos cantos, fotos extra com o rumo a rodar, em posições diferentes ao longo da linha afastada; a primeira e a última coluna de fotos passam a ficar meia imagem para lá das pontas (desliga-se em «Prolongar as pontas meia imagem»).',
+      'Órbita em vídeo: o gimbal passa a rodar de forma uniforme em cada troço (gimbalEvenlyRotate), em vez de saltar à chegada aos pontos.',
+      'Órbita e circular sem câmara (LiDAR): o KMZ deixa de levar um takePhoto em cada ponto.',
     ],
     en: [
       'Smaller battery squares: per-line overshoot, the tie line and the buffer now count in the square side.',
@@ -27,6 +29,8 @@ export const VERSION_NOTES = [
       'One flight identifier (the one on the map and in the file); blocks without a base no longer show “B04” and “Block 4”.',
       'Return height (RTH) and take-off safety height written in the KMZ, now shown on card 5, the field sheet and the checklist.',
       'Face: at corners, extra photos with the heading turning, at different positions along the offset line; the first and last photo columns now sit half an image beyond the ends (switch off “Extend the ends by half an image”).',
+      'Orbit video: the gimbal now turns evenly along each segment (gimbalEvenlyRotate) instead of jumping on arrival at points.',
+      'Orbit and circular without a camera (LiDAR): the KMZ no longer carries a takePhoto at each point.',
     ],
   },
 ]

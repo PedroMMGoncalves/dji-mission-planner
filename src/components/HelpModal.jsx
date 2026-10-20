@@ -79,14 +79,17 @@ function InstrucoesPt() {
           curtos a imagem é estreita e o painel avisa da parte que fica sem cobertura no pé da face.
           Exporta com rumo fixo e uma foto por waypoint. Numa face com cantos, as fotos extra ficam
           num arco à volta da aresta (do lado de fora) ou repartidas antes e depois do vértice (do
-          lado de dentro). Pode esperar em cada foto (acção hover), prolongar as pontas meia imagem
-          e descolar numa base: as alturas passam a ser relativas a ela.
+          lado de dentro). Pode esperar em cada foto (acção hover), tirar várias inclinações em cada
+          ponto, prolongar as pontas meia imagem e descolar numa base: as alturas passam a ser
+          relativas a ela. Em todos os modos, a aeronave e o sensor escolhem-se no topo do painel.
         </Li>
         <Li>
           <strong>Órbita</strong> — «Marcar POI» e clicar no alvo; defina raio (ou GSD alvo), níveis
-          e passo. Captura em fotografia (anéis, uma foto por waypoint) ou vídeo (espiral contínua a
-          gravar). Exporta em voo curvo contínuo, missão única ou um KMZ por nível (ZIP). Como a
-          face, pode descolar numa base.
+          e passo. Captura em fotografia (anéis, uma foto por waypoint), vídeo (espiral contínua a
+          gravar, com o gimbal a rodar sem degraus) ou{' '}
+          <strong>várias inclinações (com paragem)</strong>: a aeronave pára em cada ponto e tira
+          uma foto por inclinação (por omissão −45°, 0° e o limite do gimbal menos 5°). Exporta
+          missão única ou um KMZ por nível (ZIP). Como a face, pode descolar numa base.
         </Li>
         <Li>
           <strong>Circular</strong> — grelha de círculos sobrepostos sobre a mesma área do modo
@@ -402,14 +405,17 @@ function InstrucoesEn() {
           the part left uncovered at the foot of the face. Exports with a fixed heading and one
           photo per waypoint. On a face with corners, the extra photos sit on an arc around the edge
           (outside) or spread before and after the vertex (inside). It can wait at each photo (hover
-          action), extend the ends by half an image and take off from a base: heights then become
-          relative to it.
+          action), take several pitches at each point, extend the ends by half an image and take off
+          from a base: heights then become relative to it. In every mode, the aircraft and sensor
+          are chosen at the top of the panel.
         </Li>
         <Li>
           <strong>Orbit</strong> — “Mark POI” and click the target; set radius (or target GSD),
-          levels and step. Capture as photo (rings, one photo per waypoint) or video (a continuous
-          recording spiral). Exports in continuous curved flight, single mission or one KMZ per
-          level (ZIP). Like the face, it can take off from a base.
+          levels and step. Capture as photo (rings, one photo per waypoint), video (a continuous
+          recording spiral, with the gimbal turning without steps) or{' '}
+          <strong>several pitches (with stops)</strong>: the aircraft stops at each point and takes
+          one photo per pitch (by default −45°, 0° and the gimbal limit minus 5°). Exports a single
+          mission or one KMZ per level (ZIP). Like the face, it can take off from a base.
         </Li>
         <Li>
           <strong>Circular</strong> — a grid of overlapping circles over the same polygon as the

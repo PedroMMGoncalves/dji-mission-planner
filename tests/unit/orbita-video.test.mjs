@@ -68,10 +68,14 @@ describe('espiral em video', () => {
   })
 
   test('o gimbal reaponta ao centro em cada ponto, a descer com a altura', () => {
+    // à décima de grau: ao grau, o gimbal andava aos degraus de 1°
+    const aim = (h) => Math.round(-((Math.atan2(h, 60) * 180) / Math.PI) * 10) / 10
     const pitches = video.perWaypoint.map((pw) => pw.gimbalPitch)
     for (let i = 1; i < pitches.length; i++) expect(pitches[i]).toBeLessThanOrEqual(pitches[i - 1])
-    expect(pitches[0]).toBe(-Math.round((Math.atan2(10, 60) * 180) / Math.PI))
-    expect(pitches.at(-1)).toBe(-Math.round((Math.atan2(50, 60) * 180) / Math.PI))
+    expect(pitches[0]).toBe(aim(10))
+    expect(pitches.at(-1)).toBe(aim(50))
+    expect(pitches.some((p) => !Number.isInteger(p))).toBe(true)
+    expect(video.perWaypoint.every((pw) => pw.gimbalEven === true)).toBe(true)
   })
 
   test('um so nivel: uma volta a altura constante, a gravar', () => {
@@ -170,13 +174,25 @@ describe('exportacao da orbita em video', () => {
     expect(first.indexOf('gimbalRotate')).toBeLessThan(first.indexOf('startRecord'))
   })
 
-  test('gimbal e rumo em todos os pontos, voo curvo continuo, altura executada a subir', () => {
-    // o gimbal por waypoint so sai quando o pitch muda (M7 da revisao); o
-    // global no waypoint 0 vale o do primeiro nivel
-    const pitches = plan.perWaypoint.map((pw) => pw.gimbalPitch)
-    const mudancas = pitches.filter((p, i) => i > 0 && p !== pitches[i - 1]).length
-    expect(mudancas).toBeGreaterThan(0)
-    expect(count(xml, /<wpml:actionActuatorFunc>gimbalRotate</g)).toBe(1 + mudancas)
+  test('gimbal uniforme em cada troço, rumo em todos os pontos, voo curvo continuo, altura a subir', () => {
+    // o gimbal roda de forma uniforme ao longo de cada troço até ao ângulo
+    // do ponto seguinte (gimbalEvenlyRotate, gatilho betweenAdjacentPoints,
+    // common-element.md); só o grupo global do waypoint 0 leva gimbalRotate
+    const n = plan.stats.waypointCount
+    expect(count(xml, /<wpml:actionActuatorFunc>gimbalRotate</g)).toBe(1)
+    expect(count(xml, /<wpml:actionActuatorFunc>gimbalEvenlyRotate</g)).toBe(n - 1)
+    const trocos = [
+      ...xml.matchAll(
+        /<wpml:actionGroupStartIndex>(\d+)<\/wpml:actionGroupStartIndex>\s*<wpml:actionGroupEndIndex>(\d+)<\/wpml:actionGroupEndIndex>\s*<wpml:actionGroupMode>sequence<\/wpml:actionGroupMode>\s*<wpml:actionTrigger>\s*<wpml:actionTriggerType>betweenAdjacentPoints</g,
+      ),
+    ].map((m) => [Number(m[1]), Number(m[2])])
+    expect(trocos).toEqual(Array.from({ length: n - 1 }, (_, k) => [k, k + 1]))
+    const alvos = [
+      ...xml.matchAll(
+        /gimbalEvenlyRotate<\/wpml:actionActuatorFunc>\s*<wpml:actionActuatorFuncParam>\s*<wpml:gimbalPitchRotateAngle>([-\d.]+)</g,
+      ),
+    ].map((m) => Number(m[1]))
+    expect(alvos).toEqual(plan.perWaypoint.slice(1).map((pw) => pw.gimbalPitch))
     expect(count(xml, /toPointAndPassWithContinuityCurvature/g)).toBe(plan.stats.waypointCount)
     const hs = [...xml.matchAll(/<wpml:executeHeight>([-\d.]+)</g)].map((m) => Number(m[1]))
     expect(hs[0]).toBe(20)

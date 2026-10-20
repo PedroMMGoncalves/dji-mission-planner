@@ -1,5 +1,9 @@
 import * as turf from '@turf/turf'
 import { computeFootprint, computeGSD } from './geo.js'
+import { SHOT_TIME_S } from '../mission/gimbal.js'
+
+/** Travar e arrancar numa paragem (s), como na face. */
+const STOP_TIME_S = 2
 
 /** Valores iniciais da configuração de órbita (E1.2). */
 export const DEFAULT_ORBIT_CONFIG = {
@@ -14,13 +18,18 @@ export const DEFAULT_ORBIT_CONFIG = {
   speedMS: 5, // velocidade de voo da órbita — parâmetro explícito (sem clamp)
   // 'photo': anéis a altura constante, uma foto por waypoint (fotogrametria)
   // 'video': espiral contínua, a gravar do primeiro ao último ponto
+  // 'multi': anéis com paragem em cada ponto e uma foto por inclinação
   capture: 'photo',
+  // inclinações do 'multi' (null = por omissão: −45°, 0° e o limite de cima
+  // do gimbal menos 5°; src/mission/gimbal.js) e a espera ao chegar (s)
+  multiPitches: null,
+  hoverS: 0,
   // descolagem: null = no chão do POI (como sempre); o id de uma base do
   // projecto = alturas convertidas pela diferença de cotas (takeoffRef.js)
   takeoffBaseId: null,
 }
 
-export const ORBIT_CAPTURES = ['photo', 'video']
+export const ORBIT_CAPTURES = ['photo', 'video', 'multi']
 
 /**
  * E1.2: normaliza uma configuração de órbita guardada num projecto —
@@ -46,6 +55,14 @@ export function normalizeOrbitConfig(stored) {
     clockwise: stored.clockwise !== false,
     speedMS: num(stored.speedMS, 1, 10, d.speedMS),
     capture: ORBIT_CAPTURES.includes(stored.capture) ? stored.capture : d.capture,
+    multiPitches:
+      Array.isArray(stored.multiPitches) && stored.multiPitches.some(Number.isFinite)
+        ? stored.multiPitches
+            .filter(Number.isFinite)
+            .slice(0, 5)
+            .map((v) => Math.max(-120, Math.min(60, v)))
+        : null,
+    hoverS: num(stored.hoverS, 0, 60, d.hoverS),
     takeoffBaseId:
       typeof stored.takeoffBaseId === 'string' && stored.takeoffBaseId
         ? stored.takeoffBaseId
@@ -105,6 +122,9 @@ export function generateOrbitPlan(poi, options) {
     startBearingDeg = 0,
     clockwise = true,
     capture = 'photo',
+    // 'multi': as inclinações de cada ponto (shotPitches) e a espera ao chegar
+    shots = null,
+    hoverS = 0,
   } = options ?? {}
 
   if (!poi || !(radiusM > 0)) return { error: 'invalid-radius' }
@@ -133,9 +153,11 @@ export function generateOrbitPlan(poi, options) {
   const waypoints = []
   const perWaypoint = []
   const perLevel = []
-  // gimbal apontado ao centro do alvo (trigonometria simples)
-  const pitchAt = (h) =>
-    Math.max(-90, Math.min(20, -Math.round((Math.atan2(h - poiHeightM, radiusM) * 180) / Math.PI)))
+  // gimbal apontado ao centro do alvo (trigonometria simples), ao grau; no
+  // vídeo à décima, para a rotação contínua não andar aos degraus de 1°
+  const aimDeg = (h) => -(Math.atan2(h - poiHeightM, radiusM) * 180) / Math.PI
+  const pitchAt = (h) => Math.max(-90, Math.min(20, Math.round(aimDeg(h))))
+  const pitchFine = (h) => Math.max(-90, Math.min(20, Math.round(aimDeg(h) * 10) / 10))
   const posAt = (i) => {
     const brg = startBearingDeg + (i % nPts) * stepDeg
     return turf.destination(poiPt, radiusM, (((brg % 360) + 540) % 360) - 180, {
@@ -144,6 +166,13 @@ export function generateOrbitPlan(poi, options) {
   }
   const headingAt = (pos) => ((Math.round(turf.bearing(pos, poi)) % 360) + 360) % 360
   const video = capture === 'video'
+  // sem câmara não há fotos: o painel contava 0 e o KMZ levava na mesma um
+  // takePhoto em cada ponto
+  const camera = sensor?.type === 'camera'
+  const photoActs = camera ? ['takePhoto'] : []
+  // várias inclinações (com paragem): uma foto por inclinação em cada ponto
+  const shotList =
+    capture === 'multi' && camera && Array.isArray(shots) && shots.length ? shots : null
   if (video) {
     // ESPIRAL: L−1 voltas entre o primeiro e o último nível (uma volta a
     // altura constante com um só nível). A volta t sobe do nível t ao nível
@@ -168,14 +197,22 @@ export function generateOrbitPlan(poi, options) {
         perLevel.push({
           level: j / nPts + 1,
           heightM: Math.round(h * 10) / 10,
-          gimbalPitch: pitchAt(h),
+          gimbalPitch: pitchFine(h),
           start: j,
           count: j / nPts === turns - 1 ? nPts + 1 : nPts,
         })
       }
       const actions = j === 0 ? ['startRecord'] : j === total - 1 ? ['stopRecord'] : []
       waypoints.push([pos[0], pos[1], Math.round(h * 10) / 10])
-      perWaypoint.push({ heading: headingAt(pos), gimbalPitch: pitchAt(h), actions })
+      // gimbalEven: o gimbal roda de forma uniforme ao longo de cada troço
+      // até ao ângulo do ponto seguinte (gimbalEvenlyRotate), em vez de
+      // saltar ao chegar a cada ponto
+      perWaypoint.push({
+        heading: headingAt(pos),
+        gimbalPitch: pitchFine(h),
+        gimbalEven: true,
+        actions,
+      })
     }
   }
   if (!video)
@@ -196,7 +233,9 @@ export function generateOrbitPlan(poi, options) {
       perLevel.push({
         level: li + 1,
         heightM: h,
-        gimbalPitch: pitch,
+        // com várias inclinações o nível começa na primeira (o grupo global
+        // do waypoint 0 fica igual ao primeiro ponto)
+        gimbalPitch: shotList ? shotList[0] : pitch,
         start: waypoints.length,
         count,
       })
@@ -204,7 +243,17 @@ export function generateOrbitPlan(poi, options) {
         // i === nPts (só no último anel) fecha a volta no rumo inicial
         const pos = posAt(i)
         waypoints.push([pos[0], pos[1], Math.round(h * 10) / 10])
-        perWaypoint.push({ heading: headingAt(pos), gimbalPitch: pitch, actions: ['takePhoto'] })
+        perWaypoint.push(
+          shotList
+            ? {
+                heading: headingAt(pos),
+                gimbalPitch: shotList[0],
+                shots: shotList,
+                ...(hoverS > 0 ? { hoverS } : {}),
+                actions: photoActs,
+              }
+            : { heading: headingAt(pos), gimbalPitch: pitch, actions: photoActs },
+        )
       }
     })
 
@@ -219,21 +268,32 @@ export function generateOrbitPlan(poi, options) {
     waypoints,
     perWaypoint,
     perLevel,
-    turnMode: 'toPointAndPassWithContinuityCurvature',
+    // com várias inclinações a aeronave pára em cada ponto; senão, curva contínua
+    turnMode: shotList
+      ? 'toPointAndStopWithDiscontinuityCurvature'
+      : 'toPointAndPassWithContinuityCurvature',
     stats: {
-      capture: video ? 'video' : 'photo',
+      capture: video ? 'video' : capture === 'multi' ? 'multi' : 'photo',
+      shotsPerPoint: shotList ? shotList.length : null,
       levelCount: heights.length,
       // voltas voadas: uma por anel, ou as da espiral
       turnCount: perLevel.length,
       pointsPerOrbit: nPts,
       waypointCount: waypoints.length,
-      photoCount: video || sensor?.type !== 'camera' ? 0 : waypoints.length,
+      photoCount: video || !camera ? 0 : waypoints.length * (shotList ? shotList.length : 1),
       chordM: chordRealM,
       radiusM,
       gsdCm: sensor?.type === 'camera' ? computeGSD(sensor, radiusM) : null,
       heights,
       pathLengthM,
-      flightTimeS: speed > 0 ? pathLengthM / speed : null,
+      // com paragem: travar e arrancar, a espera e cada inclinação (rodar e disparar)
+      flightTimeS:
+        speed > 0
+          ? pathLengthM / speed +
+            (shotList
+              ? waypoints.length * (STOP_TIME_S + hoverS + SHOT_TIME_S * shotList.length)
+              : 0)
+          : null,
       // ligação entre anéis: corda na horizontal, passo na vertical
       transitionM: !video && heights.length > 1 ? chordRealM : null,
     },

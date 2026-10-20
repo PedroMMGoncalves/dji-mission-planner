@@ -308,7 +308,12 @@ export function generateCircularPlan(ring, opts) {
       const heading = norm(Math.round(turf.bearing(pos, centre)))
       waypoints.push([pos[0], pos[1], h])
       // o ponto de fecho (i === nPts) repete a entrada sem fotografia
-      perWaypoint.push({ heading, gimbalPitch: pitch, actions: i < nPts ? ['takePhoto'] : [] })
+      // sem câmara, sem fotos (o painel já contava 0)
+      perWaypoint.push({
+        heading,
+        gimbalPitch: pitch,
+        actions: i < nPts && sensor?.type === 'camera' ? ['takePhoto'] : [],
+      })
     }
     circles.push({
       index: k + 1,

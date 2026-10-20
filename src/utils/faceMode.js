@@ -2,6 +2,7 @@ import * as turf from '@turf/turf'
 import { offsetPolylineMiter, pointPolylineDistance, resamplePolyline } from './corridor.js'
 import { computeFootprint, computeGSD } from './geo.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
+import { SHOT_TIME_S } from '../mission/gimbal.js'
 
 /** Fracção do afastamento abaixo da qual a linha afastada é recusada (M2-E3). */
 export const STANDOFF_MIN_FRAC = 0.95
@@ -134,6 +135,12 @@ export const DEFAULT_FACE_CONFIG = {
   // da face, como no corredor (M2-E12); desligável junto a outras paredes
   extendEnds: true,
   hoverS: 0, // espera em cada foto, antes de disparar (acção hover do WPML)
+  // 'single': uma foto por ponto, com `gimbalPitch`; 'multi': várias
+  // inclinações com paragem, uma foto por inclinação (beirados, varandas)
+  capture: 'single',
+  // inclinações do 'multi' (null = por omissão: −45°, 0° e o limite de cima
+  // do gimbal menos 5°; src/mission/gimbal.js)
+  multiPitches: null,
   // descolagem: null = no pé da face (como sempre); o id de uma base do
   // projecto = alturas convertidas pela diferença de cotas (takeoffRef.js)
   takeoffBaseId: null,
@@ -167,6 +174,14 @@ export function normalizeFaceConfig(stored) {
     speedMS: num(stored.speedMS, 1, 10, d.speedMS),
     extendEnds: typeof stored.extendEnds === 'boolean' ? stored.extendEnds : d.extendEnds,
     hoverS: num(stored.hoverS, 0, 60, d.hoverS),
+    capture: stored.capture === 'multi' ? 'multi' : 'single',
+    multiPitches:
+      Array.isArray(stored.multiPitches) && stored.multiPitches.some(Number.isFinite)
+        ? stored.multiPitches
+            .filter(Number.isFinite)
+            .slice(0, 5)
+            .map((v) => Math.max(-120, Math.min(60, v)))
+        : null,
     takeoffBaseId:
       typeof stored.takeoffBaseId === 'string' && stored.takeoffBaseId
         ? stored.takeoffBaseId
@@ -210,7 +225,11 @@ export function generateFacePlan(baseline, options) {
     extendEnds = false,
     // espera em cada foto, em segundos (acção hover antes do disparo)
     hoverS = 0,
+    // várias inclinações (com paragem): uma foto por inclinação em cada
+    // ponto (shotPitches); null = uma foto com `gimbalPitch`
+    shots = null,
   } = options ?? {}
+  const shotList = Array.isArray(shots) && shots.length ? shots : null
 
   if (!baseline || baseline.length < 2) return null
   if (!(faceHeightM > 0) || !(standoffM > 0)) return { error: 'invalid-dimensions' }
@@ -373,7 +392,8 @@ export function generateFacePlan(baseline, options) {
       waypoints.push([spaced.pts[i][0], spaced.pts[i][1], Math.round(h * 10) / 10])
       perWaypoint.push({
         heading: spaced.headings[i],
-        gimbalPitch,
+        gimbalPitch: shotList ? shotList[0] : gimbalPitch,
+        ...(shotList ? { shots: shotList } : {}),
         ...(hoverS > 0 ? { hoverS } : {}),
         actions: ['takePhoto'],
       })
@@ -397,7 +417,8 @@ export function generateFacePlan(baseline, options) {
       // amostras ao longo da linha (sem as fotografias extra dos cantos)
       samplesPerPass: nPts,
       waypointCount: waypoints.length,
-      photoCount: waypoints.length,
+      photoCount: waypoints.length * (shotList ? shotList.length : 1),
+      shotsPerPoint: shotList ? shotList.length : null,
       vStepM: heights.length > 1 ? heights[1] - heights[0] : null,
       hStepM: stepM,
       imageWidthM: imgW,
@@ -414,7 +435,13 @@ export function generateFacePlan(baseline, options) {
       pathLengthM,
       // paragem-e-disparo: ~2 s por waypoint além do deslocamento
       // 2 s por foto (paragem e disparo) mais a espera pedida em cada uma
-      flightTimeS: speed > 0 ? pathLengthM / speed + waypoints.length * (2 + hoverS) : null,
+      // paragem e disparo (2 s), a espera e, com várias inclinações, cada
+      // uma (rodar o gimbal e disparar)
+      flightTimeS:
+        speed > 0
+          ? pathLengthM / speed +
+            waypoints.length * (2 + hoverS + (shotList ? SHOT_TIME_S * shotList.length : 0))
+          : null,
       // prolongamento aplicado em cada ponta (m)
       endExtensionM: extM,
     },

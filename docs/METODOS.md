@@ -866,7 +866,10 @@ do troço, para as pontas terem a sobreposição do resto (a primeira e a
 última foto ficavam centradas na ponta, como no corredor antes do M2-E12);
 `endExtensionM` nas estatísticas. Um `takePhoto` por waypoint, precedido
 de `hover` quando há espera (`hoverS`, §11); pitch do gimbal constante em
-todas as passagens. Serpentina com subida no mesmo ponto horizontal.
+todas as passagens. Com várias inclinações (`capture: 'multi'`), uma foto
+por inclinação em cada ponto, com a sequência e as inclinações por
+omissão da órbita (§8); as passagens continuam espaçadas para o pitch do
+gimbal, e o tempo soma `2 s` por inclinação. Serpentina com subida no mesmo ponto horizontal.
 Tempo `L/v + (2 s + espera) · waypoints` (paragem, espera e disparo). GSD
 ao longo do eixo óptico, `d / cos p`.
 
@@ -939,7 +942,14 @@ Captura, parâmetro `capture` da configuração da órbita:
   `L − 1` voltas; um nível = uma volta a altura constante), e o último
   ponto fecha no rumo inicial à altura do último nível. Com níveis a passo
   constante, o que a interface gera, é `h₀ + (j / nPts) · passo`. O gimbal reaponta ao centro do alvo em cada ponto
-  (`pitch(h)`, a descer com a altura). Acções: `startRecord` no primeiro
+  (`pitch(h)`, a descer com a altura, à décima de grau) e roda de forma
+  uniforme ao longo de cada troço até ao ângulo do ponto seguinte: um grupo
+  `gimbalEvenlyRotate` por troço, gatilho `betweenAdjacentPoints` e
+  índices `i`–`i+1` (`common-element.md`: «rotates the pitch angle of
+  gimbal evenly during the segments of the flight route. The trigger must
+  be betweenAdjacentPoints»). Antes era um `gimbalRotate` à chegada de cada
+  ponto onde o grau inteiro mudava, e o vídeo andava aos degraus de 1°.
+  Acções: `startRecord` no primeiro
   ponto (depois do `gimbalRotate`, no mesmo grupo em sequência),
   `stopRecord` no último, nada nos intermédios; nenhum `takePhoto`,
   porque a câmara não fotografa enquanto grava. `photoCount` é 0, não há
@@ -951,6 +961,24 @@ Captura, parâmetro `capture` da configuração da órbita:
   `useGlobalPayloadLensIndex` 0, `stopRecord` só com
   `payloadPositionIndex`; `fileSuffix` e `payloadLensIndex` omitidos,
   como no `takePhoto`.
+
+- **`multi` (várias inclinações, com paragem)**: os anéis do `photo`, mas
+  a aeronave pára em cada ponto (`toPointAndStopWithDiscontinuityCurvature`)
+  e tira uma foto por inclinação, pela ordem escrita: em cada ponto
+  `gimbalRotate` → `hover` (só antes da primeira, se houver espera) →
+  `takePhoto`, e `gimbalRotate` → `takePhoto` em cada uma das outras, num
+  só grupo em sequência. As inclinações (1 a 5) são absolutas, não
+  relativas ao centro do alvo; por omissão −45°, 0° e o limite de cima do
+  gimbal menos 5° (M3E e M4T 35° → 30°, P1 30° → 25°), e as escritas ficam
+  entre o limite de baixo e o de cima menos 5° (`shotPitches`,
+  `src/mission/gimbal.js`). Fotos `n · k`; tempo `L/v + n · (2 + espera +
+  2 · k)` (travar e arrancar, a espera e rodar e disparar cada uma). Sem
+  câmara, nem fotos nem inclinações.
+
+Sem câmara (LiDAR, ou nenhum sensor), nenhum modo tira fotos: o painel
+contava 0 e o KMZ levava na mesma um `takePhoto` em cada ponto (também no
+circular). A aeronave e o sensor escolhem-se no topo do painel de cada
+modo, com a escolha do cartão 1 da área (uma por projecto).
 
 «Vídeo + fotografia» no mesmo anel não é possível pela razão acima; a
 alternativa anel a anel (uns a gravar, outros a fotografar) foi posta de

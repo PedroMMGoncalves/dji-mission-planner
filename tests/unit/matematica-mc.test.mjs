@@ -213,6 +213,12 @@ describe('M2-E13/E14: orbita — rumo inicial da base e corda voada', () => {
     expect(orb({}).stats.photoCount).toBe(orb({}).waypoints.length)
     expect(orb({ sensor: null }).stats.photoCount).toBe(0)
   })
+  // o painel contava 0 fotos e o KMZ levava na mesma um takePhoto por ponto
+  test('sem camara a orbita nao tira fotos: nenhum takePhoto nos waypoints', () => {
+    const semCamara = orb({ sensor: null })
+    expect(semCamara.perWaypoint.some((w) => w.actions.includes('takePhoto'))).toBe(false)
+    expect(orb({}).perWaypoint.every((w) => w.actions.includes('takePhoto'))).toBe(true)
+  })
 })
 
 // ------------------------------------------------------------------ fachada

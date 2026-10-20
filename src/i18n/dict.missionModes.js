@@ -153,8 +153,8 @@ export default {
   'fp.baseline.undo': { pt: 'Anular ponto', en: 'Undo point' },
   'fp.baseline.finish': { pt: 'Concluir', en: 'Finish' },
   'fp.cameraRequired': {
-    pt: 'O modo Face precisa de um payload de câmara — seleccione uma câmara no modo Área.',
-    en: 'Face mode needs a camera payload — select a camera in Area mode.',
+    pt: 'O modo Face precisa de um payload de câmara — escolha uma em «Aeronave e sensor», acima.',
+    en: 'Face mode needs a camera payload — choose one in “Aircraft and sensor”, above.',
   },
   'fp.params.title': { pt: 'Parâmetros da Face', en: 'Face Parameters' },
   'fp.params.height': { pt: 'Altura da face', en: 'Face height' },
@@ -249,8 +249,29 @@ export default {
     en: 'Constant-height rings, one photo at every waypoint: same height, gimbal and overlap across each level, for photogrammetry.',
   },
   'op.capture.videoHint': {
-    pt: 'Espiral contínua do primeiro ao último nível, uma volta por passo, a gravar do primeiro ao último ponto (startRecord/stopRecord). Sem fotografias: a câmara não fotografa enquanto grava.',
-    en: 'Continuous spiral from the first to the last level, one turn per step, recording from the first to the last point (startRecord/stopRecord). No photos: the camera cannot shoot while recording.',
+    pt: 'Espiral contínua do primeiro ao último nível, uma volta por passo, a gravar do primeiro ao último ponto (startRecord/stopRecord). Sem fotografias: a câmara não fotografa enquanto grava. O gimbal roda de forma uniforme ao longo de cada troço, sem degraus (gimbalEvenlyRotate).',
+    en: 'Continuous spiral from the first to the last level, one turn per step, recording from the first to the last point (startRecord/stopRecord). No photos: the camera cannot shoot while recording. The gimbal turns evenly along each segment, without steps (gimbalEvenlyRotate).',
+  },
+  'op.capture.multi': {
+    pt: 'Várias inclinações (com paragem)',
+    en: 'Several pitches (with stops)',
+  },
+  'op.capture.multiHint': {
+    pt: 'Anéis a altura constante; em cada ponto a aeronave pára, espera o tempo pedido e tira uma foto por inclinação, pela ordem abaixo: vê por baixo dos beirais e por cima das coberturas. Fotos e tempo multiplicam-se pelo número de inclinações.',
+    en: 'Constant-height rings; at each point the aircraft stops, waits the time set and takes one photo per pitch, in the order below: it sees under eaves and over roofs. Photos and time multiply by the number of pitches.',
+  },
+  'op.capture.hover': { pt: 'Espera ao chegar', en: 'Wait on arrival' },
+  /* ---- Várias inclinações (com paragem), órbita e face ---- */
+  'shots.title': {
+    pt: 'Inclinações do gimbal, por ordem de disparo',
+    en: 'Gimbal pitches, in shooting order',
+  },
+  'shots.angle': { pt: 'Inclinação {n}', en: 'Pitch {n}' },
+  'shots.remove': { pt: 'Retirar a inclinação {n}', en: 'Remove pitch {n}' },
+  'shots.add': { pt: '+ inclinação', en: '+ pitch' },
+  'shots.hint': {
+    pt: 'De {lo}° a {hi}°: o ângulo para cima fica 5° abaixo do limite do gimbal ({max}°). Em cada ponto: gimbal, espera (só antes da primeira) e foto, por cada inclinação.',
+    en: 'From {lo}° to {hi}°: the upward angle stays 5° below the gimbal limit ({max}°). At each point: gimbal, wait (before the first only) and photo, for each pitch.',
   },
   'op.geom.title': { pt: 'Geometria da Órbita', en: 'Orbit Geometry' },
   'op.geom.radius': { pt: 'Raio', en: 'Radius' },
@@ -262,8 +283,8 @@ export default {
   'op.geom.clockwise': { pt: 'Sentido horário', en: 'Clockwise' },
   'op.geom.speed': { pt: 'Velocidade', en: 'Speed' },
   'op.lidarNote': {
-    pt: 'Sem câmara activa os pontos por volta usam um passo por omissão (24/volta).',
-    en: 'Without an active camera the points per turn fall back to a default (24/turn).',
+    pt: 'Sem câmara não há fotos, e os pontos por volta usam um passo por omissão (24/volta). Para fotografar, escolha uma câmara em «Aeronave e sensor», acima.',
+    en: 'Without a camera there are no photos, and the points per turn fall back to a default (24/turn). To take photos, choose a camera in “Aircraft and sensor”, above.',
   },
   'op.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
   'op.plan.noPoi': {
@@ -455,6 +476,16 @@ export default {
   'ci.params.altitude': { pt: 'Altura acima da descolagem', en: 'Height above take-off' },
   'ci.params.frontOverlap': { pt: 'Sobreposição frontal', en: 'Forward overlap' },
   'fp.params.hover': { pt: 'Espera em cada foto', en: 'Wait at each photo' },
+  'fp.capture.title': { pt: 'Captura', en: 'Capture' },
+  'fp.capture.single': { pt: 'Uma foto por ponto', en: 'One photo per point' },
+  'fp.capture.multi': {
+    pt: 'Várias inclinações (com paragem)',
+    en: 'Several pitches (with stops)',
+  },
+  'fp.capture.multiHint': {
+    pt: 'Em cada ponto, uma foto por inclinação, pela ordem acima, com a espera antes da primeira: vê por baixo dos beirados e das varandas. As passagens continuam espaçadas para a «Inclinação do gimbal» acima; fotos e tempo multiplicam-se pelo número de inclinações.',
+    en: 'At each point, one photo per pitch, in the order above, with the wait before the first: it sees under eaves and balconies. The passes are still spaced for the “Gimbal pitch” above; photos and time multiply by the number of pitches.',
+  },
   'fp.params.hoverHint': {
     pt: 'A aeronave pára e espera antes de cada disparo (acção hover do WPML): útil com pouca luz ou com a câmara térmica. Conta no tempo de voo.',
     en: 'The aircraft stops and waits before each shot (WPML hover action): useful in low light or with the thermal camera. It counts in the flight time.',

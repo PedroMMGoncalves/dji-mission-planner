@@ -67,9 +67,10 @@ export function useDrawers() {
 
 /**
  * Cartão numerado: título, o essencial e, com `more`, o botão «Mais opções ›»
- * que abre a gaveta `drawer-<id>`.
+ * que abre a gaveta `drawer-<id>`. Sem `n`, sem número (a aeronave e o sensor
+ * no topo dos outros modos, antes do trabalho numerado).
  */
-export function Card({ id, n, title, children, more = null }) {
+export function Card({ id, n = null, title, children, more = null }) {
   const t = useT()
   const buttonRef = useRef(null)
   const wasOpen = useRef(false)
@@ -94,12 +95,14 @@ export function Card({ id, n, title, children, more = null }) {
         id={`card-${id}-title`}
         className="flex items-center gap-2 px-3 pb-2 pt-3 text-xs font-semibold uppercase tracking-widest text-sky-400"
       >
-        <span
-          aria-hidden="true"
-          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/15 font-mono text-xs text-sky-300"
-        >
-          {n}
-        </span>
+        {n != null && (
+          <span
+            aria-hidden="true"
+            className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/15 font-mono text-xs text-sky-300"
+          >
+            {n}
+          </span>
+        )}
         <span>{title}</span>
       </h2>
       <div className="px-3 pb-3">

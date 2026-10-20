@@ -1,4 +1,5 @@
 import { useT } from '../i18n.jsx'
+import AircraftPicker from './AircraftPicker.jsx'
 import NumberInput from './NumberInput.jsx'
 import { Card, CardColumn, SafetyCard } from './Cards.jsx'
 import { IconDownload, IconTrash } from './Icons.jsx'
@@ -29,6 +30,10 @@ function terrainErrorText(res, t) {
 }
 
 export default function CircularPanel({
+  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
+  drone = null,
+  setDrone = null,
+  sensor = null,
   circularConfig,
   setCircularParam,
   circularPlan,
@@ -75,6 +80,11 @@ export default function CircularPanel({
 
   return (
     <CardColumn label={t('cards.panel')}>
+      {drone && setDrone && (
+        <Card id="circular-aeronave" title={t('ap.title')}>
+          <AircraftPicker drone={drone} setDrone={setDrone} sensor={sensor} />
+        </Card>
+      )}
       {/* Área: o mesmo polígono do modo Área */}
       <Card id="circular-1" n={1} title={t('ci.area.title')}>
         <div className="grid grid-cols-2 gap-2">

@@ -224,6 +224,16 @@ export function validateExportParams(params) {
       if (pw.actions != null && !Array.isArray(pw.actions)) {
         throw new MissionExportError('per-waypoint-invalid', `${i}.actions`)
       }
+      // várias inclinações: 1 a 10 ângulos finitos no intervalo do gimbalPitch
+      if (
+        pw.shots != null &&
+        (!Array.isArray(pw.shots) ||
+          pw.shots.length === 0 ||
+          pw.shots.length > 10 ||
+          pw.shots.some((p) => !isNum(p) || p < -120 || p > 60))
+      ) {
+        throw new MissionExportError('param-out-of-range', `perWaypoint[${i}].shots`)
+      }
     })
   }
   // Pontos de passagem: lista paralela aos waypoints (buracos = paragem)
@@ -909,58 +919,84 @@ ${triggerXml}
   // relação ao ponto anterior (no waypoint 0, ao grupo global): a órbita e a
   // circular repetiam-no em todos os pontos (391 grupos em 30 círculos)
   let lastPitch = gimbalGroup ? gimbalPitch : null
-  const perWaypointGroup = (i, pw) => {
-    const actions = []
-    if (pw.gimbalPitch != null && pitchOf(pw.gimbalPitch) !== lastPitch) {
-      lastPitch = pitchOf(pw.gimbalPitch)
-      actions.push(`          <wpml:action>
-            <wpml:actionId>${actions.length}</wpml:actionId>
+  const payloadIdx = wpml.payloadPositionIndex ?? 0
+  const rotateXml = (id, pitch) => `          <wpml:action>
+            <wpml:actionId>${id}</wpml:actionId>
             <wpml:actionActuatorFunc>gimbalRotate</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
               <wpml:gimbalHeadingYawBase>north</wpml:gimbalHeadingYawBase>
               <wpml:gimbalRotateMode>absoluteAngle</wpml:gimbalRotateMode>
               <wpml:gimbalPitchRotateEnable>1</wpml:gimbalPitchRotateEnable>
-              <wpml:gimbalPitchRotateAngle>${pitchOf(pw.gimbalPitch)}</wpml:gimbalPitchRotateAngle>
+              <wpml:gimbalPitchRotateAngle>${pitch}</wpml:gimbalPitchRotateAngle>
               <wpml:gimbalRollRotateEnable>0</wpml:gimbalRollRotateEnable>
               <wpml:gimbalRollRotateAngle>0</wpml:gimbalRollRotateAngle>
               <wpml:gimbalYawRotateEnable>0</wpml:gimbalYawRotateEnable>
               <wpml:gimbalYawRotateAngle>0</wpml:gimbalYawRotateAngle>
               <wpml:gimbalRotateTimeEnable>0</wpml:gimbalRotateTimeEnable>
               <wpml:gimbalRotateTime>0</wpml:gimbalRotateTime>
-              <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>
+              <wpml:payloadPositionIndex>${payloadIdx}</wpml:payloadPositionIndex>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>`)
-    }
-    // Espera antes do disparo (hover, common-element.md: hoverTime > 0 s, em
-    // todas as aeronaves): depois de o gimbal rodar, para a imagem sair com
-    // a aeronave e a câmara paradas
-    if (isNum(pw.hoverS) && pw.hoverS > 0) {
-      actions.push(`          <wpml:action>
-            <wpml:actionId>${actions.length}</wpml:actionId>
+          </wpml:action>`
+  const hoverXml = (id, s) => `          <wpml:action>
+            <wpml:actionId>${id}</wpml:actionId>
             <wpml:actionActuatorFunc>hover</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:hoverTime>${fmtDec(pw.hoverS, 1)}</wpml:hoverTime>
+              <wpml:hoverTime>${fmtDec(s, 1)}</wpml:hoverTime>
             </wpml:actionActuatorFuncParam>
-          </wpml:action>`)
-    }
-    // Accoes de camara conhecidas (common-element.md): takePhoto e o par
-    // startRecord/stopRecord da orbita em video. stopRecord so leva a
-    // posicao do payload; as outras levam tambem useGlobalPayloadLensIndex.
-    // Accoes desconhecidas ignoram-se, como antes.
-    for (const act of pw.actions ?? []) {
-      if (act !== 'takePhoto' && act !== 'startRecord' && act !== 'stopRecord') continue
-      const lens =
-        act === 'stopRecord'
-          ? ''
-          : `${lensXml}
+          </wpml:action>`
+  // Accoes de camara conhecidas (common-element.md): takePhoto e o par
+  // startRecord/stopRecord da orbita em video. stopRecord so leva a
+  // posicao do payload; as outras levam tambem useGlobalPayloadLensIndex.
+  const cameraXml = (id, act) => {
+    const lens =
+      act === 'stopRecord'
+        ? ''
+        : `${lensXml}
               <wpml:useGlobalPayloadLensIndex>0</wpml:useGlobalPayloadLensIndex>`
-      actions.push(`          <wpml:action>
-            <wpml:actionId>${actions.length}</wpml:actionId>
+    return `          <wpml:action>
+            <wpml:actionId>${id}</wpml:actionId>
             <wpml:actionActuatorFunc>${act}</wpml:actionActuatorFunc>
             <wpml:actionActuatorFuncParam>
-              <wpml:payloadPositionIndex>${wpml.payloadPositionIndex ?? 0}</wpml:payloadPositionIndex>${lens}
+              <wpml:payloadPositionIndex>${payloadIdx}</wpml:payloadPositionIndex>${lens}
             </wpml:actionActuatorFuncParam>
-          </wpml:action>`)
+          </wpml:action>`
+  }
+  const perWaypointGroup = (i, pw) => {
+    const actions = []
+    const rotate = (p) => {
+      if (pitchOf(p) === lastPitch) return
+      lastPitch = pitchOf(p)
+      actions.push(rotateXml(actions.length, lastPitch))
+    }
+    const hover = () => {
+      // hover, common-element.md: hoverTime > 0 s, em todas as aeronaves
+      if (isNum(pw.hoverS) && pw.hoverS > 0) actions.push(hoverXml(actions.length, pw.hoverS))
+    }
+    const shots =
+      Array.isArray(pw.shots) && pw.shots.length > 0 && (pw.actions ?? []).includes('takePhoto')
+        ? pw.shots
+        : null
+    if (shots) {
+      // Várias inclinações (com paragem): uma foto por inclinação, cada uma
+      // com o seu gimbalRotate; a espera depois da primeira rotação, para a
+      // primeira foto sair com a aeronave parada
+      shots.forEach((p, k) => {
+        rotate(p)
+        if (k === 0) hover()
+        actions.push(cameraXml(actions.length, 'takePhoto'))
+      })
+    } else {
+      // M7 (revisão): o gimbalRotate por waypoint só sai quando o pitch muda;
+      // com gimbalEven (vídeo da órbita) a rotação é a uniforme do troço
+      if (pw.gimbalPitch != null && pw.gimbalEven !== true) rotate(pw.gimbalPitch)
+      // Espera antes do disparo: depois de o gimbal rodar, para a imagem
+      // sair com a aeronave e a câmara paradas
+      hover()
+      // accoes desconhecidas ignoram-se, como antes
+      for (const act of pw.actions ?? []) {
+        if (act === 'takePhoto' || act === 'startRecord' || act === 'stopRecord')
+          actions.push(cameraXml(actions.length, act))
+      }
     }
     if (actions.length === 0) return ''
     const gid = nextGroupId
@@ -976,11 +1012,40 @@ ${triggerXml}
 ${actions.join('\n')}
         </wpml:actionGroup>`
   }
+  // Rotação uniforme do gimbal no troço i → i+1 até ao ângulo do ponto
+  // seguinte (gimbalEvenlyRotate, common-element.md: «rotates the pitch
+  // angle of gimbal evenly during the segments of the flight route. The
+  // trigger must be betweenAdjacentPoints»): o vídeo da órbita deixa de
+  // andar aos solavancos, um gimbalRotate à chegada de cada ponto
+  const evenGroup = (i, pw, next) => {
+    if (pw?.gimbalEven !== true || next?.gimbalPitch == null) return ''
+    const gid = nextGroupId
+    nextGroupId += 1
+    lastPitch = pitchOf(next.gimbalPitch)
+    return `        <wpml:actionGroup>
+          <wpml:actionGroupId>${gid}</wpml:actionGroupId>
+          <wpml:actionGroupStartIndex>${i}</wpml:actionGroupStartIndex>
+          <wpml:actionGroupEndIndex>${i + 1}</wpml:actionGroupEndIndex>
+          <wpml:actionGroupMode>sequence</wpml:actionGroupMode>
+          <wpml:actionTrigger>
+            <wpml:actionTriggerType>betweenAdjacentPoints</wpml:actionTriggerType>
+          </wpml:actionTrigger>
+          <wpml:action>
+            <wpml:actionId>0</wpml:actionId>
+            <wpml:actionActuatorFunc>gimbalEvenlyRotate</wpml:actionActuatorFunc>
+            <wpml:actionActuatorFuncParam>
+              <wpml:gimbalPitchRotateAngle>${lastPitch}</wpml:gimbalPitchRotateAngle>
+              <wpml:payloadPositionIndex>${payloadIdx}</wpml:payloadPositionIndex>
+            </wpml:actionActuatorFuncParam>
+          </wpml:action>
+        </wpml:actionGroup>`
+  }
 
   return waypoints.map((_, i) => {
     const pw = perWaypoint?.[i] ?? null
     const pwGroup = pw ? perWaypointGroup(i, pw) : ''
-    return [...(globalGroupsAt.get(i) ?? []), pwGroup].filter(Boolean).join('\n')
+    const even = i + 1 < waypoints.length ? evenGroup(i, pw, perWaypoint?.[i + 1]) : ''
+    return [...(globalGroupsAt.get(i) ?? []), pwGroup, even].filter(Boolean).join('\n')
   })
 }
 

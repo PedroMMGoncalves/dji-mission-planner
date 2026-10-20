@@ -1,4 +1,5 @@
 import { useT } from '../i18n.jsx'
+import AircraftPicker from './AircraftPicker.jsx'
 import NumberInput from './NumberInput.jsx'
 import { Card, CardColumn, SafetyCard } from './Cards.jsx'
 import { useRef } from 'react'
@@ -54,6 +55,10 @@ function duration(seconds) {
 }
 
 export default function CorridorPanel({
+  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
+  drone = null,
+  setDrone = null,
+  sensor = null,
   triggerWarn,
   corridorConfig,
   setCorridorParam,
@@ -111,6 +116,11 @@ export default function CorridorPanel({
 
   return (
     <CardColumn label={t('cards.panel')}>
+      {drone && setDrone && (
+        <Card id="corredor-aeronave" title={t('ap.title')}>
+          <AircraftPicker drone={drone} setDrone={setDrone} sensor={sensor} />
+        </Card>
+      )}
       <Card id="corredor-1" n={1} title={t('co.axis.title')}>
         {isLidar && (
           <p className="mb-2 rounded border border-slate-700 bg-slate-900 p-2 text-xs text-slate-400">

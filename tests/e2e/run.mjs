@@ -1190,6 +1190,68 @@ await scenario('orbita-marcada', async () => {
   return { page }
 })
 
+// Órbita: a aeronave e o sensor escolhem-se no próprio painel (antes só no
+// cartão 1 da área, e sem câmara não havia fotos nem maneira de a escolher),
+// e as várias inclinações com paragem: em cada ponto gimbal e foto por
+// inclinação, a de cima 5° abaixo do limite do gimbal (P1: 30° → 25°).
+await scenario('orbita-aeronave-e-inclinacoes', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await modo(page, /^Órbita$|^Orbit$/)
+  const picker = page.getByTestId('aircraft-picker')
+  check('órbita: aeronave e sensor no topo do painel', await picker.isVisible())
+  await picker.getByTestId('aircraft-picker-aircraft').selectOption('M300RTK')
+  await picker.getByTestId('aircraft-picker-payload').selectOption('P1')
+  await page.getByRole('button', { name: /Marcar POI|Mark POI/ }).click()
+  await clickMap(page, 0, 0)
+  await page.getByTestId('orbit-capture-multi').click()
+  await page.waitForTimeout(800)
+  const angulos = await page
+    .getByTestId('orbit-shots')
+    .locator('input[type=number]')
+    .evaluateAll((els) => els.map((e) => Number(e.value)))
+  check(
+    'órbita: por omissão −45°, 0° e o limite do P1 menos 5° (25°)',
+    JSON.stringify(angulos) === JSON.stringify([-45, 0, 25]),
+    angulos.join(', '),
+  )
+  const [rota] = await readRoutes(
+    await panelExport(
+      page,
+      /Exportar missão única|Export single mission/,
+      join(OUT, 'orbita-inclinacoes.kmz'),
+    ),
+  )
+  const r = analyseRoute(rota.wpml, plano)
+  executavel(r)
+  const fotos = (rota.wpml.match(/<wpml:actionActuatorFunc>takePhoto</g) ?? []).length
+  check(
+    'órbita: três fotos por ponto, com paragem em cada um',
+    fotos === 3 * r.n && /toPointAndStopWithDiscontinuityCurvature/.test(rota.wpml),
+    `${fotos} fotos em ${r.n} pontos`,
+  )
+  const pitches = [...rota.wpml.matchAll(/<wpml:gimbalPitchRotateAngle>([-\d.]+)</g)].map((m) =>
+    Number(m[1]),
+  )
+  check(
+    'órbita: o gimbal sobe aos 25° e não passa deles',
+    pitches.includes(25) && Math.max(...pitches) === 25,
+    `de ${Math.min(...pitches)} a ${Math.max(...pitches)}°`,
+  )
+  // a escolha é a do projecto: o cartão 1 da área mostra-a
+  await modo(page, /^Área$|^Area$/)
+  const sel = page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+  check(
+    'órbita: a aeronave escolhida na órbita é a do projecto (cartão 1 da área)',
+    (await sel.inputValue()) === 'M300RTK',
+  )
+  check('órbita com inclinações: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 // Projecto: gravação automática, recarregar a página, guardar em ficheiro
 // e abrir — a ligação entre o estado e o ficheiro de projecto que nenhuma
 // suite em Node exercita de ponta a ponta.

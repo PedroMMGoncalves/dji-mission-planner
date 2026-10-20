@@ -1,4 +1,6 @@
 import { useT } from '../i18n.jsx'
+import AircraftPicker from './AircraftPicker.jsx'
+import ShotPitches from './ShotPitches.jsx'
 import NumberInput from './NumberInput.jsx'
 import { Card, CardColumn, SafetyCard, TakeoffSelect } from './Cards.jsx'
 import { IconDownload, IconTarget, IconTrash } from './Icons.jsx'
@@ -20,6 +22,12 @@ function Field({ label, suffix = null, children }) {
 }
 
 export default function OrbitPanel({
+  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
+  drone = null,
+  setDrone = null,
+  sensor = null,
+  // intervalo do gimbal do payload activo, para as várias inclinações
+  gimbalRange = null,
   orbitConfig,
   setOrbitParam,
   orbitPlan,
@@ -49,6 +57,11 @@ export default function OrbitPanel({
 
   return (
     <CardColumn label={t('cards.panel')}>
+      {drone && setDrone && (
+        <Card id="orbita-aeronave" title={t('ap.title')}>
+          <AircraftPicker drone={drone} setDrone={setDrone} sensor={sensor} />
+        </Card>
+      )}
       {/* POI */}
       <Card id="orbita-1" n={1} title={t('op.poi.title')}>
         <div className="grid grid-cols-2 gap-2">
@@ -103,13 +116,16 @@ export default function OrbitPanel({
           role="radiogroup"
           aria-label={t('op.capture.title')}
         >
-          {['photo', 'video'].map((c) => (
+          {['photo', 'video', 'multi'].map((c) => (
             <button
               key={c}
               role="radio"
               aria-checked={orbitConfig.capture === c}
+              data-testid={`orbit-capture-${c}`}
               onClick={() => setOrbitParam('capture', c)}
               className={`rounded px-2 py-2 text-sm font-medium transition-colors ${
+                c === 'multi' ? 'col-span-2' : ''
+              } ${
                 orbitConfig.capture === c
                   ? 'bg-sky-500 text-slate-950'
                   : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
@@ -120,8 +136,33 @@ export default function OrbitPanel({
           ))}
         </div>
         <p className="mt-2 text-xs leading-relaxed text-slate-400">
-          {t(video ? 'op.capture.videoHint' : 'op.capture.photoHint')}
+          {t(
+            video
+              ? 'op.capture.videoHint'
+              : orbitConfig.capture === 'multi'
+                ? 'op.capture.multiHint'
+                : 'op.capture.photoHint',
+          )}
         </p>
+        {orbitConfig.capture === 'multi' && (
+          <div className="mt-2">
+            <ShotPitches
+              pitches={orbitConfig.multiPitches}
+              onChange={(list) => setOrbitParam('multiPitches', list)}
+              range={gimbalRange}
+              testId="orbit-shots"
+            />
+            <Field label={t('op.capture.hover')} suffix="s">
+              <NumberInput
+                value={orbitConfig.hoverS ?? 0}
+                min={0}
+                max={60}
+                step={0.5}
+                onChange={(v) => setOrbitParam('hoverS', v)}
+              />
+            </Field>
+          </div>
+        )}
       </Card>
 
       {/* Geometria */}

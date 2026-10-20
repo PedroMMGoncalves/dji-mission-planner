@@ -161,6 +161,26 @@ describe('plano circular', () => {
     expect(p.stats.gsdCm).toBeNull()
   })
 
+  // o painel contava 0 fotos e o KMZ levava na mesma um takePhoto por ponto
+  test('sem camara (LiDAR ou nenhum sensor): nenhum takePhoto, coerente com 0 fotos', () => {
+    for (const sensor of [null, { type: 'lidar', fov: 70 }]) {
+      const p = generateCircularPlan(field, opts({ sensor }))
+      expect(p.stats.photoCount).toBe(0)
+      expect(p.perWaypoint.some((w) => w.actions.includes('takePhoto'))).toBe(false)
+      const xml = buildWaylinesWPML(
+        circularExportParams({
+          missionName: 'c',
+          plan: p,
+          altitude: 60,
+          speed: 5,
+          wpml,
+          sensorType: sensor?.type ?? 'lidar',
+        }),
+      )
+      expect(xml).not.toMatch(/takePhoto/)
+    }
+  })
+
   test('erros: altura, raio, area, demasiados circulos', () => {
     expect(generateCircularPlan(field, opts({ altitude: 0 })).error).toBe('invalid-altitude')
     expect(generateCircularPlan(field, opts({ radiusM: -1 })).error).toBe('invalid-radius')

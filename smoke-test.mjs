@@ -2964,23 +2964,15 @@ check(
     ),
   )
   check(
-    'orbita video: voo curvo continuo com rumo e gimbal em todos os pontos',
+    'orbita video: voo curvo continuo com rumo em todos os pontos e o gimbal uniforme em cada troco',
     cnt(/toPointAndPassWithContinuityCurvature/g) === vid.stats.waypointCount &&
       cnt(/smoothTransition/g) === vid.stats.waypointCount &&
-      // o gimbal por waypoint so sai quando o pitch muda (M7 da revisao); o
-      // global, sem gimbalPitch nos parametros, e -90
-      cnt(/<wpml:actionActuatorFunc>gimbalRotate</g) ===
-        (() => {
-          let last = -90
-          let n = 1
-          for (const pw of vid.perWaypoint) {
-            if (pw.gimbalPitch !== last) {
-              n += 1
-              last = pw.gimbalPitch
-            }
-          }
-          return n
-        })(),
+      // so o grupo global do waypoint 0 leva gimbalRotate; em cada troco o
+      // gimbal roda de forma uniforme ate ao angulo do ponto seguinte
+      // (gimbalEvenlyRotate, gatilho betweenAdjacentPoints)
+      cnt(/<wpml:actionActuatorFunc>gimbalRotate</g) === 1 &&
+      cnt(/<wpml:actionActuatorFunc>gimbalEvenlyRotate</g) === vid.stats.waypointCount - 1 &&
+      cnt(/<wpml:actionTriggerType>betweenAdjacentPoints</g) === vid.stats.waypointCount - 1,
   )
 }
 

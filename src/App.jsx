@@ -2897,6 +2897,10 @@ function AppInner({ lang, setLang }) {
           <div className="min-h-0 flex-1">
             {missionMode === 'face' && (
               <FacePanel
+                drone={drone}
+                setDrone={setDrone}
+                sensor={sensor}
+                gimbalRange={activePayload.gimbalPitch ?? null}
                 safety={safety}
                 setSafety={setSafety}
                 rthInfo={rthInfo}
@@ -2920,6 +2924,10 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'orbit' && (
               <OrbitPanel
+                drone={drone}
+                setDrone={setDrone}
+                sensor={sensor}
+                gimbalRange={activePayload.gimbalPitch ?? null}
                 safety={safety}
                 setSafety={setSafety}
                 rthInfo={rthInfo}
@@ -2942,6 +2950,9 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'corridor' && (
               <CorridorPanel
+                drone={drone}
+                setDrone={setDrone}
+                sensor={sensor}
                 safety={safety}
                 setSafety={setSafety}
                 rthInfo={rthInfo}
@@ -2985,6 +2996,9 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'circular' && (
               <CircularPanel
+                drone={drone}
+                setDrone={setDrone}
+                sensor={sensor}
                 safety={safety}
                 setSafety={setSafety}
                 rthInfo={rthInfo}

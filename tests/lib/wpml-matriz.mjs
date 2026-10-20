@@ -24,6 +24,7 @@ import {
 import { generateFacePlan } from '../../src/utils/faceMode.js'
 import { passThroughFor, resolveSensor } from '../../src/utils/geo.js'
 import { generateOrbitPlan, orbitLevelsToBlocks } from '../../src/utils/orbit.js'
+import { shotPitches } from '../../src/mission/gimbal.js'
 import { DEFAULT_CUSTOM_SENSOR } from '../../src/data/drones.js'
 import { buildAreaExport } from '../../src/mission/areaExport.js'
 import { planMissionFromProject } from '../../src/mission/planFromProject.js'
@@ -204,6 +205,26 @@ export function casosMatriz() {
         sensorType: 'camera',
       }),
     )
+    // várias inclinações com paragem e espera: gimbalRotate e takePhoto por ângulo
+    const multi = generateFacePlan(face, {
+      sensor,
+      faceHeightM: 20,
+      standoffM: 15,
+      speed: 3,
+      hoverS: 2,
+      shots: shotPitches(null, PAYLOADS[p].gimbalPitch),
+    })
+    add(
+      `fachada-inclinacoes-${a.toLowerCase()}`,
+      faceExportParams({
+        missionName: 'm',
+        plan: multi,
+        speed: 3,
+        wpml: wpmlOf(a, p),
+        gimbalPitch: 0,
+        sensorType: 'camera',
+      }),
+    )
   }
 
   // órbita (M3E, M4T, M300 + P1): foto (missão única e por nível) e vídeo
@@ -244,6 +265,19 @@ export function casosMatriz() {
     add(
       `orbita-video-${tag}`,
       orbitExportParams({ missionName: 'm', plan: video, speed: 3, wpml, sensorType: 'camera' }),
+    )
+    const multi = generateOrbitPlan(em(0, 0), {
+      sensor,
+      radiusM: 40,
+      levels: { count: 2, startM: 20, stepM: 10 },
+      speed: 3,
+      capture: 'multi',
+      shots: shotPitches(null, PAYLOADS[p].gimbalPitch),
+      hoverS: 2,
+    })
+    add(
+      `orbita-inclinacoes-${tag}`,
+      orbitExportParams({ missionName: 'm', plan: multi, speed: 3, wpml, sensorType: 'camera' }),
     )
   }
 
