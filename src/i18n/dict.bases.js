@@ -71,6 +71,7 @@ export default {
   },
   'bases.gatherDone': { pt: 'Terminar', en: 'Done' },
   'bases.flights': { pt: 'voos {list}', en: 'flights {list}' },
+  'bases.flightsOne': { pt: 'voo {list}', en: 'flight {list}' },
   'bases.zone': { pt: 'zona {r} m', en: 'zone {r} m' },
   'bases.zoneReduced': {
     pt: 'zona reduzida a {r} m (pedidos {req} m): {relief} m de desnível a {at} m',

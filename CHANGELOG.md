@@ -39,7 +39,9 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   intervalos que podiam sair com as duas pontas iguais depois do
   arredondamento (GSD e sobreposição efectiva nas métricas e no relatório,
   altura AGL no relatório, cotas do terreno e altura acima do solo nos
-  painéis).
+  painéis). A lista das bases dizia «voos A-1» com um só voo («voo A-1»), e
+  o conselho do circular «de 50 % a 50 %» quando só essa sobreposição dá o
+  número de círculos.
 - **Botões de exportar: um nome, e o que sai.** A exportação da missão do
   separador aberto tinha quatro nomes (cabeçalho «Exportar WPML Avançado
   (KMZ)», face e corredor «Exportar WPML (KMZ)», órbita e circular

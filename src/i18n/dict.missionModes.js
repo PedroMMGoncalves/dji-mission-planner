@@ -384,6 +384,12 @@ export default {
     pt: 'Com {p} %: {cols} × {rows} = {n} círculos. O mesmo número mantém-se de {min} % a {max} %; no topo do intervalo os círculos saem menos da área.',
     en: 'At {p} %: {cols} × {rows} = {n} circles. The same count holds from {min} % to {max} %; at the top of the range the circles overshoot the area less.',
   },
+  // sem intervalo (o número só se tem com esta sobreposição): «de 50 % a 50 %»
+  // não diz nada
+  'ci.adviceExact': {
+    pt: 'Com {p} %: {cols} × {rows} = {n} círculos; outra sobreposição muda o número.',
+    en: 'At {p} %: {cols} × {rows} = {n} circles; another overlap changes the count.',
+  },
   'ci.adviceApply': { pt: 'Usar {max} %', en: 'Use {max} %' },
   'ci.plan.title': { pt: 'Plano e Exportação', en: 'Plan and Export' },
   'ci.plan.circles': { pt: '{n} círculos × {pts} pontos', en: '{n} circles × {pts} points' },

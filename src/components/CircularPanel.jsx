@@ -152,7 +152,7 @@ export default function CircularPanel({
             className="mb-3 rounded border border-sky-900/60 bg-sky-950/30 p-2 text-xs leading-relaxed text-sky-200"
             data-testid="circular-advice"
           >
-            {t('ci.advice', {
+            {t(advice.minPct === advice.maxPct ? 'ci.adviceExact' : 'ci.advice', {
               p: circularConfig.overlapPct,
               cols: advice.cols,
               rows: advice.rows,

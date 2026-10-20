@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useT } from '../i18n.jsx'
+import { tCount } from '../i18n/format.js'
 import { IconDownload, IconTrash } from './Icons.jsx'
 import { exportChoices, flightsArchiveName } from '../mission/flightFiles.js'
 import { eyeText, viewCaveatText, viewTerrainText } from './BaseFieldSheets.jsx'
@@ -485,7 +486,7 @@ function BaseRow({
       </div>
       <p className="mt-0.5 font-mono text-xs leading-relaxed text-slate-200">
         {b.flights.length
-          ? t('bases.flights', { list: b.flights.join(', ') })
+          ? tCount(t, 'bases.flights', b.flights.length, { list: b.flights.join(', ') })
           : t('bases.noFlights')}
       </p>
       {/* juntar blocos à mão: a base fica seleccionada e cada clique num
