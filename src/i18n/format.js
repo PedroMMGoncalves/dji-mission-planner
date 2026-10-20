@@ -32,3 +32,16 @@ export function rangeText(a, b, fmt = (v) => String(v), sep = '–') {
 export function tCount(t, key, n, vars = {}) {
   return t(n === 1 ? `${key}One` : key, vars)
 }
+
+/**
+ * O nome único da exportação da missão do separador aberto — o do botão do
+ * cabeçalho, «Exportar WPML Avançado (KMZ)» ou «(ZIP)» — com o que o clique
+ * escreve: `kind` é 'zip' (vários voos, um KMZ por voo) ou 'kmz'. Quem chama
+ * decide-o dos mesmos dados da exportação, para o rótulo e o ficheiro nunca
+ * discordarem.
+ * @param {(key: string, vars?: Record<string, any>) => string} t
+ * @param {'kmz'|'zip'|string|null} kind
+ */
+export function missionExportLabel(t, kind) {
+  return t('app.exportWpml', { ext: kind === 'zip' ? 'ZIP' : 'KMZ' })
+}

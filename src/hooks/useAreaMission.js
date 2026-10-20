@@ -507,6 +507,9 @@ export function useAreaMission({
     () => handleExportFlights({ kind: hasBases ? 'byBase' : 'all' }),
     [handleExportFlights, hasBases],
   )
+  // o que esse clique escreve, para o rótulo do botão: com mais de um bloco
+  // um ZIP com um KMZ por voo (buildAreaExport: multiBlock), senão um KMZ
+  const exportKind = blocks && blocks.length > 1 ? 'zip' : 'kmz'
 
   return {
     gcpConfig,
@@ -535,6 +538,7 @@ export function useAreaMission({
     handleExportKML,
     handleExportGcps,
     handleExportKMZ,
+    exportKind,
     handleExportFlights,
     flightFiles: flightFileList,
     exportBaseName,

@@ -29,7 +29,7 @@ import {
 } from './Cards.jsx'
 import { errorText, terrainErrorText as terrainErrText } from '../utils/appError.js'
 import { batteryLabel } from '../mission/equipment.js'
-import { rangeText, tCount } from '../i18n/format.js'
+import { missionExportLabel, rangeText, tCount } from '../i18n/format.js'
 import { notesSince } from '../data/versionNotes.js'
 import { versionBefore } from '../mission/project.js'
 
@@ -255,9 +255,11 @@ export default function ControlPanel({
     handleExportGcps: onExportGcps,
     // voos por bloco (layoutBlocks): rótulo "A-1" e cor da base
     baseLayout = null,
-    // cartão 7: exportação do KML da área
+    // cartão 7: exportação do KML da área, e o que a da missão escreve
+    // ('kmz' | 'zip'), para o botão dizer o que sai
     handleExportKML: onExportArea = null,
     canExportKML: canExportArea = false,
+    exportKind = 'kmz',
   } = area
   const {
     terrain,
@@ -318,6 +320,9 @@ export default function ControlPanel({
   const d = useDrawers()
   const terrainReady = terrain.status === 'ready'
   const exportFlights = basesPanel?.exportFlights ?? null
+  // com vários voos, a exportação (todos, por base, um voo) está em
+  // «Exportar voos»; o botão da missão do cartão 7 repetia o ZIP por base
+  const perFlight = Boolean(exportFlights && exportFlights.files.length > 1)
   const viewshed = basesPanel?.viewshed ?? null
   // descarregar o relevo global e importar um MDT: no cartão enquanto não há
   // relevo; depois, na gaveta (reimportar ou voltar ao global)
@@ -1383,29 +1388,20 @@ export default function ControlPanel({
               )}
             </div>
           )}
-          {exportFlights && exportFlights.files.length > 1 && (
-            <FlightExports {...exportFlights} rows={basesPanel.rows} />
-          )}
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {onExportMission && (
+          {perFlight && <FlightExports {...exportFlights} rows={basesPanel.rows} />}
+          <div className={`mt-3 grid gap-2 ${perFlight ? 'grid-cols-1' : 'grid-cols-2'}`}>
+            {/* sem divisão em voos: a missão num KMZ, com o nome do botão do
+                cabeçalho (a mesma exportação, atrás do mesmo preflight) */}
+            {onExportMission && !perFlight && (
               <button
                 type="button"
                 data-testid="summary-export-mission"
                 onClick={onExportMission}
                 disabled={!canExportMission}
-                title={t(
-                  baseLayout?.hasBases
-                    ? 'cards.summary.exportMissionByBaseTitle'
-                    : 'cards.summary.exportMissionTitle',
-                )}
+                title={t('cards.summary.exportMissionTitle')}
                 className="flex min-h-[44px] items-center justify-center gap-1.5 rounded bg-sky-700 px-2 text-xs font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <IconDownload />{' '}
-                {t(
-                  baseLayout?.hasBases
-                    ? 'cards.summary.exportMissionByBase'
-                    : 'cards.summary.exportMission',
-                )}
+                <IconDownload /> {missionExportLabel(t, exportKind)}
               </button>
             )}
             {onExportArea && (

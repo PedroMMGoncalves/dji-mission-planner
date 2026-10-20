@@ -229,7 +229,7 @@ async function openMission({
 async function exportReady(page) {
   await page.waitForFunction(
     () => {
-      const b = [...document.querySelectorAll('button')].find((b) =>
+      const b = [...document.querySelectorAll('header button')].find((b) =>
         /Exportar WPML|Export Advanced WPML/.test(b.textContent),
       )
       return b && !b.disabled
@@ -251,12 +251,28 @@ async function configure(page, { cross = false, nadir = false, tf = false, split
   await page.waitForTimeout(800)
 }
 
+// O botão de exportar a missão do cabeçalho; os painéis dos modos têm um
+// botão com o mesmo nome (o cartão do plano), por isso cada um se procura
+// no seu sítio. O rótulo diz o que sai: «(KMZ)», ou «(ZIP)» com vários voos.
+const HEADER_EXPORT = /Exportar WPML Avançado|Export Advanced WPML/
+const headerExport = (page) => page.locator('header').getByRole('button', { name: HEADER_EXPORT })
+const panelExportButton = (page, card) =>
+  page.getByTestId(`card-${card}`).getByRole('button', { name: HEADER_EXPORT })
+/** O rótulo do botão condiz com o ficheiro: «(ZIP)» para um .zip, «(KMZ)» para um .kmz. */
+async function rotuloCondiz(locator, fileName) {
+  const txt = await locator.innerText()
+  return /\.zip$/i.test(fileName) ? /\(ZIP\)/.test(txt) : /\(KMZ\)/.test(txt)
+}
+
 async function exportKmz(page, file) {
-  const [dl] = await Promise.all([
-    page.waitForEvent('download', { timeout: 30000 }),
-    page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).click(),
-  ])
+  const btn = headerExport(page)
+  const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }), btn.click()])
   await dl.saveAs(file)
+  check(
+    'cabeçalho: o rótulo diz o tipo do ficheiro que saiu',
+    await rotuloCondiz(btn, dl.suggestedFilename()),
+    `${(await btn.innerText()).trim()} → ${dl.suggestedFilename()}`,
+  )
   return file
 }
 
@@ -567,7 +583,7 @@ await scenario('multipoligono-aviso', async () => {
   // as outras duas partes ficam fora do MDT importado: sem relevo não há
   // exportação, e o preflight diz porquê e oferece o relevo global
   const pill = page.getByTestId('preflight-pill')
-  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  const exportBtn = headerExport(page)
   check(
     'importação: partes fora do MDT importado bloqueiam a exportação',
     /1 bloqueio|1 blocker/.test(await pill.innerText()) && !(await exportBtn.isEnabled()),
@@ -601,11 +617,10 @@ async function clickMap(page, dx, dy) {
   await page.waitForTimeout(250)
 }
 const modo = (page, re) => page.getByRole('button', { name: re, exact: true }).click()
-const panelExport = async (page, re, file) => {
-  const [dl] = await Promise.all([
-    page.waitForEvent('download', { timeout: 30000 }),
-    page.getByRole('button', { name: re }).click(),
-  ])
+/** Descarrega pelo botão `btn` (um Locator, ou o nome do botão). */
+const panelExport = async (page, btn, file) => {
+  const loc = btn instanceof RegExp ? page.getByRole('button', { name: btn }) : btn
+  const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 30000 }), loc.click()])
   await dl.saveAs(file)
   return file
 }
@@ -628,7 +643,7 @@ await scenario('corredor-desenhado', async () => {
   const txt = await bodyText(page)
   check('corredor: painel mostra as passagens', /passagens|passes/.test(txt))
   const routes = await readRoutes(
-    await panelExport(page, /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/, join(OUT, 'corredor.kmz')),
+    await panelExport(page, panelExportButton(page, 'corredor-5'), join(OUT, 'corredor.kmz')),
   )
   const r = analyseRoute(routes[0].wpml, plano)
   executavel(r)
@@ -667,7 +682,7 @@ await scenario('corredor-voos-parametros-proprios', async () => {
   await altura.fill('60')
   await altura.press('Tab')
   await page.waitForTimeout(800)
-  const exportar = /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/
+  const exportar = panelExportButton(page, 'corredor-5')
   const alturas = (wpml) =>
     [...wpml.matchAll(/<wpml:executeHeight>([-\d.]+)</g)].map((m) => Number(m[1]))
   const [um] = await readRoutes(await panelExport(page, exportar, join(OUT, 'corredor-60.kmz')))
@@ -706,6 +721,13 @@ await scenario('corredor-voos-parametros-proprios', async () => {
       (await maisLongo.getAttribute('data-tone')) !== 'over' &&
       /^C-\d+ \d+:\d\d \/ \d+:\d\d$/.test((await maisLongo.innerText()).trim()),
     `${nVoos} · ${await maisLongo.innerText()}`,
+  )
+  // partido em voos sai um ZIP, e os botões do painel e do cabeçalho dizem-no
+  check(
+    'corredor em voos: os botões do painel e do cabeçalho dizem (ZIP)',
+    /\(ZIP\)/.test(await exportar.innerText()) &&
+      /\(ZIP\)/.test(await headerExport(page).innerText()),
+    `${(await exportar.innerText()).trim()} · ${(await headerExport(page).innerText()).trim()}`,
   )
   const rotas = await readRoutes(await panelExport(page, exportar, join(OUT, 'corredor-voos.zip')))
   const medidas = rotas.map((x) => analyseRoute(x.wpml, plano))
@@ -806,9 +828,7 @@ await scenario('circular-sobre-a-area', async () => {
   check(
     'circular: demasiados círculos com o raio por omissão é um erro explicado',
     /Demasiados círculos|Too many circles/.test(txt) &&
-      (await page
-        .getByRole('button', { name: /Exportar missão única|Export single mission/ })
-        .isDisabled()),
+      (await panelExportButton(page, 'circular-4').isDisabled()),
   )
   const setField = async (re, value) => {
     const input = page.locator('label', { hasText: re }).locator('input')
@@ -827,7 +847,7 @@ await scenario('circular-sobre-a-area', async () => {
   )
   const [dl] = await Promise.all([
     page.waitForEvent('download', { timeout: 30000 }),
-    page.getByRole('button', { name: /Exportar missão única|Export single mission/ }).click(),
+    panelExportButton(page, 'circular-4').click(),
   ])
   await dl.saveAs(join(OUT, 'circular.kmz'))
   const routes = await readRoutes(join(OUT, 'circular.kmz'))
@@ -889,12 +909,8 @@ await scenario('corredor-segue-terreno', async () => {
   await page.waitForTimeout(800)
   // sem seguimento de terreno o corredor plano entra nas colinas: o preflight
   // bloqueia, e tanto o botão do painel como o do cabeçalho ficam desactivados
-  const exportPainel = page.getByRole('button', {
-    name: /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/,
-  })
-  const exportCabecalho = page.getByRole('button', {
-    name: /Exportar WPML Avançado|Export Advanced WPML/,
-  })
+  const exportPainel = panelExportButton(page, 'corredor-5')
+  const exportCabecalho = headerExport(page)
   check(
     'corredor: rota plana dentro do relevo fica bloqueada no painel e no cabeçalho',
     (await exportPainel.isDisabled()) &&
@@ -950,7 +966,7 @@ await scenario('fachada-desenhada', async () => {
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
   await page.waitForTimeout(800)
   const routes = await readRoutes(
-    await panelExport(page, /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/, join(OUT, 'fachada.kmz')),
+    await panelExport(page, panelExportButton(page, 'fachada-4'), join(OUT, 'fachada.kmz')),
   )
   const wpml = routes[0].wpml
   const rumos = [...wpml.matchAll(/<wpml:waypointHeadingAngle>([-\d.]+)</g)].map((m) =>
@@ -1001,11 +1017,8 @@ await scenario('fachada-em-l', async () => {
   await espera.fill('2')
   await espera.press('Tab')
   await page.waitForTimeout(800)
-  const exportar = /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/
-  check(
-    'fachada em L: a exportação fica disponível',
-    await page.getByRole('button', { name: exportar }).isEnabled(),
-  )
+  const exportar = panelExportButton(page, 'fachada-4')
+  check('fachada em L: a exportação fica disponível', await exportar.isEnabled())
   const [rota] = await readRoutes(await panelExport(page, exportar, join(OUT, 'fachada-l.kmz')))
   const r = analyseRoute(rota.wpml, plano)
   executavel(r)
@@ -1094,8 +1107,8 @@ await scenario('fachada-v-fechado-por-dentro', async () => {
     localStorage.setItem('dji-mission-planner:project:v1', JSON.stringify(p))
   }, baseline)
   await page.reload({ waitUntil: 'domcontentloaded' })
-  const exportar = /Exportar WPML \(KMZ\)|Export WPML \(KMZ\)/
-  const botao = page.getByRole('button', { name: exportar })
+  const exportar = panelExportButton(page, 'fachada-4')
+  const botao = exportar
   await botao.waitFor({ timeout: 20000 })
   await page.waitForTimeout(1500)
   check(
@@ -1123,7 +1136,7 @@ await scenario('orbita-marcada', async () => {
   await clickMap(page, 0, 0)
   await page.waitForTimeout(800)
   const single = await readRoutes(
-    await panelExport(page, /Exportar missão única|Export single mission/, join(OUT, 'orbita.kmz')),
+    await panelExport(page, panelExportButton(page, 'orbita-5'), join(OUT, 'orbita.kmz')),
   )
   const r = analyseRoute(single[0].wpml, plano)
   executavel(r)
@@ -1152,7 +1165,7 @@ await scenario('orbita-marcada', async () => {
   await page.waitForTimeout(500)
   const [dlVideo] = await Promise.all([
     page.waitForEvent('download', { timeout: 30000 }),
-    page.getByRole('button', { name: /Exportar missão única|Export single mission/ }).click(),
+    panelExportButton(page, 'orbita-5').click(),
   ])
   await dlVideo.saveAs(join(OUT, 'orbita-video.kmz'))
   const video = await readRoutes(join(OUT, 'orbita-video.kmz'))
@@ -1218,7 +1231,7 @@ await scenario('orbita-aeronave-e-inclinacoes', async () => {
   const [rota] = await readRoutes(
     await panelExport(
       page,
-      /Exportar missão única|Export single mission/,
+      panelExportButton(page, 'orbita-5'),
       join(OUT, 'orbita-inclinacoes.kmz'),
     ),
   )
@@ -1286,7 +1299,7 @@ await scenario('projecto-autosave-ficheiro', async () => {
   check(
     'projecto: a área volta com o plano calculado',
     /Exportar WPML|Export Advanced WPML/.test(afterReload) &&
-      (await page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).isEnabled()),
+      (await headerExport(page).isEnabled()),
   )
 
   const [dl] = await Promise.all([
@@ -1338,7 +1351,7 @@ await scenario('projecto-autosave-ficheiro', async () => {
     'projecto: abrir o ficheiro repõe nome, dupla grelha e área',
     (await nameInput.inputValue()) === 'projecto-e2e' &&
       (await label(page, CROSS).isChecked()) &&
-      (await page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).isEnabled()),
+      (await headerExport(page).isEnabled()),
   )
   check('projecto: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
@@ -1354,7 +1367,7 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false, globalTerrain: false })
   const pill = page.getByTestId('preflight-pill')
   await page.waitForTimeout(1500)
-  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  const exportBtn = headerExport(page)
   check(
     'preflight: sem relevo sobre a rota é um bloqueio e o KMZ fica desactivado',
     (await pill.count()) === 1 &&
@@ -1576,7 +1589,7 @@ await scenario('preflight-bloqueia-colisao-com-relevo', async () => {
   await alt.press('Tab')
   await page.waitForTimeout(900)
   const pill = page.getByTestId('preflight-pill')
-  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  const exportBtn = headerExport(page)
   check(
     'colisao: a 30 m sem seguir terreno o preflight bloqueia e o KMZ fica desactivado',
     /bloqueio|blocker/.test(await pill.innerText()) && !(await exportBtn.isEnabled()),
@@ -1591,7 +1604,7 @@ await scenario('preflight-bloqueia-colisao-com-relevo', async () => {
   await label(page, TF).check()
   await page.waitForFunction(
     () => {
-      const b = [...document.querySelectorAll('button')].find((b) =>
+      const b = [...document.querySelectorAll('header button')].find((b) =>
         /Exportar WPML|Export Advanced WPML/.test(b.textContent),
       )
       return b && !b.disabled
@@ -2134,7 +2147,7 @@ await scenario('bases-exportar-por-base', async () => {
     (await panel.getByTestId('export-by-base').count()) === 1 &&
       (await panel.getByTestId('export-base-flights').count()) === 0,
   )
-  const header = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  const header = headerExport(page)
   check(
     'por base: os botões seguem o preflight do botão do cabeçalho',
     (await panel.getByTestId('export-all-flights').isDisabled()) === (await header.isDisabled()) &&
@@ -2295,9 +2308,16 @@ await scenario('bases-exportar-por-base', async () => {
   // o dos voos soltos continua em «Exportar voos»
   const [headName, headFile] = await download(page, header, join(OUT, 'cabecalho.zip'))
   check(
-    'todos: o botão do cabeçalho descarrega um só ZIP, o por base',
-    headName === zipByBase && (await zipOrder(headFile)).join() === entries.join(),
-    headName,
+    'todos: o botão do cabeçalho, que diz (ZIP), descarrega um só ZIP, o por base',
+    headName === zipByBase &&
+      (await zipOrder(headFile)).join() === entries.join() &&
+      (await rotuloCondiz(header, headName)),
+    `${(await header.innerText()).trim()} → ${headName}`,
+  )
+  // o cartão 7 já não repete esse botão: a saída por base só em «Exportar voos»
+  check(
+    'todos: o cartão «Resumo e exportar» não repete a exportação por base',
+    (await page.getByTestId('summary-export-mission').count()) === 0,
   )
 
   // KML de campo: bases, zonas, blocos com o rótulo do voo
@@ -3946,6 +3966,12 @@ await scenario('accoes-seguranca-kmz', async () => {
     page.getByTestId('summary-export-mission').click(),
   ])
   await dl.saveAs(join(OUT, 'seguranca-continuar.kmz'))
+  check(
+    'cartão 7: o botão da missão tem o nome do cabeçalho e diz (KMZ), e sai um KMZ',
+    HEADER_EXPORT.test(await page.getByTestId('summary-export-mission').innerText()) &&
+      (await rotuloCondiz(page.getByTestId('summary-export-mission'), dl.suggestedFilename())),
+    `${(await page.getByTestId('summary-export-mission').innerText()).trim()} → ${dl.suggestedFilename()}`,
+  )
   ;[r] = await readRoutes(join(OUT, 'seguranca-continuar.kmz'))
   check(
     'segurança: «Continuar a missão» sai no KMZ (exportado no cartão «Resumo e exportar»)',
@@ -4566,8 +4592,8 @@ await scenario('relatorio-sem-bloco-nao-apaga-a-app', async () => {
   await page.waitForTimeout(500)
   check(
     'bloco em falta: o planeador continua, com o botão de exportar',
-    (await page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ }).count()) ===
-      1 && (await page.getByTestId('error-boundary-window').count()) === 0,
+    (await headerExport(page).count()) === 1 &&
+      (await page.getByTestId('error-boundary-window').count()) === 0,
   )
   // o único erro admissível é o do próprio bloco que não chegou
   const outros = errors.filter((e) => !/dynamically imported module|Failed to fetch/i.test(e))
@@ -4724,7 +4750,7 @@ await scenario('preflight-bloqueia-buracos-no-mdt', async () => {
   await configure(page, { tf: true })
   await page.waitForTimeout(1500)
   const pill = page.getByTestId('preflight-pill')
-  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  const exportBtn = headerExport(page)
   check(
     'buracos: um disco sem dados debaixo da rota é um bloqueio e o KMZ fica desactivado',
     (await pill.count()) === 1 &&
@@ -4793,7 +4819,7 @@ await scenario('preflight-bloqueia-transito-atras-da-cumeada', async () => {
   check('trânsito: dois blocos de 250 m, com a base A', nBlocks === 2, `${nBlocks} blocos`)
   await page.waitForTimeout(1500)
   const pill = page.getByTestId('preflight-pill')
-  const exportBtn = page.getByRole('button', { name: /Exportar WPML|Export Advanced WPML/ })
+  const exportBtn = headerExport(page)
   check(
     'trânsito: a 40 m atrás da cumeada é um bloqueio e o KMZ fica desactivado',
     (await pill.count()) === 1 &&
@@ -5092,14 +5118,20 @@ async function comProjecto(opts, muda) {
   return { page, errors }
 }
 
-const KMZ_CABECALHO = { name: /Exportar WPML Avançado \(KMZ\)|Export Advanced WPML \(KMZ\)/ }
 const BASE_A = { id: 'imp-a', label: 'A', point: toLL(700, 700), radiusM: null }
 
 /** Exporta pelo botão do cabeçalho e junta a impressão do ficheiro à do ecrã. */
 async function impressaoModo(page, ficheiro) {
   await exportReady(page)
   const ecra = await ecraEstavel(page)
-  const [, f] = await download(page, page.getByRole('button', KMZ_CABECALHO), join(OUT, ficheiro))
+  const btn = headerExport(page)
+  const [nome, f] = await download(page, btn, join(OUT, ficheiro))
+  // o rótulo diz o que saiu: «(KMZ)», ou «(ZIP)» com vários voos
+  check(
+    'cabeçalho: o rótulo diz o tipo do ficheiro que saiu',
+    await rotuloCondiz(btn, nome),
+    `${(await btn.innerText()).trim()} → ${nome}`,
+  )
   return { ...ecra, kmz: await impressaoFicheiro(f) }
 }
 

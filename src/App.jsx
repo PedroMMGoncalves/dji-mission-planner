@@ -455,7 +455,11 @@ function AppInner({ lang, setLang }) {
     sensorType: sensor.type,
     runExport,
   })
-  const { corridorRoute: corridorPlan, handleExportCorridor } = corridorOnTerrain
+  const {
+    corridorRoute: corridorPlan,
+    handleExportCorridor,
+    corridorExportKind,
+  } = corridorOnTerrain
 
   /* ---------- Modo área, parte 2: plano, blocos, GCPs, exportação ------ */
   const area = useAreaMission({
@@ -481,6 +485,7 @@ function AppInner({ lang, setLang }) {
     manualLost,
     canExportKMZ,
     handleExportKMZ,
+    exportKind: areaExportKind,
     handleExportFlights,
     flightFiles,
     exportBaseName,
@@ -703,6 +708,15 @@ function AppInner({ lang, setLang }) {
     circular: circularPlan,
   }[missionMode]
   const modePlanOk = missionMode === 'area' ? canExportKMZ : Boolean(modePlan && !modePlan.error)
+  // o que esse clique escreve (KMZ, ou ZIP com um KMZ por voo), decidido dos
+  // mesmos dados da exportação: o rótulo do botão diz o que sai
+  const modeExportKind = {
+    area: areaExportKind,
+    face: 'kmz',
+    orbit: 'kmz',
+    corridor: corridorExportKind,
+    circular: 'kmz',
+  }[missionMode]
   const gated = (fn) => () => {
     if (!exportBlocked) fn()
   }
@@ -839,6 +853,7 @@ function AppInner({ lang, setLang }) {
         setShowPreflight={setShowPreflight}
         gated={gated}
         modeExport={modeExport}
+        modeExportKind={modeExportKind}
         modePlanOk={modePlanOk}
         setShowSettings={setShowSettings}
         setShowHelp={setShowHelp}

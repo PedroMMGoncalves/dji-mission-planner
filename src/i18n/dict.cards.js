@@ -82,14 +82,6 @@ export default {
     pt: 'Voo mais longo / tempo útil',
     en: 'Longest flight / usable time',
   },
-  'cards.summary.exportMissionByBase': {
-    pt: 'Exportar os voos por base (ZIP)',
-    en: 'Export the flights by base (ZIP)',
-  },
-  'cards.summary.exportMissionByBaseTitle': {
-    pt: 'Um ZIP com uma pasta por base (cada piloto leva as pastas das suas bases); o ZIP com todos os voos soltos e cada voo à parte estão em «Exportar voos».',
-    en: 'One ZIP with a folder per base (each pilot takes the folders of their bases); the ZIP with all flights loose and each flight on its own are under “Export flights”.',
-  },
   'cards.versionNote': {
     pt: 'Projecto gravado com a versão {v}; esta é a {now}. Desde então mudou:',
     en: 'Project saved with version {v}; this is {now}. Since then:',
@@ -103,10 +95,9 @@ export default {
     en: 'Review the plan before re-exporting: the square or flight with the same label may no longer be the same one.',
   },
   'cards.versionNoteClose': { pt: 'Entendido', en: 'Got it' },
-  'cards.summary.exportMission': { pt: 'Exportar a missão (KMZ)', en: 'Export the mission (KMZ)' },
   'cards.summary.exportMissionTitle': {
-    pt: 'A mesma exportação do botão «Exportar WPML Avançado (KMZ)» do cabeçalho, atrás do preflight.',
-    en: 'The same export as the header “Export Advanced WPML (KMZ)” button, behind the preflight.',
+    pt: 'A mesma exportação do botão «Exportar WPML Avançado» do cabeçalho, atrás do preflight.',
+    en: 'The same export as the header “Export Advanced WPML” button, behind the preflight.',
   },
   'cards.summary.exportArea': { pt: 'Área em KML', en: 'Area as KML' },
   'cards.summary.exportAreaTitle': {

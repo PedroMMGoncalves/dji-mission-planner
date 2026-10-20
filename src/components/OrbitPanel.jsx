@@ -1,4 +1,5 @@
 import { useT } from '../i18n.jsx'
+import { missionExportLabel } from '../i18n/format.js'
 import AircraftPicker from './AircraftPicker.jsx'
 import ShotPitches from './ShotPitches.jsx'
 import NumberInput from './NumberInput.jsx'
@@ -331,7 +332,7 @@ export default function OrbitPanel({
             disabled={!stats || exportBlocked}
             className="flex items-center justify-center gap-1.5 rounded bg-sky-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <IconDownload /> {t('op.exportSingle')}
+            <IconDownload /> {missionExportLabel(t, 'kmz')}
           </button>
           <button
             onClick={onExportPerLevel}

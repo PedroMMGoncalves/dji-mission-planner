@@ -105,7 +105,6 @@ export default {
     pt: 'Curvatura mais apertada do que a distância ao eixo: {n} passagem(ns) partida(s) em troços; a cobertura pára onde deixaria de ser geometricamente possível.',
     en: 'Curvature tighter than the pass distance: {n} pass(es) split into runs; coverage stops where it would no longer be geometrically possible.',
   },
-  'co.plan.export': { pt: 'Exportar WPML (KMZ)', en: 'Export WPML (KMZ)' },
   'co.err.invalid-buffer': { pt: 'Meia-largura inválida.', en: 'Invalid half-width.' },
   'co.err.invalid-altitude': { pt: 'Altura inválida.', en: 'Invalid height.' },
   'co.err.overlap-too-high': {
@@ -226,7 +225,6 @@ export default {
     pt: 'Num canto o drone ficaria a menos do afastamento pedido da face (canto demasiado fechado ou troço mais curto do que o afastamento permite). Abra o canto, reduza o afastamento ou parta o pé da face em dois troços.',
     en: 'At a corner the drone would be closer to the face than the requested standoff (corner too tight, or a segment shorter than the standoff allows). Open the corner, reduce the standoff or split the face foot into two segments.',
   },
-  'fp.export': { pt: 'Exportar WPML (KMZ)', en: 'Export WPML (KMZ)' },
   'fp.exportHint': {
     pt: 'Alturas relativas à descolagem escolhida no cartão 2 (o pé da face, ou uma base). Rumo próprio e uma foto em cada waypoint.',
     en: 'Heights relative to the take-off chosen in card 2 (the foot of the face, or a base). Own heading and one photo at every waypoint.',
@@ -322,7 +320,6 @@ export default {
     pt: 'gimbal em cada ponto: {v}',
     en: 'gimbal at each point: {v}',
   },
-  'op.exportSingle': { pt: 'Exportar missão única (KMZ)', en: 'Export single mission (KMZ)' },
   'op.exportPerLevel': {
     pt: 'Exportar um KMZ por nível (ZIP)',
     en: 'Export one KMZ per level (ZIP)',
@@ -444,7 +441,6 @@ export default {
     pt: 'Cada ponto sobe ou desce com o relevo debaixo dele, em relação à cota de referência (base com relevo, senão a mínima da área). Precisa de relevo carregado que cubra a área.',
     en: 'Each point rises or drops with the terrain beneath it, relative to the reference elevation (base with terrain, otherwise the area minimum). Needs loaded terrain covering the area.',
   },
-  'ci.exportSingle': { pt: 'Exportar missão única (KMZ)', en: 'Export single mission (KMZ)' },
   'ci.exportBlocks': {
     pt: 'Exportar um KMZ por bloco (ZIP)',
     en: 'Export one KMZ per block (ZIP)',

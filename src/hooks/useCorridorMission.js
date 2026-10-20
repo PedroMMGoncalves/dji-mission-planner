@@ -479,5 +479,8 @@ export function useCorridorRoute({
     corridorCovers,
     corridorBaseDistance,
     handleExportCorridor,
+    // o que handleExportCorridor escreve, para o rótulo do botão: partido em
+    // voos, um ZIP com um KMZ por voo; senão um KMZ
+    corridorExportKind: split ? 'zip' : 'kmz',
   }
 }

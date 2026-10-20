@@ -40,6 +40,17 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   arredondamento (GSD e sobreposição efectiva nas métricas e no relatório,
   altura AGL no relatório, cotas do terreno e altura acima do solo nos
   painéis).
+- **Botões de exportar: um nome, e o que sai.** A exportação da missão do
+  separador aberto tinha quatro nomes (cabeçalho «Exportar WPML Avançado
+  (KMZ)», face e corredor «Exportar WPML (KMZ)», órbita e circular
+  «Exportar missão única (KMZ)», área «Exportar a missão (KMZ)»), e dizia
+  «(KMZ)» quando escrevia um ZIP (área com blocos, corredor partido em
+  voos). Todos passam a chamar-se «Exportar WPML Avançado», com «(KMZ)» ou
+  «(ZIP)» conforme o que esse clique escreve, decidido dos mesmos dados da
+  exportação. No cartão «Resumo e exportar» da área, com a divisão em
+  voos, o botão «Exportar os voos por base (ZIP)» repetia o «Todos os
+  voos por base (ZIP)» de «Exportar voos» logo acima: sai; sem divisão o
+  botão da missão fica, e «Área em KML» também.
 
 ### Interno (repartição do `App.jsx`)
 

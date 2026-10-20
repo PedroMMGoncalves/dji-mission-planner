@@ -178,7 +178,9 @@ const BASE_DICT = {
     pt: 'As {n} células desactivadas ficam dentro do polígono do KML: a missão do Pilot 2 vai cobri-las.',
     en: 'The {n} disabled cells stay inside the KML polygon: the Pilot 2 mission will cover them.',
   },
-  'app.exportWpml': { pt: 'Exportar WPML Avançado (KMZ)', en: 'Export Advanced WPML (KMZ)' },
+  // um só nome para a exportação da missão do separador aberto (cabeçalho e
+  // painéis), com o que o clique escreve: {ext} é KMZ ou ZIP
+  'app.exportWpml': { pt: 'Exportar WPML Avançado ({ext})', en: 'Export Advanced WPML ({ext})' },
   'app.exportWpmlTitle': {
     pt: 'Missão completa DJI (wpmz/template.kml + waylines.wpml)',
     en: 'Full DJI mission (wpmz/template.kml + waylines.wpml)',

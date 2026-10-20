@@ -5,6 +5,7 @@
  * e o erro da última exportação.
  */
 import { useT } from '../i18n.jsx'
+import { missionExportLabel } from '../i18n/format.js'
 import { FlagGB, FlagPT, IconCheck, IconCube, IconDownload, IconDrone, IconGear } from './Icons.jsx'
 import { PreflightList, PreflightPill } from './PreflightBar.jsx'
 import { LANGS } from '../i18n.jsx'
@@ -25,6 +26,8 @@ export default function AppHeader({
   setShowPreflight,
   gated,
   modeExport,
+  // o que modeExport escreve ('kmz' | 'zip'), para o rótulo dizer o que sai
+  modeExportKind = 'kmz',
   modePlanOk,
   setShowSettings,
   setShowHelp,
@@ -108,7 +111,7 @@ export default function AppHeader({
             title={t('app.exportWpmlTitle')}
             className="flex items-center gap-1.5 whitespace-nowrap rounded bg-sky-700 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <IconDownload /> {t('app.exportWpml')}
+            <IconDownload /> {missionExportLabel(t, modeExportKind)}
           </button>
 
           {/* configuração, ajuda e língua encostados à direita */}

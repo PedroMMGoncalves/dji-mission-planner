@@ -12,7 +12,7 @@ import {
   IconTrash,
 } from './Icons.jsx'
 import { errorText, terrainErrorText as terrainErrText } from '../utils/appError.js'
-import { rangeText } from '../i18n/format.js'
+import { missionExportLabel, rangeText } from '../i18n/format.js'
 
 /**
  * E5.1: painel do modo corredor (cobertura de infraestruturas lineares a
@@ -102,6 +102,8 @@ export default function CorridorPanel({
     corridorCovers,
     corridorTerrain,
     corridorReference,
+    // o que onExport escreve: um KMZ, ou um ZIP com um KMZ por voo
+    corridorExportKind = 'kmz',
   } = corridorOnTerrain
   // relevo e seguimento de terreno (partilhados com a área)
   const {
@@ -542,7 +544,7 @@ export default function CorridorPanel({
               disabled={exportBlocked}
               className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-sky-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <IconDownload /> {t('co.plan.export')}
+              <IconDownload /> {missionExportLabel(t, corridorExportKind)}
             </button>
           </div>
         )}

@@ -11,7 +11,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
 import DICT, { translate } from '../../src/i18n.jsx'
-import { rangeText, tCount } from '../../src/i18n/format.js'
+import { missionExportLabel, rangeText, tCount } from '../../src/i18n/format.js'
 
 const SRC = new URL('../../src/', import.meta.url).pathname
 function sources(dir = SRC, out = []) {
@@ -58,6 +58,24 @@ describe('intervalos «a–b»', () => {
       .filter(([, v]) => /\{[a-zA-Z0-9_]+\}\s*[–-]\s*\{[a-zA-Z0-9_]+\}/.test(`${v.pt} ${v.en}`))
       .map(([k]) => k)
     expect(fixos).toEqual([])
+  })
+})
+
+describe('nome da exportação da missão', () => {
+  test('o nome do cabeçalho, com o que o clique escreve', () => {
+    expect(missionExportLabel(t, 'kmz')).toBe('Exportar WPML Avançado (KMZ)')
+    expect(missionExportLabel(t, 'zip')).toBe('Exportar WPML Avançado (ZIP)')
+    expect(missionExportLabel(en, 'kmz')).toBe('Export Advanced WPML (KMZ)')
+    expect(missionExportLabel(en, 'zip')).toBe('Export Advanced WPML (ZIP)')
+    // sem indicação, um KMZ (face, órbita, circular)
+    expect(missionExportLabel(t, null)).toBe('Exportar WPML Avançado (KMZ)')
+  })
+
+  test('os painéis dos modos já não têm nomes próprios para a mesma exportação', () => {
+    for (const k of ['fp.export', 'op.exportSingle', 'ci.exportSingle', 'co.plan.export'])
+      expect(DICT[k], k).toBeUndefined()
+    expect(DICT['cards.summary.exportMission']).toBeUndefined()
+    expect(DICT['cards.summary.exportMissionByBase']).toBeUndefined()
   })
 })
 
