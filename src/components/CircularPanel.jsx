@@ -30,19 +30,15 @@ function terrainErrorText(res, t) {
 }
 
 export default function CircularPanel({
-  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
-  drone = null,
-  setDrone = null,
-  sensor = null,
+  // grupos do App: hw (useHardware), circular (useCircularMission),
+  // terrainState (useTerrain) e geom (useAreaGeometry)
+  hw,
+  circular,
+  terrainState,
+  geom,
   circularConfig,
-  setCircularParam,
-  circularPlan,
-  advice,
-  blocks,
-  usableMin,
   setsCheck = null,
   batteryLabel = '',
-  triggerWarn,
   // altura e sobreposição frontal que o circular usa (as suas ou as da área)
   altitude,
   frontOverlap,
@@ -50,16 +46,11 @@ export default function CircularPanel({
   areaParams = null,
   areaStats,
   areaKind,
-  terrainFollow,
-  setTerrainFollow,
   terrainReady,
   mode,
   draftCount,
   hasRing,
-  onStartDraw,
   onUndoVertex,
-  onFinishDraw,
-  onClear,
   onExportSingle,
   onExportBlocks,
   exportBlocked = false,
@@ -67,10 +58,23 @@ export default function CircularPanel({
   safety = null,
   setSafety = (_next) => {},
   rthInfo = null,
-  circularTerrain = null,
-  circularCovers = false,
   onRemove,
 }) {
+  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
+  const { drone = null, setDrone = null, sensor = null } = hw
+  const {
+    setCircularParam,
+    circularPlan,
+    circularAdvice: advice,
+    circularBlocks: blocks,
+    circularUsableMin: usableMin,
+    circularTriggerWarn: triggerWarn,
+    circularTerrain = null,
+    circularCovers = false,
+  } = circular
+  const { terrainFollow, setTerrainFollow } = terrainState
+  // o polígono é o do modo Área: desenhar, acabar e limpar são os dele
+  const { startDraw: onStartDraw, handleFinishDraw: onFinishDraw, clearAll: onClear } = geom
   const t = useT()
   const drawing = mode === 'draw'
   const stats = circularPlan && !circularPlan.error ? circularPlan.stats : null

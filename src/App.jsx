@@ -1075,25 +1075,18 @@ function AppInner({ lang, setLang }) {
           <div className="min-h-0 flex-1">
             {missionMode === 'face' && (
               <FacePanel
-                drone={drone}
-                setDrone={setDrone}
-                sensor={sensor}
+                hw={hw}
+                face={face}
                 gimbalRange={activePayload.gimbalPitch ?? null}
                 safety={safety}
                 setSafety={setSafety}
                 rthInfo={rthInfo}
-                faceConfig={faceConfig}
-                setFaceParam={setFaceParam}
-                facePlan={facePlan}
                 faceClearance={faceClearance}
                 dsmLoaded={dsmLoaded}
                 cameraOk={sensor.type === 'camera'}
                 mode={mode}
                 draftCount={draftVertices.length}
-                onStartDraw={startFaceDraw}
                 onUndoVertex={removeLastDraftVertex}
-                onFinishDraw={handleFinishFace}
-                onClearBaseline={clearFaceBaseline}
                 onExport={gated(() => handleExportFace(faceTakeoff))}
                 bases={bases}
                 takeoff={faceTakeoff}
@@ -1102,81 +1095,57 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'orbit' && (
               <OrbitPanel
-                drone={drone}
-                setDrone={setDrone}
-                sensor={sensor}
+                hw={hw}
+                orbit={orbit}
+                preflightState={preflightState}
                 gimbalRange={activePayload.gimbalPitch ?? null}
                 safety={safety}
                 setSafety={setSafety}
                 rthInfo={rthInfo}
-                orbitConfig={orbitConfig}
-                setOrbitParam={setOrbitParam}
-                orbitPlan={orbitPlan}
                 cameraOk={sensor.type === 'camera'}
-                gsdAtRadius={gsdAtRadius}
-                onGsdTarget={setRadiusFromGsd}
                 mode={mode}
-                onStartPoi={startOrbitPoi}
-                onClearPoi={clearOrbitPoi}
                 onExportSingle={gated(() => handleExportOrbitSingle(orbitTakeoff))}
                 onExportPerLevel={gated(() => handleExportOrbitPerLevel(orbitTakeoff))}
                 bases={bases}
                 takeoff={orbitTakeoff}
-                exportBlocked={exportBlocked}
-                triggerWarn={orbitTriggerWarn}
               />
             )}
             {missionMode === 'corridor' && (
               <CorridorPanel
-                drone={drone}
-                setDrone={setDrone}
-                sensor={sensor}
+                hw={hw}
+                corridor={corridor}
+                corridorOnTerrain={corridorOnTerrain}
+                terrainState={terrainState}
+                baseActions={baseActions}
                 safety={safety}
                 setSafety={setSafety}
                 rthInfo={rthInfo}
-                triggerWarn={corridorTriggerWarn}
                 corridorConfig={
                   corridorConfig.speedMS === corridorSpeed
                     ? corridorConfig
                     : { ...corridorConfig, speedMS: corridorSpeed }
                 }
-                setCorridorParam={setCorridorParam}
-                corridorPlan={corridorPlan}
                 sensorType={sensor.type}
                 mode={mode}
-                onStartAxis={startCorridorDraw}
-                onFinishAxis={handleFinishCorridor}
                 onUndoAxisPoint={() => setDraftVertices((d) => d.slice(0, -1))}
-                onClearAxis={clearCorridorAxis}
                 draftCount={draftVertices.length}
                 onExport={gated(handleExportCorridor)}
                 exportBlocked={exportBlocked}
-                terrain={terrain}
-                corridorCovers={corridorCovers}
-                terrainFollow={terrainFollow}
-                setTerrainFollow={setTerrainFollow}
-                corridorTerrain={corridorTerrain}
-                corridorReference={corridorReference}
                 areaParams={{
                   altitude: params.altitude,
                   frontOverlap: params.frontOverlap,
                   sideOverlap: params.sideOverlap,
                 }}
-                corridorSplit={corridorSplit}
-                usableMin={batteryMin}
                 hasBase={Boolean(corridorBase)}
-                onStartBase={startBase}
-                onRemoveBase={removeBase}
-                onLoadTerrain={handleLoadTerrain}
-                onImportDem={handleImportDem}
                 onShowProfile={() => setShowProfile(true)}
               />
             )}
             {missionMode === 'circular' && (
               <CircularPanel
-                drone={drone}
-                setDrone={setDrone}
-                sensor={sensor}
+                hw={hw}
+                circular={circular}
+                terrainState={terrainState}
+                geom={geom}
                 safety={safety}
                 setSafety={setSafety}
                 rthInfo={rthInfo}
@@ -1185,34 +1154,21 @@ function AppInner({ lang, setLang }) {
                     ? circularConfig
                     : { ...circularConfig, speedMS: circularSpeed }
                 }
-                setCircularParam={setCircularParam}
-                circularPlan={circularPlan}
-                advice={circularAdvice}
-                blocks={circularBlocks}
-                usableMin={circularUsableMin}
                 setsCheck={circularSetsCheck}
                 batteryLabel={missionBatteryType.label || missionBatteryType.id}
-                triggerWarn={circularTriggerWarn}
                 altitude={circularFlight.altitude}
                 frontOverlap={circularFlight.frontOverlap}
                 areaParams={{ altitude: params.altitude, frontOverlap: params.frontOverlap }}
                 areaStats={planOk?.stats ?? null}
                 areaKind={params.crosshatch ? 'crosshatch' : 'serpentine'}
-                terrainFollow={terrainFollow}
-                setTerrainFollow={setTerrainFollow}
                 terrainReady={terrain.status === 'ready'}
                 mode={mode}
                 draftCount={draftVertices.length}
                 hasRing={Boolean(ring)}
-                onStartDraw={startDraw}
                 onUndoVertex={removeLastDraftVertex}
-                onFinishDraw={handleFinishDraw}
-                onClear={clearAll}
                 onExportSingle={gated(handleExportCircularSingle)}
                 onExportBlocks={gated(handleExportCircularBlocks)}
                 exportBlocked={exportBlocked}
-                circularTerrain={circularTerrain}
-                circularCovers={circularCovers}
                 onRemove={() => {
                   removeCircular()
                   changeMissionMode('area')

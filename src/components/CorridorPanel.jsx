@@ -55,20 +55,18 @@ function duration(seconds) {
 }
 
 export default function CorridorPanel({
-  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
-  drone = null,
-  setDrone = null,
-  sensor = null,
-  triggerWarn,
+  // grupos do App: hw (useHardware), corridor (useCorridorMission),
+  // corridorOnTerrain (useCorridorRoute), terrainState (useTerrain) e
+  // baseActions (useBaseActions)
+  hw,
+  corridor,
+  corridorOnTerrain,
+  terrainState,
+  baseActions,
   corridorConfig,
-  setCorridorParam,
-  corridorPlan,
   sensorType,
   mode,
-  onStartAxis,
-  onFinishAxis,
   onUndoAxisPoint,
-  onClearAxis,
   draftCount,
   onExport,
   exportBlocked = false,
@@ -78,24 +76,41 @@ export default function CorridorPanel({
   rthInfo = null,
   // altitude e sobreposições do separador Área, que o corredor usa (M3-U7)
   areaParams = null,
-  // divisão em voos (useCorridorMission): os voos, ou o erro
-  corridorSplit = null,
-  // tempo útil por voo (min), para o resumo dos voos
-  usableMin = null,
-  // relevo e seguimento de terreno (partilhados com a área)
-  terrain,
-  corridorCovers,
-  terrainFollow,
-  setTerrainFollow,
-  corridorTerrain,
-  corridorReference,
   hasBase,
-  onStartBase,
-  onRemoveBase,
-  onLoadTerrain,
-  onImportDem,
   onShowProfile,
 }) {
+  const {
+    // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
+    drone = null,
+    setDrone = null,
+    sensor = null,
+    // tempo útil por voo (min), para o resumo dos voos
+    batteryMin: usableMin = null,
+  } = hw
+  const {
+    corridorTriggerWarn: triggerWarn,
+    setCorridorParam,
+    startCorridorDraw: onStartAxis,
+    handleFinishCorridor: onFinishAxis,
+    clearCorridorAxis: onClearAxis,
+    // divisão em voos (useCorridorMission): os voos, ou o erro
+    corridorSplit = null,
+  } = corridor
+  const {
+    corridorRoute: corridorPlan,
+    corridorCovers,
+    corridorTerrain,
+    corridorReference,
+  } = corridorOnTerrain
+  // relevo e seguimento de terreno (partilhados com a área)
+  const {
+    terrain,
+    terrainFollow,
+    setTerrainFollow,
+    handleLoadTerrain: onLoadTerrain,
+    handleImportDem: onImportDem,
+  } = terrainState
+  const { startBase: onStartBase, removeBase: onRemoveBase } = baseActions
   const t = useT()
   const demFileRef = useRef(null)
   const terrainReady = terrain?.status === 'ready'

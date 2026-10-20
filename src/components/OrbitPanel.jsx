@@ -22,26 +22,17 @@ function Field({ label, suffix = null, children }) {
 }
 
 export default function OrbitPanel({
-  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
-  drone = null,
-  setDrone = null,
-  sensor = null,
+  // grupos do App: hw (useHardware), orbit (useOrbitMission) e
+  // preflightState (usePreflight)
+  hw,
+  orbit,
+  preflightState,
   // intervalo do gimbal do payload activo, para as várias inclinações
   gimbalRange = null,
-  orbitConfig,
-  setOrbitParam,
-  orbitPlan,
   cameraOk,
-  gsdAtRadius,
-  onGsdTarget,
   mode,
-  onStartPoi,
-  onClearPoi,
   onExportSingle,
   onExportPerLevel,
-  // obturador: a corda entre fotos contra o intervalo mínimo do payload
-  triggerWarn = null,
-  exportBlocked = false,
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
   safety = null,
   setSafety = (_next) => {},
@@ -50,6 +41,22 @@ export default function OrbitPanel({
   bases = [],
   takeoff = null,
 }) {
+  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
+  const { drone = null, setDrone = null, sensor = null } = hw
+  const {
+    orbitConfig,
+    setOrbitParam,
+    orbitPlan,
+    gsdAtRadius,
+    setRadiusFromGsd: onGsdTarget,
+    startOrbitPoi: onStartPoi,
+    clearOrbitPoi: onClearPoi,
+  } = orbit
+  const {
+    // obturador: a corda entre fotos contra o intervalo mínimo do payload
+    orbitTriggerWarn: triggerWarn = null,
+    exportBlocked = false,
+  } = preflightState
   const t = useT()
   const stats = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
   const video = orbitConfig.capture === 'video'

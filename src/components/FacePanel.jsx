@@ -21,24 +21,17 @@ function Field({ label, suffix = null, children }) {
 }
 
 export default function FacePanel({
-  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
-  drone = null,
-  setDrone = null,
-  sensor = null,
+  // grupos do App: hw (useHardware) e face (useFaceMission)
+  hw,
+  face,
   // intervalo do gimbal do payload activo, para as várias inclinações
   gimbalRange = null,
-  faceConfig,
-  setFaceParam,
-  facePlan,
   faceClearance,
   dsmLoaded,
   cameraOk,
   mode,
   draftCount,
-  onStartDraw,
   onUndoVertex,
-  onFinishDraw,
-  onClearBaseline,
   onExport,
   exportBlocked = false,
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
@@ -49,6 +42,16 @@ export default function FacePanel({
   takeoff = null,
   rthInfo = null,
 }) {
+  // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
+  const { drone = null, setDrone = null, sensor = null } = hw
+  const {
+    faceConfig,
+    setFaceParam,
+    facePlan,
+    startFaceDraw: onStartDraw,
+    handleFinishFace: onFinishDraw,
+    clearFaceBaseline: onClearBaseline,
+  } = face
   const t = useT()
   const stats = facePlan && !facePlan.error ? facePlan.stats : null
 
