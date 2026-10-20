@@ -12,32 +12,32 @@ import { LANGS } from '../i18n.jsx'
 const FLAG_BY_LANG = { pt: FlagPT, en: FlagGB }
 
 export default function AppHeader({
+  terrainState,
+  area,
+  routeView,
+  sheets,
+  preflightState,
   setShow3d,
-  terrain,
-  view3d,
   missionMode,
-  terrainCovers,
-  planOk,
   setShowReport,
   setView,
-  handleExportKML,
-  canExportKML,
-  exportKmlTitle,
-  preflight,
   showPreflight,
   setShowPreflight,
   gated,
   modeExport,
   modePlanOk,
-  exportBlocked,
   setShowSettings,
   setShowHelp,
   setLang,
   lang,
-  terrainActions,
   exportError,
   setExportError,
 }) {
+  const { terrain, terrainCovers } = terrainState
+  const { planOk, handleExportKML, canExportKML } = area
+  const { view3d } = routeView
+  const { exportKmlTitle } = sheets
+  const { preflight, exportBlocked, terrainActions } = preflightState
   const t = useT()
   return (
     <>

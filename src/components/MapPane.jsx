@@ -8,66 +8,75 @@ import MapView from './MapView.jsx'
 import StatsPanel from './StatsPanel.jsx'
 
 export default function MapPane({
-  projectSummary,
+  basesState,
+  areaParams,
+  corridor,
+  orbit,
+  face,
+  inspect,
+  geom,
+  area,
+  circular,
+  ops,
+  viewshedState,
+  baseActions,
+  mapActions,
+  routeView,
+  preflightState,
   mode,
   draftVertices,
-  ring,
-  holes,
-  validation,
-  anchor,
-  bases,
-  baseRows,
-  selectedBaseId,
-  handleBaseSelect,
-  baseLayout,
   missionMode,
-  assignMode,
-  handleBlockClick,
-  planOk,
-  blocks,
-  gridCells,
-  tiles,
-  disabledTiles,
-  handleTileClick,
-  gcps,
   handleGcpDrag,
-  mapPhotoPoints,
-  inspectPoints,
-  handleInspectDrag,
-  facePreview,
-  corridorPreview,
-  orbitPreview,
-  circularPreview,
-  handleOrbitPoiDrag,
-  fitKey,
-  split,
-  handleMapClick,
-  handleVertexDrag,
-  handleVertexInsert,
-  handleVertexDelete,
-  handleAreaMove,
-  handleBaseDrag,
-  handleFinishAny,
-  viewshedByBlock,
   viewshedLayerOn,
   setViewshedLayerOn,
-  uncertainty,
-  gsd,
-  gsdPitch,
-  footprint,
-  spacing,
-  pointDensity,
-  interval,
-  trigger,
-  params,
-  speed,
-  modeStats,
-  statsOps,
-  circularTriggerWarn,
-  corridorTriggerWarn,
-  triggerWarn,
-  areaBaseDistance,
 }) {
+  const { bases, selectedBaseId } = basesState
+  const {
+    gsd,
+    gsdPitch,
+    footprint,
+    spacing,
+    pointDensity,
+    interval,
+    trigger,
+    params,
+    speed,
+    triggerWarn,
+  } = areaParams
+  const { corridorPreview, corridorTriggerWarn } = corridor
+  const { orbitPreview, handleOrbitPoiDrag } = orbit
+  const { facePreview } = face
+  const { inspectPoints, handleInspectDrag } = inspect
+  const {
+    ring,
+    holes,
+    validation,
+    anchor,
+    gridCells,
+    tiles,
+    disabledTiles,
+    fitKey,
+    split,
+    handleVertexDrag,
+    handleVertexInsert,
+    handleVertexDelete,
+    handleAreaMove,
+  } = geom
+  const { baseLayout, planOk, blocks, gcps } = area
+  const { circularPreview, circularTriggerWarn } = circular
+  const { projectSummary, modeStats, statsOps, areaBaseDistance } = ops
+  const { viewshedByBlock } = viewshedState
+  const {
+    baseRows,
+    handleBaseSelect,
+    assignMode,
+    handleBlockClick,
+    handleTileClick,
+    handleBaseDrag,
+  } = baseActions
+  const { handleMapClick, handleFinishAny } = mapActions
+  const { mapPhotoPoints } = routeView
+  const { uncertainty } = preflightState
   return (
     <>
       <main className="relative min-w-0 flex-1">

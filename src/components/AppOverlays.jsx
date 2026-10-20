@@ -17,57 +17,56 @@ const MissionReport = lazy(() => import('./MissionReport.jsx'))
 const ElevationProfile = lazy(() => import('./ElevationProfile.jsx'))
 
 export default function AppOverlays({
+  hw,
+  basesState,
+  areaParams,
+  corridor,
+  inspect,
+  geom,
+  terrainState,
+  corridorOnTerrain,
+  area,
+  circular,
+  baseActions,
+  routeView,
+  safetyChecks,
+  sheets,
+  preflightState,
+  session,
   showHelp,
   setShowHelp,
   setDisclaimer,
   showSettings,
-  equipment,
-  setEquipment,
-  drone,
   setShowSettings,
   disclaimer,
   lang,
   setLang,
   closeDisclaimer,
   showProfile,
-  terrain,
-  view3d,
   setShowProfile,
-  reference,
   missionMode,
-  corridorReference,
-  circularReference,
-  blocks,
-  profileBlocks,
   showReport,
-  planOk,
   setShowReport,
   missionName,
-  hardwareLabel,
-  inspectPoints,
-  params,
-  speed,
-  spacing,
-  interval,
-  gsd,
-  ring,
-  bases,
-  fieldSheets,
-  terrainFollow,
-  rthInfo,
-  fieldSheetsDay,
-  gcps,
-  projectState,
-  uncertainty,
-  blur,
-  preflight,
   show3d,
   setShow3d,
-  corridorPreview,
-  view3dColors,
-  baseRows,
-  photos3d,
 }) {
+  const { equipment, setEquipment, drone, hardwareLabel } = hw
+  const { bases } = basesState
+  const { params, speed, spacing, interval, gsd } = areaParams
+  const { corridorPreview } = corridor
+  const { inspectPoints } = inspect
+  const { ring } = geom
+  const { terrain, terrainFollow } = terrainState
+  const { corridorReference } = corridorOnTerrain
+  const { reference, blocks, planOk, gcps } = area
+  const { circularReference } = circular
+  const { baseRows } = baseActions
+  const { view3d, profileBlocks, view3dColors, photos3d } = routeView
+  const { rthInfo } = safetyChecks
+  const { fieldSheets, fieldSheetsDay } = sheets
+  const { uncertainty, blur, preflight } = preflightState
+  const { projectState } = session
   const t = useT()
   return (
     <>
