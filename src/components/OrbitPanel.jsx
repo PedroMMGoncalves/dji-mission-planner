@@ -61,6 +61,10 @@ export default function OrbitPanel({
   const stats = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
   const video = orbitConfig.capture === 'video'
   const pitches = (orbitPlan?.perWaypoint ?? []).map((w) => w.gimbalPitch)
+  // várias inclinações: as que cada ponto dispara, pela ordem (o plano
+  // guarda-as em cada waypoint; perLevel só leva a primeira)
+  const shots = stats?.capture === 'multi' ? (orbitPlan.perWaypoint?.[0]?.shots ?? null) : null
+  const shotsPerPoint = shots && shots.length > 1 ? shots.length : null
 
   return (
     <CardColumn label={t('cards.panel')}>
@@ -291,7 +295,11 @@ export default function OrbitPanel({
             {video ? (
               <p>{t('op.plan.video', { min: Math.round((stats.flightTimeS ?? 0) / 60) })}</p>
             ) : (
-              <p>{t('op.plan.photos', { n: stats.photoCount })}</p>
+              <p>
+                {shotsPerPoint
+                  ? t('op.plan.photosMulti', { n: stats.photoCount, k: shotsPerPoint })
+                  : t('op.plan.photos', { n: stats.photoCount })}
+              </p>
             )}
             {stats.gsdCm != null && <p>{t('op.plan.gsd', { v: stats.gsdCm.toFixed(2) })}</p>}
             <p>
@@ -301,6 +309,10 @@ export default function OrbitPanel({
             {video && pitches.length > 0 ? (
               <p className="text-slate-400">
                 {t('op.plan.gimbalsVideo', { a: Math.max(...pitches), b: Math.min(...pitches) })}
+              </p>
+            ) : shots ? (
+              <p className="text-slate-400">
+                {t('op.plan.gimbalsMulti', { v: shots.map((p) => `${p}°`).join(' / ') })}
               </p>
             ) : (
               orbitPlan.perLevel && (
@@ -335,7 +347,7 @@ export default function OrbitPanel({
           </p>
         )}
         <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
-          {t(video ? 'op.exportHintVideo' : 'op.exportHint')}
+          {t(video ? 'op.exportHintVideo' : shots ? 'op.exportHintMulti' : 'op.exportHint')}
         </p>
       </Card>
     </CardColumn>

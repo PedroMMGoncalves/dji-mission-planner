@@ -54,6 +54,8 @@ export default function FacePanel({
   } = face
   const t = useT()
   const stats = facePlan && !facePlan.error ? facePlan.stats : null
+  // várias inclinações: cada waypoint tira uma foto por inclinação
+  const shotsPerPoint = stats?.shotsPerPoint > 1 ? stats.shotsPerPoint : null
 
   return (
     <CardColumn label={t('cards.panel')}>
@@ -270,7 +272,11 @@ export default function FacePanel({
         {stats && (
           <div className="space-y-1 font-mono text-xs text-slate-300">
             <p>{t('fp.plan.passes', { n: stats.passCount, pts: stats.pointsPerPass })}</p>
-            <p>{t('fp.plan.photos', { n: stats.photoCount })}</p>
+            <p>
+              {shotsPerPoint
+                ? t('fp.plan.photosMulti', { n: stats.photoCount, k: shotsPerPoint })
+                : t('fp.plan.photos', { n: stats.photoCount })}
+            </p>
             <p>
               {t('fp.plan.gsd', { v: stats.gsdCm?.toFixed(2) })} ·{' '}
               {t('fp.plan.vstep', { v: (stats.vStepM ?? stats.imageHeightM).toFixed(1) })}
@@ -329,7 +335,9 @@ export default function FacePanel({
         >
           <IconDownload /> {t('fp.export')}
         </button>
-        <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{t('fp.exportHint')}</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
+          {t(shotsPerPoint ? 'fp.exportHintMulti' : 'fp.exportHint')}
+        </p>
       </Card>
     </CardColumn>
   )

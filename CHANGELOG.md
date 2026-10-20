@@ -16,6 +16,14 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   circular o GSD à inclinação do gimbal e a corda entre fotos ao longo do
   círculo, sem pegada nem espaçamento. Uma métrica que o modo não tem fica
   de fora; a área não muda.
+- **Fotos por waypoint com várias inclinações.** A face e a órbita diziam
+  «150 fotos (1 por waypoint)» com três inclinações por ponto: passam a
+  dizer quantas fotos cada waypoint tira («450 fotos (3 por waypoint, uma
+  por inclinação)»). Na órbita com várias inclinações a nota da exportação
+  falava de voo curvo contínuo com uma foto por waypoint, quando o KMZ pára
+  em cada ponto e tira uma foto por inclinação, e a linha «gimbal por nível»
+  repetia a primeira inclinação: passam a dizer a paragem e as inclinações
+  de cada ponto; a nota da face idem. Só texto: os ficheiros não mudam.
 
 ### Interno (repartição do `App.jsx`)
 

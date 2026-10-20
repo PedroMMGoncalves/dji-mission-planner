@@ -178,6 +178,10 @@ export default {
   },
   'fp.plan.passes': { pt: '{n} passagens × {pts} pontos', en: '{n} passes × {pts} points' },
   'fp.plan.photos': { pt: '{n} fotos (1 por waypoint)', en: '{n} photos (1 per waypoint)' },
+  'fp.plan.photosMulti': {
+    pt: '{n} fotos ({k} por waypoint, uma por inclinação)',
+    en: '{n} photos ({k} per waypoint, one per pitch)',
+  },
   'fp.plan.gsd': { pt: 'GSD {v} cm/px na face', en: 'GSD {v} cm/px on the face' },
   'fp.plan.vstep': { pt: 'passo vertical {v} m', en: 'vertical step {v} m' },
   'fp.plan.path': { pt: 'percurso {km} km', en: 'path {km} km' },
@@ -226,6 +230,10 @@ export default {
   'fp.exportHint': {
     pt: 'Alturas relativas à descolagem escolhida no cartão 2 (o pé da face, ou uma base). Rumo próprio e uma foto em cada waypoint.',
     en: 'Heights relative to the take-off chosen in card 2 (the foot of the face, or a base). Own heading and one photo at every waypoint.',
+  },
+  'fp.exportHintMulti': {
+    pt: 'Alturas relativas à descolagem escolhida no cartão 2 (o pé da face, ou uma base). Rumo próprio e, em cada waypoint, paragem e uma foto por inclinação.',
+    en: 'Heights relative to the take-off chosen in card 2 (the foot of the face, or a base). Own heading and, at every waypoint, a stop and one photo per pitch.',
   },
 
   /* ---- Painel de órbita (E1.2) ---- */
@@ -293,6 +301,10 @@ export default {
   },
   'op.plan.rings': { pt: '{n} níveis × {pts} pontos/volta', en: '{n} levels × {pts} points/turn' },
   'op.plan.photos': { pt: '{n} fotos (1 por waypoint)', en: '{n} photos (1 per waypoint)' },
+  'op.plan.photosMulti': {
+    pt: '{n} fotos ({k} por waypoint, uma por inclinação)',
+    en: '{n} photos ({k} per waypoint, one per pitch)',
+  },
   'op.plan.spiral': {
     pt: 'espiral: {turns} voltas, {h0} → {h1} m, {pts} pontos/volta',
     en: 'spiral: {turns} turns, {h0} → {h1} m, {pts} points/turn',
@@ -306,6 +318,10 @@ export default {
   'op.plan.path': { pt: 'percurso {km} km', en: 'path {km} km' },
   'op.plan.time': { pt: '~{min} min', en: '~{min} min' },
   'op.plan.gimbals': { pt: 'gimbal por nível: {v}', en: 'gimbal per level: {v}' },
+  'op.plan.gimbalsMulti': {
+    pt: 'gimbal em cada ponto: {v}',
+    en: 'gimbal at each point: {v}',
+  },
   'op.exportSingle': { pt: 'Exportar missão única (KMZ)', en: 'Export single mission (KMZ)' },
   'op.exportPerLevel': {
     pt: 'Exportar um KMZ por nível (ZIP)',
@@ -320,6 +336,10 @@ export default {
   'op.exportHint': {
     pt: 'Voo curvo contínuo (toPointAndPassWithContinuityCurvature), rumo ao POI e uma foto em cada waypoint. Alturas relativas ao ponto de descolagem.',
     en: 'Continuous curved flight (toPointAndPassWithContinuityCurvature), heading at the POI and one photo per waypoint. Heights relative to the take-off point.',
+  },
+  'op.exportHintMulti': {
+    pt: 'Paragem em cada waypoint (toPointAndStopWithDiscontinuityCurvature), rumo ao POI e, em cada ponto, uma foto por inclinação. Alturas relativas ao ponto de descolagem.',
+    en: 'Stop at every waypoint (toPointAndStopWithDiscontinuityCurvature), heading at the POI and, at each point, one photo per pitch. Heights relative to the take-off point.',
   },
   'op.exportHintVideo': {
     pt: 'Voo curvo contínuo, rumo ao POI, gimbal a reapontar ao centro em cada ponto; grava do primeiro ao último ponto. Um só KMZ: a gravação não se fatia por nível. Alturas relativas ao ponto de descolagem.',
