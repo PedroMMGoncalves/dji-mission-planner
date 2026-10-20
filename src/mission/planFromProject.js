@@ -29,7 +29,7 @@ import {
 import { planArea } from './areaPlan.js'
 import { cellFitsBattery, squareSideWithBaseTransit } from './baseLayout.js'
 import { DEFAULT_ZONE_RADIUS_M } from './takeoffZones.js'
-import { planBlocks } from './blocks.js'
+import { areaRouteStats, planBlocks } from './blocks.js'
 import { triggerInterval } from './triggerInterval.js'
 import { DEFAULT_PARAMS, DEFAULT_SPLIT } from './defaults.js'
 import { usableBatteryMin } from './preflight.js'
@@ -159,7 +159,7 @@ export function planMissionFromProject(n, { zoneRadiusM = DEFAULT_ZONE_RADIUS_M 
   }
 
   /* ------------------------------- plano -------------------------------- */
-  const plan = valid
+  const planned = valid
     ? planArea(ring, activeCells, {
         spacingM,
         angleDeg: params.angle,
@@ -178,9 +178,9 @@ export function planMissionFromProject(n, { zoneRadiusM = DEFAULT_ZONE_RADIUS_M 
     : ring
       ? { error: 'invalid-ring' }
       : null
-  const planOk = plan && !plan.error ? plan : null
-  const blocks = planOk
-    ? planBlocks(planOk, {
+  const plannedOk = planned && !planned.error ? planned : null
+  const blocks = plannedOk
+    ? planBlocks(plannedOk, {
         activeCells,
         cellIds: activeCellIds,
         cellHoles: activeCellHoles,
@@ -192,6 +192,12 @@ export function planMissionFromProject(n, { zoneRadiusM = DEFAULT_ZONE_RADIUS_M 
         overshootM,
       })
     : null
+  // as estatísticas de rota de uma missão dividida são a soma dos voos, sem
+  // os troços entre blocos (areaRouteStats), como no App
+  const planOk = plannedOk
+    ? areaRouteStats(plannedOk, { blocks, speed, waypointStops: params.waypointStops })
+    : null
+  const plan = planOk ?? planned
   // o voo mais longo (bloco, ou a rota inteira) em fracção do tempo útil:
   // acima de 1 não cabe numa bateria
   const usableS = usableBatteryMin(batteryMin, reservePct) * 60

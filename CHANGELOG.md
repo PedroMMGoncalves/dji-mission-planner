@@ -52,13 +52,24 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   voos por base (ZIP)» de «Exportar voos» logo acima: sai; sem divisão o
   botão da missão fica, e «Área em KML» também.
 - **Relatório: um nome e uma cor por voo.** O relatório numerava os voos
-  1…20 no mapa, B01…B20 na tabela e A-1…G-20 nas fichas de campo, com
+  1…20 no mapa, B01…B20 na tabela e A-1… nas fichas de campo, com
   todas as bases num ponto laranja e os blocos nas cores dos blocos. Passa
   a usar os rótulos dos voos do planeador (A-1…) no mapa e na tabela (pela
   ordem de voo), a desenhar cada base com a sua cor e letra, e a colorir
   os blocos como o mapa (a cor da base de cada um). A linha do preflight
   mostra as mensagens traduzidas em vez dos códigos («base-zone-drop») com
   um glifo, e o datum vertical sai na língua da interface («unknown»).
+- **Os totais de uma missão dividida em voos são a soma dos voos**:
+  «Distância total» e «Tempo na missão (sem deslocação)» (métricas,
+  relatório, resumo do projecto) somam a rota de cada bloco — a 3D, com
+  seguimento de terreno —, o mesmo que cada KMZ leva em `wpml:distance` e
+  `wpml:duration`, sem os troços entre blocos, que não se voam. Com
+  seguimento de terreno contavam a rota de toda a área numa só peça, com
+  esses troços e uma inversão a mais por bloco: 20 blocos de 500 m davam
+  128,5 km e 3 h 55 min para 116,3 km e 3 h 33 min voados (+10 %); o corte
+  da serpentina por faixas contava-os também sem seguimento de terreno
+  (+1–2 %). Os ficheiros exportados, o preflight e o tempo de cada voo não
+  mudam.
 
 ### Interno (repartição do `App.jsx`)
 

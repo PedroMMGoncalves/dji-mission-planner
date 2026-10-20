@@ -3,7 +3,7 @@
  * mosaico (cada célula é um bloco) ou o corte da serpentina por faixas /
  * área. Lógica pura que vivia num useMemo do App.jsx.
  */
-import { nadirLineLocalPerBlock, splitIntoBlocks } from '../utils/geo.js'
+import { nadirLineLocalPerBlock, splitIntoBlocks, stripRouteStats } from '../utils/geo.js'
 
 /**
  * Bloco de voo: a fatia da serpentina que cabe numa bateria ou numa área
@@ -79,4 +79,71 @@ export function planBlocks(
     plan.nadirStartLine,
   )
   return cut.map((b, i) => ({ ...b, nadirLineLocal: locals[i] }))
+}
+
+/**
+ * Comprimento e tempo de uma missão dividida em voos: a soma do que cada
+ * voo voa — a rota do seu bloco (a 3D, com seguimento de terreno), as suas
+ * `n − 1` inversões e, com paragem em todos, as paragens intermédias —, o
+ * mesmo que a exportação escreve em `wpml:distance` e `wpml:duration` de
+ * cada KMZ. Sem os troços entre blocos, que não se voam (cada bloco descola
+ * da sua base), e sem trânsito.
+ * @param {Array<{waypoints?: number[][], lines?: any[], perLine?: number[]|null}>} flights
+ *   blocos (planBlocks) ou blocos com alturas (`blocks3` de planTerrainFollow)
+ * @param {{speed: number, waypointStops?: string}} opts
+ * @returns {{pathLengthM: number, flightTimeS: number|null}}
+ */
+export function flightsRouteStats(flights, { speed, waypointStops = 'corners' }) {
+  let pathLengthM = 0
+  /** @type {number|null} */
+  let flightTimeS = 0
+  for (const b of flights) {
+    const st = stripRouteStats(b.waypoints ?? [], {
+      speed,
+      lineCount: b.lines?.length ?? 0,
+      perLine: b.perLine ?? null,
+      waypointStops,
+    })
+    pathLengthM += st.pathLengthM
+    flightTimeS =
+      flightTimeS == null || st.flightTimeS == null ? null : flightTimeS + st.flightTimeS
+  }
+  return { pathLengthM, flightTimeS }
+}
+
+/**
+ * O plano de área com as estatísticas de rota que o painel, o relatório e o
+ * resumo do projecto mostram («Distância total», «Tempo na missão»): com
+ * blocos, a soma dos voos (flightsRouteStats), sobre os blocos com alturas
+ * quando há seguimento de terreno; sem blocos, a rota inteira, a 3D com
+ * seguimento de terreno. Sem nada a corrigir devolve o plano tal qual.
+ *
+ * Até Outubro de 2026, com seguimento de terreno, as estatísticas vinham da
+ * rota de toda a área numa só peça: contavam os troços entre blocos e uma
+ * inversão a mais por bloco — 20 blocos de 500 m davam 128,5 km e 235 min
+ * para 116,3 km e 213 min voados (+10 %); o corte da serpentina por área
+ * contava-os também sem seguimento de terreno (+1–2 %).
+ * @param {any} plan plano de área válido (planArea), ou null / com erro
+ * @param {{blocks?: any[]|null, terrainResult?: any,
+ *   speed: number, waypointStops?: string}} opts
+ */
+export function areaRouteStats(
+  plan,
+  { blocks = null, terrainResult = null, speed, waypointStops = 'corners' },
+) {
+  if (!plan || plan.error) return plan
+  const tf =
+    terrainResult && !terrainResult.error && terrainResult.waypoints?.length ? terrainResult : null
+  const flights = blocks?.length ? (tf?.blocks3 ?? blocks) : null
+  let stats
+  if (flights) stats = flightsRouteStats(flights, { speed, waypointStops })
+  else if (tf)
+    stats = stripRouteStats(tf.waypoints, {
+      speed,
+      lineCount: plan.lines.length,
+      perLine: tf.perLine,
+      waypointStops,
+    })
+  else return plan
+  return { ...plan, stats: { ...plan.stats, ...stats, ...(tf ? { path3D: true } : {}) } }
 }

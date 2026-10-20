@@ -8,7 +8,7 @@
  */
 import { useCallback, useMemo, useState } from 'react'
 import { planArea } from '../mission/areaPlan.js'
-import { planBlocks } from '../mission/blocks.js'
+import { areaRouteStats, planBlocks } from '../mission/blocks.js'
 import { planTerrainFollow } from '../mission/terrainFollow.js'
 import { buildAreaExport } from '../mission/areaExport.js'
 import { areaPhotoPoints } from '../mission/photoPoints.js'
@@ -27,7 +27,6 @@ import {
   exportWPMLKmz,
   safeFileStem,
 } from '../utils/exporters.js'
-import { stripRouteStats } from '../utils/geo.js'
 import { referenceElevation } from '../mission/reference.js'
 import {
   blockLayoutKey,
@@ -334,23 +333,24 @@ export function useAreaMission({
     ],
   )
 
-  // Com seguimento de terreno os waypoints levam altura e a rota real e a
-  // 3D — e e essa que o Pilot 2 escreve em `wpml:distance`. Sem esta
-  // correccao o comprimento sai curto ate ~2 % em terreno acidentado, e o
-  // erro e sempre optimista: menos rota, menos tempo, menos baterias. A
-  // geometria nao muda; so as estatisticas mostradas e usadas no preflight.
-  const planRoute = useMemo(() => {
-    const wps = terrainResult && !terrainResult.error ? terrainResult.waypoints : null
-    if (!planOk || !wps?.length) return plan
-    // com 'all' conta também as paragens nos vértices do terreno
-    const { pathLengthM, flightTimeS } = stripRouteStats(wps, {
-      speed,
-      lineCount: planOk.lines.length,
-      perLine: terrainResult.perLine,
-      waypointStops: params.waypointStops,
-    })
-    return { ...planOk, stats: { ...planOk.stats, pathLengthM, flightTimeS, path3D: true } }
-  }, [plan, planOk, terrainResult, speed, params.waypointStops])
+  // As estatísticas de rota que se mostram (src/mission/blocks.js): com
+  // blocos, a soma dos voos — cada bloco com a sua rota, sem os troços entre
+  // blocos, que não se voam —, e com seguimento de terreno a rota 3D, a que
+  // o Pilot 2 escreve em `wpml:distance` (só a horizontal saía curta até
+  // ~2 % em terreno acidentado, sempre do lado optimista). A geometria não
+  // muda; só as estatísticas mostradas.
+  const planRoute = useMemo(
+    () =>
+      planOk
+        ? areaRouteStats(planOk, {
+            blocks,
+            terrainResult,
+            speed,
+            waypointStops: params.waypointStops,
+          })
+        : plan,
+    [plan, planOk, blocks, terrainResult, speed, params.waypointStops],
+  )
   const planRouteOk = planRoute && !planRoute.error ? planRoute : null
 
   /* --------------------------- Exportação ---------------------------- */

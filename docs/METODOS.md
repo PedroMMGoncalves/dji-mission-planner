@@ -268,6 +268,29 @@ no pior caso da zona: `(d(centro, 1.º waypoint) + r) + (d(centro, último
 waypoint) + r)`, a dividir por `v` (`blockWorstTransitM`). Entre células do
 mosaico o trânsito não é contado; entre as grelhas da dupla grelha é.
 
+Totais de uma missão dividida em voos (`areaRouteStats`,
+`src/mission/blocks.js`): «Distância total» e «Tempo na missão (sem
+deslocação)» — no painel de métricas, nas estatísticas do relatório e no
+resumo do projecto — são a soma do que cada voo voa: a rota do seu bloco
+(a 3D, com seguimento de terreno), as suas `n − 1` inversões e, com «Em
+todos», as paragens intermédias, o mesmo que cada KMZ leva em
+`wpml:distance` e `wpml:duration` (§11); sem os troços do fim de um bloco
+ao início do seguinte, que não se voam (cada bloco descola da sua base), e
+sem trânsito. «Tempo total com deslocações» é a soma dos voos com o
+trânsito de cada um da sua base (`opsSummary`), e o voo mais longo é o
+maior deles. A tabela «Blocos de voo» do relatório soma, por bloco, o
+comprimento das faixas sem as ligações (`lengthM`) e o tempo do bloco em
+planta (`timeS`). Até Outubro de 2026, com seguimento de terreno, os dois
+totais vinham da rota de toda a área numa só peça (`terrainFollowLines`
+sobre todas as faixas): contavam os troços entre blocos e uma inversão a
+mais por bloco — no projecto de teste do E2E, 20 blocos de 500 m, 128,5 km
+e 235 min para 116,3 km e 213 min voados (+10 %); o corte da serpentina
+por área contava-os também sem seguimento de terreno (+0,8 % no
+comprimento e +1,9 % no tempo, com 21 ligações e 21 inversões a mais). O
+tempo e o comprimento de cada voo (resumo da operação, preflight, fichas,
+tabela do relatório) continuam os do plano em planta, sem as subidas e as
+paragens do relevo (§16).
+
 Tempo útil por voo: o operador conta as baterias em minutos de voo por
 conjunto já descontada a reserva com que aterra (15-20 %): no M300 RTK,
 TB60 25 min e TB65 28 min, medidos no campo; nas outras aeronaves os
@@ -720,7 +743,8 @@ ligação que o antecede não entra), e as alturas exportadas desse bloco são
 (`AGL`) e é a altitude absoluta de cada bloco que muda (`cota + AGL`). O
 3D, o perfil e a folga ao solo juntam os blocos numa só rota na cota comum
 (a mais baixa das zonas), `h + cotaBloco − comum`, e não contam o troço que
-começa cada bloco: não se voa (cada bloco descola da sua base). Uma base
+começa cada bloco: não se voa (cada bloco descola da sua base), e os totais
+da missão também não o contam (§4). Uma base
 fora do relevo deixa os seus blocos na mínima de cada bloco, e o preflight
 bloqueia. A mínima, porque a altura real acima
 do solo é `AGL planeado + (cota real da descolagem − cota assumida)`:
@@ -1748,11 +1772,14 @@ Não modelado, em resumo: dinâmica do voo (raio de viragem, vento — a
 aceleração entra apenas no custo de viragem); rotações de gimbal, que nas
 missões oblíquas do Pilot 2 custam entre 13 e 110 s por faixa, uma ordem
 de grandeza acima de uma inversão de sentido, pelo que o tempo de uma
-missão oblíqua pode ser o dobro do previsto; o comprimento 3D por bloco,
-que continua horizontal quando a missão é dividida com seguimento de
-terreno; as paragens nos vértices do terreno no lado dos quadrados por
-bateria, que é calculado antes de o perfil existir (o tempo de cada bloco
-já as conta, e o preflight avisa); atitude da aeronave (rolamento/arfagem)
+missão oblíqua pode ser o dobro do previsto; o tempo e o comprimento de
+cada voo (resumo da operação, preflight, fichas de campo, tabela do
+relatório), que continuam os do plano em planta quando a missão é dividida
+com seguimento de terreno — sem as subidas nem as paragens nos vértices do
+relevo, que só os totais da missão (§4) e a duração de cada KMZ (§11)
+contam; as paragens nos vértices do terreno no lado dos quadrados por
+bateria, que é calculado antes de o perfil existir (o preflight avisa com
+o tempo de cada bloco e o trânsito); atitude da aeronave (rolamento/arfagem)
 na pegada; obstáculos
 fora da folga da fachada; conversão entre datums verticais (só a
 declaração); retornos múltiplos e padrão de varrimento do LiDAR; a
