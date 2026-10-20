@@ -21,7 +21,6 @@ import DisclaimerModal, {
 const Map3D = lazy(() => import('./components/Map3D.jsx'))
 const MissionReport = lazy(() => import('./components/MissionReport.jsx'))
 const ElevationProfile = lazy(() => import('./components/ElevationProfile.jsx'))
-import { positioningError, aglCapWarning } from './data/drones.js'
 import { flightsVsSets } from './mission/equipment.js'
 import { opsSummary } from './mission/opsSummary.js'
 import { addBase, nearestBase } from './mission/bases.js'
@@ -45,7 +44,6 @@ import {
 } from './utils/geo.js'
 import {
   DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
-  defaultRthHeightM,
   MissionExportError,
   buildFilesZip,
   downloadBlob,
@@ -53,6 +51,8 @@ import {
 import { useHardware } from './hooks/useHardware.js'
 import { useAreaParams } from './hooks/useAreaParams.js'
 import { useBaseActions, useBasesState } from './hooks/useBases.js'
+import { useRouteChecks } from './hooks/useRouteChecks.js'
+import { usePreflight } from './hooks/usePreflight.js'
 import { useActiveRoute } from './hooks/useActiveRoute.js'
 import { useAreaGeometry } from './hooks/useAreaGeometry.js'
 import { useAreaMission } from './hooks/useAreaMission.js'
@@ -67,20 +67,9 @@ import { useProjectSession } from './hooks/useProjectSession.js'
 import { terrainIdentity, useViewsheds } from './hooks/useViewsheds.js'
 import { viewshedJobs, viewshedTerrainModel } from './mission/viewshedPlan.js'
 import { DEFAULT_MISSION_NAME } from './mission/defaults.js'
-import { hasBlockers } from './mission/preflight.js'
-import { preflightFor } from './mission/preflightFor.js'
-import { routeClearance, terrainHolesAlong } from './mission/clearance.js'
-import { rthByFlight, transitLegs, worstTransit } from './mission/transitLegs.js'
 import { blockWorstTransitM, blockWorstVlosM } from './mission/takeoffZones.js'
 import { checkFaceClearance } from './utils/faceMode.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from './utils/units.js'
-import { gimbalRangeViolation } from './mission/gimbal.js'
-import {
-  motionBlur,
-  routeChecks,
-  terrainReliefRange,
-  uncertaintyIntervals,
-} from './mission/uncertainty.js'
 import { serializeProject } from './mission/project.js'
 import { DEFAULT_SAFETY } from './mission/safety.js'
 import { PreflightList, PreflightPill } from './components/PreflightBar.jsx'
@@ -100,8 +89,6 @@ const VIEWSHED_LAYER_KEY = 'dji-mission-planner:viewshedLayer'
 
 import { browserStorage } from './utils/browserStorage.js'
 import { LANGS, LangContext, useT } from './i18n.jsx'
-import { terrainErrorText } from './utils/appError.js'
-import { isVerifiedFlight } from './data/validation.js'
 
 /** Bases a menos de ~3 km da caixa da área: entram na caixa do relevo (a cota da zona). */
 function basePointsNear(bases, ring) {
@@ -1221,114 +1208,24 @@ function AppInner({ lang, setLang }) {
     setRouteBox,
   })
 
-  // Pior folga ao solo da rota que sairia no KMZ, sobre o relevo carregado.
-  // E daqui que o preflight bloqueia uma rota que entra no terreno.
-  const clearance = useMemo(() => {
-    const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
-    if (!elevationAt || !view3d?.waypoints?.length || !Number.isFinite(view3d.refElev)) return null
-    // a amostragem à resolução do relevo (≤ 10 m), não aos 40 m do perfil,
-    // que a folga validava contra si próprio (M2-T2)
-    const res = terrain.data?.resolutionM
-    return routeClearance(view3d.waypoints, {
-      elevationAt,
-      refElev: view3d.refElev,
-      breaks: view3d.breaks ?? null,
-      stepM: Math.min(10, Math.max(1, (Number.isFinite(res) && res > 0 ? res : 30) / 2)),
-    })
-  }, [terrain, view3d])
-
-  // Buracos do relevo debaixo da rota exportável (M2-T1 da revisão da
-  // matemática): tiles em falta ou zonas sem dados do MDT dentro da caixa
-  // carregada, que o seguimento de terreno atravessava à cota do último
-  // ponto válido e a folga ao solo saltava. O preflight bloqueia.
-  const terrainHoles = useMemo(() => {
-    const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
-    if (!elevationAt || !view3d?.waypoints?.length) return null
-    return terrainHolesAlong(view3d.waypoints, { elevationAt, breaks: view3d.breaks ?? null })
-  }, [terrain, view3d])
-
-  // Folga ao solo dos trânsitos base ↔ rota (M2-T3): com `flyToWaylineMode`
-  // «safely» a aeronave sobe à altura do 1.º waypoint (ou à de segurança da
-  // descolagem) e voa a direito até ele; no fim regressa à altura de RTH.
-  // Com bases, cada voo descola da sua base, às alturas relativas à cota da
-  // zona dela (a rota do 3D está na cota comum); o pior voo manda.
-  const transitLegsInfo = useMemo(() => {
-    if (!view3d?.waypoints?.length || !Number.isFinite(view3d.refElev)) return []
-    const tfOk = terrainResult && !terrainResult.error
-    const basePoint =
-      missionMode === 'area'
-        ? areaBasePoint
-        : missionMode === 'corridor'
-          ? (corridorBase?.point ?? null)
-          : missionMode === 'circular'
-            ? (circularBase?.point ?? null)
-            : null
-    return transitLegs({
-      view3d,
-      perBlock: missionMode === 'area' && perBlockBases && view3d.refSource === 'bases',
-      blocks: tfOk && terrainResult.blocks3 ? terrainResult.blocks3 : blocks,
-      baseLayout,
-      bases,
-      blockRefs,
-      basePoint,
-    })
-  }, [
+  // folga ao solo, buracos do relevo, trânsitos e RTH da rota que sairia no
+  // KMZ (src/hooks/useRouteChecks.js)
+  const { clearance, terrainHoles, transitClearanceInfo, rthInfo } = useRouteChecks({
+    terrain,
     view3d,
-    missionMode,
-    perBlockBases,
-    blocks,
-    terrainResult,
-    baseLayout,
     bases,
-    blockRefs,
+    terrainResult,
+    missionMode,
     areaBasePoint,
     corridorBase,
     circularBase,
-  ])
-  const transitClearanceInfo = useMemo(() => {
-    const elevationAt = terrain.status === 'ready' ? terrain.data?.elevationAt : null
-    if (!elevationAt || transitLegsInfo.length === 0) return null
-    // as alturas escritas pelo piloto (acções de segurança), senão as omissões
-    const takeOffSecurityHeightM =
-      safety.takeOffSecurityHeightM ?? DEFAULT_TAKEOFF_SECURITY_HEIGHT_M
-    const rthFixed = safety.rthHeightM
-    return worstTransit(transitLegsInfo, {
-      elevationAt,
-      takeOffSecurityHeightM,
-      rthHeightOf: (tecto) => (Number.isFinite(rthFixed) ? rthFixed : defaultRthHeightM(tecto)),
-    })
-  }, [terrain, transitLegsInfo, safety.takeOffSecurityHeightM, safety.rthHeightM])
-
-  // Altura de regresso (RTH) e subida de descolagem que o KMZ escreve
-  // (M3-U3): por voo com bases (cada um no seu KMZ), senão da rota inteira;
-  // nenhum ecrã as mostrava e a checklist mandava «confirmar o RTH».
-  const rthInfo = useMemo(() => {
-    const legs = transitLegsInfo.length
-      ? transitLegsInfo
-      : view3d?.waypoints?.length
-        ? [{ flight: null, waypoints: view3d.waypoints }]
-        : []
-    if (legs.length === 0) return null
-    const altitudeM = missionMode === 'area' ? params.altitude : 0
-    const byFlight = rthByFlight(legs, { altitudeM, rthHeightM: safety.rthHeightM })
-    const values = byFlight.map((r) => r.rthM)
-    return {
-      minM: Math.min(...values),
-      maxM: Math.max(...values),
-      takeoffM: safety.takeOffSecurityHeightM ?? DEFAULT_TAKEOFF_SECURITY_HEIGHT_M,
-      // escritas pelo piloto (true) ou automáticas
-      rthManual: Number.isFinite(safety.rthHeightM),
-      takeoffManual: Number.isFinite(safety.takeOffSecurityHeightM),
-      byFlight,
-    }
-  }, [
-    transitLegsInfo,
-    view3d,
-    missionMode,
-    params.altitude,
-    safety.rthHeightM,
-    safety.takeOffSecurityHeightM,
-  ])
+    perBlockBases,
+    blocks,
+    baseLayout,
+    blockRefs,
+    safety,
+    params,
+  })
 
   // os parâmetros que o piloto confere no Pilot 2, na ficha (M3-U10)
   // (no corredor, a altura e as sobreposições que o corredor usa: as suas ou as da área)
@@ -1605,380 +1502,80 @@ function AppInner({ lang, setLang }) {
     exportBaseName,
   ])
 
-  // Rótulo do voo de cada bloco (o do mapa e do ficheiro): um só
-  // identificador visível no cartão, no preflight e nas fichas (M3-U4)
-  const blockFlightLabels = useMemo(() => {
-    const out = {}
-    for (const [id, info] of Object.entries(baseLayout?.byBlock ?? {}))
-      if (info?.flightLabel) out[id] = info.flightLabel
-    return out
-  }, [baseLayout])
-  // o voo a que um índice da rota de verificação pertence (os blocos seguem-se
-  // pela ordem da rota; os cortes em `breaks`)
-  const flightOfIndex = useMemo(() => {
-    if (!view3d?.breaks?.length || !blocks?.length) return null
-    const starts = [0, ...view3d.breaks]
-    const withWps = blocks.filter((b) => b.waypoints?.length > 0)
-    return (i) => {
-      let k = 0
-      while (k + 1 < starts.length && i >= starts[k + 1]) k += 1
-      const b = withWps[k]
-      return b ? (blockFlightLabels[b.id] ?? String(b.id)) : null
-    }
-  }, [view3d, blocks, blockFlightLabels])
-
-  // A mensagem traduzida do erro do plano, para o preflight não mostrar o
-  // código em bruto (M3-U8): a mesma que o painel do modo já mostra
-  const planErrorText = useMemo(() => {
-    const tr = (key, vars) => {
-      const msg = t(key, vars)
-      return msg === key ? null : msg
-    }
-    if (missionMode === 'area') {
-      const code = plan?.error
-      if (!code) return null
-      if (code === 'too-many-lines') return tr('cp.area.tooManyLines')
-      return tr(`cp.area.planError.${code}`, { cells: (plan?.errorCells ?? []).join(', ') })
-    }
-    if (missionMode === 'corridor')
-      return corridorPlan?.error ? tr(`co.err.${corridorPlan.error}`) : null
-    if (missionMode === 'circular')
-      return circularPlan?.error ? tr(`ci.err.${circularPlan.error}`) : null
-    if (missionMode === 'face') return facePlan?.error ? tr(`fp.error.${facePlan.error}`) : null
-    return orbitPlan?.error ? tr(`orb.err.${orbitPlan.error}`) : null
-  }, [missionMode, plan, corridorPlan, circularPlan, facePlan, orbitPlan, t])
-
-  // Ganho da zona de descolagem (§4.1): o voo real fica entre 0 e +ganho
-  // acima do planeado, e isso conta para o tecto AGL do payload e para a
-  // nota dos 120 m (M2-T8)
-  const zoneGainM = useMemo(() => {
-    const gainOf = (z) => (z && !z.error && Number.isFinite(z.gainM) ? z.gainM : 0)
-    if (missionMode === 'corridor') return gainOf(corridorReference?.zone)
-    if (missionMode === 'circular') return gainOf(circularReference?.zone)
-    if (missionMode !== 'area') return 0
-    if (perBlockBases) return Math.max(0, ...Object.values(zones ?? {}).map(gainOf))
-    return gainOf(refBase ? zones[refBase.id] : null)
-  }, [missionMode, corridorReference, circularReference, perBlockBases, zones, refBase])
-
-  // Maior altura acima do solo da rota exportável, sobre o relevo, com o
-  // ganho da zona. Só para a nota da categoria aberta (120 m): a altura é
-  // decisão do operador e nada é cortado nem bloqueado.
-  const aglMaxM = Number.isFinite(clearance?.maxM) ? clearance.maxM + zoneGainM : null
-
-  // O relevo cobre a rota que sairia no KMZ do separador aberto? Sem isto
-  // não há exportação: as alturas são relativas à descolagem e só o relevo
-  // diz a que altura do chão se voa (o preflight diz o que falta).
-  const terrainRoute = useMemo(() => {
-    const box = bboxOfPoints(view3d?.waypoints)
-    const covered =
-      terrain.status === 'ready' && Boolean(box) && bboxCovers(terrain.data?.bbox, box)
-    return {
-      covered,
-      status: terrain.status,
-      source: terrain.data?.source ?? null,
-      // o texto traduzido: o preflight só o mostra
-      error: terrain.error ? terrainErrorText(terrain.error, t) : null,
-      fromFile: Boolean(terrain.fromFile),
-    }
-  }, [view3d, terrain, t])
-
-  // Inclinacao do gimbal pedida fora do que o payload alcanca (a exportacao
-  // recorta; aqui avisa-se do valor pedido), no modo activo e nos pontos de
-  // inspeccao que tenham pitch proprio
-  const gimbal = useMemo(() => {
-    const pitches =
-      missionMode === 'face'
-        ? [faceConfig.gimbalPitch]
-        : missionMode === 'orbit'
-          ? (orbitPlan?.perWaypoint ?? []).map((w) => w.gimbalPitch)
-          : missionMode === 'corridor'
-            ? [-90]
-            : missionMode === 'circular'
-              ? [circularConfig.gimbalPitch]
-              : [params.gimbalPitch]
-    for (const p of inspectPoints ?? []) if (p?.gimbalPitch != null) pitches.push(p.gimbalPitch)
-    return gimbalRangeViolation(pitches, payload.gimbalPitch ?? null)
-  }, [
-    missionMode,
-    faceConfig.gimbalPitch,
-    orbitPlan,
-    circularConfig.gimbalPitch,
-    params.gimbalPitch,
-    inspectPoints,
-    payload,
-  ])
-
-  // Teto operacional AGL do payload (T1.3), ex.: LiDAR limitado a 100 m
-  const aglWarn = useMemo(
-    () =>
-      aglCapWarning(payload, params.altitude, {
-        terrainFollowActive: Boolean(
-          terrainFollow.enabled && terrainResult && !terrainResult.error,
-        ),
-        toleranceM: terrainFollow.tolerance,
-        // a subida do corredor com terreno transversal e o ganho da zona
-        routeMaxAglM: clearance?.maxM ?? null,
-        gainM: zoneGainM,
-      }),
-    [payload, params.altitude, terrainFollow, terrainResult, clearance, zoneGainM],
-  )
-
-  /* ------------------------ Incerteza propagada ----------------------- */
-  // Intervalos [pior, melhor] de AGL, GSD e sobreposicoes com o erro de
-  // posicionamento (GNSS ou RTK) e o relevo dentro da area (ou a tolerancia
-  // do seguimento); arrastamento por movimento; rota exportada segmento a
-  // segmento. Tudo puro em src/mission/uncertainty.js.
-  const posError = useMemo(
-    () => positioningError(aircraft, drone.rtk === true),
-    [aircraft, drone.rtk],
-  )
-  const relief = useMemo(() => {
-    if (!planOk || terrain.status !== 'ready' || !terrain.data?.elevationAt) return null
-    return terrainReliefRange(
-      planOk.waypoints,
-      terrain.data.elevationAt,
-      areaBasePoint ?? planOk.waypoints[0],
-    )
-  }, [planOk, terrain, areaBasePoint])
-  const tfActive = Boolean(terrainFollow.enabled && terrainResult && !terrainResult.error)
-  const uncertainty = useMemo(
-    () =>
-      planOk && sensor.type === 'camera'
-        ? uncertaintyIntervals({
-            sensor,
-            altitude: params.altitude,
-            gimbalPitch: gsdPitch,
-            spacing,
-            interval,
-            posError,
-            relief,
-            terrainFollow: tfActive,
-            toleranceM: terrainFollow.tolerance,
-          })
-        : null,
-    [
+  // o preflight do separador aberto: avisos, bloqueios e o que os alimenta
+  // (src/hooks/usePreflight.js)
+  const { preflight, aglWarn, uncertainty, blur, orbitTriggerWarn, exportBlocked, terrainActions } =
+    usePreflight({
+      baseLayout,
+      view3d,
+      blocks,
+      t,
+      missionMode,
+      plan,
+      corridorPlan,
+      circularPlan,
+      facePlan,
+      orbitPlan,
+      payload,
+      corridorReference,
+      circularReference,
+      perBlockBases,
+      zones,
+      refBase,
+      clearance,
+      terrain,
+      faceConfig,
+      circularConfig,
+      params,
+      inspectPoints,
+      terrainFollow,
+      terrainResult,
+      aircraft,
+      drone,
       planOk,
+      areaBasePoint,
       sensor,
-      params.altitude,
       gsdPitch,
       spacing,
       interval,
-      posError,
-      relief,
-      tfActive,
-      terrainFollow.tolerance,
-    ],
-  )
-  const blur = useMemo(() => (gsd != null ? motionBlur({ speed, gsdCm: gsd }) : null), [speed, gsd])
-  // Sobre a geometria que sai no KMZ do modo activo (view3d), e nao so na
-  // area: a orbita, a fachada, o corredor e a inspeccao ficavam sem nenhuma
-  // verificacao de rota, e foi na orbita que apareceu o troco inexecutavel.
-  const route = useMemo(() => {
-    if (!view3d?.waypoints?.length) return null
-    const v =
-      missionMode === 'orbit'
-        ? orbitConfig.speedMS
-        : missionMode === 'circular'
-          ? circularSpeed
-          : speed
-    return routeChecks(view3d.waypoints, {
-      speed: v,
-      maxClimbMS: aircraft.maxClimbMS ?? 5,
-      // as descidas contra a velocidade de descida da aeronave (M2-T13)
-      maxDescentMS: aircraft.maxDescentMS ?? aircraft.maxClimbMS ?? 5,
-      breaks: view3d.breaks ?? null,
-    })
-  }, [
-    view3d,
-    missionMode,
-    orbitConfig.speedMS,
-    circularSpeed,
-    speed,
-    aircraft.maxClimbMS,
-    aircraft.maxDescentMS,
-  ])
-
-  // Obturador na órbita (M2-E6): a corda voada entre fotos contra o
-  // intervalo mínimo do payload — o circular já avisava, a órbita não
-  const orbitTriggerWarn = useMemo(() => {
-    const s = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
-    if (!s || s.capture === 'video' || !(s.pointsPerOrbit > 0)) return null
-    return avisoIntervalo(2 * s.radiusM * Math.sin(Math.PI / s.pointsPerOrbit), orbitConfig.speedMS)
-  }, [orbitPlan, orbitConfig.speedMS, avisoIntervalo])
-
-  /* ----------------------------- Preflight ---------------------------- */
-  // Uma só lista, calculada a partir do mesmo estado que a exportação usa
-  // (src/mission/preflight.js). Os bloqueios desactivam o botão do KMZ.
-  // o erro do seguimento de terreno é um código (M3-C8); o preflight mostra-o
-  // na língua da interface
-  const terrainResultForPreflight = useMemo(() => {
-    if (!terrainResult?.error) return terrainResult
-    const key = `cp.terrain.err.${terrainResult.error}`
-    const msg = t(key, { msg: terrainResult.detail ?? '' })
-    return { ...terrainResult, error: msg === key ? String(terrainResult.error) : msg }
-  }, [terrainResult, t])
-  // primeiro voo de uma combinação aeronave + payload + modo sem KMZ confirmado
-  // na matriz (M3-U19): o preflight lembra o que confirmar
-  const unverified = useMemo(() => {
-    if (
-      isVerifiedFlight({
-        aircraftId: drone.aircraftId,
-        payloadId: drone.payloadId,
-        mode: missionMode,
-      })
-    )
-      return null
-    return { aircraft: aircraft.label, payload: payload.label, mode: t(`mode.${missionMode}`) }
-  }, [drone.aircraftId, drone.payloadId, missionMode, aircraft, payload, t])
-  const preflight = useMemo(
-    () =>
-      preflightFor(missionMode, {
-        plan,
-        blocks,
-        photoMode,
-        waypointStops: params.waypointStops,
-        terrainFollow,
-        terrainCovers,
-        terrainResultForPreflight,
-        areaBasePoint,
-        perBlockBases,
-        areaBaseDistance,
-        areaRouteOps,
-        baseLayout,
-        viewshedByBlock,
-        refBase,
-        zones,
-        vlosM,
-        speed,
-        batteryMin,
-        reservePct: split.reservePct,
-        aglWarn,
-        triggerWarn,
-        terrainDatum: terrain.data?.verticalDatum ?? null,
-        uncertainty,
-        blur,
-        route,
-        clearance,
-        terrainHoles,
-        transitClearanceInfo,
-        reference,
-        gimbal,
-        aglMaxM,
-        terrainRoute,
-        planErrorText,
-        blockFlightLabels,
-        routePoints: view3d?.waypoints ?? null,
-        flightOfIndex,
-        rthHeightM: rthInfo?.maxM ?? null,
-        unverified,
-        corridorPlan,
-        corridorTriggerWarn,
-        corridorPhotoMode: corridorConfig.photoMode,
-        corridorWaypointStops: corridorConfig.waypointStops,
-        corridorCovers,
-        corridorTerrain,
-        corridorReference,
-        corridorBase,
-        corridorBaseDistance,
-        corridorRouteOps,
-        corridorSpeed,
-        circularPlan,
-        circularTriggerWarn,
-        circularCovers,
-        circularTerrain,
-        circularReference,
-        circularBase,
-        circularBaseDistance,
-        circularRouteOps,
-        circularSpeed,
-        facePlan,
-        dsmLoaded,
-        faceClearance,
-        orbitPlan,
-        orbitTriggerWarn,
-        faceTakeoff,
-        orbitTakeoff,
-      }),
-    [
-      missionMode,
-      plan,
-      blocks,
-      photoMode,
-      params.waypointStops,
-      corridorConfig.photoMode,
-      corridorConfig.waypointStops,
-      terrainFollow,
-      terrainCovers,
-      terrainResultForPreflight,
-      areaBasePoint,
-      areaBaseDistance,
-      perBlockBases,
-      baseLayout,
-      viewshedByBlock,
-      refBase,
-      zones,
-      vlosM,
-      corridorBase,
-      circularBase,
-      circularBaseDistance,
+      gsd,
       speed,
-      batteryMin,
-      split.reservePct,
-      aglWarn,
-      triggerWarn,
-      corridorPlan,
-      corridorTriggerWarn,
-      corridorTerrain,
-      corridorReference,
-      corridorCovers,
-      corridorBaseDistance,
-      corridorSpeed,
-      circularPlan,
-      circularTriggerWarn,
-      circularReference,
-      circularTerrain,
-      circularCovers,
+      orbitConfig,
       circularSpeed,
-      facePlan,
-      orbitPlan,
-      faceTakeoff,
-      orbitTakeoff,
-      terrain.data,
-      clearance,
-      reference,
-      gimbal,
-      uncertainty,
-      blur,
-      route,
-      aglMaxM,
-      terrainRoute,
+      avisoIntervalo,
+      photoMode,
+      terrainCovers,
+      areaBaseDistance,
+      areaRouteOps,
+      viewshedByBlock,
+      vlosM,
+      batteryMin,
+      split,
+      triggerWarn,
       terrainHoles,
       transitClearanceInfo,
-      orbitTriggerWarn,
-      areaRouteOps,
-      planErrorText,
-      blockFlightLabels,
-      flightOfIndex,
+      reference,
       rthInfo,
-      view3d,
+      corridorTriggerWarn,
+      corridorConfig,
+      corridorCovers,
+      corridorTerrain,
+      corridorBase,
+      corridorBaseDistance,
+      corridorRouteOps,
+      corridorSpeed,
+      circularTriggerWarn,
+      circularCovers,
+      circularTerrain,
+      circularBase,
+      circularBaseDistance,
+      circularRouteOps,
       dsmLoaded,
       faceClearance,
-      unverified,
-      corridorRouteOps,
-      circularRouteOps,
-    ],
-  )
-  const exportBlocked = hasBlockers(preflight)
-  // sem relevo sobre a rota, o próprio item do preflight descarrega o global
-  const terrainActions = useMemo(() => {
-    const a = { label: t('cp.terrain.downloadGlobal'), onClick: handleLoadTerrain }
-    return {
-      'terrain-missing': a,
-      'terrain-download-error': a,
-      'terrain-file-outside': a,
-      'terrain-file-error': a,
-    }
-  }, [t, handleLoadTerrain])
+      faceTakeoff,
+      orbitTakeoff,
+      handleLoadTerrain,
+    })
 
   // Exportação da missão do SEPARADOR ABERTO, sempre atrás do preflight dela:
   // o botão do cabeçalho e os botões de cada painel. Antes o cabeçalho
