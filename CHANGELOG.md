@@ -8,7 +8,7 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ### Interno (repartição do `App.jsx`)
 
-- **O `App.jsx` passa de 3422 para 1640 linhas**, sem mudar o que a
+- **O `App.jsx` passa de 3422 para 1118 linhas**, sem mudar o que a
   aplicação faz: o que ligava os modos sai, tal como estava, para hooks em
   `src/hooks/` — aeronave, payload e bateria (`useHardware`), parâmetros de
   voo da área (`useAreaParams`), bases (`useBasesState`,
@@ -18,8 +18,15 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   campo e KML das bases (`useFieldSheets`), bacias de visão, mapa e
   atalhos da área (`useBaseViewsheds`, `useMapInteractions`,
   `useAreaTools`) —, e o cabeçalho, a área do mapa e as janelas passam a
-  componentes (`AppHeader`, `MapPane`, `AppOverlays`). A coluna dos
-  painéis fica no App: reparti-la pede agrupar as props por domínio.
+  componentes (`AppHeader`, `MapPane`, `AppOverlays`).
+- **Props e entradas agrupadas por domínio**: o resultado de cada hook tem
+  nome no App (`hw`, `area`, `corridor`, `routeView`, `preflightState`…)
+  e os painéis, os componentes do ecrã e os hooks recebem esses objectos
+  inteiros, desmontados nas primeiras linhas nos mesmos nomes de antes (o
+  painel da área passa de 113 props soltas para 10 grupos e 31 props; o
+  `usePreflight` de 69 entradas para 21). Acrescentar um valor a um painel
+  passa a mexer no hook e no painel, sem passar pelo App. A ligação ao
+  projecto gravado (`useProjectSession`) fica como estava.
 - **Impressões digitais no E2E**: um projecto fixo por modo (área com
   bases, área simples, corredor partido, face, órbita em vídeo e com várias
   inclinações, circular, inspecção) exportado pela interface; o resumo de

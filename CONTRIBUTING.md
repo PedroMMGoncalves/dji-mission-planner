@@ -17,7 +17,11 @@ de trazer para ser integrado. O texto está em português europeu
   (aeronave e bateria, bases, rota activa, verificações de segurança e
   preflight, fichas de campo); `src/App.jsx` só compõe, e o cabeçalho, a
   área do mapa e as janelas são componentes (`AppHeader`, `MapPane`,
-  `AppOverlays`).
+  `AppOverlays`). O resultado de cada hook tem nome no App (`hw`, `area`,
+  `corridor`…) e passa inteiro aos painéis e aos hooks que o usam, que o
+  desmontam nas primeiras linhas: um valor novo de um hook chega a um
+  painel sem tocar no App. Nunca ponha um destes objectos numa lista de
+  dependências (são novos em cada render): desmonte primeiro.
 
 ## Ciclo de desenvolvimento
 
