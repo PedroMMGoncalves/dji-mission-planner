@@ -21,17 +21,14 @@ import DisclaimerModal, {
 const Map3D = lazy(() => import('./components/Map3D.jsx'))
 const MissionReport = lazy(() => import('./components/MissionReport.jsx'))
 const ElevationProfile = lazy(() => import('./components/ElevationProfile.jsx'))
-import { addBase, nearestBase } from './mission/bases.js'
-import {
-  bufferDistanceMeters,
-  findOptimalDirection,
-  ringToPolygon,
-  squareFlightTimeS,
-} from './utils/geo.js'
+import { nearestBase } from './mission/bases.js'
 import { MissionExportError } from './utils/exporters.js'
 import { useHardware } from './hooks/useHardware.js'
 import { useAreaParams } from './hooks/useAreaParams.js'
 import { useBaseActions, useBasesState } from './hooks/useBases.js'
+import { useAreaTools } from './hooks/useAreaTools.js'
+import { useMapInteractions } from './hooks/useMapInteractions.js'
+import { useBaseViewsheds } from './hooks/useBaseViewsheds.js'
 import { useFieldSheets } from './hooks/useFieldSheets.js'
 import { useMissionOps } from './hooks/useMissionOps.js'
 import { useRouteChecks } from './hooks/useRouteChecks.js'
@@ -47,8 +44,6 @@ import { useFaceMission } from './hooks/useFaceMission.js'
 import { useInspection } from './hooks/useInspection.js'
 import { useTerrain } from './hooks/useTerrain.js'
 import { useProjectSession } from './hooks/useProjectSession.js'
-import { terrainIdentity, useViewsheds } from './hooks/useViewsheds.js'
-import { viewshedJobs, viewshedTerrainModel } from './mission/viewshedPlan.js'
 import { DEFAULT_MISSION_NAME } from './mission/defaults.js'
 import { checkFaceClearance } from './utils/faceMode.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from './utils/units.js'
@@ -751,64 +746,23 @@ function AppInner({ lang, setLang }) {
     split,
   })
 
-  // Bacias de visão: cada bloco visto dos olhos do operador no ponto da sua
-  // base (src/mission/viewshedPlan.js), na área dividida em blocos com bases
-  // e relevo sobre a área. A cota do drone é a do KMZ: com seguimento de
-  // terreno relevo + AGL, sem ele a cota da zona do bloco + altura. Calculado
-  // em fatias, depois de uma pausa nas edições (useViewsheds).
-  const viewshedOn =
-    missionMode === 'area' && perBlockBases && terrain.status === 'ready' && terrainCovers
-  const viewTerrain = useMemo(
-    () =>
-      viewshedOn
-        ? viewshedTerrainModel(terrain.data, {
-            surface: terrain.data?.source === 'file' ? demSurface : 'dtm',
-            obstacleM,
-          })
-        : null,
-    [viewshedOn, terrain.data, demSurface, obstacleM],
-  )
-  const viewshedTf = Boolean(terrainFollow.enabled && terrainResult && !terrainResult.error)
-  const viewJobs = useMemo(
-    () =>
-      viewshedOn && viewTerrain
-        ? viewshedJobs({
-            blocks,
-            layout: baseLayout,
-            bases,
-            zones,
-            altitudeM: params.altitude,
-            terrainFollow: viewshedTf,
-            terrainKey: terrainIdentity(terrain.data),
-            eyeHeightM: equipment.eyeHeightM,
-            antennaHeightM: equipment.antennaHeightM,
-            obstacleM: viewTerrain.obstacleM,
-            resolutionM: viewTerrain.resolutionM,
-          })
-        : [],
-    [
-      viewshedOn,
-      viewTerrain,
-      blocks,
-      baseLayout,
-      bases,
-      zones,
-      params.altitude,
-      viewshedTf,
-      terrain.data,
-      equipment.eyeHeightM,
-      equipment.antennaHeightM,
-    ],
-  )
-  const viewsheds = useViewsheds({
-    jobs: viewJobs,
-    elevationAt: viewshedOn ? (terrain.data?.elevationAt ?? null) : null,
-    eyeHeightM: equipment.eyeHeightM,
-    antennaHeightM: equipment.antennaHeightM,
-    obstacleM: viewTerrain?.obstacleM ?? 0,
-    resolutionM: viewTerrain?.resolutionM ?? 0,
+  // bacias de visão dos blocos com bases (src/hooks/useBaseViewsheds.js)
+  const { viewTerrain, viewshedTf, viewsheds, viewshedByBlock } = useBaseViewsheds({
+    bases,
+    missionMode,
+    perBlockBases,
+    terrain,
+    terrainCovers,
+    demSurface,
+    obstacleM,
+    terrainFollow,
+    terrainResult,
+    blocks,
+    baseLayout,
+    zones,
+    params,
+    equipment,
   })
-  const viewshedByBlock = viewJobs.length ? viewsheds.byBlock : null
 
   // bases: zonas no painel, arrasto, remoção, raio, «Propor bases» e
   // atribuição de blocos (src/hooks/useBases.js)
@@ -865,85 +819,43 @@ function AppInner({ lang, setLang }) {
     overlayOpen,
   })
 
-  const handleMapClick = useCallback(
-    (lonlat) => {
-      if (handleAreaClick(lonlat)) return
-      if (mode === 'base') {
-        // "Marcar base" acrescenta uma base (A, B, C...) e selecciona-a
-        const res = addBase(bases, lonlat)
-        if (res.base) pushHistory()
-        setBases(res.bases)
-        if (res.base) setSelectedBaseId(res.base.id)
-        setMode('idle')
-      } else if (mode === 'face' || mode === 'corridor') {
-        setDraftVertices((d) => [...d, lonlat])
-      } else if (mode === 'orbit') {
-        setOrbitConfig((c) => ({ ...c, poi: lonlat }))
-        setMode('idle')
-      } else if (mode === 'inspect') {
-        addInspectPoint(lonlat)
-      }
-    },
-    [
-      mode,
+  // cliques, duplo clique e teclado no mapa, troca de separador
+  // (src/hooks/useMapInteractions.js)
+  const { handleMapClick, changeMissionMode, handleFinishAny, removeLastDraftVertex } =
+    useMapInteractions({
       handleAreaClick,
-      addInspectPoint,
-      setOrbitConfig,
+      mode,
       bases,
       pushHistory,
       setBases,
       setSelectedBaseId,
-    ],
-  )
+      setMode,
+      setDraftVertices,
+      setOrbitConfig,
+      addInspectPoint,
+      setMissionMode,
+      enableCircular,
+      handleFinishFace,
+      handleFinishCorridor,
+      handleFinishDraw,
+    })
 
-  /* ---------------------- Interacções comuns -------------------------- */
-  const changeMissionMode = useCallback(
-    (m) => {
-      setMissionMode(m)
-      setMode('idle')
-      setDraftVertices([])
-      // abrir o separador circular é escolher essa missão: passa a existir
-      if (m === 'circular') enableCircular()
-    },
-    [enableCircular],
-  )
-
-  // o duplo clique no mapa conclui o desenho activo (área, baseline ou eixo)
-  const handleFinishAny = useCallback(() => {
-    if (mode === 'face') handleFinishFace()
-    else if (mode === 'corridor') handleFinishCorridor()
-    else handleFinishDraw()
-  }, [mode, handleFinishFace, handleFinishCorridor, handleFinishDraw])
-
-  const removeLastDraftVertex = useCallback(() => {
-    setDraftVertices((d) => d.slice(0, -1))
-  }, [])
-
-  // Teclado nos desenhos (polígono, linha de base, eixo): Backspace/Delete
-  // ou Ctrl+Z anulam o último ponto (o Ctrl+Z das edições da área fica de
-  // fora enquanto se desenha), Escape cancela o desenho (ignorado quando o
-  // foco está num input)
-  useEffect(() => {
-    if (mode !== 'draw' && mode !== 'face' && mode !== 'corridor') return
-    const onKey = (e) => {
-      const tag = e.target?.tagName
-      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
-      const undo = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z'
-      if (e.key === 'Backspace' || e.key === 'Delete' || undo) {
-        e.preventDefault()
-        removeLastDraftVertex()
-      } else if (e.key === 'Escape') {
-        setMode('idle')
-        setDraftVertices([])
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [mode, removeLastDraftVertex])
-
-  const applySlopeAngle = useCallback(() => {
-    if (slopeHint) setParams((p) => ({ ...p, angle: Math.round(slopeHint.contourAzimuthDeg) }))
-  }, [slopeHint, setParams])
+  // atalhos da área: direcção das linhas, margem em metros, minutos de um
+  // quadrado (src/hooks/useAreaTools.js)
+  const { applySlopeAngle, bufferM, squareMinutes, setAngleRelative, setAngleOptimal } =
+    useAreaTools({
+      slopeHint,
+      setParams,
+      ring,
+      params,
+      holes,
+      speed,
+      spacing,
+      photoMode,
+      interval,
+      refAzimuth,
+      validation,
+    })
 
   // a rota que sairia no KMZ do separador aberto, a vista 3D, as fotos no
   // mapa e no 3D e os blocos do perfil (src/hooks/useActiveRoute.js)
@@ -1243,29 +1155,6 @@ function AppInner({ lang, setLang }) {
     t,
   })
 
-  // a margem em metros do contorno (M3-U22: o Pilot 2 e o UgCS pedem metros)
-  const bufferM = useMemo(
-    () =>
-      ring && params.bufferPct > 0
-        ? bufferDistanceMeters(ringToPolygon(ring, holes), params.bufferPct)
-        : 0,
-    [ring, holes, params.bufferPct],
-  )
-  // minutos de um quadrado com os parâmetros actuais (M3-U20)
-  const squareMinutes = useCallback(
-    (sideM) =>
-      squareFlightTimeS(sideM, {
-        speed,
-        spacingM: spacing,
-        passes: (params.crosshatch ? 2 : 1) + (params.includeNadir ? 1 : 0),
-        stopEveryM: photoMode === 'waypoint' && params.waypointStops === 'all' ? interval : 0,
-        overshootM: params.overshoot,
-        tieLine: params.tieLine,
-        bufferM,
-      }) / 60,
-    [speed, spacing, params, photoMode, interval, bufferM],
-  )
-
   // Os blocos sob demanda (vista 3D, relatório, perfil) pedem-se depois do
   // arranque, para ficarem na cache do browser antes de se ir para o campo
   // sem rede (M3-C4); uma falha aqui não é erro: a janela volta a pedi-los
@@ -1279,22 +1168,6 @@ function AppInner({ lang, setLang }) {
     })
     return () => cancel(id)
   }, [])
-
-  // Atalhos de direção das linhas relativamente ao bloco/aresta de referência
-  const setAngleRelative = useCallback(
-    (offsetDeg) => {
-      if (refAzimuth == null) return
-      setParams((p) => ({ ...p, angle: Math.round((refAzimuth + offsetDeg) % 360) }))
-    },
-    [refAzimuth, setParams],
-  )
-
-  // Direção ótima (T3.2): menor número de troços dentro do polígono real
-  const setAngleOptimal = useCallback(() => {
-    if (!ring || !validation.valid) return
-    const best = findOptimalDirection(ring, spacing)
-    if (best != null) setParams((p) => ({ ...p, angle: Math.round(best) }))
-  }, [ring, validation.valid, spacing, setParams])
 
   /* ----------------------------- Layout ------------------------------ */
   if (view === 'checklist') {
