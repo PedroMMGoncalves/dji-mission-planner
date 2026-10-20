@@ -12,9 +12,13 @@
  */
 export function finishDraft(draft, min, eps = 1e-6) {
   const pts = Array.isArray(draft) ? draft : []
-  const clean = pts.filter(
-    (v, i) =>
-      i === 0 || Math.abs(v[0] - pts[i - 1][0]) > eps || Math.abs(v[1] - pts[i - 1][1]) > eps,
-  )
+  // compara com o último vértice que ficou, e não com o clique anterior:
+  // três cliques no mesmo sítio, o 2.º para um lado e o 3.º para o outro,
+  // deixavam dois vértices quase iguais seguidos (um eixo de um só ponto)
+  const clean = []
+  for (const v of pts) {
+    const last = clean[clean.length - 1]
+    if (!last || Math.abs(v[0] - last[0]) > eps || Math.abs(v[1] - last[1]) > eps) clean.push(v)
+  }
   return { ok: clean.length >= min, clean }
 }
