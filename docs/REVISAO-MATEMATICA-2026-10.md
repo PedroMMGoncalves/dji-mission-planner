@@ -20,7 +20,7 @@ todas as distâncias da app), não para o elipsóide — assim o que se pede
 
 ## 1. Método
 
-Três agentes de revisão (Claude Opus 5.5), cada um com um domínio, a ler
+Três agentes de revisão, cada um com um domínio, a ler
 primeiro o `METODOS.md` (o método pretendido e as referências) e depois o
 código função a função, a confrontar (a) código contra METODOS, (b) os
 dois contra a prática fotogramétrica, (c) casos-limite numéricos e (d) a

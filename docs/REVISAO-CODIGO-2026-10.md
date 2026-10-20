@@ -36,7 +36,7 @@ repetem aqui.
 
 ## 1. Método
 
-Três agentes de revisão (Claude Opus 5.5), um por domínio, sem alterarem o
+Três agentes de revisão, um por domínio, sem alterarem o
 repositório. O agente do código correu a aplicação num servidor Vite isolado
 com o Chromium do Playwright (rede exterior cortada, um tile de relevo plano
 servido localmente) e confirmou cada achado que bloqueia no browser; o dos

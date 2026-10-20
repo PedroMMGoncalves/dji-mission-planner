@@ -29,7 +29,7 @@ para quando houver ficheiros reais.
 - **Sem ficheiros reais do Pilot 2 à mão nesta revisão** (os 81 KMZ do M300
   ficaram no arquivo do LNEG). Onde um ficheiro real é necessário para
   decidir, está dito.
-- Dois agentes de revisão (Fable: WPML/KMZ elemento a elemento; Opus: KML,
+- Dois agentes de revisão (o primeiro: WPML/KMZ elemento a elemento; o segundo: KML,
   ZIPs e exportação por base), só de leitura, com exemplos gerados de todos
   os modos × aeronaves (M3E, M4T grande-angular e térmica, M300+P1,
   M300+Mapper+, custom) e um inventário automático de pares pai→filho,
