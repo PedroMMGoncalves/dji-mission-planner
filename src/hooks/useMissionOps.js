@@ -13,30 +13,30 @@ import { blockWorstTransitM, blockWorstVlosM } from '../mission/takeoffZones.js'
 import { aggregatePlans, distanceToArea } from '../utils/geo.js'
 
 export function useMissionOps({
-  baseLayout,
-  refBase,
-  blocks,
-  ring,
-  zones,
-  equipment,
-  planOk,
-  speed,
-  corridorPlan,
-  corridorSpeed,
+  hw,
+  basesState,
+  areaParams,
+  corridor,
+  orbit,
+  face,
+  geom,
+  corridorOnTerrain,
+  area,
+  circular,
   corridorBase,
   circularBase,
-  circularPlan,
-  circularSpeed,
-  drone,
-  missionBatteryType,
-  circularBlocks,
-  bases,
   missionMode,
-  facePlan,
-  orbitPlan,
-  batteryMin,
-  split,
 }) {
+  const { drone, equipment, missionBatteryType, batteryMin } = hw
+  const { bases } = basesState
+  const { speed } = areaParams
+  const { corridorSpeed } = corridor
+  const { orbitPlan } = orbit
+  const { facePlan } = face
+  const { ring, split } = geom
+  const { corridorRoute: corridorPlan } = corridorOnTerrain
+  const { planOk, blocks, zones, baseLayout, refBase } = area
+  const { circularSpeed, circularPlan, circularBlocks } = circular
   // Base de referência da área numa rota única (a mais próxima dela) e a
   // sua distância; com blocos, cada bloco tem a sua (baseLayout)
   const areaBasePoint = refBase?.point ?? null

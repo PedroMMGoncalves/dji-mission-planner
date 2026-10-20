@@ -11,21 +11,23 @@ import { rthByFlight, transitLegs, worstTransit } from '../mission/transitLegs.j
 import { DEFAULT_TAKEOFF_SECURITY_HEIGHT_M, defaultRthHeightM } from '../utils/exporters.js'
 
 export function useRouteChecks({
-  terrain,
-  view3d,
-  bases,
-  terrainResult,
+  basesState,
+  areaParams,
+  terrainState,
+  area,
+  ops,
+  routeView,
   missionMode,
-  areaBasePoint,
   corridorBase,
   circularBase,
-  perBlockBases,
-  blocks,
-  baseLayout,
-  blockRefs,
   safety,
-  params,
 }) {
+  const { bases } = basesState
+  const { params } = areaParams
+  const { terrain } = terrainState
+  const { blocks, terrainResult, baseLayout, blockRefs } = area
+  const { areaBasePoint, perBlockBases } = ops
+  const { view3d } = routeView
   // Pior folga ao solo da rota que sairia no KMZ, sobre o relevo carregado.
   // E daqui que o preflight bloqueia uma rota que entra no terreno.
   const clearance = useMemo(() => {

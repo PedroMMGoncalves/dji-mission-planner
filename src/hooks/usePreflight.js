@@ -22,76 +22,67 @@ import {
 import { terrainErrorText } from '../utils/appError.js'
 
 export function usePreflight({
-  baseLayout,
-  view3d,
-  blocks,
+  hw,
+  areaParams,
+  corridor,
+  orbit,
+  face,
+  inspect,
+  geom,
+  terrainState,
+  corridorOnTerrain,
+  area,
+  circular,
+  ops,
+  viewshedState,
+  routeView,
+  safetyChecks,
   t,
   missionMode,
-  plan,
-  corridorPlan,
-  circularPlan,
-  facePlan,
-  orbitPlan,
-  payload,
-  corridorReference,
-  circularReference,
-  perBlockBases,
-  zones,
-  refBase,
-  clearance,
-  terrain,
-  faceConfig,
-  circularConfig,
-  params,
-  inspectPoints,
-  terrainFollow,
-  terrainResult,
-  aircraft,
-  drone,
-  planOk,
-  areaBasePoint,
-  sensor,
-  gsdPitch,
-  spacing,
-  interval,
-  gsd,
-  speed,
-  orbitConfig,
-  circularSpeed,
-  avisoIntervalo,
-  photoMode,
-  terrainCovers,
-  areaBaseDistance,
-  areaRouteOps,
-  viewshedByBlock,
-  vlosM,
-  batteryMin,
-  split,
-  triggerWarn,
-  terrainHoles,
-  transitClearanceInfo,
-  reference,
-  rthInfo,
-  corridorTriggerWarn,
-  corridorConfig,
-  corridorCovers,
-  corridorTerrain,
   corridorBase,
-  corridorBaseDistance,
-  corridorRouteOps,
-  corridorSpeed,
-  circularTriggerWarn,
-  circularCovers,
-  circularTerrain,
   circularBase,
-  circularBaseDistance,
-  circularRouteOps,
   dsmLoaded,
   faceClearance,
-  faceTakeoff,
-  orbitTakeoff,
-  handleLoadTerrain,
 }) {
+  const { drone, aircraft, payload, vlosM, sensor, batteryMin } = hw
+  const { params, speed, spacing, interval, gsdPitch, gsd, triggerWarn, avisoIntervalo } =
+    areaParams
+  const { corridorConfig, corridorSpeed, corridorTriggerWarn } = corridor
+  const { orbitConfig, orbitPlan } = orbit
+  const { faceConfig, facePlan } = face
+  const { inspectPoints } = inspect
+  const { split } = geom
+  const { terrain, terrainFollow, handleLoadTerrain, terrainCovers } = terrainState
+  const {
+    corridorRoute: corridorPlan,
+    corridorTerrain,
+    corridorReference,
+    corridorCovers,
+    corridorBaseDistance,
+  } = corridorOnTerrain
+  const { photoMode, plan, planOk, blocks, terrainResult, reference, zones, baseLayout, refBase } =
+    area
+  const {
+    circularConfig,
+    circularSpeed,
+    circularTriggerWarn,
+    circularPlan,
+    circularReference,
+    circularTerrain,
+    circularCovers,
+  } = circular
+  const {
+    areaBasePoint,
+    perBlockBases,
+    areaBaseDistance,
+    areaRouteOps,
+    corridorRouteOps,
+    circularRouteOps,
+    circularBaseDistance,
+  } = ops
+  const { viewshedByBlock } = viewshedState
+  const { faceTakeoff, orbitTakeoff, view3d } = routeView
+  const { clearance, terrainHoles, transitClearanceInfo, rthInfo } = safetyChecks
   // Rótulo do voo de cada bloco (o do mapa e do ficheiro): um só
   // identificador visível no cartão, no preflight e nas fichas (M3-U4)
   const blockFlightLabels = useMemo(() => {

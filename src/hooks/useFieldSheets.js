@@ -22,54 +22,47 @@ import {
 import { computeGSD } from '../utils/geo.js'
 
 export function useFieldSheets({
+  hw,
+  areaParams,
+  corridor,
+  geom,
+  corridorOnTerrain,
+  area,
+  circular,
+  ops,
+  viewshedState,
+  baseActions,
+  routeView,
+  safetyChecks,
   missionMode,
-  corridorFlight,
-  corridorSpeed,
-  sensor,
-  circularFlight,
-  circularSpeed,
-  circularConfig,
-  params,
-  speed,
-  gsd,
-  perBlockBases,
-  refBase,
-  zones,
-  areaRouteOps,
-  planOk,
-  exportBaseName,
   corridorBase,
-  corridorReference,
-  corridorRouteOps,
-  modeStats,
   circularBase,
-  circularReference,
-  circularRouteOps,
-  equipment,
-  view3d,
-  vlosM,
-  rthInfo,
-  batteryMin,
-  drone,
-  missionBatteryType,
   t,
-  baseRows,
-  baseLayout,
-  blocks,
-  flightFiles,
-  viewshedByBlock,
-  viewTerrain,
-  terrainResult,
-  holes,
-  gridCells,
-  importParts,
-  disabledTiles,
   runExport,
   missionName,
-  areaSafeName,
-  spacing,
-  ring,
 }) {
+  const { drone, equipment, vlosM, sensor, missionBatteryType, batteryMin } = hw
+  const { params, speed, spacing, gsd } = areaParams
+  const { corridorSpeed, corridorFlight } = corridor
+  const { ring, holes, importParts, gridCells, disabledTiles } = geom
+  const { corridorReference } = corridorOnTerrain
+  const {
+    planOk,
+    blocks,
+    terrainResult,
+    zones,
+    baseLayout,
+    refBase,
+    flightFiles,
+    exportBaseName,
+    safeName: areaSafeName,
+  } = area
+  const { circularConfig, circularSpeed, circularFlight, circularReference } = circular
+  const { perBlockBases, areaRouteOps, corridorRouteOps, circularRouteOps, modeStats } = ops
+  const { viewTerrain, viewshedByBlock } = viewshedState
+  const { baseRows } = baseActions
+  const { view3d } = routeView
+  const { rthInfo } = safetyChecks
   // os parâmetros que o piloto confere no Pilot 2, na ficha (M3-U10)
   // (no corredor, a altura e as sobreposições que o corredor usa: as suas ou as da área)
   const sheetParams = useMemo(
