@@ -8,22 +8,26 @@ import { useCallback, useEffect } from 'react'
 import { addBase } from '../mission/bases.js'
 
 export function useMapInteractions({
-  handleAreaClick,
+  basesState,
+  corridor,
+  orbit,
+  face,
+  inspect,
+  geom,
+  circular,
   mode,
-  bases,
-  pushHistory,
-  setBases,
-  setSelectedBaseId,
   setMode,
   setDraftVertices,
-  setOrbitConfig,
-  addInspectPoint,
   setMissionMode,
-  enableCircular,
-  handleFinishFace,
-  handleFinishCorridor,
-  handleFinishDraw,
 }) {
+  const { bases, setBases, setSelectedBaseId } = basesState
+  const { handleFinishCorridor } = corridor
+  const { setOrbitConfig } = orbit
+  const { handleFinishFace } = face
+  const { addInspectPoint } = inspect
+  const { handleAreaClick, pushHistory, handleFinishDraw } = geom
+  const { enableCircular } = circular
+
   const handleMapClick = useCallback(
     (lonlat) => {
       if (handleAreaClick(lonlat)) return

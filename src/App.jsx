@@ -738,20 +738,14 @@ function AppInner({ lang, setLang }) {
 
   // bacias de visão dos blocos com bases (src/hooks/useBaseViewsheds.js)
   const viewshedState = useBaseViewsheds({
-    bases,
+    hw,
+    basesState,
+    areaParams,
+    terrainState,
+    area,
+    ops,
     missionMode,
-    perBlockBases,
-    terrain,
-    terrainCovers,
-    demSurface,
     obstacleM,
-    terrainFollow,
-    terrainResult,
-    blocks,
-    baseLayout,
-    zones,
-    params,
-    equipment,
   })
   const { viewTerrain, viewshedTf, viewsheds, viewshedByBlock } = viewshedState
 
@@ -760,38 +754,19 @@ function AppInner({ lang, setLang }) {
   const overlayOpen =
     show3d || showProfile || showHelp || showReport || showSettings || Boolean(disclaimer)
   const baseActions = useBaseActions({
-    bases,
-    setBases,
-    blockBaseState,
-    setBlockBaseState,
-    selectedBaseId,
-    setSelectedBaseId,
-    setBaseProposal,
-    layoutKey,
-    layoutCells,
-    ring,
-    manualLost,
-    blockBaseEffective,
-    blocks,
-    zones,
-    baseLayout,
-    refBase,
-    disabledTiles,
-    toggleTile,
-    pushHistory,
+    hw,
+    basesState,
+    geom,
+    terrainState,
+    area,
+    viewshedState,
     missionMode,
     mode,
     setMode,
     corridorBase,
     circularBase,
-    terrain,
-    terrainCovers,
-    demSurface,
     obstacleM,
-    viewshedTf,
     altitudeM: params.altitude,
-    equipment,
-    vlosM,
     overlayOpen,
   })
   const {
@@ -814,67 +789,39 @@ function AppInner({ lang, setLang }) {
   // cliques, duplo clique e teclado no mapa, troca de separador
   // (src/hooks/useMapInteractions.js)
   const mapActions = useMapInteractions({
-    handleAreaClick,
+    basesState,
+    corridor,
+    orbit,
+    face,
+    inspect,
+    geom,
+    circular,
     mode,
-    bases,
-    pushHistory,
-    setBases,
-    setSelectedBaseId,
     setMode,
     setDraftVertices,
-    setOrbitConfig,
-    addInspectPoint,
     setMissionMode,
-    enableCircular,
-    handleFinishFace,
-    handleFinishCorridor,
-    handleFinishDraw,
   })
   const { handleMapClick, changeMissionMode, handleFinishAny, removeLastDraftVertex } = mapActions
 
   // atalhos da área: direcção das linhas, margem em metros, minutos de um
   // quadrado (src/hooks/useAreaTools.js)
-  const areaTools = useAreaTools({
-    slopeHint,
-    setParams,
-    ring,
-    params,
-    holes,
-    speed,
-    spacing,
-    photoMode,
-    interval,
-    refAzimuth,
-    validation,
-  })
+  const areaTools = useAreaTools({ areaParams, geom, terrainState, area })
   const { applySlopeAngle, bufferM, squareMinutes, setAngleRelative, setAngleOptimal } = areaTools
 
   // a rota que sairia no KMZ do separador aberto, a vista 3D, as fotos no
   // mapa e no 3D e os blocos do perfil (src/hooks/useActiveRoute.js)
   const routeView = useActiveRoute({
+    hw,
+    basesState,
+    areaParams,
+    corridor,
+    orbit,
+    face,
+    terrainState,
+    corridorOnTerrain,
+    area,
+    circular,
     missionMode,
-    terrain,
-    facePlan,
-    faceConfig,
-    orbitPlan,
-    orbitConfig,
-    corridorPlan,
-    corridorReference,
-    corridorFlight,
-    corridorConfig,
-    corridorPreview,
-    circularPlan,
-    circularReference,
-    planOk,
-    terrainResult,
-    reference,
-    blockRefs,
-    blocks,
-    baseLayout,
-    photoPoints,
-    params,
-    bases,
-    zoneConfig,
     setRouteBox,
   })
   const {

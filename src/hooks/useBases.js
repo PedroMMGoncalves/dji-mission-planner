@@ -67,40 +67,45 @@ export function useBasesState() {
 }
 
 export function useBaseActions({
-  bases,
-  setBases,
-  blockBaseState,
-  setBlockBaseState,
-  selectedBaseId,
-  setSelectedBaseId,
-  setBaseProposal,
-  layoutKey,
-  layoutCells,
-  ring,
-  manualLost,
-  blockBaseEffective,
-  blocks,
-  zones,
-  baseLayout,
-  refBase,
-  disabledTiles,
-  toggleTile,
-  pushHistory,
+  hw,
+  basesState,
+  geom,
+  terrainState,
+  area,
+  viewshedState,
   missionMode,
   mode,
   setMode,
   corridorBase,
   circularBase,
-  terrain,
-  terrainCovers,
-  demSurface,
   obstacleM,
-  viewshedTf,
   altitudeM,
-  equipment,
-  vlosM,
   overlayOpen,
 }) {
+  const { equipment, vlosM } = hw
+  const {
+    bases,
+    setBases,
+    blockBaseState,
+    setBlockBaseState,
+    selectedBaseId,
+    setSelectedBaseId,
+    setBaseProposal,
+  } = basesState
+  const { ring, disabledTiles, toggleTile, pushHistory } = geom
+  const { terrain, terrainCovers, demSurface } = terrainState
+  const {
+    layoutKey,
+    layoutCells,
+    manualLost,
+    blockBase: blockBaseEffective,
+    blocks,
+    zones,
+    baseLayout,
+    refBase,
+  } = area
+  const { viewshedTf } = viewshedState
+
   // Disposição de blocos nova: as atribuições lidas de um projecto adoptam-na
   // (key null); refeito o mosaico, ficam as que passaram por sobreposição
   // (calculadas em useAreaMission) e a contagem das que se perderam. Sem

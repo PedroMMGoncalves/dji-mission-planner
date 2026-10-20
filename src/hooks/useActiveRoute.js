@@ -13,31 +13,30 @@ import { blockRing } from '../mission/baseLayout.js'
 import { bboxOfPoints } from '../mission/corridorTerrain.js'
 
 export function useActiveRoute({
+  hw,
+  basesState,
+  areaParams,
+  corridor,
+  orbit,
+  face,
+  terrainState,
+  corridorOnTerrain,
+  area,
+  circular,
   missionMode,
-  terrain,
-  facePlan,
-  faceConfig,
-  orbitPlan,
-  orbitConfig,
-  corridorPlan,
-  corridorReference,
-  corridorFlight,
-  corridorConfig,
-  corridorPreview,
-  circularPlan,
-  circularReference,
-  planOk,
-  terrainResult,
-  reference,
-  blockRefs,
-  blocks,
-  baseLayout,
-  photoPoints,
-  params,
-  bases,
-  zoneConfig,
   setRouteBox,
 }) {
+  const { zoneConfig } = hw
+  const { bases } = basesState
+  const { params } = areaParams
+  const { corridorFlight, corridorConfig, corridorPreview } = corridor
+  const { orbitPlan, orbitConfig } = orbit
+  const { facePlan, faceConfig } = face
+  const { terrain } = terrainState
+  const { corridorRoute: corridorPlan, corridorReference } = corridorOnTerrain
+  const { planOk, terrainResult, reference, blockRefs, blocks, baseLayout, photoPoints } = area
+  const { circularPlan, circularReference } = circular
+
   // E1.4: a vista 3D cobre o modo activo — grelha (com terrain follow),
   // passagens de fachada empilhadas ou anéis de órbita às suas alturas.
   // refElev ancora as alturas relativas: pé da face / solo do POI / base.

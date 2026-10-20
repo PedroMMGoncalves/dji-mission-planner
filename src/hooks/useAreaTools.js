@@ -12,19 +12,12 @@ import {
   squareFlightTimeS,
 } from '../utils/geo.js'
 
-export function useAreaTools({
-  slopeHint,
-  setParams,
-  ring,
-  params,
-  holes,
-  speed,
-  spacing,
-  photoMode,
-  interval,
-  refAzimuth,
-  validation,
-}) {
+export function useAreaTools({ areaParams, geom, terrainState, area }) {
+  const { setParams, params, speed, spacing, interval } = areaParams
+  const { ring, holes, refAzimuth, validation } = geom
+  const { slopeHint } = terrainState
+  const { photoMode } = area
+
   const applySlopeAngle = useCallback(() => {
     if (slopeHint) setParams((p) => ({ ...p, angle: Math.round(slopeHint.contourAzimuthDeg) }))
   }, [slopeHint, setParams])

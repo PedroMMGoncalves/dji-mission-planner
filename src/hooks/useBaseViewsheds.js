@@ -10,21 +10,22 @@ import { terrainIdentity, useViewsheds } from './useViewsheds.js'
 import { viewshedJobs, viewshedTerrainModel } from '../mission/viewshedPlan.js'
 
 export function useBaseViewsheds({
-  bases,
+  hw,
+  basesState,
+  areaParams,
+  terrainState,
+  area,
+  ops,
   missionMode,
-  perBlockBases,
-  terrain,
-  terrainCovers,
-  demSurface,
   obstacleM,
-  terrainFollow,
-  terrainResult,
-  blocks,
-  baseLayout,
-  zones,
-  params,
-  equipment,
 }) {
+  const { equipment } = hw
+  const { bases } = basesState
+  const { params } = areaParams
+  const { terrain, terrainCovers, demSurface, terrainFollow } = terrainState
+  const { terrainResult, blocks, baseLayout, zones } = area
+  const { perBlockBases } = ops
+
   // Bacias de visão: cada bloco visto dos olhos do operador no ponto da sua
   // base (src/mission/viewshedPlan.js), na área dividida em blocos com bases
   // e relevo sobre a área. A cota do drone é a do KMZ: com seguimento de
