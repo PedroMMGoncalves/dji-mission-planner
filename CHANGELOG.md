@@ -24,6 +24,13 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   em cada ponto e tira uma foto por inclinação, e a linha «gimbal por nível»
   repetia a primeira inclinação: passam a dizer a paragem e as inclinações
   de cada ponto; a nota da face idem. Só texto: os ficheiros não mudam.
+- **Checklist de campo: o previsto não é o voado.** «Importar blocos do
+  plano» escrevia o tempo previsto de cada voo na coluna «Duração (min)»,
+  que é a do tempo realmente voado, e o registo exportado ou impresso
+  mostrava tempos planeados como se tivessem sido voados. O registo de
+  voos ganha a coluna «Previsto (min)», antes da duração, que a importação
+  preenche; a duração fica em branco para o piloto. As checklists gravadas
+  antes abrem com a coluna nova vazia; o JSON e a impressão levam-na.
 
 ### Interno (repartição do `App.jsx`)
 

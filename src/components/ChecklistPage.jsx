@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLang, useT } from '../i18n.jsx'
-import { groupApplies } from '../data/checklist.js'
+import { flightLogRows, groupApplies } from '../data/checklist.js'
 import BaseFieldSheets from './BaseFieldSheets.jsx'
 import { rthRangeLabel } from '../mission/transitLegs.js'
 import { safeFileStem } from '../utils/exporters.js'
@@ -916,6 +916,10 @@ const COLS_VOO = [
   { key: 'n', label: bi('#', '#'), w: 'w-12' },
   { key: 'inicio', label: bi('Hora início', 'Start time'), w: 'w-24' },
   { key: 'fim', label: bi('Hora fim', 'End time'), w: 'w-24' },
+  // o tempo previsto no plano (importado dos blocos) e, ao lado, o voado,
+  // que o piloto escreve; uma checklist gravada antes desta coluna abre
+  // com ela vazia (linhaVazia preenche as colunas em falta)
+  { key: 'previsto', label: bi('Previsto (min)', 'Planned (min)'), w: 'w-24' },
   { key: 'duracao', label: bi('Duração (min)', 'Duration (min)'), w: 'w-24' },
   { key: 'baterias', label: bi('Bateria(s)', 'Battery(ies)'), w: 'w-28' },
   { key: 'area', label: bi('Área (ha)', 'Area (ha)'), w: 'w-24' },
@@ -1365,18 +1369,11 @@ export default function ChecklistPage({
 
   const importarBlocos = () => {
     if (!blocks || blocks.length === 0) return
-    // pela ordem de voo, com o rótulo do voo (A-1) e o trânsito da base
-    const voo = (b) => flightLabels?.[b.id] ?? null
-    const ordenados = [...blocks].sort(
-      (a, b) => (voo(a)?.flight ?? a.id) - (voo(b)?.flight ?? b.id),
-    )
-    const novas = ordenados.map((b, i) => ({
+    // pela ordem de voo, com o rótulo do voo (A-1), a área e o tempo
+    // previsto com o trânsito da base; a duração fica para o piloto
+    const novas = flightLogRows(blocks, flightLabels).map((l) => ({
       ...linhaVazia(COLS_VOO),
-      n: voo(b)?.flightLabel || String(b.id ?? i + 1),
-      area: Number.isFinite(b.areaHa) ? b.areaHa.toFixed(1) : '',
-      duracao: Number.isFinite(b.timeS)
-        ? String(Math.round((b.timeS + (voo(b)?.transitS ?? 0)) / 60))
-        : '',
+      ...l,
     }))
     setVoos((prev) => {
       const preenchidas = prev.filter((l) =>
@@ -1607,7 +1604,7 @@ export default function ChecklistPage({
             cols={COLS_VOO}
             linhas={voos}
             rotuloAdd={UI.addFlight}
-            minWidth="min-w-[1160px]"
+            minWidth="min-w-[1260px]"
             onCell={setCelulaVoo}
             onAdd={() => setVoos((v) => [...v, linhaVazia(COLS_VOO)])}
             onRemove={() => setVoos((v) => v.slice(0, -1))}

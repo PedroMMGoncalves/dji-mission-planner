@@ -15,3 +15,29 @@ export function groupApplies(group, sensorType, opts = {}) {
   if (group.appliesTo === 'corridor') return Boolean(opts.corridor)
   return group.appliesTo === sensorType
 }
+
+/**
+ * Linhas do registo de voos a partir dos blocos do plano («Importar blocos
+ * do plano»): pela ordem de voo, com o rótulo do voo (A-1) em «#», a área
+ * e o tempo previsto (o do bloco com o trânsito da sua base) em «Previsto
+ * (min)». «Duração (min)» é o tempo realmente voado e fica em branco para
+ * o piloto: o previsto escrito aí saía no registo como se tivesse sido
+ * voado. Só as colunas preenchidas; quem chama junta as restantes.
+ * @param {Array<{id?: number, areaHa?: number, timeS?: number}>} blocks
+ * @param {Record<string, {flight?: number, flightLabel?: string, transitS?: number}>|null} [flightLabels]
+ *   voo de cada bloco (layoutBlocks: byBlock)
+ * @returns {Array<{n: string, area: string, previsto: string, duracao: string}>}
+ */
+export function flightLogRows(blocks, flightLabels = null) {
+  if (!Array.isArray(blocks) || blocks.length === 0) return []
+  const voo = (b) => flightLabels?.[b.id] ?? null
+  const ordenados = [...blocks].sort((a, b) => (voo(a)?.flight ?? a.id) - (voo(b)?.flight ?? b.id))
+  return ordenados.map((b, i) => ({
+    n: voo(b)?.flightLabel || String(b.id ?? i + 1),
+    area: Number.isFinite(b.areaHa) ? b.areaHa.toFixed(1) : '',
+    previsto: Number.isFinite(b.timeS)
+      ? String(Math.round((b.timeS + (voo(b)?.transitS ?? 0)) / 60))
+      : '',
+    duracao: '',
+  }))
+}
