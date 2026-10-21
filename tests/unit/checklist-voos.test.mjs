@@ -45,9 +45,10 @@ describe('registo de voos: importar blocos do plano', () => {
     }
   })
 
-  // guarda estrutural, como no smoke test: a coluna «Previsto (min)» está
-  // logo antes de «Duração (min)» na tabela, e as linhas gravadas (também
-  // de antes desta coluna) abrem com todas as colunas preenchidas
+  // guarda estrutural, como no smoke test: nos dados (COLS_VOO, a ordem das
+  // chaves de cada linha gravada e exportada) a coluna «Previsto (min)» está
+  // logo antes de «Duração (min)», e as linhas gravadas (também de antes
+  // desta coluna) abrem com todas as colunas preenchidas
   test('ChecklistPage: a coluna Previsto antes da Duracao, e as linhas gravadas com todas as colunas', () => {
     const src = readFileSync(
       new URL('../../src/components/ChecklistPage.jsx', import.meta.url),
@@ -61,5 +62,34 @@ describe('registo de voos: importar blocos do plano', () => {
     expect(cols[i]).toEqual(['previsto', 'Previsto (min)', 'Planned (min)'])
     expect(cols[i + 1]).toEqual(['duracao', 'Duração (min)', 'Duration (min)'])
     expect(src).toMatch(/guardado\.voos\.map\(\(l\) => \(\{ \.\.\.linhaVazia\(COLS_VOO\), \.\.\.l/)
+  })
+
+  // no ecrã e na impressão (ORDEM_VOO, o desenho de Outubro de 2026) o que vem
+  // do plano — voo, área e previsto — fica antes do que se preenche no campo,
+  // e a hora de início antes da de fim e da duração voada; são as mesmas
+  // colunas dos dados, nenhuma a mais nem a menos
+  test('ChecklistPage: a tabela mostra primeiro o plano e depois o campo, com as colunas todas', () => {
+    const src = readFileSync(
+      new URL('../../src/components/ChecklistPage.jsx', import.meta.url),
+      'utf8',
+    )
+    const lista = (re) => [...(re.exec(src)?.[1] ?? '').matchAll(/key: '([a-z]+)'|'([a-z]+)'/g)]
+    const dados = lista(/const COLS_VOO = \[([\s\S]*?)\n\]/).map((m) => m[1])
+    const ordem = lista(/const ORDEM_VOO = \[([\s\S]*?)\]/).map((m) => m[2])
+    expect(ordem).toEqual([
+      'n',
+      'area',
+      'previsto',
+      'inicio',
+      'fim',
+      'duracao',
+      'baterias',
+      'imagens',
+      'sensor',
+      'meteo',
+      'obs',
+    ])
+    expect([...ordem].sort()).toEqual([...dados].sort())
+    expect(dados).toHaveLength(11)
   })
 })

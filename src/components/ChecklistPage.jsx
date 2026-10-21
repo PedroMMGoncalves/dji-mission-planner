@@ -1,13 +1,28 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useLang, useT } from '../i18n.jsx'
+import { tCount } from '../i18n/format.js'
 import { flightLogRows, groupApplies } from '../data/checklist.js'
-import BaseFieldSheets from './BaseFieldSheets.jsx'
+import { BaseSheetPage, baseInk } from './BaseFieldSheets.jsx'
+import { Button } from './ui/Button.jsx'
+import {
+  IconCheckCircle,
+  IconChevronDown,
+  IconChevronRight,
+  IconDownload,
+  IconShield,
+  IconTrash,
+} from './Icons.jsx'
+import { dayFlightOrder } from '../mission/fieldSheet.js'
 import { rthRangeLabel } from '../mission/transitLegs.js'
 import { safeFileStem } from '../utils/exporters.js'
 
 /* ------------------------------------------------------------------ *
  * Checklist de campo UAV — pré-campo, durante, pós-campo + relatório.
  * Persistência local automática, exportação JSON e impressão (A4).
+ * As fases em separadores com o progresso, os grupos que fecham, itens
+ * de 52 px e caixas de 24 px (com luvas); e a folha A4 de cada base, com
+ * o código QR do ponto, para ver e imprimir (BaseSheetPage).
  *
  * Bilingue PT/EN com dicionário interno: o conteúdo é longo e muito
  * estruturado, pelo que cada texto vive junto do item a que pertence
@@ -46,7 +61,6 @@ const tr = (v, lang) => {
   return v[lang] ?? v.pt ?? ''
 }
 
-/** Hook de conveniência: `const L = useL()` e depois `L(par)`. */
 /**
  * Lê o estado gravado do checklist. Corre uma vez, no inicializador
  * preguiçoso do `useState`: assim os átomos nascem já com os valores
@@ -78,11 +92,6 @@ function lerGuardado(missionName) {
   const nome = antiga.missionName ?? antiga.missao?.missao ?? ''
   if (!nome || nome === missionName) return { dados: antiga, outra: null }
   return { dados: {}, outra: { ...antiga, nome } }
-}
-
-function useL() {
-  const lang = useLang()
-  return (v) => tr(v, lang)
 }
 
 /** Atalho para declarar um item: texto, nota opcional, crítico opcional. */
@@ -423,8 +432,11 @@ const fasesDe = (ctx) => [
           ),
         ],
       },
+      // os quatro grupos que se repetem em cada voo («Por voo»): as mesmas
+      // caixas em todos os voos; o selector de voo só escolhe o que se mostra
       {
         titulo: bi('Descolagem', 'Take-off'),
+        porVoo: true,
         itens: [
           it(
             bi('Sinal GNSS estável', 'GNSS signal stable'),
@@ -459,6 +471,7 @@ const fasesDe = (ctx) => [
       },
       {
         titulo: bi('Monitorização em voo', 'In-flight monitoring'),
+        porVoo: true,
         itens: [
           it(
             bi(
@@ -480,6 +493,7 @@ const fasesDe = (ctx) => [
       },
       {
         titulo: bi('Aterragem', 'Landing'),
+        porVoo: true,
         itens: [
           it(bi('Confirmar bateria antes do retorno', 'Confirm battery before return leg')),
           it(bi('Zona de aterragem livre e visível', 'Landing zone clear and in sight')),
@@ -496,6 +510,7 @@ const fasesDe = (ctx) => [
       },
       {
         titulo: bi('Entre voos', 'Between flights'),
+        porVoo: true,
         itens: [
           it(bi('Substituição de bateria — registar ID', 'Battery swap — record ID')),
           it(bi('Verificação rápida de câmara e cartão SD', 'Quick check of camera and SD card')),
@@ -819,36 +834,16 @@ const fasesDe = (ctx) => [
   },
 ]
 
-/** Cores por fase — strings completas para o JIT do Tailwind as detectar. */
-const ACENTOS = {
-  pre: {
-    titulo: 'text-amber-400',
-    caixa: 'border-amber-500 bg-amber-500 text-slate-950',
-    barra: 'bg-amber-500',
-    risca: 'bg-amber-500/60',
-  },
-  durante: {
-    titulo: 'text-violet-400',
-    caixa: 'border-violet-500 bg-violet-500 text-slate-950',
-    barra: 'bg-violet-500',
-    risca: 'bg-violet-500/60',
-  },
-  pos: {
-    titulo: 'text-teal-400',
-    caixa: 'border-teal-500 bg-teal-500 text-slate-950',
-    barra: 'bg-teal-500',
-    risca: 'bg-teal-500/60',
-  },
-}
-
 /** Strings de interface — dicionário interno a esta página. */
 const UI = {
-  back: bi('← Voltar ao planeador', '← Back to planner'),
+  back: bi('Voltar ao planeador', 'Back to planner'),
   title: bi('Checklist de Campo UAS', 'UAS Field Checklist'),
-  subtitle: bi(
-    'Pré-campo · Durante · Pós-campo + Relatório de missão',
-    'Pre-field · In-field · Post-field + Mission report',
-  ),
+  // o subtítulo: a missão, a plataforma e os voos do plano
+  flightsBases: bi('{n} voos em {b} bases', '{n} flights from {b} bases'),
+  flightsBase: bi('{n} voos em 1 base', '{n} flights from 1 base'),
+  flightBase: bi('1 voo em 1 base', '1 flight from 1 base'),
+  flights: bi('{n} voos', '{n} flights'),
+  flightOne: bi('1 voo', '1 flight'),
   exportJson: bi('Exportar JSON', 'Export JSON'),
   printFilled: bi('Imprimir preenchido', 'Print filled in'),
   printBlank: bi('Imprimir em branco', 'Print blank'),
@@ -867,14 +862,138 @@ const UI = {
   flightsSection: bi('Registo de voos', 'Flight log'),
   gcpSection: bi('GCPs', 'GCPs'),
   notesSection: bi('Notas de missão', 'Mission notes'),
-  addFlight: bi('+ Voo', '+ Flight'),
-  addGcp: bi('+ GCP', '+ GCP'),
-  removeLast: bi('− Remover última', '− Remove last'),
+  // rótulo curto à vista; o nome e a dica dizem a acção inteira
+  addFlight: bi('Voo', 'Flight'),
+  addFlightFull: bi('Acrescentar uma linha de voo', 'Add a flight row'),
+  addGcp: bi('GCP', 'GCP'),
+  addGcpFull: bi('Acrescentar uma linha de GCP', 'Add a GCP row'),
+  removeLast: bi('Remover a última', 'Remove the last'),
+  removeFlightFull: bi('Remover a última linha de voo', 'Remove the last flight row'),
+  removeGcpFull: bi('Remover a última linha de GCP', 'Remove the last GCP row'),
   emptyRows: bi('Sem linhas.', 'No rows.'),
   importBlocks: bi('Importar blocos do plano', 'Import plan blocks'),
   importGcps: bi('Importar GCPs do plano', 'Import planned GCPs'),
-  items: bi('itens', 'items'),
-  autosave: bi('Guardado automaticamente neste navegador.', 'Saved automatically in this browser.'),
+  flightsHint: bi(
+    '«Importar blocos do plano» escreve o voo, a área e o tempo previsto; o resto preenche-se no campo.',
+    '“Import plan blocks” writes the flight, the area and the planned time; the rest is filled in on site.',
+  ),
+  gcpsHint: bi(
+    'Sem GCP planeados no plano: registe aqui os que colocar no campo.',
+    'No GCPs planned: record here the ones you lay out in the field.',
+  ),
+  gcpsHintPlanned: bi(
+    '«Importar GCPs do plano» escreve o ID e as coordenadas dos {n} planeados; o resto preenche-se no campo.',
+    '“Import planned GCPs” writes the ID and coordinates of the {n} planned; the rest is filled in on site.',
+  ),
+  flightCol: bi('Voo', 'Flight'),
+  cellFlight: bi('{col} do voo {v}', '{col} of flight {v}'),
+  cellRow: bi('{col} da linha {i}', '{col}, row {i}'),
+  cellGcp: bi('{col} do GCP da linha {i}', '{col} of the GCP in row {i}'),
+  autosave: bi('Guardado automaticamente neste navegador', 'Saved automatically in this browser'),
+  // a checklist em fases
+  checklist: bi('Checklist', 'Checklist'),
+  overall: bi('{f} de {t} itens · {p} %', '{f} of {t} items · {p} %'),
+  critPending: bi('{n} críticos por fazer', '{n} critical items to do'),
+  critPendingOne: bi('1 crítico por fazer', '1 critical item to do'),
+  critAllDone: bi('Todos os críticos feitos', 'All critical items done'),
+  phases: bi('Fases da checklist', 'Checklist phases'),
+  tabCritOk: bi('Críticos feitos', 'Critical items done'),
+  tabCrit: bi('{n} críticos', '{n} critical'),
+  tabCritOne: bi('1 crítico', '1 critical'),
+  itemsOf: bi('{f} de {t} itens', '{f} of {t} items'),
+  groupDone: bi('feito', 'done'),
+  groupDoneIcon: bi('Grupo feito', 'Group done'),
+  perFlight: bi('Por voo', 'Per flight'),
+  critical: bi('Crítico', 'Critical'),
+  flightPick: bi('Voo a que se referem as caixas por voo', 'Flight the per-flight boxes refer to'),
+  flightOption: bi('Voo {v}', 'Flight {v}'),
+  flightOf: bi('de {n}', 'of {n}'),
+  perFlightNote: bi(
+    'Descolagem, Monitorização em voo, Aterragem e Entre voos repetem-se em cada voo: as caixas «Por voo» são as mesmas em todos; confira-as antes de cada um.',
+    'Take-off, In-flight monitoring, Landing and Between flights repeat on every flight: the “Per flight” boxes are the same for all of them; check them before each one.',
+  ),
+  flightZone: bi('zona {r} m', 'zone {r} m'),
+  flightTime: bi('{m} min com a deslocação', '{m} min incl. transit'),
+  flightPct: bi('{p} % do tempo útil', '{p} % of usable time'),
+  flightPlanned: bi('{m} min previstos', '{m} min planned'),
+  flightLogged: bi('registo: {a}–{b}', 'log: {a}–{b}'),
+  // as fichas por base e a folha A4
+  sheetsTitle: bi('Fichas por base', 'Sheets by base'),
+  printSheets: bi('Imprimir as {n} fichas', 'Print the {n} sheets'),
+  printSheet: bi('Imprimir a ficha', 'Print the sheet'),
+  sheetsA4: bi('Cada ficha é uma folha A4.', 'Each sheet is one A4 page.'),
+  zonePill: bi('Zona {r} m', 'Zone {r} m'),
+  zoneWord: bi('Zona', 'Zone'),
+  sheetCard: bi(
+    'Ficha de campo da base {l}, {v}: zona {z} m, RTH {r} m, {m} min. Abre a folha para imprimir.',
+    'Field sheet of base {l}, {v}: zone {z} m, RTH {r} m, {m} min. Opens the sheet to print.',
+  ),
+  cardFlight: bi('voo {v}', 'flight {v}'),
+  cardFlights: bi('voos {v}', 'flights {v}'),
+  zonesReduced: bi(
+    'reduzida pelo desnível em {n} bases: descolar dentro dela (a base {l} só tem {r} m).',
+    'reduced by the relief at {n} bases: take off inside it (base {l} has only {r} m).',
+  ),
+  zonesReducedOne: bi(
+    'reduzida pelo desnível na base {l}: descolar dentro dela ({r} m).',
+    'reduced by the relief at base {l}: take off inside it ({r} m).',
+  ),
+  sheetBack: bi('Voltar à checklist', 'Back to the checklist'),
+  sheetOf: bi('{n} de {t}', '{n} of {t}'),
+  sheetPrev: bi('Base anterior', 'Previous base'),
+  sheetNext: bi('Base seguinte', 'Next base'),
+  printThis: bi('Imprimir esta ficha', 'Print this sheet'),
+  // acções de segurança e assinaturas
+  rthValue: bi('{rth} m acima da descolagem', '{rth} m above take-off'),
+  signatures: bi('Assinaturas', 'Signatures'),
+  signaturesHint: bi('assinam-se na folha impressa', 'signed on the printed sheet'),
+}
+
+/**
+ * Ordem das colunas do registo de voos no ecrã e na impressão: primeiro o
+ * que vem do plano (voo, área, previsto), depois o que se preenche no
+ * campo. COLS_VOO fica pela ordem de sempre — é a ordem das chaves de cada
+ * linha gravada e exportada no JSON, que não muda.
+ */
+const ORDEM_VOO = [
+  'n',
+  'area',
+  'previsto',
+  'inicio',
+  'fim',
+  'duracao',
+  'baterias',
+  'imagens',
+  'sensor',
+  'meteo',
+  'obs',
+]
+/** Larguras das colunas no ecrã (as da prancha); a impressão reparte a folha. */
+const LARGURA = {
+  voo: {
+    n: 'w-[84px]',
+    area: 'w-[92px]',
+    previsto: 'w-[108px]',
+    inicio: 'w-[100px]',
+    fim: 'w-[100px]',
+    duracao: 'w-[108px]',
+    baterias: 'w-[116px]',
+    imagens: 'w-[108px]',
+    sensor: 'w-[116px]',
+    meteo: 'w-[132px]',
+    obs: 'min-w-[180px]',
+  },
+  gcp: {
+    n: 'w-[56px]',
+    ident: 'w-[120px]',
+    lat: 'w-[150px]',
+    lon: 'w-[150px]',
+    alt: 'w-[120px]',
+    crs: 'w-[140px]',
+    metodo: 'w-[140px]',
+    incerteza: 'w-[130px]',
+    obs: 'min-w-[180px]',
+  },
 }
 
 const ASSINATURAS = [
@@ -957,251 +1076,872 @@ const chaveItem = (faseId, gi, ii) => `${faseId}.${gi}.${ii}`
 
 const hoje = () => new Date().toISOString().slice(0, 10)
 
-/** Marcas diacríticas combinatórias (bloco U+0300–U+036F). */
+/** Um texto do dicionário da página com as {variáveis} preenchidas. */
+const fmt = (s, vars) =>
+  Object.entries(vars).reduce((acc, [k, v]) => acc.replaceAll(`{${k}}`, String(v)), s)
+
+/** «3 críticos por fazer» / «1 crítico por fazer». */
+const critText = (n, L) => (n === 1 ? L(UI.critPendingOne) : fmt(L(UI.critPending), { n }))
+
+/**
+ * A fase que abre: a primeira com críticos por fazer, senão a primeira com
+ * itens por fazer, senão a última — como no desenho, o pré-campo feito
+ * (menos o que não se aplica) passa ao «Durante».
+ */
+function faseInicial(fases, checked, applies) {
+  const pend = fases.map((f) => {
+    let crit = 0
+    let todos = 0
+    f.grupos.forEach((g, gi) => {
+      if (!applies(g)) return
+      g.itens.forEach((item, ii) => {
+        if (checked[chaveItem(f.id, gi, ii)]) return
+        todos += 1
+        if (item.critico) crit += 1
+      })
+    })
+    return { id: f.id, crit, todos }
+  })
+  return (pend.find((p) => p.crit > 0) ?? pend.find((p) => p.todos > 0) ?? pend[pend.length - 1]).id
+}
+
+/** Os grupos abertos à entrada: os que têm itens por fazer (os feitos fecham). */
+function gruposAbertos(fases, checked) {
+  const out = {}
+  for (const f of fases)
+    f.grupos.forEach((g, gi) => {
+      out[`${f.id}.${gi}`] = g.itens.some((_, ii) => !checked[chaveItem(f.id, gi, ii)])
+    })
+  return out
+}
+
+/** O voo a seguir: o primeiro do plano sem «Hora fim» no registo; feitos todos, o último. */
+function proximoVoo(plano, linhas) {
+  if (plano.length === 0) return null
+  const feito = (label) =>
+    linhas.some((l) => String(l.n ?? '').trim() === label && String(l.fim ?? '').trim() !== '')
+  return (plano.find((v) => !feito(v.label)) ?? plano[plano.length - 1]).label
+}
+
+/* ------------------------------ Ícones ------------------------------ */
+
+/** Ícone de traço 24×24 (o estilo de Icons.jsx), decorativo: o nome é do botão. */
+function Svg({ children, className = 'h-4 w-4', strokeWidth = 1.8 }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`inline-block shrink-0 ${className}`}
+    >
+      {children}
+    </svg>
+  )
+}
+
+/** @param {{className?: string}} props */
+function IconArrowLeft({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2}>
+      <path d="M19 12H5M12 19l-7-7 7-7" />
+    </Svg>
+  )
+}
+
+/** @param {{className?: string}} props */
+function IconChevronLeft({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2}>
+      <path d="m15 18-6-6 6-6" />
+    </Svg>
+  )
+}
+
+/** Impressora — imprimir. */
+/** @param {{className?: string}} props */
+function IconPrinter({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M6 9V2h12v7" />
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+      <rect x="6" y="14" width="12" height="8" />
+    </Svg>
+  )
+}
+
+/** Folha em branco — imprimir em branco. */
+/** @param {{className?: string}} props */
+function IconFile({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+    </Svg>
+  )
+}
+
+/** @param {{className?: string}} props */
+function IconPlus({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2}>
+      <path d="M12 5v14M5 12h14" />
+    </Svg>
+  )
+}
+
+/** Seta para a linha de base — trazer do plano. */
+/** @param {{className?: string}} props */
+function IconImport({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+    </Svg>
+  )
+}
+
+/** Octógono com «!» — item crítico. */
+/** @param {{className?: string}} props */
+function IconCritical({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2.4}>
+      <path d="M7.86 2h8.28L22 7.86v8.28L16.14 22H7.86L2 16.14V7.86z" />
+      <path d="M12 8v4M12 16h.01" />
+    </Svg>
+  )
+}
 
 /* --------------------------- Subcomponentes --------------------------- */
 
-function Titulo({ children, className = '' }) {
-  return (
-    <h2 className={`text-xs font-semibold uppercase tracking-widest text-sky-400 ${className}`}>
-      {children}
-    </h2>
-  )
-}
+/** Uma secção da página: painel com contorno e cantos de 12 px, como na prancha. */
+const CARTAO = 'chk-bloco rounded-xl border border-slate-800 bg-panel'
+const H2 = 'm-0 text-sm font-semibold text-slate-100'
+/** «Voltar …»: uma ligação de acção, na cor das ligações. */
+const VOLTAR =
+  'inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-[13.5px] font-medium text-sky-300 transition-colors hover:bg-raised hover:text-sky-200'
 
-function Botao({ children, onClick, tom = 'neutro', disabled = false }) {
-  const tons = {
-    neutro: 'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700',
-    primario: 'bg-emerald-700 text-white hover:bg-emerald-700 border border-emerald-600',
-    aviso:
-      'bg-slate-800 text-slate-300 hover:bg-red-900/60 hover:text-red-200 border border-slate-700',
-  }
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${tons[tom]}`}
-    >
-      {children}
-    </button>
-  )
-}
-
+/** Campo da identificação da missão: o rótulo por cima e a caixa de 44 px. */
 function CampoTexto({ label, value, onChange, placeholder, type = 'text' }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="font-mono text-xs uppercase tracking-wider text-slate-400">{label}</span>
+    <label className="flex min-w-0 flex-col gap-1.5 text-xs text-slate-400">
+      {label}
       <input
         type={type}
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="chk-fill w-full rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:border-sky-500 focus:outline-none"
+        className="chk-fill h-11 w-full min-w-0 rounded-lg border border-slate-700 bg-field px-3 text-sm font-medium tabular-nums text-slate-100 [color-scheme:dark] placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
       />
     </label>
   )
 }
 
-function Celula({ value, onChange }) {
+/** Pastilha vermelha dos críticos por fazer, com o octógono. */
+function CritPill({ children, small = false }) {
   return (
-    <td className="border border-slate-800 p-0 align-top">
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="chk-fill w-full bg-transparent px-2 py-1 text-[12px] text-slate-100 focus:bg-slate-800/60 focus:outline-none"
-      />
-    </td>
+    <span
+      className={`chk-crit-pill inline-flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border border-[#7A2530] bg-[#2B1215] font-semibold tabular-nums text-red-300 ${
+        small ? 'h-6 px-[9px] text-xs' : 'h-7 px-[11px] text-[12.5px]'
+      }`}
+    >
+      <IconCritical className={`text-red-400 ${small ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} />
+      {children}
+    </span>
   )
 }
 
-function ItemChecklist({ item, feito, onToggle, acento }) {
-  const L = useL()
+/** Um item: a caixa de 24 px, o texto e a nota, e «Crítico»; alvo de 52 px (com luvas). */
+function ItemChecklist({ item, feito, onToggle, L }) {
   return (
-    <li>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-pressed={feito}
-        className="chk-item flex w-full items-start gap-2 rounded px-1.5 py-1 text-left transition-colors hover:bg-slate-800/50"
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={feito}
+      onClick={onToggle}
+      className="chk-item flex min-h-[52px] w-full items-start gap-3.5 px-4 pb-3 pt-[13px] text-left text-slate-100 transition-colors hover:bg-raised/60 focus-visible:outline-offset-[-2px]"
+    >
+      <span
+        aria-hidden="true"
+        className={`chk-box flex h-6 w-6 flex-none items-center justify-center rounded-md border-2 ${
+          feito ? 'border-sky-400 bg-sky-400 text-[#06202E]' : 'border-[#5B6E8F] bg-field'
+        }`}
       >
+        {feito && (
+          <Svg className="chk-mark h-4 w-4" strokeWidth={2.6}>
+            <path d="M20 6 9 17l-5-5" />
+          </Svg>
+        )}
+      </span>
+      <span className="min-w-0 flex-1 pt-0.5">
         <span
-          className={`chk-box mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border text-xs font-bold leading-none ${
-            feito ? acento.caixa : 'border-slate-600 bg-slate-950 text-transparent'
+          className={`chk-text block text-sm leading-[1.4] ${
+            feito ? 'text-slate-300' : 'text-slate-100'
           }`}
         >
-          <span className="chk-mark">{feito ? '✓' : ''}</span>
+          {L(item.texto)}
         </span>
-        <span className="min-w-0 flex-1">
-          <span
-            className={`chk-text block text-[13px] leading-snug ${
-              feito ? 'text-slate-400 line-through' : 'text-slate-200'
-            }`}
-          >
-            {L(item.texto)}
-            {item.critico && (
-              <span className="chk-crit ml-1.5 inline-block rounded-sm border border-red-500/60 bg-red-500/10 px-1 align-middle font-mono text-[9px] font-bold uppercase tracking-wider text-red-400">
-                CRIT
-              </span>
-            )}
+        {item.nota && (
+          <span className="chk-note mt-[3px] block text-[12.5px] leading-[1.4] text-slate-400">
+            {L(item.nota)}
           </span>
-          {item.nota && (
-            <span className="chk-note mt-0.5 block font-mono text-xs leading-tight text-slate-400">
-              {L(item.nota)}
-            </span>
-          )}
+        )}
+      </span>
+      {item.critico && (
+        <span
+          className={`chk-crit inline-flex h-6 flex-none items-center gap-[5px] whitespace-nowrap rounded-full border px-[9px] text-xs font-semibold ${
+            feito
+              ? 'border-slate-700 bg-[#1A2742] text-slate-300'
+              : 'border-[#7A2530] bg-[#2B1215] text-red-300'
+          }`}
+        >
+          <IconCritical className="h-3 w-3" />
+          {L(UI.critical)}
         </span>
-      </button>
-    </li>
+      )}
+    </button>
   )
 }
 
-function BarraProgresso({ feitos, total, acento }) {
-  const L = useL()
-  const pct = total ? Math.round((feitos / total) * 100) : 0
+/**
+ * Um grupo de itens que abre e fecha: o anel do progresso (ou o visto,
+ * feito), o título e «N de M itens», «Por voo» e os críticos por fazer.
+ * Fechado, os itens ficam no DOM e escondidos (e imprimem-se).
+ */
+function Grupo({ id, grupo, faseId, gi, c, checked, onToggle, aberto, onAbrir, L }) {
+  const completo = c.total > 0 && c.feitos === c.total
+  const pend = c.crit - c.critFeitos
+  const C = 2 * Math.PI * 12
   return (
-    <div className="mt-3 border-t border-slate-800 pt-3">
-      <div className="mb-1 flex items-baseline justify-between font-mono text-xs text-slate-400">
-        <span>
-          {feitos}/{total} {L(UI.items)}
+    <section
+      className={`chk-grupo overflow-hidden rounded-[10px] border bg-surface ${
+        aberto ? 'border-[#2C4A68]' : 'border-slate-800'
+      }`}
+    >
+      <h3 className="m-0">
+        {/* o nome do botão é só o título; o progresso e as etiquetas descrevem-no */}
+        <button
+          type="button"
+          aria-expanded={aberto}
+          aria-controls={`${id}-itens`}
+          aria-labelledby={`${id}-titulo`}
+          aria-describedby={[
+            `${id}-resumo`,
+            grupo.porVoo && `${id}-voo`,
+            pend > 0 && `${id}-criticos`,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          onClick={onAbrir}
+          className="chk-grupo-btn flex min-h-[64px] w-full items-center gap-3.5 px-4 py-2.5 text-left text-slate-100"
+        >
+          {completo ? (
+            <svg
+              role="img"
+              aria-label={L(UI.groupDoneIcon)}
+              width="30"
+              height="30"
+              viewBox="0 0 30 30"
+              className="chk-anel flex-none"
+            >
+              <circle cx="15" cy="15" r="13" fill="#0D2A21" stroke="#34D399" strokeWidth="2" />
+              <path
+                d="m9.5 15.5 3.6 3.6 7.4-7.6"
+                fill="none"
+                stroke="#34D399"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : (
+            <svg
+              aria-hidden="true"
+              width="30"
+              height="30"
+              viewBox="0 0 30 30"
+              className="chk-anel flex-none"
+            >
+              <circle cx="15" cy="15" r="12" fill="none" stroke="#1C2740" strokeWidth="3" />
+              <circle
+                cx="15"
+                cy="15"
+                r="12"
+                fill="none"
+                stroke="#38BDF8"
+                strokeWidth="3"
+                transform="rotate(-90 15 15)"
+                strokeDasharray={`${((C * c.feitos) / Math.max(1, c.total)).toFixed(1)} ${C.toFixed(1)}`}
+              />
+            </svg>
+          )}
+          <span className="min-w-0 flex-1">
+            <span
+              id={`${id}-titulo`}
+              className="chk-grupo-titulo block text-[14.5px] font-semibold"
+            >
+              {L(grupo.titulo)}
+            </span>
+            <span
+              id={`${id}-resumo`}
+              className={`chk-progresso mt-0.5 block text-[12.5px] tabular-nums ${
+                completo ? 'text-emerald-300' : 'text-slate-400'
+              }`}
+            >
+              {fmt(L(UI.itemsOf), { f: c.feitos, t: c.total })}
+              {completo ? ` · ${L(UI.groupDone)}` : ''}
+            </span>
+          </span>
+          {grupo.porVoo && (
+            <span
+              id={`${id}-voo`}
+              className="chk-por-voo inline-flex h-6 flex-none items-center whitespace-nowrap rounded-full border border-[#1E2E4A] bg-[#10233A] px-[9px] text-xs font-semibold text-blue-300"
+            >
+              {L(UI.perFlight)}
+            </span>
+          )}
+          {pend > 0 && (
+            <span id={`${id}-criticos`} className="flex flex-none">
+              <CritPill small>{critText(pend, L)}</CritPill>
+            </span>
+          )}
+          <IconChevronDown
+            className={`chk-seta h-[18px] w-[18px] flex-none text-slate-400 transition-transform ${
+              aberto ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+      </h3>
+      <ul
+        id={`${id}-itens`}
+        hidden={!aberto}
+        className={`chk-itens m-0 list-none border-t border-slate-800 p-0 ${aberto ? 'block' : 'hidden'}`}
+      >
+        {grupo.itens.map((item, ii) => {
+          const k = chaveItem(faseId, gi, ii)
+          return (
+            <li key={k} className="border-t border-raised first:border-t-0">
+              <ItemChecklist item={item} feito={!!checked[k]} onToggle={() => onToggle(k)} L={L} />
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
+
+/** O separador de uma fase: número, título, críticos, «N de M itens», a percentagem e a barra. */
+function FaseTab({ ids, fase, n, c, sel, onSelect, onKeyDown, L }) {
+  const pct = c.total ? Math.round((100 * c.feitos) / c.total) : 0
+  const pend = c.crit - c.critFeitos
+  return (
+    <button
+      type="button"
+      role="tab"
+      id={ids.tab}
+      aria-selected={sel}
+      aria-controls={ids.painel}
+      aria-labelledby={ids.titulo}
+      aria-describedby={ids.progresso}
+      tabIndex={sel ? 0 : -1}
+      onClick={onSelect}
+      onKeyDown={onKeyDown}
+      data-testid={`chk-tab-${fase.id}`}
+      className={`flex min-h-[92px] min-w-0 flex-col gap-2.5 rounded-[10px] border px-3.5 pb-3.5 pt-3 text-left text-slate-100 transition-colors ${
+        sel ? 'border-[#2C4A68] bg-[#16223A]' : 'border-slate-800 bg-surface hover:bg-raised'
+      }`}
+    >
+      <span className="flex w-full items-center gap-2.5">
+        <span
+          aria-hidden="true"
+          className={`flex h-[26px] w-[26px] flex-none items-center justify-center rounded-full text-[12.5px] font-semibold ${
+            sel ? 'bg-sky-400 text-[#06202E]' : 'bg-[#1A2742] text-slate-300'
+          }`}
+        >
+          {n}
         </span>
-        <span>{pct}%</span>
-      </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
-        <div
-          className={`h-full rounded-full transition-all ${acento.barra}`}
+        <span id={ids.titulo} className="min-w-0 flex-1 truncate text-[15px] font-semibold">
+          {L(fase.titulo)}
+        </span>
+        {pend === 0 ? (
+          <span className="inline-flex items-center gap-[5px] whitespace-nowrap text-xs font-medium text-emerald-300">
+            <IconCheckCircle className="h-3.5 w-3.5 text-emerald-400" />
+            {L(UI.tabCritOk)}
+          </span>
+        ) : (
+          <CritPill small>
+            {pend === 1 ? L(UI.tabCritOne) : fmt(L(UI.tabCrit), { n: pend })}
+          </CritPill>
+        )}
+      </span>
+      <span
+        id={ids.progresso}
+        className="flex w-full justify-between text-[12.5px] tabular-nums text-slate-300"
+      >
+        <span>{fmt(L(UI.itemsOf), { f: c.feitos, t: c.total })}</span>
+        <span>{pct} %</span>
+      </span>
+      <span
+        aria-hidden="true"
+        className="block h-1.5 w-full overflow-hidden rounded-full bg-slate-800"
+      >
+        <span
+          className={`block h-full rounded-full ${
+            c.feitos === c.total ? 'bg-emerald-400' : 'bg-sky-400'
+          }`}
           style={{ width: `${pct}%` }}
         />
+      </span>
+    </button>
+  )
+}
+
+/**
+ * O voo a que se referem os grupos «Por voo», na fase Durante: uma vista
+ * sobre as mesmas caixas (não há caixas por voo gravadas), com os dados do
+ * voo escolhido. Um <select> nativo por cima da face do desenho: o teclado,
+ * o leitor de ecrã e o seleccionador do tablet são os do sistema.
+ */
+function SeletorVoo({ voos, valor, onChange, info, L }) {
+  const v = voos.find((x) => x.label === valor) ?? voos[0]
+  return (
+    <div className="no-print flex flex-wrap items-center gap-x-3.5 gap-y-2 pb-1 pt-0.5">
+      <div className="relative flex h-11 flex-none items-center gap-2 rounded-lg border border-slate-700 bg-field px-3 text-[13.5px] font-semibold tabular-nums text-slate-100 transition-colors focus-within:border-sky-400 hover:border-slate-600">
+        <span
+          aria-hidden="true"
+          className="h-2.5 w-2.5 flex-none rounded-full"
+          style={{ backgroundColor: v?.color ?? '#38BDF8' }}
+        />
+        <span aria-hidden="true">{fmt(L(UI.flightOption), { v: v?.label ?? '' })}</span>
+        <span aria-hidden="true" className="font-normal text-slate-400">
+          {fmt(L(UI.flightOf), { n: voos.length })}
+        </span>
+        <IconChevronDown className="h-[15px] w-[15px] text-slate-400" />
+        <select
+          data-testid="chk-flight-select"
+          aria-label={L(UI.flightPick)}
+          value={v?.label ?? ''}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
+        >
+          {voos.map((x) => (
+            <option key={x.label} value={x.label}>
+              {fmt(L(UI.flightOption), { v: x.label })}
+            </option>
+          ))}
+        </select>
+      </div>
+      <p className="m-0 min-w-[240px] flex-1 text-[12.5px] leading-[1.45] text-slate-300">
+        {L(UI.perFlightNote)}
+        {info && (
+          <span data-testid="chk-flight-info" className="mt-1 block text-slate-400">
+            {info}
+          </span>
+        )}
+      </p>
+    </div>
+  )
+}
+
+/** As acções de segurança escritas no KMZ, em linhas «rótulo … valor». */
+function SegurancaKmz({ safety, rthInfo, t, L }) {
+  const tituloId = useId()
+  const linhas = [
+    { k: 'fim', label: t('safety.finish'), value: t(`safety.finish.${safety.finishAction}`) },
+    {
+      k: 'sinal',
+      label: t('safety.rcLost'),
+      value:
+        safety.exitOnRCLost === 'executeLostAction'
+          ? t('safety.checklistStop', {
+              mode: t('safety.rcLost.executeLostAction'),
+              action: t(`safety.rcAction.${safety.executeRCLostAction}`),
+            })
+          : t('safety.rcLost.goContinue'),
+    },
+    ...(rthInfo
+      ? [
+          {
+            k: 'rth',
+            testId: 'checklist-rth',
+            label: t('bases.sheet.rth'),
+            value: fmt(L(UI.rthValue), { rth: rthRangeLabel(rthInfo) }),
+          },
+          { k: 'subida', label: t('bases.a4.takeoff'), value: `${rthInfo.takeoffM} m` },
+        ]
+      : []),
+  ]
+  return (
+    <section
+      data-testid="checklist-safety"
+      aria-labelledby={tituloId}
+      className={`${CARTAO} px-[18px] py-4`}
+    >
+      <div className="flex items-center gap-2.5">
+        <IconShield className="h-[18px] w-[18px] text-sky-300" />
+        <h2 id={tituloId} className={H2}>
+          {t('safety.checklist')}
+        </h2>
+      </div>
+      <dl className="m-0 mt-2.5 text-[13px]">
+        {linhas.map((l, i) => (
+          <div
+            key={l.k}
+            data-testid={l.testId}
+            className={`flex min-h-[36px] items-center justify-between gap-3 py-1.5 ${
+              i ? 'border-t border-raised' : ''
+            }`}
+          >
+            <dt className="flex-none whitespace-nowrap text-slate-300">{l.label}</dt>
+            <dd className="m-0 text-right tabular-nums">{l.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="m-0 mt-2 text-xs leading-normal text-slate-400">{t('safety.checklistHint')}</p>
+    </section>
+  )
+}
+
+/**
+ * As fichas por base: a linha do dia, um cartão por base (zona, RTH,
+ * tempo) que abre a folha A4 dela, e «Imprimir as N fichas».
+ */
+function FichasPorBase({ sheets, day, onOpen, onPrintAll, ultima, cardRefs, t, L }) {
+  const tituloId = useId()
+  const reduzidas = sheets.filter((s) => s.reduced && Number.isFinite(s.radiusM))
+  const menor = reduzidas.reduce((a, s) => (!a || s.radiusM < a.radiusM ? s : a), null)
+  return (
+    <section
+      data-testid="checklist-bases"
+      aria-labelledby={tituloId}
+      className={`chk-bases ${CARTAO} px-4 pb-4 pt-3`}
+    >
+      <div className="flex items-center gap-2.5">
+        <h2 id={tituloId} className={`${H2} flex-1`}>
+          {L(UI.sheetsTitle)}
+        </h2>
+        <button
+          type="button"
+          data-testid="sheets-print-all"
+          onClick={onPrintAll}
+          className="no-print inline-flex h-11 items-center gap-1.5 whitespace-nowrap rounded-lg px-1.5 text-[13px] font-medium text-sky-300 transition-colors hover:text-sky-200"
+        >
+          <IconPrinter className="h-4 w-4" />
+          {sheets.length === 1 ? L(UI.printSheet) : fmt(L(UI.printSheets), { n: sheets.length })}
+        </button>
+      </div>
+      {day && (
+        <p
+          data-testid="sheets-day"
+          className={`m-0 text-[12.5px] leading-normal ${
+            day.short ? 'text-amber-300' : 'text-slate-400'
+          }`}
+        >
+          {day.sets != null
+            ? tCount(t, 'bases.sheet.day', day.flights, {
+                flights: day.flights,
+                sets: day.flights,
+                team: day.sets,
+              })
+            : tCount(t, 'bases.sheet.dayUnknown', day.flights, {
+                flights: day.flights,
+                sets: day.flights,
+              })}
+          . {L(UI.sheetsA4)}
+        </p>
+      )}
+      <ul className="m-0 mt-3 grid list-none grid-cols-1 gap-2 p-0 sm:grid-cols-2">
+        {sheets.map((s, i) => {
+          const voos = (s.flights ?? []).map((f) => f.flightLabel)
+          const labels = voos.join(', ')
+          // no cartão, vários voos (seguidos: a numeração é base a base)
+          // cabem como «A-1–A-3»; o nome do cartão diz-os todos
+          const curto = voos.length > 1 ? `${voos[0]}–${voos[voos.length - 1]}` : labels
+          const z = Number.isFinite(s.radiusM) ? Math.round(s.radiusM) : '—'
+          const rth = s.rthM != null ? Math.round(s.rthM) : '—'
+          const m = Number.isFinite(s.totalS) ? Math.round(s.totalS / 60) : '—'
+          const nome = fmt(L(UI.sheetCard), {
+            l: s.label,
+            v: fmt(L((s.flights ?? []).length === 1 ? UI.cardFlight : UI.cardFlights), {
+              v: labels,
+            }),
+            z,
+            r: rth,
+            m,
+          })
+          return (
+            <li key={s.id}>
+              <button
+                type="button"
+                ref={(el) => {
+                  cardRefs.current[s.id] = el
+                }}
+                data-testid="base-sheet-card"
+                data-base-label={s.label}
+                aria-label={nome}
+                title={nome}
+                onClick={() => onOpen(i)}
+                className={`chk-cartao-base flex min-h-[64px] w-full flex-col gap-1.5 rounded-[10px] border px-3 py-2.5 text-left text-slate-100 transition-colors hover:border-[#2C4A68] ${
+                  ultima === s.id ? 'border-[#2C4A68] bg-[#16223A]' : 'border-slate-800 bg-surface'
+                }`}
+              >
+                <span className="flex w-full min-w-0 items-center gap-1.5 whitespace-nowrap">
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full text-[11.5px] font-bold [-webkit-print-color-adjust:exact] [print-color-adjust:exact]"
+                    style={{ backgroundColor: s.color ?? '#334155', color: baseInk(s.color) }}
+                  >
+                    {s.label}
+                  </span>
+                  <span className="text-[13.5px] font-semibold">
+                    {t('bases.label', { label: s.label })}
+                  </span>
+                  <span className="min-w-0 truncate text-[12.5px] tabular-nums text-slate-400">
+                    {curto}
+                  </span>
+                  <span className="flex-1" />
+                  <span className="text-[12.5px] tabular-nums text-slate-200">{m} min</span>
+                </span>
+                <span className="flex w-full items-center gap-1.5 whitespace-nowrap">
+                  <span
+                    className={`inline-flex h-[22px] items-center rounded-full px-2 text-xs font-semibold tabular-nums ${
+                      s.reduced || s.noTerrain
+                        ? 'bg-[#2A1F0B] text-amber-300'
+                        : 'bg-[#1A2742] text-slate-200'
+                    }`}
+                  >
+                    {fmt(L(UI.zonePill), { r: z })}
+                  </span>
+                  <span className="text-xs tabular-nums text-slate-300">RTH {rth} m</span>
+                  <IconPrinter className="no-print ml-auto h-[15px] w-[15px] text-sky-300" />
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+      {menor && (
+        <p className="m-0 mt-3 flex items-start gap-2 text-xs leading-[1.45] text-slate-400">
+          <span className="inline-flex h-[22px] flex-none items-center rounded-full bg-[#2A1F0B] px-2 text-xs font-semibold text-amber-300">
+            {L(UI.zoneWord)}
+          </span>
+          <span className="pt-[3px]">
+            {reduzidas.length === 1
+              ? fmt(L(UI.zonesReducedOne), { l: menor.label, r: Math.round(menor.radiusM) })
+              : fmt(L(UI.zonesReduced), {
+                  n: reduzidas.length,
+                  l: menor.label,
+                  r: Math.round(menor.radiusM),
+                })}
+          </span>
+        </p>
+      )}
+    </section>
+  )
+}
+
+/**
+ * A folha A4 de uma base, por cima da checklist (que fica inerte): voltar,
+ * a base anterior e a seguinte, imprimir esta folha ou todas. Esc volta.
+ */
+function FichaVista({ sheets, index, onIndex, onClose, onPrintAll, sheetProps, t, L }) {
+  const s = sheets[index]
+  const voltar = useRef(/** @type {HTMLButtonElement|null} */ (null))
+  const corpo = useRef(/** @type {HTMLDivElement|null} */ (null))
+  useEffect(() => {
+    voltar.current?.focus()
+  }, [])
+  // cada base abre a folha no topo
+  useEffect(() => {
+    corpo.current?.scrollTo?.(0, 0)
+  }, [index])
+  // Esc volta à checklist, também com o foco fora dos botões (um clique na folha)
+  useEffect(() => {
+    const tecla = (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      e.preventDefault()
+      onClose()
+    }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  }, [onClose])
+  const titulo = t('bases.a4.title', { label: s.label })
+  const quadrado = 'h-11 w-11 px-0'
+  return (
+    <div
+      role="region"
+      aria-label={titulo}
+      data-testid="sheet-view"
+      className="chk-vista fixed inset-0 z-50 flex flex-col bg-slate-950 text-slate-100"
+    >
+      <header className="no-print flex min-h-[72px] flex-none flex-wrap items-center gap-3 border-b border-slate-800 py-3 pl-5 pr-8">
+        <button ref={voltar} type="button" onClick={onClose} className={VOLTAR}>
+          <IconArrowLeft className="h-[18px] w-[18px]" />
+          {L(UI.sheetBack)}
+        </button>
+        <span aria-hidden="true" className="h-8 w-px bg-slate-800" />
+        <div className="min-w-0 pl-1">
+          <h1 className="m-0 truncate text-lg font-semibold tracking-[-0.01em]">{titulo}</h1>
+          <div className="mt-[3px] text-[12.5px] tabular-nums text-slate-400">
+            {fmt(L(UI.sheetOf), { n: index + 1, t: sheets.length })}
+          </div>
+        </div>
+        <div className="flex-1" />
+        <Button
+          size="lg"
+          variant="ghost"
+          className={quadrado}
+          aria-label={L(UI.sheetPrev)}
+          title={L(UI.sheetPrev)}
+          disabled={index === 0}
+          onClick={() => onIndex(index - 1)}
+          icon={<IconChevronLeft className="h-5 w-5" />}
+        />
+        <Button
+          size="lg"
+          variant="ghost"
+          className={quadrado}
+          aria-label={L(UI.sheetNext)}
+          title={L(UI.sheetNext)}
+          disabled={index === sheets.length - 1}
+          onClick={() => onIndex(index + 1)}
+          icon={<IconChevronRight className="h-5 w-5" />}
+        />
+        <Button
+          size="lg"
+          variant="primary"
+          data-testid="sheet-print"
+          onClick={() => window.print()}
+          icon={<IconPrinter className="h-4 w-4" />}
+        >
+          {L(UI.printThis)}
+        </Button>
+        {sheets.length > 1 && (
+          <Button
+            size="lg"
+            onClick={onPrintAll}
+            icon={<IconPrinter className="h-4 w-4 text-slate-300" />}
+          >
+            {fmt(L(UI.printSheets), { n: sheets.length })}
+          </Button>
+        )}
+      </header>
+      <div ref={corpo} className="chk-vista-corpo flex-1 overflow-auto px-4 py-6">
+        <div className="chk-papel mx-auto w-[794px] shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
+          <BaseSheetPage sheet={s} index={index} total={sheets.length} {...sheetProps} />
+        </div>
       </div>
     </div>
   )
 }
 
-function ColunaFase({ fase, checked, onToggle, sensorType, faceMode, corridorMode }) {
-  const L = useL()
-  const acento = ACENTOS[fase.id]
-  const { feitos, total } = useMemo(() => {
-    let f = 0
-    let t = 0
-    fase.grupos.forEach((g, gi) => {
-      if (!groupApplies(g, sensorType, { face: faceMode, corridor: corridorMode })) return
-      g.itens.forEach((_, ii) => {
-        t += 1
-        if (checked[chaveItem(fase.id, gi, ii)]) f += 1
-      })
-    })
-    return { feitos: f, total: t }
-  }, [fase, checked, sensorType, faceMode, corridorMode])
-
+/** Uma tabela de registo (voos ou GCPs): uma caixa de texto por célula, de 44 px. */
+function Tabela({
+  label,
+  cols,
+  linhas,
+  onCell,
+  largura,
+  nomeCelula,
+  separador = null,
+  plano = null,
+  corDe = null,
+  L,
+}) {
   return (
-    <section className="chk-coluna flex flex-col rounded-lg border border-slate-800 bg-slate-900 p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <span className={`h-3 w-1 rounded-full ${acento.risca}`} />
-        <h2 className={`text-xs font-semibold uppercase tracking-widest ${acento.titulo}`}>
-          {L(fase.titulo)}
-        </h2>
-      </div>
-
-      <div className="flex-1 space-y-4">
-        {/* filtragem sem reindexar: gi original preserva as chaves gravadas */}
-        {fase.grupos.map(
-          (grupo, gi) =>
-            groupApplies(grupo, sensorType, { face: faceMode, corridor: corridorMode }) && (
-              <div key={`${fase.id}.${gi}`} className="chk-grupo">
-                <h3 className="mb-1 font-mono text-xs uppercase tracking-wider text-slate-400">
-                  {L(grupo.titulo)}
-                </h3>
-                <ul className="space-y-0.5">
-                  {grupo.itens.map((item, ii) => {
-                    const k = chaveItem(fase.id, gi, ii)
-                    return (
-                      <ItemChecklist
-                        key={k}
-                        item={item}
-                        feito={!!checked[k]}
-                        acento={acento}
-                        onToggle={() => onToggle(k)}
-                      />
-                    )
-                  })}
-                </ul>
-              </div>
-            ),
-        )}
-      </div>
-
-      <BarraProgresso feitos={feitos} total={total} acento={acento} />
-    </section>
-  )
-}
-
-function Tabela({ titulo, cols, linhas, onCell, onAdd, onRemove, extra, minWidth, rotuloAdd }) {
-  const L = useL()
-  return (
-    <section className="chk-bloco rounded-lg border border-slate-800 bg-slate-900 p-4">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <Titulo>{L(titulo)}</Titulo>
-        <div className="no-print flex flex-wrap items-center gap-2">
-          {extra}
-          <Botao onClick={onAdd}>{L(rotuloAdd)}</Botao>
-          <Botao onClick={onRemove} tom="aviso" disabled={linhas.length === 0}>
-            {L(UI.removeLast)}
-          </Botao>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className={`chk-tabela w-full border-collapse text-left ${minWidth}`}>
-          <thead>
-            <tr>
-              {cols.map((c) => (
-                <th
-                  key={c.key}
-                  className={`border border-slate-800 bg-slate-950 px-2 py-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-slate-400 ${c.w}`}
-                >
-                  {L(c.label)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.map((linha, li) => (
-              <tr key={linha._id}>
-                {cols.map((c) => (
-                  <Celula
-                    key={c.key}
-                    value={linha[c.key] ?? ''}
-                    onChange={(v) => onCell(li, c.key, v)}
-                  />
-                ))}
-              </tr>
+    <div className="chk-moldura overflow-x-auto rounded-[10px] border border-slate-800">
+      <table
+        aria-label={label}
+        className="chk-tabela w-full min-w-[1100px] border-collapse text-left"
+      >
+        <thead>
+          <tr className="bg-sunken text-xs">
+            {cols.map((c, i) => (
+              <th
+                key={c.key}
+                scope="col"
+                className={`px-3 py-3 font-normal ${largura[c.key] ?? ''} ${
+                  i === 0
+                    ? ''
+                    : c.key === separador
+                      ? 'border-l border-[#2C4A68]'
+                      : 'border-l border-raised'
+                } ${plano && !plano.has(c.key) ? 'text-slate-200' : 'text-slate-400'}`}
+              >
+                {c.key === 'n' && plano ? L(UI.flightCol) : L(c.label)}
+              </th>
             ))}
-            {linhas.length === 0 && (
-              <tr>
-                <td
-                  colSpan={cols.length}
-                  className="border border-slate-800 px-2 py-3 text-center text-[12px] text-slate-600"
-                >
-                  {L(UI.emptyRows)}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </section>
+          </tr>
+        </thead>
+        <tbody>
+          {linhas.map((linha, li) => (
+            <tr key={linha._id} className="border-t border-raised">
+              {cols.map((c, i) => {
+                const cor = c.key === 'n' && corDe ? corDe(linha.n) : null
+                return (
+                  <td
+                    key={c.key}
+                    className={`p-0 ${
+                      i === 0
+                        ? ''
+                        : c.key === separador
+                          ? 'border-l border-[#2C4A68]'
+                          : 'border-l border-raised'
+                    }`}
+                  >
+                    <span className="flex h-11 items-center">
+                      {cor && (
+                        <span
+                          aria-hidden="true"
+                          className="ml-3 h-2.5 w-2.5 flex-none rounded-full"
+                          style={{ backgroundColor: cor }}
+                        />
+                      )}
+                      <input
+                        value={linha[c.key] ?? ''}
+                        placeholder={c.key === 'n' ? String(li + 1) : undefined}
+                        aria-label={nomeCelula(L(c.label), linha, li)}
+                        onChange={(e) => onCell(li, c.key, e.target.value)}
+                        className={`chk-fill h-11 w-full min-w-0 bg-transparent text-[13.5px] tabular-nums placeholder:text-slate-500 focus:bg-raised focus:shadow-[inset_0_0_0_2px_#38BDF8] focus:outline-none ${
+                          cor ? 'pl-2 pr-3' : 'px-3'
+                        } ${
+                          c.key === 'n'
+                            ? 'font-semibold text-slate-100'
+                            : plano?.has(c.key)
+                              ? 'text-slate-200'
+                              : 'font-medium text-slate-100'
+                        }`}
+                      />
+                    </span>
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+          {linhas.length === 0 && (
+            <tr>
+              <td colSpan={cols.length} className="px-3 py-3 text-center text-xs text-slate-400">
+                {L(UI.emptyRows)}
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
 function CaixaNota({ label, value, onChange }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="font-mono text-xs uppercase tracking-wider text-slate-400">{label}</span>
+    <label className="flex min-w-0 flex-col gap-1.5 text-xs text-slate-400">
+      {label}
       <textarea
         rows={4}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="chk-fill chk-nota w-full resize-y rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-[13px] leading-relaxed text-slate-100 placeholder:text-slate-600 focus:border-sky-500 focus:outline-none"
+        className="chk-fill chk-nota h-28 w-full resize-y rounded-lg border border-slate-700 bg-field px-3 py-2.5 text-[13.5px] leading-normal text-slate-100 placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
       />
     </label>
   )
@@ -1283,6 +2023,19 @@ export default function ChecklistPage({
     ...(guardado.notas && typeof guardado.notas === 'object' ? guardado.notas : {}),
   }))
 
+  /* -------- Só vista (não se grava nem se exporta): fase, grupos, voo -------- */
+  const aplica = (g) => groupApplies(g, sensorType, { face: faceMode, corridor: corridorMode })
+  const [fase, setFase] = useState(() => faseInicial(FASES, checked, aplica))
+  const [abertos, setAbertos] = useState(() => gruposAbertos(FASES, checked))
+  const [vooEscolhido, setVooEscolhido] = useState(/** @type {string|null} */ (null))
+  // a folha A4 aberta (índice nas fichas) e a que se abriu por último
+  const [ficha, setFicha] = useState(/** @type {number|null} */ (null))
+  const [ultimaFicha, setUltimaFicha] = useState(/** @type {string|null} */ (null))
+  // 'fichas' enquanto se imprimem as folhas de todas as bases
+  const [imprimir, setImprimir] = useState(/** @type {string|null} */ (null))
+  const cardRefs = useRef(/** @type {Record<string, HTMLButtonElement|null>} */ ({}))
+  const prefixo = useId()
+
   /* ------------- Gravação automática com debounce simples ------------- */
   // Sem guarda de hidratação: o estado já nasce com o que estava gravado,
   // pelo que a primeira gravação reescreve exactamente o mesmo conteúdo.
@@ -1304,7 +2057,10 @@ export default function ChecklistPage({
   const continuarOutra = () => {
     if (!outraMissao) return
     const g = outraMissao
-    if (g.checked && typeof g.checked === 'object') setChecked(g.checked)
+    if (g.checked && typeof g.checked === 'object') {
+      setChecked(g.checked)
+      setAbertos(gruposAbertos(FASES, g.checked))
+    }
     setMissao((m) => ({
       ...m,
       ...(g.missao && typeof g.missao === 'object' ? g.missao : {}),
@@ -1367,6 +2123,37 @@ export default function ChecklistPage({
     return { porFase, feitos, total }
   }, [checked, lang, sensorType, faceMode, corridorMode, FASES])
 
+  // as contagens do ecrã: por fase e por grupo, com os críticos
+  const contagens = useMemo(
+    () =>
+      FASES.map((fase) => {
+        const grupos = {}
+        let feitos = 0
+        let total = 0
+        let crit = 0
+        let critFeitos = 0
+        fase.grupos.forEach((g, gi) => {
+          if (!groupApplies(g, sensorType, { face: faceMode, corridor: corridorMode })) return
+          const c = { feitos: 0, total: g.itens.length, crit: 0, critFeitos: 0 }
+          g.itens.forEach((item, ii) => {
+            const on = !!checked[chaveItem(fase.id, gi, ii)]
+            if (on) c.feitos += 1
+            if (item.critico) {
+              c.crit += 1
+              if (on) c.critFeitos += 1
+            }
+          })
+          grupos[gi] = c
+          feitos += c.feitos
+          total += c.total
+          crit += c.crit
+          critFeitos += c.critFeitos
+        })
+        return { feitos, total, crit, critFeitos, grupos }
+      }),
+    [FASES, checked, sensorType, faceMode, corridorMode],
+  )
+
   const importarBlocos = () => {
     if (!blocks || blocks.length === 0) return
     // pela ordem de voo, com o rótulo do voo (A-1), a área e o tempo
@@ -1406,6 +2193,7 @@ export default function ChecklistPage({
       return
     }
     setChecked({})
+    setAbertos(gruposAbertos(FASES, {}))
     setMissao({
       operador: '',
       missao: missionName || '',
@@ -1460,218 +2248,552 @@ export default function ChecklistPage({
     document.body.classList.remove('print-blank')
   }
 
+  /* ---------------------- Voos do plano e fichas ---------------------- */
+  // os voos do plano pela ordem de voo, com os rótulos do registo (A-1)
+  const voosPlano = useMemo(() => {
+    if (!Array.isArray(blocks) || blocks.length === 0) return []
+    const info = (b) => flightLabels?.[b.id] ?? null
+    return [...blocks]
+      .sort((a, b) => (info(a)?.flight ?? a.id) - (info(b)?.flight ?? b.id))
+      .map((b, i) => ({
+        label: info(b)?.flightLabel || String(b.id ?? i + 1),
+        color: info(b)?.color ?? null,
+        timeS: b.timeS,
+        transitS: info(b)?.transitS ?? 0,
+      }))
+  }, [blocks, flightLabels])
+  const vooAtual = vooEscolhido ?? proximoVoo(voosPlano, voos)
+  const fichaDoVoo = useMemo(() => {
+    const m = new Map()
+    for (const s of baseSheets) for (const f of s.flights ?? []) m.set(f.flightLabel, { s, f })
+    return m
+  }, [baseSheets])
+  const corDoVoo = (n) => voosPlano.find((v) => v.label === String(n ?? '').trim())?.color ?? null
+
+  // a linha do voo escolhido: a base, a zona, o RTH, o tempo, o KMZ e o registo
+  const infoVoo = (() => {
+    const v = voosPlano.find((x) => x.label === vooAtual)
+    if (!v) return ''
+    const partes = []
+    const x = fichaDoVoo.get(v.label)
+    if (x) {
+      partes.push(t('bases.label', { label: x.s.label }))
+      if (Number.isFinite(x.s.radiusM))
+        partes.push(fmt(L(UI.flightZone), { r: Math.round(x.s.radiusM) }))
+      const rth = x.f.rthM ?? x.s.rthM
+      if (rth != null) partes.push(`RTH ${Math.round(rth)} m`)
+      if (Number.isFinite(x.f.totalS))
+        partes.push(
+          fmt(L(UI.flightTime), { m: Math.round(x.f.totalS / 60) }) +
+            (x.f.pctUseful != null ? ` (${fmt(L(UI.flightPct), { p: x.f.pctUseful })})` : ''),
+        )
+      if (x.f.file) partes.push(x.f.file)
+    } else if (Number.isFinite(v.timeS)) {
+      partes.push(fmt(L(UI.flightPlanned), { m: Math.round((v.timeS + v.transitS) / 60) }))
+    }
+    const linha = voos.find((l) => String(l.n ?? '').trim() === v.label)
+    const ini = String(linha?.inicio ?? '').trim()
+    const fim = String(linha?.fim ?? '').trim()
+    if (ini || fim) partes.push(fmt(L(UI.flightLogged), { a: ini || '—', b: fim || '—' }))
+    return partes.join(' · ')
+  })()
+
+  // o que a folha A4 de cada base leva da checklist: a ordem do dia, a
+  // identificação, as acções de segurança e os críticos da descolagem (o
+  // grupo 1 da fase Durante: os índices dos grupos não mudam)
+  const ordemDia = useMemo(() => dayFlightOrder(baseSheets), [baseSheets])
+  const descolagem = FASES.find((f) => f.id === 'durante')?.grupos[1]
+  const sheetProps = {
+    order: ordemDia,
+    missionName: missao.missao,
+    droneLabel: missao.plataforma,
+    date: missao.data,
+    pilot: missao.operador,
+    safety,
+    criticalItems: (descolagem?.itens ?? [])
+      .filter((item) => item.critico)
+      .map((item) => (item.nota ? `${L(item.texto)} (${L(item.nota)})` : L(item.texto))),
+  }
+
+  const abrirFicha = (i) => {
+    setFicha(i)
+    setUltimaFicha(baseSheets[i]?.id ?? null)
+  }
+  const fecharFicha = () => {
+    const id = baseSheets[ficha]?.id
+    // a checklist deixa de estar inerte antes de o foco voltar ao cartão
+    flushSync(() => setFicha(null))
+    if (id != null) cardRefs.current[id]?.focus()
+  }
+  // as folhas de todas as bases só existem enquanto se imprimem
+  const imprimirFichas = () => {
+    flushSync(() => setImprimir('fichas'))
+    window.print()
+    setImprimir(null)
+  }
+
+  /* ---------------------------- Cabeçalho ---------------------------- */
+  const nBases = baseSheets.length
+  const nVoos = voosPlano.length
+  const voosTxt =
+    nVoos === 0
+      ? ''
+      : nBases > 0
+        ? nVoos === 1
+          ? L(UI.flightBase)
+          : nBases === 1
+            ? fmt(L(UI.flightsBase), { n: nVoos })
+            : fmt(L(UI.flightsBases), { n: nVoos, b: nBases })
+        : nVoos === 1
+          ? L(UI.flightOne)
+          : fmt(L(UI.flights), { n: nVoos })
+  const subtitulo = [missao.missao, missao.plataforma, voosTxt].filter(Boolean).join(' · ')
+
   const pctGlobal = resumo.total ? Math.round((resumo.feitos / resumo.total) * 100) : 0
+  const critPorFazer = contagens.reduce((n, c) => n + c.crit - c.critFeitos, 0)
+  const ids = (id) => ({
+    tab: `${prefixo}-tab-${id}`,
+    painel: `${prefixo}-painel-${id}`,
+    titulo: `${prefixo}-titulo-${id}`,
+    progresso: `${prefixo}-progresso-${id}`,
+  })
+  // setas, Home e End entre os separadores (o foco segue a escolha)
+  const teclaFase = (e, i) => {
+    const n = FASES.length
+    const destino = { ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }[
+      e.key
+    ]
+    if (destino === undefined) return
+    e.preventDefault()
+    setFase(FASES[destino].id)
+    document.getElementById(ids(FASES[destino].id).tab)?.focus()
+  }
+  const temLado = Boolean(safety) || baseSheets.length > 0
 
   return (
-    <div className="chk-root min-h-full bg-slate-950 text-slate-100">
+    <div
+      className="chk-root min-h-full bg-slate-950 text-slate-100"
+      data-imprimir={imprimir ?? (ficha != null ? 'ficha' : 'checklist')}
+    >
       <style>{PRINT_CSS}</style>
 
-      <div className="mx-auto max-w-[1600px] px-4 py-5">
+      <div className="chk-page" inert={ficha != null}>
         {/* -------------------------- Cabeçalho -------------------------- */}
-        <header className="mb-5">
-          <div className="no-print mb-3">
-            <button
-              type="button"
-              onClick={onBack}
-              className="rounded px-2 py-1 text-xs font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
-            >
-              {L(UI.back)}
-            </button>
+        <header className="chk-cabecalho flex min-h-[72px] flex-wrap items-center gap-3 border-b border-slate-800 bg-slate-950 py-3 pl-5 pr-8">
+          <button type="button" onClick={onBack} className={`no-print ${VOLTAR}`}>
+            <IconArrowLeft className="h-[18px] w-[18px]" />
+            {L(UI.back)}
+          </button>
+          <span aria-hidden="true" className="no-print h-8 w-px bg-slate-800" />
+          <div className="min-w-0 pl-1">
+            <h1 className="m-0 text-lg font-semibold tracking-[-0.01em]">{L(UI.title)}</h1>
+            {subtitulo && <div className="mt-[3px] text-[12.5px] text-slate-400">{subtitulo}</div>}
           </div>
+          <div className="flex-1" />
+          <div className="no-print flex flex-wrap items-center gap-2.5">
+            <Button
+              size="lg"
+              variant="primary"
+              onClick={exportarJSON}
+              icon={<IconDownload className="h-4 w-4" />}
+            >
+              {L(UI.exportJson)}
+            </Button>
+            <Button
+              size="lg"
+              onClick={imprimirPreenchido}
+              icon={<IconPrinter className="h-4 w-4 text-slate-300" />}
+            >
+              {L(UI.printFilled)}
+            </Button>
+            <Button
+              size="lg"
+              onClick={imprimirEmBranco}
+              icon={<IconFile className="h-4 w-4 text-slate-300" />}
+            >
+              {L(UI.printBlank)}
+            </Button>
+            <span aria-hidden="true" className="mx-1.5 h-8 w-px bg-slate-700" />
+            <Button
+              size="lg"
+              variant="danger"
+              onClick={limpar}
+              icon={<IconTrash className="h-4 w-4" />}
+            >
+              {L(UI.clear)}
+            </Button>
+          </div>
+        </header>
 
+        <main className="mx-auto flex max-w-[1600px] flex-col gap-5 px-4 pb-8 pt-5 sm:px-8">
           {outraMissao && (
             <div
               data-testid="checklist-other-mission"
-              className="no-print mb-3 flex flex-wrap items-center gap-2 rounded border border-amber-700/60 bg-amber-950/40 px-3 py-2 text-[13px] text-amber-100"
+              className="no-print flex flex-wrap items-center gap-3 rounded-xl border border-[#6B4A12] bg-[#1F170A] px-4 py-3 text-[13px] text-amber-100"
             >
-              <span>
+              <span className="min-w-0 flex-1">
                 {L(UI.otherMission)
                   .replace('{m}', outraMissao.nome)
                   .replace('{d}', outraMissao.savedAt ?? outraMissao.missao?.data ?? '—')}
               </span>
-              <Botao onClick={esquecerOutra} tom="primario">
+              <Button size="md" variant="primary" onClick={esquecerOutra}>
                 {L(UI.startNew)}
-              </Botao>
-              <Botao onClick={continuarOutra}>
+              </Button>
+              <Button size="md" onClick={continuarOutra}>
                 {L(UI.continueOld).replace('{m}', outraMissao.nome)}
-              </Botao>
+              </Button>
             </div>
           )}
-          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-4">
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight text-slate-100">{L(UI.title)}</h1>
-              <p className="mt-0.5 text-[13px] text-slate-400">{L(UI.subtitle)}</p>
-            </div>
 
-            <div className="no-print flex flex-wrap items-center gap-2">
-              <span className="mr-1 font-mono text-xs uppercase tracking-wider text-slate-400">
-                {resumo.feitos}/{resumo.total} · {pctGlobal}%
+          {/* ---------------------- Campos da missão ---------------------- */}
+          <section
+            aria-labelledby={`${prefixo}-missao`}
+            className={`${CARTAO} px-5 pb-[18px] pt-4`}
+          >
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+              <h2 id={`${prefixo}-missao`} className={H2}>
+                {L(UI.missionSection)}
+              </h2>
+              <span className="flex-1" />
+              <span className="no-print flex items-center gap-1.5 text-[12.5px] text-slate-400">
+                <IconCheckCircle className="h-[15px] w-[15px] text-emerald-400" />
+                {L(UI.autosave)}
               </span>
-              <Botao onClick={exportarJSON} tom="primario">
-                {L(UI.exportJson)}
-              </Botao>
-              <Botao onClick={imprimirPreenchido}>{L(UI.printFilled)}</Botao>
-              <Botao onClick={imprimirEmBranco}>{L(UI.printBlank)}</Botao>
-              <Botao onClick={limpar} tom="aviso">
-                {L(UI.clear)}
-              </Botao>
             </div>
-          </div>
-        </header>
-
-        {/* ---------------------- Campos da missão ---------------------- */}
-        <section className="chk-bloco mb-5 rounded-lg border border-slate-800 bg-slate-900 p-4">
-          <Titulo className="mb-3">{L(UI.missionSection)}</Titulo>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {CAMPOS_MISSAO.map((c) => (
-              <CampoTexto
-                key={c.key}
-                label={L(c.label)}
-                type={c.type}
-                placeholder={L(c.placeholder)}
-                value={missao[c.key] ?? ''}
-                onChange={(v) => setCampoMissao(c.key, v)}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* ------------- Acções de segurança escritas no KMZ ------------- */}
-        {safety && (
-          <section
-            data-testid="checklist-safety"
-            className="chk-bloco mb-5 rounded-lg border border-slate-800 bg-slate-900 p-4"
-          >
-            <Titulo className="mb-2">{t('safety.checklist')}</Titulo>
-            <p className="text-sm text-slate-200">
-              {t('safety.checklistLine', {
-                finish: t(`safety.finish.${safety.finishAction}`),
-                lost:
-                  safety.exitOnRCLost === 'executeLostAction'
-                    ? t('safety.checklistStop', {
-                        mode: t('safety.rcLost.executeLostAction'),
-                        action: t(`safety.rcAction.${safety.executeRCLostAction}`),
-                      })
-                    : t('safety.rcLost.goContinue'),
-              })}
-            </p>
-            {rthInfo && (
-              <p data-testid="checklist-rth" className="mt-1 text-sm text-slate-200">
-                {t('safety.rth', { rth: rthRangeLabel(rthInfo), takeoff: rthInfo.takeoffM })}
-              </p>
-            )}
-            <p className="mt-1 text-xs leading-relaxed text-slate-400">
-              {t('safety.checklistHint')}
-            </p>
+            <div className="chk-campos grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {CAMPOS_MISSAO.map((c) => (
+                <CampoTexto
+                  key={c.key}
+                  label={L(c.label)}
+                  type={c.type}
+                  placeholder={L(c.placeholder)}
+                  value={missao[c.key] ?? ''}
+                  onChange={(v) => setCampoMissao(c.key, v)}
+                />
+              ))}
+            </div>
           </section>
-        )}
 
-        {/* ------------- Bases de descolagem: ficha de campo ------------- */}
-        {baseSheets.length > 0 && (
-          <section
-            data-testid="checklist-bases"
-            className="chk-bases mb-5 rounded-lg border border-slate-800 bg-slate-900 p-4"
+          <div
+            className={`chk-colunas grid items-start gap-5 ${
+              temLado ? 'xl:grid-cols-[minmax(0,1fr)_468px]' : ''
+            }`}
           >
-            <Titulo className="mb-3">{t('bases.sheet.title')}</Titulo>
-            <BaseFieldSheets
-              day={daySheets}
-              sheets={baseSheets}
-              cardClass="chk-base bg-slate-950"
-              tableClass="chk-base-tabela"
+            {/* ------------------- Checklist em fases ------------------- */}
+            <section
+              aria-labelledby={`${prefixo}-checklist`}
+              className={`${CARTAO} flex min-w-0 flex-col gap-3 px-[18px] pb-[18px] pt-4`}
+            >
+              <div className="flex min-h-[30px] flex-wrap items-center gap-3">
+                <h2 id={`${prefixo}-checklist`} className={H2}>
+                  {L(UI.checklist)}
+                </h2>
+                <span className="chk-progresso text-[13px] tabular-nums text-slate-300">
+                  {fmt(L(UI.overall), { f: resumo.feitos, t: resumo.total, p: pctGlobal })}
+                </span>
+                <span className="flex-1" />
+                {critPorFazer > 0 ? (
+                  <CritPill>{critText(critPorFazer, L)}</CritPill>
+                ) : (
+                  <span className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#1F5C47] bg-[#0D2A21] px-[11px] text-[12.5px] font-semibold text-emerald-200">
+                    <Svg className="h-3.5 w-3.5 text-emerald-400" strokeWidth={2.2}>
+                      <path d="M20 6 9 17l-5-5" />
+                    </Svg>
+                    {L(UI.critAllDone)}
+                  </span>
+                )}
+              </div>
+
+              <div
+                role="tablist"
+                aria-label={L(UI.phases)}
+                className="no-print grid grid-cols-1 gap-2 sm:grid-cols-3"
+              >
+                {FASES.map((f, i) => (
+                  <FaseTab
+                    key={f.id}
+                    ids={ids(f.id)}
+                    fase={f}
+                    n={i + 1}
+                    c={contagens[i]}
+                    sel={f.id === fase}
+                    onSelect={() => setFase(f.id)}
+                    onKeyDown={(e) => teclaFase(e, i)}
+                    L={L}
+                  />
+                ))}
+              </div>
+
+              <div className="chk-fases">
+                {FASES.map((f, fi) => {
+                  const sel = f.id === fase
+                  return (
+                    <div
+                      key={f.id}
+                      role="tabpanel"
+                      id={ids(f.id).painel}
+                      aria-labelledby={ids(f.id).tab}
+                      hidden={!sel}
+                      className={`chk-fase flex-col gap-2 ${sel ? 'flex' : 'hidden'}`}
+                    >
+                      <h3 className="chk-fase-titulo hidden">
+                        {L(f.titulo)}
+                        <span className="chk-progresso">
+                          {' '}
+                          ·{' '}
+                          {fmt(L(UI.itemsOf), { f: contagens[fi].feitos, t: contagens[fi].total })}
+                        </span>
+                      </h3>
+                      {f.id === 'durante' && voosPlano.length > 0 && (
+                        <SeletorVoo
+                          voos={voosPlano}
+                          valor={vooAtual}
+                          onChange={setVooEscolhido}
+                          info={infoVoo}
+                          L={L}
+                        />
+                      )}
+                      {/* filtragem sem reindexar: gi original preserva as chaves gravadas */}
+                      {f.grupos.map(
+                        (grupo, gi) =>
+                          groupApplies(grupo, sensorType, {
+                            face: faceMode,
+                            corridor: corridorMode,
+                          }) && (
+                            <Grupo
+                              key={`${f.id}.${gi}`}
+                              id={`${prefixo}-grupo-${f.id}-${gi}`}
+                              grupo={grupo}
+                              faseId={f.id}
+                              gi={gi}
+                              c={contagens[fi].grupos[gi]}
+                              checked={checked}
+                              onToggle={toggle}
+                              aberto={abertos[`${f.id}.${gi}`] ?? true}
+                              onAbrir={() =>
+                                setAbertos((a) => ({
+                                  ...a,
+                                  [`${f.id}.${gi}`]: !(a[`${f.id}.${gi}`] ?? true),
+                                }))
+                              }
+                              L={L}
+                            />
+                          ),
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+
+            {temLado && (
+              <div className="chk-lado grid items-start gap-4 md:grid-cols-2 xl:grid-cols-1">
+                {safety && <SegurancaKmz safety={safety} rthInfo={rthInfo} t={t} L={L} />}
+                {baseSheets.length > 0 && (
+                  <FichasPorBase
+                    sheets={baseSheets}
+                    day={daySheets}
+                    onOpen={abrirFicha}
+                    onPrintAll={imprimirFichas}
+                    ultima={ultimaFicha}
+                    cardRefs={cardRefs}
+                    t={t}
+                    L={L}
+                  />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* ------------------------ Registo de voos ---------------------- */}
+          <section
+            aria-labelledby={`${prefixo}-voos`}
+            className={`chk-registo ${CARTAO} px-5 pb-5 pt-3.5`}
+          >
+            <div className="mb-3 flex flex-wrap items-center gap-2.5">
+              <div className="min-w-0 flex-1">
+                <h2 id={`${prefixo}-voos`} className={H2}>
+                  {L(UI.flightsSection)}
+                </h2>
+                <p className="m-0 mt-0.5 text-[12.5px] text-slate-400">{L(UI.flightsHint)}</p>
+              </div>
+              <div className="no-print flex flex-wrap items-center gap-2">
+                {blocks && blocks.length > 0 && (
+                  <Button
+                    size="lg"
+                    onClick={importarBlocos}
+                    icon={<IconImport className="h-4 w-4 text-slate-300" />}
+                  >
+                    {L(UI.importBlocks)} ({blocks.length})
+                  </Button>
+                )}
+                <Button
+                  size="lg"
+                  aria-label={L(UI.addFlightFull)}
+                  title={L(UI.addFlightFull)}
+                  onClick={() => setVoos((v) => [...v, linhaVazia(COLS_VOO)])}
+                  icon={<IconPlus className="h-4 w-4" />}
+                >
+                  {L(UI.addFlight)}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="danger"
+                  aria-label={L(UI.removeFlightFull)}
+                  title={L(UI.removeFlightFull)}
+                  disabled={voos.length === 0}
+                  onClick={() => setVoos((v) => v.slice(0, -1))}
+                >
+                  {L(UI.removeLast)}
+                </Button>
+              </div>
+            </div>
+            <Tabela
+              label={L(UI.flightsSection)}
+              cols={ORDEM_VOO.map((k) => COLS_VOO.find((c) => c.key === k))}
+              linhas={voos}
+              onCell={setCelulaVoo}
+              largura={LARGURA.voo}
+              separador="inicio"
+              plano={new Set(['n', 'area', 'previsto'])}
+              corDe={corDoVoo}
+              nomeCelula={(col, linha, i) =>
+                String(linha.n ?? '').trim()
+                  ? fmt(L(UI.cellFlight), { col, v: String(linha.n).trim() })
+                  : fmt(L(UI.cellRow), { col, i: i + 1 })
+              }
+              L={L}
             />
           </section>
-        )}
 
-        {/* -------------------- Colunas de checklist -------------------- */}
-        <div className="chk-cols mb-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {FASES.map((fase) => (
-            <ColunaFase
-              key={fase.id}
-              fase={fase}
-              checked={checked}
-              onToggle={toggle}
-              sensorType={sensorType}
-              faceMode={faceMode}
-              corridorMode={corridorMode}
+          {/* --------------------------- GCPs ----------------------------- */}
+          <section
+            aria-labelledby={`${prefixo}-gcps`}
+            className={`chk-registo ${CARTAO} px-5 pb-5 pt-3.5`}
+          >
+            <div className="mb-3 flex flex-wrap items-center gap-2.5">
+              <div className="min-w-0 flex-1">
+                <h2 id={`${prefixo}-gcps`} className={H2}>
+                  {L(UI.gcpSection)}
+                </h2>
+                <p className="m-0 mt-0.5 text-[12.5px] text-slate-400">
+                  {plannedGcps && plannedGcps.length > 0
+                    ? fmt(L(UI.gcpsHintPlanned), { n: plannedGcps.length })
+                    : L(UI.gcpsHint)}
+                </p>
+              </div>
+              <div className="no-print flex flex-wrap items-center gap-2">
+                {plannedGcps && plannedGcps.length > 0 && (
+                  <Button
+                    size="lg"
+                    onClick={importarGcps}
+                    icon={<IconImport className="h-4 w-4 text-slate-300" />}
+                  >
+                    {L(UI.importGcps)} ({plannedGcps.length})
+                  </Button>
+                )}
+                <Button
+                  size="lg"
+                  aria-label={L(UI.addGcpFull)}
+                  title={L(UI.addGcpFull)}
+                  onClick={() => setGcps((g) => [...g, linhaVazia(COLS_GCP)])}
+                  icon={<IconPlus className="h-4 w-4" />}
+                >
+                  {L(UI.addGcp)}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="danger"
+                  aria-label={L(UI.removeGcpFull)}
+                  title={L(UI.removeGcpFull)}
+                  disabled={gcps.length === 0}
+                  onClick={() => setGcps((g) => g.slice(0, -1))}
+                >
+                  {L(UI.removeLast)}
+                </Button>
+              </div>
+            </div>
+            <Tabela
+              label={L(UI.gcpSection)}
+              cols={COLS_GCP}
+              linhas={gcps}
+              onCell={setCelulaGcp}
+              largura={LARGURA.gcp}
+              nomeCelula={(col, _linha, i) => fmt(L(UI.cellGcp), { col, i: i + 1 })}
+              L={L}
+            />
+          </section>
+
+          {/* --------------------------- Notas ---------------------------- */}
+          <section aria-labelledby={`${prefixo}-notas`} className={`${CARTAO} px-5 pb-5 pt-3.5`}>
+            <h2 id={`${prefixo}-notas`} className={`${H2} mb-3`}>
+              {L(UI.notesSection)}
+            </h2>
+            <div className="chk-notas grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {CAMPOS_NOTAS.map((c) => (
+                <CaixaNota
+                  key={c.key}
+                  label={L(c.label)}
+                  value={notas[c.key] ?? ''}
+                  onChange={(v) => setNota(c.key, v)}
+                />
+              ))}
+            </div>
+          </section>
+
+          {/* ------------------------ Assinaturas -------------------------- */}
+          <section
+            aria-labelledby={`${prefixo}-assinaturas`}
+            className={`chk-assinaturas ${CARTAO} px-5 pb-[18px] pt-3.5`}
+          >
+            <div className="flex items-baseline gap-2.5">
+              <h2 id={`${prefixo}-assinaturas`} className={H2}>
+                {L(UI.signatures)}
+              </h2>
+              <span className="no-print text-[12.5px] text-slate-400">{L(UI.signaturesHint)}</span>
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-8">
+              {ASSINATURAS.map((papel) => (
+                <div key={papel.pt}>
+                  <div className="chk-linha h-10 border-b border-[#3A4A66]" />
+                  <p className="m-0 mt-1.5 text-[12.5px] text-slate-300">{L(papel)}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </main>
+      </div>
+
+      {ficha != null && baseSheets[ficha] && (
+        <FichaVista
+          sheets={baseSheets}
+          index={ficha}
+          onIndex={abrirFicha}
+          onClose={fecharFicha}
+          onPrintAll={imprimirFichas}
+          sheetProps={sheetProps}
+          t={t}
+          L={L}
+        />
+      )}
+
+      {imprimir === 'fichas' && (
+        // fora do ecrã mas com a largura da folha: cada uma mede-se para caber na página
+        <div
+          className="chk-fichas-impressao pointer-events-none invisible absolute left-[-10000px] top-0"
+          data-testid="sheets-print"
+        >
+          {baseSheets.map((s, i) => (
+            <BaseSheetPage
+              key={s.id}
+              sheet={s}
+              index={i}
+              total={baseSheets.length}
+              {...sheetProps}
             />
           ))}
         </div>
-
-        {/* ------------------------ Registo de voos ---------------------- */}
-        <div className="mb-5">
-          <Tabela
-            titulo={UI.flightsSection}
-            cols={COLS_VOO}
-            linhas={voos}
-            rotuloAdd={UI.addFlight}
-            minWidth="min-w-[1260px]"
-            onCell={setCelulaVoo}
-            onAdd={() => setVoos((v) => [...v, linhaVazia(COLS_VOO)])}
-            onRemove={() => setVoos((v) => v.slice(0, -1))}
-            extra={
-              blocks && blocks.length > 0 ? (
-                <Botao onClick={importarBlocos}>
-                  {L(UI.importBlocks)} ({blocks.length})
-                </Botao>
-              ) : null
-            }
-          />
-        </div>
-
-        {/* --------------------------- GCPs ----------------------------- */}
-        <div className="mb-5">
-          <Tabela
-            titulo={UI.gcpSection}
-            cols={COLS_GCP}
-            linhas={gcps}
-            rotuloAdd={UI.addGcp}
-            minWidth="min-w-[1040px]"
-            onCell={setCelulaGcp}
-            onAdd={() => setGcps((g) => [...g, linhaVazia(COLS_GCP)])}
-            onRemove={() => setGcps((g) => g.slice(0, -1))}
-            extra={
-              plannedGcps && plannedGcps.length > 0 ? (
-                <Botao onClick={importarGcps}>
-                  {L(UI.importGcps)} ({plannedGcps.length})
-                </Botao>
-              ) : null
-            }
-          />
-        </div>
-
-        {/* --------------------------- Notas ---------------------------- */}
-        <section className="chk-bloco mb-5 rounded-lg border border-slate-800 bg-slate-900 p-4">
-          <Titulo className="mb-3">{L(UI.notesSection)}</Titulo>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {CAMPOS_NOTAS.map((c) => (
-              <CaixaNota
-                key={c.key}
-                label={L(c.label)}
-                value={notas[c.key] ?? ''}
-                onChange={(v) => setNota(c.key, v)}
-              />
-            ))}
-          </div>
-        </section>
-
-        {/* ------------------------ Assinaturas -------------------------- */}
-        <section className="chk-assinaturas">
-          <div className="grid grid-cols-3 gap-8 pt-8">
-            {ASSINATURAS.map((papel) => (
-              <div key={papel.pt}>
-                <div className="h-8 border-b border-slate-600" />
-                <p className="mt-1 font-mono text-xs uppercase tracking-wider text-slate-400">
-                  {L(papel)}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <p className="no-print mt-6 text-center font-mono text-xs text-slate-600">
-          {L(UI.autosave)}
-        </p>
-      </div>
+      )}
     </div>
   )
 }
@@ -1679,8 +2801,6 @@ export default function ChecklistPage({
 /* --------------------------- Estilos de impressão --------------------------- */
 
 const PRINT_CSS = `
-.chk-assinaturas { display: none; }
-
 @media print {
   @page { size: A4 portrait; margin: 10mm; }
 
@@ -1691,116 +2811,187 @@ const PRINT_CSS = `
 
   .no-print { display: none !important; }
 
-  .chk-root,
-  .chk-root * {
+  /* o que se imprime: a checklist, a folha da base aberta, ou as de todas */
+  .chk-root { min-height: 0 !important; background: #fff !important; }
+  .chk-root[data-imprimir='ficha'] .chk-page,
+  .chk-root[data-imprimir='fichas'] .chk-page,
+  .chk-root[data-imprimir='fichas'] .chk-vista { display: none !important; }
+  .chk-root .chk-vista {
+    position: static !important;
+    display: block !important;
+    background: #fff !important;
+  }
+  .chk-root .chk-vista-corpo { overflow: visible !important; padding: 0 !important; }
+  .chk-root .chk-papel { width: auto !important; box-shadow: none !important; }
+  .chk-root .chk-fichas-impressao {
+    position: static !important;
+    visibility: visible !important;
+  }
+  /* uma folha por página (a margem é a da página), reduzida só quando o
+     conteúdo não cabe numa (--print-zoom, medido em BaseSheetPage) */
+  .chk-root .chk-ficha {
+    width: auto !important;
+    min-height: calc(276mm / var(--print-zoom, 1)) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    zoom: var(--print-zoom, 1);
+    break-after: page;
+  }
+  .chk-root .chk-ficha:last-child { break-after: auto; }
+  .chk-root .chk-ficha a { text-decoration: none !important; }
+
+  /* a checklist: a preto e branco, compacta */
+  .chk-page,
+  .chk-page * {
     background: transparent !important;
     color: #000 !important;
+    border-color: #ccc !important;
     box-shadow: none !important;
     text-shadow: none !important;
   }
-
-  .chk-root {
-    min-height: 0 !important;
-    font-size: 9pt;
+  .chk-page { font-size: 9pt; }
+  .chk-page .chk-registo { break-inside: avoid; }
+  .chk-page .chk-campos input {
+    height: auto !important;
+    padding: 1mm 1.5mm !important;
   }
-
-  .chk-root .chk-bloco,
-  .chk-root .chk-coluna {
+  .chk-page main { max-width: none !important; padding: 0 !important; gap: 4mm !important; }
+  .chk-page .chk-cabecalho {
+    min-height: 0 !important;
+    padding: 0 0 3mm !important;
+    border-bottom: 1px solid #000 !important;
+  }
+  .chk-page .chk-bloco {
     border: 1px solid #bbb !important;
     border-radius: 0 !important;
     padding: 3mm !important;
-    break-inside: avoid;
   }
+  .chk-page .chk-colunas,
+  .chk-page .chk-lado { display: block !important; }
+  .chk-page .chk-lado { margin-top: 4mm; }
+  .chk-page .chk-lado > * + * { margin-top: 4mm; }
+  .chk-page .chk-campos { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
 
-  .chk-cols {
+  /* as três fases lado a lado, com os grupos todos abertos */
+  .chk-page .chk-fases {
     display: grid !important;
     grid-template-columns: 1fr 1fr 1fr !important;
     gap: 4mm !important;
   }
-
-  .chk-grupo { break-inside: avoid; }
-
-  /* ficha das bases: cada base inteira numa página, a secção pode partir */
-  .chk-root .chk-bases {
-    border: 1px solid #bbb !important;
-    border-radius: 0 !important;
-    padding: 3mm !important;
+  .chk-page .chk-fase { display: block !important; }
+  .chk-page .chk-fase-titulo {
+    display: block !important;
+    margin: 0 0 1.5mm !important;
+    font-size: 8pt !important;
+    font-weight: 700 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
-  .chk-root .chk-base {
-    border: 1px solid #ccc !important;
+  .chk-page .chk-grupo {
+    border: 0 !important;
     border-radius: 0 !important;
-    padding: 2mm !important;
+    margin-bottom: 2mm;
     break-inside: avoid;
   }
-  .chk-root .chk-base-tabela th,
-  .chk-root .chk-base-tabela td {
-    border: 1px solid #ccc !important;
-    padding: 0.5mm 1mm !important;
-    font-size: 7.5pt !important;
+  .chk-page .chk-grupo-btn {
+    min-height: 0 !important;
+    padding: 0 !important;
+    gap: 1.5mm !important;
   }
-  .chk-root .chk-base a { text-decoration: none !important; }
-
-  .chk-item {
+  .chk-page .chk-grupo-titulo { font-size: 7.5pt !important; font-weight: 700 !important; }
+  .chk-page .chk-anel,
+  .chk-page .chk-seta,
+  .chk-page .chk-crit-pill svg,
+  .chk-page .chk-crit svg { display: none !important; }
+  .chk-page .chk-progresso { font-size: 7pt !important; }
+  .chk-page .chk-por-voo,
+  .chk-page .chk-crit-pill {
+    height: auto !important;
+    padding: 0 1mm !important;
+    border: 1px solid #777 !important;
+    font-size: 6pt !important;
+  }
+  .chk-page .chk-itens { display: block !important; border: 0 !important; }
+  .chk-page .chk-itens li { border: 0 !important; }
+  .chk-page .chk-item {
+    min-height: 0 !important;
     padding: 0.4mm 0 !important;
+    gap: 1.5mm !important;
   }
-
-  .chk-box {
+  .chk-page .chk-box {
+    width: 3mm !important;
+    height: 3mm !important;
+    margin-top: 0.4mm;
     border: 1px solid #444 !important;
-    border-radius: 1px !important;
+    border-radius: 0.5mm !important;
   }
-
-  .chk-text,
-  .chk-note {
+  .chk-page .chk-mark { width: 2.6mm !important; height: 2.6mm !important; }
+  .chk-page .chk-text,
+  .chk-page .chk-note {
     font-size: 7.5pt !important;
     line-height: 1.25 !important;
   }
-
-  .chk-crit {
+  .chk-page .chk-crit {
+    height: auto !important;
+    padding: 0 1mm !important;
     border: 1px solid #777 !important;
     font-size: 6pt !important;
   }
 
-  .chk-root input,
-  .chk-root textarea {
+  /* as fichas por base: os cartões em quatro colunas */
+  .chk-page .chk-bases ul {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 1.5mm !important;
+  }
+  .chk-page .chk-cartao-base {
+    min-height: 0 !important;
+    padding: 1mm 1.5mm !important;
+    border: 1px solid #ccc !important;
+    border-radius: 0 !important;
+    font-size: 7pt !important;
+  }
+  /* no papel os voos de cada base vão por inteiro */
+  .chk-page .chk-cartao-base span {
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+  }
+
+  .chk-page input,
+  .chk-page textarea {
     border: 1px solid #ccc !important;
     border-radius: 0 !important;
     font-size: 8pt !important;
     resize: none !important;
   }
-
-  .chk-root .chk-tabela {
+  .chk-page .chk-moldura { overflow: visible !important; border: 0 !important; }
+  .chk-page .chk-tabela {
     min-width: 0 !important;
     width: 100% !important;
     table-layout: fixed;
     font-size: 7.5pt !important;
   }
-
-  .chk-root .chk-tabela th,
-  .chk-root .chk-tabela td {
+  .chk-page .chk-tabela th,
+  .chk-page .chk-tabela td {
     border: 1px solid #ccc !important;
     padding: 0.5mm 1mm !important;
     width: auto !important;
     min-width: 0 !important;
   }
-
-  .chk-root .chk-tabela input {
+  .chk-page .chk-tabela td > span { height: auto !important; }
+  .chk-page .chk-tabela input {
+    height: auto !important;
     border: 0 !important;
     padding: 0 !important;
     width: 100% !important;
     min-width: 0 !important;
     font-size: 7.5pt !important;
   }
+  .chk-page .chk-tabela input::placeholder { color: transparent !important; }
 
-  .chk-root .overflow-x-auto { overflow: visible !important; }
-
-  .chk-assinaturas {
-    display: block !important;
-    break-inside: avoid;
-    margin-top: 8mm;
-  }
-
-  .chk-assinaturas .border-b { border-bottom: 1px solid #000 !important; }
-  .chk-assinaturas p { font-size: 7.5pt !important; }
+  .chk-page .chk-notas { grid-template-columns: 1fr 1fr !important; gap: 3mm !important; }
+  .chk-page .chk-assinaturas { break-inside: avoid; }
+  .chk-page .chk-linha { border-bottom: 1px solid #000 !important; }
 }
 
 /* ------- Impressão em branco: esconder tudo o que foi preenchido ------- */
@@ -1833,8 +3024,6 @@ const PRINT_CSS = `
     background: transparent !important;
   }
 
-  body.print-blank .chk-text {
-    text-decoration: none !important;
-  }
+  body.print-blank .chk-progresso { visibility: hidden !important; }
 }
 `
