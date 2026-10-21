@@ -8,7 +8,7 @@
  * armazenamento (modo privado, quota), as marcas ficam só nesta sessão.
  */
 import { useCallback, useMemo, useSyncExternalStore } from 'react'
-import { checklistStorageKey } from '../components/ChecklistPage.jsx'
+import { STORAGE_KEY as LEGACY_KEY, checklistStorageKey } from '../components/ChecklistPage.jsx'
 import { flightLogRows } from '../data/checklist.js'
 import {
   clockText,
@@ -20,10 +20,8 @@ import {
 } from '../mission/dayPlan.js'
 import { browserStorage } from '../utils/browserStorage.js'
 
-// A chave antiga da checklist, sem missão, que a checklist ainda lê quando a
-// missão não tem a sua: a chave de uma missão sem nome (…:missao) sem o fim.
-// Provisório: passa a importar a STORAGE_KEY quando a checklist a exportar
-const LEGACY_KEY = checklistStorageKey('').replace(/:missao$/, '')
+// LEGACY_KEY: a chave antiga da checklist, sem missão, que a checklist ainda
+// lê quando a missão não tem a sua.
 /** O evento com que esta página avisa que escreveu o registo. */
 const CHANGED = 'dmp:flight-log'
 /** O registo escrito quando o browser recusou o armazenamento, por chave. */
