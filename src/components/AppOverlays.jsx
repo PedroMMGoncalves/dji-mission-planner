@@ -118,6 +118,10 @@ export default function AppOverlays({
                       : null
               }
               blocks={profileBlocks}
+              // com bases, cada voo na cor da sua, como no mapa
+              colorOf={(id) =>
+                baseLayout?.hasBases ? (baseLayout.byBlock?.[id]?.color ?? null) : null
+              }
               onClose={() => setShowProfile(false)}
             />
           </Suspense>

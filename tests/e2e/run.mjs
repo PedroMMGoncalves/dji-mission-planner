@@ -36,6 +36,7 @@ import {
   toM,
 } from './fixtures.mjs'
 import { analyseRoute, readRoutes } from './kmz.mjs'
+import { buildProfile } from '../../src/mission/elevationProfile.js'
 import { conferir, gravarReferencia, impressaoFicheiro } from './impressoes.mjs'
 
 const PORT = Number(process.env.E2E_PORT ?? 4173)
@@ -5199,6 +5200,119 @@ function coresDoSimbolo(loc) {
     ),
   ])
 }
+
+// Perfil de elevação: a folga mínima em destaque, com os limites das cores
+// escritos, e os valores do resumo iguais aos do cálculo do perfil
+// (buildProfile) sobre a rota exportada e o relevo analítico dos fixtures —
+// o E2E nunca abria o perfil. A escala do relevo da vista 3D cobre o terreno
+// do perfil. A 30 m sem seguir terreno, a folga passa a negativa e o cartão a
+// vermelho, como o bloqueio do preflight.
+await scenario('perfil-folga-minima', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  await label(page, TF).check()
+  await exportReady(page)
+  const [rota] = await readRoutes(await exportKmz(page, join(OUT, 'perfil-tf.kmz')))
+  const wps = rota.wpml
+    .split('<Placemark>')
+    .slice(1)
+    .map((p) => {
+      const c = /<coordinates>\s*([-\d.]+),([-\d.]+)/.exec(p)
+      const h = /<wpml:executeHeight>([-\d.]+)</.exec(p)
+      return [Number(c[1]), Number(c[2]), Number(h[1])]
+    })
+  // a cota de referência: nos waypoints que seguem o terreno, solo + AGL − altura
+  const solo = { elevationAt: (lon, lat) => ground(...toM(lon, lat)) }
+  const ref = Math.max(...wps.map(([lon, lat, h]) => solo.elevationAt(lon, lat) + AGL_M - h))
+  const esperado = buildProfile(wps, solo, ref)
+  const abrirPerfil = async () => {
+    const { el } = await reach(page, 'area', inv.btn(/Perfil de elevação|elevation profile/))
+    await el.click()
+    const perfil = page.getByTestId('elevation-profile')
+    await perfil.waitFor({ timeout: 10000 })
+    return perfil
+  }
+  let perfil = await abrirPerfil()
+  const num = (s) =>
+    Number(
+      String(s)
+        .replace('−', '-')
+        .match(/-?\d+(\.\d+)?/)[0],
+    )
+  const valor = (id) => perfil.getByTestId(id).locator('dd').first().innerText()
+  const intervalo = async (id) =>
+    (await valor(id))
+      .match(/(-?\d+)\s*–\s*(-?\d+)/)
+      .slice(1)
+      .map(Number)
+  const folga = perfil.getByTestId('profile-clearance')
+  const folgaTxt = await folga.getByTestId('profile-clearance-value').innerText()
+  const limites = await folga.getByTestId('profile-limits').innerText()
+  check(
+    'perfil: a folga mínima em destaque é a calculada sobre a rota exportada',
+    Math.abs(num(folgaTxt) - esperado.aglMin) <= 0.3 &&
+      (await perfil.getByTestId('profile-worst').textContent()).trim() === folgaTxt.trim(),
+    `${folgaTxt} (calculada ${esperado.aglMin.toFixed(2)} m)`,
+  )
+  check(
+    'perfil: folga a verde, com os limites escritos (verde a partir de 30 m, vermelho abaixo de 15 m)',
+    esperado.aglMin >= 30 &&
+      (await folga.getAttribute('data-tone')) === 'ok' &&
+      /Verde a partir de 30 m, âmbar de 15 a 30 m, vermelho abaixo de 15 m/.test(limites),
+    limites,
+  )
+  const [g0, g1] = await intervalo('profile-terrain')
+  const [a0, a1] = await intervalo('profile-agl')
+  const comprimento = await valor('profile-length')
+  const metros = /km/.test(comprimento) ? num(comprimento) * 1000 : num(comprimento)
+  check(
+    'perfil: terreno, AGL, referência, percurso e waypoints como os calculados',
+    Math.abs(g0 - esperado.gMin) <= 1 &&
+      Math.abs(g1 - esperado.gMax) <= 1 &&
+      Math.abs(a0 - esperado.aglMin) <= 1 &&
+      Math.abs(a1 - esperado.aglMax) <= 1 &&
+      Math.abs(num(await valor('profile-ref')) - ref) <= 1 &&
+      Math.abs(metros - esperado.totalM) <= Math.max(20, esperado.totalM * 0.002) &&
+      num(await valor('profile-wps')) === esperado.wpCount,
+    `terreno ${g0}–${g1} (${esperado.gMin.toFixed(1)}–${esperado.gMax.toFixed(1)}) · AGL ${a0}–${a1} (${esperado.aglMin.toFixed(1)}–${esperado.aglMax.toFixed(1)}) · ref ${await valor('profile-ref')} (${ref.toFixed(1)}) · ${comprimento} (${esperado.totalM.toFixed(0)} m) · ${await valor('profile-wps')} wps (${esperado.wpCount})`,
+  )
+  await page.keyboard.press('Escape')
+  check('perfil: Esc fecha o perfil', (await perfil.count()) === 0)
+
+  // a escala do relevo da vista 3D (a malha cobre mais do que a rota) contém
+  // o terreno do perfil
+  await page.getByRole('button', { name: /Vista 3D|3D View/ }).click()
+  const escala = page.getByTestId('map3d-scale')
+  await escala.waitFor({ timeout: 20000 })
+  const [z0, z1] = (await escala.innerText()).match(/-?\d+/g).map(Number)
+  check(
+    'vista 3D: a escala do relevo cobre o terreno do perfil',
+    z0 <= esperado.gMin + 2 && z1 >= esperado.gMax - 2 && z0 < z1,
+    `escala ${z0}–${z1} m · perfil ${esperado.gMin.toFixed(1)}–${esperado.gMax.toFixed(1)} m`,
+  )
+  await page.keyboard.press('Escape')
+
+  // a 30 m sem seguir terreno a rota entra no relevo: folga negativa, a vermelho
+  await label(page, TF).uncheck()
+  const alt = page
+    .locator('label', { hasText: /Altura acima da descolagem|Altura AGL|Altitude/ })
+    .locator('input')
+    .first()
+  await alt.fill('30')
+  await alt.press('Tab')
+  await page.waitForTimeout(900)
+  perfil = await abrirPerfil()
+  const negativa = await perfil.getByTestId('profile-clearance-value').innerText()
+  check(
+    'perfil: com a rota dentro do relevo, a folga negativa a vermelho',
+    num(negativa) < 0 &&
+      (await perfil.getByTestId('profile-clearance').getAttribute('data-tone')) === 'danger' &&
+      /bloqueio|blocker/.test(await pillText(page)),
+    negativa,
+  )
+  check('perfil: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
 
 // Ajuda em português: o índice abre os tópicos (os grupos abrem e fecham),
 // «Ver também» leva aos relacionados, a pesquisa deixa no índice só os
