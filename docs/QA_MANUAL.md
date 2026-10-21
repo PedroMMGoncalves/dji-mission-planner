@@ -231,11 +231,22 @@ gaveta).
   2026, com os grupos em `parallel`). Registar Pilot 2, firmware e o
   resultado na matriz do `docs/VALIDACAO.md`.
 
-## 11. Verificação em tablet (~1 min)
+## 11. Verificação em tablet (~2 min)
 
-A app é usada em campo: numa janela a **~768 px de largura** (DevTools ou
-tablet real):
+A app é usada em campo: numa janela de **1024 × 768** e noutra de **834 ×
+1112** (DevTools ou tablet real):
 
+- ☐ O cabeçalho numa só linha, com botões de 44 px: o ícone da aplicação, o
+  projecto, as vistas (só os ícones; a 834 px passam para o menu), o
+  preflight, o botão de exportar com o nome de sempre e o menu **⋮**.
+  **Esperado:** no **⋮**, Configuração, Ajuda e Português/English (a
+  língua em uso marcada); nada sai do ecrã nem obriga a deslizar para o
+  lado.
+- ☐ Recolher o painel no botão ao lado do nome do modo, e voltar a abri-lo
+  no **Painel**, no fundo da barra dos modos.
+  **Esperado:** o mapa fica com a largura toda (e volta), sem faixas
+  cinzentas nem cliques desviados; escolher um modo na barra mostra o
+  painel; as métricas começam recolhidas num botão.
 - ☐ A barra dos modos (à esquerda do painel) e os cinco painéis
   (Área/Face/Órbita/Corredor/Circular) são usáveis sem sobreposições; os
   campos numéricos aceitam toque; as listas fazem scroll dentro do painel.
@@ -306,6 +317,19 @@ tablet real):
   mapas, zona (reduzida e porquê), cota de referência, voos com tempo
   (trânsito incluído) e o nome do KMZ, conjuntos de baterias contra os da
   equipa, distância VLOS; cada base inteira numa página.
+- ☐ **Operação do dia**, no botão por baixo das métricas; **Marcar feito**
+  no voo seguinte, desmarcar um voo na caixa da linha, **Ver no mapa**
+  noutro voo; depois abrir a checklist e voltar.
+  **Esperado:** o painel à direita do mapa, com as métricas e o painel de
+  parâmetros recolhidos (Esc ou ✕ fecham, e voltam); os conjuntos, o tempo
+  total e o voo mais longo iguais aos das métricas; uma linha por voo pela
+  ordem de voo (A-1, A-2, B-3…), com a barra do tempo no bloco e da
+  deslocação contra o tempo útil e a distância à base; o voo seguinte
+  marcado no mapa (contorno, anel e rótulo) e os feitos com um visto; o
+  voo marcado tem a hora de agora na **Hora fim** do **Registo de voos** da
+  checklist (com as linhas do plano, como «Importar blocos do plano»), e
+  apagada lá volta a estar por fazer no painel; abrir o painel sem marcar
+  não muda o JSON exportado da checklist.
 - ☐ **No campo**, na base B: copiar a pasta `base-B/` do ZIP por base para o
   comando e importar no DJI Pilot 2 (cartão ou cabo).
   **Esperado:** as missões aparecem com o nome do ficheiro (`..._B-3`), pela

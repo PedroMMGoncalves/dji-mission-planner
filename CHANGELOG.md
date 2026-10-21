@@ -8,6 +8,25 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ### Alterado
 
+- **Operação do dia e tablet.** Com a área dividida em voos e as bases
+  marcadas, o botão «Operação do dia», por baixo das métricas, abre à
+  direita do mapa o painel do dia de campo, no lugar delas e com o painel
+  de parâmetros recolhido: os conjuntos de baterias contra os da equipa, o
+  tempo total com as deslocações e o voo mais longo; o voo seguinte, com
+  «Ver no mapa» e «Marcar feito»; e a ordem do dia, uma linha por voo pela
+  ordem de voo, com a base, a barra do tempo no bloco e da deslocação
+  contra o tempo útil, a percentagem e a maior distância à base. No mapa,
+  o voo em foco fica com o contorno do bloco, um anel na base e o rótulo,
+  e os feitos com um visto. Feito é o voo com a «Hora fim» no «Registo de
+  voos» da checklist de campo: «Marcar feito» escreve lá a hora de agora
+  (com as linhas do plano, como «Importar blocos do plano») e desmarcar
+  apaga-a, sem um registo à parte; o JSON da checklist só muda quando o
+  registo muda. No tablet (até 1179 px de largura) o cabeçalho fica numa
+  linha, com botões de 44 px e a configuração, a ajuda e a língua num menu
+  «⋮» (num tablet ao alto, também as vistas); o painel de parâmetros é uma
+  folha que se recolhe, e o botão «Painel», no fundo da barra dos modos,
+  mostra-o e esconde-o em qualquer ecrã; as métricas começam num botão. Os
+  números, os ficheiros exportados e os controlos são os mesmos.
 - **Painel da área em secções que fecham.** Os sete cartões abrem e
   fecham no título, um de cada vez, como os dos outros modos (abrir um
   fecha o que estava aberto), e, fechados, dizem o essencial numa linha

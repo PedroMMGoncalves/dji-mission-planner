@@ -415,7 +415,51 @@ function topicsPt({ onShowDisclaimer, t }) {
             operação do separador aberto. A seta recolhe o cartão num botão com o GSD e os voos; num
             mapa estreito começa recolhido, e a escolha fica neste aparelho. Ao importar uma área ou
             abrir um projecto, o mapa enquadra-a por baixo da barra de desenho e à esquerda do
-            cartão aberto.
+            cartão aberto. Com a área dividida em voos e as bases marcadas, por baixo das métricas
+            fica o botão <strong>Operação do dia</strong> (os voos e o tempo total), que abre o
+            painel do dia de campo no lugar delas.
+          </p>
+        </>
+      ),
+    },
+    {
+      id: 'operacao',
+      title: 'Operação do dia e tablet',
+      body: (
+        <>
+          <p>
+            A <strong>Operação do dia</strong> abre-se no botão por baixo das métricas, com a área
+            dividida em voos e as bases marcadas, e fica à direita do mapa; enquanto está aberta, as
+            métricas e o painel de parâmetros recolhem-se, e o mapa fica só com a missão. Fecha no ✕
+            ou com <Kbd>Esc</Kbd>. Em cima, os conjuntos de baterias necessários contra os da equipa
+            («Definir na Configuração»), o tempo total com as deslocações (e o tempo na missão) e o
+            voo mais longo contra o tempo útil. Depois, <strong>A seguir</strong>: o primeiro voo
+            por fazer, com a base, o tempo com a deslocação, a parte da bateria, a maior distância à
+            base e a zona de descolagem (a âmbar, quando foi reduzida); <strong>Ver no mapa</strong>{' '}
+            enquadra o bloco e a base, e <strong>Marcar feito</strong> dá-o por feito. Na{' '}
+            <strong>Ordem do dia</strong> há uma linha por voo, pela ordem de voo (A-1, B-2, …), com
+            a base e os conjuntos dela, a barra do tempo no bloco e da deslocação (mais clara)
+            contra o tempo útil, com um traço nos 90 %, a percentagem e a maior distância à base; a
+            caixa da linha marca e desmarca o voo, e a base mostra-o no mapa. No mapa, o voo em foco
+            fica com o contorno do bloco, um anel na base e o rótulo, e cada voo feito com um visto.
+            «Ajustar o tempo útil» abre a secção 4 do painel, onde se acerta o tempo útil por voo
+            para o vento e o frio do dia.
+          </p>
+          <p>
+            Um voo está feito quando tem a <strong>Hora fim</strong> no{' '}
+            <strong>Registo de voos</strong> da checklist de campo: <strong>Marcar feito</strong>{' '}
+            escreve lá a hora de agora e desmarcar apaga-a; sem as linhas do plano no registo,
+            juntam-se primeiro, como em «Importar blocos do plano». O painel e a checklist usam o
+            mesmo registo, guardado neste browser com a checklist da missão: o que se marca num
+            vê-se no outro.
+          </p>
+          <p>
+            Num ecrã estreito (um tablet, até 1179 px de largura) o cabeçalho fica numa linha, com
+            botões de 44 px: o nome da aplicação só no ícone, e a configuração, a ajuda e a língua
+            no menu <strong>⋮</strong> (num tablet ao alto, também as vistas). O painel de
+            parâmetros é uma folha que se recolhe no botão ao lado do nome do modo; o botão{' '}
+            <strong>Painel</strong>, no fundo da barra dos modos, mostra-o e esconde-o em qualquer
+            ecrã, e escolher um modo mostra-o. As métricas começam recolhidas num botão.
           </p>
         </>
       ),
@@ -1031,7 +1075,51 @@ function topicsEn({ onShowDisclaimer, t }) {
             flight and operation of the open tab. The arrow collapses the card into a button with
             the GSD and the flights; on a narrow map it starts collapsed, and the choice is kept on
             this device. When you import an area or open a project, the map frames it below the
-            drawing bar and to the left of the open card.
+            drawing bar and to the left of the open card. With the area split into flights and the
+            bases set, below the metrics is the <strong>Operation of the day</strong> button (the
+            flights and the total time), which opens the field-day panel in their place.
+          </p>
+        </>
+      ),
+    },
+    {
+      id: 'operacao',
+      title: 'Operation of the day and tablet',
+      body: (
+        <>
+          <p>
+            The <strong>Operation of the day</strong> opens from the button below the metrics, with
+            the area split into flights and the bases set, and sits on the right of the map; while
+            it is open, the metrics and the parameters panel are tucked away and the map shows only
+            the mission. ✕ or <Kbd>Esc</Kbd> closes it. At the top, the battery sets needed against
+            those of the team (“Set in the settings”), the total time with transit (and the mission
+            time) and the longest flight against the usable time. Then <strong>Next</strong>: the
+            first flight not yet done, with its base, the time with transit, the share of the
+            battery, the furthest distance from the base and the take-off zone (amber when it was
+            reduced); <strong>Show on the map</strong> frames the block and the base, and{' '}
+            <strong>Mark done</strong> marks it as done. The <strong>Order of the day</strong> has
+            one row per flight, in flying order (A-1, B-2, …), with the base and its sets, the bar
+            of the time in the block and of the transit (lighter) against the usable time, with a
+            tick at 90 %, the percentage and the furthest distance from the base; the row’s box
+            marks and unmarks the flight, and the base shows it on the map. On the map, the flight
+            in focus gets the block outline, a ring on the base and its label, and each flight done
+            a tick. “Adjust the usable time” opens section 4 of the panel, where the usable time per
+            flight is set for the day’s wind and cold.
+          </p>
+          <p>
+            A flight is done when it has an <strong>End time</strong> in the field checklist’s{' '}
+            <strong>Flight log</strong>: <strong>Mark done</strong> writes the current time there
+            and unmarking clears it; when the log does not have the plan’s rows yet, they are added
+            first, as “Import plan blocks” does. The panel and the checklist use the same log, kept
+            in this browser with the mission’s checklist: what is marked in one shows in the other.
+          </p>
+          <p>
+            On a narrow screen (a tablet, up to 1179 px wide) the header fits on one line, with 44
+            px buttons: the app name only as the icon, and the settings, help and language in the{' '}
+            <strong>⋮</strong> menu (on an upright tablet, the views too). The parameters panel is a
+            sheet that collapses with the button next to the mode name; the <strong>Panel</strong>{' '}
+            button at the bottom of the mode bar shows and hides it on any screen, and choosing a
+            mode shows it. The metrics start collapsed into a button.
           </p>
         </>
       ),
@@ -1293,7 +1381,8 @@ const SEE_ALSO = {
   atribuir: ['bases', 'divisao'],
   bacias: ['bases', 'configuracao'],
   relevo: ['bases', 'mapa'],
-  mapa: ['relevo', 'painel'],
+  mapa: ['relevo', 'painel', 'operacao'],
+  operacao: ['mapa', 'divisao', 'bases'],
   kml: ['wpml'],
   wpml: ['kml', 'seguranca', 'projecto'],
   disparo: ['wpml'],
