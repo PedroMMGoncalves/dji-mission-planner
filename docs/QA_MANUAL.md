@@ -476,9 +476,11 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
 
 - ☐ Abrir o menu do projecto (o nome da missão, no cabeçalho) e escolher
   **Mudar o nome**; escrever outro nome e Enter.
-  **Esperado:** o cabeçalho e o cartão 1 mostram o nome novo; com Esc em vez
-  de Enter o nome fica como estava. Ao lado do nome, «gravado»; numa janela
-  com o armazenamento do site bloqueado, «não gravado».
+  **Esperado:** o cabeçalho e o cartão 1 mostram o nome novo, o menu não
+  reabre e o foco volta ao botão do projecto; com Esc em vez de Enter o
+  nome fica como estava. Ao lado do nome, «gravado»; numa janela com o
+  armazenamento do site bloqueado, «não gravado»; logo ao abrir, antes da
+  primeira gravação automática (meio segundo), nenhum dos dois.
 - ☐ No mesmo menu, **Guardar projecto** e depois **Abrir projecto** com esse
   ficheiro, num separador que não seja o da área.
   **Esperado:** o mesmo .json do botão do cartão 1; o projecto abre igual.

@@ -284,7 +284,8 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
     // o erro do projecto aberto pelo cabeçalho, por baixo dele, e o seu ✕
     projectAlert,
     dismissProjectAlert,
-    // o browser recusou a última gravação automática (o cabeçalho di-lo)
+    // o browser recusou a última gravação automática (o cabeçalho di-lo);
+    // null antes da primeira
     autosaveFailed,
   }
 }

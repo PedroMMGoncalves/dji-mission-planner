@@ -4931,6 +4931,20 @@ await scenario('armazenamento-recusado-abre', async () => {
     'armazenamento recusado: a aplicação abre',
     filhos > 0 && /DJI Mission Planner/.test(await bodyText(page)),
   )
+  // a gravação automática falhou: o projecto do cabeçalho di-lo
+  const projecto = await page.evaluate(
+    () =>
+      document
+        .querySelector(
+          'header button[aria-label^="Projecto "], header button[aria-label^="Project "]',
+        )
+        ?.getAttribute('aria-label') ?? '',
+  )
+  check(
+    'armazenamento recusado: o cabeçalho diz que o projecto não está gravado',
+    /, (não gravado|not saved)$/.test(projecto),
+    projecto,
+  )
   check('armazenamento recusado: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }

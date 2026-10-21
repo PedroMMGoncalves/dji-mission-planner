@@ -72,6 +72,8 @@ const BASE_DICT = {
     en: 'Project: rename, save, open',
   },
   'app.project.label': { pt: 'Projecto {name}, {state}', en: 'Project {name}, {state}' },
+  // antes da primeira gravação automática, sem o estado
+  'app.project.labelPending': { pt: 'Projecto {name}', en: 'Project {name}' },
   'app.project.saved': { pt: 'gravado', en: 'saved' },
   'app.project.notSaved': { pt: 'não gravado', en: 'not saved' },
   'app.project.notSavedTitle': {

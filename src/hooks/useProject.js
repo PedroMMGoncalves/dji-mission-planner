@@ -80,8 +80,9 @@ export function useProject({ state, missionName, applyNormalized, onLoaded, setI
   }, [])
 
   // gravação automática (debounce 500 ms); o cabeçalho diz quando o browser
-  // a recusa (armazenamento bloqueado ou cheio)
-  const [autosaveFailed, setAutosaveFailed] = useState(false)
+  // a recusa (armazenamento bloqueado ou cheio). null até à primeira
+  // tentativa: antes dela não se sabe se fica gravado
+  const [autosaveFailed, setAutosaveFailed] = useState(/** @type {boolean|null} */ (null))
   useEffect(() => {
     if (!hydratedRef.current) return
     const t = setTimeout(() => {

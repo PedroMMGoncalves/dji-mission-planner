@@ -173,8 +173,11 @@ function ProjectButton({ missionName, setMissionName, session, onOpen }) {
     focusBackRef.current = false
     menu.triggerRef.current?.focus()
   }, [renaming, menu.triggerRef])
-  const saved = !session.autosaveFailed
-  const state = t(saved ? 'app.project.saved' : 'app.project.notSaved')
+  // antes da primeira gravação automática (null) não se diz nada: ainda
+  // não se sabe se o browser a aceita
+  const pending = session.autosaveFailed == null
+  const saved = session.autosaveFailed === false
+  const state = pending ? null : t(saved ? 'app.project.saved' : 'app.project.notSaved')
   const finish = (value, returnFocus) => {
     if (doneRef.current) return
     doneRef.current = true
@@ -212,18 +215,24 @@ function ProjectButton({ missionName, setMissionName, session, onOpen }) {
           type="button"
           {...menu.triggerProps}
           aria-controls={menu.open ? 'project-menu' : undefined}
-          aria-label={t('app.project.label', { name: missionName || '—', state })}
+          aria-label={
+            pending
+              ? t('app.project.labelPending', { name: missionName || '—' })
+              : t('app.project.label', { name: missionName || '—', state })
+          }
           title={t('app.project.title')}
           className="flex h-9 min-w-0 max-w-[18rem] items-center gap-2 rounded-lg px-2.5 text-[13px] font-medium text-slate-100 transition-colors hover:bg-raised"
         >
           <IconFolder className="h-4 w-4 flex-none text-slate-400" />
           <span className="truncate">{missionName || t('cp.mission.namePlaceholder')}</span>
-          <span
-            title={saved ? t('cp.mission.autosave') : t('app.project.notSavedTitle')}
-            className={`flex-none text-xs font-normal ${saved ? 'text-slate-400' : 'text-amber-300'}`}
-          >
-            · {state}
-          </span>
+          {!pending && (
+            <span
+              title={saved ? t('cp.mission.autosave') : t('app.project.notSavedTitle')}
+              className={`flex-none text-xs font-normal ${saved ? 'text-slate-400' : 'text-amber-300'}`}
+            >
+              · {state}
+            </span>
+          )}
           <IconChevronDown className="h-3.5 w-3.5 flex-none text-slate-400" />
         </button>
       )}
