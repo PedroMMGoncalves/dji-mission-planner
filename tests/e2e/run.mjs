@@ -4539,6 +4539,109 @@ await scenario('cartoes-gavetas', async () => {
   return { page }
 })
 
+/* ---- as secções do painel da área ------------------------------------- */
+// Como abrem (sem área, «Área e relevo»; quando a área chega, também
+// «Parâmetros de voo»; o resto fechado; nenhuma se fecha sozinha), o resumo
+// de uma linha (a descrição do botão da secção), a escolha do operador
+// lembrada neste aparelho, e a secção que se abre sozinha quando passa a
+// ter o que mostrar.
+const seccoesAbertas = (page) =>
+  page
+    .getByTestId('area-panel')
+    .locator('section[data-testid^="card-"]')
+    .evaluateAll((els) =>
+      els
+        .filter(
+          (e) => e.querySelector(':scope > h3 > button')?.getAttribute('aria-expanded') === 'true',
+        )
+        .map((e) => e.dataset.testid.slice(5)),
+    )
+const botaoSeccao = (page, card) => page.getByTestId(`card-${card}`).locator(':scope > h3 > button')
+const resumoSeccao = (page, card) =>
+  botaoSeccao(page, card).evaluate((b) =>
+    (b.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map((id) => document.getElementById(id)?.textContent ?? '')
+      .join(' ')
+      .trim(),
+  )
+
+await scenario('seccoes-do-painel', async () => {
+  const a = await openMission({ seccoes: false })
+  await a.page.getByTestId('area-panel').waitFor({ state: 'visible', timeout: 20000 })
+  const semArea = await seccoesAbertas(a.page)
+  const resumos0 = {
+    missao: await resumoSeccao(a.page, 'missao'),
+    area: await resumoSeccao(a.page, 'area'),
+    divisao: await resumoSeccao(a.page, 'divisao'),
+    resumo: await resumoSeccao(a.page, 'resumo'),
+  }
+  check(
+    'secções: sem área, só «Área e relevo» aberta',
+    JSON.stringify(semArea) === '["area"]',
+    JSON.stringify(semArea),
+  )
+  check(
+    'secções: o essencial numa linha, na descrição do botão (a da área também aberta)',
+    /RTK (ligado|desligado)$/.test(resumos0.missao) &&
+      resumos0.area === 'Sem área: desenhe-a no mapa ou importe-a' &&
+      resumos0.divisao === 'Nenhuma · um só voo' &&
+      resumos0.resumo === 'Sem plano',
+    JSON.stringify(resumos0),
+  )
+  await a.page.close()
+
+  const { page, errors } = await openMission({ area: fx.rect, seccoes: false })
+  await page.waitForTimeout(800)
+  const comArea = await seccoesAbertas(page)
+  const resumos = {
+    area: await resumoSeccao(page, 'area'),
+    voo: await resumoSeccao(page, 'voo'),
+    resumo: await resumoSeccao(page, 'resumo'),
+  }
+  check(
+    'secções: com a área abre-se também «Parâmetros de voo», e a da área não se fecha sozinha',
+    JSON.stringify(comArea) === '["area","voo"]',
+    JSON.stringify(comArea),
+  )
+  check(
+    'secções: o resumo da área diz os hectares e o relevo; o do plano, os voos',
+    /^\d+\.\d{2} ha · /.test(resumos.area) &&
+      /^1 voo · /.test(resumos.resumo) &&
+      // aberta, a secção dos parâmetros de voo mostra o resumo por baixo do título
+      / m (AGL|acima da descolagem)/.test(resumos.voo),
+    JSON.stringify(resumos),
+  )
+  // o operador abre e fecha: fica lembrado neste aparelho
+  await botaoSeccao(page, 'area').click()
+  await botaoSeccao(page, 'voo').click()
+  await botaoSeccao(page, 'divisao').click()
+  const escolha = await seccoesAbertas(page)
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByTestId('area-panel').waitFor({ state: 'visible', timeout: 20000 })
+  await page.waitForTimeout(800)
+  const depois = await seccoesAbertas(page)
+  check(
+    'secções: a escolha do operador fica lembrada depois de recarregar',
+    JSON.stringify(escolha) === '["divisao"]' && JSON.stringify(depois) === '["divisao"]',
+    `${JSON.stringify(escolha)} -> ${JSON.stringify(depois)}`,
+  )
+  // marcar uma base (na barra do mapa) abre a secção das bases, fechada
+  const bases = botaoSeccao(page, 'bases')
+  const fechada = (await bases.getAttribute('aria-expanded')) === 'false'
+  await marcarBase(page, 'mapa').click()
+  const aberta = (await bases.getAttribute('aria-expanded')) === 'true'
+  await marcarBase(page, 'mapa').click()
+  check(
+    'secções: marcar uma base no mapa abre a secção das bases',
+    fechada && aberta && (await marcarBase(page).isVisible()),
+  )
+  const erros = [...a.errors, ...errors]
+  check('secções: sem erros de página', erros.length === 0, erros.join(' | '))
+  await page.close()
+  return { page }
+})
+
 /* ---- acções de segurança no KMZ ---------------------------------------- */
 const accoes = (wpml) =>
   ['finishAction', 'exitOnRCLost', 'executeRCLostAction'].map(
