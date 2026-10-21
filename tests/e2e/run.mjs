@@ -5180,6 +5180,25 @@ await scenario('legenda-camadas', async () => {
       (await page.getByTestId('map3d-summary').innerText()) === 'Área · 1 voo',
     `rota ${rota3d} · waypoints ${pontos3d} · ${antes3d.replace(/\s+/g, ' ')} → ${depois3d.replace(/\s+/g, ' ')}`,
   )
+  // o botão do cabeçalho da legenda recolhe-a numa pastilha e volta a
+  // abri-la, com o foco sempre no botão
+  const focoNoBotao = () =>
+    page.evaluate(
+      () => document.activeElement?.getAttribute('data-testid') === 'map3d-legend-toggle',
+    )
+  await abrir3d.click()
+  const recolhida =
+    (await abrir3d.getAttribute('aria-expanded')) === 'false' &&
+    !(await fotos3d.isVisible()) &&
+    (await focoNoBotao())
+  await abrir3d.click()
+  check(
+    'legenda 3D: o botão recolhe a legenda e volta a abri-la, com o foco nele',
+    recolhida &&
+      (await abrir3d.getAttribute('aria-expanded')) === 'true' &&
+      (await fotos3d.isVisible()) &&
+      (await focoNoBotao()),
+  )
   check('legenda: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
