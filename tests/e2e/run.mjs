@@ -6317,7 +6317,8 @@ await scenario('operacao-do-dia', async () => {
     ({ voo, hora }) => {
       for (const tabela of document.querySelectorAll('table')) {
         const cols = [...tabela.querySelectorAll('thead th')].map((th) => th.textContent.trim())
-        const iN = cols.indexOf('#')
+        // a coluna do voo: «#», ou «Voo» com as linhas do plano
+        const iN = cols.findIndex((c) => /^(#|Voo|Flight)$/.test(c))
         const iFim = cols.findIndex((c) => /^(Hora fim|End time)$/i.test(c))
         if (iN < 0 || iFim < 0) continue
         for (const tr of tabela.querySelectorAll('tbody tr')) {
