@@ -144,6 +144,20 @@ describe('plano médio da área (sugestões para encostas)', () => {
     expect(fit.downhillAzimuthDeg).toBeCloseTo(270, 6)
   })
 
+  test('faixa fina na diagonal: as amostras caem numa recta e não há plano (nem sugestão)', () => {
+    // a grelha 12 × 12 da caixa só acerta nos pontos da diagonal; com o
+    // limiar absoluto do pivô o arredondamento passava e o plano saía com
+    // qualquer inclinação: 90° nesta rampa de 5,7°, 15° numa faixa de 1,2 km
+    const rampa = { elevationAt: (lon) => 100 + 0.1 * xOf(lon) }
+    const diagonal = (L, w) => [em(0, 0), em(w, 0), em(L, L - w), em(L, L), em(L - w, L), em(0, w)]
+    expect(fitSlopePlane(rampa, diagonal(400, 30))).toBeNull()
+    expect(fitSlopePlane(rampa, diagonal(1200, 40))).toBeNull()
+    // mais larga, com pontos fora da diagonal: o plano certo
+    const larga = fitSlopePlane(rampa, diagonal(400, 120))
+    expect(larga.slopeDeg).toBeCloseTo((Math.atan(0.1) * 180) / Math.PI, 3)
+    expect(larga.downhillAzimuthDeg).toBeCloseTo(270, 6)
+  })
+
   test('pouco relevo na área (menos de oito pontos) ou sem relevo: nenhuma sugestão', () => {
     const quaseSem = (lon, lat) => (xOf(lon) < 40 && yOf(lat) < 40 ? 100 : null)
     expect(fitSlopePlane({ elevationAt: quaseSem }, area)).toBeNull()

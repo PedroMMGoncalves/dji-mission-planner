@@ -844,10 +844,15 @@ export function terrainFollowLines(
 /** Resolve um sistema linear 3x3 por eliminação gaussiana (ou null). */
 function solve3(A, B) {
   const M = A.map((row, i) => [...row, B[i]])
+  // pivô nulo face à escala da matriz (somas em m², de 1e5 a 1e9): numa
+  // faixa fina na diagonal as amostras caem numa recta e o sistema é
+  // singular, mas o arredondamento (1e-10 a 1e-8) passava o limiar absoluto
+  // de 1e-12 e o plano saía com qualquer inclinação
+  const tol = 1e-12 * Math.max(1, ...A.flat().map(Math.abs))
   for (let c = 0; c < 3; c++) {
     let p = c
     for (let r = c + 1; r < 3; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r
-    if (Math.abs(M[p][c]) < 1e-12) return null
+    if (Math.abs(M[p][c]) < tol) return null
     ;[M[c], M[p]] = [M[p], M[c]]
     for (let r = 0; r < 3; r++) {
       if (r === c) continue
