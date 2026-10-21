@@ -1387,6 +1387,29 @@ await scenario('projecto-autosave-ficheiro', async () => {
       (await label(page, CROSS).isChecked()) &&
       (await headerExport(page).isEnabled()),
   )
+  // «Mudar o nome», no menu do projecto do cabeçalho: o Enter grava o nome,
+  // o menu não reabre e o foco volta ao botão do projecto
+  const projecto = page.locator('header').getByRole('button', { name: /^(Projecto|Project) / })
+  await projecto.click()
+  await page
+    .locator('#project-menu')
+    .getByRole('menuitem', { name: /Mudar o nome|Rename/ })
+    .click()
+  const novoNome = page
+    .locator('header')
+    .getByRole('textbox', { name: /Nome da missão|Mission name/ })
+  await novoNome.fill('projecto-renomeado')
+  await novoNome.press('Enter')
+  await page.waitForTimeout(300)
+  const menuAberto = await page.locator('#project-menu').count()
+  const foco = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') ?? '')
+  check(
+    'projecto: o Enter de «Mudar o nome» grava, não reabre o menu e devolve o foco ao botão',
+    menuAberto === 0 &&
+      (await nameInput.inputValue()) === 'projecto-renomeado' &&
+      /^(Projecto|Project) projecto-renomeado,/.test(foco),
+    `menu aberto: ${menuAberto}, foco: ${foco}`,
+  )
   check('projecto: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }

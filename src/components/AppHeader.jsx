@@ -192,8 +192,12 @@ function ProjectButton({ missionName, setMissionName, session, onOpen }) {
           onFocus={(e) => e.currentTarget.select()}
           onBlur={(e) => finish(e.currentTarget.value, false)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') finish(e.currentTarget.value, true)
-            else if (e.key === 'Escape') {
+            if (e.key === 'Enter') {
+              // o Enter fica no campo: no botão que volta ao lugar dele, o
+              // Chromium fazia dele um clique e o menu reabria
+              e.preventDefault()
+              finish(e.currentTarget.value, true)
+            } else if (e.key === 'Escape') {
               // o Esc é do campo: nem a gaveta nem a base seleccionada o recebem
               e.preventDefault()
               e.stopPropagation()
