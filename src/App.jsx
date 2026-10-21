@@ -890,9 +890,10 @@ function AppInner({ lang, setLang }) {
         setExportError={setExportError}
       />
       <div className="flex min-h-0 flex-1">
-        <div className="flex h-full shrink-0 flex-col">
+        {/* a barra dos modos à esquerda e o painel do modo; o mapa fica com o resto */}
+        <div className="flex h-full shrink-0">
           <MissionModeSelector mode={missionMode} onChange={changeMissionMode} />
-          <div className="min-h-0 flex-1">
+          <div className="h-full min-h-0">
             {missionMode === 'face' && (
               <FacePanel
                 hw={hw}

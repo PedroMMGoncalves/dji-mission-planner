@@ -2,7 +2,8 @@
  * Dicionário dos modos de missão (Ronda 3, E1.x). PT em norma pré-AO90.
  */
 export default {
-  /* ---- Selector de modo (E1.0, modelo A) ---- */
+  /* ---- Barra dos modos (E1.0, modelo A) ---- */
+  'mode.nav': { pt: 'Tipo de missão', en: 'Mission type' },
   'mode.area': { pt: 'Área', en: 'Area' },
   'mode.face': { pt: 'Face', en: 'Face' },
   'mode.orbit': { pt: 'Órbita', en: 'Orbit' },

@@ -26,13 +26,16 @@ import NumberInput from './NumberInput.jsx'
  * montadas (escondidas): os campos guardam o que se estava a escrever.
  */
 
-/** Coluna de cartões de um painel de modo (o contentor que rola). */
+/**
+ * Coluna de cartões de um painel de modo (o contentor que rola): 360 px a
+ * partir de 1024 px de largura, ao lado dos 64 px da barra dos modos.
+ */
 export function CardColumn({ children, label }) {
   return (
     <div
       role="region"
       aria-label={label}
-      className="flex h-full w-80 shrink-0 flex-col gap-3 overflow-y-auto border-r border-slate-800 bg-slate-950 p-3 lg:w-96"
+      className="flex h-full w-80 shrink-0 flex-col gap-3 overflow-y-auto border-r border-slate-800 bg-slate-950 p-3 lg:w-[360px]"
     >
       {children}
     </div>
