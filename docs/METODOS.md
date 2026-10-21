@@ -1446,6 +1446,12 @@ pedido, o desnível e a distância que a limitaram); cota de referência e
 trânsito de ida e volta no pior caso da zona, e o nome do KMZ de cada um;
 conjuntos de baterias que a base pede (um por voo) contra os da equipa
 (`flightsVsSets`); alcance visual da aeronave e o pior caso dos voos.
+Na checklist, cada ficha é uma folha A4 (`BaseSheetPage`) com um código QR
+da ligação `https` (lean-qr, correcção M, margem de 4 módulos, em SVG), o
+lugar do voo no dia (`dayFlightOrder`) e o aviso da zona com a regra do
+preflight (`zoneNotice`: sem raio, a baixar o voo `cause.belowM`, só
+reduzida, fora do relevo); impressa, a letra só encolhe quando o conteúdo
+passa a área útil da A4.
 
 **KML «Bases e blocos»** (`buildBasesKML`, `<missão>_bases.kml`), para o
 Google Earth ou a navegação no telemóvel — nunca para o Pilot 2: uma pasta

@@ -316,7 +316,12 @@ A app é usada em campo: numa janela de **1024 × 768** e noutra de **834 ×
   **Esperado:** uma ficha por base: coordenadas (6 casas) que abrem nos
   mapas, zona (reduzida e porquê), cota de referência, voos com tempo
   (trânsito incluído) e o nome do KMZ, conjuntos de baterias contra os da
-  equipa, distância VLOS; cada base inteira numa página.
+  equipa, distância VLOS; cada base inteira numa página. Na checklist,
+  **Fichas por base** tem um cartão por base (zona, RTH, tempo): abrir um
+  mostra a folha A4 da base, com o aviso da zona reduzida, a régua da zona,
+  os críticos da descolagem e o registo do voo; **Imprimir esta ficha** dá
+  uma página, **Imprimir as N fichas** uma página por base; Esc volta à
+  checklist.
 - ☐ **Operação do dia**, no botão por baixo das métricas; **Marcar feito**
   no voo seguinte, desmarcar um voo na caixa da linha, **Ver no mapa**
   noutro voo; depois abrir a checklist e voltar.
@@ -330,6 +335,15 @@ A app é usada em campo: numa janela de **1024 × 768** e noutra de **834 ×
   checklist (com as linhas do plano, como «Importar blocos do plano»), e
   apagada lá volta a estar por fazer no painel; abrir o painel sem marcar
   não muda o JSON exportado da checklist.
+- ☐ **No telemóvel**, ler o código QR de uma folha impressa.
+  **Esperado:** abre o ponto da base no Google Maps (as mesmas coordenadas
+  da folha) e a navegação até lá.
+- ☐ Checklist com luvas, no tablet: as fases em separadores (o número de
+  críticos por fazer em cada), um grupo que fecha no título, marcar itens.
+  **Esperado:** cada item marca-se com um toque (linhas de 52 px, caixas
+  de 24 px); na fase **Durante** o selector de voo diz a base, a zona, o
+  RTH e o KMZ do voo escolhido, sem mudar as caixas; **Exportar JSON** dá
+  o mesmo ficheiro de antes.
 - ☐ **No campo**, na base B: copiar a pasta `base-B/` do ZIP por base para o
   comando e importar no DJI Pilot 2 (cartão ou cabo).
   **Esperado:** as missões aparecem com o nome do ficheiro (`..._B-3`), pela

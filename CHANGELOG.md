@@ -27,6 +27,22 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   folha que se recolhe, e o botão «Painel», no fundo da barra dos modos,
   mostra-o e esconde-o em qualquer ecrã; as métricas começam num botão. Os
   números, os ficheiros exportados e os controlos são os mesmos.
+- **Checklist de campo em separadores e folha A4 de cada base.** As três
+  fases sobem para o topo, em separadores com o progresso e os críticos
+  por fazer (as setas mudam de fase); os grupos fecham no título, com o
+  progresso numa linha, e os itens têm 52 px com caixas de 24 px, para
+  usar com luvas. Na fase Durante, um selector de voo mostra a base, a
+  zona, o RTH, o tempo e o KMZ do voo escolhido (as caixas «Por voo» são
+  as mesmas em todos os voos, como sempre). As acções de segurança do KMZ
+  ficam em linhas e as fichas por base num cartão por base, que abre a
+  folha A4 dela: o voo e o lugar no dia, o aviso da zona reduzida, a zona,
+  a altura no comando, o RTH e o tempo, um código QR com a ligação dos
+  mapas do ponto da base, a zona numa régua, as alturas e o alcance, os
+  voos com o KMZ, o que conferir no Pilot 2, os críticos da descolagem e o
+  registo do voo para preencher à mão; imprime-se uma ou todas
+  («Imprimir as N fichas», uma página A4 por base). O registo de voos
+  mostra primeiro o que vem do plano. O JSON exportado e a checklist
+  gravada são os mesmos, byte a byte; o código QR é do lean-qr 2.7.4 (MIT).
 - **Painel da área em secções que fecham.** Os sete cartões abrem e
   fecham no título, um de cada vez, como os dos outros modos (abrir um
   fecha o que estava aberto), e, fechados, dizem o essencial numa linha
