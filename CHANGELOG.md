@@ -40,6 +40,24 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   bloco são os mesmos nos dois ZIP (nome, ordem e texto); os KMZ e o ZIP
   por base não mudam. Os pares por base aparecem só com bases, os dois ao
   mesmo tempo.
+- **Face, Órbita, Corredor e Circular em secções.** Os painéis dos outros
+  quatro modos passam ao painel em secções do modo Área, pela ordem do
+  trabalho, uma aberta de cada vez e, fechadas, com o essencial numa linha
+  e o estado (✓, avisos, o voo mais longo contra a bateria). Os resultados
+  ficam onde se decidem: as passagens e o GSD por baixo dos parâmetros da
+  face, os anéis vistos de lado por baixo da geometria da órbita, as
+  passagens por baixo da meia-largura do corredor, o conselho da
+  sobreposição nos círculos, os voos do corredor numa tabela com a base,
+  o tempo no troço e com a deslocação. Cada painel acaba em «Resumo e
+  exportar»: mosaicos, a barra do voo mais longo com os números das
+  métricas, a linha do preflight («Ver» abre a lista), o botão de exportar,
+  que é o do cabeçalho, o nome do ficheiro e «O que vai no KMZ», para onde
+  passam os nomes técnicos do WPML que estavam nas dicas. O aviso do
+  afastamento não verificado da face leva ao separador Área. As acções do
+  desenho têm os nomes da área («Anular último», «Concluir»; no circular,
+  «Polígono» e «Limpar área»), o eixo do corredor desenha-se em «Desenhar o
+  eixo», e cada base do corredor retira-se na sua linha. Os números, os
+  ficheiros exportados e os controlos são os mesmos.
 - **Cabeçalho e preflight do desenho novo.** A letra passa a ser a Inter,
   que vem com a aplicação (funciona sem rede), e a paleta a azul-ardósia do
   desenho aprovado, em toda a interface. O cabeçalho: o nome e a versão; o

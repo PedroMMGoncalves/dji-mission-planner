@@ -96,56 +96,71 @@ dizem em que cartão (e se na gaveta).
 
 ## 6. Modo face (~2.5 min)
 
-- ☐ Selector do topo → **Face**; Desenhar; clicar um L no mapa (dois
-  troços perpendiculares, ~300 m cada); Concluir (ou duplo clique).
+- ☐ Barra dos modos → **Face**; na secção 2 «Pé da face», **Desenhar**;
+  clicar um L no mapa (dois troços perpendiculares, ~300 m cada); Concluir
+  (ou duplo clique).
   **Esperado:** baseline laranja; linha afastada tracejada ao standoff do
   lado escolhido; traços amarelos de rumo perpendiculares a cada troço,
-  a rodarem na esquina; painel com passagens/GSD/tempo.
-- ☐ Trocar o **Lado do voo**.
+  a rodarem na esquina; na secção 3 «Parâmetros da face», a caixa azul com
+  as passagens, o passo vertical e o GSD; o tempo no resumo (secção 6).
+- ☐ Percorrer as seis secções do painel.
+  **Esperado:** só uma aberta de cada vez; fechada, cada uma diz o
+  essencial numa linha e o estado (✓, avisos, bloqueios); no resumo, o
+  botão **Exportar WPML Avançado (KMZ)** é o do cabeçalho (o mesmo nome, a
+  mesma dica, o mesmo estado), «Ver» abre a lista do preflight e «O que vai
+  no KMZ» diz o que o ficheiro leva.
+- ☐ Trocar o **Lado do voo** (secção 2).
   **Esperado:** a linha afastada salta para o outro lado da baseline e os
   rumos invertem.
-- ☐ Baixar o **Afastamento** para 5 m (o mínimo) e ler o painel.
+- ☐ Baixar o **Afastamento** para 5 m (o mínimo) e ler a secção 3.
   **Esperado:** passo vertical POSITIVO e aviso âmbar da altura mínima de segurança
   com a faixa por cobrir no pé da face; as alturas das passagens sobem
   sempre, nenhuma abaixo dos 5 m. Repor o afastamento a 25 m faz o aviso
   desaparecer.
 - ☐ Sem GeoTIFF local carregado, observar os avisos.
-  **Esperado:** aviso âmbar "afastamento NÃO verificado" (os tiles globais
-  nunca validam uma face).
-- ☐ Importar um GeoTIFF local (separador Área, cartão 2 «Área e relevo») que cubra a face —
+  **Esperado:** aviso âmbar «Afastamento não verificado contra o terreno»
+  (os tiles globais nunca validam uma face), com a ligação «Importar um
+  GeoTIFF em Área e relevo», que abre o separador Área.
+- ☐ Importar um GeoTIFF local (separador Área, «Área e relevo») que cubra a face —
   idealmente o DSM sintético de rampa dos testes de campo.
   **Esperado:** o aviso muda para folga verificada (verde) ou para a lista
   vermelha de passagens em conflito; subir o standoff limpa a lista.
-- ☐ Exportar WPML e abrir o KMZ.
-  **Esperado:** nome `<missao>_face_p1-N.kmz`; `waylines.wpml` com
-  `smoothTransition` e um `takePhoto` em cada waypoint.
+- ☐ No resumo, exportar e abrir o KMZ.
+  **Esperado:** nome `<missao>_face_p1-N.kmz`, o que o resumo diz em «Sai
+  como»; `waylines.wpml` com `smoothTransition` e um `takePhoto` em cada
+  waypoint.
 - ☐ Guardar o projecto, limpar tudo, reabrir.
   **Esperado:** baseline, parâmetros e modo activo restaurados.
 
 ## 7. Modo órbita (~2 min)
 
-- ☐ Selector → **Órbita**; Marcar POI; clicar no alvo; raio 60 m, 3 níveis.
+- ☐ Barra dos modos → **Órbita**; na secção 2, **Marcar POI** e clicar no
+  alvo; na secção 3 «Geometria da órbita», raio 60 m, 3 níveis.
   **Esperado:** anel tracejado ao raio, traços de rumo a apontarem ao POI,
-  marcador arrastável; painel com níveis × pontos/volta e gimbal por nível
-  (mais inclinado nos níveis altos).
+  marcador arrastável; por baixo da geometria, os anéis vistos de lado com
+  os pontos por volta e o gimbal por nível (mais inclinado nos níveis
+  altos).
 - ☐ Ajustar o **GSD pretendido no alvo**.
   **Esperado:** o raio recalcula-se em conformidade.
-- ☐ **Exportar WPML Avançado (KMZ)** (a missão única); reimportar o KMZ no
-  modo Área.
+- ☐ No resumo (secção 6), **Exportar WPML Avançado (KMZ)** (a missão
+  única); reimportar o KMZ no modo Área.
   **Esperado:** `<missao>_orbit_nN.kmz` com
   `toPointAndPassWithContinuityCurvature` em todos os waypoints; o
   reimport reconstrói um contorno em redor do círculo sem erro.
-- ☐ Exportar um KMZ por nível.
+- ☐ **Exportar um KMZ por nível (ZIP)**, por baixo do botão principal.
   **Esperado:** ZIP com N ficheiros `_b01..bNN`, um nível cada, alturas
-  crescentes.
+  crescentes; em vídeo o botão fica inactivo e diz porquê.
 
 ## 8. Modo corredor (~2 min)
 
-- ☐ Selector do topo → **Corredor**; Desenhar; clicar um eixo com uma curva
-  larga (3–4 vértices, ~500 m); Concluir (ou duplo clique).
+- ☐ Barra dos modos → **Corredor**; na secção 2 «Eixo e largura»,
+  **Desenhar o eixo**; clicar um eixo com uma curva larga (3–4 vértices,
+  ~500 m); Concluir (ou duplo clique).
   **Esperado:** eixo desenhado, faixa ilustrativa da largura pedida e as
-  passagens paralelas; painel com o número de passagens, waypoints e tempo, e
-  a linha «Altura … · sobreposição …/… % (do separador Área, cartão 3)».
+  passagens paralelas; por baixo da meia-largura, a caixa azul com o número
+  de passagens e o espaçamento; na secção 3 «Parâmetros de voo», «As do
+  separador Área (Parâmetros de voo): … acima da descolagem · sobreposição
+  …/… %»; os waypoints e o tempo no resumo (secção 7).
 - ☐ Aumentar a **meia-largura** de 60 para 120 m.
   **Esperado:** o número de passagens cresce **uma de cada vez**, nunca aos
   saltos, e a faixa alarga em conformidade.
@@ -156,16 +171,17 @@ dizem em que cartão (e se na gaveta).
 - ☐ Trocar o **Disparo** entre «Por distância» e «Por waypoint».
   **Esperado:** por waypoint, a contagem de waypoints sobe e a de fotos
   iguala-a; por distância, volta aos extremos das passagens.
-- ☐ Ligar **Seguir terreno** (cartão Relevo e Base) sobre relevo carregado.
+- ☐ Ligar **Seguir terreno** (secção 4 «Relevo») sobre relevo carregado.
   **Esperado:** as alturas de cada waypoint seguem o relevo (painel «waypoints
   com altura própria»), o KMZ sai com `-tf` no nome e a folga ao solo mantém-se
   em toda a rota; sem relevo a cobrir o eixo o preflight bloqueia.
 - ☐ Exportar WPML e abrir o KMZ.
   **Esperado:** `waylines.wpml` analisa, gimbal a −90 em todos os waypoints
   (o corredor é apenas nadir) e nenhum valor não-finito nas coordenadas.
-- ☐ Confirmar que a divisão por bateria não se aplica ao corredor.
-  **Esperado:** o corredor é um só voo; o preflight avisa quando passa o
-  tempo útil (com o trânsito da base, se marcada).
+- ☐ Na secção 5 «Voos e bases», **Divisão em voos: Nenhuma**.
+  **Esperado:** o corredor é um só voo, com a barra contra o tempo útil; o
+  preflight avisa quando passa o tempo útil (com o trânsito da base, se
+  marcada).
 - ☐ Guardar o projecto, limpar tudo, reabrir.
   **Esperado:** eixo, meia-largura, modo de disparo e seguir terreno
   restaurados.
@@ -370,8 +386,10 @@ tablet real):
   `<wpml:executeRCLostAction>hover`; com **Continuar a missão até ao fim** a
   acção ao interromper fica desligada e o KMZ leva `goContinue`.
 - ☐ Mudar para Corredor, Circular, Face e Órbita.
-  **Esperado:** o cartão **Acções de segurança** com a mesma escolha; o KMZ
-  de cada modo leva-a.
+  **Esperado:** a secção **Acções de segurança** (no corredor e no
+  circular; na face e na órbita, dentro de «Descolagem e segurança») com a
+  mesma escolha, dita numa linha no resumo da secção; o KMZ de cada modo
+  leva-a.
 - ☐ **Checklist de campo**; guardar e reabrir o projecto; abrir um projecto
   anterior.
   **Esperado:** a checklist diz as acções escritas no KMZ; o projecto
@@ -426,12 +444,13 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   junto ao vértice fica uma foto a olhar para o fundo do canto; nenhum par
   de waypoints seguidos a menos de 0,55 m.
 - ☐ **Face: prolongamento e espera**: com «Prolongar as pontas meia
-  imagem» ligado, a primeira e a última coluna de fotos ficam para lá das
-  pontas (o painel diz quanto); «Espera em cada foto» a 2 s.
+  imagem» ligado (secção 3), a primeira e a última coluna de fotos ficam
+  para lá das pontas (o painel diz quanto); «Espera em cada foto» a 2 s
+  (secção 4 «Captura»).
   **Esperado:** cada grupo de foto com `hover` (`hoverTime` 2) antes do
   `takePhoto`, e o tempo de voo sobe 2 s por foto.
-- ☐ **Descolagem numa base** (face e órbita, com relevo e uma base): escolher
-  «Na base A».
+- ☐ **Descolagem numa base** (face e órbita, com relevo e uma base): em
+  «Descolagem e segurança», escolher «Na base A».
   **Esperado:** o painel diz a diferença de cotas, as alturas do KMZ sobem
   (ou descem) dessa diferença, e a vista 3D mostra a rota no mesmo sítio;
   apagar a base: o preflight bloqueia até escolher outra descolagem.
@@ -455,8 +474,9 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   circular), e a área não muda.
 - ☐ **Corredor partido em voos**: corredor de vários quilómetros, «Divisão
   em voos: Por bateria».
-  **Esperado:** o painel lista os voos (C-1, C-2…) com o tempo e a base de
-  cada um, todos abaixo do tempo útil; as estatísticas dizem o mesmo número
+  **Esperado:** a tabela da secção «Voos e bases» lista os voos (C-1,
+  C-2…) com a base, o tempo no troço e com a deslocação, todos abaixo do
+  tempo útil, e a barra do mais longo; as estatísticas dizem o mesmo número
   de voos e o mais longo com a deslocação da sua base; o mapa mostra cada
   voo na sua cor, com o rótulo; a exportação dá um ZIP com um KMZ por voo;
   a vista 3D mostra os voos separados.
@@ -464,7 +484,8 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   pausa entre teclas; no raio do circular, 30.
   **Esperado:** os campos ficam em 150 e 30 (antes davam 205 e 50).
 - ☐ **Aeronave e sensor nos outros modos**: na face, na órbita, no corredor
-  e no circular, mudar a aeronave e o payload no topo do painel.
+  e no circular, mudar a aeronave e o payload na secção 1 «Aeronave e
+  sensor» do painel.
   **Esperado:** o cartão 1 da área mostra a mesma escolha; com um LiDAR, a
   órbita e o circular não levam `takePhoto` no KMZ e o painel diz 0 fotos.
 - ☐ **Várias inclinações (órbita e face)**: «Várias inclinações (com
