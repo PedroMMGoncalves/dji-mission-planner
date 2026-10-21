@@ -178,6 +178,9 @@ async function openMission({
   initScript = null,
   // pedidos locais a abortar (um bloco sob demanda que «não chega»)
   abort = null,
+  // as secções do painel da área abertas logo à entrada (abrirSeccoes); o
+  // inventário e o cenário das secções partem das omissões
+  seccoes = true,
 }) {
   const page = await browser.newPage({ viewport, acceptDownloads: true })
   currentPage = page
@@ -206,6 +209,7 @@ async function openMission({
     return route.abort()
   })
   await page.goto(URL, { waitUntil: 'domcontentloaded' })
+  if (seccoes && disclaimer) await abrirSeccoes(page)
   if (!area) return { page, errors }
   const areaInput = page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
   await areaInput.waitFor({ state: 'attached', timeout: 20000 })
@@ -463,14 +467,18 @@ await scenario('gcp-arrastar-alvo', async () => {
 
 await scenario('paragens-waypoints', async () => {
   const { page, errors } = await openMission({ area: fx.u })
-  const stops = page
-    .locator('label', { hasText: /Paragem nos waypoints|Stop at waypoints/ })
-    .locator('select')
+  // um controlo segmentado na gaveta dos parâmetros de voo (só nos cantos | em todos)
+  const stops = page.getByRole('group', {
+    name: /^(Paragem nos waypoints|Stop at waypoints)$/,
+    includeHidden: true,
+  })
+  const escolha = (re) => stops.getByRole('button', { name: re, includeHidden: true })
   check('paragens: controlo escondido sem pontos intermédios', (await stops.count()) === 0)
   await configure(page, { tf: true })
   check(
     'paragens: com seguimento de terreno aparece, só nos cantos por omissão',
-    (await stops.count()) === 1 && (await stops.inputValue()) === 'corners',
+    (await stops.count()) === 1 &&
+      (await escolha(/^(Só nos cantos|Corners only)$/).getAttribute('aria-pressed')) === 'true',
   )
   const cantos = turnModes(
     (await readRoutes(await exportKmz(page, join(OUT, 'u-tf-cantos.kmz'))))[0].wpml,
@@ -482,7 +490,7 @@ await scenario('paragens-waypoints', async () => {
     `${nPass} de ${cantos.length} passam`,
   )
   await openDrawer(page, 'voo')
-  await stops.selectOption('all')
+  await escolha(/^(Em todos|At every waypoint)$/).click()
   await page.waitForTimeout(800)
   const todos = turnModes(
     (await readRoutes(await exportKmz(page, join(OUT, 'u-tf-todos.kmz'))))[0].wpml,
@@ -504,9 +512,9 @@ await scenario('terreno-foto-por-waypoint', async () => {
   await configure(page, { tf: true })
   await openDrawer(page, 'voo')
   await page
-    .locator('label', { hasText: /Disparo por|Trigger by/ })
-    .locator('select')
-    .selectOption('waypoint')
+    .getByRole('group', { name: /^(Disparo por|Trigger by)$/ })
+    .getByRole('button', { name: 'Waypoint', exact: true })
+    .click()
   await page.waitForTimeout(800)
   await closeDrawer(page)
   const pill = await pillText(page)
@@ -2580,8 +2588,9 @@ await scenario('bases-exportar-por-base', async () => {
     `${(await fimKml.innerText()).trim()} → ${fimKmlName} | cabeçalho: ${cabKmlNome}`,
   )
   // a seta do botão de exportar tem as outras do cartão 7 («Exportar voos»
-  // menos «Um voo», que pede a escolha do voo): os mesmos nomes, as mesmas
-  // dicas, o mesmo estado e os mesmos ficheiros
+  // menos «Um voo», que pede a escolha do voo): os mesmos nomes e a mesma
+  // linha a dizer o que sai, as mesmas dicas, o mesmo estado e os mesmos
+  // ficheiros
   const pares = [
     ['export-all-flights', 'header-export-all-flights'],
     ['export-by-base', 'header-export-by-base'],
@@ -2599,7 +2608,7 @@ await scenario('bases-exportar-por-base', async () => {
     const b = menu.getByTestId(cab)
     if (
       (await b.count()) !== 1 ||
-      (await a.innerText()).trim() !== (await itemName(b)) ||
+      (await a.innerText()).trim() !== (await b.innerText()).trim() ||
       (await a.getAttribute('title')) !== (await b.getAttribute('title')) ||
       (await a.isDisabled()) !== (await b.isDisabled())
     )
@@ -2923,6 +2932,8 @@ await scenario('bases-desfazer', async () => {
   const radius = page.locator(
     `[data-testid="base-row"][data-base-label="${rows0[1].label}"] [data-testid="base-radius"]`,
   )
+  // no detalhe da base, que se abre na linha da tabela
+  await revelar(page, radius)
   await radius.click()
   await page.keyboard.type('150')
   await page.evaluate(() => document.activeElement?.blur?.())
@@ -2986,6 +2997,8 @@ await scenario('juntar-a-esta-base', async () => {
   // «Juntar blocos a esta base» na linha de A: entra no modo de juntar à mão
   // (não mexe em nada sozinho)
   const rowA = page.locator(`[data-testid="base-row"][data-base-label="${A.label}"]`)
+  // no detalhe da base, que se abre na linha da tabela
+  await revelar(page, rowA.getByTestId('base-gather'))
   await rowA.getByTestId('base-gather').click()
   await page.waitForTimeout(400)
   check(
@@ -3108,16 +3121,17 @@ await scenario('atribuir-bloco-a-base', async () => {
         `bloco ${blk2} -> ${owner?.label}`,
       )
     }
-    // com uma gaveta aberta, o Esc fecha a gaveta e a base continua seleccionada
-    if (await openDrawer(page, 'bases')) {
-      await page.keyboard.press('Escape')
-      await page.waitForTimeout(300)
-      check(
-        `${split}: com uma gaveta aberta, o Esc fecha a gaveta e a base fica seleccionada`,
-        (await page.locator('[data-testid="drawer-bases"]:visible').count()) === 0 &&
-          (await hint.getAttribute('data-assign')) === 'on',
-      )
-    }
+    // com uma gaveta aberta, o Esc fecha a gaveta e a base continua
+    // seleccionada (as bacias de visão, sozinhas na gaveta das bases, foram
+    // para a secção: a gaveta é a da área)
+    await openDrawer(page, 'area')
+    await page.keyboard.press('Escape')
+    await page.waitForTimeout(300)
+    check(
+      `${split}: com uma gaveta aberta, o Esc fecha a gaveta e a base fica seleccionada`,
+      (await page.locator('[data-testid="drawer-area"]:visible').count()) === 0 &&
+        (await hint.getAttribute('data-assign')) === 'on',
+    )
     // Esc desselecciona
     await page.keyboard.press('Escape')
     await page.waitForTimeout(300)
@@ -3389,10 +3403,15 @@ await scenario('bacias-visao-cumeada', async () => {
     views[vf] === 100 && radio[vf] >= 5,
     `rádio em risco à vista: ${JSON.stringify(radio)}`,
   )
-  // a lista das bases no cartão, as bacias de visão (relevo usado) na gaveta dele
-  await openDrawer(page, 'bases')
+  // a lista das bases na secção, com a vista de cada voo no detalhe da base
+  // A (abre-se na linha), e as bacias de visão (relevo usado) na mesma secção
+  await revelar(
+    page,
+    page.locator('[data-testid="base-row"][data-base-label="A"] [data-testid="base-view"]'),
+  )
+  await revelar(page, page.getByTestId('viewshed-terrain'))
   const panelText = `${await page.getByTestId('bases-panel').innerText()}\n${await page
-    .getByTestId('drawer-bases')
+    .getByTestId('viewshed-box')
     .innerText()}`
   check(
     'cumeada: o painel diz a distância a que fica tapado e o relevo usado (com a ressalva do MDT)',
@@ -3466,7 +3485,7 @@ await scenario('bacias-visao-cumeada', async () => {
 
   // camada do mapa: ligada no painel, pinta os quadrados tapados e a
   // percentagem de cada bloco, e fica lembrada neste aparelho
-  await openDrawer(page, 'bases')
+  await revelar(page, page.getByTestId('viewshed-toggle'))
   await page.getByTestId('viewshed-toggle').check()
   await page.waitForTimeout(500)
   const squares = await page.locator('.viewshed-hidden').count()
@@ -3512,7 +3531,7 @@ await scenario('bacias-visao-cumeada', async () => {
 
   // vegetação e obstáculos (por missão): 10 m somados ao MDT alargam a
   // sombra ao bloco de oeste; marcado o ficheiro como MDS, não se somam
-  await openDrawer(page, 'bases')
+  await revelar(page, page.getByTestId('viewshed-obstacle'))
   await page.getByTestId('viewshed-obstacle').fill('10')
   await page.waitForFunction(
     (f) =>
@@ -3556,7 +3575,7 @@ await scenario('bacias-visao-cumeada', async () => {
     dsmText.slice(0, 200),
   )
   await page.getByTestId('dem-surface-dtm').click()
-  await openDrawer(page, 'bases')
+  await revelar(page, page.getByTestId('viewshed-obstacle'))
   await page.getByTestId('viewshed-obstacle').fill('0')
   await page.waitForFunction(
     (f) =>
@@ -3870,26 +3889,78 @@ await scenario('propor-bases-sitio-alto', async () => {
   return { page }
 })
 
-/* ---- cartões e gavetas do painel da área ------------------------------- */
-// O painel da área é uma coluna de cartões numerados pela ordem do trabalho;
-// o resto dos controlos de cada cartão está na sua gaveta («Mais opções ›»),
-// ao lado do painel e por cima do mapa, uma de cada vez.
+/* ---- secções e gavetas do painel da área ------------------------------- */
+// O painel da área é uma coluna de secções numeradas pela ordem do trabalho,
+// que fecham (fechadas, o resumo numa linha); o resto dos controlos de cada
+// secção está na sua gaveta («Mais opções ›»), ao lado do painel e por cima
+// do mapa, uma de cada vez, em grupos que também fecham.
 async function openDrawer(page, card) {
   const more = page.getByTestId(`card-more-${card}`)
   if ((await more.count()) === 0) return false
+  // o botão está na secção: aberta, se estiver fechada
+  if (!(await more.isVisible())) await revelar(page, more)
   if ((await more.getAttribute('aria-expanded')) !== 'true') await more.click()
-  await page.getByTestId(`drawer-${card}`).waitFor({ state: 'visible', timeout: 5000 })
+  const gaveta = page.getByTestId(`drawer-${card}`)
+  await gaveta.waitFor({ state: 'visible', timeout: 5000 })
+  // os grupos da gaveta todos abertos, também os que fecham por omissão (um
+  // a um: abrir um tira-o da lista dos fechados)
+  const fechado = gaveta.locator('h3 > button[aria-expanded="false"]')
+  for (let i = 0; i < 12 && (await fechado.count()) > 0; i += 1) await fechado.first().click()
   return true
+}
+/**
+ * As secções do painel da área abertas, e as caixas que fecham dentro delas
+ * (as acções de segurança): o operador abre as que vai usar, e os cenários
+ * abrem-nas todas logo à entrada; a escolha fica gravada no aparelho, e
+ * recarregar ou mudar de separador deixa-as abertas.
+ */
+async function abrirSeccoes(page) {
+  const painel = page.getByTestId('area-panel')
+  if (
+    !(await painel.waitFor({ state: 'visible', timeout: 20000 }).then(
+      () => true,
+      () => false,
+    ))
+  )
+    return
+  // uma a uma: abrir uma tira-a da lista e mostra as caixas de dentro
+  const fechada = painel.locator(':is(h3, h4) > button[aria-expanded="false"]:visible')
+  for (let i = 0; i < 40 && (await fechada.count()) > 0; i += 1) await fechada.first().click()
+}
+/**
+ * Põe à vista o controlo `loc`: abre, de fora para dentro, o que o esconde —
+ * a secção, a gaveta (pelo seu «Mais opções ›»), um grupo da gaveta, o
+ * detalhe de uma base —, carregando no botão que o controla (aria-controls).
+ * Devolve se ficou à vista.
+ */
+async function revelar(page, loc) {
+  const el = loc.first()
+  for (let i = 0; i < 6; i += 1) {
+    if (await el.isVisible().catch(() => false)) return true
+    const id = await el
+      .evaluate((e) => {
+        let fora = null
+        for (let x = e; x; x = x.parentElement) if (x.hidden && x.id) fora = x.id
+        return fora
+      })
+      .catch(() => null)
+    if (!id) return false
+    const botao = page.locator(`[aria-controls="${id}"]`).first()
+    if (!(await botao.isVisible()) && !(await revelar(page, botao))) return false
+    await botao.click()
+  }
+  return el.isVisible()
 }
 async function closeDrawer(page) {
   const open = page.locator('[data-testid^="drawer-"]:visible')
   if ((await open.count()) > 0) await open.getByRole('button', { name: /^(Fechar|Close)/ }).click()
 }
 /**
- * O controlo `loc` do cartão `card`, à vista: no cartão, ou depois de abrir a
- * gaveta dele. Devolve onde estava ('cartão' | 'gaveta') e o locator, ou
- * null quando não se alcança. Sem cartões (painel antigo) procura na página.
- * Com `card` 'mapa', na barra de desenho sobre o mapa ('mapa').
+ * O controlo `loc` do cartão `card`, à vista: na secção (aberta, se estiver
+ * fechada), ou depois de abrir a gaveta dela (e o grupo da gaveta, ou o
+ * detalhe da base). Devolve onde estava ('cartão' | 'gaveta') e o locator,
+ * ou null quando não se alcança. Sem cartões (painel antigo) procura na
+ * página. Com `card` 'mapa', na barra de desenho sobre o mapa ('mapa').
  */
 async function reach(page, card, loc) {
   if (card === 'mapa') {
@@ -3903,15 +3974,17 @@ async function reach(page, card, loc) {
   const where = () =>
     el.evaluate((e) => (e.closest('[data-testid^="drawer-"]') ? 'gaveta' : 'cartão'))
   if (await el.isVisible().catch(() => false)) return { where: await where(), el }
-  if ((await openDrawer(page, card)) && (await el.isVisible().catch(() => false)))
-    return { where: 'gaveta', el }
+  if (await revelar(page, el)) return { where: await where(), el }
   return { where: null, el }
 }
 
+// escondidos também (includeHidden): numa secção fechada ou numa gaveta, o
+// controlo existe e revelar() abre o que o esconde
 const inv = {
-  btn: (re) => (r) => r.getByRole('button', { name: re }),
-  exact: (name) => (r) => r.getByRole('button', { name, exact: true }),
+  btn: (re) => (r) => r.getByRole('button', { name: re, includeHidden: true }),
+  exact: (name) => (r) => r.getByRole('button', { name, exact: true, includeHidden: true }),
   field: (re) => (r) => r.locator('label', { hasText: re }).locator('input, select'),
+  group: (re) => (r) => r.getByRole('group', { name: re, includeHidden: true }),
   id: (id) => (r) => r.getByTestId(id),
 }
 
@@ -3925,7 +3998,13 @@ const inv = {
  * (polígono, rectângulo, quadrado) do cartão «Área e relevo» para a barra de
  * desenho sobre o mapa ('mapa'), que tem também «Marcar base» e «Marcar
  * pontos de inspecção» (os dos cartões 5 e 6). Agrupados pelo estado que os
- * mostra.
+ * mostra. Os cartões são secções que fecham: o inventário parte delas como
+ * abrem (sem abrirSeccoes) e reach() abre a secção, a gaveta, o grupo da
+ * gaveta ou o detalhe da base de cada controlo. «Seleccionar a base A» (o
+ * rótulo da base) e «Atribuir blocos a esta base» eram a mesma acção com
+ * dois nomes: fica o segundo, no detalhe da base; «Disparo por», «Paragem
+ * nos waypoints» e o tipo do sensor próprio passaram de listas e botões de
+ * rádio a controlos segmentados (grupos de botões).
  */
 const INVENTARIO_INICIO = [
   ['missao', 'nome da missão', (r) => r.getByPlaceholder(/nome-da-missao/)],
@@ -3944,7 +4023,7 @@ const INVENTARIO_INICIO = [
   ['voo', 'sobreposição frontal', inv.field(/Sobreposição frontal/)],
   ['voo', 'sobreposição lateral', inv.field(/Sobreposição lateral/)],
   ['voo', 'espaçamento manual', inv.field(/Espaçamento manual/)],
-  ['voo', 'disparo por', inv.field(/Disparo por/)],
+  ['voo', 'disparo por', inv.group(/Disparo por/)],
   ['voo', 'intervalo de disparo manual', inv.id('interval-manual')],
   ['voo', 'rumo da aeronave', inv.id('heading-mode')],
   ['voo', 'inclinação do gimbal', inv.field(/Inclinação do gimbal/)],
@@ -3992,8 +4071,8 @@ const INVENTARIO_DRONE = [
   ['missao', 'FOV nominal', inv.exact('Nominal')],
 ]
 const INVENTARIO_CUSTOM = [
-  ['missao', 'sensor próprio: câmara', (r) => r.getByRole('radio', { name: 'Câmara' })],
-  ['missao', 'sensor próprio: LiDAR', (r) => r.getByRole('radio', { name: /LiDAR \(FOV\)/ })],
+  ['missao', 'sensor próprio: câmara', inv.exact('Câmara')],
+  ['missao', 'sensor próprio: LiDAR', inv.btn(/LiDAR \(FOV\)/)],
   ['missao', 'largura do sensor', inv.field(/Largura sensor/)],
   ['missao', 'altura do sensor', inv.field(/Altura sensor/)],
   ['missao', 'distância focal', inv.field(/Distância focal/)],
@@ -4025,7 +4104,7 @@ const INVENTARIO_AREA = [
   // a sugestão de gimbal caiu (M2-T9): fica só a do ângulo das linhas
   ['area', 'declive: linhas', inv.btn(/^Faixas a \d+°$/)],
   ['voo', 'tolerância vertical', inv.field(/Tolerância vertical/)],
-  ['voo', 'paragem nos waypoints', inv.field(/Paragem nos waypoints/)],
+  ['voo', 'paragem nos waypoints', inv.group(/Paragem nos waypoints/)],
   ['voo', 'distância entre linhas', inv.field(/Espaçamento entre faixas/)],
   ['voo', 'passagem nadir extra', inv.field(/Passagem nadir extra/)],
 ]
@@ -4047,7 +4126,12 @@ const INVENTARIO_BATERIA = [
   ['divisao', 'lado máximo (VLOS)', inv.field(/Lado máx\. \(VLOS\)/)],
   ['divisao', 'lista de blocos', inv.id('block-row')],
   ['bases', 'Propor bases', inv.id('propose-bases')],
-  ['bases', 'seleccionar a base', (r) => r.getByTitle(/Seleccionar a base A/)],
+  // a base marcada fica seleccionada: «Terminar» no lugar de «Atribuir…»
+  [
+    'bases',
+    'seleccionar a base (Atribuir blocos a esta base / Terminar)',
+    (r) => r.locator('[data-testid="base-gather"], [data-testid="base-gather-done"]'),
+  ],
   ['bases', 'raio da zona', inv.id('base-radius')],
   ['bases', 'retirar a base', inv.btn(/Retirar a base A/)],
   ['bases', 'clique num bloco (activar ou passar à base)', inv.id('bases-click-hint')],
@@ -4075,7 +4159,7 @@ const INVENTARIO_EXTRAS = [
     (r) =>
       r
         .locator('[draggable=true]')
-        .getByRole('button', { name: /Retirar o ponto 1|Remove point 1/ }),
+        .getByRole('button', { name: /Retirar o ponto 1|Remove point 1/, includeHidden: true }),
   ],
   [
     'extras',
@@ -4123,9 +4207,9 @@ await scenario('inventario-painel-area', async () => {
     return el
   }
 
-  // sem área: o painel inteiro tal como abre
-  const { page, errors } = await openMission({})
-  await page.getByPlaceholder(/nome-da-missao/).waitFor({ timeout: 20000 })
+  // sem área: o painel inteiro tal como abre, com as secções como abrem
+  const { page, errors } = await openMission({ seccoes: false })
+  await page.getByPlaceholder(/nome-da-missao/).waitFor({ state: 'attached', timeout: 20000 })
   await verifica(page, INVENTARIO_INICIO)
   // aeronave com vários payloads e um LiDAR (FOV de trabalho)
   const aeronave = (r, p) =>
@@ -4136,17 +4220,31 @@ await scenario('inventario-painel-area', async () => {
       r.locator('select').filter({ has: p.locator('option[value="P1"]') }),
     )
   ).selectOption('MAPPER_PLUS')
-  await (await usa(page, 'missao', inv.field(/FOV de trabalho/))).fill('50')
+  // o valor escrito chega ao plano ao acabar (Enter), e só então aparece «Nominal»
+  const fov = await usa(page, 'missao', inv.field(/FOV de trabalho/))
+  await fov.fill('50')
+  await fov.press('Enter')
   await closeDrawer(page)
   await verifica(page, INVENTARIO_DRONE)
   // aeronave própria: o editor do sensor e os enums WPML
   await (await usa(page, 'missao', aeronave)).selectOption('CUSTOM')
   await verifica(page, INVENTARIO_CUSTOM)
-  await (await usa(page, 'missao', (r) => r.getByRole('radio', { name: /LiDAR \(FOV\)/ }))).check()
+  await (await usa(page, 'missao', inv.btn(/LiDAR \(FOV\)/))).click()
   await closeDrawer(page)
   await verifica(page, [['missao', 'FOV do feixe', inv.field(/FOV do feixe/)]])
-  // desenho livre e formas ancoradas
+  // desenho livre e formas ancoradas: o desenho abre a secção da área,
+  // mesmo fechada, onde estão os seus botões e campos
+  const area2 = page.getByTestId('card-area').locator('h3 > button')
+  if ((await area2.getAttribute('aria-expanded')) === 'true') await area2.click()
   await (await usa(page, 'mapa', inv.btn(/Polígono/))).click()
+  check(
+    'inventário: desenhar na barra do mapa abre a secção «Área e relevo» fechada',
+    (await area2.getAttribute('aria-expanded')) === 'true' &&
+      (await page
+        .getByTestId('card-area')
+        .getByRole('button', { name: /Anular último/ })
+        .isVisible()),
+  )
   await verifica(page, INVENTARIO_DESENHO)
   await (await usa(page, 'mapa', inv.btn(/Rectângulo/))).click()
   await verifica(page, INVENTARIO_ANCORA)
@@ -4156,7 +4254,7 @@ await scenario('inventario-painel-area', async () => {
   await page.close()
 
   // com área e um MDT inclinado (sugestão de declive), divisões e bases
-  const b = await openMission({ area: fx.rect, demFile: fx.demSteep })
+  const b = await openMission({ area: fx.rect, demFile: fx.demSteep, seccoes: false })
   const p2 = b.page
   await (await usa(p2, 'voo', inv.field(/Seguir terreno/))).check()
   await (await usa(p2, 'voo', inv.field(/Espaçamento manual/))).check()
@@ -4203,11 +4301,11 @@ await scenario('inventario-painel-area', async () => {
   await p2.close()
 
   // importações: várias partes e coordenadas projectadas sem CRS
-  const c = await openMission({ area: fx.multi, dem: false })
+  const c = await openMission({ area: fx.multi, dem: false, seccoes: false })
   await c.page.waitForTimeout(800)
   await verifica(c.page, INVENTARIO_IMPORTACAO)
   await c.page.close()
-  const d = await openMission({ area: fx.projected, dem: false })
+  const d = await openMission({ area: fx.projected, dem: false, seccoes: false })
   await d.page.waitForTimeout(800)
   await verifica(d.page, INVENTARIO_CRS)
   await d.page.close()
@@ -4313,11 +4411,15 @@ const focoEm = (page, testid) =>
 
 await scenario('cartoes-gavetas', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
-  // sete cartões numerados, pela ordem do trabalho
+  // sete secções numeradas, pela ordem do trabalho (o número é o do botão
+  // que abre e fecha a secção)
   const ordem = await page
     .locator('[data-testid^="card-"]:not([data-testid^="card-more-"])')
     .evaluateAll((els) =>
-      els.map((e) => [e.dataset.testid.slice(5), e.querySelector('h2 span')?.textContent]),
+      els.map((e) => [
+        e.dataset.testid.slice(5),
+        e.querySelector(':scope > h3 button > span')?.textContent,
+      ]),
     )
   check(
     'cartões: sete, numerados 1 a 7 pela ordem do trabalho',
@@ -4325,7 +4427,11 @@ await scenario('cartoes-gavetas', async () => {
     JSON.stringify(ordem),
   )
   check('gavetas: nenhuma aberta ao abrir a aplicação', (await gavetasAbertas(page)) === 0)
-  // «Mais opções ›»: botões a sério, com aria-expanded/aria-controls e 44 px
+  // os botões que abrem as gavetas: botões a sério, com aria-expanded e
+  // aria-controls e 44 px; cada um diz o que a gaveta tem (a da área, a dos
+  // parâmetros de voo e, nos Extras, uma por parte). As gavetas pequenas
+  // (bases, resumo) passaram para dentro da secção; a da missão só existe
+  // com um sensor personalizado e a da divisão com células (abaixo).
   const mais = page.locator('[data-testid^="card-more-"]')
   const botoes = await mais.evaluateAll((els) =>
     els.map((e) => ({
@@ -4336,18 +4442,24 @@ await scenario('cartoes-gavetas', async () => {
       txt: e.textContent,
     })),
   )
+  const nomes = [
+    ['drawer-area', /^Datum vertical e mais opções$/],
+    ['drawer-voo', /^Linhas de voo, disparo e câmara$/],
+    ['drawer-extras', /^Pontos de apoio \(GCP\)/],
+    ['drawer-extras', /^Pontos de inspecção/],
+  ]
   check(
-    'gavetas: «Mais opções ›» em seis cartões, com aria-expanded, aria-controls e 44 px',
-    botoes.length === 6 &&
+    'gavetas: os botões que as abrem (área, voo, GCP, inspecção), com aria-expanded, aria-controls e 44 px',
+    botoes.length === nomes.length &&
       botoes.every(
-        (b) =>
+        (b, i) =>
           b.tag === 'BUTTON' &&
-          /^drawer-/.test(b.controls) &&
+          b.controls === nomes[i][0] &&
           b.expanded === 'false' &&
           b.h >= 44 &&
-          /Mais opções/.test(b.txt),
+          nomes[i][1].test(b.txt.trim()),
       ),
-    JSON.stringify(botoes.map((b) => [b.controls, b.expanded, Math.round(b.h)])),
+    JSON.stringify(botoes.map((b) => [b.controls, b.expanded, Math.round(b.h), b.txt])),
   )
 
   // abre com o botão: a gaveta aparece ao lado do painel, o foco entra nela
@@ -4394,13 +4506,23 @@ await scenario('cartoes-gavetas', async () => {
     'gaveta: Escape fecha, e o foco volta a «Mais opções»',
     (await gavetasAbertas(page)) === 0 && (await focoEm(page, 'card-more-extras')),
   )
+  // a gaveta da divisão (as células) só existe com quadrícula ou bateria
+  check(
+    'gavetas: a divisão sem células não tem gaveta',
+    (await page.getByTestId('card-more-divisao').count()) === 0,
+  )
+  await configure(page, { split: 'Quadrícula' })
+  const celulas = page.getByTestId('card-more-divisao')
+  await celulas.waitFor({ state: 'visible', timeout: 5000 })
   // o mesmo botão abre e fecha
-  await page.getByTestId('card-more-divisao').click()
-  await page.getByTestId('card-more-divisao').click()
+  await celulas.click()
+  await page.getByTestId('drawer-divisao').waitFor({ state: 'visible', timeout: 5000 })
+  await celulas.click()
   check(
     'gaveta: o mesmo botão volta a fechá-la',
     (await gavetasAbertas(page)) === 0 &&
-      (await page.getByTestId('card-more-divisao').getAttribute('aria-expanded')) === 'false',
+      (await celulas.getAttribute('aria-expanded')) === 'false' &&
+      /^Células e orientação dos quadrados$/.test((await celulas.textContent()).trim()),
   )
   // o que se mudou numa gaveta fica, fechada e reaberta (continua montada)
   await openDrawer(page, 'voo')
@@ -4702,7 +4824,11 @@ await scenario('intervalo-manual-e-rumo-fixo', async () => {
     `${p.length} grupos (${[...new Set(p)].join(',')}) · ${sobre.slice(0, 80)}`,
   )
   // por tempo: os segundos escritos, sem passar por metros
-  await (await usa(inv.field(/Disparo por/))).selectOption('time')
+  await (
+    await usa(inv.group(/Disparo por/))
+  )
+    .getByRole('button', { name: /^(Tempo|Time)$/ })
+    .click()
   const segundos = await usa(inv.id('interval-seconds'))
   await segundos.fill('2.3')
   await segundos.press('Tab')
@@ -4718,7 +4844,7 @@ await scenario('intervalo-manual-e-rumo-fixo', async () => {
     `${p.length} grupos (${[...new Set(p)].join(',')})`,
   )
   // rumo fixo a 270°: −90 no WPML, em smoothTransition, em todos os waypoints
-  await (await usa(inv.id('heading-mode'))).selectOption('fixed')
+  await (await usa(inv.id('heading-mode'))).getByRole('button', { name: /^(Fixo|Fixed)$/ }).click()
   const graus = await usa(inv.id('heading-deg'))
   await graus.fill('270')
   await graus.press('Tab')
@@ -5719,6 +5845,11 @@ const lerEcra = (page) =>
 
 /** Os painéis estáveis durante 1,5 s, sem nada a meio (relevo, zonas, bacias de visão). */
 async function ecraEstavel(page) {
+  // cada base com o detalhe aberto (abre-se na linha da tabela): o texto
+  // inteiro da base, como o operador o lê (uma a uma: abrir uma tira-a da
+  // lista das fechadas)
+  const fechada = page.locator('[data-testid="base-row"] th button[aria-expanded="false"]:visible')
+  for (let i = 0; i < 60 && (await fechada.count()) > 0; i += 1) await fechada.first().click()
   if ((await page.getByTestId('preflight-list').count()) === 0)
     await page.getByTestId('preflight-pill').click()
   const toggle = page.getByTestId('stats-toggle')

@@ -53,7 +53,6 @@ export default {
     en: 'Back to the sensor nominal FOV ({fov}°)',
   },
   /* ---- Pontos de inspecção (R2.9) ---- */
-  'cp.inspect.title': { pt: 'Pontos de Inspecção', en: 'Inspection Points' },
   // o nome da acção, o mesmo no cartão 6 e na barra sobre o mapa («Inspecção»)
   'cp.inspect.mark': { pt: 'Marcar pontos de inspecção', en: 'Place inspection points' },
   'cp.inspect.markTitle': {
@@ -181,10 +180,17 @@ export default {
   'cp.flight.stops': { pt: 'Paragem nos waypoints', en: 'Stop at waypoints' },
   'cp.flight.stopsCorners': { pt: 'Só nos cantos', en: 'Corners only' },
   'cp.flight.stopsAll': { pt: 'Em todos', en: 'At every waypoint' },
-  'cp.flight.stopsHint': {
-    pt: 'Só nos cantos: a aeronave pára no fim de cada faixa e passa sem parar pelas fotos e pelos vértices do terreno (nesses pontos o KMZ leva waypointTurnMode toPointAndPassWithContinuityCurvature com useStraightLine 1, o «Turns before waypoint. Flies through» do Pilot 2). Em todos: pára em cada waypoint (toPointAndStopWithDiscontinuityCurvature; pouca luz, exposições longas), e o tempo previsto conta as paragens.',
-    en: 'Corners only: the aircraft stops at the end of each line and flies through photo points and terrain vertices (at those points the KMZ carries waypointTurnMode toPointAndPassWithContinuityCurvature with useStraightLine 1, Pilot 2’s “Turns before waypoint. Flies through”). At every waypoint: it stops at each one (toPointAndStopWithDiscontinuityCurvature; low light, long exposures), and the estimated time counts the stops.',
+  // a dica da escolha feita, e o que o KMZ leva nesses pontos à parte
+  'cp.flight.stopsHintCorners': {
+    pt: 'A aeronave pára no fim de cada faixa e passa sem parar pelas fotos e pelos vértices do terreno («Turns before waypoint. Flies through» no Pilot 2).',
+    en: 'The aircraft stops at the end of each line and flies through the photo points and terrain vertices (Pilot 2’s “Turns before waypoint. Flies through”).',
   },
+  'cp.flight.stopsHintAll': {
+    pt: 'A aeronave pára em cada waypoint (pouca luz, exposições longas), e o tempo previsto conta as paragens.',
+    en: 'The aircraft stops at every waypoint (low light, long exposures), and the estimated time counts the stops.',
+  },
+  'cp.flight.stopsKmzCorners': { pt: 'No KMZ, nesses pontos:', en: 'In the KMZ, at those points:' },
+  'cp.flight.stopsKmzAll': { pt: 'No KMZ:', en: 'In the KMZ:' },
   'cp.flight.waypointWarn': {
     pt: '{n} waypoints num só bloco — acima de 2000 a importação no Pilot 2 fica lenta; aumente o intervalo ou divida em blocos.',
     en: '{n} waypoints in a single block — above 2000 the Pilot 2 import gets slow; increase the interval or split into blocks.',
@@ -201,9 +207,15 @@ export default {
     pt: 'Azimute das faixas: 0° = Norte–Sul · 90° = Este–Oeste',
     en: 'Flight line azimuth: 0° = North–South · 90° = East–West',
   },
-  'cp.orientation.parallel': { pt: '∥ Paralelas', en: '∥ Parallel' },
-  'cp.orientation.perpendicular': { pt: '⊥ Perpendic.', en: '⊥ Perpend.' },
-  'cp.orientation.oblique45': { pt: '∠ Oblíquas 45°', en: '∠ Oblique 45°' },
+  'cp.orientation.group': {
+    pt: 'Orientação em relação ao bloco',
+    en: 'Orientation relative to the block',
+  },
+  'cp.orientation.parallel': { pt: 'Paralelas', en: 'Parallel' },
+  // o rótulo curto do botão; o nome e a dica dizem o resto
+  'cp.orientation.perpendicular': { pt: 'Perpendiculares', en: 'Perpendicular' },
+  'cp.orientation.perpendicularShort': { pt: 'Perpend.', en: 'Perpend.' },
+  'cp.orientation.oblique45': { pt: 'Oblíquas 45°', en: 'Oblique 45°' },
   'cp.orientation.relativeTitle': {
     pt: 'Direcção relativa à orientação do bloco (ou ao lado mais longo do polígono)',
     en: 'Direction relative to the block orientation (or to the longest edge of the polygon)',
@@ -235,9 +247,10 @@ export default {
   'cp.inspect.remove': { pt: 'Retirar o ponto {n}', en: 'Remove point {n}' },
 
   /* ---- Área de levantamento ---- */
+  // por baixo de «Importar área»: o que se importa, ou desenhar
   'cp.area.drawOnMap': {
-    pt: 'Desenhe a área na barra sobre o mapa (Polígono, Rectângulo ou Quadrado), ou importe-a:',
-    en: 'Draw the area with the bar over the map (Polygon, Rectangle or Square), or import it:',
+    pt: 'KML · GeoJSON · SHP (.zip) · KMZ WPML, ou desenhe a área na barra sobre o mapa (Polígono, Rectângulo ou Quadrado).',
+    en: 'KML · GeoJSON · SHP (.zip) · WPML KMZ, or draw the area with the bar over the map (Polygon, Rectangle or Square).',
   },
   'cp.area.polygon': { pt: 'Polígono', en: 'Polygon' },
   // dicas da barra sobre o mapa: sem o nome da forma, que a barra lhes junta
@@ -256,10 +269,7 @@ export default {
     pt: 'Centrado num ponto (lado único)',
     en: 'Centred on a point (single side)',
   },
-  'cp.area.import': {
-    pt: 'Importar área (KML · GeoJSON · SHP · KMZ WPML)',
-    en: 'Import area (KML · GeoJSON · SHP · WPML KMZ)',
-  },
+  'cp.area.import': { pt: 'Importar área', en: 'Import area' },
   'cp.area.importHoles': {
     pt: 'O polígono tem {n} anel(is) interior(es): os buracos ficam fora do plano e não são editáveis.',
     en: 'The polygon has {n} inner ring(s): holes are excluded from the plan and cannot be edited.',
@@ -290,6 +300,10 @@ export default {
     en: 'Set the take-off point / pilot position',
   },
   'cp.area.removeBase': { pt: 'Remover base', en: 'Remove base' },
+  // os rótulos curtos na secção 5, ao lado de «Propor bases» (o nome e a
+  // dica dos botões são os de cima)
+  'cp.area.markBaseShort': { pt: 'Marcar', en: 'Set' },
+  'cp.area.removeBaseShort': { pt: 'Remover', en: 'Remove' },
   'cp.area.baseHint': {
     pt: 'Clique no mapa para acrescentar uma base (A, B, C...; arrastável). Cada base é uma zona: as alturas dos seus blocos referem-se à cota mais baixa dela.',
     en: 'Click on the map to add a base (A, B, C...; draggable). Each base is a zone: the heights of its blocks refer to its lowest elevation.',
@@ -428,8 +442,8 @@ export default {
     en: 'Set or propose the bases: each block’s transit counts from its own.',
   },
   'cp.split.exportHint': {
-    pt: 'A exportação WPML gera um ZIP com um KMZ por voo, pela ordem de voo e com o rótulo do voo no nome (…_A-1.kmz), cada um com as alturas referidas à zona da sua base. Os voos de uma só base, ou um só voo, exportam-se no cartão 5 (Bases e segurança).',
-    en: 'The WPML export produces a ZIP with one KMZ per flight, in flight order and named after the flight (…_A-1.kmz), each with heights referred to its base zone. One base’s flights, or a single flight, are exported from card 5 (Bases and safety).',
+    pt: 'A exportação WPML gera um ZIP com um KMZ por voo, pela ordem de voo e com o rótulo do voo no nome (…_A-1.kmz), cada um com as alturas referidas à zona da sua base. Os voos de uma só base, ou um só voo, exportam-se no cartão 7 (Resumo e exportar).',
+    en: 'The WPML export produces a ZIP with one KMZ per flight, in flight order and named after the flight (…_A-1.kmz), each with heights referred to its base zone. One base’s flights, or a single flight, are exported from card 7 (Summary and export).',
   },
 
   /* ---- Terreno (DEM) ---- */
@@ -457,8 +471,8 @@ export default {
   'cp.terrain.localDem': { pt: 'MDT local:', en: 'Local DTM:' },
   'cp.terrain.localDsm': { pt: 'MDS local:', en: 'Local DSM:' },
   'cp.terrain.surface': { pt: 'Este ficheiro é:', en: 'This file is:' },
-  'cp.terrain.surfaceDtm': { pt: 'MDT', en: 'DTM' },
-  'cp.terrain.surfaceDsm': { pt: 'MDS', en: 'DSM' },
+  'cp.terrain.surfaceDtm': { pt: 'MDT · terreno', en: 'DTM · terrain' },
+  'cp.terrain.surfaceDsm': { pt: 'MDS · superfície', en: 'DSM · surface' },
   'cp.terrain.surfaceHint': {
     pt: 'MDT: só o solo nu (ex. LiDAR da DGT). MDS: com a vegetação, as construções e as escombreiras (ex. o último voo da equipa). As bacias de visão somam a vegetação e os obstáculos da missão só a um MDT.',
     en: 'DTM: bare ground (e.g. DGT LiDAR). DSM: with vegetation, buildings and spoil heaps (e.g. the team’s last flight). The viewsheds add the mission’s vegetation and obstacle height only to a DTM.',
@@ -526,7 +540,6 @@ export default {
   },
 
   /* ---- GCPs ---- */
-  'cp.gcp.title': { pt: 'GCPs', en: 'GCPs' },
   'cp.gcp.plan': { pt: 'Planear posições de GCPs', en: 'Plan GCP positions' },
   'cp.gcp.count': { pt: 'Número de GCPs', en: 'Number of GCPs' },
   'cp.gcp.auto': { pt: 'Auto', en: 'Auto' },
@@ -586,9 +599,13 @@ export default {
   'cp.flight.headingRoute': { pt: 'Segue a rota', en: 'Follows the route' },
   'cp.flight.headingFixed': { pt: 'Fixo', en: 'Fixed' },
   'cp.flight.headingDeg': { pt: 'Rumo fixo', en: 'Fixed heading' },
-  'cp.flight.headingHint': {
-    pt: 'Fixo: a câmara aponta sempre para o mesmo lado, seja qual for o sentido da faixa (oblíquas viradas para a encosta, e cada direcção de vista com a sobreposição lateral pedida; a seguir a rota, as faixas alternam a direcção). Sai como smoothTransition com o mesmo ângulo em todos os waypoints.',
-    en: 'Fixed: the camera always points the same way, whatever the direction of the line (obliques facing the slope, and each viewing direction with the requested side overlap; following the route, lines alternate the direction). Written as smoothTransition with the same angle at every waypoint.',
+  'cp.flight.headingHintRoute': {
+    pt: 'As faixas alternam a direcção de vista; «Fixo» mantém as oblíquas viradas para o mesmo lado.',
+    en: 'Lines alternate the viewing direction; “Fixed” keeps the obliques facing the same way.',
+  },
+  'cp.flight.headingHintFixed': {
+    pt: 'A câmara aponta sempre para o mesmo lado, seja qual for o sentido da faixa: oblíquas viradas para a encosta, e cada direcção de vista com a sobreposição lateral pedida. Sai como smoothTransition com o mesmo ângulo em todos os waypoints.',
+    en: 'The camera always points the same way, whatever the direction of the line: obliques facing the slope, and each viewing direction with the requested side overlap. Written as smoothTransition with the same angle at every waypoint.',
   },
   'cp.inspect.hover': { pt: 'Espera', en: 'Wait' },
   'cp.inspect.hoverTitle': {

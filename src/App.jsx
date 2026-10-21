@@ -1048,6 +1048,7 @@ function AppInner({ lang, setLang }) {
                   flights: blocks?.length || (planOk ? 1 : 0),
                   timeS: planOk?.stats?.flightTimeS ?? null,
                   areaHa: planOk?.stats?.areaHa ?? null,
+                  photos: planOk?.stats?.photoCount ?? null,
                 }}
                 onExportMission={gated(handleExportKMZ)}
                 canExportMission={canExportKMZ && !exportBlocked}

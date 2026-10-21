@@ -2,6 +2,28 @@
 export default {
   'bases.title': { pt: 'Bases de descolagem', en: 'Take-off bases' },
   'bases.vlos': { pt: 'distância VLOS {m} m', en: 'VLOS range {m} m' },
+  // a linha por cima da tabela das bases: quantas, a distância VLOS e o raio
+  'bases.count': { pt: '{n} bases', en: '{n} bases' },
+  'bases.countOne': { pt: '1 base', en: '1 base' },
+  'bases.radiusDefault': { pt: 'raio {r} m', en: 'radius {r} m' },
+  'bases.reducedWarn': {
+    pt: '{n} bases com a zona reduzida',
+    en: '{n} bases with a reduced zone',
+  },
+  'bases.reducedWarnOne': {
+    pt: '1 base com a zona reduzida',
+    en: '1 base with a reduced zone',
+  },
+  'bases.reducedWhy': {
+    pt: 'pelo desnível perto do ponto.',
+    en: 'because of the relief near the point.',
+  },
+  // as colunas da tabela das bases
+  'bases.col.base': { pt: 'Base', en: 'Base' },
+  'bases.col.flights': { pt: 'Voos', en: 'Flights' },
+  'bases.col.zone': { pt: 'Zona', en: 'Zone' },
+  'bases.col.ref': { pt: 'Cota', en: 'Elevation' },
+  'bases.col.detail': { pt: 'Detalhe', en: 'Details' },
   'bases.none': {
     pt: 'Sem bases: as alturas referem-se à cota mínima do relevo debaixo da rota. Marque uma ou mais bases, ou proponha-as a partir dos blocos.',
     en: 'No bases: heights refer to the lowest terrain under the route. Set one or more bases, or propose them from the blocks.',
@@ -89,16 +111,12 @@ export default {
     pt: 'cota de referência {ref} m · voo entre 0 e +{gain} m acima do planeado',
     en: 'reference elevation {ref} m · flight between 0 and +{gain} m above plan',
   },
-  'bases.radius': { pt: 'Raio', en: 'Radius' },
+  'bases.radius': { pt: 'Raio da zona', en: 'Zone radius' },
   'bases.radiusTitle': {
     pt: 'Raio pedido para a zona desta base (vazio = o da Configuração, {r} m)',
     en: 'Requested zone radius for this base (empty = the one in Settings, {r} m)',
   },
   'bases.remove': { pt: 'Retirar a base {label}', en: 'Remove base {label}' },
-  'bases.select': {
-    pt: 'Seleccionar a base {label} (mostra a zona no mapa)',
-    en: 'Select base {label} (shows its zone on the map)',
-  },
   'bases.markerTitle': {
     pt: 'Base {label}: arraste para mover, clique para seleccionar',
     en: 'Base {label}: drag to move, click to select',
