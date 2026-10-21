@@ -994,6 +994,19 @@ await scenario('corredor-segue-terreno', async () => {
 await scenario('fachada-desenhada', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Face$/)
+  // a seta do botão de exportar tem o KML da área em todos os separadores,
+  // como o botão que o cabeçalho tinha; na Face é o único item
+  const menuFace = await headerMenu(page)
+  const itensFace = await menuFace
+    .getByRole('menuitem')
+    .evaluateAll((els) => els.map((e) => e.innerText.split('\n')[0].trim()))
+  const kmlFace = await (await headerKml(page)).isEnabled()
+  await page.keyboard.press('Escape')
+  check(
+    'fachada: a seta do cabeçalho tem o KML da área, activo com a área',
+    itensFace.join(' | ') === 'Exportar KML da área' && kmlFace,
+    itensFace.join(' | '),
+  )
   await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
   await clickMap(page, -200, 0)
   await clickMap(page, 200, 0)

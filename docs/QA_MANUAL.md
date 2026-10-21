@@ -485,8 +485,9 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
 - ☐ Com o teclado: Tab até à seta do botão **Exportar**, seta para baixo,
   setas, Esc.
   **Esperado:** o menu abre com o foco no primeiro item activo, as setas
-  andam pelos itens, Esc fecha e o foco volta à seta; nos separadores Face
-  e Corredor não há seta (não há outras exportações), na Órbita há o KMZ
+  andam pelos itens, Esc fecha e o foco volta à seta; em todos os
+  separadores o primeiro item é **Exportar KML da área** (inactivo sem
+  área), o único nos separadores Face e Corredor; na Órbita segue-se o KMZ
   por nível e no Circular o KMZ por bloco.
 - ☐ Área com 15 ou mais bases e zonas reduzidas (relevo acidentado); abrir
   o **preflight** no cabeçalho.

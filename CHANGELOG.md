@@ -26,10 +26,11 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   projecto — o nome da missão e se está gravado, com mudar o nome, guardar
   e abrir (as acções do cartão 1, que lá continuam) —; as vistas; a
   pastilha do preflight; o botão de exportar partido — a parte principal é
-  a de sempre, com o mesmo nome e a mesma dica, e a seta abre as outras
-  exportações do separador com os nomes do painel: na área, «Exportar KML
-  da área», que sai do cabeçalho para este menu, e as de «Exportar voos»;
-  na órbita, o KMZ por nível; no circular, o KMZ por bloco —; configuração,
+  a de sempre, com o mesmo nome e a mesma dica, e a seta abre «Exportar KML
+  da área», que sai do cabeçalho para este menu e lá está em todos os
+  separadores, e as outras exportações do separador com os nomes do
+  painel: na área, as de «Exportar voos»; na órbita, o KMZ por nível; no
+  circular, o KMZ por bloco —; configuração,
   ajuda e língua. O preflight abre por cima do mapa, sem o empurrar, com as
   contagens no topo, os bloqueios primeiro e os avisos repetidos do mesmo
   tipo numa tabela: as quinze frases «Zona da base X reduzida…» passam a

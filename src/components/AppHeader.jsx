@@ -4,9 +4,9 @@
  * vistas (3D, relatório, checklist); a pastilha do preflight, que abre a
  * lista por cima do mapa; o botão de exportar partido — a parte principal
  * é a exportação do separador aberto, a mesma do fim do painel, e a seta
- * abre as outras desse separador (na área as do cartão 7, com os mesmos
- * nomes, dicas e acções); configuração, ajuda e língua. Por baixo, o erro
- * da última exportação.
+ * abre o KML da área (em todos os separadores) e as outras desse separador
+ * (na área as do cartão 7, com os mesmos nomes, dicas e acções);
+ * configuração, ajuda e língua. Por baixo, o erro da última exportação.
  */
 import { useEffect, useRef, useState } from 'react'
 import { LANGS, useT } from '../i18n.jsx'
@@ -32,10 +32,12 @@ import { SplitButton } from './ui/SplitButton.jsx'
 const menuIcon = (Icon) => <Icon className="mt-0.5 h-4 w-4 flex-none text-sky-300" />
 
 /**
- * As outras exportações do separador aberto, para a seta do botão de
- * exportar: as do painel desse separador, com as condições dos botões de
- * lá. Na área, as do cartão 7 — o KML da área e, com vários voos, as de
- * «Exportar voos» (FlightExports) menos «Um voo», que pede a escolha do voo.
+ * As outras exportações, para a seta do botão de exportar. Primeiro, em
+ * todos os separadores, o KML da área, como o botão que o cabeçalho tinha
+ * (inactivo sem área válida); depois as do painel do separador aberto, com
+ * as condições dos botões de lá: na órbita o KMZ por nível, no circular o
+ * KMZ por bloco, na área as de «Exportar voos» do cartão 7 (FlightExports)
+ * menos «Um voo», que pede a escolha do voo.
  */
 function moreExports({
   t,
@@ -50,34 +52,6 @@ function moreExports({
   exportBlocked,
 }) {
   const icon = menuIcon(IconDownload)
-  if (missionMode === 'orbit') {
-    const { orbitPlan, orbitConfig, handleExportOrbitPerLevel } = orbit
-    const stats = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
-    return [
-      {
-        key: 'per-level',
-        label: t('op.exportPerLevel'),
-        icon,
-        disabled:
-          !stats || stats.levelCount < 2 || orbitConfig.capture === 'video' || exportBlocked,
-        onSelect: gated(() => handleExportOrbitPerLevel(routeView.orbitTakeoff)),
-      },
-    ]
-  }
-  if (missionMode === 'circular') {
-    const { circularPlan, circularBlocks, handleExportCircularBlocks } = circular
-    const stats = circularPlan && !circularPlan.error ? circularPlan.stats : null
-    return [
-      {
-        key: 'blocks',
-        label: t('ci.exportBlocks'),
-        icon,
-        disabled: !stats || !(circularBlocks?.length > 1) || exportBlocked,
-        onSelect: gated(handleExportCircularBlocks),
-      },
-    ]
-  }
-  if (missionMode !== 'area') return []
   /** @type {import('./ui/Menu.jsx').MenuItem[]} */
   const items = [
     {
@@ -91,6 +65,31 @@ function moreExports({
       testId: 'header-export-area',
     },
   ]
+  if (missionMode === 'orbit') {
+    const { orbitPlan, orbitConfig, handleExportOrbitPerLevel } = orbit
+    const stats = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null
+    items.push({
+      key: 'per-level',
+      label: t('op.exportPerLevel'),
+      icon,
+      disabled: !stats || stats.levelCount < 2 || orbitConfig.capture === 'video' || exportBlocked,
+      onSelect: gated(() => handleExportOrbitPerLevel(routeView.orbitTakeoff)),
+    })
+    return items
+  }
+  if (missionMode === 'circular') {
+    const { circularPlan, circularBlocks, handleExportCircularBlocks } = circular
+    const stats = circularPlan && !circularPlan.error ? circularPlan.stats : null
+    items.push({
+      key: 'blocks',
+      label: t('ci.exportBlocks'),
+      icon,
+      disabled: !stats || !(circularBlocks?.length > 1) || exportBlocked,
+      onSelect: gated(handleExportCircularBlocks),
+    })
+    return items
+  }
+  if (missionMode !== 'area') return items
   const files = area.flightFiles ?? []
   if (files.length < 2) return items
   const { bases } = exportChoices(files, baseRows)
