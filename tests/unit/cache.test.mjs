@@ -1,10 +1,17 @@
 /**
  * Cache persistente dos tiles de relevo (src/utils/tileCache.js), com uma
  * CacheStorage falsa: a segunda leitura nao vai a rede, respostas com erro
- * nao entram, e uma cache avariada cai no fetch simples.
+ * nao entram, e uma cache avariada cai no fetch simples; uma cache que
+ * falha a ler, a guardar ou a apagar nao trava nada; sem cache indicada
+ * usa-se a Cache API do browser; e o estado da rede.
  */
-import { describe, expect, test } from 'vitest'
-import { withTileCache, clearTileCache } from '../../src/utils/tileCache.js'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import {
+  TILE_CACHE_NAME,
+  clearTileCache,
+  isOffline,
+  withTileCache,
+} from '../../src/utils/tileCache.js'
 
 const fakeStorage = () => {
   const stores = new Map()
@@ -94,5 +101,69 @@ describe('cache de tiles', () => {
     expect(await clearTileCache(null, 'x')).toBe(
       typeof caches !== 'undefined' ? expect.anything() : false,
     )
+  })
+})
+
+describe('falhas a meio e a Cache API do browser', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  const net = async () => response(true, 'png')
+
+  test('cache que falha a ler ou a guardar: a rede serve na mesma e conta-se o que ficou', async () => {
+    const ilegivel = {
+      open: async () => ({
+        match: async () => {
+          throw new Error('ilegivel')
+        },
+        put: async () => {},
+      }),
+    }
+    const a = withTileCache(net, { cacheStorage: ilegivel, cacheName: 't' })
+    expect((await a.fetch('u/6')).ok).toBe(true)
+    expect(a.stats).toEqual({ hits: 0, misses: 1, stored: 1 })
+    const quotaCheia = {
+      open: async () => ({
+        match: async () => undefined,
+        put: async () => {
+          throw new Error('quota')
+        },
+      }),
+    }
+    const b = withTileCache(net, { cacheStorage: quotaCheia, cacheName: 't' })
+    expect((await b.fetch('u/7')).ok).toBe(true)
+    expect(b.stats).toEqual({ hits: 0, misses: 1, stored: 0 })
+  })
+
+  test('sem cache indicada usa a Cache API do browser, com o nome por omissao', async () => {
+    const storage = fakeStorage()
+    vi.stubGlobal('caches', storage)
+    const c = withTileCache(net)
+    expect(c.enabled).toBe(true)
+    await c.fetch('u/8')
+    await c.fetch('u/8')
+    expect(c.stats).toEqual({ hits: 1, misses: 1, stored: 1 })
+    expect([...storage.stores.keys()]).toEqual([TILE_CACHE_NAME])
+    expect(await clearTileCache()).toBe(true)
+    expect(storage.stores.size).toBe(0)
+  })
+
+  test('apagar uma cache que falha, ou sem forma de apagar: false, sem rebentar', async () => {
+    const bloqueada = {
+      delete: async () => {
+        throw new Error('bloqueada')
+      },
+    }
+    expect(await clearTileCache(bloqueada, 't')).toBe(false)
+    expect(await clearTileCache({ open: async () => null }, 't')).toBe(false)
+  })
+
+  test('sem rede: o browser diz se esta ligado; sem essa informacao, null', () => {
+    vi.stubGlobal('navigator', { onLine: false })
+    expect(isOffline()).toBe(true)
+    vi.stubGlobal('navigator', { onLine: true })
+    expect(isOffline()).toBe(false)
+    vi.stubGlobal('navigator', {})
+    expect(isOffline()).toBeNull()
+    vi.stubGlobal('navigator', undefined)
+    expect(isOffline()).toBeNull()
   })
 })
