@@ -280,6 +280,11 @@ function ProjectButton({ missionName, setMissionName, session, onOpen }) {
 
 const VIEW_BUTTON =
   'flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-[13px] font-medium text-slate-200 transition-colors hover:bg-raised hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent'
+// O cabeçalho numa só linha até 1440 px (o rótulo longo do botão de
+// exportar): abaixo de 1800 px as vistas ficam só com o ícone e os grupos
+// mais juntos; o nome continua no botão, para o leitor de ecrã (sr-only), e
+// a dica é a mesma
+const VIEW_LABEL = 'sr-only min-[1800px]:not-sr-only min-[1800px]:whitespace-nowrap'
 
 const Divider = () => <span aria-hidden="true" className="h-6 w-px bg-slate-800" />
 
@@ -345,7 +350,7 @@ export default function AppHeader({
   const baseColors = Object.fromEntries(baseRows.map((b) => [b.label, b.color]))
   return (
     <>
-      <header className="relative z-[1200] flex min-h-14 flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-slate-950 px-4 py-2">
+      <header className="relative z-[1200] flex min-h-14 flex-wrap items-center gap-x-2 gap-y-2 border-b border-slate-800 bg-slate-950 px-4 py-2 min-[1800px]:gap-x-3">
         <div className="flex items-center gap-2.5" title={t('app.subtitle')}>
           <IconDrone className="h-[26px] w-[26px] text-sky-400" />
           <h1 className="flex items-baseline gap-1.5 whitespace-nowrap text-[15px] font-semibold tracking-tight">
@@ -377,7 +382,8 @@ export default function AppHeader({
             title={terrain.status === 'ready' ? t('app.view3dReady') : t('app.view3dNotReady')}
             className={VIEW_BUTTON}
           >
-            <IconCube className="h-4 w-4" /> {t('app.view3d')}
+            <IconCube className="h-4 w-4" />
+            <span className={VIEW_LABEL}>{t('app.view3d')}</span>
           </button>
           <button
             type="button"
@@ -386,7 +392,8 @@ export default function AppHeader({
             title={t('app.reportTitle')}
             className={VIEW_BUTTON}
           >
-            <IconReport className="h-4 w-4" /> {t('app.report')}
+            <IconReport className="h-4 w-4" />
+            <span className={VIEW_LABEL}>{t('app.report')}</span>
           </button>
           <button
             type="button"
@@ -394,7 +401,8 @@ export default function AppHeader({
             title={t('app.checklistTitle')}
             className={VIEW_BUTTON}
           >
-            <IconClipboard className="h-4 w-4" /> {t('app.checklist')}
+            <IconClipboard className="h-4 w-4" />
+            <span className={VIEW_LABEL}>{t('app.checklist')}</span>
           </button>
         </nav>
         <Divider />

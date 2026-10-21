@@ -503,6 +503,9 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   avisos e as notas; as zonas reduzidas numa só tabela (base, zona, desnível,
   voo mais baixo), da pior para a melhor, com os mesmos números das frases
   de antes; Esc ou ✕ fecha, e o foco volta à pastilha.
+- ☐ A 1440 × 900, sem área e com uma área planeada.
+  **Esperado:** o cabeçalho numa só linha; as vistas só com o ícone (a dica
+  e o leitor de ecrã dizem qual é); a partir de 1800 px, com o nome.
 - ☐ A 1024 px de largura.
   **Esperado:** o cabeçalho parte-se em duas linhas sem sair do ecrã; a lista
   do preflight e os menus ficam dentro do ecrã.

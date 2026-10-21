@@ -4619,6 +4619,34 @@ await scenario('legenda-camadas', async () => {
   return { page }
 })
 
+// A 1440 × 900 o cabeçalho cabe numa linha, sem área e com uma área
+// planeada: abaixo de 1800 px as vistas ficam só com o ícone (o nome fica
+// para o leitor de ecrã); a partir de 1800 px voltam a ter o nome
+await scenario('cabecalho-1440-uma-linha', async () => {
+  const { page, errors } = await openMission({ viewport: { width: 1440, height: 900 } })
+  const altura = async () => Math.round((await page.locator('header').boundingBox())?.height ?? 0)
+  const vista = page.locator('header').getByRole('button', { name: 'Vista 3D', exact: true })
+  const largura = async () => Math.round((await vista.boundingBox())?.width ?? 0)
+  const semArea = await altura()
+  const icone = await largura()
+  const areaInput = page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
+  await areaInput.setInputFiles(fx.rect)
+  await page.waitForTimeout(1200)
+  const comArea = await altura()
+  await page.setViewportSize({ width: 1800, height: 900 })
+  await page.waitForTimeout(300)
+  const a1800 = await altura()
+  const nome = await largura()
+  check(
+    'cabeçalho: numa só linha a 1440 px (vistas só com o ícone) e a 1800 px (com o nome)',
+    semArea <= 64 && comArea <= 64 && icone <= 40 && a1800 <= 64 && nome > 60,
+    `1440: ${semArea}/${comArea} px, vista ${icone} px; 1800: ${a1800} px, vista ${nome} px`,
+  )
+  check('cabeçalho: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 await scenario('tablet-cartoes-gaveta', async () => {
   const { page, errors } = await openMission({
     area: fx.rect,

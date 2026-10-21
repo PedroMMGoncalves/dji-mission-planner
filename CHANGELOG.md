@@ -26,17 +26,19 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   projecto — o nome da missão e se está gravado, com mudar o nome, guardar
   e abrir (as acções do cartão 1, que lá continuam; um ficheiro que não
   abre diz o erro por baixo do cabeçalho, em qualquer separador) —; as
-  vistas; a pastilha do preflight; o botão de exportar partido — a parte
-  principal é a de sempre, com o mesmo nome e a mesma dica, e a seta abre
-  «Exportar KML da área», que sai do cabeçalho para este menu e lá está em
-  todos os separadores, e as outras exportações do separador com os nomes
-  do painel: na área, as de «Exportar voos»; na órbita, o KMZ por nível; no
-  circular, o KMZ por bloco —; configuração, ajuda e língua. O preflight
-  abre por cima do mapa, sem o empurrar, com as contagens no topo, os
-  bloqueios primeiro e os avisos repetidos do mesmo tipo numa tabela: as
-  quinze frases «Zona da base X reduzida…» passam a uma linha por base, com
-  os mesmos números. Esc fecha. Sem bloqueios, a pastilha diz só os avisos
-  («3 avisos»). Os ficheiros exportados não mudam.
+  vistas (só com o ícone abaixo de 1800 px de largura, para o cabeçalho
+  caber numa linha a 1440 px); a pastilha do preflight; o botão de exportar
+  partido — a parte principal é a de sempre, com o mesmo nome e a mesma
+  dica, e a seta abre «Exportar KML da área», que sai do cabeçalho para
+  este menu e lá está em todos os separadores, e as outras exportações do
+  separador com os nomes do painel: na área, as de «Exportar voos»; na
+  órbita, o KMZ por nível; no circular, o KMZ por bloco —; configuração,
+  ajuda e língua. O preflight abre por cima do mapa, sem o empurrar, com as
+  contagens no topo, os bloqueios primeiro e os avisos repetidos do mesmo
+  tipo numa tabela: as quinze frases «Zona da base X reduzida…» passam a
+  uma linha por base, com os mesmos números. Esc fecha. Sem bloqueios, a
+  pastilha diz só os avisos («3 avisos»). Os ficheiros exportados não
+  mudam.
 - **Ecrã principal: modos à esquerda, desenho e métricas sobre o mapa.**
   Os cinco modos passam a uma barra vertical à esquerda do painel (ícone e
   nome), e o painel, de 360 px, ganha a altura da antiga grelha de botões;
