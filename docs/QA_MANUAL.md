@@ -467,11 +467,13 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   **Esperado:** sobre o mapa, a barra de desenho (Polígono, Rectângulo e
   Quadrado realçados; Base; Inspecção) e, por baixo, os «Primeiros passos»
   (3 passos); o ✕ esconde-os e fica o botão «Primeiros passos · 1 de 3»
-  (lembrado neste aparelho); sem métricas até haver plano. Importar uma
-  área: o cartão «Métricas» à direita, com o voo mais longo e a barra
-  contra o tempo útil, e a área enquadrada à esquerda dele e por baixo da
-  barra de desenho; a seta recolhe-o num botão «Métricas · GSD · voos», e
-  assim fica ao recarregar.
+  (lembrado neste aparelho); sem métricas até haver plano. Na barra, a dica
+  de «Base» diz «Marcar base» e a de «Inspecção» «Marcar pontos de
+  inspecção», os nomes dos botões dos cartões 5 e 6. Importar uma área:
+  o cartão «Métricas» à direita, com o voo mais longo e a barra contra o
+  tempo útil, e a área enquadrada à esquerda dele e por baixo da barra de
+  desenho; a seta recolhe-o num botão «Métricas · GSD · voos», e assim
+  fica ao recarregar.
 
 ## 18. Cabeçalho: projecto, exportar e preflight (~2 min)
 

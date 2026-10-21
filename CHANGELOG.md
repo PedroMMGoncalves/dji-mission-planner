@@ -44,16 +44,17 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   nome), e o painel, de 360 px, ganha a altura da antiga grelha de botões;
   o mapa fica com o resto e nada o empurra. As formas da área (Polígono,
   Rectângulo, Quadrado) saem do cartão 2 para uma barra de desenho sobre o
-  mapa, com atalhos para «Base» e «Inspecção» (as mesmas acções de «Marcar
-  base» e «Marcar pontos no mapa», que ficam nos cartões); o zoom e as
-  camadas ficam no canto de cima à esquerda. As métricas são um cartão
-  opaco à direita do mapa, rótulo à esquerda e valor à direita, com o voo
-  mais longo e uma barra contra o tempo útil; recolhem-se num botão com o
-  GSD e os voos, e sem plano não aparecem (eram mosaicos translúcidos por
-  cima da missão, com traços antes de haver área). Os números são os
-  mesmos. Uma área importada ou aberta fica enquadrada por baixo da barra
-  de desenho e à esquerda do cartão aberto, e não ao centro, por baixo
-  dele. A legenda é um cartão opaco com interruptores e os símbolos do
+  mapa, com «Base» e «Inspecção», rótulos curtos das acções dos cartões
+  5 e 6, que dão o nome e a dica aos botões: a mesma acção tem o mesmo
+  nome em todo o lado, e «Marcar pontos no mapa» passa a «Marcar pontos de
+  inspecção». O zoom e as camadas ficam no canto de cima à esquerda. As
+  métricas são um cartão opaco à direita do mapa, rótulo à esquerda e
+  valor à direita, com o voo mais longo e uma barra contra o tempo útil;
+  recolhem-se num botão com o GSD e os voos, e sem plano não aparecem
+  (eram mosaicos translúcidos por cima da missão, com traços antes de
+  haver área). Os números são os mesmos. Uma área importada ou aberta
+  fica enquadrada por baixo da barra de desenho e à esquerda do cartão
+  aberto, e não ao centro, por baixo dele. A legenda é um cartão opaco com interruptores e os símbolos do
   mapa (blocos e faixas na cor da base, início e fim da rota, o pino da
   base, as bacias de visão em «Análise»), e a margem a 0 % deixa de se
   desenhar por cima do contorno da área. Sem área, os «Primeiros passos»

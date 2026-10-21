@@ -39,9 +39,9 @@ function InstrucoesPt() {
         </Li>
         <Li>
           Confirme o <strong>relevo</strong> (cartão 2: o global descarrega-se sozinho, ou importe
-          um MDT; sem relevo não há exportação) e, se quiser, marque a <strong>base</strong> («Base»
-          na barra sobre o mapa, ou «Marcar base» no cartão 5), divida em <strong>blocos</strong> e
-          planeie <strong>GCPs</strong>.
+          um MDT; sem relevo não há exportação) e, se quiser, marque a <strong>base</strong>{' '}
+          («Marcar base», no cartão 5 ou na barra sobre o mapa, onde se lê «Base»), divida em{' '}
+          <strong>blocos</strong> e planeie <strong>GCPs</strong>.
         </Li>
         <Li>
           <strong>Exporte</strong>: WPML/KMZ (missão completa para o DJI Pilot 2) no botão{' '}
@@ -69,10 +69,10 @@ function InstrucoesPt() {
         <Li>
           <strong>Área</strong> (na barra dos modos, à esquerda do painel) — grelha nadir/oblíqua
           sobre um polígono; inclui a dupla grelha 3D com «Passagem nadir extra (ortomosaico)» e os{' '}
-          <strong>pontos de inspecção</strong> como camada extra: marque pontos no mapa («Inspecção»
-          na barra sobre o mapa, ou «Marcar pontos no mapa» em Mais opções do cartão 6), edite
-          etiqueta/rumo/pitch/foto, reordene por arrasto ou «Sugerir ordem», e exporte como missão
-          própria.
+          <strong>pontos de inspecção</strong> como camada extra: marque-os no mapa («Marcar pontos
+          de inspecção», em Mais opções do cartão 6 ou na barra sobre o mapa, onde se lê
+          «Inspecção»), edite etiqueta/rumo/pitch/foto, reordene por arrasto ou «Sugerir ordem», e
+          exporte como missão própria.
         </Li>
         <Li>
           <strong>Face</strong> — clique «Desenhar» e marque o pé da face no mapa (o sentido do
@@ -395,8 +395,8 @@ function InstrucoesEn() {
         </Li>
         <Li>
           Check the <strong>terrain</strong> (card 2: the global terrain downloads on its own, or
-          import a DTM; no terrain, no export) and, if you wish, set the <strong>base</strong>
-          (“Base” in the bar over the map, or “Set base” in card 5), split into{' '}
+          import a DTM; no terrain, no export) and, if you wish, set the <strong>base</strong> (“Set
+          base”, in card 5 or in the bar over the map, where it reads “Base”), split into{' '}
           <strong>blocks</strong> and plan <strong>GCPs</strong>.
         </Li>
         <Li>
@@ -426,10 +426,10 @@ function InstrucoesEn() {
         <Li>
           <strong>Area</strong> (in the mode bar, left of the panel) — nadir/oblique grid over a
           polygon; includes the 3D crosshatch with “Extra nadir pass (orthomosaic)” and{' '}
-          <strong>inspection points</strong> as an extra layer: place points on the map
-          (“Inspection” in the bar over the map, or “Place points on the map” in card 6’s More
-          options), edit label/heading/pitch/photo, reorder by drag or “Suggest order”, and export
-          as a mission of its own.
+          <strong>inspection points</strong> as an extra layer: place them on the map (“Place
+          inspection points”, in card 6’s More options or in the bar over the map, where it reads
+          “Inspection”), edit label/heading/pitch/photo, reorder by drag or “Suggest order”, and
+          export as a mission of its own.
         </Li>
         <Li>
           <strong>Face</strong> — click “Draw” and mark the foot of the face on the map (the drawing

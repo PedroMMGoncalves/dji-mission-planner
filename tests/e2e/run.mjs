@@ -724,6 +724,22 @@ async function afastar(page) {
   }
   throw new Error('«Afastar» não mudou o zoom do mapa')
 }
+// «Marcar base» e «Marcar pontos de inspecção» são a mesma acção no cartão
+// (o 5, e a gaveta do 6) e na barra de desenho sobre o mapa, com o mesmo
+// nome: cada uma procura-se no seu sítio
+const MARCAR_BASE = /^(Marcar base|Set base)$/
+const MARCAR_PONTOS = /^(Marcar pontos de inspecção|Place inspection points)$/
+const naBarra = (page) => page.getByTestId('map-draw-tools')
+/** «Marcar base» do cartão 5, ou da barra sobre o mapa (`onde` 'mapa'). */
+const marcarBase = (page, onde = 'cartão') =>
+  (onde === 'mapa' ? naBarra(page) : page.getByTestId('card-bases')).getByRole('button', {
+    name: MARCAR_BASE,
+  })
+/** «Marcar pontos de inspecção» da gaveta do cartão 6 (aberta), ou da barra sobre o mapa. */
+const marcarPontos = (page, onde = 'gaveta') =>
+  (onde === 'mapa' ? naBarra(page) : page.getByTestId('drawer-extras')).getByRole('button', {
+    name: MARCAR_PONTOS,
+  })
 const modo = (page, re) => page.getByRole('button', { name: re, exact: true }).click()
 /** Descarrega pelo botão `btn` (um Locator, ou o nome do botão). */
 const panelExport = async (page, btn, file) => {
@@ -1714,12 +1730,12 @@ await scenario('inspeccao-sem-relevo-bloqueia', async () => {
   // gaveta fica por cima da parte oeste da área: fecha-se para marcar e
   // volta a abrir-se para terminar
   await openDrawer(page, 'extras')
-  await page.getByRole('button', { name: /Marcar pontos no mapa|Place points on the map/ }).click()
+  await marcarPontos(page).click()
   await closeDrawer(page)
   await clickMap(page, 1150, 980)
   await clickMap(page, 1670, 1165)
   await openDrawer(page, 'extras')
-  await page.getByRole('button', { name: /Marcar pontos no mapa|Place points on the map/ }).click()
+  await marcarPontos(page).click()
   const btn = page.getByRole('button', { name: /^Exportar KMZ$|^Export KMZ$/ })
   await page.waitForTimeout(800)
   check(
@@ -3105,7 +3121,7 @@ await scenario('atribuir-bloco-a-base', async () => {
     if (split === 'Bateria') {
       // «Marcar base» com o clique dentro de uma célula: cria a base
       const n0 = (await baseRows(page)).length
-      await page.getByRole('button', { name: /Marcar base|Set base/ }).click()
+      await marcarBase(page).click()
       const lbl = await page.locator(`.block-label [data-block-id="${blk}"]`).boundingBox()
       await page.mouse.click(lbl.x + lbl.width / 2 + 30, lbl.y + lbl.height / 2 + 30)
       await page.waitForTimeout(800)
@@ -3119,9 +3135,7 @@ await scenario('atribuir-bloco-a-base', async () => {
       const blocks0 = (await baseRows(page)).reduce((n, r) => n + r.blocks.length, 0)
       const ip0 = (await savedProject(page))?.inspectPoints?.length ?? 0
       await openDrawer(page, 'extras')
-      await page
-        .getByRole('button', { name: /Marcar pontos no mapa|Place points on the map/ })
-        .click()
+      await marcarPontos(page).click()
       await closeDrawer(page)
       const cellI = await page.locator(`path.block-cell-${blk}`).boundingBox()
       await page.mouse.click(cellI.x + cellI.width * 0.7, cellI.y + cellI.height * 0.3)
@@ -3135,12 +3149,10 @@ await scenario('atribuir-bloco-a-base', async () => {
       )
       // «Marcar base» em cima da pega de mover a área (no centro dela)
       await openDrawer(page, 'extras')
-      await page
-        .getByRole('button', { name: /Marcar pontos no mapa|Place points on the map/ })
-        .click()
+      await marcarPontos(page).click()
       await closeDrawer(page)
       const nb0 = (await baseRows(page)).length
-      await page.getByRole('button', { name: /Marcar base|Set base/ }).click()
+      await marcarBase(page).click()
       await page.locator('.anchor-handle').first().click()
       await page.waitForTimeout(800)
       check(
@@ -3320,7 +3332,7 @@ await scenario('bacias-visao-cumeada', async () => {
   // a base: um clique no mapa, e depois arrastada para a planície a oeste
   // da cumeada (mapa calibrado com a base e a pega do centro da área)
   await afastar(page)
-  await page.getByRole('button', { name: /Marcar base|Set base/ }).click()
+  await marcarBase(page).click()
   await clickMap(page, 785, 1125, HILL_M)
   await page.waitForTimeout(1200)
   const centreLL = toLL(1250, 1125)
@@ -3726,7 +3738,7 @@ await scenario('propor-bases-sitio-alto', async () => {
   // 1) a base do operador no alto de oeste: arrastada para lá com o mapa
   // calibrado pela base e pela pega do centro da área
   await afastar(page)
-  await page.getByRole('button', { name: /Marcar base|Set base/ }).click()
+  await marcarBase(page).click()
   await clickMap(page, 785, 1125, HILL_M)
   await page.waitForTimeout(1200)
   const proj = await mapProjector(
@@ -3907,7 +3919,9 @@ const inv = {
  * o cartão onde ficaram: a exportação por voo e por base passou do painel
  * das bases para o cartão «Resumo e exportar», e as formas da área
  * (polígono, rectângulo, quadrado) do cartão «Área e relevo» para a barra de
- * desenho sobre o mapa ('mapa'). Agrupados pelo estado que os mostra.
+ * desenho sobre o mapa ('mapa'), que tem também «Marcar base» e «Marcar
+ * pontos de inspecção» (os dos cartões 5 e 6). Agrupados pelo estado que os
+ * mostra.
  */
 const INVENTARIO_INICIO = [
   ['missao', 'nome da missão', (r) => r.getByPlaceholder(/nome-da-missao/)],
@@ -3947,6 +3961,10 @@ const INVENTARIO_INICIO = [
   ['mapa', 'Polígono', inv.btn(/Polígono/)],
   ['mapa', 'Rectângulo', inv.btn(/Rectângulo/)],
   ['mapa', 'Quadrado', inv.btn(/^Quadrado/)],
+  // a mesma acção do cartão 5 e da gaveta do 6, com o mesmo nome («Base» e
+  // «Inspecção» são os rótulos curtos)
+  ['mapa', 'Marcar base (Base)', inv.btn(/^Marcar base$/)],
+  ['mapa', 'Marcar pontos de inspecção (Inspecção)', inv.btn(/^Marcar pontos de inspecção$/)],
   ['area', 'Importar área', inv.btn(/Importar área/)],
   ['area', 'Descarregar relevo global', inv.btn(DOWNLOAD_GLOBAL)],
   ['area', 'Importar MDT', inv.btn(/Importar MDT/)],
@@ -3958,7 +3976,7 @@ const INVENTARIO_INICIO = [
   ['bases', 'Marcar base', inv.btn(/Marcar base/)],
   ['bases', 'Remover base', inv.btn(/Remover base/)],
   ['extras', 'planear GCPs', inv.field(/Planear posições de GCPs/)],
-  ['extras', 'marcar pontos de inspecção', inv.btn(/Marcar pontos no mapa/)],
+  ['extras', 'marcar pontos de inspecção', inv.btn(/Marcar pontos de inspecção/)],
 ]
 const INVENTARIO_DRONE = [
   [
@@ -4145,7 +4163,7 @@ await scenario('inventario-painel-area', async () => {
   await (await usa(p2, 'voo', inv.field(/Espaçamento manual/))).uncheck()
   await (await usa(p2, 'voo', inv.field(/crosshatch/))).uncheck()
   // pontos de inspecção e GCPs, antes da divisão
-  await (await usa(p2, 'extras', inv.btn(/Marcar pontos no mapa/))).click()
+  await (await usa(p2, 'extras', inv.btn(/Marcar pontos de inspecção/))).click()
   await closeDrawer(p2)
   for (const [x, y] of [
     [1670, 1200],
@@ -4153,7 +4171,7 @@ await scenario('inventario-painel-area', async () => {
     [1745, 830],
   ])
     await clickMap(p2, x, y)
-  await (await usa(p2, 'extras', inv.btn(/Marcar pontos no mapa/))).click()
+  await (await usa(p2, 'extras', inv.btn(/Marcar pontos de inspecção/))).click()
   await (await usa(p2, 'extras', inv.field(/Planear posições de GCPs/))).check()
   await closeDrawer(p2)
   await verifica(p2, INVENTARIO_EXTRAS)
@@ -4198,6 +4216,84 @@ await scenario('inventario-painel-area', async () => {
       : `${onde['cartão']} no cartão, ${onde.gaveta} na gaveta, ${onde.mapa} na barra do mapa`,
   )
   return { page: p2 }
+})
+
+// A barra sobre o mapa e os cartões são a mesma acção, com o mesmo nome:
+// «Base» é o rótulo curto de «Marcar base» (o nome e a dica do botão), e
+// marca no mesmo ponto a mesma base que o botão do cartão 5; «Inspecção»
+// (marcar pontos de inspecção) acrescenta o ponto, com o marcador no mapa,
+// como o botão da gaveta do cartão 6.
+await scenario('barra-do-mapa-base-e-inspeccao', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  const base = marcarBase(page, 'mapa')
+  const pontos = marcarPontos(page, 'mapa')
+  check(
+    'barra do mapa: «Base» e «Inspecção» com o nome e a dica das acções dos cartões',
+    (await base.count()) === 1 &&
+      (await base.innerText()).trim() === 'Base' &&
+      (await base.getAttribute('title')) === 'Marcar base' &&
+      (await pontos.count()) === 1 &&
+      (await pontos.innerText()).trim() === 'Inspecção' &&
+      (await pontos.getAttribute('title')) === 'Marcar pontos de inspecção',
+    `${await base.getAttribute('title')} · ${await pontos.getAttribute('title')}`,
+  )
+  // a linha da base, estável durante 1,5 s (a zona, a cota e a vista
+  // chegam depois do clique)
+  const linhaA = async () => {
+    await zonesReady(page)
+    const ler = async () => {
+      const [row] = await baseRows(page)
+      const txt = (await page.getByTestId('base-row').first().innerText()).replace(/\s+/g, ' ')
+      return JSON.stringify({ ...row, id: null, txt, ponto: (await savedBase(page, 'A'))?.point })
+    }
+    const t0 = Date.now()
+    let antes = await ler()
+    let desde = Date.now()
+    while (Date.now() - t0 < 30000 && Date.now() - desde < 1500) {
+      await page.waitForTimeout(250)
+      const agora = await ler()
+      if (agora !== antes) [antes, desde] = [agora, Date.now()]
+    }
+    return JSON.parse(antes)
+  }
+  await marcarBase(page).click()
+  await clickMap(page, 900, 1400)
+  const doCartao = await linhaA()
+  await undo(page)
+  const desfeita = (await baseRows(page)).length === 0
+  await base.click()
+  const premido = (await base.getAttribute('aria-pressed')) === 'true'
+  await clickMap(page, 900, 1400)
+  const daBarra = await linhaA()
+  check(
+    'barra do mapa: «Marcar base» da barra dá a mesma base que a do cartão 5, no mesmo ponto',
+    desfeita &&
+      premido &&
+      doCartao.label === 'A' &&
+      doCartao.ponto != null &&
+      JSON.stringify(daBarra) === JSON.stringify(doCartao),
+    `${doCartao.txt.slice(0, 80)} | ${daBarra.txt.slice(0, 80)}`,
+  )
+  const marcadores = page.locator('.inspect-marker')
+  const n0 = await marcadores.count()
+  await pontos.click()
+  const marcar = (await pontos.getAttribute('aria-pressed')) === 'true'
+  await clickMap(page, 1700, 700)
+  await page.waitForTimeout(1200)
+  const n1 = await marcadores.count()
+  const guardados = (await savedProject(page))?.inspectPoints?.length ?? 0
+  await pontos.click()
+  check(
+    'barra do mapa: «Inspecção» acrescenta um ponto de inspecção, com o marcador no mapa',
+    marcar &&
+      n1 === n0 + 1 &&
+      guardados === n1 &&
+      (await pontos.getAttribute('aria-pressed')) === 'false',
+    `${n0} -> ${n1} marcadores, ${guardados} no projecto`,
+  )
+  check('barra do mapa: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
 })
 
 /* ---- cartões e gavetas: comportamento ---------------------------------- */

@@ -9,9 +9,11 @@ import { FOCUS, Icon } from './MapOverlay.jsx'
  * marcar uma base e os pontos de inspecção (os mesmos dos cartões 5 e 6).
  * Cada botão chama a mesma acção do painel; a ferramenta activa fica
  * premida. Sem área, as três formas ficam realçadas (o primeiro passo).
- * É uma barra de ferramentas: uma só paragem do Tab, e as setas, Home e End
- * passam de um botão ao outro. O `ref` é o da barra: o enquadramento da
- * área fica por baixo dela.
+ * A mesma acção tem o mesmo nome em todo o lado: «Base» e «Inspecção» são
+ * rótulos curtos de «Marcar base» e «Marcar pontos de inspecção», os nomes
+ * (e as dicas) dos botões dos cartões. É uma barra de ferramentas: uma só
+ * paragem do Tab, e as setas, Home e End passam de um botão ao outro. O
+ * `ref` é o da barra: o enquadramento da área fica por baixo dela.
  */
 
 /**
@@ -67,7 +69,7 @@ export default function MapDrawTools({
     {
       key: 'base',
       label: t('map.toolBase'),
-      title: t('cp.area.baseTitle'),
+      name: t('cp.area.markBase'),
       on: mode === 'base',
       act: onBase,
       icon: (
@@ -80,7 +82,7 @@ export default function MapDrawTools({
     {
       key: 'inspect',
       label: t('map.toolInspect'),
-      title: t('cp.inspect.markTitle'),
+      name: t('cp.inspect.mark'),
       on: mode === 'inspect',
       act: onInspect,
       icon: (
@@ -126,7 +128,8 @@ export default function MapDrawTools({
       onFocus={() => setFocusIdx(i)}
       onClick={tool.act}
       aria-pressed={tool.on}
-      title={tool.title}
+      aria-label={tool.name}
+      title={tool.name ?? tool.title}
       className={`flex h-9 items-center gap-[7px] rounded-[7px] px-2.5 text-[13px] font-medium transition-colors ${FOCUS} ${
         tool.on
           ? 'bg-sky-400/15 text-sky-300'

@@ -54,7 +54,8 @@ export default {
   },
   /* ---- Pontos de inspecção (R2.9) ---- */
   'cp.inspect.title': { pt: 'Pontos de Inspecção', en: 'Inspection Points' },
-  'cp.inspect.mark': { pt: 'Marcar pontos no mapa', en: 'Place points on the map' },
+  // o nome da acção, o mesmo no cartão 6 e na barra sobre o mapa («Inspecção»)
+  'cp.inspect.mark': { pt: 'Marcar pontos de inspecção', en: 'Place inspection points' },
   'cp.inspect.markTitle': {
     pt: 'Cada clique no mapa acrescenta um ponto de inspecção; volte a carregar para terminar',
     en: 'Each map click adds an inspection point; press again to finish',
@@ -280,6 +281,7 @@ export default {
   },
   'cp.area.convert': { pt: 'Converter', en: 'Convert' },
   'cp.area.cancel': { pt: 'Cancelar', en: 'Cancel' },
+  // o nome da acção, o mesmo no cartão 5 e na barra sobre o mapa («Base»)
   'cp.area.markBase': { pt: 'Marcar base', en: 'Set base' },
   'cp.area.baseTitle': {
     pt: 'Marcar o ponto de descolagem / posição do piloto',
