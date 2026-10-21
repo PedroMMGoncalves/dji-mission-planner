@@ -4479,8 +4479,9 @@ await scenario('alturas-seguranca-kmz', async () => {
   return { page }
 })
 
-// Legenda do mapa e da vista 3D: só as camadas com conteúdo, e cada caixa
-// esconde e volta a mostrar a sua camada (a área em SVG, as fotos no canvas).
+// Legenda do mapa e da vista 3D: só as camadas com conteúdo, e cada
+// interruptor esconde e volta a mostrar a sua camada (a área em SVG, as
+// fotos no canvas).
 await scenario('legenda-camadas', async () => {
   // relevo global plano: com o MDT de colinas, a grelha sem seguir terreno bloqueia
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
@@ -4488,7 +4489,7 @@ await scenario('legenda-camadas', async () => {
   const legenda = page.getByTestId('map-legend')
   await legenda.getByTestId('map-legend-toggle').click()
   const caixas = await legenda
-    .locator('input[type=checkbox]')
+    .getByRole('switch')
     .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')))
   check(
     'legenda: a área, as faixas e as fotos, e não as camadas vazias',
@@ -4504,7 +4505,7 @@ await scenario('legenda-camadas', async () => {
   await legenda.getByTestId('map-legend-polygon').check()
   const depois = await caminhos()
   check(
-    'legenda: a caixa da área esconde e volta a mostrar o polígono',
+    'legenda: o interruptor da área esconde e volta a mostrar o polígono',
     sem < antes && depois === antes,
     `${antes} → ${sem} → ${depois} caminhos`,
   )
@@ -4527,7 +4528,7 @@ await scenario('legenda-camadas', async () => {
   await legenda.getByTestId('map-legend-photos').check()
   const deNovo = await imagem()
   check(
-    'legenda: a caixa das fotos esconde e volta a mostrar as fotos',
+    'legenda: o interruptor das fotos esconde e volta a mostrar as fotos',
     comFotos !== semFotos && deNovo !== semFotos,
   )
   // vista 3D: a sua legenda, com as fotos e a rota
@@ -4536,14 +4537,14 @@ await scenario('legenda-camadas', async () => {
   await l3d.waitFor({ timeout: 20000 })
   await l3d.getByTestId('map3d-legend-toggle').click()
   const caixas3d = await l3d
-    .locator('input[type=checkbox]')
+    .getByRole('switch')
     .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')))
   const fotos3d = l3d.getByTestId('map3d-legend-photos')
   await fotos3d.uncheck()
   const desligada = !(await fotos3d.isChecked())
   await fotos3d.check()
   check(
-    'legenda 3D: relevo, rota e fotos, e a caixa das fotos liga e desliga',
+    'legenda 3D: relevo, rota e fotos, e o interruptor das fotos liga e desliga',
     ['terrain', 'route', 'photos'].every((k) => caixas3d.includes(`map3d-legend-${k}`)) &&
       desligada &&
       (await fotos3d.isChecked()),

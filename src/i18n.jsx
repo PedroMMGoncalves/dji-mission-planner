@@ -400,6 +400,53 @@ const BASE_DICT = {
   'legend.blocks': { pt: 'Blocos', en: 'Blocks' },
   'legend.route': { pt: 'Rota', en: 'Route' },
   'legend.waypoints': { pt: 'Waypoints', en: 'Waypoints' },
+  'legend.hint': { pt: 'mostrar no mapa', en: 'show on the map' },
+  'legend.expand': { pt: 'Mostrar a legenda', en: 'Show the legend' },
+  'legend.collapse': { pt: 'Recolher a legenda', en: 'Collapse the legend' },
+  'legend.groupMission': { pt: 'Missão', en: 'Mission' },
+  'legend.groupAnalysis': { pt: 'Análise', en: 'Analysis' },
+  'legend.areaBlocks': { pt: 'Área e blocos', en: 'Area and blocks' },
+  'legend.blocksBase': {
+    pt: 'Cada bloco na cor da sua base',
+    en: "Each block in its base's colour",
+  },
+  'legend.linesBase': { pt: 'Na cor da base', en: "In the base's colour" },
+  'legend.linesBlock': { pt: 'Uma cor por bloco', en: 'One colour per block' },
+  'legend.start': { pt: 'início', en: 'start' },
+  'legend.end': { pt: 'fim', en: 'end' },
+  'legend.photosDesc': { pt: 'Onde a câmara dispara', en: 'Where the camera fires' },
+  'legend.basesDesc': {
+    pt: '{n} bases · a tracejado, o raio pedido se foi reduzido',
+    en: '{n} bases · dashed, the requested radius if it was reduced',
+  },
+  'legend.basesDescOne': {
+    pt: '1 base · a tracejado, o raio pedido se foi reduzido',
+    en: '1 base · dashed, the requested radius if it was reduced',
+  },
+  'legend.viewshedOn': {
+    pt: 'Ligada · lembrada neste aparelho',
+    en: 'On · remembered on this device',
+  },
+  'legend.viewshedOff': {
+    pt: 'Desligada · lembrada neste aparelho',
+    en: 'Off · remembered on this device',
+  },
+  'legend.viewshedHidden': {
+    pt: 'Atrás do relevo, visto da base',
+    en: 'Behind the terrain, seen from the base',
+  },
+  'legend.viewshedRadio': {
+    pt: 'À vista, mas com o rádio em risco',
+    en: 'In view, but with the radio link at risk',
+  },
+  'legend.viewshedPct': {
+    pt: 'No centro de cada bloco, a parte à vista',
+    en: 'At the centre of each block, the share in view',
+  },
+  'legend.note': {
+    pt: 'Só aparecem as camadas com conteúdo.',
+    en: 'Only the layers with content are listed.',
+  },
   'map3d.imageryOk': { pt: 'Imagens © Esri', en: 'Imagery © Esri' },
   'map3d.imageryLoading': { pt: 'A carregar imagens…', en: 'Loading imagery…' },
   'map3d.imageryFallback': {

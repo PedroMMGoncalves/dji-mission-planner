@@ -988,7 +988,7 @@ export default function Map3D({
             onToggle={toggleLayer}
             open={legendOpen}
             onOpenChange={setLegendOpen}
-            className="absolute right-2 top-2 z-10 max-w-[14rem]"
+            className="absolute right-2 top-2 z-10 max-h-[calc(100%-16px)] max-w-[calc(100%-16px)]"
             testId="map3d-legend"
           />
         )}

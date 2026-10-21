@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import { useLang, useT } from '../i18n.jsx'
+import { tCount } from '../i18n/format.js'
 import LayerLegend from './LayerLegend.jsx'
 import { hiddenStrips, radioStrips, ringLabelPoint } from '../mission/viewshedPlan.js'
 import { blockRing } from '../mission/baseLayout.js'
@@ -28,20 +29,33 @@ const MAP_CLICK_MODES = new Set(['draw', 'anchor', 'base', 'inspect', 'face', 'o
 
 /**
  * Camadas da missão na legenda do mapa: o grupo Leaflet de cada uma, o
- * texto e o símbolo. A legenda só mostra as que têm conteúdo.
+ * texto e o símbolo, com as cores com que esta página as desenha. A
+ * legenda só mostra as que têm conteúdo.
  */
 const LEGEND_LAYERS = [
   { key: 'polygon', label: 'legend.area', kind: 'area', color: '#38bdf8' },
   { key: 'buffer', label: 'legend.buffer', kind: 'dashed', color: '#f59e0b' },
-  { key: 'lines', label: 'legend.lines', kind: 'line', color: '#22d3ee' },
-  { key: 'photos', label: 'legend.photos', kind: 'dot', color: '#fde68a' },
-  { key: 'gcps', label: 'legend.gcps', kind: 'marker', color: '#facc15' },
-  { key: 'bases', label: 'legend.bases', kind: 'marker', color: '#f59e0b' },
-  { key: 'inspect', label: 'legend.inspect', kind: 'dot', color: '#f472b6' },
-  { key: 'corridor', label: 'legend.corridor', kind: 'line', color: '#f97316' },
-  { key: 'face', label: 'legend.face', kind: 'line', color: '#f97316' },
-  { key: 'orbit', label: 'legend.orbit', kind: 'line', color: '#38bdf8' },
-  { key: 'circular', label: 'legend.circular', kind: 'line', color: '#fde047' },
+  { key: 'lines', label: 'legend.lines', kind: 'lines', color: '#22d3ee' },
+  { key: 'photos', label: 'legend.photos', kind: 'photos', color: '#fde68a' },
+  { key: 'gcps', label: 'legend.gcps', kind: 'gcp', color: '#fde047' },
+  { key: 'bases', label: 'legend.bases', kind: 'base', color: '#38bdf8' },
+  { key: 'inspect', label: 'legend.inspect', kind: 'inspect', color: '#f97316' },
+  { key: 'corridor', label: 'legend.corridor', kind: 'corridor', color: '#f97316' },
+  { key: 'face', label: 'legend.face', kind: 'face', color: '#f97316' },
+  { key: 'orbit', label: 'legend.orbit', kind: 'orbit', color: '#38bdf8' },
+  { key: 'circular', label: 'legend.circular', kind: 'circular', color: '#fde047' },
+]
+
+// Faixas de voo com divisão e sem bases: uma cor por bloco
+const BLOCK_COLORS = [
+  '#22d3ee',
+  '#a3e635',
+  '#f472b6',
+  '#fbbf24',
+  '#c084fc',
+  '#34d399',
+  '#fb923c',
+  '#60a5fa',
 ]
 
 /** Ícones do zoom e das camadas (traço, na cor do texto), em HTML para o Leaflet. */
@@ -99,6 +113,9 @@ export default function MapView({
   viewsheds = null,
   viewshedLayerOn = false,
   onViewshedLayer,
+  // a margem só se desenha quando existe: a 0 % a linha tracejada caía
+  // por cima do contorno da área
+  bufferOn = true,
 }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
@@ -708,15 +725,17 @@ export default function MapView({
     layers.lines.clearLayers()
     if (!plan || plan.error) return
 
-    // Contorno da área expandida (buffer)
-    const bufferRing = plan.area.geometry.coordinates[0]
-    L.polyline(bufferRing.map(toLatLng), {
-      color: '#f59e0b',
-      weight: 1.5,
-      dashArray: '4 6',
-      opacity: 0.9,
-      interactive: false,
-    }).addTo(layers.buffer)
+    // Contorno da área expandida (buffer), só com margem
+    if (bufferOn) {
+      const bufferRing = plan.area.geometry.coordinates[0]
+      L.polyline(bufferRing.map(toLatLng), {
+        color: '#f59e0b',
+        weight: 1.5,
+        dashArray: '4 6',
+        opacity: 0.9,
+        interactive: false,
+      }).addTo(layers.buffer)
+    }
 
     // Caminho completo em serpentina (faixas + viragens)
     const path = plan.waypoints.map(toLatLng)
@@ -730,16 +749,6 @@ export default function MapView({
     }).addTo(layers.lines)
 
     // Faixas de voo: uma cor por bloco (quando há divisão) ou ciano único
-    const BLOCK_COLORS = [
-      '#22d3ee',
-      '#a3e635',
-      '#f472b6',
-      '#fbbf24',
-      '#c084fc',
-      '#34d399',
-      '#fb923c',
-      '#60a5fa',
-    ]
     const assign = assignMode && Boolean(baseLayout?.hasBases)
     // há células clicáveis (mosaico ou grelha)? senão, o contorno de cada bloco
     const hasCells = Boolean(tiles?.length || gridCells?.length)
@@ -814,7 +823,7 @@ export default function MapView({
         renderer: layers.canvas,
       }).addTo(layers.lines)
     })
-  }, [plan, blocks, baseLayout, assignMode, tiles, gridCells])
+  }, [plan, blocks, baseLayout, assignMode, tiles, gridCells, bufferOn])
 
   // Alvos GCP planeados (xadrez amarelo, com etiqueta)
   useEffect(() => {
@@ -1065,6 +1074,7 @@ export default function MapView({
     ring,
     holes,
     plan,
+    bufferOn,
     blocks,
     tiles,
     gridCells,
@@ -1090,10 +1100,88 @@ export default function MapView({
       else if (!show && map.hasLayer(g)) map.removeLayer(g)
     }
   }, [hiddenLayers])
+  // o símbolo e a linha de cada camada dizem o que o mapa desenha: os
+  // blocos e as faixas na cor da base (ou uma cor por bloco), o início e o
+  // fim da rota, o pino da primeira base
+  const tinted = Boolean(baseLayout?.hasBases)
+  const hasCells = Boolean(tiles?.length || gridCells?.length)
+  // as células do mosaico na cor da base; sem bases (e as da grelha), a tracejado
+  const cellColours =
+    tinted && tiles?.length
+      ? [...new Set(tiles.map((_, i) => baseLayout?.byBlock?.[i + 1]?.color).filter(Boolean))]
+      : []
+  const perBlock = Boolean(blocks && (blocks.length > 1 || tinted))
+  const blockColours = perBlock
+    ? [
+        ...new Set(
+          blocks.map(
+            (b, i) => baseLayout?.byBlock?.[b.id]?.color ?? BLOCK_COLORS[i % BLOCK_COLORS.length],
+          ),
+        ),
+      ]
+    : null
+  const startEnd = (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        aria-hidden="true"
+        className="h-2 w-2 rounded-full bg-[#4ade80] ring-1 ring-slate-950"
+      />
+      {t('legend.start')}
+      <span
+        aria-hidden="true"
+        className="h-2 w-2 rounded-full bg-[#ef4444] ring-1 ring-slate-950"
+      />
+      {t('legend.end')}
+    </span>
+  )
+  const extra = {
+    polygon: hasCells
+      ? {
+          label: t('legend.areaBlocks'),
+          colors: cellColours.length ? cellColours : ['#f59e0b', '#f59e0b'],
+          cellsDashed: cellColours.length === 0,
+          desc: cellColours.length ? t('legend.blocksBase') : null,
+        }
+      : {},
+    lines: {
+      colors: blockColours ?? ['#22d3ee'],
+      desc: (
+        <>
+          {tinted ? `${t('legend.linesBase')} · ` : perBlock ? `${t('legend.linesBlock')} · ` : ''}
+          {startEnd}
+        </>
+      ),
+    },
+    photos: { desc: t('legend.photosDesc') },
+    bases: {
+      color: bases?.[0]?.color,
+      letter: bases?.[0]?.label,
+      desc: tCount(t, 'legend.basesDesc', bases?.length ?? 0, { n: bases?.length ?? 0 }),
+    },
+  }
   const legendItems = LEGEND_LAYERS.filter((l) => presentLayers.includes(l.key)).map((l) => ({
     ...l,
     label: t(l.label),
+    group: 'mission',
+    ...extra[l.key],
   }))
+  // as bacias de visão (área com bases): a camada de análise, que fica
+  // lembrada neste aparelho, com as três marcas que pinta
+  if (viewsheds && Object.keys(viewsheds).length > 0)
+    legendItems.push({
+      key: 'viewshed',
+      label: t('map.viewsheds'),
+      kind: 'viewshed',
+      group: 'analysis',
+      checked: viewshedLayerOn,
+      onToggle: () => onViewshedLayer?.(!viewshedLayerOn),
+      desc: t(viewshedLayerOn ? 'legend.viewshedOn' : 'legend.viewshedOff'),
+      details: [
+        { kind: 'hidden', text: t('legend.viewshedHidden') },
+        { kind: 'radio', text: t('legend.viewshedRadio') },
+        { kind: 'pct', text: t('legend.viewshedPct') },
+      ],
+    })
   const toggleLayer = (key) =>
     setHiddenLayers((prev) => {
       const next = new Set(prev)
@@ -1112,8 +1200,11 @@ export default function MapView({
         onToggle={toggleLayer}
         open={legendOpen}
         onOpenChange={setLegendOpen}
-        className="absolute bottom-6 left-2 z-[1000] max-w-[14rem]"
+        className="absolute bottom-4 left-4 z-[1010] max-h-[calc(100%-32px)] max-w-[calc(100%-32px)]"
         testId="map-legend"
+        hint={t('legend.hint')}
+        note={t('legend.note')}
+        opensUp
       />
     </div>
   )

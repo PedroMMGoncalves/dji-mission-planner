@@ -196,6 +196,7 @@ export default function MapPane({
           viewsheds={missionMode === 'area' ? viewshedByBlock : null}
           viewshedLayerOn={viewshedLayerOn}
           onViewshedLayer={setViewshedLayerOn}
+          bufferOn={params.bufferPct > 0}
         />
         {drawTools && (
           <MapDrawTools
