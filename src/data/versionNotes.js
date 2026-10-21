@@ -33,6 +33,15 @@ export const VERSION_NOTES = [
       'Orbit and circular without a camera (LiDAR): the KMZ no longer carries a takePhoto at each point.',
     ],
   },
+  {
+    version: '1.6.0',
+    pt: [
+      'Margem por bloco: com a área dividida, a margem passa a ser a percentagem do lado de cada bloco, e não da área inteira; com margem, os quadrados por bateria mudam de tamanho e de número, e um voo (o «A-4» de antes) pode ser outro quadrado.',
+    ],
+    en: [
+      'Buffer per block: with the area split, the buffer is now a percentage of each block’s side, not of the whole area; with a buffer, the battery squares change size and number, and a flight (the former “A-4”) may be a different square.',
+    ],
+  },
 ]
 
 /** As notas que se aplicam a um projecto gravado pela versão `saved` (null = anterior a todas). */

@@ -205,9 +205,10 @@ describe('versões: as notas de um projecto antigo', () => {
     expect(versionBefore(undefined, undefined)).toBe(false)
   })
 
-  test('um projecto da 1.4.2 vê as notas da 1.5.0; um da 1.5.0, nenhuma; sem versão, todas', () => {
-    expect(notesSince('1.4.2', versionBefore).map((n) => n.version)).toEqual(['1.5.0'])
-    expect(notesSince('1.5.0', versionBefore)).toEqual([])
+  test('um projecto da 1.4.2 vê as notas da 1.5.0 e da 1.6.0; um da 1.5.0, a da 1.6.0; um da 1.6.0, nenhuma; sem versão, todas', () => {
+    expect(notesSince('1.4.2', versionBefore).map((n) => n.version)).toEqual(['1.5.0', '1.6.0'])
+    expect(notesSince('1.5.0', versionBefore).map((n) => n.version)).toEqual(['1.6.0'])
+    expect(notesSince('1.6.0', versionBefore)).toEqual([])
     expect(notesSince(null, versionBefore)).toHaveLength(VERSION_NOTES.length)
   })
 })
