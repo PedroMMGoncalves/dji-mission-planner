@@ -321,7 +321,10 @@ A app é usada em campo: numa janela de **1024 × 768** e noutra de **834 ×
   mostra a folha A4 da base, com o aviso da zona reduzida, a régua da zona,
   os críticos da descolagem e o registo do voo; **Imprimir esta ficha** dá
   uma página, **Imprimir as N fichas** uma página por base; Esc volta à
-  checklist.
+  checklist. Uma base com muitos voos (p. ex. 20, com a distância VLOS da
+  Configuração a 2500 m e relevo plano) sai em várias páginas, sem blocos
+  cortados, com a tabela dos voos partida entre linhas e «página 2 de 3»
+  no rodapé e na linha de continuação.
 - ☐ **Operação do dia**, no botão por baixo das métricas; **Marcar feito**
   no voo seguinte, desmarcar um voo na caixa da linha, **Ver no mapa**
   noutro voo; depois abrir a checklist e voltar.
@@ -348,9 +351,11 @@ A app é usada em campo: numa janela de **1024 × 768** e noutra de **834 ×
   marcar um voo feito; na checklist, escrever numa célula e voltar logo ao
   planeador; reabrir e **Importar blocos do plano** outra vez.
   **Esperado:** a «Hora fim» do voo marcado aparece na checklist sem
-  recarregar e fica depois de a checklist gravar; a célula escrita mesmo
-  antes de voltar ficou gravada; importar de novo não repete os voos que
-  já têm linha.
+  recarregar e fica depois de a checklist gravar (marcar e desmarcar logo
+  a seguir deixa o voo por fazer); a célula escrita mesmo antes de voltar
+  ficou gravada; importar de novo não repete os voos que já têm linha. Só
+  a «Hora fim» e as linhas novas do planeador se juntam: tenha uma só
+  checklist aberta de cada vez (duas gravam por cima uma da outra).
 - ☐ **No campo**, na base B: copiar a pasta `base-B/` do ZIP por base para o
   comando e importar no DJI Pilot 2 (cartão ou cabo).
   **Esperado:** as missões aparecem com o nome do ficheiro (`..._B-3`), pela

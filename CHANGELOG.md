@@ -40,9 +40,11 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   mapas do ponto da base, a zona numa régua, as alturas e o alcance, os
   voos com o KMZ, o que conferir no Pilot 2, os críticos da descolagem e o
   registo do voo para preencher à mão; imprime-se uma ou todas
-  («Imprimir as N fichas», uma página A4 por base). O registo de voos
-  mostra primeiro o que vem do plano. O JSON exportado e a checklist
-  gravada são os mesmos, byte a byte; o código QR é do lean-qr 2.7.4 (MIT).
+  («Imprimir as N fichas», uma página A4 por base; a de uma base com
+  muitos voos sai em várias, sem blocos cortados e com o número de cada
+  página no rodapé). O registo de voos mostra primeiro o que vem do
+  plano. O JSON exportado e a checklist gravada são os mesmos, byte a
+  byte; o código QR é do lean-qr 2.7.4 (MIT).
 - **Painel da área em secções que fecham.** Os sete cartões abrem e
   fecham no título, um de cada vez, como os dos outros modos (abrir um
   fecha o que estava aberto), e, fechados, dizem o essencial numa linha
@@ -198,7 +200,10 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   plano que ele juntou), em vez de escrever por cima; uma hora ou uma
   linha que a checklist apagou não volta. **Importar blocos do plano** já
   não repete os voos que têm linha. Sem outro escritor, a checklist gravada
-  é a mesma, byte a byte.
+  é a mesma, byte a byte. Só se juntam essas horas e linhas: duas
+  checklists da mesma missão abertas ao mesmo tempo ainda gravam por cima
+  uma da outra o resto (a ajuda e o manual de testes dizem para ter uma
+  só aberta).
 - **Desenho com cliques quase no mesmo sítio.** Três cliques quase no
   mesmo ponto podiam deixar dois vértices quase iguais seguidos, e o
   corredor ou a fachada aceitavam um eixo de um só ponto (dois vértices a

@@ -514,12 +514,17 @@ function topicsPt({ onShowDisclaimer, t }) {
                 em «Fichas por base», a folha A4 de cada base: coordenadas com um código QR que abre
                 o ponto nos mapas do telemóvel, zona, cota, voos com os ficheiros, baterias, os
                 críticos da descolagem e o registo do voo para preencher à mão; abre-se no cartão da
-                base e imprime-se uma a uma ou todas («Imprimir as N fichas», uma página por base).
-                O relatório traz a ficha de cada base; «Bases e blocos (KML)» leva as bases, as
-                zonas e os blocos com o rótulo do voo para o Google Earth ou o telemóvel. No
-                relatório, cada base fica numa linha da tabela «Voos por base», com o que é comum a
-                todos os voos por cima, e as fichas inteiras abrem-se no botão por baixo dela; o
-                relatório imprime-se em A4, em branco, sem a barra de cima.
+                base e imprime-se uma a uma ou todas («Imprimir as N fichas», uma página por base;
+                uma base com muitos voos, que não cabe numa página nem com a letra reduzida, sai em
+                várias, numeradas no rodapé, com a tabela dos voos partida entre linhas). O registo
+                de voos da checklist recebe as horas que o planeador marca, mesmo com a checklist
+                aberta noutro separador do browser; tenha uma só checklist aberta de cada vez: duas
+                abertas gravam por cima uma da outra o resto do que se escreve. O relatório traz a
+                ficha de cada base; «Bases e blocos (KML)» leva as bases, as zonas e os blocos com o
+                rótulo do voo para o Google Earth ou o telemóvel. No relatório, cada base fica numa
+                linha da tabela «Voos por base», com o que é comum a todos os voos por cima, e as
+                fichas inteiras abrem-se no botão por baixo dela; o relatório imprime-se em A4, em
+                branco, sem a barra de cima.
               </p>
             </>
           ),
@@ -1183,11 +1188,16 @@ function topicsEn({ onShowDisclaimer, t }) {
                 phone’s maps, zone, reference elevation, flights with their files, batteries, the
                 critical take-off items and the flight log to fill in by hand; it opens from the
                 base’s card and prints one by one or all at once (“Print the N sheets”, one page per
-                base). The report carries a sheet per base; “Bases and blocks (KML)” takes the
-                bases, zones and blocks labelled with their flight to Google Earth or a phone. In
-                the report, each base takes one line of the “Flights by base” table, with what every
-                flight shares above it, and the full sheets open from the button below it; the
-                report prints on A4, on white, without the top bar.
+                base; a base with many flights, which does not fit on a page even in smaller type,
+                prints on several, numbered in the footer, with the flights table split between
+                rows). The checklist’s flight log takes the times the planner marks, even with the
+                checklist open in another browser tab; keep a single checklist open at a time: two
+                open ones overwrite each other’s other entries. The report carries a sheet per base;
+                “Bases and blocks (KML)” takes the bases, zones and blocks labelled with their
+                flight to Google Earth or a phone. In the report, each base takes one line of the
+                “Flights by base” table, with what every flight shares above it, and the full sheets
+                open from the button below it; the report prints on A4, on white, without the top
+                bar.
               </p>
             </>
           ),
