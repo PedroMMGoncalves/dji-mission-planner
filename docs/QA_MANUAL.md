@@ -17,13 +17,13 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 
 ## 1. Área em U — rota côncava-segura (~2 min)
 
-- ☐ Desenhar um U (braços verticais largos, base em baixo; ~600×600 m) com a
-  ferramenta polígono; direcção das linhas a **90°** (E-O).
+- ☐ Desenhar um U (braços verticais largos, base em baixo; ~600×600 m) com
+  **Polígono**, na barra sobre o mapa; direcção das linhas a **90°** (E-O).
   **Esperado:** na pré-visualização, nenhuma ligação entre faixas atravessa o
   vão do U — as pernas entre strips seguem pela base.
 - ☐ Carregar o atalho **Óptima**.
   **Esperado:** a direcção salta para ~0° (N-S), o nº de faixas desce
-  (comparar o cartão "N.º de faixas" antes/depois) e a distância total baixa.
+  (comparar «Faixas» nas métricas antes/depois) e a distância total baixa.
 - ☐ Voltar a 90° e comparar "Distância total".
   **Esperado:** maior do que na direcção óptima.
 
@@ -32,7 +32,7 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 - ☐ Área retangular ~500×300 m em terreno com relevo; preset
   **Modelo 3D · Dupla grelha** (cartão 1, **Mais opções ›**); esperar a descarga automática do relevo;
   activar **terrain follow**.
-  **Esperado:** duas famílias de linhas perpendiculares; cartão GSD passa a
+  **Esperado:** duas famílias de linhas perpendiculares; o GSD das métricas passa a
   **"GSD (centro da imagem)"** (gimbal −60°) com valor ~15% pior do que a
   −90°; o resultado do terreno indica waypoints densificados.
 - ☐ Abrir o **perfil de elevação**.
@@ -214,16 +214,17 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 A app é usada em campo: numa janela a **~768 px de largura** (DevTools ou
 tablet real):
 
-- ☐ O selector de modo e os cinco painéis (Área/Face/Órbita/Corredor/Circular) são usáveis
-  sem sobreposições; os campos numéricos aceitam toque; as listas fazem
-  scroll dentro do painel.
+- ☐ A barra dos modos (à esquerda do painel) e os cinco painéis
+  (Área/Face/Órbita/Corredor/Circular) são usáveis sem sobreposições; os
+  campos numéricos aceitam toque; as listas fazem scroll dentro do painel.
 - ☐ Abrir **Mais opções ›** de um cartão.
   **Esperado:** a gaveta abre ao lado do painel, por cima do mapa, sem sair
   do ecrã; os botões dos cartões têm 44 px de altura; o ✕ e o Escape fecham.
 - ☐ No modo inspecção, reordenar com as **setas** (o arrastar HTML5 não
   dispara em ecrã táctil — comportamento esperado).
-- ☐ A faixa de resumo do projecto (2+ planos) não tapa os controlos do
-  mapa.
+- ☐ O resumo do projecto (2+ planos), por cima das métricas, e o cartão
+  das métricas não tapam a barra de desenho nem o zoom; a 1024 × 768 o
+  cartão desce para baixo da barra.
 
 ## 12. Não há missão sem relevo (~1.5 min)
 
@@ -457,9 +458,19 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
 - ☐ **Legenda e fotos**: abrir «Legenda» no mapa e na vista 3D, desligar
   «Fotos» e voltar a ligar, em cada modo (área, corredor com foto por
   waypoint, face, órbita, circular).
-  **Esperado:** a legenda só lista as camadas com conteúdo; cada caixa
-  esconde e mostra a sua camada; as fotos (âmbar) aparecem em todos os
-  modos, no mapa e no 3D.
+  **Esperado:** a legenda só lista as camadas com conteúdo, com os símbolos
+  do mapa (os blocos e as faixas na cor da base, o início e o fim da rota);
+  cada interruptor esconde e mostra a sua camada; as fotos (âmbar) aparecem
+  em todos os modos, no mapa e no 3D; com bases e blocos, «Bacias de visão»
+  em «Análise» liga a mesma camada do controlo de camadas e do cartão 5.
+- ☐ **Primeiro ecrã e métricas**: abrir a app sem área (janela privada).
+  **Esperado:** sobre o mapa, a barra de desenho (Polígono, Rectângulo e
+  Quadrado realçados; Base; Inspecção) e, por baixo, os «Primeiros passos»
+  (3 passos); o ✕ esconde-os e fica o botão «Primeiros passos · 1 de 3»
+  (lembrado neste aparelho); sem métricas até haver plano. Com o plano, o
+  cartão «Métricas» à direita, com o voo mais longo e a barra contra o
+  tempo útil; a seta recolhe-o num botão «Métricas · GSD · voos», e assim
+  fica ao recarregar.
 
 ## 18. Cabeçalho: projecto, exportar e preflight (~2 min)
 

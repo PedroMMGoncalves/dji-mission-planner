@@ -33,13 +33,15 @@ function InstrucoesPt() {
           velocidade e as sobreposições.
         </Li>
         <Li>
-          Defina a <strong>área</strong>: desenhe um polígono, use rectângulo/quadrado no ponto
-          central, ou importe KML/GeoJSON/Shapefile.
+          Defina a <strong>área</strong>: desenhe-a na barra sobre o mapa (polígono, ou
+          rectângulo/quadrado no ponto central), ou importe KML/GeoJSON/Shapefile (cartão 2). Sem
+          área, os «Primeiros passos» por baixo da barra dizem por onde começar.
         </Li>
         <Li>
           Confirme o <strong>relevo</strong> (cartão 2: o global descarrega-se sozinho, ou importe
-          um MDT; sem relevo não há exportação) e, se quiser, marque a <strong>base</strong>, divida
-          em <strong>blocos</strong> e planeie <strong>GCPs</strong>.
+          um MDT; sem relevo não há exportação) e, se quiser, marque a <strong>base</strong> («Base»
+          na barra sobre o mapa, ou «Marcar base» no cartão 5), divida em <strong>blocos</strong> e
+          planeie <strong>GCPs</strong>.
         </Li>
         <Li>
           <strong>Exporte</strong>: WPML/KMZ (missão completa para o DJI Pilot 2) no botão{' '}
@@ -65,9 +67,10 @@ function InstrucoesPt() {
       <H>Tipos de missão</H>
       <ul className="list-none">
         <Li>
-          <strong>Área</strong> (selector no topo do painel) — grelha nadir/oblíqua sobre um
-          polígono; inclui a dupla grelha 3D com «Passagem nadir extra (ortomosaico)» e os{' '}
-          <strong>pontos de inspecção</strong> como camada extra: marque pontos no mapa, edite
+          <strong>Área</strong> (na barra dos modos, à esquerda do painel) — grelha nadir/oblíqua
+          sobre um polígono; inclui a dupla grelha 3D com «Passagem nadir extra (ortomosaico)» e os{' '}
+          <strong>pontos de inspecção</strong> como camada extra: marque pontos no mapa («Inspecção»
+          na barra sobre o mapa, ou «Marcar pontos no mapa» em Mais opções do cartão 6), edite
           etiqueta/rumo/pitch/foto, reordene por arrasto ou «Sugerir ordem», e exporte como missão
           própria.
         </Li>
@@ -263,8 +266,14 @@ function InstrucoesPt() {
           com o rato, exagero vertical).
         </Li>
         <Li>
-          A <strong>Legenda</strong>, no canto do mapa e da vista 3D, diz o que é cada camada e
-          mostra ou esconde cada uma (faixas, fotos, bases, GCP…).
+          A <strong>Legenda</strong>, no canto de baixo do mapa e no da vista 3D, diz o que é cada
+          camada, com o símbolo que o mapa desenha, e mostra ou esconde cada uma no seu interruptor
+          (faixas, fotos, bases, GCP…; no mapa, também as bacias de visão).
+        </Li>
+        <Li>
+          As <strong>Métricas</strong>, num cartão à direita do mapa, aparecem quando há plano: o
+          voo mais longo contra o tempo útil da bateria (com uma barra) e a qualidade, o voo e a
+          operação do separador aberto. A seta recolhe o cartão num botão com o GSD e os voos.
         </Li>
       </ul>
 
@@ -376,13 +385,15 @@ function InstrucoesEn() {
           speed and overlaps.
         </Li>
         <Li>
-          Define the <strong>area</strong>: draw a polygon, use a centre-point rectangle/square, or
-          import KML/GeoJSON/Shapefile.
+          Define the <strong>area</strong>: draw it with the bar over the map (polygon, or
+          centre-point rectangle/square), or import KML/GeoJSON/Shapefile (card 2). With no area,
+          the “First steps” under the bar say where to start.
         </Li>
         <Li>
           Check the <strong>terrain</strong> (card 2: the global terrain downloads on its own, or
-          import a DTM; no terrain, no export) and, if you wish, set the <strong>base</strong>,
-          split into <strong>blocks</strong> and plan <strong>GCPs</strong>.
+          import a DTM; no terrain, no export) and, if you wish, set the <strong>base</strong>
+          (“Base” in the bar over the map, or “Set base” in card 5), split into{' '}
+          <strong>blocks</strong> and plan <strong>GCPs</strong>.
         </Li>
         <Li>
           <strong>Export</strong>: WPML/KMZ (full mission for DJI Pilot 2) with the{' '}
@@ -409,11 +420,12 @@ function InstrucoesEn() {
       <H>Mission types</H>
       <ul className="list-none">
         <Li>
-          <strong>Area</strong> (selector at the top of the panel) — nadir/oblique grid over a
+          <strong>Area</strong> (in the mode bar, left of the panel) — nadir/oblique grid over a
           polygon; includes the 3D crosshatch with “Extra nadir pass (orthomosaic)” and{' '}
-          <strong>inspection points</strong> as an extra layer: place points on the map, edit
-          label/heading/pitch/photo, reorder by drag or “Suggest order”, and export as a mission of
-          its own.
+          <strong>inspection points</strong> as an extra layer: place points on the map
+          (“Inspection” in the bar over the map, or “Place points on the map” in card 6’s More
+          options), edit label/heading/pitch/photo, reorder by drag or “Suggest order”, and export
+          as a mission of its own.
         </Li>
         <Li>
           <strong>Face</strong> — click “Draw” and mark the foot of the face on the map (the drawing
@@ -604,8 +616,15 @@ function InstrucoesEn() {
           (mouse orbit, vertical exaggeration).
         </Li>
         <Li>
-          The <strong>Legend</strong>, in the corner of the map and of the 3D view, says what each
-          layer is and shows or hides each one (lines, photos, bases, GCPs…).
+          The <strong>Legend</strong>, in the bottom corner of the map and in the 3D view, says what
+          each layer is, with the symbol the map draws, and shows or hides each one with its switch
+          (lines, photos, bases, GCPs…; on the map, also the viewsheds).
+        </Li>
+        <Li>
+          The <strong>Metrics</strong>, in a card on the right of the map, appear once there is a
+          plan: the longest flight against the battery’s usable time (with a bar) and the quality,
+          flight and operation of the open tab. The arrow collapses the card into a button with the
+          GSD and the flights.
         </Li>
       </ul>
 

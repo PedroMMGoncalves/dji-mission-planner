@@ -35,6 +35,23 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   tipo numa tabela: as quinze frases «Zona da base X reduzida…» passam a
   uma linha por base, com os mesmos números. Esc fecha. Sem bloqueios, a
   pastilha diz só os avisos («3 avisos»). Os ficheiros exportados não mudam.
+- **Ecrã principal: modos à esquerda, desenho e métricas sobre o mapa.**
+  Os cinco modos passam a uma barra vertical à esquerda do painel (ícone e
+  nome), e o painel, de 360 px, ganha a altura da antiga grelha de botões;
+  o mapa fica com o resto e nada o empurra. As formas da área (Polígono,
+  Rectângulo, Quadrado) saem do cartão 2 para uma barra de desenho sobre o
+  mapa, com atalhos para «Base» e «Inspecção» (as mesmas acções de «Marcar
+  base» e «Marcar pontos no mapa», que ficam nos cartões); o zoom e as
+  camadas ficam no canto de cima à esquerda. As métricas são um cartão
+  opaco à direita do mapa, rótulo à esquerda e valor à direita, com o voo
+  mais longo e uma barra contra o tempo útil; recolhem-se num botão com o
+  GSD e os voos, e sem plano não aparecem (eram mosaicos translúcidos por
+  cima da missão, com traços antes de haver área). Os números são os
+  mesmos. A legenda é um cartão opaco com interruptores e os símbolos do
+  mapa (blocos e faixas na cor da base, início e fim da rota, o pino da
+  base, as bacias de visão em «Análise»), e a margem a 0 % deixa de se
+  desenhar por cima do contorno da área. Sem área, os «Primeiros passos»
+  (três) ficam por baixo da barra de desenho.
 
 ### Corrigido
 
