@@ -281,7 +281,7 @@ export default {
   'bases.a4.flight': { pt: 'Voo {list}', en: 'Flight {list}' },
   'bases.a4.flights': { pt: 'Voos {list}', en: 'Flights {list}' },
   'bases.a4.order': { pt: '{n}.º voo de {total}', en: 'flight {n} of {total}' },
-  'bases.a4.orderMany': { pt: 'voos {a}–{b} de {total}', en: 'flights {a}–{b} of {total}' },
+  'bases.a4.orderMany': { pt: 'voos {range} de {total}', en: 'flights {range} of {total}' },
   'bases.a4.prev': { pt: 'antes {flight}', en: 'after {flight}' },
   'bases.a4.next': { pt: 'depois {flight}', en: 'before {flight}' },
   'bases.a4.sub': { pt: 'Ficha de campo', en: 'Field sheet' },
@@ -375,7 +375,6 @@ export default {
   'bases.a4.file': { pt: 'Ficheiro KMZ (abrir no Pilot 2)', en: 'KMZ file (open in Pilot 2)' },
   'bases.a4.total': { pt: 'Tempo total', en: 'Total time' },
   'bases.a4.transit': { pt: 'Deslocação', en: 'Transit' },
-  'bases.a4.min': { pt: '{m} min', en: '{m} min' },
   'bases.a4.check': {
     pt: 'Ao abrir {flights} no DJI Pilot 2, confira:',
     en: 'When opening {flights} in DJI Pilot 2, check:',

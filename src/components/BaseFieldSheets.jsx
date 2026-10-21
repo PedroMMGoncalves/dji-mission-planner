@@ -622,7 +622,7 @@ export function BaseSheetPage({
       ? [
           one
             ? t('bases.a4.order', { n: first.n, total: first.total })
-            : t('bases.a4.orderMany', { a: first.n, b: last.n, total: first.total }),
+            : t('bases.a4.orderMany', { range: rangeText(first.n, last.n), total: first.total }),
           [
             first.prev && t('bases.a4.prev', { flight: first.prev }),
             last.next && t('bases.a4.next', { flight: last.next }),
