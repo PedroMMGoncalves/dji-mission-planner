@@ -24,7 +24,13 @@ import { fileURLToPath } from 'node:url'
 // o intervalo manual, o rumo fixo, as alturas de segurança, os cantos da
 // face, o campo numérico partilhado e os textos PT/EN e da ajuda; nenhuma
 // dependência nova. O lote acrescenta 45 KB (2361 → 2406 KB).
-const BUDGET_KB = 2450
+// 2450 → 2500 na conversão para o desenho aprovado (fase 1, Outubro de
+// 2026): o cabeçalho com o menu do projecto e o botão de exportar partido,
+// a lista do preflight com as tabelas dos avisos repetidos e os seus textos
+// PT/EN, os componentes partilhados (src/components/ui) e a ajuda; nenhuma
+// dependência de JavaScript nova (a letra Inter são ficheiros .woff2, que
+// não contam). O total ia em 2466 KB (2435 antes).
+const BUDGET_KB = 2500
 // fileURLToPath e não .pathname: este descodifica percent-encoding e trata
 // os caminhos do Windows, o outro devolve-os em bruto.
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))
