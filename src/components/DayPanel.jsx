@@ -59,9 +59,8 @@ export function DayOpener({ flights, totalS, onOpen, buttonRef }) {
       ref={buttonRef}
       data-testid="day-open"
       onClick={onOpen}
-      aria-expanded="false"
       title={t('day.openTitle')}
-      className={`pointer-events-auto ${PILL}`}
+      className={`pointer-events-auto flex-none ${PILL}`}
     >
       <Icon className="text-sky-300">{ROUTE}</Icon>
       {t('day.title')}
@@ -532,7 +531,7 @@ function FlightRow({
   onShow,
 }) {
   const t = useT()
-  const vars = { flight: f.label }
+  const vars = { flight: f.label, base: f.base.label }
   const pct = usefulS ? (100 * f.totalS) / usefulS : null
   const level = done ? 'done' : levelOf(usefulS ? f.totalS / usefulS : null)
   // a barra contra o tempo útil: acima dele, as duas partes em proporção
@@ -566,7 +565,7 @@ function FlightRow({
         >
           <span
             className={`flex h-[22px] w-[22px] items-center justify-center rounded-md border-[1.5px] ${
-              done ? 'border-emerald-400 bg-emerald-400' : 'border-[#3A4A66]'
+              done ? 'border-emerald-400 bg-emerald-400' : 'border-slate-500'
             }`}
           >
             {done && <Icon d={CHECK} size={14} sw={3} />}
@@ -574,10 +573,11 @@ function FlightRow({
         </button>
       </td>
       <td className="pl-1">
+        {/* o nome é o que se lê (a base e os conjuntos); «Ver no mapa: voo …» é
+            a descrição e a dica */}
         <button
           type="button"
           onClick={onShow}
-          aria-label={t('day.showFlight', vars)}
           title={t('day.showFlight', vars)}
           className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-1 text-left transition-colors hover:bg-raised ${FOCUS}`}
         >

@@ -21,7 +21,8 @@ import {
 import { browserStorage } from '../utils/browserStorage.js'
 
 // A chave antiga da checklist, sem missão, que a checklist ainda lê quando a
-// missão não tem a sua: a chave de uma missão sem nome (…:missao) sem o fim
+// missão não tem a sua: a chave de uma missão sem nome (…:missao) sem o fim.
+// Provisório: passa a importar a STORAGE_KEY quando a checklist a exportar
 const LEGACY_KEY = checklistStorageKey('').replace(/:missao$/, '')
 /** O evento com que esta página avisa que escreveu o registo. */
 const CHANGED = 'dmp:flight-log'

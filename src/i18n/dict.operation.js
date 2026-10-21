@@ -54,18 +54,20 @@ export default {
     pt: 'Zona de descolagem {r} m, fora do relevo carregado (cota de referência desconhecida)',
     en: 'Take-off zone {r} m, outside the loaded elevation data (reference elevation unknown)',
   },
-  // o nome da acção (o botão da linha e o do voo seguinte, que diz «Ver no mapa»)
-  'day.showFlight': { pt: 'Mostrar o voo {flight} no mapa', en: 'Show flight {flight} on the map' },
+  // «Ver no mapa» e o nome inteiro da acção, que começa por ele (o botão do
+  // voo seguinte; na linha, a base é o rótulo e este nome a descrição)
   'day.showOnMap': { pt: 'Ver no mapa', en: 'Show on the map' },
-  // o nome do interruptor de cada linha e do botão do voo seguinte («Marcar feito»)
-  'day.markFlight': {
-    pt: 'Marcar o voo {flight} como feito',
-    en: 'Mark flight {flight} as done',
+  'day.showFlight': {
+    pt: 'Ver no mapa: voo {flight} (base {base})',
+    en: 'Show on the map: flight {flight} (base {base})',
   },
+  // «Marcar feito» e o nome inteiro (o botão do voo seguinte e a caixa de
+  // cada linha), e a dica, que começa por ele
   'day.markDone': { pt: 'Marcar feito', en: 'Mark done' },
+  'day.markFlight': { pt: 'Marcar feito: voo {flight}', en: 'Mark done: flight {flight}' },
   'day.markTitle': {
-    pt: 'Escreve a hora de agora na «Hora fim» do voo {flight}, no registo de voos da checklist de campo',
-    en: 'Writes the current time as the “End time” of flight {flight}, in the field checklist’s flight log',
+    pt: 'Marcar feito: voo {flight}. Escreve a hora de agora na «Hora fim» do voo, no registo de voos da checklist de campo',
+    en: 'Mark done: flight {flight}. Writes the current time as the flight’s “End time”, in the field checklist’s flight log',
   },
   'day.allDone': {
     pt: 'Os {n} voos estão marcados como feitos.',
@@ -117,7 +119,6 @@ export default {
 
   /* ---- O total do dia ---- */
   'day.dayTotal': { pt: 'Total do dia', en: 'Day total' },
-  'day.totalLine': { pt: '{flights} · {sets} · {time}', en: '{flights} · {sets} · {time}' },
   'day.totalNote': {
     pt: 'Sem trocas de bateria nem mudanças de base · VLOS contra {v} m',
     en: 'Without battery swaps or base moves · VLOS against {v} m',
