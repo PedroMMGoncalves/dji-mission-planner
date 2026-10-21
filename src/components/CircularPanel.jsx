@@ -1,27 +1,54 @@
+import { useId, useRef, useState } from 'react'
 import { useT } from '../i18n.jsx'
-import { missionExportLabel } from '../i18n/format.js'
-import AircraftPicker from './AircraftPicker.jsx'
-import NumberInput from './NumberInput.jsx'
-import { Card, CardColumn, SafetyCard } from './Cards.jsx'
-import { IconDownload, IconTrash } from './Icons.jsx'
-import BatterySetsNote from './BatterySetsNote.jsx'
+import { tCount } from '../i18n/format.js'
 import { MAX_CIRCLES } from '../utils/circular.js'
+import { terrainErrorText as terrainErrText } from '../utils/appError.js'
+import AircraftPicker, { aircraftSummary } from './AircraftPicker.jsx'
+import NumberInput from './NumberInput.jsx'
+import BatterySetsNote from './BatterySetsNote.jsx'
+import { fmtDist, fmtTime } from './StatsPanel.jsx'
+import { Icon } from './MapOverlay.jsx'
+import { IconFolder, IconMountain, IconTrash, IconWarning } from './Icons.jsx'
+import { Section } from './ui/Section.jsx'
+import { Button } from './ui/Button.jsx'
+import { Field, fieldInput } from './ui/Field.jsx'
+import {
+  DrawControls,
+  ExportButton,
+  ExportRow,
+  FlightBar,
+  Grid,
+  Hint,
+  KeyLine,
+  LongestBadge,
+  ModePanel,
+  Note,
+  Part,
+  PreflightRow,
+  PreflightStatus,
+  Readout,
+  Rows,
+  SafetyBlock,
+  StatusBadge,
+  StatusDone,
+  Switch,
+  Tiles,
+  boldText,
+  preflightState,
+  rthHeight,
+  safetySummary,
+  signedText,
+  speedUnit,
+  useOpenSection,
+} from './ModePanel.jsx'
 
 /**
- * Painel do modo circular («circlegrammetry»): a área é o polígono do modo
- * Área; aqui só o raio, a sobreposição entre círculos, o gimbal, a
- * velocidade, as estatísticas e a exportação. Geometria em utils/circular.js.
+ * Painel do modo circular («circlegrammetry»), em sete secções pela ordem
+ * do trabalho: aeronave e sensor, a área (o polígono do modo Área), os
+ * círculos (com o número que dão e o conselho da sobreposição), os
+ * parâmetros de voo e o relevo, os voos e as baterias, as acções de
+ * segurança e o resumo com a exportação. Geometria em utils/circular.js.
  */
-
-function Field({ label, suffix = null, children }) {
-  return (
-    <label className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-300">
-      <span className="flex-1">{label}</span>
-      {children}
-      {suffix && <span className="w-8 text-xs text-slate-400">{suffix}</span>}
-    </label>
-  )
-}
 
 /** Mensagem de um erro do seguimento de terreno do circular. */
 function terrainErrorText(res, t) {
@@ -62,9 +89,14 @@ export default function CircularPanel({
   setSafety = (_next) => {},
   rthInfo = null,
   onRemove,
+  // o resumo: os números do cartão de métricas (useMissionOps), os itens do
+  // preflight e o botão que abre a lista dele
+  ops = null,
+  preflight = [],
+  onShowPreflight = null,
 }) {
   // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
-  const { drone = null, setDrone = null, sensor = null } = hw
+  const { drone = null, setDrone = null, sensor = null, speedRange = { min: 1, max: 15 } } = hw
   const {
     setCircularParam,
     circularPlan,
@@ -75,304 +107,577 @@ export default function CircularPanel({
     circularTerrain = null,
     circularCovers = false,
   } = circular
-  const { terrainFollow, setTerrainFollow } = terrainState
+  const {
+    terrain,
+    terrainFollow,
+    setTerrainFollow,
+    handleLoadTerrain: onLoadTerrain,
+    handleImportDem: onImportDem,
+  } = terrainState
   // o polígono é o do modo Área: desenhar, acabar e limpar são os dele
   const { startDraw: onStartDraw, handleFinishDraw: onFinishDraw, clearAll: onClear } = geom
   const t = useT()
+  const demFileRef = useRef(null)
+  const howId = useId()
+  // «Como funciona»: a conta do passo entre centros, que o conselho encurtou
+  const [howOpen, setHowOpen] = useState(false)
+  const section = useOpenSection(hasRing ? 'circular-2' : 'circular-1')
+  const pf = preflightState(preflight)
   const drawing = mode === 'draw'
   const stats = circularPlan && !circularPlan.error ? circularPlan.stats : null
   const errorKey = circularPlan?.error ? `ci.err.${circularPlan.error}` : null
+  const errorText = errorKey ? t(errorKey, { n: circularPlan.count ?? '', max: MAX_CIRCLES }) : null
+  // quanto os círculos saem da área, no conselho da sobreposição
+  const extAlong = stats ? Math.round(stats.extensionAlongM) : '—'
+  const extAcross = stats ? Math.round(stats.extensionAcrossM) : '—'
+  // «Como funciona», no fim do conselho (ou sozinho, sem ele)
+  const howLink = (
+    <button
+      type="button"
+      aria-expanded={howOpen}
+      aria-controls={howId}
+      onClick={() => setHowOpen((v) => !v)}
+      className="rounded text-left text-[12.5px] text-sky-300 underline underline-offset-2 hover:text-sky-200"
+    >
+      {t('ci.params.how')}
+    </button>
+  )
   const pitchAbs = Math.abs(circularConfig.gimbalPitch)
   const axisGroundM = pitchAbs > 0 ? altitude / Math.tan((pitchAbs * Math.PI) / 180) : Infinity
+  const nBlocks = blocks?.length > 1 ? blocks.length : 0
+  const usable = usableMin != null ? Math.round(usableMin) : '—'
+  const areaHa = stats?.areaHa ?? areaStats?.areaHa ?? null
+  const own = circularConfig.ownParams === true
+  const terrainSource =
+    terrain?.status === 'ready'
+      ? terrain.data?.source === 'file'
+        ? `${t('cp.terrain.localDem')} ${terrain.data.label}`
+        : t('co.terrain.global')
+      : terrain?.status === 'loading'
+        ? t('cp.terrain.loading')
+        : t('co.terrain.noTerrain')
 
   return (
-    <CardColumn label={t('cards.panel')}>
+    <ModePanel
+      title={t('mode.circular')}
+      description={t('ci.panel.description')}
+      label={t('ci.panel.label')}
+    >
       {drone && setDrone && (
-        <Card id="circular-aeronave" title={t('ap.title')}>
+        <Section
+          n={1}
+          title={t('ap.title')}
+          summary={aircraftSummary(t, drone, sensor, 'focal')}
+          {...section('circular-aeronave')}
+        >
           <AircraftPicker drone={drone} setDrone={setDrone} sensor={sensor} />
-        </Card>
+        </Section>
       )}
-      {/* Área: o mesmo polígono do modo Área */}
-      <Card id="circular-1" n={1} title={t('ci.area.title')}>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={drawing ? onFinishDraw : onStartDraw}
-            className={`rounded px-2 py-2 text-sm font-medium transition-colors ${
-              drawing
-                ? 'bg-sky-500 text-slate-950'
-                : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-            }`}
-          >
-            {drawing ? t('ci.area.finish') : t('ci.area.draw')}
-          </button>
-          <button
-            onClick={drawing ? onUndoVertex : onClear}
-            disabled={drawing ? draftCount === 0 : !hasRing}
-            className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {drawing ? (
-              t('ci.area.undo')
-            ) : (
-              <>
-                <IconTrash /> {t('ci.area.clear')}
-              </>
-            )}
-          </button>
-        </div>
-        <p className="mt-2 text-xs text-slate-400">
-          {drawing
-            ? t('ci.area.hint', { n: draftCount })
-            : hasRing
-              ? t('ci.area.shared')
-              : t('ci.area.none')}
-        </p>
-      </Card>
 
-      {/* Círculos */}
-      <Card id="circular-2" n={2} title={t('ci.params.title')}>
-        <Field label={t('ci.params.radius')} suffix="m">
-          <NumberInput
-            value={circularConfig.radiusM}
-            min={5}
-            max={500}
-            step={5}
-            onChange={(v) => setCircularParam('radiusM', Math.max(5, Math.min(500, v)))}
-          />
-        </Field>
-        <Field label={t('ci.params.overlap')} suffix="%">
-          <NumberInput
-            value={circularConfig.overlapPct}
-            min={0}
-            max={90}
-            step={1}
-            onChange={(v) => setCircularParam('overlapPct', Math.max(0, Math.min(90, v)))}
-          />
-        </Field>
-        <p className="mb-2 text-xs leading-relaxed text-slate-400">{t('ci.params.overlapHint')}</p>
-        {advice && (
-          <div
-            className="mb-3 rounded border border-sky-900/60 bg-sky-950/30 p-2 text-xs leading-relaxed text-sky-200"
-            data-testid="circular-advice"
-          >
-            {t(advice.minPct === advice.maxPct ? 'ci.adviceExact' : 'ci.advice', {
-              p: circularConfig.overlapPct,
-              cols: advice.cols,
-              rows: advice.rows,
-              n: advice.count,
-              min: advice.minPct,
-              max: advice.maxPct,
-            })}
-            {advice.maxPct !== circularConfig.overlapPct && (
-              <button
-                onClick={() => setCircularParam('overlapPct', advice.maxPct)}
-                className="ml-2 rounded bg-sky-800/70 px-1.5 py-0.5 font-semibold text-sky-100 hover:bg-sky-700"
-              >
-                {t('ci.adviceApply', { max: advice.maxPct })}
-              </button>
+      {/* a área: o mesmo polígono do modo Área */}
+      <Section
+        n={2}
+        title={t('ci.area.title')}
+        summary={
+          drawing
+            ? tCount(t, 'mp.drawingN', draftCount, { n: draftCount })
+            : hasRing
+              ? areaHa != null
+                ? t('ci.area.summary', { ha: areaHa.toFixed(2) })
+                : t('ci.area.summaryShared')
+              : t('mp.toDraw')
+        }
+        status={hasRing && !drawing ? <StatusDone label={t('mp.ready')} /> : null}
+        {...section('circular-1')}
+      >
+        {hasRing && (
+          <div className="flex items-baseline justify-between gap-2 text-[13.5px]">
+            <span className="text-slate-100">
+              {t('ci.area.shared')} <span className="text-slate-400">· {t('ci.area.tab')}</span>
+            </span>
+            {areaHa != null && (
+              <span className="font-semibold tabular-nums text-slate-100">
+                {areaHa.toFixed(2)} ha
+              </span>
             )}
           </div>
         )}
-        <Field label={t('ci.params.pitch')} suffix="°">
-          <NumberInput
-            value={circularConfig.gimbalPitch}
-            min={-90}
-            max={-20}
-            step={5}
-            onChange={(v) => setCircularParam('gimbalPitch', Math.max(-90, Math.min(-20, v)))}
+        <DrawControls
+          label={t('cp.area.polygon')}
+          title={t('cp.area.polygonTitle')}
+          icon={<Icon size={15} sw={1.8} d="M12 2.5 21.5 9.4 17.9 20.5H6.1L2.5 9.4z" />}
+          drawing={drawing}
+          onDraw={onStartDraw}
+          clearLabel={t('cp.area.clear')}
+          onClear={onClear}
+          clearDisabled={!hasRing && draftCount === 0}
+          count={draftCount}
+          hint={t('ci.area.hint')}
+          onUndo={onUndoVertex}
+          onFinish={onFinishDraw}
+          minVertices={3}
+        />
+        {!drawing && <Hint>{t(hasRing ? 'ci.area.sharedHint' : 'ci.area.none')}</Hint>}
+      </Section>
+
+      {/* os círculos: raio, sobreposição e azimute, e o número que dão */}
+      <Section
+        n={3}
+        title={t('ci.params.title')}
+        summary={
+          stats
+            ? t('ci.params.summary', {
+                n: stats.circleCount,
+                r: circularConfig.radiusM,
+                o: circularConfig.overlapPct,
+              })
+            : t('ci.params.summaryNone', {
+                r: circularConfig.radiusM,
+                o: circularConfig.overlapPct,
+              })
+        }
+        status={
+          errorText ? (
+            <StatusBadge
+              tone="block"
+              icon={<IconWarning className="h-3 w-3" />}
+              value="1"
+              label={errorText}
+            />
+          ) : stats ? (
+            <StatusDone label={t('mp.ready')} />
+          ) : null
+        }
+        {...section('circular-2')}
+      >
+        <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] items-end gap-3">
+          <Field label={t('ci.params.radius')} unit="m">
+            <NumberInput
+              value={circularConfig.radiusM}
+              min={5}
+              max={500}
+              step={5}
+              className={fieldInput}
+              onChange={(v) => setCircularParam('radiusM', Math.max(5, Math.min(500, v)))}
+            />
+          </Field>
+          <Field label={t('ci.params.overlap')} unit={t('ci.params.overlapUnit')}>
+            <NumberInput
+              value={circularConfig.overlapPct}
+              min={0}
+              max={90}
+              step={1}
+              className={fieldInput}
+              onChange={(v) => setCircularParam('overlapPct', Math.max(0, Math.min(90, v)))}
+            />
+          </Field>
+          <Field label={t('ci.params.angle')} unit="°">
+            <input
+              type="number"
+              className={fieldInput}
+              value={circularConfig.angleDeg ?? ''}
+              placeholder={t('ci.params.angleAuto')}
+              min={0}
+              max={179}
+              step={1}
+              onChange={(e) =>
+                setCircularParam(
+                  'angleDeg',
+                  e.target.value === '' ? null : ((Number(e.target.value) % 180) + 180) % 180,
+                )
+              }
+            />
+          </Field>
+          <Readout
+            label={t('ci.params.step')}
+            value={stats ? `${Math.round(stats.stepM)} m` : '—'}
+            extra={t('ci.params.stepFormula', { p: circularConfig.overlapPct })}
           />
-        </Field>
-        <p className="mb-2 text-xs leading-relaxed text-slate-400">
-          {t('ci.params.pitchHint', {
-            d: Number.isFinite(axisGroundM) ? Math.round(axisGroundM) : '∞',
-          })}
+        </div>
+        {errorText && <Note tone="block">{errorText}</Note>}
+        {advice && (
+          <Note
+            tone="result"
+            testId="circular-advice"
+            lead={t('ci.advice.lead', { cols: advice.cols, rows: advice.rows, n: advice.count })}
+          >
+            {t(advice.minPct === advice.maxPct ? 'ci.adviceExact' : 'ci.advice', {
+              p: circularConfig.overlapPct,
+              min: advice.minPct,
+              max: advice.maxPct,
+              a: extAlong,
+              b: extAcross,
+              ext: stats ? t('ci.plan.extension', { a: extAlong, b: extAcross }) : '',
+            })}
+            {advice.maxPct !== circularConfig.overlapPct && (
+              <button
+                type="button"
+                onClick={() => setCircularParam('overlapPct', advice.maxPct)}
+                className="ml-1.5 rounded-md bg-sky-900/70 px-1.5 py-0.5 font-semibold text-sky-100 transition-colors hover:bg-sky-800"
+              >
+                {t('ci.adviceApply', { max: advice.maxPct })}
+              </button>
+            )}{' '}
+            {howLink}
+          </Note>
+        )}
+        {!advice && <div>{howLink}</div>}
+        <p id={howId} hidden={!howOpen} className="text-xs leading-normal text-slate-300">
+          {t('ci.params.overlapHint')}
         </p>
+      </Section>
+
+      {/* parâmetros de voo: gimbal, velocidade, altura e sobreposição, relevo */}
+      <Section
+        n={4}
+        title={t('cards.flight')}
+        summary={t('ci.flight.summary', {
+          p: signedText(circularConfig.gimbalPitch),
+          v: circularConfig.speedMS,
+          h: altitude,
+          f: frontOverlap,
+        })}
+        status={
+          terrainFollow?.enabled && circularTerrain?.error ? (
+            <StatusBadge
+              tone="block"
+              icon={<IconWarning className="h-3 w-3" />}
+              value="1"
+              label={terrainErrorText(circularTerrain, t)}
+            />
+          ) : null
+        }
+        {...section('circular-voo')}
+      >
+        <Part>
+          <Grid>
+            <Field label={t('ci.params.pitch')} unit={t('ci.params.pitchUnit')}>
+              <NumberInput
+                value={circularConfig.gimbalPitch}
+                min={-90}
+                max={-20}
+                step={5}
+                className={fieldInput}
+                onChange={(v) => setCircularParam('gimbalPitch', Math.max(-90, Math.min(-20, v)))}
+              />
+            </Field>
+            <Field label={t('ci.params.speed')} unit={speedUnit(t, speedRange.min, speedRange.max)}>
+              <NumberInput
+                value={circularConfig.speedMS}
+                min={1}
+                max={15}
+                step={0.5}
+                className={fieldInput}
+                onChange={(v) => setCircularParam('speedMS', Math.max(1, Math.min(15, v)))}
+              />
+            </Field>
+          </Grid>
+          <Hint>
+            {t('ci.params.pitchHint', {
+              d: Number.isFinite(axisGroundM) ? Math.round(axisGroundM) : '∞',
+            })}
+          </Hint>
+          {stats?.gsdCm != null && (
+            <KeyLine label={t('ci.plan.gsdLabel')} value={`${stats.gsdCm.toFixed(2)} cm/px`} />
+          )}
+        </Part>
         {triggerWarn && (
-          <p className="mb-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
-            ⚠{' '}
+          <Note tone="warn">
             {t('cp.flight.triggerFast', {
               s: triggerWarn.actualS.toFixed(2),
               min: triggerWarn.minS.toFixed(1),
               vmax: triggerWarn.maxSpeed.toFixed(1),
             })}
-          </p>
+          </Note>
         )}
-        <Field label={t('ci.params.speed')} suffix="m/s">
-          <NumberInput
-            value={circularConfig.speedMS}
-            min={1}
-            max={15}
-            step={0.5}
-            onChange={(v) => setCircularParam('speedMS', Math.max(1, Math.min(15, v)))}
-          />
-        </Field>
-        <Field label={t('ci.params.angle')} suffix="°">
-          <input
-            type="number"
-            className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            value={circularConfig.angleDeg ?? ''}
-            placeholder={t('ci.params.angleAuto')}
-            min={0}
-            max={179}
-            step={1}
-            onChange={(e) =>
-              setCircularParam(
-                'angleDeg',
-                e.target.value === '' ? null : ((Number(e.target.value) % 180) + 180) % 180,
-              )
-            }
-          />
-        </Field>
-        {/* altura e sobreposição frontal próprias, ou as do separador Área */}
-        <label className="mb-2 mt-1 flex items-center gap-2 text-sm text-slate-300">
-          <input
-            type="checkbox"
-            data-testid="circular-own-params"
-            checked={circularConfig.ownParams === true}
-            onChange={(e) => {
+        <Part>
+          {/* altura e sobreposição frontal próprias, ou as do separador Área */}
+          <Switch
+            label={t('ci.params.own')}
+            checked={own}
+            testId="circular-own-params"
+            onChange={(on) => {
               // ao ligar, começa nos valores da área
-              if (e.target.checked && areaParams) {
+              if (on && areaParams) {
                 setCircularParam('altitude', areaParams.altitude)
                 setCircularParam('frontOverlap', areaParams.frontOverlap)
               }
-              setCircularParam('ownParams', e.target.checked)
+              setCircularParam('ownParams', on)
             }}
           />
-          {t('ci.params.own')}
-        </label>
-        {circularConfig.ownParams === true ? (
-          <>
-            <Field label={t('ci.params.altitude')} suffix="m">
-              <NumberInput
-                value={circularConfig.altitude}
-                min={5}
-                max={1500}
-                onChange={(v) => setCircularParam('altitude', Math.max(5, Math.min(1500, v)))}
-              />
-            </Field>
-            <Field label={t('ci.params.frontOverlap')} suffix="%">
-              <NumberInput
-                value={circularConfig.frontOverlap}
-                min={10}
-                max={95}
-                onChange={(v) => setCircularParam('frontOverlap', Math.max(10, Math.min(95, v)))}
-              />
-            </Field>
-          </>
-        ) : (
-          <p className="text-xs leading-relaxed text-slate-400">
-            {t('ci.params.altitudeNote', { h: altitude, f: frontOverlap })}
-          </p>
-        )}
-        <label className="mt-3 flex items-center gap-2 text-sm text-slate-300">
-          <input
-            type="checkbox"
+          {own ? (
+            <>
+              <Grid>
+                <Field label={t('ci.params.altitude')} unit="m">
+                  <NumberInput
+                    value={circularConfig.altitude}
+                    min={5}
+                    max={1500}
+                    className={fieldInput}
+                    onChange={(v) => setCircularParam('altitude', Math.max(5, Math.min(1500, v)))}
+                  />
+                </Field>
+                <Field label={t('ci.params.frontOverlap')} unit="%">
+                  <NumberInput
+                    value={circularConfig.frontOverlap}
+                    min={10}
+                    max={95}
+                    className={fieldInput}
+                    onChange={(v) =>
+                      setCircularParam('frontOverlap', Math.max(10, Math.min(95, v)))
+                    }
+                  />
+                </Field>
+              </Grid>
+              <Hint>{t('ci.params.ownHint')}</Hint>
+            </>
+          ) : (
+            <Note tone="neutral">
+              {t('co.params.fromArea')} {boldText(t('co.params.fromAreaHeight'), [`${altitude} m`])}
+              {' · '}
+              {boldText(t('ci.params.fromAreaFront'), [`${frontOverlap} %`])}
+            </Note>
+          )}
+        </Part>
+        <Part divided>
+          <Switch
+            label={t('mp.followTerrain')}
+            extra={t('ci.terrain.followWhat')}
             checked={Boolean(terrainFollow?.enabled)}
             // ligar exige relevo que cubra os círculos; desligar, nunca
             disabled={!terrainFollow?.enabled && !(terrainReady && circularCovers)}
-            onChange={(e) => setTerrainFollow((f) => ({ ...f, enabled: e.target.checked }))}
+            onChange={(on) => setTerrainFollow((f) => ({ ...f, enabled: on }))}
           />
-          {t('ci.terrain.follow')}
-        </label>
-        <p className="mt-1 text-xs leading-relaxed text-slate-400">{t('ci.terrain.hint')}</p>
-        {terrainReady && stats && !circularCovers && (
-          <p className="mt-2 rounded border border-amber-700 bg-amber-950/60 p-2 text-xs leading-relaxed text-amber-300">
-            ⚠ {t('ci.terrain.outOfCoverage')}
-          </p>
-        )}
-        {terrainFollow?.enabled && circularTerrain?.error && (
-          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
-            ⚠ {terrainErrorText(circularTerrain, t)}
-          </p>
-        )}
-      </Card>
+          <Hint>{t('ci.terrain.hint')}</Hint>
+          {terrainReady && stats && !circularCovers && (
+            <Note tone="warn">{t('ci.terrain.outOfCoverage')}</Note>
+          )}
+          {terrainFollow?.enabled && circularTerrain?.error && (
+            <Note tone="block">{terrainErrorText(circularTerrain, t)}</Note>
+          )}
+          {stats?.path3D && (
+            <Note tone="neutral">{t('ci.plan.terrain', { n: stats.terrainMissing ?? 0 })}</Note>
+          )}
+          <div className="flex flex-col gap-2.5 rounded-[9px] border border-slate-800 bg-sunken p-3">
+            <div className="flex items-start gap-2.5">
+              <IconMountain className="mt-px h-[18px] w-[18px] flex-none text-sky-300" />
+              <div className="min-w-0">
+                <div className="text-[13.5px] font-semibold text-slate-100 [overflow-wrap:anywhere]">
+                  {terrainSource}
+                </div>
+                {terrain?.status === 'ready' && (
+                  <div className="mt-0.5 text-xs leading-normal text-slate-300">
+                    {t('ci.terrain.shared')}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Button
+                size="md"
+                className="w-full"
+                onClick={onLoadTerrain}
+                disabled={!hasRing || terrain?.status === 'loading'}
+                icon={<IconMountain className="h-3.5 w-3.5" />}
+              >
+                {terrain?.status === 'loading'
+                  ? t('cp.terrain.loading')
+                  : t('cp.terrain.downloadGlobal')}
+              </Button>
+              <Button
+                size="md"
+                className="w-full"
+                onClick={() => demFileRef.current?.click()}
+                disabled={!hasRing || terrain?.status === 'loading'}
+                title={t('cp.terrain.importDemTitle')}
+                icon={<IconFolder className="h-3.5 w-3.5" />}
+              >
+                {t('cp.terrain.importDem')}
+              </Button>
+              <input
+                ref={demFileRef}
+                type="file"
+                accept=".tif,.tiff"
+                className="hidden"
+                onChange={(e) => {
+                  onImportDem(e.target.files?.[0])
+                  e.target.value = ''
+                }}
+              />
+            </div>
+          </div>
+          {terrain?.status === 'error' && (
+            <Note tone="block">{terrainErrText(terrain.error, t)}</Note>
+          )}
+        </Part>
+      </Section>
 
-      {/* Plano e exportação */}
-      <SafetyCard
-        rthInfo={rthInfo}
-        id="circular-seguranca"
-        n={3}
-        safety={safety}
-        onChange={setSafety}
-      />
-
-      <Card id="circular-4" n={4} title={t('ci.plan.title')}>
-        {errorKey && (
-          <p className="mb-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
-            ⚠ {t(errorKey, { n: circularPlan.count ?? '', max: MAX_CIRCLES })}
-          </p>
-        )}
-        {!hasRing && !errorKey && <p className="text-xs text-slate-400">{t('ci.area.none')}</p>}
-        {stats && (
-          <div className="space-y-1 font-mono text-xs text-slate-300">
-            <p>{t('ci.plan.circles', { n: stats.circleCount, pts: stats.pointsPerCircle })}</p>
-            <p>{t('ci.plan.photos', { n: stats.photoCount })}</p>
-            <p>
-              {t('ci.plan.extension', {
-                a: Math.round(stats.extensionAlongM),
-                b: Math.round(stats.extensionAcrossM),
-              })}
-            </p>
-            {stats.gsdCm != null && <p>{t('ci.plan.gsd', { v: stats.gsdCm.toFixed(2) })}</p>}
-            <p>
-              {t('ci.plan.path', { km: (stats.pathLengthM / 1000).toFixed(2) })} ·{' '}
-              {t('ci.plan.time', { min: Math.round((stats.flightTimeS ?? 0) / 60) })}
-            </p>
-            {stats.path3D && (
-              <p className="text-slate-400">
-                {t('ci.plan.terrain', { n: stats.terrainMissing ?? 0 })}
-              </p>
-            )}
-            {areaStats && Number.isFinite(areaStats.flightTimeS) && (
-              <p className="text-slate-400">
-                {t('ci.plan.vsArea', {
-                  kind: t(
-                    areaKind === 'crosshatch' ? 'ci.plan.kindCrosshatch' : 'ci.plan.kindSerpentine',
-                  ),
-                  min: Math.round(areaStats.flightTimeS / 60),
-                })}
-              </p>
-            )}
-            {blocks?.length > 1 && usableMin != null && (
-              <p className="text-slate-400">
-                {t('ci.plan.blocks', { n: blocks.length, min: Math.round(usableMin) })}
-              </p>
+      {/* voos e baterias: os blocos de círculos que cabem no tempo útil */}
+      <Section
+        n={5}
+        title={t('ci.blocks.title')}
+        summary={
+          nBlocks
+            ? t('ci.blocks.count', { n: nBlocks })
+            : stats
+              ? t('ci.blocks.one')
+              : t('mp.noPlan')
+        }
+        status={
+          stats && ops?.longestFrac != null ? (
+            <LongestBadge
+              ops={ops}
+              label={t('mp.longestBadge', { p: Math.round(ops.longestFrac * 100) })}
+            />
+          ) : null
+        }
+        {...section('circular-voos')}
+      >
+        {stats ? (
+          <>
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-[13.5px] text-slate-100">
+                {nBlocks ? t('ci.blocks.count', { n: nBlocks }) : t('ci.blocks.one')}
+              </span>
+              <span className="text-[12.5px] tabular-nums text-slate-400">
+                {t('ci.blocks.usable', { min: usable })}
+              </span>
+            </div>
+            <FlightBar
+              ops={ops}
+              label={nBlocks ? t('ci.blocks.longest') : null}
+              margin={t('ci.blocks.margin')}
+            />
+            <Hint>{t('ci.blocks.hint')}</Hint>
+            {ops && (
+              <Rows
+                rows={[
+                  [t('mp.tile.totalTime'), fmtTime(ops.totalS)],
+                  [
+                    t('cards.summary.sets'),
+                    tCount(t, 'stats.setsNeeded', ops.flights, { n: ops.flights }),
+                  ],
+                ]}
+              />
             )}
             <BatterySetsNote check={setsCheck} battery={batteryLabel} />
-          </div>
+          </>
+        ) : (
+          <Hint>{t('ci.blocks.hint')}</Hint>
         )}
-        <div className="mt-3 grid grid-cols-1 gap-2">
-          <button
-            onClick={onExportSingle}
-            disabled={!stats || exportBlocked}
-            title={exportTitle}
-            className="flex items-center justify-center gap-1.5 rounded bg-sky-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <IconDownload /> {missionExportLabel(t, 'kmz')}
-          </button>
-          <button
-            onClick={onExportBlocks}
-            disabled={!stats || !(blocks?.length > 1) || exportBlocked}
-            className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-3 py-2 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <IconDownload /> {t('ci.exportBlocks')}
-          </button>
-        </div>
-        {exportBlocked && (
-          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs leading-relaxed text-red-300">
-            ⚠ {t('app.exportBlockedHint')}
-          </p>
+      </Section>
+
+      <Section
+        n={6}
+        title={t('safety.title')}
+        summary={[safetySummary(t, safety), rthHeight(rthInfo)].filter(Boolean).join(' · ')}
+        {...section('circular-seguranca')}
+      >
+        <SafetyBlock safety={safety} setSafety={setSafety} rthInfo={rthInfo} />
+      </Section>
+
+      {/* resumo e exportar: missão única (a do cabeçalho) ou um KMZ por bloco */}
+      <Section
+        n={7}
+        title={t('cards.summary')}
+        summary={
+          stats
+            ? [
+                tCount(t, 'mp.photosN', stats.photoCount, { n: stats.photoCount }),
+                fmtTime(ops?.totalS ?? stats.flightTimeS),
+              ].join(' · ')
+            : t('mp.noPlan')
+        }
+        status={stats ? <PreflightStatus state={pf} /> : null}
+        {...section('circular-4')}
+      >
+        {errorText && <Note tone="block">{errorText}</Note>}
+        {!hasRing && !errorKey && <Hint>{t('ci.area.none')}</Hint>}
+        {stats && (
+          <>
+            <Tiles
+              tiles={[
+                {
+                  label: t('stats.circles'),
+                  value: stats.circleCount,
+                  sub: t('ci.tile.circlesSub', { pts: stats.pointsPerCircle }),
+                  testId: 'circular-circles',
+                },
+                {
+                  label: t('stats.photos'),
+                  value: stats.photoCount,
+                  sub: t('mp.tile.photosOne'),
+                },
+                {
+                  label: t('mp.tile.totalTime'),
+                  value: fmtTime(ops?.totalS ?? stats.flightTimeS),
+                  sub: nBlocks ? t('ci.tile.blocks', { n: nBlocks }) : t('ci.blocks.one'),
+                },
+                {
+                  label: t('mp.tile.path'),
+                  value: fmtDist(stats.pathLengthM),
+                  sub: tCount(t, 'mp.waypointsN', stats.waypointCount, {
+                    n: stats.waypointCount,
+                  }),
+                },
+              ]}
+            />
+            <Rows
+              rows={[
+                ...(stats.gsdCm != null
+                  ? [[t('ci.plan.gsdLabel'), `${stats.gsdCm.toFixed(2)} cm/px`]]
+                  : []),
+                ...(areaHa != null ? [[t('stats.area'), `${areaHa.toFixed(2)} ha`]] : []),
+                ...(areaStats && Number.isFinite(areaStats.flightTimeS)
+                  ? [
+                      [
+                        t('ci.plan.vsAreaLabel', {
+                          kind: t(
+                            areaKind === 'crosshatch'
+                              ? 'ci.plan.kindCrosshatch'
+                              : 'ci.plan.kindSerpentine',
+                          ),
+                        }),
+                        t('ci.plan.vsAreaValue', {
+                          min: Math.round(areaStats.flightTimeS / 60),
+                        }),
+                      ],
+                    ]
+                  : []),
+              ]}
+            />
+          </>
         )}
-        <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{t('ci.exportHint')}</p>
+        <PreflightRow state={stats ? pf : null} onShow={onShowPreflight} />
+        {exportBlocked && <Note tone="block">{t('app.exportBlockedHint')}</Note>}
+        <ExportButton
+          onClick={onExportSingle}
+          disabled={!stats || exportBlocked}
+          title={exportTitle}
+        />
+        <ExportRow
+          label={t('ci.exportBlocks')}
+          description={
+            nBlocks ? t('ci.blocksExport.desc', { n: nBlocks }) : t('ci.blocksExport.one')
+          }
+          onClick={onExportBlocks}
+          disabled={!stats || !(blocks?.length > 1) || exportBlocked}
+        />
+        <Hint>{t('ci.exportHint')}</Hint>
         {onRemove && (
-          <button
-            onClick={onRemove}
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-red-900/60 hover:text-red-200"
-          >
-            <IconTrash /> {t('ci.remove')}
-          </button>
+          <Part divided className="gap-1">
+            <Button
+              variant="danger"
+              className="h-10 justify-start self-start px-0.5"
+              onClick={onRemove}
+              icon={<IconTrash className="h-[15px] w-[15px]" />}
+            >
+              {t('ci.remove')}
+            </Button>
+            <Hint>{t('ci.removeHint')}</Hint>
+          </Part>
         )}
-        <p className="mt-1 text-xs leading-relaxed text-slate-400">{t('ci.removeHint')}</p>
-      </Card>
-    </CardColumn>
+      </Section>
+    </ModePanel>
   )
 }

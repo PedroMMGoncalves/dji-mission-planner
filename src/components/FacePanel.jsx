@@ -1,23 +1,91 @@
 import { useT } from '../i18n.jsx'
-import { missionExportLabel } from '../i18n/format.js'
-import AircraftPicker from './AircraftPicker.jsx'
+import { tCount } from '../i18n/format.js'
+import { faceExportName } from '../mission/exportParams.js'
+import AircraftPicker, { aircraftSummary } from './AircraftPicker.jsx'
 import ShotPitches from './ShotPitches.jsx'
 import NumberInput from './NumberInput.jsx'
-import { Card, CardColumn, SafetyCard, TakeoffSelect } from './Cards.jsx'
-import { IconCheck, IconDownload, IconPolygon, IconTrash } from './Icons.jsx'
+import { fmtDist, fmtTime } from './StatsPanel.jsx'
+import { Icon } from './MapOverlay.jsx'
+import { Section } from './ui/Section.jsx'
+import { Field, fieldInput } from './ui/Field.jsx'
+import { IconWarning } from './Icons.jsx'
+import {
+  Choices,
+  Code,
+  DrawControls,
+  ExportButton,
+  FlightBar,
+  Grid,
+  Hint,
+  KmzContents,
+  ModePanel,
+  Note,
+  Part,
+  PreflightRow,
+  PreflightStatus,
+  SafetyBlock,
+  Segmented,
+  StatusBadge,
+  StatusDone,
+  Switch,
+  TakeoffField,
+  Tiles,
+  anglesText,
+  preflightState,
+  rthShort,
+  safetyEnd,
+  setsNote,
+  signedText,
+  speedUnit,
+  takeoffShort,
+  useOpenSection,
+} from './ModePanel.jsx'
 
 /**
- * E1.1: painel do modo fachada (serpentina vertical). Toda a matemática vive
- * em faceMode.js; aqui só parâmetros, estatísticas, avisos e exportação.
+ * E1.1: painel do modo face (serpentina vertical), em seis secções pela
+ * ordem do trabalho: aeronave e sensor, o pé da face (desenho e lado do
+ * voo), os parâmetros da face (com as passagens e o GSD que dão, e os
+ * avisos do afastamento), a captura, a descolagem e a segurança, e o resumo
+ * com a exportação. Toda a matemática vive em faceMode.js.
  */
 
-function Field({ label, suffix = null, children }) {
+/**
+ * O lado do voo visto de cima: a linha desenhada com o seu sentido, o drone
+ * do lado escolhido e a face (tracejada) do lado oposto.
+ */
+function SideSketch({ side }) {
+  const t = useT()
+  const left = side !== 'right'
   return (
-    <label className="mb-2 flex items-center justify-between gap-2 text-sm text-slate-300">
-      <span className="flex-1">{label}</span>
-      {children}
-      {suffix && <span className="w-8 text-xs text-slate-400">{suffix}</span>}
-    </label>
+    <svg
+      role="img"
+      aria-label={t(left ? 'fp.side.sketchLeft' : 'fp.side.sketchRight')}
+      width="104"
+      height="44"
+      viewBox="0 0 104 44"
+      fill="none"
+      className="flex-none"
+    >
+      {/* à direita, o mesmo desenho espelhado em torno da linha */}
+      <g transform={left ? undefined : 'matrix(1 0 0 -1 0 56)'}>
+        <path d="M48 12.5v13" stroke="#8391A8" strokeWidth="1.4" strokeDasharray="2 3" />
+        <circle cx="48" cy="8" r="4.5" fill="#38BDF8" />
+        <path
+          d="M10 32.5l-4 8M20 32.5l-4 8M30 32.5l-4 8M40 32.5l-4 8M50 32.5l-4 8M60 32.5l-4 8M70 32.5l-4 8M80 32.5l-4 8"
+          stroke="#8391A8"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+        />
+      </g>
+      <path d="M4 28h86" stroke="#7DD3FC" strokeWidth="2" strokeLinecap="round" />
+      <path
+        d="m85 23.5 6.5 4.5-6.5 4.5"
+        stroke="#7DD3FC"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   )
 }
 
@@ -44,6 +112,14 @@ export default function FacePanel({
   bases = [],
   takeoff = null,
   rthInfo = null,
+  // o resumo: os números do cartão de métricas (useMissionOps), os itens do
+  // preflight e o botão que abre a lista dele, e o nome do ficheiro
+  ops = null,
+  preflight = [],
+  onShowPreflight = null,
+  missionName = '',
+  // a ligação do aviso do afastamento: abre o separador Área (o GeoTIFF)
+  onOpenArea = null,
 }) {
   // aeronave e sensor do projecto (a mesma escolha do cartão 1 da área)
   const { drone = null, setDrone = null, sensor = null } = hw
@@ -59,290 +135,426 @@ export default function FacePanel({
   const stats = facePlan && !facePlan.error ? facePlan.stats : null
   // várias inclinações: cada waypoint tira uma foto por inclinação
   const shotsPerPoint = stats?.shotsPerPoint > 1 ? stats.shotsPerPoint : null
+  const multi = faceConfig.capture === 'multi'
+  const drawing = mode === 'face'
+  const section = useOpenSection(faceConfig.baseline ? 'fachada-2' : 'fachada-1')
+  const pf = preflightState(preflight)
+
+  // os avisos da face, onde se decide o afastamento (a lista do preflight
+  // tem os mesmos): o pé por cobrir, a folga por verificar ou curta
+  const warnings = []
+  if (stats && stats.uncoveredBottomM > 0.5) warnings.push(['warn', 'bottom'])
+  if (stats && !dsmLoaded) warnings.push(['warn', 'unverified'])
+  if (stats && dsmLoaded && faceClearance && !faceClearance.ok)
+    warnings.push(['block', 'clearance'])
+  if (stats && dsmLoaded && faceClearance == null) warnings.push(['warn', 'noData'])
+  const warnLabel = warnings.length
+    ? `${tCount(t, 'mp.warnN', warnings.length, { n: warnings.length })}: ${warnings
+        .map(([, k]) => t(`fp.short.${k}`))
+        .join(', ')}`
+    : ''
+
+  const shots = stats ? (facePlan.perWaypoint?.[0]?.shots ?? null) : null
+  const fileName = stats ? `${faceExportName(missionName, facePlan)}.kmz` : null
 
   return (
-    <CardColumn label={t('cards.panel')}>
+    <ModePanel
+      title={t('mode.face')}
+      description={t('fp.panel.description')}
+      label={t('fp.panel.label')}
+    >
       {drone && setDrone && (
-        <Card id="fachada-aeronave" title={t('ap.title')}>
-          <AircraftPicker drone={drone} setDrone={setDrone} sensor={sensor} />
-        </Card>
-      )}
-      {/* Baseline (pé da face) */}
-      <Card id="fachada-1" n={1} title={t('fp.baseline.title')}>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={onStartDraw}
-            className={`flex items-center justify-center gap-1.5 rounded px-2 py-2 text-sm font-medium transition-colors ${
-              mode === 'face'
-                ? 'bg-sky-500 text-slate-950'
-                : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-            }`}
-          >
-            <IconPolygon /> {t('fp.baseline.draw')}
-          </button>
-          <button
-            onClick={onClearBaseline}
-            disabled={!faceConfig.baseline && draftCount === 0}
-            className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-red-900/60 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <IconTrash /> {t('fp.baseline.clear')}
-          </button>
-        </div>
-        {mode === 'face' && (
-          <div className="mt-2 space-y-2">
-            <p className="text-xs leading-relaxed text-slate-400">
-              {t('fp.baseline.hint', { n: draftCount })}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={onUndoVertex}
-                disabled={draftCount === 0}
-                className="flex items-center justify-center gap-1.5 rounded bg-slate-800 px-2 py-1.5 text-sm font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                ↩ {t('fp.baseline.undo')}
-              </button>
-              <button
-                onClick={onFinishDraw}
-                disabled={draftCount < 2}
-                className="flex items-center justify-center gap-1.5 rounded bg-emerald-700 px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <IconCheck /> {t('fp.baseline.finish')}
-              </button>
-            </div>
-          </div>
-        )}
-        {!cameraOk && (
-          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
-            ⚠ {t('fp.cameraRequired')}
-          </p>
-        )}
-      </Card>
-
-      {/* Parâmetros da face */}
-      <Card id="fachada-2" n={2} title={t('fp.params.title')}>
-        <Field label={t('fp.params.height')} suffix="m">
-          <NumberInput
-            value={faceConfig.heightM}
-            min={2}
-            max={500}
-            onChange={(v) => setFaceParam('heightM', v)}
-          />
-        </Field>
-        <Field label={t('fp.params.standoff')} suffix="m">
-          <NumberInput
-            value={faceConfig.standoffM}
-            min={5}
-            max={200}
-            onChange={(v) => setFaceParam('standoffM', v)}
-          />
-        </Field>
-        <Field label={t('fp.params.side')}>
-          <select
-            className="w-28 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-            value={faceConfig.side}
-            onChange={(e) => setFaceParam('side', e.target.value)}
-          >
-            <option value="left">{t('fp.params.sideLeft')}</option>
-            <option value="right">{t('fp.params.sideRight')}</option>
-          </select>
-        </Field>
-        <p className="mb-2 text-xs leading-relaxed text-slate-400">{t('fp.params.sideHint')}</p>
-        <Field label={t('fp.params.vOverlap')} suffix="%">
-          <NumberInput
-            value={faceConfig.verticalOverlapPct}
-            min={0}
-            max={95}
-            onChange={(v) => setFaceParam('verticalOverlapPct', v)}
-          />
-        </Field>
-        <Field label={t('fp.params.hOverlap')} suffix="%">
-          <NumberInput
-            value={faceConfig.horizontalOverlapPct}
-            min={0}
-            max={95}
-            onChange={(v) => setFaceParam('horizontalOverlapPct', v)}
-          />
-        </Field>
-        <Field label={t('fp.params.gimbal')} suffix="°">
-          <NumberInput
-            value={faceConfig.gimbalPitch}
-            min={-90}
-            max={45}
-            step={5}
-            onChange={(v) => setFaceParam('gimbalPitch', v)}
-          />
-        </Field>
-        <Field label={t('fp.params.minClearance')} suffix="m">
-          <NumberInput
-            value={faceConfig.minClearanceM}
-            min={2}
-            max={100}
-            onChange={(v) => setFaceParam('minClearanceM', v)}
-          />
-        </Field>
-        <Field label={t('fp.params.speed')} suffix="m/s">
-          <NumberInput
-            value={faceConfig.speedMS}
-            min={1}
-            max={10}
-            step={0.5}
-            onChange={(v) => setFaceParam('speedMS', Math.max(1, Math.min(10, v)))}
-          />
-        </Field>
-        <Field label={t('fp.params.hover')} suffix="s">
-          <NumberInput
-            value={faceConfig.hoverS}
-            min={0}
-            max={60}
-            step={0.5}
-            onChange={(v) => setFaceParam('hoverS', Math.max(0, Math.min(60, v)))}
-          />
-        </Field>
-        <p className="mb-2 text-xs leading-relaxed text-slate-400">{t('fp.params.hoverHint')}</p>
-        {/* captura: uma foto por ponto, ou várias inclinações com paragem */}
-        <label htmlFor="face-capture" className="mb-1 block text-sm text-slate-300">
-          {t('fp.capture.title')}
-        </label>
-        <select
-          id="face-capture"
-          data-testid="face-capture"
-          className="mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-          value={faceConfig.capture === 'multi' ? 'multi' : 'single'}
-          onChange={(e) => setFaceParam('capture', e.target.value)}
+        <Section
+          n={1}
+          title={t('ap.title')}
+          summary={aircraftSummary(t, drone, sensor, 'gimbal')}
+          {...section('fachada-aeronave')}
         >
-          <option value="single">{t('fp.capture.single')}</option>
-          <option value="multi">{t('fp.capture.multi')}</option>
-        </select>
-        {faceConfig.capture === 'multi' && (
-          <>
-            <ShotPitches
-              pitches={faceConfig.multiPitches}
-              onChange={(list) => setFaceParam('multiPitches', list)}
-              range={gimbalRange}
-              testId="face-shots"
-            />
-            <p className="mb-2 text-xs leading-relaxed text-slate-400">
-              {t('fp.capture.multiHint')}
-            </p>
-          </>
-        )}
-        <label className="mb-1 flex items-center gap-2 text-sm text-slate-300">
-          <input
-            type="checkbox"
-            data-testid="face-extend-ends"
-            checked={faceConfig.extendEnds !== false}
-            onChange={(e) => setFaceParam('extendEnds', e.target.checked)}
+          <AircraftPicker drone={drone} setDrone={setDrone} sensor={sensor} />
+        </Section>
+      )}
+
+      {/* o pé da face: desenho e lado do voo */}
+      <Section
+        n={2}
+        title={t('fp.baseline.title')}
+        summary={
+          drawing
+            ? tCount(t, 'mp.drawingN', draftCount, { n: draftCount })
+            : faceConfig.baseline
+              ? t(faceConfig.side === 'right' ? 'fp.baseline.drawnRight' : 'fp.baseline.drawnLeft')
+              : t('mp.toDraw')
+        }
+        status={faceConfig.baseline && !drawing ? <StatusDone label={t('mp.drawn')} /> : null}
+        {...section('fachada-1')}
+      >
+        <DrawControls
+          label={t('fp.baseline.draw')}
+          icon={
+            <Icon size={15} sw={1.8}>
+              <path d="M3.5 18.5 9 10.5l5 3.5 6.5-8.5" />
+              <circle cx="3.5" cy="18.5" r="1.6" />
+              <circle cx="9" cy="10.5" r="1.6" />
+              <circle cx="14" cy="14" r="1.6" />
+              <circle cx="20.5" cy="5.5" r="1.6" />
+            </Icon>
+          }
+          drawing={drawing}
+          onDraw={onStartDraw}
+          clearLabel={t('fp.baseline.clear')}
+          onClear={onClearBaseline}
+          clearDisabled={!faceConfig.baseline && draftCount === 0}
+          count={draftCount}
+          hint={t('fp.baseline.hint')}
+          onUndo={onUndoVertex}
+          onFinish={onFinishDraw}
+        />
+        <Hint>{t('fp.baseline.direction')}</Hint>
+        {!cameraOk && <Note tone="warn">{t('fp.cameraRequired')}</Note>}
+        <Part divided>
+          <Segmented
+            label={t('fp.params.side')}
+            value={faceConfig.side === 'right' ? 'right' : 'left'}
+            onChange={(v) => setFaceParam('side', v)}
+            testId="face-side"
+            options={[
+              { value: 'left', label: t('fp.params.sideLeft') },
+              { value: 'right', label: t('fp.params.sideRight') },
+            ]}
+            after={<SideSketch side={faceConfig.side} />}
           />
-          {t('fp.params.extendEnds')}
-        </label>
-        <p className="mb-2 text-xs leading-relaxed text-slate-400">
-          {t('fp.params.extendEndsHint', {
-            m:
-              facePlan?.stats?.endExtensionM != null
-                ? facePlan.stats.endExtensionM.toFixed(1)
-                : '—',
-          })}
-        </p>
-        <TakeoffSelect
+          <Hint>{t('fp.params.sideHint')}</Hint>
+        </Part>
+      </Section>
+
+      {/* parâmetros da face: o que dão e os avisos do afastamento */}
+      <Section
+        n={3}
+        title={t('fp.params.title')}
+        summary={t('fp.params.summary', {
+          h: faceConfig.heightM,
+          s: faceConfig.standoffM,
+          v: faceConfig.verticalOverlapPct,
+          o: faceConfig.horizontalOverlapPct,
+        })}
+        status={
+          warnings.length ? (
+            <StatusBadge
+              tone={warnings.some(([tone]) => tone === 'block') ? 'block' : 'warn'}
+              icon={<IconWarning className="h-3 w-3" />}
+              value={warnings.length}
+              label={warnLabel}
+            />
+          ) : null
+        }
+        {...section('fachada-2')}
+      >
+        <Grid>
+          <Field label={t('fp.params.height')} unit="m">
+            <NumberInput
+              value={faceConfig.heightM}
+              min={2}
+              max={500}
+              className={fieldInput}
+              onChange={(v) => setFaceParam('heightM', v)}
+            />
+          </Field>
+          <Field label={t('fp.params.standoff')} unit="m">
+            <NumberInput
+              value={faceConfig.standoffM}
+              min={5}
+              max={200}
+              className={fieldInput}
+              onChange={(v) => setFaceParam('standoffM', v)}
+            />
+          </Field>
+          <Field label={t('fp.params.vOverlap')} unit="%">
+            <NumberInput
+              value={faceConfig.verticalOverlapPct}
+              min={0}
+              max={95}
+              className={fieldInput}
+              onChange={(v) => setFaceParam('verticalOverlapPct', v)}
+            />
+          </Field>
+          <Field label={t('fp.params.hOverlap')} unit="%">
+            <NumberInput
+              value={faceConfig.horizontalOverlapPct}
+              min={0}
+              max={95}
+              className={fieldInput}
+              onChange={(v) => setFaceParam('horizontalOverlapPct', v)}
+            />
+          </Field>
+          <Field label={t('fp.params.minClearance')} unit="m">
+            <NumberInput
+              value={faceConfig.minClearanceM}
+              min={2}
+              max={100}
+              className={fieldInput}
+              onChange={(v) => setFaceParam('minClearanceM', v)}
+            />
+          </Field>
+          <Field label={t('fp.params.speed')} unit={speedUnit(t, 1, 10)}>
+            <NumberInput
+              value={faceConfig.speedMS}
+              min={1}
+              max={10}
+              step={0.5}
+              className={fieldInput}
+              onChange={(v) => setFaceParam('speedMS', Math.max(1, Math.min(10, v)))}
+            />
+          </Field>
+        </Grid>
+        <Part divided>
+          <Switch
+            label={t('fp.params.extendEnds')}
+            checked={faceConfig.extendEnds !== false}
+            onChange={(v) => setFaceParam('extendEnds', v)}
+            testId="face-extend-ends"
+          />
+          <Hint>
+            {t('fp.params.extendEndsHint', {
+              m:
+                facePlan?.stats?.endExtensionM != null
+                  ? facePlan.stats.endExtensionM.toFixed(1)
+                  : '—',
+            })}
+          </Hint>
+        </Part>
+        {facePlan?.error && <Note tone="block">{t(`fp.error.${facePlan.error}`)}</Note>}
+        {stats && (
+          <Note
+            tone="result"
+            // a vírgula fica com o negrito: a frase continua no texto
+            lead={`${t('fp.plan.passes', { n: stats.passCount, pts: stats.pointsPerPass })},`}
+          >
+            {t('fp.result', {
+              v: (stats.vStepM ?? stats.imageHeightM).toFixed(1),
+              gsd: stats.gsdCm?.toFixed(2),
+            })}
+          </Note>
+        )}
+        {stats && stats.uncoveredBottomM > 0.5 && (
+          <Note tone="warn">
+            {t('fp.warn.bottom', {
+              floor: stats.minHeightM,
+              n: stats.uncoveredBottomM.toFixed(1),
+              img: stats.imageHeightM.toFixed(1),
+            })}
+          </Note>
+        )}
+        {stats && !dsmLoaded && (
+          <Note tone="warn" lead={t('fp.warn.unverifiedLead')}>
+            {t('fp.warn.unverified')}
+            {onOpenArea && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  onClick={onOpenArea}
+                  title={t('fp.warn.importDemHint')}
+                  className="rounded text-left text-sky-300 underline underline-offset-2 hover:text-sky-200"
+                >
+                  {t('fp.warn.importDem')}
+                </button>
+              </>
+            )}
+          </Note>
+        )}
+        {stats && dsmLoaded && faceClearance && !faceClearance.ok && (
+          <Note tone="block">
+            {t('fp.warn.clearance', {
+              passes: faceClearance.passes.join(', '),
+              min: faceClearance.minClearanceM,
+            })}
+          </Note>
+        )}
+        {stats && dsmLoaded && faceClearance?.ok && (
+          <Note tone="ok">{t('fp.warn.clearanceOk', { min: faceClearance.minClearanceM })}</Note>
+        )}
+        {stats && dsmLoaded && faceClearance == null && (
+          <Note tone="warn">{t('fp.warn.noData')}</Note>
+        )}
+      </Section>
+
+      {/* captura: uma foto por ponto, ou várias inclinações com paragem */}
+      <Section
+        n={4}
+        title={t('fp.capture.title')}
+        summary={[
+          multi
+            ? t('mp.multiSummary', {
+                list: anglesText(t, shots ?? faceConfig.multiPitches ?? []),
+              })
+            : t('fp.capture.summarySingle', { p: signedText(faceConfig.gimbalPitch) }),
+          faceConfig.hoverS > 0 ? t('mp.hoverShort', { s: faceConfig.hoverS }) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+        {...section('fachada-captura')}
+      >
+        <Choices
+          name="face-capture"
+          label={t('fp.capture.title')}
+          testId="face-capture"
+          value={multi ? 'multi' : 'single'}
+          onChange={(v) => setFaceParam('capture', v)}
+          options={[
+            {
+              value: 'single',
+              title: t('fp.capture.single'),
+              desc: t('fp.capture.singleDesc'),
+            },
+            { value: 'multi', title: t('fp.capture.multi'), desc: t('fp.capture.multiDesc') },
+          ]}
+        />
+        {multi && (
+          <ShotPitches
+            pitches={faceConfig.multiPitches}
+            onChange={(list) => setFaceParam('multiPitches', list)}
+            range={gimbalRange}
+            testId="face-shots"
+          />
+        )}
+        <Part divided>
+          <Grid>
+            <Field label={t('fp.params.gimbal')} unit="°">
+              <NumberInput
+                value={faceConfig.gimbalPitch}
+                min={-90}
+                max={45}
+                step={5}
+                className={fieldInput}
+                onChange={(v) => setFaceParam('gimbalPitch', v)}
+              />
+            </Field>
+            <Field label={t('fp.params.hover')} unit="s">
+              <NumberInput
+                value={faceConfig.hoverS}
+                min={0}
+                max={60}
+                step={0.5}
+                className={fieldInput}
+                onChange={(v) => setFaceParam('hoverS', Math.max(0, Math.min(60, v)))}
+              />
+            </Field>
+          </Grid>
+          <Hint>{t('fp.capture.hint')}</Hint>
+        </Part>
+      </Section>
+
+      {/* descolagem e segurança */}
+      <Section
+        n={5}
+        title={t('mp.takeoffSafety')}
+        summary={[
+          takeoffShort(t, takeoff, t('fp.takeoff.footShort')),
+          safetyEnd(t, safety),
+          rthShort(t, rthInfo),
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+        status={
+          takeoff?.error ? (
+            <StatusBadge
+              tone="block"
+              icon={<IconWarning className="h-3 w-3" />}
+              value="1"
+              label={t(`takeoff.err.${takeoff.error}`)}
+            />
+          ) : null
+        }
+        {...section('fachada-seguranca')}
+      >
+        <TakeoffField
           value={faceConfig.takeoffBaseId}
           onChange={(v) => setFaceParam('takeoffBaseId', v)}
           bases={bases}
           takeoff={takeoff}
           targetLabel={t('fp.takeoff.foot')}
           targetHint={t('fp.takeoff.footHint')}
+          otherHint={t('fp.takeoff.other')}
           testId="face-takeoff"
         />
-      </Card>
+        <SafetyBlock safety={safety} setSafety={setSafety} rthInfo={rthInfo} nested />
+      </Section>
 
-      {/* Plano e avisos */}
-      <SafetyCard
-        rthInfo={rthInfo}
-        id="fachada-seguranca"
-        n={3}
-        safety={safety}
-        onChange={setSafety}
-      />
-
-      <Card id="fachada-4" n={4} title={t('fp.plan.title')}>
-        {!faceConfig.baseline && (
-          <p className="text-xs leading-relaxed text-slate-400">{t('fp.plan.noBaseline')}</p>
+      {/* resumo e exportar */}
+      <Section
+        n={6}
+        title={t('cards.summary')}
+        summary={
+          stats
+            ? [
+                tCount(t, 'mp.photosN', stats.photoCount, { n: stats.photoCount }),
+                fmtTime(stats.flightTimeS),
+                pf?.block
+                  ? tCount(t, 'mp.blockersN', pf.block, { n: pf.block })
+                  : t('mp.noBlockers'),
+              ].join(' · ')
+            : t('mp.noPlan')
+        }
+        status={stats ? <PreflightStatus state={pf} /> : null}
+        {...section('fachada-4')}
+      >
+        {!faceConfig.baseline && <Hint>{t('fp.plan.noBaseline')}</Hint>}
+        {faceConfig.baseline && !cameraOk && <Note tone="warn">{t('fp.cameraRequired')}</Note>}
+        {facePlan?.error && <Note tone="block">{t(`fp.error.${facePlan.error}`)}</Note>}
+        {stats && (
+          <>
+            <Tiles
+              tiles={[
+                {
+                  label: t('stats.passes'),
+                  value: `${stats.passCount} × ${stats.pointsPerPass}`,
+                  sub: t('fp.tile.passesSub', {
+                    v: (stats.vStepM ?? stats.imageHeightM).toFixed(1),
+                  }),
+                },
+                {
+                  label: t('stats.photos'),
+                  value: stats.photoCount,
+                  sub: shotsPerPoint
+                    ? t('mp.tile.photosMulti', { n: stats.waypointCount, k: shotsPerPoint })
+                    : t('mp.tile.photosOne'),
+                },
+                {
+                  label: t('fp.tile.gsd'),
+                  value: stats.gsdCm != null ? `${stats.gsdCm.toFixed(2)} cm/px` : '—',
+                  sub: t('fp.tile.gsdSub', { d: stats.standoffM }),
+                },
+                {
+                  label: t('mp.tile.path'),
+                  value: fmtDist(stats.pathLengthM),
+                  sub: t('mp.tile.speed', { v: faceConfig.speedMS }),
+                },
+              ]}
+            />
+            <FlightBar ops={ops} note={setsNote(t, ops)} />
+          </>
         )}
-        {facePlan?.error && (
-          <p className="rounded border border-red-800 bg-red-950/50 p-2 text-xs text-red-300">
-            ⚠ {t(`fp.error.${facePlan.error}`)}
-          </p>
+        <PreflightRow state={stats ? pf : null} onShow={onShowPreflight} />
+        {exportBlocked && <Note tone="block">{t('app.exportBlockedHint')}</Note>}
+        <ExportButton onClick={onExport} disabled={!stats || exportBlocked} title={exportTitle} />
+        {fileName && (
+          <Hint className="[overflow-wrap:anywhere]">
+            {t('mp.fileName')} <Code>{fileName}</Code>. {t('mp.sameAsHeader')}
+          </Hint>
         )}
         {stats && (
-          <div className="space-y-1 font-mono text-xs text-slate-300">
-            <p>{t('fp.plan.passes', { n: stats.passCount, pts: stats.pointsPerPass })}</p>
-            <p>
-              {shotsPerPoint
-                ? t('fp.plan.photosMulti', { n: stats.photoCount, k: shotsPerPoint })
-                : t('fp.plan.photos', { n: stats.photoCount })}
-            </p>
-            <p>
-              {t('fp.plan.gsd', { v: stats.gsdCm?.toFixed(2) })} ·{' '}
-              {t('fp.plan.vstep', { v: (stats.vStepM ?? stats.imageHeightM).toFixed(1) })}
-            </p>
-            <p>
-              {t('fp.plan.path', { km: (stats.pathLengthM / 1000).toFixed(2) })} ·{' '}
-              {t('fp.plan.time', { min: Math.round((stats.flightTimeS ?? 0) / 60) })}
-            </p>
-          </div>
+          <KmzContents
+            lines={[
+              t('fp.kmz.waypoints'),
+              shotsPerPoint ? t('fp.kmz.multi', { k: shotsPerPoint }) : t('fp.kmz.single'),
+              takeoff?.mode === 'base' && takeoff.base
+                ? t('fp.kmz.heightsBase', { b: takeoff.base.label })
+                : t('fp.kmz.heightsFoot'),
+              t('mp.kmz.safety', { n: 5 }),
+            ]}
+          />
         )}
-
-        {stats && stats.uncoveredBottomM > 0.5 && (
-          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
-            ⚠{' '}
-            {t('fp.warn.bottom', {
-              floor: stats.minHeightM,
-              n: stats.uncoveredBottomM.toFixed(1),
-              img: stats.imageHeightM.toFixed(1),
-            })}
-          </p>
-        )}
-        {stats && !dsmLoaded && (
-          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
-            ⚠ {t('fp.warn.unverified')}
-          </p>
-        )}
-        {stats && dsmLoaded && faceClearance && !faceClearance.ok && (
-          <p className="mt-2 rounded border border-red-800/60 bg-red-950/40 p-2 text-xs leading-relaxed text-red-200">
-            ⚠{' '}
-            {t('fp.warn.clearance', {
-              passes: faceClearance.passes.join(', '),
-              min: faceClearance.minClearanceM,
-            })}
-          </p>
-        )}
-        {stats && dsmLoaded && faceClearance?.ok && (
-          <p className="mt-2 rounded border border-emerald-800 bg-emerald-950/40 p-2 text-xs leading-relaxed text-emerald-200">
-            {t('fp.warn.clearanceOk', { min: faceClearance.minClearanceM })}
-          </p>
-        )}
-        {stats && dsmLoaded && faceClearance == null && (
-          <p className="mt-2 rounded border border-amber-800/60 bg-amber-950/40 p-2 text-xs leading-relaxed text-amber-200">
-            ⚠ {t('fp.warn.noData')}
-          </p>
-        )}
-
-        {exportBlocked && (
-          <p className="mt-2 rounded border border-red-800 bg-red-950/50 p-2 text-xs leading-relaxed text-red-300">
-            ⚠ {t('app.exportBlockedHint')}
-          </p>
-        )}
-        <button
-          onClick={onExport}
-          disabled={!stats || exportBlocked}
-          title={exportTitle}
-          className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-sky-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <IconDownload /> {missionExportLabel(t, 'kmz')}
-        </button>
-        <p className="mt-1.5 text-xs leading-relaxed text-slate-400">
-          {t(shotsPerPoint ? 'fp.exportHintMulti' : 'fp.exportHint')}
-        </p>
-      </Card>
-    </CardColumn>
+      </Section>
+    </ModePanel>
   )
 }

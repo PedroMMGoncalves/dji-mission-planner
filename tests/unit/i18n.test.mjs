@@ -114,5 +114,8 @@ describe('M3-T13: o dicionario contra o codigo', () => {
     for (const a of FINISH_ACTIONS) expect(DICT[`safety.finish.${a}`], a).toBeTruthy()
     for (const a of RC_LOST_MODES) expect(DICT[`safety.rcLost.${a}`], a).toBeTruthy()
     for (const a of RC_LOST_ACTIONS) expect(DICT[`safety.rcAction.${a}`], a).toBeTruthy()
+    // o resumo das accoes de seguranca nos paineis da face, orbita, corredor e circular
+    for (const a of FINISH_ACTIONS) expect(DICT[`mp.safety.end.${a}`], a).toBeTruthy()
+    for (const a of RC_LOST_ACTIONS) expect(DICT[`mp.safety.act.${a}`], a).toBeTruthy()
   })
 })

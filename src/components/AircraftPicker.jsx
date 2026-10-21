@@ -1,8 +1,7 @@
+import { useId } from 'react'
 import { useT } from '../i18n.jsx'
 import { AIRCRAFT, PAYLOADS } from '../data/drones.js'
-
-const SELECT_CLASS =
-  'mb-2 w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none'
+import { Note, Select, signedText } from './ModePanel.jsx'
 
 /**
  * A escolha `drone` com outra aeronave: fica o payload, se a nova o monta,
@@ -19,10 +18,39 @@ export function droneForAircraft(drone, aircraftId) {
 }
 
 /**
- * Aeronave e sensor do projecto, compactos, no topo dos painéis da face, da
- * órbita, do corredor e do circular: a mesma escolha do cartão 1 da área
- * (uma por projecto), que antes só se mudava no separador Área — sem câmara,
- * estes modos ficavam sem fotos e sem maneira de a escolher.
+ * A escolha em poucas palavras, para o resumo da secção «Aeronave e sensor»:
+ * o nome curto da aeronave, o payload e, com câmara, o intervalo do gimbal
+ * (`detail` 'gimbal', na face e na órbita) ou a focal ('focal').
+ * @param {(key: string, vars?: any) => string} t
+ * @param {{aircraftId: string, payloadId: string}} drone
+ * @param {{type: string, focalLength?: number}} sensor
+ * @param {'gimbal'|'focal'} detail
+ */
+export function aircraftSummary(t, drone, sensor, detail) {
+  const aircraft = AIRCRAFT[drone.aircraftId]
+  const payload = PAYLOADS[drone.payloadId]
+  // o nome curto do resumo do cartão 1 da área: o código entre parênteses
+  // («M3E»), senão o nome sem «DJI»
+  const code = /\(([^)]+)\)\s*$/.exec(aircraft.label)
+  const name = code ? code[1] : aircraft.label.replace(/^DJI\s+/, '')
+  const camera = sensor?.type === 'camera'
+  const extra = !camera
+    ? null
+    : detail === 'gimbal'
+      ? payload.gimbalPitch &&
+        t('mp.aircraft.gimbal', {
+          min: signedText(payload.gimbalPitch.min),
+          max: signedText(payload.gimbalPitch.max),
+        })
+      : Number.isFinite(sensor.focalLength) && t('mp.aircraft.focal', { f: sensor.focalLength })
+  return [name, payload.label, extra].filter(Boolean).join(' · ')
+}
+
+/**
+ * Aeronave e sensor do projecto, no topo dos painéis da face, da órbita, do
+ * corredor e do circular: a mesma escolha do cartão 1 da área (uma por
+ * projecto), que antes só se mudava no separador Área — sem câmara, estes
+ * modos ficavam sem fotos e sem maneira de a escolher.
  * `sensor` é o sensor resolvido (resolveSensor): o payload próprio é câmara
  * ou LiDAR conforme o editor do cartão 1 da área, que fica lá.
  * @param {{drone: {aircraftId: string, payloadId: string}, setDrone: (d: any) => void,
@@ -30,49 +58,54 @@ export function droneForAircraft(drone, aircraftId) {
  */
 export default function AircraftPicker({ drone, setDrone, sensor }) {
   const t = useT()
+  const descId = useId()
   const aircraft = AIRCRAFT[drone.aircraftId]
   const payload = PAYLOADS[drone.payloadId]
   return (
-    <div data-testid="aircraft-picker">
-      <select
-        className={SELECT_CLASS}
-        value={drone.aircraftId}
-        aria-label={t('cards.aircraft')}
-        data-testid="aircraft-picker-aircraft"
-        onChange={(e) => setDrone(droneForAircraft(drone, e.target.value))}
-      >
-        {Object.values(AIRCRAFT).map((a) => (
-          <option key={a.id} value={a.id}>
-            {a.label}
-          </option>
-        ))}
-      </select>
-      {aircraft.payloads.length > 1 && (
-        <select
-          className={SELECT_CLASS}
-          value={drone.payloadId}
-          aria-label={t('cp.drone.payload')}
-          data-testid="aircraft-picker-payload"
-          onChange={(e) => setDrone({ ...drone, payloadId: e.target.value })}
+    <div data-testid="aircraft-picker" className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
+        <Select
+          label={t('cards.aircraft')}
+          value={drone.aircraftId}
+          testId="aircraft-picker-aircraft"
+          describedBy={descId}
+          onChange={(v) => setDrone(droneForAircraft(drone, v))}
         >
-          {aircraft.payloads.map((pid) => (
-            <option key={pid} value={pid}>
-              {PAYLOADS[pid].label}
+          {Object.values(AIRCRAFT).map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.label}
             </option>
           ))}
-        </select>
-      )}
-      <p className="text-xs leading-relaxed text-slate-400">
-        {sensor?.type === 'camera'
-          ? t('ap.camera', {
-              camera: payload.desc,
-              focal: sensor.focalLength,
-              min: payload.gimbalPitch?.min ?? '—',
-              max: payload.gimbalPitch?.max ?? '—',
-            })
-          : t('ap.noCamera', { desc: payload.desc })}
-        {payload.type === 'custom' && ` ${t('ap.custom')}`}
-      </p>
+        </Select>
+        {aircraft.payloads.length > 1 && (
+          <Select
+            label={t('cp.drone.payload')}
+            value={drone.payloadId}
+            testId="aircraft-picker-payload"
+            describedBy={descId}
+            onChange={(v) => setDrone({ ...drone, payloadId: v })}
+            className="mt-1.5"
+          >
+            {aircraft.payloads.map((pid) => (
+              <option key={pid} value={pid}>
+                {PAYLOADS[pid].label}
+              </option>
+            ))}
+          </Select>
+        )}
+        <p id={descId} className="text-xs leading-normal text-slate-400">
+          {sensor?.type === 'camera'
+            ? t('ap.camera', {
+                camera: payload.desc,
+                focal: sensor.focalLength,
+                min: payload.gimbalPitch?.min ?? '—',
+                max: payload.gimbalPitch?.max ?? '—',
+              })
+            : t('ap.noCamera', { desc: payload.desc })}
+          {payload.type === 'custom' && ` ${t('ap.custom')}`}
+        </p>
+      </div>
+      <Note tone="info">{t('mp.aircraftShared')}</Note>
     </div>
   )
 }

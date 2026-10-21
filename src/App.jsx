@@ -898,12 +898,19 @@ function AppInner({ lang, setLang }) {
               <FacePanel
                 hw={hw}
                 face={face}
+                // o resumo: os números das métricas, o preflight e o nome do ficheiro
+                ops={statsOps}
+                preflight={preflight}
+                onShowPreflight={() => setShowPreflight(true)}
+                missionName={missionName}
                 gimbalRange={activePayload.gimbalPitch ?? null}
                 safety={safety}
                 setSafety={setSafety}
                 rthInfo={rthInfo}
                 faceClearance={faceClearance}
                 dsmLoaded={dsmLoaded}
+                // «Importar um GeoTIFF em Área e relevo», no aviso do afastamento
+                onOpenArea={() => changeMissionMode('area')}
                 cameraOk={sensor.type === 'camera'}
                 mode={mode}
                 draftCount={draftVertices.length}
@@ -920,6 +927,9 @@ function AppInner({ lang, setLang }) {
                 hw={hw}
                 orbit={orbit}
                 preflightState={preflightState}
+                ops={statsOps}
+                onShowPreflight={() => setShowPreflight(true)}
+                missionName={missionName}
                 gimbalRange={activePayload.gimbalPitch ?? null}
                 safety={safety}
                 setSafety={setSafety}
@@ -937,6 +947,11 @@ function AppInner({ lang, setLang }) {
               <CorridorPanel
                 hw={hw}
                 corridor={corridor}
+                // os números das métricas e cada voo com o seu trânsito
+                ops={statsOps}
+                flightOps={ops.corridorFlightOps}
+                preflight={preflight}
+                onShowPreflight={() => setShowPreflight(true)}
                 corridorOnTerrain={corridorOnTerrain}
                 terrainState={terrainState}
                 baseActions={baseActions}
@@ -960,7 +975,6 @@ function AppInner({ lang, setLang }) {
                   frontOverlap: params.frontOverlap,
                   sideOverlap: params.sideOverlap,
                 }}
-                hasBase={Boolean(corridorBase)}
                 onShowProfile={() => setShowProfile(true)}
               />
             )}
@@ -968,6 +982,9 @@ function AppInner({ lang, setLang }) {
               <CircularPanel
                 hw={hw}
                 circular={circular}
+                ops={statsOps}
+                preflight={preflight}
+                onShowPreflight={() => setShowPreflight(true)}
                 terrainState={terrainState}
                 geom={geom}
                 safety={safety}
