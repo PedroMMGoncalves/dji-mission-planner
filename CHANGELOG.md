@@ -9,12 +9,15 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 ### Alterado
 
 - **Painel da área em secções que fecham.** Os sete cartões abrem e
-  fecham no título e, fechados, dizem o essencial numa linha («451.96 ha ·
-  relevo global (~30 m)», «20 voos · 5 h 27 min · sem bloqueios»); à
-  partida abrem-se a área e, com área, os parâmetros de voo, e o que o
-  operador abre ou fecha fica lembrado neste aparelho; uma secção fechada
-  abre-se sozinha quando passa a ter o que mostrar (marcar uma base, a base
-  escolhida no mapa, um erro ao importar). Os campos ficam em grelha, com a
+  fecham no título, um de cada vez, como os dos outros modos (abrir um
+  fecha o que estava aberto), e, fechados, dizem o essencial numa linha
+  («451.96 ha · relevo global (~30 m)», «20 voos · 5 h 27 min · sem
+  bloqueios»); à partida abre-se a área e, quando ela chega, os parâmetros
+  de voo, e o cartão que o operador deixa aberto (ou nenhum) fica lembrado
+  neste aparelho; um cartão fechado abre-se sozinho quando passa a ter o
+  que mostrar (marcar uma base, a base escolhida no mapa, um erro ao
+  importar) e fecha o outro, sem mudar a escolha do operador. Os campos
+  ficam em grelha, com a
   unidade dentro da caixa, e as escolhas curtas em botões segmentados. As
   bases passam a uma tabela (base, voos, zona, cota) e o detalhe de cada
   uma abre na sua linha: com 20 bases o painel deixa de ter perto de

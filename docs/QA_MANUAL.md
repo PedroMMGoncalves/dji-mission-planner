@@ -12,11 +12,12 @@ com screenshot e os passos.
 
 O painel da área é uma coluna de sete cartões numerados (1 Missão, 2 Área e
 relevo, 3 Parâmetros de voo, 4 Divisão em voos, 5 Bases e segurança, 6
-Extras, 7 Resumo e exportar), que abrem e fecham no título (fechados, o
-essencial numa linha; os abertos ficam lembrados neste aparelho); o que não
-está no cartão está na gaveta dele, no botão do fim do cartão, que diz o que
-ela tem (p. ex. **Linhas de voo, disparo e câmara ›**). Os passos abaixo
-dizem em que cartão (e se na gaveta).
+Extras, 7 Resumo e exportar), que abrem e fecham no título, um de cada vez
+(fechados, o essencial numa linha; o que se deixou aberto, ou nenhum, fica
+lembrado neste aparelho); o que não está no cartão está na gaveta dele, no
+botão do fim do cartão, que diz o que ela tem (p. ex. **Linhas de voo,
+disparo e câmara ›**). Os passos abaixo dizem em que cartão (e se na
+gaveta).
 
 ## 1. Área em U — rota côncava-segura (~2 min)
 
@@ -359,12 +360,17 @@ tablet real):
 
 ## 15. Cartões, gavetas e acções de segurança (~2 min)
 
-- ☐ Modo Área: fechar e abrir os sete cartões no título; recarregar a
-  página.
-  **Esperado:** fechado, cada cartão diz o essencial numa linha (p. ex.
-  «451.96 ha · relevo global (~30 m)»); sem escolha gravada, abertos o 2 e,
-  com área, o 3; depois de recarregar, os cartões ficam como se deixaram;
-  marcar uma base com o cartão 5 fechado abre-o.
+- ☐ Modo Área: abrir os sete cartões no título, um a um, e fechar o que
+  ficou aberto; recarregar a página; abrir o 4, marcar uma base na barra do
+  mapa e importar um ficheiro de área que não abre; recarregar.
+  **Esperado:** só um aberto de cada vez (abrir um fecha o outro; o título
+  do aberto fecha-o, e podem ficar todos fechados); fechado, cada cartão diz
+  o essencial numa linha (p. ex. «451.96 ha · relevo global (~30 m)»); sem
+  escolha gravada, aberto o 2 e, quando a área chega, o 3 (se ainda não se
+  abriu outro); depois de recarregar, aberto o que se deixou (ou nenhum);
+  marcar a base abre o 5 e o erro da importação o 2, cada um fechando o
+  outro, e ao recarregar volta o 4 (o que se abre sozinho não fica
+  lembrado).
 - ☐ Abrir as gavetas: **Datum vertical e mais opções ›** (2), **Linhas de
   voo, disparo e câmara ›** (3), **Células e orientação dos quadrados ›** (4,
   com Quadrícula ou Bateria), **Pontos de apoio (GCP)** e **Pontos de
