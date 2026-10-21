@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * Menu de acções (role="menu"), aberto por um botão (useMenu): abre por
@@ -60,15 +60,19 @@ export function useMenu({ onOpen } = {}) {
  * @property {string} [testId]
  * @property {boolean} [checked] com valor, uma escolha entre várias
  *   (role menuitemradio, aria-checked): a marcada é a que está em uso
+ * @property {boolean} [divider] um traço por cima do item (role separator), a
+ *   separar o grupo dele do anterior; as setas passam por cima
  * @property {() => void} onSelect
  */
 
 /**
  * O menu aberto. `className` dá a largura e o lado (ex.: «right-0 w-80»);
  * fica dentro do ecrã mesmo quando o botão está encostado a um bordo.
+ * `tall`: itens com 44 px de altura, no mínimo, com o ícone e o texto ao
+ * meio (o toque, no tablet).
  * @param {{id?: string, open: boolean, start?: 'first'|'last', label: string,
  *   items: MenuItem[], close: (returnFocus?: boolean) => void,
- *   triggerRef: {current: HTMLElement|null}, className?: string}} props
+ *   triggerRef: {current: HTMLElement|null}, className?: string, tall?: boolean}} props
  */
 export function Menu({
   id,
@@ -79,6 +83,7 @@ export function Menu({
   close,
   triggerRef,
   className = '',
+  tall = false,
 }) {
   const ref = useRef(/** @type {HTMLDivElement|null} */ (null))
   useEffect(() => {
@@ -138,32 +143,36 @@ export function Menu({
       className={`absolute top-full z-10 mt-2 rounded-xl border border-slate-700 bg-slate-900 p-1.5 text-left shadow-[0_24px_60px_rgba(0,0,0,0.6)] ${className}`}
     >
       {items.map((it) => (
-        <button
-          key={it.key}
-          type="button"
-          role={it.checked == null ? 'menuitem' : 'menuitemradio'}
-          aria-checked={it.checked ?? undefined}
-          tabIndex={-1}
-          aria-disabled={it.disabled || undefined}
-          title={it.title}
-          data-testid={it.testId}
-          onClick={() => {
-            if (it.disabled) return
-            close(true)
-            it.onSelect()
-          }}
-          className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-slate-100 transition-colors hover:bg-raised focus:bg-raised focus-visible:outline-offset-[-2px] aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-transparent"
-        >
-          {it.icon}
-          <span className="min-w-0">
-            <span className="block">{it.label}</span>
-            {it.description && (
-              <span className="mt-0.5 block text-xs font-normal leading-snug text-slate-400">
-                {it.description}
-              </span>
-            )}
-          </span>
-        </button>
+        <Fragment key={it.key}>
+          {it.divider && <div role="separator" className="mx-1 my-1 h-px bg-slate-800" />}
+          <button
+            type="button"
+            role={it.checked == null ? 'menuitem' : 'menuitemradio'}
+            aria-checked={it.checked ?? undefined}
+            tabIndex={-1}
+            aria-disabled={it.disabled || undefined}
+            title={it.title}
+            data-testid={it.testId}
+            onClick={() => {
+              if (it.disabled) return
+              close(true)
+              it.onSelect()
+            }}
+            className={`flex w-full gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-slate-100 transition-colors hover:bg-raised focus:bg-raised focus-visible:outline-offset-[-2px] aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-transparent ${
+              tall ? 'min-h-11 items-center' : 'items-start'
+            }`}
+          >
+            {it.icon}
+            <span className="min-w-0">
+              <span className="block">{it.label}</span>
+              {it.description && (
+                <span className="mt-0.5 block text-xs font-normal leading-snug text-slate-400">
+                  {it.description}
+                </span>
+              )}
+            </span>
+          </button>
+        </Fragment>
       ))}
     </div>
   )

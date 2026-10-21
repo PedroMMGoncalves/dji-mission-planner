@@ -336,7 +336,8 @@ const IconCheckSmall = () => (
 /**
  * O menu «Mais» do tablet: as vistas (num tablet ao alto, `views`), a
  * configuração, a ajuda e a língua — os mesmos nomes, dicas e acções dos
- * botões do cabeçalho largo; a língua em uso fica marcada.
+ * botões do cabeçalho largo; a língua em uso fica marcada. Os itens têm 44
+ * px de altura (o toque), e um traço separa os três grupos.
  */
 function MoreMenu({ views = null, setShowSettings, setShowHelp, lang, setLang, onOpen }) {
   const t = useT()
@@ -352,6 +353,7 @@ function MoreMenu({ views = null, setShowSettings, setShowHelp, lang, setLang, o
       icon: menuIcon(IconGear),
       onSelect: () => setShowSettings(true),
       testId: 'open-settings',
+      divider: Boolean(views?.length),
     },
     {
       key: 'help',
@@ -360,13 +362,14 @@ function MoreMenu({ views = null, setShowSettings, setShowHelp, lang, setLang, o
       icon: menuIcon(IconHelp),
       onSelect: () => setShowHelp(true),
     },
-    ...LANGS.map(({ code, label: name }) => ({
+    ...LANGS.map(({ code, label: name }, i) => ({
       key: `lang-${code}`,
       label: name,
       checked: lang === code,
       icon:
         lang === code ? <IconCheckSmall /> : <span aria-hidden="true" className="w-4 flex-none" />,
       onSelect: () => setLang(code),
+      divider: i === 0,
     })),
   ]
   return (
@@ -391,6 +394,7 @@ function MoreMenu({ views = null, setShowSettings, setShowHelp, lang, setLang, o
         label={label}
         items={items}
         className="right-0 w-64"
+        tall
       />
     </div>
   )
