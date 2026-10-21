@@ -12,9 +12,12 @@ const INPUT_CLASS =
  * «2.» por acabar (vazio para o browser) não pode apagar o valor.
  * `allowEmpty`: o campo vazio devolve null (p. ex. «automática»).
  *
+ * `aria-describedby` passa ao campo (a dica de um Field, ui/Field.jsx).
+ *
  * @param {{value: any, onChange: (v: any) => void, min?: number, max?: number,
  *   step?: number, wide?: boolean, testId?: string, label?: string,
- *   allowEmpty?: boolean, placeholder?: string, className?: string}} props
+ *   allowEmpty?: boolean, placeholder?: string, className?: string,
+ *   'aria-describedby'?: string}} props
  */
 export default function NumberInput({
   value,
@@ -28,6 +31,7 @@ export default function NumberInput({
   allowEmpty = false,
   placeholder,
   className,
+  'aria-describedby': describedBy,
 }) {
   const [draft, setDraft] = useState(/** @type {string | null} */ (null))
   const timer = useRef(/** @type {ReturnType<typeof setTimeout> | undefined} */ (undefined))
@@ -61,6 +65,7 @@ export default function NumberInput({
     <input
       type="number"
       aria-label={label}
+      aria-describedby={describedBy}
       data-testid={testId}
       placeholder={placeholder}
       onBlur={(e) => finish(e.currentTarget)}

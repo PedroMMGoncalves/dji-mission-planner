@@ -7,7 +7,9 @@ import { IconChevronDown, IconChevronRight } from '../Icons.jsx'
  * ou uma etiqueta antes da seta (pronto, avisos). Aberta por fora (`open` e
  * `onToggle`) ou por si (`defaultOpen`). Fechada, o conteúdo fica montado e
  * escondido: os campos guardam o que se estava a escrever. `more`, no fim
- * do conteúdo, é o lugar do «Mais opções» (ver MoreButton).
+ * do conteúdo, é o lugar do «Mais opções» (ver MoreButton). O nome do botão
+ * é só o título (o resumo muda com os valores); o resumo e o estado ficam
+ * na descrição dele.
  * @param {{title: any, n?: number|null, summary?: any, summaryOpen?: boolean,
  *   status?: any, open?: boolean, onToggle?: () => void, defaultOpen?: boolean,
  *   more?: any, testId?: string, children?: any}} props
@@ -30,6 +32,9 @@ export function Section({
   const isOpen = open ?? own
   const toggle = onToggle ?? (() => setOwn((v) => !v))
   const showSummary = summary != null && summary !== '' && (!isOpen || summaryOpen)
+  const describedBy =
+    [showSummary && `${id}-summary`, status != null && `${id}-status`].filter(Boolean).join(' ') ||
+    undefined
   return (
     <section
       data-testid={testId}
@@ -42,6 +47,8 @@ export function Section({
           type="button"
           aria-expanded={isOpen}
           aria-controls={`${id}-body`}
+          aria-labelledby={`${id}-title`}
+          aria-describedby={describedBy}
           onClick={toggle}
           className="flex min-h-[56px] w-full items-center gap-2.5 px-3 py-2.5 text-left text-slate-100"
         >
@@ -56,14 +63,23 @@ export function Section({
             </span>
           )}
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold">{title}</span>
+            <span id={`${id}-title`} className="block text-sm font-semibold">
+              {title}
+            </span>
             {showSummary && (
-              <span className="mt-0.5 block truncate text-[12.5px] font-normal text-slate-400">
+              <span
+                id={`${id}-summary`}
+                className="mt-0.5 block truncate text-[12.5px] font-normal text-slate-400"
+              >
                 {summary}
               </span>
             )}
           </span>
-          {status}
+          {status != null && (
+            <span id={`${id}-status`} className="flex flex-none items-center">
+              {status}
+            </span>
+          )}
           <IconChevronDown
             className={`h-4 w-4 flex-none text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           />
