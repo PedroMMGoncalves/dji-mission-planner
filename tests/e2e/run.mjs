@@ -1511,7 +1511,11 @@ await scenario('projecto-autosave-ficheiro', async () => {
     (await nameInput.inputValue()) !== 'projecto-e2e',
   )
   await projectFile(page).setInputFiles(file)
-  await page.waitForTimeout(800)
+  // o projecto aberto repõe o estado e o plano recalcula-se: espera-se por
+  // isso (até 20 s) e não por uma pausa fixa, que no CI às vezes não chegava
+  for (const t0 = Date.now(); Date.now() - t0 < 20000; await page.waitForTimeout(250))
+    if ((await nameInput.inputValue()) === 'projecto-e2e' && (await headerExport(page).isEnabled()))
+      break
   check(
     'projecto: abrir o ficheiro repõe nome, dupla grelha e área',
     (await nameInput.inputValue()) === 'projecto-e2e' &&
@@ -4638,6 +4642,15 @@ await scenario('metricas-enquadramento', async () => {
         corpo,
       )),
     `cartão até ${Math.round(coluna.y + coluna.height)} px, atribuição desde ${Math.round(atribuicao.y)}`,
+  )
+  // a gravação automática (500 ms depois da última mudança) tem de ter
+  // chegado ao localStorage antes de recarregar: sem ela a página volta sem
+  // área, e sem plano não há cartão das métricas (no CI recarregava antes)
+  await page.waitForFunction(
+    () =>
+      Boolean(JSON.parse(localStorage.getItem('dji-mission-planner:project:v1') ?? 'null')?.ring),
+    null,
+    { timeout: 20000 },
   )
   await page.reload({ waitUntil: 'domcontentloaded' })
   await toggle.waitFor({ timeout: 20000 })
