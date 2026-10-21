@@ -111,6 +111,18 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   os hooks e o `App.jsx` (e `mission` e `utils`, para comparação) saem em
   resumo, tabela por ficheiro, HTML e lcov em `tests/e2e/out/cobertura/`.
   Até aqui só se media `src/utils/` e `src/mission/`, com as suites em Node.
+- **Testes unitários para a lógica que não os tinha e para os casos
+  raros**: o desenho, o armazenamento do browser, a ficha de campo, a
+  inspecção, os erros com código, o MDT local, a importação de missões e de
+  áreas, as recusas da exportação (cada uma com o código e a mensagem nas
+  duas línguas), o corredor, a fachada, a órbita, o modo circular, os GCP,
+  a geometria do plano e a cache do relevo, com entradas inválidas,
+  caminhos de erro e combinações raras. Só com os unitários (sem os
+  scripts de smoke), a cobertura passa de 94,5 % para 99,6 % das linhas e
+  de 80,1 % para 90,7 % dos ramos. Encontraram quatro erros, corrigidos:
+  cliques quase no mesmo sítio no desenho, a inclinação sugerida para uma
+  faixa fina na diagonal, etiquetas vazias num KMZ importado e coordenadas
+  em notação científica junto a 0° no KML dos GCP e no das bases.
 
 ### Interno (repartição do `App.jsx`)
 
