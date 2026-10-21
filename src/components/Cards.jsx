@@ -126,17 +126,13 @@ export function useDrawers() {
 }
 
 /**
- * Secções abertas de um painel. A escolha do operador fica neste aparelho
- * (`key` no localStorage, como a das métricas); sem escolha, `defaults`,
- * que pode depender do estado (com área, a dos parâmetros de voo). Nenhuma
- * secção se fecha sozinha: a que as omissões abriram fica aberta até o
- * operador a fechar, mesmo que a omissão mude (a área que chega não fecha
- * a secção onde se estava). `setOpen(id, true)` abre uma secção que passou
- * a ter alguma coisa a dizer.
+ * Caixas que fecham dentro das secções de um painel (SubSection; no da área,
+ * as acções de segurança), fora do acordeão das secções (ui/useAccordion.js):
+ * cada uma fica aberta ou fechada como o operador a deixou, neste aparelho
+ * (`key` no localStorage, um objecto id → aberta); sem escolha, fechada.
  * @param {string} key
- * @param {Record<string, boolean>} defaults
  */
-export function useSections(key, defaults) {
+export function useSubSections(key) {
   const [chosen, setChosen] = useState(() => {
     try {
       const v = JSON.parse(localStorage.getItem(key) ?? 'null')
@@ -145,11 +141,6 @@ export function useSections(key, defaults) {
       return {}
     }
   })
-  // as que as omissões já abriram, nesta sessão (não se gravam)
-  const [shown, setShown] = useState(/** @type {Record<string, boolean>} */ ({}))
-  const novas = Object.keys(defaults).filter((id) => defaults[id] && !shown[id])
-  if (novas.length > 0)
-    setShown((s) => ({ ...s, ...Object.fromEntries(novas.map((id) => [id, true])) }))
   useEffect(() => {
     if (Object.keys(chosen).length === 0) return
     try {
@@ -158,12 +149,10 @@ export function useSections(key, defaults) {
       /* sem armazenamento: fica só nesta sessão */
     }
   }, [key, chosen])
-  const isOpen = (id) => chosen[id] ?? Boolean(defaults[id] || shown[id])
-  const setOpen = useCallback(
-    (id, v) => setChosen((c) => (c[id] === v ? c : { ...c, [id]: v })),
-    [],
-  )
-  return { isOpen, setOpen, toggle: (id) => setOpen(id, !isOpen(id)) }
+  return {
+    isOpen: (id) => chosen[id] === true,
+    toggle: (id) => setChosen((c) => ({ ...c, [id]: c[id] !== true })),
+  }
 }
 
 /**

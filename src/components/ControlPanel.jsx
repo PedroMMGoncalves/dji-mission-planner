@@ -42,8 +42,9 @@ import {
   selectInput,
   useDrawers,
   useOnSignal,
-  useSections,
+  useSubSections,
 } from './Cards.jsx'
+import { useAccordion } from './ui/useAccordion.js'
 import { Button, buttonClass } from './ui/Button.jsx'
 import { Field, fieldBox, fieldInput } from './ui/Field.jsx'
 import { Badge } from './ui/Pill.jsx'
@@ -58,8 +59,20 @@ import { missionExportLabel, rangeText, tCount } from '../i18n/format.js'
 import { notesSince } from '../data/versionNotes.js'
 import { versionBefore } from '../mission/project.js'
 
-/** As secções abertas do painel da área, lembradas neste aparelho. */
-const SECTIONS_KEY = 'dji-mission-planner:areaSections'
+/** As secções do painel da área, pela ordem do trabalho. */
+const SECTION_IDS = ['missao', 'area', 'voo', 'divisao', 'bases', 'extras', 'resumo']
+/**
+ * A secção aberta do painel da área (o id, ou null com todas fechadas),
+ * lembrada neste aparelho. A chave é nova: a de antes guardava várias
+ * secções abertas ao mesmo tempo, e fica só para as caixas (SUBSECTIONS_KEY).
+ */
+const SECTION_KEY = 'dji-mission-planner:areaPanel:open'
+/**
+ * As caixas que fecham dentro das secções (as acções de segurança), abertas
+ * ou fechadas, lembradas neste aparelho (das secções que lá ficaram de
+ * antes, nenhuma conta).
+ */
+const SUBSECTIONS_KEY = 'dji-mission-planner:areaSections'
 
 /** Linhas da tabela dos voos à vista antes de «Ver os N voos». */
 const FLIGHT_ROWS = 6
@@ -383,9 +396,12 @@ export default function ControlPanel({
   const [allFlights, setAllFlights] = useState(false)
 
   const d = useDrawers()
-  // abertas à partida: a da área (é por ali que se começa) e, quando há
-  // área, também a dos parâmetros de voo; o resto, fechado
-  const S = useSections(SECTIONS_KEY, { area: true, voo: hasRing })
+  // uma secção aberta de cada vez: à partida a da área (é por ali que se
+  // começa) e, quando a área chega, a dos parâmetros de voo; depois, a que o
+  // operador abrir (ou nenhuma), lembrada neste aparelho
+  const S = useAccordion(hasRing ? 'voo' : 'area', { storageKey: SECTION_KEY, ids: SECTION_IDS })
+  // as caixas dentro das secções (as acções de segurança) abrem e fecham à parte
+  const boxes = useSubSections(SUBSECTIONS_KEY)
   const sec = (id) => ({ open: S.isOpen(id), onToggle: () => S.toggle(id) })
   const more = (id, label, part = null) => {
     const m = d.more(id, part)
@@ -399,19 +415,20 @@ export default function ControlPanel({
       />
     )
   }
-  // o que aparece numa secção fechada abre-a: o projecto que não abriu (ou
-  // de uma versão anterior), o ficheiro da área (coordenadas, erro, partes),
-  // o desenho e as medidas do rectângulo, marcar uma base, a base escolhida
-  // no mapa e marcar os pontos de inspecção
-  useOnSignal(projectError, () => S.setOpen('missao', true))
-  useOnSignal(projectVersion, () => S.setOpen('missao', true))
-  useOnSignal(importState, () => S.setOpen('area', true))
-  useOnSignal(importError, () => S.setOpen('area', true))
-  useOnSignal(importWarning, () => S.setOpen('area', true))
-  useOnSignal(mode === 'draw' || mode === 'anchor' ? mode : null, () => S.setOpen('area', true))
-  useOnSignal(mode === 'base' ? mode : null, () => S.setOpen('bases', true))
-  useOnSignal(basesPanel?.selectedBaseId, () => S.setOpen('bases', true))
-  useOnSignal(mode === 'inspect' ? mode : null, () => S.setOpen('extras', true))
+  // o que aparece numa secção fechada abre-a (e fecha a outra), sem mudar a
+  // escolha do operador: o projecto que não abriu (ou de uma versão
+  // anterior), o ficheiro da área (coordenadas, erro, partes), o desenho e as
+  // medidas do rectângulo, marcar uma base, a base escolhida no mapa e
+  // marcar os pontos de inspecção
+  useOnSignal(projectError, () => S.show('missao'))
+  useOnSignal(projectVersion, () => S.show('missao'))
+  useOnSignal(importState, () => S.show('area'))
+  useOnSignal(importError, () => S.show('area'))
+  useOnSignal(importWarning, () => S.show('area'))
+  useOnSignal(mode === 'draw' || mode === 'anchor' ? mode : null, () => S.show('area'))
+  useOnSignal(mode === 'base' ? mode : null, () => S.show('bases'))
+  useOnSignal(basesPanel?.selectedBaseId, () => S.show('bases'))
+  useOnSignal(mode === 'inspect' ? mode : null, () => S.show('extras'))
 
   const terrainReady = terrain.status === 'ready'
   const exportFlights = basesPanel?.exportFlights ?? null
@@ -1608,8 +1625,8 @@ export default function ControlPanel({
             icon={<IconShield className="h-[17px] w-[17px] flex-none text-sky-300" />}
             title={t('safety.title')}
             summary={safetySummary}
-            open={S.isOpen('seguranca')}
-            onToggle={() => S.toggle('seguranca')}
+            open={boxes.isOpen('seguranca')}
+            onToggle={() => boxes.toggle('seguranca')}
           >
             <SafetyActions safety={safety} onChange={setSafety} />
             <RthLine info={rthInfo} />

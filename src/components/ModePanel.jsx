@@ -31,6 +31,7 @@ import {
 import { Icon } from './MapOverlay.jsx'
 import { fmtClock } from './StatsPanel.jsx'
 import { Button } from './ui/Button.jsx'
+import { useAccordion } from './ui/useAccordion.js'
 
 /**
  * A coluna do painel (a que rola), com o nome do modo e uma linha a dizer
@@ -54,17 +55,21 @@ export function ModePanel({ title, description, label, children = null }) {
 }
 
 /**
- * Uma secção aberta de cada vez, como no desenho, a começar em `initial`
- * (o passo em que o trabalho está quando o separador abre). `section(id)`
- * dá as propriedades da Section `card-<id>` (o resumo vê-se também aberta).
+ * Uma secção aberta de cada vez, como no desenho (ui/useAccordion.js, o
+ * mesmo acordeão do painel da área), a começar em `initial` (o passo em que
+ * o trabalho está quando o separador abre); depois, a que o operador abrir,
+ * sem a gravar. `section(id)` dá as propriedades da Section `card-<id>` (o
+ * resumo vê-se também aberta).
  * @param {string|null} initial
  */
 export function useOpenSection(initial) {
-  const [open, setOpen] = useState(initial)
+  // só a do primeiro render: a secção de partida não segue o trabalho
+  const [first] = useState(initial)
+  const { isOpen, toggle } = useAccordion(first)
   return (/** @type {string} */ id) => ({
     testId: `card-${id}`,
-    open: open === id,
-    onToggle: () => setOpen((cur) => (cur === id ? null : id)),
+    open: isOpen(id),
+    onToggle: () => toggle(id),
     summaryOpen: true,
   })
 }
