@@ -179,9 +179,6 @@ async function openMission({
   initScript = null,
   // pedidos locais a abortar (um bloco sob demanda que «não chega»)
   abort = null,
-  // as secções do painel da área abertas logo à entrada (abrirSeccoes); o
-  // inventário e o cenário das secções partem das omissões
-  seccoes = true,
 }) {
   const page = await browser.newPage({ viewport, acceptDownloads: true })
   currentPage = page
@@ -210,7 +207,9 @@ async function openMission({
     return route.abort()
   })
   await page.goto(URL, { waitUntil: 'domcontentloaded' })
-  if (seccoes && disclaimer) await abrirSeccoes(page)
+  // o painel da área como abre (uma secção de cada vez: a da área e, quando
+  // a área chega, a dos parâmetros de voo): os passos abrem a secção do que
+  // vão usar (abrirNoPainel)
   if (!area) return { page, errors }
   const areaInput = page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
   await areaInput.waitFor({ state: 'attached', timeout: 20000 })
@@ -257,14 +256,32 @@ async function exportReady(page) {
 }
 const DOWNLOAD_GLOBAL = /Descarregar relevo global|Download global terrain/
 
+/**
+ * Abre a secção `card-<card>` de um painel, se está fechada, antes de mexer
+ * no que tem dentro. Os painéis (o da área e os dos outros modos) abrem uma
+ * secção de cada vez, e a fechada esconde os campos: como o operador,
+ * abre-se a secção do que se vai usar (e a que estava aberta fecha-se).
+ */
+async function abrirNoPainel(page, card) {
+  const botao = page.getByTestId(`card-${card}`).locator(':scope > h3 > button')
+  if ((await botao.getAttribute('aria-expanded')) !== 'true') await botao.click()
+}
+
 async function configure(page, { cross = false, nadir = false, tf = false, split = null }) {
   // dupla grelha e passagem nadir: na gaveta do cartão «Parâmetros de voo»
   if (cross || nadir) await openDrawer(page, 'voo')
   if (cross) await label(page, CROSS).check()
   if (nadir) await label(page, NADIR).check()
   await closeDrawer(page)
-  if (tf) await label(page, TF).check()
-  if (split) await page.getByRole('button', { name: split, exact: true }).click()
+  // seguir terreno na secção dos parâmetros de voo; a divisão, na dela
+  if (tf) {
+    await abrirNoPainel(page, 'voo')
+    await label(page, TF).check()
+  }
+  if (split) {
+    await abrirNoPainel(page, 'divisao')
+    await page.getByRole('button', { name: split, exact: true }).click()
+  }
   await page.waitForTimeout(800)
 }
 
@@ -620,7 +637,9 @@ await scenario('multipoligono-aviso', async () => {
     r.n > 20 && r.groups.length === 1,
     `${r.n} waypoints`,
   )
-  // todas as partes como células: um KMZ por parte
+  // todas as partes como células: um KMZ por parte (o botão está no aviso da
+  // importação, na secção «Área e relevo»)
+  await abrirNoPainel(page, 'area')
   await page.getByRole('button', { name: /Usar todas as partes|Use all parts/ }).click()
   await page.waitForTimeout(800)
   // as outras duas partes ficam fora do MDT importado: sem relevo não há
@@ -750,13 +769,6 @@ const marcarPontos = (page, onde = 'gaveta') =>
     name: MARCAR_PONTOS,
   })
 const modo = (page, re) => page.getByRole('button', { name: re, exact: true }).click()
-// Os painéis da face, da órbita, do corredor e do circular abrem uma secção
-// de cada vez, e a fechada esconde os campos: abrir a `card-<id>` (se está
-// fechada) antes de mexer no que tem dentro.
-async function abrirNoPainel(page, card) {
-  const botao = page.getByTestId(`card-${card}`).locator(':scope > h3 > button')
-  if ((await botao.getAttribute('aria-expanded')) !== 'true') await botao.click()
-}
 // o botão de desenhar o eixo do corredor diz o que desenha
 const DESENHAR_EIXO = /^Desenhar o eixo$|^Draw the centreline$/
 /** Descarrega pelo botão `btn` (um Locator, ou o nome do botão). */
@@ -1580,7 +1592,9 @@ await scenario('orbita-aeronave-e-inclinacoes', async () => {
 // suite em Node exercita de ponta a ponta.
 await scenario('projecto-autosave-ficheiro', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  // o nome e «Guardar projecto» estão na secção «Missão»
   const nameInput = page.getByPlaceholder(/nome-da-missao|mission-name/)
+  await abrirNoPainel(page, 'missao')
   await nameInput.fill('projecto-e2e')
   await openDrawer(page, 'voo')
   await label(page, CROSS).check()
@@ -1611,6 +1625,7 @@ await scenario('projecto-autosave-ficheiro', async () => {
       (await headerExport(page).isEnabled()),
   )
 
+  await abrirNoPainel(page, 'missao')
   const [dl] = await Promise.all([
     page.waitForEvent('download', { timeout: 30000 }),
     page.getByRole('button', { name: /Guardar projecto|Save project/ }).click(),
@@ -1712,6 +1727,7 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
     await pill.innerText(),
   )
   // o cartão 7 diz o bloqueio ao pé dos botões cinzentos, sem abrir a pastilha (M3-U6)
+  await abrirNoPainel(page, 'resumo')
   const caixa7 = page.getByTestId('summary-blockers')
   check(
     'preflight: o cartão 7 diz o bloqueio do relevo e oferece a lista',
@@ -1820,6 +1836,8 @@ await scenario('mdt-importado-acompanha-a-geometria', async () => {
     txt.slice(0, 200),
   )
   await modo(page, /^Área$|^Area$/)
+  // a fonte do relevo diz-se na secção «Área e relevo»
+  await abrirNoPainel(page, 'area')
   check(
     'mdt: a fonte continua a ser o ficheiro importado, não o relevo global',
     /MDT local grande\.tif|local DTM grande\.tif/.test(await bodyText(page)),
@@ -2069,11 +2087,14 @@ await scenario('area-mover-inteira', async () => {
 // volta por ficheiro.
 await scenario('configuracao-equipamento', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  // a aeronave na secção «Missão»; a bateria da missão, na da divisão
+  await abrirNoPainel(page, 'missao')
   await page
     .locator('select')
     .filter({ has: page.locator('option[value="M300RTK"]') })
     .first()
     .selectOption('M300RTK')
+  await abrirNoPainel(page, 'divisao')
   await page.getByRole('button', { name: 'Bateria', exact: true }).click()
   const batSel = page.getByTestId('mission-battery')
   const useful = page.getByTestId('mission-useful')
@@ -2123,6 +2144,8 @@ await scenario('configuracao-equipamento', async () => {
       /TB65 · 30 min/.test(await batSel.locator('option[value="TB65"]').innerText()),
     `${await useful.inputValue()}`,
   )
+  // a nota dos conjuntos está no «Resumo e exportar»
+  await abrirNoPainel(page, 'resumo')
   check(
     'equipamento: mais voos do que os 3 conjuntos dá a nota',
     await page.getByTestId('sets-note').isVisible(),
@@ -2138,6 +2161,7 @@ await scenario('configuracao-equipamento', async () => {
 
   // acerto do dia na missão e volta ao valor da bateria (o campo confirma o
   // rascunho ao sair dele, no Enter ou 400 ms depois da última tecla)
+  await abrirNoPainel(page, 'divisao')
   await useful.fill('26')
   await useful.press('Tab')
   await page.waitForTimeout(300)
@@ -2238,10 +2262,12 @@ const baseRows = (page) =>
 const savedProject = (page) =>
   page.evaluate(() => JSON.parse(localStorage.getItem('dji-mission-planner:project:v1') ?? 'null'))
 /**
- * «Propor bases» e esperar pelo fim: com relevo a proposta corre em fatias
- * («A propor bases… N %»), e só no fim aparece o resumo da proposta.
+ * «Propor bases» (na secção «Bases e segurança») e esperar pelo fim: com
+ * relevo a proposta corre em fatias («A propor bases… N %»), e só no fim
+ * aparece o resumo da proposta.
  */
 async function proposeAndWait(page) {
+  await abrirNoPainel(page, 'bases')
   await page.getByTestId('propose-bases').click()
   await page.waitForFunction(
     () =>
@@ -2331,6 +2357,7 @@ async function kmzTitle(buf) {
 
 await scenario('bases-multiplas', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
+  await abrirNoPainel(page, 'missao')
   await page
     .locator('select')
     .filter({ has: page.locator('option[value="M300RTK"]') })
@@ -2499,6 +2526,7 @@ await scenario('bases-multiplas', async () => {
 // rótulo no nome; um voo só; todos; KML de campo; ficha na checklist.
 await scenario('bases-exportar-por-base', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
+  await abrirNoPainel(page, 'missao')
   await page
     .locator('select')
     .filter({ has: page.locator('option[value="M300RTK"]') })
@@ -2518,6 +2546,8 @@ await scenario('bases-exportar-por-base', async () => {
     withFlights.length >= 2,
     rows.map((r) => `${r.label}:${r.blocks.length}`).join(' '),
   )
+  // as exportações por voo e por base, no «Resumo e exportar»
+  await abrirNoPainel(page, 'resumo')
   const panel = page.getByTestId('flight-exports')
   check(
     'por base: um só botão «Voos por base (KMZ, ZIP)» (e não um por base)',
@@ -2928,6 +2958,8 @@ await scenario('exportar-voos-sem-bases', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await configure(page, { split: 'Quadrícula' })
   await exportReady(page)
+  // as exportações por voo, no «Resumo e exportar»
+  await abrirNoPainel(page, 'resumo')
   const panel = page.getByTestId('flight-exports')
   const conta = (id) => panel.getByTestId(id).count()
   check(
@@ -3064,6 +3096,7 @@ const undo = async (page) => {
 }
 await scenario('bases-desfazer', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
+  await abrirNoPainel(page, 'missao')
   await page
     .locator('select')
     .filter({ has: page.locator('option[value="M300RTK"]') })
@@ -3149,6 +3182,7 @@ await scenario('bases-desfazer', async () => {
 // «Terminar» sai, e o Ctrl+Z desfaz um clique de cada vez.
 await scenario('juntar-a-esta-base', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
+  await abrirNoPainel(page, 'missao')
   await page
     .locator('select')
     .filter({ has: page.locator('option[value="M300RTK"]') })
@@ -3261,6 +3295,7 @@ await scenario('juntar-a-esta-base', async () => {
 await scenario('atribuir-bloco-a-base', async () => {
   for (const split of ['Bateria', 'Faixas']) {
     const { page, errors } = await openMission({ area: fx.rect })
+    await abrirNoPainel(page, 'missao')
     await page
       .locator('select')
       .filter({ has: page.locator('option[value="M300RTK"]') })
@@ -3335,8 +3370,10 @@ await scenario('atribuir-bloco-a-base', async () => {
     await page.waitForTimeout(300)
     check(`${split}: Esc desselecciona a base`, (await hint.getAttribute('data-assign')) === 'off')
     if (split === 'Bateria') {
-      // «Marcar base» com o clique dentro de uma célula: cria a base
+      // «Marcar base» com o clique dentro de uma célula: cria a base (o botão
+      // da secção «Bases e segurança»; a gaveta da área abriu a dela)
       const n0 = (await baseRows(page)).length
+      await abrirNoPainel(page, 'bases')
       await marcarBase(page).click()
       const lbl = await page.locator(`.block-label [data-block-id="${blk}"]`).boundingBox()
       await page.mouse.click(lbl.x + lbl.width / 2 + 30, lbl.y + lbl.height / 2 + 30)
@@ -3368,6 +3405,7 @@ await scenario('atribuir-bloco-a-base', async () => {
       await marcarPontos(page).click()
       await closeDrawer(page)
       const nb0 = (await baseRows(page)).length
+      await abrirNoPainel(page, 'bases')
       await marcarBase(page).click()
       await page.locator('.anchor-handle').first().click()
       await page.waitForTimeout(800)
@@ -3413,6 +3451,7 @@ const kmlBlocks = (kml) =>
     })
 await scenario('mosaico-refeito-mantem-atribuicoes', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
+  await abrirNoPainel(page, 'missao')
   await page
     .locator('select')
     .filter({ has: page.locator('option[value="M300RTK"]') })
@@ -3420,11 +3459,14 @@ await scenario('mosaico-refeito-mantem-atribuicoes', async () => {
     .selectOption('M300RTK')
   await configure(page, { tf: true, split: 'Bateria' })
   await proposeAndWait(page)
-  const kml = async (file) =>
-    readFileSync(
+  // «Bases e blocos (KML)», no «Resumo e exportar»
+  const kml = async (file) => {
+    await abrirNoPainel(page, 'resumo')
+    return readFileSync(
       (await download(page, page.getByTestId('export-bases-kml'), join(OUT, file)))[1],
       'utf8',
     )
+  }
   const old = kmlBlocks(await kml('refeito-antes.kml'))
   const manual0 = (await savedProject(page))?.blockBase ?? {}
   check(
@@ -3470,6 +3512,8 @@ await scenario('mosaico-refeito-mantem-atribuicoes', async () => {
     `${carried} herdadas; ${wrong.slice(0, 6).join(' ')}`,
   )
   const lostWanted = old.filter((o) => !heirs.has(o.id)).length
+  // o aviso está no painel das bases
+  await abrirNoPainel(page, 'bases')
   const info = page.getByTestId('bases-carry-lost')
   const lost = (await info.count()) ? Number(await info.getAttribute('data-lost')) : 0
   check(
@@ -3531,6 +3575,7 @@ const panelViews = async (page, attrName = 'data-view') => {
 }
 await scenario('bacias-visao-cumeada', async () => {
   const { page, errors } = await openMission({ area: fx.hill, demFile: fx.demRidge })
+  await abrirNoPainel(page, 'missao')
   await page
     .locator('select')
     .filter({ has: page.locator('option[value="M300RTK"]') })
@@ -3548,6 +3593,7 @@ await scenario('bacias-visao-cumeada', async () => {
   // a base: um clique no mapa, e depois arrastada para a planície a oeste
   // da cumeada (mapa calibrado com a base e a pega do centro da área)
   await afastar(page)
+  await abrirNoPainel(page, 'bases')
   await marcarBase(page).click()
   await clickMap(page, 785, 1125, HILL_M)
   await page.waitForTimeout(1200)
@@ -3754,6 +3800,8 @@ await scenario('bacias-visao-cumeada', async () => {
     'cumeada: a vegetação fica no projecto (por missão)',
     (await savedProject(page))?.obstacleHeightM === 10,
   )
+  // MDT ou MDS na secção «Área e relevo»; o relevo usado lê-se de novo nas bases
+  await abrirNoPainel(page, 'area')
   await page.getByTestId('dem-surface-dsm').click()
   await page.waitForFunction(
     (f) =>
@@ -3764,6 +3812,7 @@ await scenario('bacias-visao-cumeada', async () => {
     vf,
     { timeout: 15000 },
   )
+  await revelar(page, page.getByTestId('viewshed-terrain'))
   const dsmText = await page.getByTestId('viewshed-terrain').innerText()
   check(
     'cumeada: marcado como MDS, a vegetação não se soma (o campo fica desligado) e o painel diz MDS',
@@ -3772,6 +3821,7 @@ await scenario('bacias-visao-cumeada', async () => {
       !/vegetação e obstáculos/.test(dsmText.split('.')[0]),
     dsmText.slice(0, 200),
   )
+  await abrirNoPainel(page, 'area')
   await page.getByTestId('dem-surface-dtm').click()
   await revelar(page, page.getByTestId('viewshed-obstacle'))
   await page.getByTestId('viewshed-obstacle').fill('0')
@@ -3869,6 +3919,8 @@ await scenario('bacias-visao-cumeada', async () => {
   const demInput = page.locator('input[accept=".tif,.tiff"]').first()
   const reopenAndReimport = async () => {
     await page.goto(URL, { waitUntil: 'domcontentloaded' })
+    // o lembrete e a escolha MDT/MDS estão na secção «Área e relevo»
+    await abrirNoPainel(page, 'area')
     const note = page.getByTestId('dem-remembered')
     await note.waitFor({ timeout: 20000 })
     const noteText = await note.innerText()
@@ -3935,6 +3987,7 @@ await scenario('bacias-visao-cumeada', async () => {
 // aviso de rádio nem de relevo para essa disposição.
 await scenario('propor-bases-sitio-alto', async () => {
   const { page, errors } = await openMission({ area: fx.hill, demFile: fx.demMesas })
+  await abrirNoPainel(page, 'missao')
   await page
     .locator('select')
     .filter({ has: page.locator('option[value="M300RTK"]') })
@@ -3959,6 +4012,7 @@ await scenario('propor-bases-sitio-alto', async () => {
   // 1) a base do operador no alto de oeste: arrastada para lá com o mapa
   // calibrado pela base e pela pega do centro da área
   await afastar(page)
+  await abrirNoPainel(page, 'bases')
   await marcarBase(page).click()
   await clickMap(page, 785, 1125, HILL_M)
   await page.waitForTimeout(1200)
@@ -4037,6 +4091,7 @@ await scenario('propor-bases-sitio-alto', async () => {
   for (const tf of [false, true]) {
     const tag = tf ? 'com seguir terreno' : 'sem seguir terreno'
     if (tf) {
+      await abrirNoPainel(page, 'voo')
       await label(page, TF).check()
       await page.waitForTimeout(1200)
     }
@@ -4089,9 +4144,9 @@ await scenario('propor-bases-sitio-alto', async () => {
 
 /* ---- secções e gavetas do painel da área ------------------------------- */
 // O painel da área é uma coluna de secções numeradas pela ordem do trabalho,
-// que fecham (fechadas, o resumo numa linha); o resto dos controlos de cada
-// secção está na sua gaveta («Mais opções ›»), ao lado do painel e por cima
-// do mapa, uma de cada vez, em grupos que também fecham.
+// uma aberta de cada vez (fechadas, o resumo numa linha); o resto dos
+// controlos de cada secção está na sua gaveta («Mais opções ›»), ao lado do
+// painel e por cima do mapa, uma de cada vez, em grupos que também fecham.
 async function openDrawer(page, card) {
   const more = page.getByTestId(`card-more-${card}`)
   if ((await more.count()) === 0) return false
@@ -4105,25 +4160,6 @@ async function openDrawer(page, card) {
   const fechado = gaveta.locator('h3 > button[aria-expanded="false"]')
   for (let i = 0; i < 12 && (await fechado.count()) > 0; i += 1) await fechado.first().click()
   return true
-}
-/**
- * As secções do painel da área abertas, e as caixas que fecham dentro delas
- * (as acções de segurança): o operador abre as que vai usar, e os cenários
- * abrem-nas todas logo à entrada; a escolha fica gravada no aparelho, e
- * recarregar ou mudar de separador deixa-as abertas.
- */
-async function abrirSeccoes(page) {
-  const painel = page.getByTestId('area-panel')
-  if (
-    !(await painel.waitFor({ state: 'visible', timeout: 20000 }).then(
-      () => true,
-      () => false,
-    ))
-  )
-    return
-  // uma a uma: abrir uma tira-a da lista e mostra as caixas de dentro
-  const fechada = painel.locator(':is(h3, h4) > button[aria-expanded="false"]:visible')
-  for (let i = 0; i < 40 && (await fechada.count()) > 0; i += 1) await fechada.first().click()
 }
 /**
  * Põe à vista o controlo `loc`: abre, de fora para dentro, o que o esconde —
@@ -4196,13 +4232,14 @@ const inv = {
  * (polígono, rectângulo, quadrado) do cartão «Área e relevo» para a barra de
  * desenho sobre o mapa ('mapa'), que tem também «Marcar base» e «Marcar
  * pontos de inspecção» (os dos cartões 5 e 6). Agrupados pelo estado que os
- * mostra. Os cartões são secções que fecham: o inventário parte delas como
- * abrem (sem abrirSeccoes) e reach() abre a secção, a gaveta, o grupo da
- * gaveta ou o detalhe da base de cada controlo. «Seleccionar a base A» (o
- * rótulo da base) e «Atribuir blocos a esta base» eram a mesma acção com
- * dois nomes: fica o segundo, no detalhe da base; «Disparo por», «Paragem
- * nos waypoints» e o tipo do sensor próprio passaram de listas e botões de
- * rádio a controlos segmentados (grupos de botões).
+ * mostra. Os cartões são secções que fecham, uma aberta de cada vez: o
+ * inventário parte delas como abrem e reach() abre a secção (fechando a
+ * outra), a gaveta, o grupo da gaveta ou o detalhe da base de cada
+ * controlo. «Seleccionar a base A» (o rótulo da base) e «Atribuir blocos a
+ * esta base» eram a mesma acção com dois nomes: fica o segundo, no detalhe
+ * da base; «Disparo por», «Paragem nos waypoints» e o tipo do sensor
+ * próprio passaram de listas e botões de rádio a controlos segmentados
+ * (grupos de botões).
  */
 const INVENTARIO_INICIO = [
   ['missao', 'nome da missão', (r) => r.getByPlaceholder(/nome-da-missao/)],
@@ -4406,7 +4443,7 @@ await scenario('inventario-painel-area', async () => {
   }
 
   // sem área: o painel inteiro tal como abre, com as secções como abrem
-  const { page, errors } = await openMission({ seccoes: false })
+  const { page, errors } = await openMission({})
   await page.getByPlaceholder(/nome-da-missao/).waitFor({ state: 'attached', timeout: 20000 })
   await verifica(page, INVENTARIO_INICIO)
   // aeronave com vários payloads e um LiDAR (FOV de trabalho)
@@ -4452,7 +4489,7 @@ await scenario('inventario-painel-area', async () => {
   await page.close()
 
   // com área e um MDT inclinado (sugestão de declive), divisões e bases
-  const b = await openMission({ area: fx.rect, demFile: fx.demSteep, seccoes: false })
+  const b = await openMission({ area: fx.rect, demFile: fx.demSteep })
   const p2 = b.page
   await (await usa(p2, 'voo', inv.field(/Seguir terreno/))).check()
   await (await usa(p2, 'voo', inv.field(/Espaçamento manual/))).check()
@@ -4499,11 +4536,11 @@ await scenario('inventario-painel-area', async () => {
   await p2.close()
 
   // importações: várias partes e coordenadas projectadas sem CRS
-  const c = await openMission({ area: fx.multi, dem: false, seccoes: false })
+  const c = await openMission({ area: fx.multi, dem: false })
   await c.page.waitForTimeout(800)
   await verifica(c.page, INVENTARIO_IMPORTACAO)
   await c.page.close()
-  const d = await openMission({ area: fx.projected, dem: false, seccoes: false })
+  const d = await openMission({ area: fx.projected, dem: false })
   await d.page.waitForTimeout(800)
   await verifica(d.page, INVENTARIO_CRS)
   await d.page.close()
@@ -4556,6 +4593,8 @@ await scenario('barra-do-mapa-base-e-inspeccao', async () => {
     }
     return JSON.parse(antes)
   }
+  // o botão do cartão, na secção «Bases e segurança»
+  await abrirNoPainel(page, 'bases')
   await marcarBase(page).click()
   await clickMap(page, 900, 1400)
   const doCartao = await linhaA()
@@ -4636,10 +4675,14 @@ await scenario('cartoes-gavetas', async () => {
       tag: e.tagName,
       controls: e.getAttribute('aria-controls'),
       expanded: e.getAttribute('aria-expanded'),
-      h: e.getBoundingClientRect().height,
       txt: e.textContent,
     })),
   )
+  // a altura de cada um à vista, com a secção dele aberta (uma de cada vez)
+  for (const [i, b] of botoes.entries()) {
+    await revelar(page, mais.nth(i))
+    b.h = (await mais.nth(i).boundingBox())?.height ?? 0
+  }
   const nomes = [
     ['drawer-area', /^Datum vertical e mais opções$/],
     ['drawer-voo', /^Linhas de voo, disparo e câmara$/],
@@ -4660,8 +4703,10 @@ await scenario('cartoes-gavetas', async () => {
     JSON.stringify(botoes.map((b) => [b.controls, b.expanded, Math.round(b.h), b.txt])),
   )
 
-  // abre com o botão: a gaveta aparece ao lado do painel, o foco entra nela
+  // abre com o botão (na secção dele): a gaveta aparece ao lado do painel, o
+  // foco entra nela
   const btn = page.getByTestId('card-more-voo')
+  await abrirNoPainel(page, 'voo')
   await btn.click()
   const gaveta = page.getByTestId('drawer-voo')
   await gaveta.waitFor({ state: 'visible', timeout: 5000 })
@@ -4678,6 +4723,7 @@ await scenario('cartoes-gavetas', async () => {
   )
   check('gaveta: o foco entra nela', await focoDentro(page, 'drawer-voo'))
   // uma de cada vez
+  await abrirNoPainel(page, 'area')
   await page.getByTestId('card-more-area').click()
   await page.getByTestId('drawer-area').waitFor({ state: 'visible', timeout: 5000 })
   check(
@@ -4696,6 +4742,7 @@ await scenario('cartoes-gavetas', async () => {
     (await gavetasAbertas(page)) === 0 && (await focoEm(page, 'card-more-area')),
   )
   // Escape fecha
+  await abrirNoPainel(page, 'extras')
   await page.getByTestId('card-more-extras').click()
   await page.getByTestId('drawer-extras').waitFor({ state: 'visible', timeout: 5000 })
   await page.keyboard.press('Escape')
@@ -4738,11 +4785,12 @@ await scenario('cartoes-gavetas', async () => {
 })
 
 /* ---- as secções do painel da área ------------------------------------- */
-// Como abrem (sem área, «Área e relevo»; quando a área chega, também
-// «Parâmetros de voo»; o resto fechado; nenhuma se fecha sozinha), o resumo
-// de uma linha (a descrição do botão da secção), a escolha do operador
-// lembrada neste aparelho, e a secção que se abre sozinha quando passa a
-// ter o que mostrar.
+// Uma aberta de cada vez: abrir uma fecha a outra, e carregar na aberta
+// fecha-a (pode ficar nenhuma). Sem escolha do operador, «Área e relevo» e,
+// quando a área chega, «Parâmetros de voo», a menos que o operador já tenha
+// aberto uma. A escolha dele fica lembrada neste aparelho; a secção que passa
+// a ter o que mostrar abre-se sozinha (e fecha a outra), sem mudar essa
+// escolha. O resumo de uma linha é a descrição do botão da secção.
 const seccoesAbertas = (page) =>
   page
     .getByTestId('area-panel')
@@ -4763,9 +4811,15 @@ const resumoSeccao = (page, card) =>
       .join(' ')
       .trim(),
   )
+/** Recarrega a página e espera pelo painel da área. */
+async function recarregar(page) {
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await page.getByTestId('area-panel').waitFor({ state: 'visible', timeout: 20000 })
+  await page.waitForTimeout(800)
+}
 
 await scenario('seccoes-do-painel', async () => {
-  const a = await openMission({ seccoes: false })
+  const a = await openMission({})
   await a.page.getByTestId('area-panel').waitFor({ state: 'visible', timeout: 20000 })
   const semArea = await seccoesAbertas(a.page)
   const resumos0 = {
@@ -4787,9 +4841,22 @@ await scenario('seccoes-do-painel', async () => {
       resumos0.resumo === 'Sem plano',
     JSON.stringify(resumos0),
   )
+  // aberta pelo operador antes de a área chegar, a da missão fica: a área
+  // que chega não abre a dos parâmetros de voo por cima da escolha dele
+  await botaoSeccao(a.page, 'missao').click()
+  const daMissao = await seccoesAbertas(a.page)
+  await a.page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]').setInputFiles(fx.rect)
+  await a.page.locator('path.area-ring').first().waitFor({ timeout: 20000 })
+  await a.page.waitForTimeout(800)
+  const daMissaoComArea = await seccoesAbertas(a.page)
+  check(
+    'secções: abrir a da missão fecha a da área, e a área que chega deixa a que o operador abriu',
+    JSON.stringify(daMissao) === '["missao"]' && JSON.stringify(daMissaoComArea) === '["missao"]',
+    `${JSON.stringify(daMissao)} -> ${JSON.stringify(daMissaoComArea)}`,
+  )
   await a.page.close()
 
-  const { page, errors } = await openMission({ area: fx.rect, seccoes: false })
+  const { page, errors } = await openMission({ area: fx.rect })
   await page.waitForTimeout(800)
   const comArea = await seccoesAbertas(page)
   const resumos = {
@@ -4798,8 +4865,8 @@ await scenario('seccoes-do-painel', async () => {
     resumo: await resumoSeccao(page, 'resumo'),
   }
   check(
-    'secções: com a área abre-se também «Parâmetros de voo», e a da área não se fecha sozinha',
-    JSON.stringify(comArea) === '["area","voo"]',
+    'secções: quando a área chega abre-se «Parâmetros de voo», e a da área fecha-se',
+    JSON.stringify(comArea) === '["voo"]',
     JSON.stringify(comArea),
   )
   check(
@@ -4810,29 +4877,114 @@ await scenario('seccoes-do-painel', async () => {
       / m (AGL|acima da descolagem)/.test(resumos.voo),
     JSON.stringify(resumos),
   )
-  // o operador abre e fecha: fica lembrado neste aparelho
+  // o operador: abrir uma fecha a outra, carregar na aberta fecha-a (fica
+  // nenhuma), e também «nenhuma» fica lembrada neste aparelho
   await botaoSeccao(page, 'area').click()
-  await botaoSeccao(page, 'voo').click()
+  const umaDeCadaVez = [await seccoesAbertas(page)]
+  await botaoSeccao(page, 'divisao').click()
+  umaDeCadaVez.push(await seccoesAbertas(page))
+  await botaoSeccao(page, 'divisao').click()
+  umaDeCadaVez.push(await seccoesAbertas(page))
+  await recarregar(page)
+  umaDeCadaVez.push(await seccoesAbertas(page))
+  check(
+    'secções: uma aberta de cada vez, a aberta fecha-se no título, e «nenhuma» fica lembrada',
+    JSON.stringify(umaDeCadaVez) === '[["area"],["divisao"],[],[]]',
+    JSON.stringify(umaDeCadaVez),
+  )
   await botaoSeccao(page, 'divisao').click()
   const escolha = await seccoesAbertas(page)
-  await page.reload({ waitUntil: 'domcontentloaded' })
-  await page.getByTestId('area-panel').waitFor({ state: 'visible', timeout: 20000 })
-  await page.waitForTimeout(800)
+  await recarregar(page)
   const depois = await seccoesAbertas(page)
   check(
     'secções: a escolha do operador fica lembrada depois de recarregar',
     JSON.stringify(escolha) === '["divisao"]' && JSON.stringify(depois) === '["divisao"]',
     `${JSON.stringify(escolha)} -> ${JSON.stringify(depois)}`,
   )
-  // marcar uma base (na barra do mapa) abre a secção das bases, fechada
-  const bases = botaoSeccao(page, 'bases')
-  const fechada = (await bases.getAttribute('aria-expanded')) === 'false'
+
+  // o que passa a ter o que mostrar abre a sua secção sozinho, fechada, e
+  // fecha a outra; `mostra` é o que tem a mostrar, à vista
+  const abreSozinha = async (oQue, seccao, nome, faz, mostra) => {
+    const antes = await seccoesAbertas(page)
+    await faz()
+    await page
+      .locator(`[data-testid="card-${seccao}"] > h3 > button[aria-expanded="true"]`)
+      .waitFor({ timeout: 10000 })
+      .catch(() => {})
+    const agora = await seccoesAbertas(page)
+    check(
+      `secções: ${oQue} abre «${nome}», fechada, e fecha a outra`,
+      !antes.includes(seccao) &&
+        JSON.stringify(agora) === JSON.stringify([seccao]) &&
+        (await mostra.isVisible()),
+      `${JSON.stringify(antes)} -> ${JSON.stringify(agora)}`,
+    )
+  }
+  // marcar uma base e os pontos de inspecção na barra do mapa: o botão do
+  // cartão, com o mesmo nome, e o aviso de que se estão a marcar pontos
+  await abreSozinha(
+    'marcar uma base no mapa',
+    'bases',
+    'Bases e segurança',
+    () => marcarBase(page, 'mapa').click(),
+    marcarBase(page),
+  )
   await marcarBase(page, 'mapa').click()
-  const aberta = (await bases.getAttribute('aria-expanded')) === 'true'
-  await marcarBase(page, 'mapa').click()
+  await abreSozinha(
+    'marcar pontos de inspecção no mapa',
+    'extras',
+    'Extras',
+    () => marcarPontos(page, 'mapa').click(),
+    page.getByTestId('card-extras').getByText(/^A marcar pontos de inspecção:/),
+  )
+  await marcarPontos(page, 'mapa').click()
+  // um ficheiro de área que não abre (só com o eixo de uma estrada): o erro,
+  // junto de «Importar área»
+  const eixo = join(OUT, 'seccoes-eixo.kml')
+  writeFileSync(
+    eixo,
+    `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><Placemark><name>EN 2</name>
+<LineString><coordinates>${toLL(200, 150).join(',')},0 ${toLL(2700, 1950).join(',')},0</coordinates></LineString>
+</Placemark></Document></kml>`,
+  )
+  const areaInput = page.locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
+  await abreSozinha(
+    'um ficheiro de área que não abre',
+    'area',
+    'Área e relevo',
+    () => areaInput.setInputFiles(eixo),
+    page.getByTestId('import-error'),
+  )
+  // um projecto que não abre: o erro, junto de «Abrir projecto»
+  const mau = join(OUT, 'seccoes-projecto-mau.json')
+  writeFileSync(mau, JSON.stringify({ version: 2, ring: 'x' }))
+  await abreSozinha(
+    'um projecto que não abre',
+    'missao',
+    'Missão',
+    () => projectFile(page).setInputFiles(mau),
+    page.getByTestId('project-error'),
+  )
+  // um ficheiro em coordenadas projectadas sem sistema: a pergunta do CRS
+  await abreSozinha(
+    'a pergunta do sistema de coordenadas',
+    'area',
+    'Área e relevo',
+    () => areaInput.setInputFiles(fx.projected),
+    page.locator('#crs-select'),
+  )
+  await page
+    .getByTestId('card-area')
+    .getByRole('button', { name: /^(Cancelar|Cancel)$/ })
+    .click()
+  // nenhuma destas mudou a escolha do operador: recarregada, a da divisão
+  await recarregar(page)
+  const lembrada = await seccoesAbertas(page)
   check(
-    'secções: marcar uma base no mapa abre a secção das bases',
-    fechada && aberta && (await marcarBase(page).isVisible()),
+    'secções: as que se abrem sozinhas não mudam a escolha lembrada do operador',
+    JSON.stringify(lembrada) === '["divisao"]',
+    JSON.stringify(lembrada),
   )
   const erros = [...a.errors, ...errors]
   check('secções: sem erros de página', erros.length === 0, erros.join(' | '))
@@ -4852,6 +5004,8 @@ await scenario('accoes-seguranca-kmz', async () => {
   const fim = page.getByTestId('safety-finish')
   const sinal = page.getByTestId('safety-rc-lost')
   const accao = page.getByTestId('safety-rc-action')
+  // a caixa das acções de segurança, aberta, na secção «Bases e segurança»
+  await revelar(page, page.getByTestId('safety-actions'))
   check(
     'segurança: no cartão «Bases e segurança», com as omissões (RTH; interromper e RTH)',
     (await page.getByTestId('card-bases').getByTestId('safety-actions').isVisible()) &&
@@ -4895,6 +5049,7 @@ await scenario('accoes-seguranca-kmz', async () => {
     await accao.isDisabled(),
   )
   // o botão do cartão «Resumo e exportar» é a mesma exportação do cabeçalho
+  await abrirNoPainel(page, 'resumo')
   const [dl] = await Promise.all([
     page.waitForEvent('download', { timeout: 30000 }),
     page.getByTestId('summary-export-mission').click(),
@@ -4984,6 +5139,7 @@ await scenario('painel-estatisticas', async () => {
     await longest.innerText(),
   )
   // divisão por bateria: os voos do painel são os blocos, e cabem
+  await abrirNoPainel(page, 'divisao')
   await page.getByRole('button', { name: 'Bateria', exact: true }).click()
   await page.waitForTimeout(800)
   const nBlocks = await page.getByTestId('block-row').count()
@@ -5186,6 +5342,8 @@ await scenario('alturas-seguranca-kmz', async () => {
   const auto = alturas(r.wpml)
   const subida = page.getByTestId('safety-takeoff-height')
   const rth = page.getByTestId('safety-rth-height')
+  // na caixa das acções de segurança, na secção «Bases e segurança»
+  await revelar(page, rth)
   await rth.click()
   await rth.pressSequentially('150', { delay: 450 })
   await subida.click()
@@ -5445,7 +5603,9 @@ await scenario('perfil-folga-minima', async () => {
   )
   await page.keyboard.press('Escape')
 
-  // a 30 m sem seguir terreno a rota entra no relevo: folga negativa, a vermelho
+  // a 30 m sem seguir terreno a rota entra no relevo: folga negativa, a
+  // vermelho (o perfil abriu-se na secção da área; estes, nos parâmetros de voo)
+  await abrirNoPainel(page, 'voo')
   await label(page, TF).uncheck()
   const alt = page
     .locator('label', { hasText: /Altura acima da descolagem|Altura AGL|Altitude/ })
@@ -5919,6 +6079,8 @@ await scenario('partes-como-celulas-sobrevivem', async () => {
     antes.length === 3 && depois.length === 3,
     `${antes.length} → ${depois.length}`,
   )
+  // na secção «Área e relevo», onde estava
+  await abrirNoPainel(page, 'area')
   check(
     'partes como células: o botão das partes não volta a aparecer',
     (await page.getByRole('button', { name: /Usar todas as partes|Use all parts/ }).count()) === 0,
@@ -6050,6 +6212,8 @@ await scenario('checklist-por-projecto', async () => {
       .locator('label', { hasText: /Missão|Mission/ })
       .locator('input')
       .first()
+  // o nome da missão está na secção «Missão» (que fica aberta ao voltar)
+  await abrirNoPainel(page, 'missao')
   await nameInput.fill('corta-norte')
   await abrir()
   const item = page.locator('button.chk-item').first()
@@ -6243,6 +6407,7 @@ await scenario('preflight-bloqueia-transito-atras-da-cumeada', async () => {
   const alt = page
     .locator('label', { hasText: /Altura acima da descolagem|Altura AGL|Altitude/ })
     .locator('input')
+  await abrirNoPainel(page, 'voo')
   await alt.fill('150')
   await alt.press('Tab')
   await page.waitForTimeout(1500)
@@ -6265,6 +6430,8 @@ await scenario('m4t-termica-exporta-lente-ir', async () => {
       .locator('select')
       .filter({ has: page.locator(`option[value="${v}"]`) })
       .first()
+  // a aeronave e o sensor, na secção «Missão»
+  await abrirNoPainel(page, 'missao')
   await sel('M4T').selectOption('M4T')
   await openDrawer(page, 'missao')
   await sel('M4T_THERMAL').selectOption('M4T_THERMAL')
@@ -6539,8 +6706,16 @@ const lerEcra = (page) =>
     }
   }, PENDENTE.source)
 
-/** Os painéis estáveis durante 1,5 s, sem nada a meio (relevo, zonas, bacias de visão). */
+/**
+ * Os painéis estáveis durante 1,5 s, sem nada a meio (relevo, zonas, bacias
+ * de visão). O painel da área abre uma secção de cada vez: as bases lêem-se
+ * com a secção delas aberta e, no fim, os blocos com a da divisão (numa
+ * secção fechada a linha não se lê como o operador a vê); enquanto se
+ * espera, os blocos escondidos contam só para ver se mudam.
+ */
 async function ecraEstavel(page) {
+  const area = (await page.getByTestId('card-bases').count()) > 0
+  if (area) await abrirNoPainel(page, 'bases')
   // cada base com o detalhe aberto (abre-se na linha da tabela): o texto
   // inteiro da base, como o operador o lê (uma a uma: abrir uma tira-a da
   // lista das fechadas)
@@ -6562,6 +6737,10 @@ async function ecraEstavel(page) {
       desde = Date.now()
     } else if (Date.now() - desde >= 1500) {
       const { pendente: _p, ...resto } = agora
+      if (area) {
+        await abrirNoPainel(page, 'divisao')
+        resto.blocos = (await lerEcra(page)).blocos
+      }
       return resto
     }
     await page.waitForTimeout(250)
@@ -6623,6 +6802,7 @@ async function impressaoModo(page, ficheiro) {
 
 await scenario('impressao-area-bases', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
+  await abrirNoPainel(page, 'missao')
   await page
     .locator('select')
     .filter({ has: page.locator('option[value="M300RTK"]') })
@@ -6632,6 +6812,8 @@ await scenario('impressao-area-bases', async () => {
   await proposeAndWait(page)
   await zonesReady(page)
   const agora = await impressaoModo(page, 'impressao-area-bases.zip')
+  // as exportações por voo e por base, no «Resumo e exportar»
+  await abrirNoPainel(page, 'resumo')
   const panel = page.getByTestId('flight-exports')
   const [, kml] = await download(
     page,
