@@ -1950,6 +1950,10 @@ await scenario('configuracao-equipamento', async () => {
   await tb65.locator('input[id$="-useful"]').fill('30')
   await tb65.locator('input[id$="-count"]').fill('3')
   await tb65.locator('input[id$="-count"]').press('Tab')
+  // as quatro secções são separadores do índice: cada passo abre a sua
+  const seccao = (nome) => dlg.getByRole('tab', { name: nome }).click()
+  const AERONAVES = /^(Aeronaves e baterias|Aircraft and batteries)$/
+  const DADOS = /^(Ficheiro e dados|File and data)$/
   const fechar = () =>
     dlg
       .getByRole('button', { name: /^(Fechar|Close)$/ })
@@ -1989,6 +1993,7 @@ await scenario('configuracao-equipamento', async () => {
 
   // exportar, estragar, importar de volta
   await page.getByTestId('open-settings').click()
+  await seccao(DADOS)
   const [dl] = await Promise.all([
     page.waitForEvent('download', { timeout: 15000 }),
     dlg.getByRole('button', { name: /^(Exportar|Export)$/ }).click(),
@@ -2001,8 +2006,10 @@ await scenario('configuracao-equipamento', async () => {
     exported.kind === 'dji-mission-planner/equipment' &&
       exported.aircraft.M300RTK.batteries.find((b) => b.id === 'TB65')?.usefulMin === 30,
   )
+  await seccao(AERONAVES)
   await tb65.locator('input[id$="-useful"]').fill('27')
   await tb65.locator('input[id$="-useful"]').press('Tab')
+  await seccao(DADOS)
   const importInput = dlg.getByTestId('settings-import')
   await importInput.setInputFiles(fx.rect)
   check(
@@ -2011,10 +2018,12 @@ await scenario('configuracao-equipamento', async () => {
   )
   await importInput.setInputFiles(file)
   await page.waitForTimeout(300)
+  // a mensagem fica na secção do ficheiro; o tempo da TB65, na das aeronaves
+  const importada = /importada|imported/.test(await dlg.getByRole('status').innerText())
+  await seccao(AERONAVES)
   check(
     'equipamento: importar repõe a configuração exportada',
-    (await tb65.locator('input[id$="-useful"]').inputValue()) === '30' &&
-      /importada|imported/.test(await dlg.getByRole('status').innerText()),
+    (await tb65.locator('input[id$="-useful"]').inputValue()) === '30' && importada,
   )
   await fechar()
 
@@ -2033,8 +2042,10 @@ await scenario('configuracao-equipamento', async () => {
     `${await batSel.inputValue()} / ${await useful.inputValue()}`,
   )
 
-  // repor os valores por omissão pede confirmação
+  // repor os valores por omissão pede confirmação (o tempo da TB65 lê-se na
+  // secção das aeronaves, escondida enquanto se confirma)
   await page.getByTestId('open-settings').click()
+  await seccao(DADOS)
   await dlg.getByRole('button', { name: /Repor valores por omissão|Restore defaults/ }).click()
   check(
     'equipamento: repor pede confirmação antes de apagar',
@@ -5094,6 +5105,69 @@ await scenario('legenda-camadas', async () => {
     caixas3d.join(','),
   )
   check('legenda: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Configuração em quatro secções com índice: cada separador mostra a sua
+// secção e esconde as outras; as setas e o End andam no índice; os esquemas
+// da zona e do piloto dizem os valores configurados.
+await scenario('configuracao-indice', async () => {
+  const { page, errors } = await openMission({})
+  await page.getByTestId('open-settings').click()
+  const dlg = page.getByRole('dialog', { name: 'Configuração' })
+  await dlg.waitFor({ timeout: 5000 })
+  const indice = dlg.getByRole('tablist', { name: 'Secções da configuração' })
+  const tab = (nome) => indice.getByRole('tab', { name: nome, exact: true })
+  const nomes = ['Aeronaves e baterias', 'Zona de descolagem', 'Piloto', 'Ficheiro e dados']
+  const contagens = await Promise.all(nomes.map((n) => tab(n).count()))
+  const vis = (sel) => dlg.locator(sel).isVisible()
+  check(
+    'configuração: quatro secções no índice, a primeira aberta e as outras escondidas',
+    contagens.every((n) => n === 1) &&
+      (await tab('Aeronaves e baterias').getAttribute('aria-selected')) === 'true' &&
+      (await vis('#set-vlos')) &&
+      !(await vis('#set-zone-radius')) &&
+      !(await vis('#set-eye-height')),
+    contagens.join(','),
+  )
+  await tab('Zona de descolagem').click()
+  const raio = dlg.locator('#set-zone-radius')
+  await raio.fill('150')
+  await raio.press('Tab')
+  check(
+    'configuração: a secção da zona, com o raio no esquema do mapa',
+    (await tab('Zona de descolagem').getAttribute('aria-selected')) === 'true' &&
+      !(await vis('#set-vlos')) &&
+      /Raio pedido \(150 m\), a tracejado quando foi reduzido/.test(await dlg.innerText()),
+  )
+  // teclado: a seta para baixo passa ao Piloto, o End ao Ficheiro e dados
+  await tab('Zona de descolagem').focus()
+  await page.keyboard.press('ArrowDown')
+  const piloto =
+    (await tab('Piloto').getAttribute('aria-selected')) === 'true' &&
+    (await vis('#set-eye-height')) &&
+    /Linha de vista, dos olhos \(1\.7 m\)/.test(await dlg.innerText())
+  await page.keyboard.press('End')
+  check(
+    'configuração: as setas e o End andam no índice (Piloto, Ficheiro e dados)',
+    piloto &&
+      (await tab('Ficheiro e dados').getAttribute('aria-selected')) === 'true' &&
+      (await tab('Ficheiro e dados').evaluate((e) => e === document.activeElement)) &&
+      (await dlg.getByRole('button', { name: /^Exportar$/ }).isVisible()) &&
+      (await dlg.getByRole('button', { name: 'Limpar a cache do relevo' }).isVisible()),
+  )
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(400)
+  const guardado = await page.evaluate(
+    () => JSON.parse(localStorage.getItem('dji-mission-planner:equipment') ?? 'null')?.zoneRadiusM,
+  )
+  check(
+    'configuração: o raio fica guardado e Esc fecha a janela',
+    guardado === 150 && (await dlg.count()) === 0,
+    `${guardado}`,
+  )
+  check('configuração: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })
