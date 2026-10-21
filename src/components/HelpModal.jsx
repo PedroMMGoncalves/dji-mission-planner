@@ -42,8 +42,8 @@ function InstrucoesPt() {
           em <strong>blocos</strong> e planeie <strong>GCPs</strong>.
         </Li>
         <Li>
-          <strong>Exporte</strong>: KML simples (área) ou WPML/KMZ (missão completa para o DJI Pilot
-          2).
+          <strong>Exporte</strong>: WPML/KMZ (missão completa para o DJI Pilot 2) no botão{' '}
+          <strong>Exportar</strong> do cabeçalho, ou KML simples (área) na seta ao lado dele.
         </Li>
       </ol>
 
@@ -291,12 +291,15 @@ function InstrucoesPt() {
           KML. KMZ: «Todos os voos (KMZ, ZIP)» (…_voos.zip, todos soltos), «Voos por base (KMZ,
           ZIP)» (…_voos-por-base.zip, uma pasta por base: com vários pilotos, cada um leva as pastas
           das suas bases) ou «Um voo (KMZ)»; KML: o polígono de cada bloco, todos ou por base
-          (acima). O botão de exportar do cabeçalho e o do fim do cartão 7 são o mesmo (e os dois
-          «Exportar KML da área» também): com bases descarregam o ZIP por base, sem bases o de
-          todos, e a dica diz qual. A checklist de campo e o relatório trazem a ficha de cada base
-          (coordenadas com ligação para os mapas, zona, cota, voos com os ficheiros, baterias);
-          «Bases e blocos (KML)» leva as bases, as zonas e os blocos com o rótulo do voo para o
-          Google Earth ou o telemóvel.
+          (acima). O botão de exportar do cabeçalho é partido: a parte principal é a do fim do
+          cartão 7, o mesmo botão (com bases descarrega o ZIP por base, sem bases o de todos, e a
+          dica diz qual); a <strong>seta</strong> ao lado abre as outras exportações do separador
+          aberto, com os nomes, as dicas e as acções do painel — na área, «Exportar KML da área» e,
+          com a área em vários voos, as de «Exportar voos» (menos «Um voo», que pede a escolha do
+          voo); na órbita, o KMZ por nível; no circular, o KMZ por bloco. A checklist de campo e o
+          relatório trazem a ficha de cada base (coordenadas com ligação para os mapas, zona, cota,
+          voos com os ficheiros, baterias); «Bases e blocos (KML)» leva as bases, as zonas e os
+          blocos com o rótulo do voo para o Google Earth ou o telemóvel.
         </Li>
         <Li>
           <strong>Acções de segurança</strong> (cartão 5 da área, e um cartão próprio nos outros
@@ -326,7 +329,15 @@ function InstrucoesPt() {
         </Li>
         <Li>
           O projecto grava-se automaticamente no browser; use «Guardar/Abrir projecto» para arquivar
-          em ficheiro.
+          em ficheiro. Estão no cartão 1 e no <strong>menu do projecto</strong>, o nome da missão no
+          cabeçalho, com «Mudar o nome»; ao lado do nome, «gravado», ou «não gravado» quando o
+          browser recusa a gravação automática.
+        </Li>
+        <Li>
+          O <strong>preflight</strong> (a pastilha no cabeçalho) abre a lista por cima do mapa:
+          bloqueios primeiro, depois avisos e notas; os avisos repetidos do mesmo tipo (a zona
+          reduzida em várias bases, os voos longe da base) juntam-se numa tabela, uma linha por base
+          ou por voo. Fecha no ✕ ou com <Kbd>Esc</Kbd>.
         </Li>
       </ul>
       <H>O que mudou</H>
@@ -374,7 +385,9 @@ function InstrucoesEn() {
           split into <strong>blocks</strong> and plan <strong>GCPs</strong>.
         </Li>
         <Li>
-          <strong>Export</strong>: simple KML (area) or WPML/KMZ (full mission for DJI Pilot 2).
+          <strong>Export</strong>: WPML/KMZ (full mission for DJI Pilot 2) with the{' '}
+          <strong>Export</strong> button in the header, or simple KML (area) from the arrow next to
+          it.
         </Li>
       </ol>
 
@@ -619,12 +632,16 @@ function InstrucoesEn() {
           KML. KMZ: “All flights (KMZ, ZIP)” (…_voos.zip, all loose), “Flights by base (KMZ, ZIP)”
           (…_voos-por-base.zip, one folder per base: with several pilots, each takes the folders of
           their bases) or “One flight (KMZ)”; KML: each block’s polygon, all or by base (above). The
-          header export button and the one at the end of card 7 are the same (and so are the two
-          “Export area KML”): with bases they download the ZIP by base, without bases the one with
-          all flights, and the tooltip says which. The field checklist and the report carry a sheet
-          per base (coordinates with a maps link, zone, reference elevation, flights with their
-          files, batteries); “Bases and blocks (KML)” takes the bases, zones and blocks labelled
-          with their flight to Google Earth or a phone.
+          header export button is a split button: its main part is the one at the end of card 7, the
+          same button (with bases it downloads the ZIP by base, without bases the one with all
+          flights, and the tooltip says which); the <strong>arrow</strong> next to it opens the
+          other exports of the open tab, with the panel’s names, tooltips and actions — in the area,
+          “Export area KML” and, with the area split into flights, those of “Export flights” (except
+          “One flight”, which needs the flight to be chosen); in the orbit, the KMZ per level; in
+          the circular mode, the KMZ per block. The field checklist and the report carry a sheet per
+          base (coordinates with a maps link, zone, reference elevation, flights with their files,
+          batteries); “Bases and blocks (KML)” takes the bases, zones and blocks labelled with their
+          flight to Google Earth or a phone.
         </Li>
         <Li>
           <strong>Safety actions</strong> (card 5 of the area, and a card of their own in the other
@@ -654,6 +671,15 @@ function InstrucoesEn() {
         </Li>
         <Li>
           The project auto-saves in the browser; use “Save/Open project” to archive it as a file.
+          They are in card 1 and in the <strong>project menu</strong>, the mission name in the
+          header, with “Rename”; next to the name, “saved”, or “not saved” when the browser refuses
+          the automatic save.
+        </Li>
+        <Li>
+          The <strong>preflight</strong> (the pill in the header) opens its list over the map:
+          blockers first, then warnings and notes; repeated warnings of the same kind (the zone
+          reduced at several bases, flights far from their base) are gathered in a table, one row
+          per base or flight. It closes with ✕ or <Kbd>Esc</Kbd>.
         </Li>
       </ul>
       <H>What changed</H>

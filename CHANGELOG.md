@@ -20,6 +20,21 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   bloco são os mesmos nos dois ZIP (nome, ordem e texto); os KMZ e o ZIP
   por base não mudam. Os pares por base aparecem só com bases, os dois ao
   mesmo tempo.
+- **Cabeçalho e preflight do desenho novo.** A letra passa a ser a Inter,
+  que vem com a aplicação (funciona sem rede), e a paleta a azul-ardósia do
+  desenho aprovado, em toda a interface. O cabeçalho: o nome e a versão; o
+  projecto — o nome da missão e se está gravado, com mudar o nome, guardar
+  e abrir (as acções do cartão 1, que lá continuam) —; as vistas; a
+  pastilha do preflight; o botão de exportar partido — a parte principal é
+  a de sempre, com o mesmo nome e a mesma dica, e a seta abre as outras
+  exportações do separador com os nomes do painel: na área, «Exportar KML
+  da área», que sai do cabeçalho para este menu, e as de «Exportar voos»;
+  na órbita, o KMZ por nível; no circular, o KMZ por bloco —; configuração,
+  ajuda e língua. O preflight abre por cima do mapa, sem o empurrar, com as
+  contagens no topo, os bloqueios primeiro e os avisos repetidos do mesmo
+  tipo numa tabela: as quinze frases «Zona da base X reduzida…» passam a
+  uma linha por base, com os mesmos números. Esc fecha. Sem bloqueios, a
+  pastilha diz só os avisos («3 avisos»). Os ficheiros exportados não mudam.
 
 ### Corrigido
 

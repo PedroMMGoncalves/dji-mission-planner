@@ -255,10 +255,12 @@ tablet real):
   voo (`..._B-3.kmz`, `..._B-4.kmz`, com zeros a partir de 10 voos); **Todos
   os voos (KMZ, ZIP)** dá `..._voos.zip` com todos soltos; **Um voo (KMZ)**
   com B-3 dá `..._B-3.kmz`; o botão de exportar do cabeçalho diz **(ZIP)** e
-  descarrega o ZIP por base, com a dica a dizê-lo; no fim do cartão 7 estão
-  os dois botões do cabeçalho, pela mesma ordem, com o mesmo nome, a mesma
-  dica e o mesmo ficheiro. Com um bloqueio no preflight ficam os KMZ
-  desactivados (os KML não).
+  descarrega o ZIP por base, com a dica a dizê-lo; o botão do fim do cartão
+  7 é a parte principal desse botão, com o mesmo nome, a mesma dica e o
+  mesmo ficheiro; a seta do botão do cabeçalho abre **Exportar KML da área**
+  e as de **Exportar voos** (menos **Um voo**), com os nomes, as dicas e os
+  ficheiros do cartão 7. Com um bloqueio no preflight ficam os KMZ
+  desactivados (os KML não), no cartão e no menu.
 - ☐ **Bases e blocos (KML)** aberto no Google Earth (ou no telemóvel).
   **Esperado:** pontos «Base A» e «Base B» com a ficha ao clicar, círculos
   das zonas, contornos dos blocos com o rótulo do voo.
@@ -458,6 +460,33 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   **Esperado:** a legenda só lista as camadas com conteúdo; cada caixa
   esconde e mostra a sua camada; as fotos (âmbar) aparecem em todos os
   modos, no mapa e no 3D.
+
+## 18. Cabeçalho: projecto, exportar e preflight (~2 min)
+
+- ☐ Abrir o menu do projecto (o nome da missão, no cabeçalho) e escolher
+  **Mudar o nome**; escrever outro nome e Enter.
+  **Esperado:** o cabeçalho e o cartão 1 mostram o nome novo; com Esc em vez
+  de Enter o nome fica como estava. Ao lado do nome, «gravado»; numa janela
+  com o armazenamento do site bloqueado, «não gravado».
+- ☐ No mesmo menu, **Guardar projecto** e depois **Abrir projecto** com esse
+  ficheiro, num separador que não seja o da área.
+  **Esperado:** o mesmo .json do botão do cartão 1; o projecto abre igual.
+- ☐ Com o teclado: Tab até à seta do botão **Exportar**, seta para baixo,
+  setas, Esc.
+  **Esperado:** o menu abre com o foco no primeiro item activo, as setas
+  andam pelos itens, Esc fecha e o foco volta à seta; nos separadores Face
+  e Corredor não há seta (não há outras exportações), na Órbita há o KMZ
+  por nível e no Circular o KMZ por bloco.
+- ☐ Área com 15 ou mais bases e zonas reduzidas (relevo acidentado); abrir
+  o **preflight** no cabeçalho.
+  **Esperado:** a lista abre por cima do mapa, sem o empurrar; no topo as
+  contagens de bloqueios, avisos e notas; os bloqueios primeiro, depois os
+  avisos e as notas; as zonas reduzidas numa só tabela (base, zona, desnível,
+  voo mais baixo), da pior para a melhor, com os mesmos números das frases
+  de antes; Esc ou ✕ fecha, e o foco volta à pastilha.
+- ☐ A 1024 px de largura.
+  **Esperado:** o cabeçalho parte-se em duas linhas sem sair do ecrã; a lista
+  do preflight e os menus ficam dentro do ecrã.
 
 Registo de execução:
 
