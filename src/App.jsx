@@ -687,7 +687,6 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
   const {
     fieldSheets,
     fieldSheetsDay,
-    areaKmlNotes,
     handleExportBasesKml,
     handleExportKmlAll,
     handleExportKmlByBase,
@@ -1124,8 +1123,7 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
                 onExportMission={gated(handleExportKMZ)}
                 canExportMission={canExportKMZ && !exportBlocked}
                 exportMissionTitle={modeExportTitle}
-                exportAreaTitle={sheets.exportKmlTitle}
-                exportAreaNotes={areaKmlNotes}
+                exportKml={sheets.kmlExport}
                 basesPanel={{
                   rows: baseRows,
                   selectedBaseId,

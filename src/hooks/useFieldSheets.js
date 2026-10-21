@@ -56,6 +56,10 @@ export function useFieldSheets({
     flightFiles,
     exportBaseName,
     safeName: areaSafeName,
+    handleExportKML,
+    canExportKML,
+    exportKind,
+    exportSelection,
   } = area
   const { circularConfig, circularSpeed, circularFlight, circularReference } = circular
   const { perBlockBases, areaRouteOps, corridorRouteOps, circularRouteOps, modeStats } = ops
@@ -365,11 +369,54 @@ export function useFieldSheets({
     exportBaseName,
   ])
 
+  // «Exportar KML da área», o par KML do botão de exportar a missão (fim do cartão 7
+  // e seta do botão de exportar): o mesmo que ele escreve, em KML. Com a área
+  // num voo, o polígono da área; em vários voos, os KML dos blocos num ZIP,
+  // numa pasta por base com bases e todos soltos sem elas (handleExportKMZ).
+  // O polígono da área inteira, sozinho, fica na seta: «Polígono da área (KML)».
+  const kmlExport = useMemo(() => {
+    if (exportKind !== 'zip')
+      return {
+        kind: 'kml',
+        label: t('app.exportKml'),
+        description: t('app.menu.areaKml'),
+        title: exportKmlTitle,
+        disabled: !canExportKML,
+        onExport: handleExportKML,
+        notes: areaKmlNotes,
+      }
+    const byBase = exportSelection === 'byBase' && fieldSheets.length > 0
+    return {
+      kind: 'zip',
+      label: t('app.exportKmlZip'),
+      description: t(byBase ? 'app.menu.kmlByBase' : 'app.menu.kmlAll'),
+      title: byBase
+        ? t('app.exportKmlByBaseTitle', { file: `${exportBaseName}_kml-por-base.zip` })
+        : t('app.exportKmlAllTitle', { file: `${exportBaseName}_kml.zip` }),
+      disabled: false,
+      onExport: byBase ? handleExportKmlByBase : handleExportKmlAll,
+      notes: [],
+    }
+  }, [
+    exportKind,
+    exportSelection,
+    fieldSheets.length,
+    exportBaseName,
+    exportKmlTitle,
+    canExportKML,
+    handleExportKML,
+    handleExportKmlAll,
+    handleExportKmlByBase,
+    areaKmlNotes,
+    t,
+  ])
+
   return {
     fieldSheets,
     fieldSheetsDay,
     areaKmlNotes,
     exportKmlTitle,
+    kmlExport,
     handleExportBasesKml,
     handleExportKmlAll,
     handleExportKmlByBase,

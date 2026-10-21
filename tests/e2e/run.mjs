@@ -295,7 +295,11 @@ async function configure(page, { cross = false, nadir = false, tf = false, split
 // no seu sítio. O rótulo diz o que sai: «(KMZ)», ou «(ZIP)» com vários voos.
 const HEADER_EXPORT = /Exportar WPML Avançado|Export Advanced WPML/
 const headerExport = (page) => page.locator('header').getByRole('button', { name: HEADER_EXPORT })
-const AREA_KML = /Exportar KML|Export area KML/
+// «Exportar KML da área», o par KML do botão da missão: o polígono da área,
+// ou com a área em vários voos os KML dos blocos num ZIP; e, nesse caso,
+// «Polígono da área (KML)», só o polígono, na seta
+const AREA_KML = /Exportar KML da área|Export area KML/
+const AREA_POLYGON = /Polígono da área|Area polygon/
 // As outras exportações do separador estão no menu da seta do botão de
 // exportar do cabeçalho (os itens só existem com o menu aberto): abre-o, se
 // estiver fechado, e devolve o cabeçalho, onde estão os itens.
@@ -306,8 +310,14 @@ async function headerMenu(page) {
   if ((await seta.getAttribute('aria-expanded')) !== 'true') await seta.click()
   return page.locator('header')
 }
-// o KML da área do cabeçalho, no menu da seta (o fim do cartão 7 tem o mesmo botão)
-const headerKml = async (page) => (await headerMenu(page)).getByRole('menuitem', { name: AREA_KML })
+// o polígono da área do cabeçalho, no menu da seta: «Polígono da área (KML)»
+// com a área em vários voos, senão «Exportar KML da área», que é ele (o fim
+// do cartão 7 tem o mesmo botão)
+const headerKml = async (page) => {
+  const menu = await headerMenu(page)
+  const poligono = menu.getByRole('menuitem', { name: AREA_POLYGON })
+  return (await poligono.count()) > 0 ? poligono : menu.getByRole('menuitem', { name: AREA_KML })
+}
 // O campo de ficheiro do projecto do cartão 1; o menu do projecto do
 // cabeçalho tem outro igual (header-project-file).
 const projectFile = (page) => page.getByTestId('card-missao').locator('input[accept=".json"]')
@@ -2361,6 +2371,14 @@ async function download(page, locator, file) {
 /** Nomes dos KMZ dentro de um ZIP, pela ordem em que lá estão. */
 const zipOrder = async (file) =>
   Object.keys((await JSZip.loadAsync(readFileSync(file))).files).filter((n) => n.endsWith('.kmz'))
+/** Os ficheiros de um ZIP de KML, o nome e o texto, pela ordem em que lá estão. */
+async function zipTexts(file) {
+  const zip = await JSZip.loadAsync(readFileSync(file))
+  const out = []
+  for (const [name, entry] of Object.entries(zip.files))
+    if (!entry.dir) out.push(`${name}\n${await entry.async('string')}`)
+  return out.join('\n')
+}
 /**
  * O texto de um código QR desenhado em <svg> (a folha A4 da base): o SVG
  * passa a um canvas no browser, como o papel o mostraria, e os píxeis são
@@ -2809,20 +2827,45 @@ await scenario('bases-exportar-por-base', async () => {
       (await zipOrder(fimFile)).join() === entries.join(),
     `${(await fimMissao.innerText()).trim()} → ${fimName} | ${await header.getAttribute('title')}`,
   )
+  // «Exportar KML da área», o par KML do botão da missão: com bases, os KML dos
+  // blocos numa pasta por base, o mesmo que «Blocos por base (KML, ZIP)»
   const fimKml = page.getByTestId('summary-export-area')
-  const [fimKmlName, fimKmlFile] = await download(page, fimKml, join(OUT, 'cartao7-area.kml'))
+  const [fimKmlName, fimKmlFile] = await download(page, fimKml, join(OUT, 'cartao7-kml.zip'))
+  check(
+    'cartão 7: com bases, «Exportar KML da área (ZIP)» escreve o ZIP dos KML por base, e a dica di-lo',
+    (await fimKml.innerText()).trim() === 'Exportar KML da área (ZIP)' &&
+      /Blocos por base \(KML, ZIP\)/.test(await fimKml.getAttribute('title')) &&
+      fimKmlName === zipKml &&
+      (await zipTexts(fimKmlFile)) === (await zipTexts(fileKml)) &&
+      (await page.getByTestId('summary-export-area-notes').count()) === 0,
+    `${(await fimKml.innerText()).trim()} → ${fimKmlName}`,
+  )
   // no cabeçalho, um item do menu da seta do botão de exportar
-  const cabKml = await headerKml(page)
+  const cabKml = (await headerMenu(page)).getByTestId('header-export-area')
   const cabKmlNome = await itemName(cabKml)
   const cabKmlDica = await cabKml.getAttribute('title')
-  const [cabKmlName, cabKmlFile] = await download(page, cabKml, join(OUT, 'cab-area.kml'))
+  const [cabKmlName, cabKmlFile] = await download(page, cabKml, join(OUT, 'cab-kml.zip'))
   check(
-    'cartão 7: o KML da área é o do cabeçalho (nome, dica e o mesmo ficheiro)',
+    'cartão 7: «Exportar KML da área» é o do cabeçalho (nome, dica e o mesmo ficheiro)',
     (await fimKml.innerText()).trim() === cabKmlNome &&
       (await fimKml.getAttribute('title')) === cabKmlDica &&
       fimKmlName === cabKmlName &&
-      readFileSync(fimKmlFile, 'utf8') === readFileSync(cabKmlFile, 'utf8'),
+      (await zipTexts(fimKmlFile)) === (await zipTexts(cabKmlFile)),
     `${(await fimKml.innerText()).trim()} → ${fimKmlName} | cabeçalho: ${cabKmlNome}`,
+  )
+  // e o polígono da área inteira, à parte, na seta: «Polígono da área (KML)»
+  const poligono = (await headerMenu(page)).getByTestId('header-export-area-polygon')
+  const poligonoNome = await itemName(poligono)
+  const poligonoDica = await poligono.getAttribute('title')
+  const [poligonoName, poligonoFile] = await download(page, poligono, join(OUT, 'cab-area.kml'))
+  const poligonoKml = readFileSync(poligonoFile, 'utf8')
+  check(
+    'cabeçalho: com a área em vários voos, «Polígono da área (KML)» dá só o polígono da área',
+    poligonoNome === 'Polígono da área (KML)' &&
+      /^Só o polígono da área/.test(poligonoDica) &&
+      /\.kml$/.test(poligonoName) &&
+      (poligonoKml.match(/<Polygon>/g) ?? []).length === 1,
+    `${poligonoNome} → ${poligonoName}`,
   )
   // a seta do botão de exportar tem as outras do cartão 7 («Exportar voos»
   // menos «Um voo», que pede a escolha do voo): os mesmos nomes e a mesma
@@ -2857,7 +2900,8 @@ await scenario('bases-exportar-por-base', async () => {
     diferentes.length === 0 &&
       nomesMenu.join(' | ') ===
         [
-          'Exportar KML da área',
+          'Exportar KML da área (ZIP)',
+          'Polígono da área (KML)',
           'Todos os voos (KMZ, ZIP)',
           'Voos por base (KMZ, ZIP)',
           'Todos os blocos (KML, ZIP)',
@@ -3140,6 +3184,31 @@ await scenario('exportar-voos-sem-bases', async () => {
       (await page.getByTestId('summary-export-mission').getAttribute('title')) ===
         (await cab.getAttribute('title')),
     `${cabName} / ${fimName}`,
+  )
+  // e o par KML dele, «Exportar KML da área» (no fim do cartão 7 e na seta): os KML
+  // dos blocos todos soltos, o mesmo que «Todos os blocos (KML, ZIP)»
+  const fimKml = page.getByTestId('summary-export-area')
+  const [fimKmlName, fimKmlFile] = await download(
+    page,
+    fimKml,
+    join(OUT, 'sem-bases-cartao7-kml.zip'),
+  )
+  const cabKml = (await headerMenu(page)).getByTestId('header-export-area')
+  const cabKmlNome = await itemName(cabKml)
+  const cabKmlDica = await cabKml.getAttribute('title')
+  const [cabKmlName, cabKmlFile] = await download(page, cabKml, join(OUT, 'sem-bases-cab-kml.zip'))
+  const todosKml = await zipTexts(kmlFile)
+  check(
+    'sem bases: «Exportar KML da área (ZIP)» escreve o ZIP de todos os blocos, no cartão 7 e na seta, e a dica di-lo',
+    (await fimKml.innerText()).trim() === 'Exportar KML da área (ZIP)' &&
+      cabKmlNome === 'Exportar KML da área (ZIP)' &&
+      (await fimKml.getAttribute('title')) === cabKmlDica &&
+      /Todos os blocos \(KML, ZIP\)/.test(cabKmlDica) &&
+      fimKmlName === kmlName &&
+      cabKmlName === kmlName &&
+      (await zipTexts(fimKmlFile)) === todosKml &&
+      (await zipTexts(cabKmlFile)) === todosKml,
+    `${(await fimKml.innerText()).trim()} → ${fimKmlName} | ${cabKmlNome} → ${cabKmlName}`,
   )
   const kmlZip = await JSZip.loadAsync(readFileSync(kmlFile))
   const kml = Object.keys(kmlZip.files)

@@ -40,8 +40,10 @@ const menuIcon = (Icon) => <Icon className="mt-0.5 h-4 w-4 flex-none text-sky-30
 
 /**
  * As outras exportações, para a seta do botão de exportar. Primeiro, em
- * todos os separadores, o KML da área, como o botão que o cabeçalho tinha
- * (inactivo sem área válida); depois as do painel do separador aberto, com
+ * todos os separadores, «Exportar KML da área», o do fim do cartão 7 (kmlExport: o
+ * polígono da área, inactivo sem área válida, ou com a área em vários voos
+ * os KML dos blocos num ZIP, como o botão da missão), e nesse caso também
+ * «Polígono da área (KML)», só o polígono; depois as do painel do separador aberto, com
  * as condições dos botões de lá: na órbita o KMZ por nível, no circular o
  * KMZ por bloco, na área as de «Exportar voos» do cartão 7 (FlightExports)
  * menos «Um voo», que pede a escolha do voo.
@@ -59,19 +61,31 @@ function moreExports({
   exportBlocked,
 }) {
   const icon = menuIcon(IconDownload)
+  const kml = sheets.kmlExport
   /** @type {import('./ui/Menu.jsx').MenuItem[]} */
   const items = [
     {
       key: 'area-kml',
-      label: t('app.exportKml'),
+      label: kml.label,
+      description: kml.description,
+      title: kml.title,
+      icon,
+      disabled: kml.disabled,
+      onSelect: kml.onExport,
+      testId: 'header-export-area',
+    },
+  ]
+  if (kml.kind === 'zip')
+    items.push({
+      key: 'area-polygon',
+      label: t('app.areaKml'),
       description: t('app.menu.areaKml'),
       title: sheets.exportKmlTitle,
       icon,
       disabled: !area.canExportKML,
       onSelect: area.handleExportKML,
-      testId: 'header-export-area',
-    },
-  ]
+      testId: 'header-export-area-polygon',
+    })
   if (missionMode === 'orbit') {
     const { orbitPlan, orbitConfig, handleExportOrbitPerLevel } = orbit
     const stats = orbitPlan && !orbitPlan.error ? orbitPlan.stats : null

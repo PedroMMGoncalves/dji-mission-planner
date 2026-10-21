@@ -1322,9 +1322,17 @@ revisão da exportação): a missão de mapeamento do Pilot 2 não tem zonas de
 exclusão, e um `innerBoundaryIs` é recusado ou voado por cima; os buracos
 continuam a valer para os KMZ, que os contornam, e vão no KML «Bases e
 blocos». Numa área em várias partes vai só a maior (as outras são células,
-que o KMZ voa); as células desactivadas ficam dentro do polígono. Os dois
-botões avisam destes três casos (título e nota no cartão 7). O caso de uso
-é exportar a área e fazer o resto das configurações no comando.
+que o KMZ voa); as células desactivadas ficam dentro do polígono. Os
+botões que o escrevem avisam destes três casos (no título, e numa nota no
+cartão 7). O caso de uso é exportar a área e fazer o resto das
+configurações no comando.
+
+«Exportar KML da área» (no fim do cartão 7 e na seta do botão de exportar)
+é o par KML do botão da missão e segue o critério dele: com a área num
+voo, este KML da área; em vários voos, os KML dos blocos num ZIP (11.3),
+numa pasta por base com bases e todos soltos sem elas — o rótulo diz
+«(ZIP)» e a dica diz qual. Com a área em vários voos, este KML fica à
+parte, na seta, como «Polígono da área (KML)».
 
 O construtor (`buildAreaKML`) aceita extras — buracos, base, GCPs e uma
 pasta com as faixas — que servem para inspecção em SIG e para o teste de
@@ -1415,18 +1423,20 @@ missão dentro do KMZ (`<name>` da pasta do `template.kml`). Por isso:
   único); se acontecessem, o segundo leva `-b<id>`, e o ZIP recusa dois
   ficheiros com o mesmo nome em vez de escrever um por cima do outro.
 - **Escolhas** (cartão «Resumo e exportar», atrás do mesmo preflight do
-  botão do cabeçalho): «Todos os voos (KMZ, ZIP)» = `<missão>_<tipo>[-variantes]_voos.zip`,
-  todos soltos; «Voos por base (KMZ, ZIP)» = `..._voos-por-base.zip`,
-  uma pasta por base (`base-A/`, `base-B/`…) com os voos dessa base; «Um voo
-  (KMZ)» = o KMZ desse voo sozinho. Com bases, o botão do cabeçalho descarrega
-  o ZIP por base (um clique, um ficheiro: os dois ZIP com os mesmos KMZ
-  punham cada voo duas vezes no Pilot 2), sem bases o de todos; o fim do
-  cartão repete o par do cabeçalho («Exportar KML da área», «Exportar WPML
-  Avançado»), igual em tudo — nome, dica, preflight e ficheiro —, e a dica
-  diz qual dos ZIP sai. Dentro de um ZIP, os KMZ vão pela
-  ordem de voo (base a base, pela ordem dos rótulos, e em cada base pela
-  ordem do mosaico). Os KML dos blocos fazem o mesmo par, todos soltos ou
-  numa pasta por base (KML dos blocos, abaixo).
+  botão do cabeçalho): «Todos os voos (KMZ, ZIP)» =
+  `<missão>_<tipo>[-variantes]_voos.zip`, todos soltos; «Voos por base (KMZ,
+  ZIP)» = `..._voos-por-base.zip`, uma pasta por base (`base-A/`,
+  `base-B/`…) com os voos dessa base; «Um voo (KMZ)» = o KMZ desse voo
+  sozinho. Com bases, o botão do cabeçalho descarrega o ZIP por base (um
+  clique, um ficheiro: os dois ZIP com os mesmos KMZ punham cada voo duas
+  vezes no Pilot 2), sem bases o de todos; o fim do cartão repete o par do
+  cabeçalho («Exportar KML da área», «Exportar WPML Avançado»), igual em
+  tudo — nome, dica, preflight e ficheiro —, e a dica diz qual dos ZIP sai.
+  Dentro de um ZIP, os KMZ vão pela ordem de voo (base a base, pela ordem
+  dos rótulos, e em cada base pela ordem do mosaico). Os KML dos blocos
+  fazem o mesmo par, todos soltos ou numa pasta por base (KML dos blocos,
+  abaixo), e «Exportar KML da área» escreve um deles pelo mesmo critério: o
+  por base com bases, o de todos sem elas.
 - As alturas de cada KMZ são as do seu bloco (cota da zona da sua base,
   §4.1), qualquer que seja a escolha: exportar só a base B dá exactamente
   os mesmos ficheiros de B que exportar tudo.

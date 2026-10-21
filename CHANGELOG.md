@@ -188,7 +188,16 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   checklist e no relatório; o payload personalizado chama-se «Personalizado
   / LiDAR» e a sua descrição («Definido manualmente») também se traduz.
   Os KMZ e KML não mudam: levam só os códigos da aeronave e do payload.
-
+- **«Exportar KML da área» como o botão da missão.** O botão do KML no fim
+  do cartão 7 e o primeiro item da seta do botão de exportar escrevem, em
+  KML, o que o botão da missão escreve em KMZ: com a área num voo, o
+  polígono da área, como antes; com a área em vários voos, os KML dos
+  blocos num ZIP, numa pasta por base com bases (o mesmo
+  `…_kml-por-base.zip` de «Blocos por base (KML, ZIP)») e todos soltos sem
+  elas (`…_kml.zip`, o de «Todos os blocos (KML, ZIP)»). Chama-se
+  «Exportar KML da área», com «(ZIP)» quando sai um ZIP, e a dica diz qual
+  dos ZIP sai; o polígono da área inteira, sozinho, fica na seta, como
+  «Polígono da área (KML)». Os ficheiros são os mesmos.
 ### Corrigido
 
 - **Checklist de campo: a última edição antes de voltar ao planeador.** A

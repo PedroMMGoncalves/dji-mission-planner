@@ -269,10 +269,11 @@ export default function ControlPanel({
   onExportMission = null,
   canExportMission = false,
   exportMissionTitle = null,
-  exportAreaTitle = null,
-  // avisos do KML da área: buracos, partes e células desactivadas que ficam
-  // de fora ou dentro do polígono (K-B1, K-E1, K-M8 da revisão)
-  exportAreaNotes = [],
+  // «Exportar KML da área» (useFieldSheets: kmlExport): o polígono da área, ou os KML
+  // dos blocos num ZIP como o botão da missão, com o rótulo, a dica e os
+  // avisos do KML da área (buracos, partes e células desactivadas que ficam
+  // de fora ou dentro do polígono: K-B1, K-E1, K-M8 da revisão)
+  exportKml = null,
 }) {
   const {
     drone,
@@ -333,10 +334,8 @@ export default function ControlPanel({
     handleExportGcps: onExportGcps,
     // voos por bloco (layoutBlocks): rótulo "A-1" e cor da base
     baseLayout = null,
-    // secção 7: exportação do KML da área, e o que a da missão escreve
-    // ('kmz' | 'zip'), para o botão dizer o que sai
-    handleExportKML: onExportArea = null,
-    canExportKML: canExportArea = false,
+    // secção 7: o que a exportação da missão escreve ('kmz' | 'zip'), para o
+    // botão dizer o que sai
     exportKind = 'kmz',
   } = area
   const {
@@ -1813,25 +1812,25 @@ export default function ControlPanel({
               {missionExportLabel(t, exportKind)}
             </Button>
           )}
-          {onExportArea && (
+          {exportKml && (
             <Button
               data-testid="summary-export-area"
-              onClick={onExportArea}
-              disabled={!canExportArea}
-              title={exportAreaTitle ?? undefined}
+              onClick={exportKml.onExport}
+              disabled={exportKml.disabled}
+              title={exportKml.title}
               icon={<IconDownload />}
               size="field"
               className="w-full"
             >
-              {t('app.exportKml')}
+              {exportKml.label}
             </Button>
           )}
-          {exportAreaNotes.length > 0 && (
+          {exportKml?.notes.length > 0 && (
             <p
               data-testid="summary-export-area-notes"
               className="text-xs leading-relaxed text-amber-300"
             >
-              {exportAreaNotes.join(' ')}
+              {exportKml.notes.join(' ')}
             </p>
           )}
         </Section>

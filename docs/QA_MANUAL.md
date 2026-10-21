@@ -294,10 +294,14 @@ A app é usada em campo: numa janela de **1024 × 768** e noutra de **834 ×
   com B-3 dá `..._B-3.kmz`; o botão de exportar do cabeçalho diz **(ZIP)** e
   descarrega o ZIP por base, com a dica a dizê-lo; o botão do fim do cartão
   7 é a parte principal desse botão, com o mesmo nome, a mesma dica e o
-  mesmo ficheiro; a seta do botão do cabeçalho abre **Exportar KML da área**
-  e as de **Exportar voos** (menos **Um voo**), com os nomes, as dicas e os
-  ficheiros do cartão 7. Com um bloqueio no preflight ficam os KMZ
-  desactivados (os KML não), no cartão e no menu.
+  mesmo ficheiro; **Exportar KML da área (ZIP)**, no fim do cartão 7, dá o
+  mesmo `..._kml-por-base.zip` que **Blocos por base (KML, ZIP)** (sem
+  bases, o `..._kml.zip` de **Todos os blocos (KML, ZIP)**), com a dica a
+  dizê-lo; a seta do botão do cabeçalho abre **Exportar KML da área (ZIP)**,
+  o mesmo, **Polígono da área (KML)**, só o polígono da área
+  (`<missão>.kml`), e as de **Exportar voos** (menos **Um voo**), com os
+  nomes, as dicas e os ficheiros do cartão 7. Com um bloqueio no preflight
+  ficam os KMZ desactivados (os KML não), no cartão e no menu.
 - ☐ **Bases e blocos (KML)** aberto no Google Earth (ou no telemóvel).
   **Esperado:** pontos «Base A» e «Base B» com a ficha ao clicar, círculos
   das zonas, contornos dos blocos com o rótulo do voo.
@@ -602,12 +606,13 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
 - ☐ Com o teclado: Tab até à seta do botão **Exportar**, seta para baixo,
   setas, Esc; outra vez seta para baixo, e Tab.
   **Esperado:** o menu abre com o foco no primeiro item activo, as setas
-  andam por todos os itens (um inactivo recebe o foco e o leitor de ecrã
-  lê a dica, mas o Enter não o escolhe), Esc fecha e o foco volta à seta,
-  Tab fecha e o foco segue para o botão seguinte; em todos os separadores
-  o primeiro item é **Exportar KML da área** (inactivo sem área), o único
-  nos separadores Face e Corredor; na Órbita segue-se o KMZ por nível e no
-  Circular o KMZ por bloco.
+  andam por todos os itens (um inactivo recebe o foco e o leitor de ecrã lê
+  a dica, mas o Enter não o escolhe), Esc fecha e o foco volta à seta, Tab
+  fecha e o foco segue para o botão seguinte; em todos os separadores o
+  primeiro item é **Exportar KML da área** (inactivo sem área; com a área em
+  vários voos, **Exportar KML da área (ZIP)**, seguido de **Polígono da área
+  (KML)**), sem outros nos separadores Face e Corredor; na Órbita segue-se o
+  KMZ por nível e no Circular o KMZ por bloco.
 - ☐ Área com 15 ou mais bases e zonas reduzidas (relevo acidentado); abrir
   o **preflight** no cabeçalho.
   **Esperado:** a lista abre por cima do mapa, sem o empurrar; no topo as

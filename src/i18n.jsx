@@ -193,7 +193,12 @@ const BASE_DICT = {
     pt: 'Checklist de campo UAS (pré-campo, durante, pós-campo) + relatório de missão',
     en: 'UAS field checklist (pre-field, in-field, post-field) + mission report',
   },
+  // o par KML do botão de exportar (fim do cartão 7 e seta do cabeçalho): com
+  // a área em vários voos, os KML dos blocos num ZIP, como o KMZ
   'app.exportKml': { pt: 'Exportar KML da área', en: 'Export area KML' },
+  'app.exportKmlZip': { pt: 'Exportar KML da área (ZIP)', en: 'Export area KML (ZIP)' },
+  // só o polígono da área inteira, na seta, quando o de cima é um ZIP
+  'app.areaKml': { pt: 'Polígono da área (KML)', en: 'Area polygon (KML)' },
   'map.moveArea': {
     pt: 'Arrastar para mover a área inteira (a base fica no sítio)',
     en: 'Drag to move the whole area (the base stays)',
@@ -205,6 +210,15 @@ const BASE_DICT = {
   'app.exportKmlTitle': {
     pt: 'Só o polígono da área, para definir o levantamento no DJI Pilot 2',
     en: 'The area polygon only, to set the survey up in DJI Pilot 2',
+  },
+  // a área em vários voos: qual dos ZIP de «Exportar voos» o botão escreve
+  'app.exportKmlAllTitle': {
+    pt: 'Um KML por bloco, todos soltos num ZIP ({file}): o mesmo que «Todos os blocos (KML, ZIP)» em «Exportar voos». O polígono da área inteira, sozinho, é «Polígono da área (KML)», na seta do botão de exportar.',
+    en: 'One KML per block, all loose in a ZIP ({file}): the same as “All blocks (KML, ZIP)” under “Export flights”. The whole area polygon alone is “Area polygon (KML)”, under the export button’s arrow.',
+  },
+  'app.exportKmlByBaseTitle': {
+    pt: 'Um KML por bloco, numa pasta por base ({file}): o mesmo que «Blocos por base (KML, ZIP)» em «Exportar voos». O polígono da área inteira, sozinho, é «Polígono da área (KML)», na seta do botão de exportar.',
+    en: 'One KML per block, in one folder per base ({file}): the same as “Blocks by base (KML, ZIP)” under “Export flights”. The whole area polygon alone is “Area polygon (KML)”, under the export button’s arrow.',
   },
   'app.kmlHoleNote': {
     pt: 'O buraco fica de fora do KML (o Pilot 2 não tem zonas de exclusão): a missão do Pilot 2 vai cobri-lo.',
