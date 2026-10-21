@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * Menu de acções (role="menu"), aberto por um botão (useMenu): abre por
- * baixo dele e o foco entra no primeiro item (no último, com a seta para
- * cima); as setas, Home e End movem-no pelos itens activos, Enter e Espaço
- * escolhem (o clique do próprio botão), Esc e Tab fecham e devolvem o foco
- * ao botão, e um clique fora fecha sem lhe mexer. Os itens só existem com
- * o menu aberto.
+ * baixo dele e o foco entra no primeiro item activo (no último, com a seta
+ * para cima); as setas, Home e End movem-no por todos os itens, Enter e
+ * Espaço escolhem (o clique do próprio botão), Esc fecha e devolve o foco
+ * ao botão, Tab fecha e segue para o controlo seguinte (a partir do botão),
+ * e um clique fora fecha sem lhe mexer. Um item inactivo é aria-disabled:
+ * recebe o foco, para o leitor de ecrã dizer porquê (a dica), mas não
+ * escolhe. Os itens só existem com o menu aberto.
  */
 
 /**
@@ -79,10 +81,12 @@ export function Menu({
   useEffect(() => {
     const el = ref.current
     if (!open || !el) return
-    const enabled = el.querySelectorAll('[role="menuitem"]:not([disabled])')
-    const first = start === 'last' ? enabled[enabled.length - 1] : enabled[0]
-    // sem itens activos (sem plano, por exemplo) o foco fica no próprio
-    // menu, para o Esc o fechar e o leitor de ecrã o anunciar
+    const all = [...el.querySelectorAll('[role="menuitem"]')]
+    const enabled = all.filter((it) => it.getAttribute('aria-disabled') !== 'true')
+    // todos inactivos (sem plano, por exemplo): o primeiro, que diz porquê;
+    // sem itens, o próprio menu, para o Esc o fechar
+    const pool = enabled.length > 0 ? enabled : all
+    const first = start === 'last' ? pool[pool.length - 1] : pool[0]
     if (first instanceof HTMLElement) first.focus()
     else el.focus()
     // encostado a um bordo (o cabeçalho partido em duas linhas), desliza
@@ -99,20 +103,24 @@ export function Menu({
   }, [open, start, close, triggerRef])
   if (!open) return null
   const onKeyDown = (e) => {
-    const enabled = [...e.currentTarget.querySelectorAll('[role="menuitem"]:not([disabled])')]
-    const i = enabled.indexOf(document.activeElement)
+    const all = [...e.currentTarget.querySelectorAll('[role="menuitem"]')]
+    const i = all.indexOf(document.activeElement)
     const go = (j) => {
       e.preventDefault()
-      enabled[(j + enabled.length) % enabled.length]?.focus()
+      all[(j + all.length) % all.length]?.focus()
     }
     if (e.key === 'ArrowDown') go(i + 1)
-    else if (e.key === 'ArrowUp') go(i < 0 ? enabled.length - 1 : i - 1)
+    else if (e.key === 'ArrowUp') go(i < 0 ? all.length - 1 : i - 1)
     else if (e.key === 'Home') go(0)
-    else if (e.key === 'End') go(enabled.length - 1)
-    else if (e.key === 'Escape' || e.key === 'Tab') {
+    else if (e.key === 'End') go(all.length - 1)
+    else if (e.key === 'Escape') {
       // o Esc é deste menu: nem a gaveta nem a base seleccionada o recebem
       e.preventDefault()
       e.stopPropagation()
+      close(true)
+    } else if (e.key === 'Tab') {
+      // fecha e deixa o Tab seguir: o foco volta já ao botão, e o browser
+      // passa-o ao controlo seguinte (ou ao anterior, com Shift)
       close(true)
     }
   }
@@ -124,7 +132,7 @@ export function Menu({
       aria-label={label}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className={`absolute top-full z-10 mt-2 rounded-xl border border-slate-700 bg-slate-900 p-1.5 text-left shadow-[0_24px_60px_rgba(0,0,0,0.6)] focus:outline-none ${className}`}
+      className={`absolute top-full z-10 mt-2 rounded-xl border border-slate-700 bg-slate-900 p-1.5 text-left shadow-[0_24px_60px_rgba(0,0,0,0.6)] ${className}`}
     >
       {items.map((it) => (
         <button
@@ -132,14 +140,15 @@ export function Menu({
           type="button"
           role="menuitem"
           tabIndex={-1}
-          disabled={it.disabled}
+          aria-disabled={it.disabled || undefined}
           title={it.title}
           data-testid={it.testId}
           onClick={() => {
+            if (it.disabled) return
             close(true)
             it.onSelect()
           }}
-          className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-slate-100 transition-colors hover:bg-raised focus:bg-raised focus-visible:outline-offset-[-2px] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          className="flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-slate-100 transition-colors hover:bg-raised focus:bg-raised focus-visible:outline-offset-[-2px] aria-disabled:cursor-not-allowed aria-disabled:opacity-40 aria-disabled:hover:bg-transparent"
         >
           {it.icon}
           <span className="min-w-0">

@@ -793,6 +793,31 @@ await scenario('desenho-teclas-primeiro-vertice', async () => {
       !/bloqueio|blocker|⛔/.test(pastilha),
     pastilha,
   )
+  // o menu da seta do botão de exportar, com o teclado: sem área o KML da
+  // área está inactivo (aria-disabled) mas recebe o foco, para se ouvir a
+  // dica; o Enter não o escolhe; o Tab fecha o menu e segue em frente
+  await page
+    .locator('header')
+    .getByRole('button', { name: /Outras exportações|Other exports/ })
+    .focus()
+  await page.keyboard.press('ArrowDown')
+  const itemFoco = await page.evaluate(() => {
+    const el = document.activeElement
+    return `${el?.getAttribute('role')} ${el?.getAttribute('aria-disabled')} ${!!el?.title}`
+  })
+  await page.keyboard.press('Enter')
+  const aberto = await page.locator('#export-menu').count()
+  await page.keyboard.press('Tab')
+  const fechado = await page.locator('#export-menu').count()
+  const seguinte = await page.evaluate(() => document.activeElement?.getAttribute('data-testid'))
+  check(
+    'menu de exportar: o item inactivo recebe o foco e não escolhe; o Tab fecha e segue',
+    itemFoco === 'menuitem true true' &&
+      aberto === 1 &&
+      fechado === 0 &&
+      seguinte === 'open-settings',
+    `${itemFoco}, aberto: ${aberto}, fechado: ${fechado}, foco: ${seguinte}`,
+  )
   const draft = page.locator('path.draft-vertex')
   const closer = page.locator('path.draft-close')
   const handles = page.locator('.vertex-handle')

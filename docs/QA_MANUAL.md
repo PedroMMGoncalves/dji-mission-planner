@@ -488,12 +488,14 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   fecha; o separador não muda; no cartão 1, o mesmo erro. Um projecto que
   abre a seguir tira a faixa.
 - ☐ Com o teclado: Tab até à seta do botão **Exportar**, seta para baixo,
-  setas, Esc.
+  setas, Esc; outra vez seta para baixo, e Tab.
   **Esperado:** o menu abre com o foco no primeiro item activo, as setas
-  andam pelos itens, Esc fecha e o foco volta à seta; em todos os
-  separadores o primeiro item é **Exportar KML da área** (inactivo sem
-  área), o único nos separadores Face e Corredor; na Órbita segue-se o KMZ
-  por nível e no Circular o KMZ por bloco.
+  andam por todos os itens (um inactivo recebe o foco e o leitor de ecrã
+  lê a dica, mas o Enter não o escolhe), Esc fecha e o foco volta à seta,
+  Tab fecha e o foco segue para o botão seguinte; em todos os separadores
+  o primeiro item é **Exportar KML da área** (inactivo sem área), o único
+  nos separadores Face e Corredor; na Órbita segue-se o KMZ por nível e no
+  Circular o KMZ por bloco.
 - ☐ Área com 15 ou mais bases e zonas reduzidas (relevo acidentado); abrir
   o **preflight** no cabeçalho.
   **Esperado:** a lista abre por cima do mapa, sem o empurrar; no topo as
