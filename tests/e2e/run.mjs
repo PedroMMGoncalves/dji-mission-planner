@@ -281,6 +281,9 @@ async function headerMenu(page) {
 }
 // o KML da área do cabeçalho, no menu da seta (o fim do cartão 7 tem o mesmo botão)
 const headerKml = async (page) => (await headerMenu(page)).getByRole('menuitem', { name: AREA_KML })
+// O campo de ficheiro do projecto do cartão 1; o menu do projecto do
+// cabeçalho tem outro igual (header-project-file).
+const projectFile = (page) => page.getByTestId('card-missao').locator('input[accept=".json"]')
 /** O nome de um item do menu: a primeira linha (a segunda diz o que sai). */
 const itemName = async (item) => (await item.innerText()).split('\n')[0].trim()
 const panelExportButton = (page, card) =>
@@ -1392,7 +1395,7 @@ await scenario('projecto-autosave-ficheiro', async () => {
     'projecto: sem projecto gravado o nome volta ao defeito',
     (await nameInput.inputValue()) !== 'projecto-e2e',
   )
-  await page.locator('input[accept=".json"]').setInputFiles(file)
+  await projectFile(page).setInputFiles(file)
   await page.waitForTimeout(800)
   check(
     'projecto: abrir o ficheiro repõe nome, dupla grelha e área',
@@ -2719,7 +2722,7 @@ await scenario('projecto-antigo-mosaico-e-base', async () => {
   await page
     .locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
     .waitFor({ state: 'attached', timeout: 20000 })
-  await page.locator('input[accept=".json"]').setInputFiles(file)
+  await projectFile(page).setInputFiles(file)
   await page.waitForTimeout(1500)
   const rows = await baseRows(page)
   check(
@@ -4700,7 +4703,7 @@ await scenario('projecto-por-cima-da-sessao', async () => {
       areaOrigin: 'anchor',
     }),
   )
-  await page.locator('input[accept=".json"]').setInputFiles(grelha)
+  await projectFile(page).setInputFiles(grelha)
   await page.waitForTimeout(1000)
   await exportReady(page)
   const sessao = await readRoutes(await exportKmz(page, join(OUT, 'por-cima-sessao.zip')))
@@ -4723,7 +4726,7 @@ await scenario('projecto-por-cima-da-sessao', async () => {
       params: { altitude: 80 },
     }),
   )
-  await page.locator('input[accept=".json"]').setInputFiles(file)
+  await projectFile(page).setInputFiles(file)
   await page.waitForTimeout(1000)
   await exportReady(page)
   const nameInput = page.getByPlaceholder(/nome-da-missao|mission-name/)
@@ -4784,7 +4787,7 @@ await scenario('ancora-editada-sobrevive', async () => {
       areaOrigin: 'anchor',
     }),
   )
-  await page.locator('input[accept=".json"]').setInputFiles(ficheiroRect)
+  await projectFile(page).setInputFiles(ficheiroRect)
   await page.waitForTimeout(1000)
   const handles = page.locator('.vertex-handle')
   check('âncora editada: o rectângulo tem 4 vértices editáveis', (await handles.count()) === 4)
@@ -5118,7 +5121,7 @@ await scenario('preflight-bloqueia-transito-atras-da-cumeada', async () => {
       bases: [{ id: 'base-a', label: 'A', point: toLL(650, 850) }],
     }),
   )
-  await page.locator('input[accept=".json"]').setInputFiles(ficheiro)
+  await projectFile(page).setInputFiles(ficheiro)
   await page.waitForTimeout(1000)
   await importDem(page, fx.demMesas)
   await configure(page, { split: 'Quadrícula' })
@@ -5329,7 +5332,7 @@ await scenario('erros-de-importacao-junto-do-botao', async () => {
   // um projecto que não abre: erro no cartão 1, junto do botão
   const mau = join(OUT, 'projecto-mau.json')
   writeFileSync(mau, JSON.stringify({ version: 2, ring: 'x' }))
-  await page.locator('input[accept=".json"]').setInputFiles(mau)
+  await projectFile(page).setInputFiles(mau)
   await page.waitForTimeout(600)
   check(
     'projecto: o erro de um projecto que não abre está no cartão 1, junto de «Abrir projecto»',

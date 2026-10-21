@@ -264,8 +264,9 @@ function ProjectButton({ missionName, setMissionName, session, onOpen }) {
       <input
         ref={fileRef}
         type="file"
-        accept=".json,application/json"
+        accept=".json"
         className="hidden"
+        data-testid="header-project-file"
         onChange={(e) => {
           session.importProject(e.target.files?.[0])
           e.target.value = ''
