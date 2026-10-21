@@ -2937,13 +2937,23 @@ await scenario('bases-exportar-por-base', async () => {
   )
   await page.getByRole('button', { name: /Voltar ao planeador|Back to planner/ }).click()
 
-  // relatório: a mesma ficha
+  // relatório: a mesma ficha, inteira no botão por baixo da tabela dos voos
+  // (a tabela tem a ficha de cada base numa linha)
   await page.getByRole('button', { name: /^(Relatório|Report)$/ }).click()
   const rep = page.getByTestId('report-bases')
   await rep.waitFor({ timeout: 10000 })
+  const verFichas = rep.getByRole('button', { name: /fichas? de campo|field sheets?/ })
+  check(
+    'relatório: as fichas inteiras começam fechadas, no botão por baixo da tabela',
+    (await verFichas.getAttribute('aria-expanded')) === 'false' &&
+      (await rep.getByTestId('base-sheet').count()) === 0,
+  )
+  await verFichas.click()
+  await rep.getByTestId('base-sheet').first().waitFor({ timeout: 10000 })
   check(
     'relatório: ficha por base',
-    (await rep.getByTestId('base-sheet').count()) === withFlights.length,
+    (await verFichas.getAttribute('aria-expanded')) === 'true' &&
+      (await rep.getByTestId('base-sheet').count()) === withFlights.length,
   )
   // a tabela dos blocos com os rótulos dos voos do planeador (A-1…), pela
   // ordem de voo — dizia B01… enquanto o mapa dizia 1… e as fichas A-1…
@@ -2954,6 +2964,35 @@ await scenario('bases-exportar-por-base', async () => {
     'relatório: a tabela dos blocos usa os rótulos dos voos, pela ordem de voo',
     repFlights.join(',') === order.join(','),
     `${repFlights.join(' ')} / ${order.join(' ')}`,
+  )
+  // a ficha de cada base numa linha da tabela: uma vez cada base com voos,
+  // pela ordem dos rótulos (os voos dela por baixo)
+  const repBases = await page
+    .getByTestId('report-base')
+    .evaluateAll((els) => els.map((e) => e.dataset.baseLabel))
+  check(
+    'relatório: cada base com voos uma vez na tabela dos voos',
+    repBases.join() === withFlights.map((r) => r.label).join(),
+    repBases.join(' '),
+  )
+  // impressão: a barra do relatório não sai no papel; o mapa e a tabela sim,
+  // em fundo branco
+  await page.emulateMedia({ media: 'print' })
+  const impresso = await page.evaluate(() => {
+    const root = document.querySelector('[role="dialog"][aria-labelledby="rep-title"]')
+    const vis = (el) => Boolean(el) && el.getClientRects().length > 0
+    return {
+      barra: vis(root?.querySelector('header')),
+      mapa: vis(root?.querySelector('canvas')),
+      tabela: vis(root?.querySelector('[data-testid="report-block-row"]')),
+      fundo: getComputedStyle(document.body).backgroundColor,
+    }
+  })
+  await page.emulateMedia({ media: 'screen' })
+  check(
+    'relatório impresso: sem a barra de cima, com o mapa e a tabela dos voos, em branco',
+    !impresso.barra && impresso.mapa && impresso.tabela && impresso.fundo === 'rgb(255, 255, 255)',
+    JSON.stringify(impresso),
   )
   check('por base: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
