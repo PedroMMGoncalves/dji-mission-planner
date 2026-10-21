@@ -502,10 +502,6 @@ const BASE_DICT = {
   'stats.intervalManual': { pt: 'manual', en: 'manual' },
   'takeoff.label': { pt: 'Descolagem', en: 'Take-off' },
   'takeoff.base': { pt: 'Na base {label}', en: 'At base {label}' },
-  'takeoff.baseHint': {
-    pt: 'As alturas exportadas são relativas à base {base} (cota {elev} m): o chão do alvo está a {dh} m dela, e essa diferença soma-se às alturas do plano.',
-    en: 'Exported heights are relative to base {base} (elevation {elev} m): the target ground is {dh} m from it, and that difference is added to the plan heights.',
-  },
   'takeoff.err.base-missing': {
     pt: 'A base escolhida já não existe no projecto: escolha outra descolagem.',
     en: 'The chosen base is no longer in the project: choose another take-off.',

@@ -319,6 +319,8 @@ export function Drawer({ id, n = null, title, open, onClose, part = null, reveal
           className="min-w-0 flex-1 text-[15px] font-semibold tracking-tight text-slate-100"
         >
           {title}
+          {/* o nome da gaveta lê-se «Parâmetros de voo: mais opções» */}
+          <span className="sr-only">: </span>
           <span className="mt-px block text-[12.5px] font-normal tracking-normal text-slate-400">
             {t('cards.drawerSub')}
           </span>
@@ -462,7 +464,7 @@ export function SubSection({
  * direita (SelectChevron como `unit`), e as opções em fundo escuro.
  */
 export const selectInput =
-  'h-full w-full min-w-0 flex-1 cursor-pointer appearance-none bg-field pr-6 text-sm font-medium text-slate-100 outline-none disabled:cursor-not-allowed disabled:opacity-40'
+  'h-full w-full min-w-0 flex-1 cursor-pointer appearance-none bg-field pr-6 text-[13px] font-medium text-slate-100 outline-none disabled:cursor-not-allowed disabled:opacity-40'
 
 /** A seta de um select (`unit` do Field): os cliques passam para o select. */
 export function SelectChevron() {
@@ -597,70 +599,5 @@ export function RthLine({ info }) {
       {t('safety.rth', { rth: rthRangeLabel(info), takeoff: info.takeoffM })}
       <span className="mt-0.5 block text-xs text-slate-400">{t('safety.rthHint')}</span>
     </p>
-  )
-}
-
-/** Cartão das acções de segurança dos painéis dos outros modos. */
-export function SafetyCard({ id = 'seguranca', n, safety, onChange, rthInfo = null }) {
-  const t = useT()
-  return (
-    <Card id={id} n={n} title={t('safety.title')}>
-      <SafetyActions safety={safety} onChange={onChange} />
-      <RthLine info={rthInfo} />
-    </Card>
-  )
-}
-
-/**
- * Descolagem da face ou da órbita (src/mission/takeoffRef.js): no chão do
- * alvo, como sempre, ou numa base do projecto, com as alturas exportadas
- * convertidas pela diferença de cotas.
- */
-export function TakeoffSelect({
-  value,
-  onChange,
-  bases = [],
-  takeoff = null,
-  targetLabel,
-  targetHint,
-  testId = 'takeoff',
-}) {
-  const t = useT()
-  const signed = (v) => (v >= 0 ? `+${v.toFixed(1)}` : v.toFixed(1))
-  return (
-    <div className="mt-2" data-testid={testId}>
-      <label htmlFor={`${testId}-select`} className="mb-1 block text-sm text-slate-300">
-        {t('takeoff.label')}
-      </label>
-      <select
-        id={`${testId}-select`}
-        data-testid={`${testId}-select`}
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value || null)}
-        className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
-      >
-        <option value="">{targetLabel}</option>
-        {bases.map((b) => (
-          <option key={b.id} value={b.id}>
-            {t('takeoff.base', { label: b.label })}
-          </option>
-        ))}
-      </select>
-      {takeoff?.error ? (
-        <p className="mt-1 text-xs leading-relaxed text-red-300">
-          ⚠ {t(`takeoff.err.${takeoff.error}`)}
-        </p>
-      ) : takeoff?.mode === 'base' ? (
-        <p className="mt-1 text-xs leading-relaxed text-slate-400">
-          {t('takeoff.baseHint', {
-            base: takeoff.base?.label ?? '',
-            dh: signed(takeoff.dh),
-            elev: Number.isFinite(takeoff.baseElev) ? Math.round(takeoff.baseElev) : '—',
-          })}
-        </p>
-      ) : (
-        <p className="mt-1 text-xs leading-relaxed text-slate-400">{targetHint}</p>
-      )}
-    </div>
   )
 }

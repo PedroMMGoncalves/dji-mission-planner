@@ -45,11 +45,10 @@ export default {
   },
   'cards.slope': { pt: 'Declive', en: 'Slope' },
   'cards.slopeAvailable': {
-    pt: 'Declive médio de {slope}°: há uma sugestão de azimute das faixas em «Mais opções».',
-    en: 'Mean slope of {slope}°: a line-azimuth suggestion is under “More options”.',
+    pt: 'Declive médio de {slope}°: há uma sugestão de azimute das faixas em «Datum vertical e mais opções».',
+    en: 'Mean slope of {slope}°: a line-azimuth suggestion is under “Vertical datum and more options”.',
   },
   'cards.cells': { pt: 'Células e blocos', en: 'Cells and blocks' },
-  'cards.preset': { pt: 'Tipo de levantamento', en: 'Survey type' },
   'cards.sensor': { pt: 'Sensor', en: 'Sensor' },
   'cards.extras.summary': {
     pt: 'GCPs: {gcp} · pontos de inspecção: {n}',
@@ -57,25 +56,11 @@ export default {
   },
   'cards.extras.gcpOff': { pt: 'não planeados', en: 'not planned' },
   'cards.extras.inspecting': {
-    pt: 'A marcar pontos de inspecção: cada clique no mapa acrescenta um. A lista e a exportação estão em «Mais opções».',
-    en: 'Placing inspection points: each click on the map adds one. The list and the export are under “More options”.',
+    pt: 'A marcar pontos de inspecção: cada clique no mapa acrescenta um. A lista e a exportação estão em «Pontos de inspecção».',
+    en: 'Placing inspection points: each click on the map adds one. The list and the export are under “Inspection points”.',
   },
   'cards.summary.flights': { pt: 'Voos', en: 'Flights' },
   'cards.summary.sets': { pt: 'Conjuntos de baterias', en: 'Battery sets' },
-  'cards.summary.setsValue': {
-    pt: '{n} necessários · {s} na equipa',
-    en: '{n} needed · {s} in the team',
-  },
-  'cards.summary.setsValueOne': {
-    pt: '1 necessário · {s} na equipa',
-    en: '1 needed · {s} in the team',
-  },
-  'cards.summary.setsUnknown': { pt: '{n} necessários', en: '{n} needed' },
-  'cards.summary.setsUnknownOne': { pt: '1 necessário', en: '1 needed' },
-  'cards.summary.longest': {
-    pt: 'Voo mais longo / tempo útil',
-    en: 'Longest flight / usable time',
-  },
   'cards.versionNote': {
     pt: 'Projecto gravado com a versão {v}; esta é a {now}. Desde então mudou:',
     en: 'Project saved with version {v}; this is {now}. Since then:',
