@@ -705,6 +705,14 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
       setPanelOpen(true)
     } else setPanelOpen((v) => !v)
   }
+  // mudar de separador mostra o painel dele (recolhido no tablet ou com o
+  // «Painel» desligado, a secção que se pedisse ficava escondida) e fecha a
+  // operação do dia: a barra dos modos e as ligações dos painéis
+  const showMode = (m) => {
+    setPanelOpen(true)
+    day.setOpen(false)
+    changeMissionMode(m)
+  }
 
   // o preflight do separador aberto: avisos, bloqueios e o que os alimenta
   // (src/hooks/usePreflight.js)
@@ -931,11 +939,7 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
           <MissionModeSelector
             mode={missionMode}
             // um modo escolhido mostra o seu painel (e fecha a operação do dia)
-            onChange={(m) => {
-              setPanelOpen(true)
-              day.setOpen(false)
-              changeMissionMode(m)
-            }}
+            onChange={showMode}
             panelOpen={panelShown}
             onTogglePanel={togglePanel}
           />
@@ -958,7 +962,7 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
                 // «Importar um GeoTIFF em Área e relevo», no aviso do afastamento
                 onOpenArea={() => {
                   setAreaReveal({ id: 'area' })
-                  changeMissionMode('area')
+                  showMode('area')
                 }}
                 cameraOk={sensor.type === 'camera'}
                 mode={mode}
@@ -1062,7 +1066,7 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
                 exportBlocked={exportBlocked}
                 onRemove={() => {
                   removeCircular()
-                  changeMissionMode('area')
+                  showMode('area')
                 }}
               />
             )}
