@@ -2,12 +2,12 @@
  * Fichas de campo: uma por base com a área dividida em blocos, ou a da rota
  * única com a base marcada (área sem blocos, corredor, circular), com os
  * parâmetros que o piloto confere no Pilot 2, a linha do dia contra os
- * conjuntos de baterias, e os KML que as levam (bases e blocos; KML por
- * base) com as notas do KML da área.
+ * conjuntos de baterias, e os KML que as levam (bases e blocos; os KML dos
+ * blocos, todos num ZIP ou numa pasta por base) com as notas do KML da área.
  */
 import { useCallback, useMemo } from 'react'
 import { buildBasesKML } from '../mission/basesKml.js'
-import { blocksKmlByBase } from '../mission/blocksKml.js'
+import { blocksKmlAll, blocksKmlByBase } from '../mission/blocksKml.js'
 import {
   baseFieldSheets,
   daySummary,
@@ -302,6 +302,33 @@ export function useFieldSheets({
     t,
   ])
 
+  // KML dos blocos, todos soltos num ZIP (o par do ZIP de todos os voos):
+  // um KML por bloco só com o polígono, com ou sem bases; sem preflight,
+  // como os outros KML
+  const handleExportKmlAll = useCallback(() => {
+    if (!blocks?.length) return
+    runExport(async () => {
+      const { entries } = blocksKmlAll({
+        missionName: missionName.trim() || areaSafeName,
+        blocks,
+        layout: baseLayout,
+        spacingM: spacing,
+        area: ring ? { ring, holes } : null,
+      })
+      downloadBlob(await buildFilesZip(entries), `${exportBaseName}_kml.zip`)
+    })
+  }, [
+    blocks,
+    runExport,
+    missionName,
+    areaSafeName,
+    baseLayout,
+    spacing,
+    ring,
+    holes,
+    exportBaseName,
+  ])
+
   // KML por base (secção 7 da revisão da exportação): um ZIP com uma pasta
   // por base, um KML por bloco só com o polígono (a missão de mapeamento do
   // Pilot 2, que calcula a rota dele) e mapa/ com a base; sem preflight,
@@ -344,6 +371,7 @@ export function useFieldSheets({
     areaKmlNotes,
     exportKmlTitle,
     handleExportBasesKml,
+    handleExportKmlAll,
     handleExportKmlByBase,
   }
 }

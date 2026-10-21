@@ -276,9 +276,10 @@ function InstrucoesPt() {
           botão avisa); os GCPs têm o seu KML, e as bases, zonas e blocos o «Bases e blocos (KML)».
         </Li>
         <Li>
-          <strong>Blocos por base (KML, ZIP)</strong> — uma pasta por base com um KML por bloco, só
-          o polígono, para a missão de mapeamento do Pilot 2 (o comando planeia a rota: confirme a
-          altura, o ângulo das faixas e o tempo), e mapa/ com a base, a zona e os blocos.
+          <strong>KML dos blocos</strong> — um KML por bloco, só o polígono, para a missão de
+          mapeamento do Pilot 2 (o comando planeia a rota: confirme a altura, o ângulo das faixas e
+          o tempo): «Todos os blocos (KML, ZIP)» (…_kml.zip, todos soltos) ou «Blocos por base (KML,
+          ZIP)» (…_kml-por-base.zip, uma pasta por base, com mapa/ com a base, a zona e os blocos).
         </Li>
         <Li>
           <strong>WPML (KMZ)</strong> — missão executável com waypoints e disparo automático; com
@@ -286,13 +287,14 @@ function InstrucoesPt() {
           (missao_area-tf_A-1.kmz, que é o que o Pilot 2 mostra), pela ordem de voo.
         </Li>
         <Li>
-          <strong>Exportar voos</strong> (cartão 7, Resumo e exportar) — «Todos os voos (ZIP)»
-          (…_voos.zip, todos soltos), «Todos os voos por base (ZIP)» (…_voos-por-base.zip, uma pasta
-          por base: com vários pilotos, cada um leva as pastas das suas bases) ou «Um voo (KMZ)».
-          Com bases, o botão de exportar do cabeçalho descarrega o ZIP por base. A checklist de
-          campo e o relatório trazem a ficha de cada base (coordenadas com ligação para os mapas,
-          zona, cota, voos com os ficheiros, baterias); «Bases e blocos (KML)» leva as bases, as
-          zonas e os blocos com o rótulo do voo para o Google Earth ou o telemóvel.
+          <strong>Exportar voos</strong> (cartão 7, Resumo e exportar) — dois pares iguais, KMZ e
+          KML. KMZ: «Todos os voos (KMZ, ZIP)» (…_voos.zip, todos soltos), «Voos por base (KMZ,
+          ZIP)» (…_voos-por-base.zip, uma pasta por base: com vários pilotos, cada um leva as pastas
+          das suas bases) ou «Um voo (KMZ)»; KML: o polígono de cada bloco, todos ou por base
+          (acima). Com bases, o botão de exportar do cabeçalho descarrega o ZIP por base. A
+          checklist de campo e o relatório trazem a ficha de cada base (coordenadas com ligação para
+          os mapas, zona, cota, voos com os ficheiros, baterias); «Bases e blocos (KML)» leva as
+          bases, as zonas e os blocos com o rótulo do voo para o Google Earth ou o telemóvel.
         </Li>
         <Li>
           <strong>Acções de segurança</strong> (cartão 5 da área, e um cartão próprio nos outros
@@ -600,9 +602,10 @@ function InstrucoesEn() {
           have their own KML, and bases, zones and blocks the “Bases and blocks (KML)”.
         </Li>
         <Li>
-          <strong>Blocks by base (KML, ZIP)</strong> — one folder per base with one KML per block,
-          the polygon only, for a Pilot 2 mapping mission (the controller plans the route: check
-          height, line angle and time), plus mapa/ with the base, the zone and the blocks.
+          <strong>Block KMLs</strong> — one KML per block, the polygon only, for a Pilot 2 mapping
+          mission (the controller plans the route: check height, line angle and time): “All blocks
+          (KML, ZIP)” (…_kml.zip, all loose) or “Blocks by base (KML, ZIP)” (…_kml-por-base.zip, one
+          folder per base, with mapa/ holding the base, the zone and the blocks).
         </Li>
         <Li>
           <strong>WPML (KMZ)</strong> — executable mission with waypoints and automatic camera
@@ -610,9 +613,10 @@ function InstrucoesEn() {
           after its flight (mission_area-tf_A-1.kmz, which is what Pilot 2 shows), in flight order.
         </Li>
         <Li>
-          <strong>Export flights</strong> (card 7, Summary and export) — “All flights (ZIP)”
-          (…_voos.zip, all loose), “All flights by base (ZIP)” (…_voos-por-base.zip, one folder per
-          base: with several pilots, each takes the folders of their bases) or “One flight (KMZ)”.
+          <strong>Export flights</strong> (card 7, Summary and export) — two matching pairs, KMZ and
+          KML. KMZ: “All flights (KMZ, ZIP)” (…_voos.zip, all loose), “Flights by base (KMZ, ZIP)”
+          (…_voos-por-base.zip, one folder per base: with several pilots, each takes the folders of
+          their bases) or “One flight (KMZ)”; KML: each block’s polygon, all or by base (above).
           With bases, the header export button downloads the ZIP by base. The field checklist and
           the report carry a sheet per base (coordinates with a maps link, zone, reference
           elevation, flights with their files, batteries); “Bases and blocks (KML)” takes the bases,

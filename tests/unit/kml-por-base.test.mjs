@@ -2,7 +2,8 @@
  * KML por base (seccao 7 da revisao da exportacao,
  * docs/REVISAO-EXPORTACAO-2026-10.md): um ZIP com uma pasta por base, um
  * KML por bloco so com o poligono (o que o Pilot 2 aceita para a missao de
- * mapeamento) e mapa/ com a base, a zona e os blocos dela.
+ * mapeamento) e mapa/ com a base, a zona e os blocos dela; e o seu par, o
+ * ZIP de todos os blocos soltos (blocksKmlAll), como os dois ZIP dos KMZ.
  */
 import JSZip from 'jszip'
 import { DOMParser } from '@xmldom/xmldom'
@@ -12,7 +13,7 @@ import { planArea } from '../../src/mission/areaPlan.js'
 import { computeZones, layoutBlocks, summarizeBases } from '../../src/mission/baseLayout.js'
 import { blockOutlines } from '../../src/mission/basesKml.js'
 import { planBlocks } from '../../src/mission/blocks.js'
-import { blocksKmlByBase } from '../../src/mission/blocksKml.js'
+import { blocksKmlAll, blocksKmlByBase } from '../../src/mission/blocksKml.js'
 import { baseFieldSheets } from '../../src/mission/fieldSheet.js'
 import { flightFiles } from '../../src/mission/flightFiles.js'
 import { buildSquareMosaic, mosaicOrientationForLines } from '../../src/mission/squareMosaic.js'
@@ -82,6 +83,27 @@ function fixture({ sideM = 500, widthM = 2000 } = {}) {
   return { ring, blocks, layout, files, sheets }
 }
 
+/** Uma area em U cortada por faixas: ha blocos com duas pecas. */
+function uFixture() {
+  const U = [
+    em(0, 0),
+    em(1200, 0),
+    em(1200, 800),
+    em(800, 800),
+    em(800, 300),
+    em(400, 300),
+    em(400, 800),
+    em(0, 800),
+  ]
+  const plan = planArea(U, null, opts)
+  const blocks = planBlocks(plan, {
+    split: { mode: 'area', maxAreaHa: 16 },
+    spacingM: 50,
+    speed: 10,
+  })
+  return { blocks, area: { ring: U } }
+}
+
 describe('KML por base: pastas, nomes e ordem', () => {
   test('uma pasta por base, um KML por bloco pela ordem de voo, e o mapa de cada base', () => {
     const fx = fixture()
@@ -133,6 +155,66 @@ describe('KML por base: pastas, nomes e ordem', () => {
       entries: [],
       warnings: [],
     })
+  })
+})
+
+describe('KML de todos os blocos: soltos num ZIP, o par do por base', () => {
+  test('os mesmos ficheiros de bloco do ZIP por base, com o mesmo texto, na raiz e sem mapa/', () => {
+    const fx = fixture()
+    const args = { missionName: 'corta norte', blocks: fx.blocks, layout: fx.layout }
+    const todos = blocksKmlAll(args)
+    const porBase = blocksKmlByBase({ ...args, sheets: fx.sheets, files: fx.files })
+    expect(todos.warnings).toEqual([])
+    expect(todos.entries.map((e) => e.path)).toEqual([
+      'corta-norte_poligono_A-1.kml',
+      'corta-norte_poligono_A-2.kml',
+      'corta-norte_poligono_B-3.kml',
+      'corta-norte_poligono_B-4.kml',
+    ])
+    const semPasta = ({ path, ...e }) => ({ ...e, file: path.split('/').pop() })
+    expect(todos.entries.map(semPasta)).toEqual(
+      porBase.entries.filter((e) => e.blockId != null).map(semPasta),
+    )
+  })
+
+  test('sem bases: pela ordem dos ids, com o numero do bloco no nome; sem blocos, nada', () => {
+    const fx = fixture()
+    const { entries } = blocksKmlAll({ missionName: 'Évora (2026)', blocks: fx.blocks })
+    expect(entries.map((e) => e.path)).toEqual([
+      'Evora-2026_poligono_1.kml',
+      'Evora-2026_poligono_2.kml',
+      'Evora-2026_poligono_3.kml',
+      'Evora-2026_poligono_4.kml',
+    ])
+    expect(entries.map((e) => e.baseLabel)).toEqual([null, null, null, null])
+    for (const blocks of [[], null])
+      expect(blocksKmlAll({ missionName: 'm', blocks })).toEqual({ entries: [], warnings: [] })
+  })
+
+  test('os avisos e as pecas do por base: buracos de fora, sem contorno avisa, um U em a e b', () => {
+    const fx = fixture()
+    const hole = [em(100, 100), em(200, 100), em(200, 200), em(100, 200)]
+    const blocks = fx.blocks.map((b) => (b.id === 1 ? { ...b, cellHoles: [hole] } : b))
+    blocks.push({ id: 9, waypoints: [em(0, 0)] })
+    const todos = blocksKmlAll({ missionName: 'm', blocks, layout: fx.layout })
+    const porBase = blocksKmlByBase({ missionName: 'm', blocks, layout: fx.layout })
+    expect(todos.warnings).toEqual(porBase.warnings)
+    expect(todos.entries.map((e) => e.text)).toEqual(porBase.entries.map((e) => e.text))
+    const u = uFixture()
+    const uTodos = blocksKmlAll({ missionName: 'u', ...u, spacingM: 50 })
+    const uPorBase = blocksKmlByBase({ missionName: 'u', ...u, layout: null, spacingM: 50 })
+    expect(uTodos.entries.map((e) => e.path)).toEqual(
+      uPorBase.entries.map((e) => e.path.replace(/^sem-base\//, '')),
+    )
+    expect(uTodos.entries.some((e) => /_\d+a\.kml$/.test(e.path))).toBe(true)
+  })
+
+  test('o ZIP: os KML soltos na raiz, sem pastas, pela ordem de voo', async () => {
+    const fx = fixture()
+    const { entries } = blocksKmlAll({ missionName: 'm', blocks: fx.blocks, layout: fx.layout })
+    const zip = await JSZip.loadAsync(await (await buildFilesZip(entries)).arrayBuffer())
+    expect(Object.keys(zip.files)).toEqual(entries.map((e) => e.path))
+    expect(Object.values(zip.files).some((f) => f.dir)).toBe(false)
   })
 })
 
@@ -229,23 +311,7 @@ describe('KML por base: cada ficheiro', () => {
   })
 
   test('faixas num U: o bloco com duas pecas da dois KML, a e b, cada um com um so poligono', () => {
-    const U = [
-      em(0, 0),
-      em(1200, 0),
-      em(1200, 800),
-      em(800, 800),
-      em(800, 300),
-      em(400, 300),
-      em(400, 800),
-      em(0, 800),
-    ]
-    const plan = planArea(U, null, opts)
-    const blocks = planBlocks(plan, {
-      split: { mode: 'area', maxAreaHa: 16 },
-      spacingM: 50,
-      speed: 10,
-    })
-    const area = { ring: U }
+    const { blocks, area } = uFixture()
     const { entries, warnings } = blocksKmlByBase({
       missionName: 'u',
       blocks,

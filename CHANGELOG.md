@@ -6,6 +6,21 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Alterado
+
+- **Exportar voos: dois pares iguais, KMZ e KML.** O cartão «Resumo e
+  exportar» da área dividida em voos passa a ter as duas saídas em pares,
+  cada uma com todos os voos soltos num ZIP e numa pasta por base: KMZ, a
+  rota de cada voo — «Todos os voos (KMZ, ZIP)» (`…_voos.zip`) e «Voos por
+  base (KMZ, ZIP)» (`…_voos-por-base.zip`), mais «Um voo (KMZ)» —; KML, o
+  polígono de cada bloco para a missão de mapeamento do Pilot 2 — o novo
+  «Todos os blocos (KML, ZIP)» (`…_kml.zip`, os KML de bloco soltos na
+  raiz, também sem bases) e «Blocos por base (KML, ZIP)»
+  (`…_kml-por-base.zip`) —, mais o mapa «Bases e blocos (KML)». Os KML de
+  bloco são os mesmos nos dois ZIP (nome, ordem e texto); os KMZ e o ZIP
+  por base não mudam. Os pares por base aparecem só com bases, os dois ao
+  mesmo tempo.
+
 ### Corrigido
 
 - **Métricas do separador aberto.** Nos separadores Corredor e Circular o
@@ -50,9 +65,9 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   voos). Todos passam a chamar-se «Exportar WPML Avançado», com «(KMZ)» ou
   «(ZIP)» conforme o que esse clique escreve, decidido dos mesmos dados da
   exportação. No cartão «Resumo e exportar» da área, com a divisão em
-  voos, o botão «Exportar os voos por base (ZIP)» repetia o «Todos os
-  voos por base (ZIP)» de «Exportar voos» logo acima: sai; sem divisão o
-  botão da missão fica, e «Área em KML» também.
+  voos, o botão «Exportar os voos por base (ZIP)» repetia o dos voos por
+  base de «Exportar voos» logo acima: sai; sem divisão o botão da missão
+  fica, e «Área em KML» também.
 - **Relatório: um nome e uma cor por voo.** O relatório numerava os voos
   1…20 no mapa, B01…B20 na tabela e A-1… nas fichas de campo, com
   todas as bases num ponto laranja e os blocos nas cores dos blocos. Passa

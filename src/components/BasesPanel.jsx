@@ -23,9 +23,10 @@ import { eyeText, viewCaveatText, viewTerrainText } from './BaseFieldSheets.jsx'
  * que se vê do ponto da base e, quando tapada, a que distância; o relevo
  * usado com a ressalva do MDT, e a camada do mapa.
  *
- * Com a área dividida em voos, a exportação por voo (`exportFlights`):
- * todos os voos, os de uma base («estou na base B») ou um só, atrás do
- * preflight, e o KML «Bases e blocos» para o campo.
+ * Com a área dividida em voos, a exportação por voo (`exportFlights`): os
+ * KMZ de todos os voos, numa pasta por base ou de um só, atrás do
+ * preflight; os KML dos blocos, todos ou numa pasta por base; e o KML
+ * «Bases e blocos» para o campo.
  *
  * No painel em cartões da área, `part="list"` desenha só a lista (cartão
  * «Bases e segurança»); as bacias de visão (ViewshedBox) vão para a gaveta
@@ -186,9 +187,13 @@ export default function BasesPanel({
 }
 
 /**
- * Exportação dos voos: «Todos os voos (ZIP)», «Voos da base X (ZIP)» por
- * base, «Um voo (KMZ)» com a escolha do voo, e o KML de campo. Os nomes
- * vêm de flightFiles (os mesmos que o ficheiro leva).
+ * Exportação dos voos, em dois pares iguais — os mesmos voos, pela mesma
+ * ordem e com os mesmos nomes, todos soltos num ZIP ou numa pasta por base:
+ * KMZ, a rota de cada voo («Todos os voos», «Voos por base», mais «Um voo»
+ * com a escolha do voo), atrás do preflight; KML, o polígono de cada bloco
+ * para a missão de mapeamento do Pilot 2 («Todos os blocos», «Blocos por
+ * base»), mais o mapa «Bases e blocos». Os pares por base só com bases. Os
+ * nomes vêm de flightFiles (os mesmos que o ficheiro leva).
  */
 export function FlightExports({
   files,
@@ -198,6 +203,7 @@ export function FlightExports({
   blocked,
   onExport,
   onExportKml,
+  onExportKmlAll = null,
   onExportKmlByBase = null,
 }) {
   const t = useT()
@@ -207,14 +213,19 @@ export function FlightExports({
   const flight = files.find((f) => f.blockId === picked) ?? files[0]
   const disabled = !canExport || blocked
   const why = blocked ? t('bases.export.blocked') : undefined
+  const kmlByBase = bases.length > 0 ? onExportKmlByBase : null
   const btn =
     'flex w-full items-center justify-center gap-1.5 rounded px-2 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40'
+  const group = 'text-xs font-medium text-slate-300'
   return (
     <div data-testid="flight-exports" className="mt-2 border-t border-slate-800 pt-2">
       <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
         {t('bases.export.title')}
       </p>
-      <div className="space-y-1.5">
+      <div role="group" aria-labelledby="flight-exports-kmz" className="space-y-1.5">
+        <p id="flight-exports-kmz" className={group}>
+          {t('bases.export.kmzGroup')}
+        </p>
         <button
           type="button"
           data-testid="export-all-flights"
@@ -275,29 +286,47 @@ export function FlightExports({
         <p className="text-xs leading-relaxed text-slate-400">
           {t('bases.export.names', { example: files[0].file })}
         </p>
-        {onExportKml && (
-          <button
-            type="button"
-            data-testid="export-bases-kml"
-            onClick={onExportKml}
-            title={t('bases.export.kmlTitle')}
-            className={`${btn} bg-emerald-700 text-white hover:bg-emerald-700`}
-          >
-            <IconDownload /> {t('bases.export.kml')}
-          </button>
-        )}
-        {onExportKmlByBase && (
-          <button
-            type="button"
-            data-testid="export-kml-by-base"
-            onClick={onExportKmlByBase}
-            title={t('bases.export.kmlByBaseTitle', { file: `${baseName}_kml-por-base.zip` })}
-            className={`${btn} bg-emerald-800 text-white hover:bg-emerald-700`}
-          >
-            <IconDownload /> {t('bases.export.kmlByBase')}
-          </button>
-        )}
       </div>
+      {(onExportKmlAll || kmlByBase || onExportKml) && (
+        <div role="group" aria-labelledby="flight-exports-kml" className="mt-2 space-y-1.5">
+          <p id="flight-exports-kml" className={group}>
+            {t('bases.export.kmlGroup')}
+          </p>
+          {onExportKmlAll && (
+            <button
+              type="button"
+              data-testid="export-kml-all"
+              onClick={onExportKmlAll}
+              title={t('bases.export.kmlAllTitle', { file: `${baseName}_kml.zip` })}
+              className={`${btn} bg-emerald-700 text-white hover:bg-emerald-700`}
+            >
+              <IconDownload /> {t('bases.export.kmlAll')}
+            </button>
+          )}
+          {kmlByBase && (
+            <button
+              type="button"
+              data-testid="export-kml-by-base"
+              onClick={kmlByBase}
+              title={t('bases.export.kmlByBaseTitle', { file: `${baseName}_kml-por-base.zip` })}
+              className={`${btn} bg-emerald-800 text-white hover:bg-emerald-700`}
+            >
+              <IconDownload /> {t('bases.export.kmlByBase')}
+            </button>
+          )}
+          {onExportKml && (
+            <button
+              type="button"
+              data-testid="export-bases-kml"
+              onClick={onExportKml}
+              title={t('bases.export.kmlTitle')}
+              className={`${btn} bg-slate-800 text-slate-200 hover:bg-slate-700`}
+            >
+              <IconDownload /> {t('bases.export.kml')}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

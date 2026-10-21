@@ -2143,9 +2143,20 @@ await scenario('bases-exportar-por-base', async () => {
   )
   const panel = page.getByTestId('flight-exports')
   check(
-    'por base: um só botão «Todos os voos por base (ZIP)» (e não um por base)',
+    'por base: um só botão «Voos por base (KMZ, ZIP)» (e não um por base)',
     (await panel.getByTestId('export-by-base').count()) === 1 &&
       (await panel.getByTestId('export-base-flights').count()) === 0,
+  )
+  // dois pares iguais: KMZ (a rota) e KML (o polígono), cada um com todos
+  // soltos num ZIP e numa pasta por base
+  const kmzGroup = panel.getByRole('group', { name: /^KMZ/ })
+  const kmlGroup = panel.getByRole('group', { name: /^KML/ })
+  check(
+    'exportar: dois pares, KMZ e KML, cada um com todos (ZIP) e por base (ZIP)',
+    (await kmzGroup.getByTestId('export-all-flights').count()) === 1 &&
+      (await kmzGroup.getByTestId('export-by-base').count()) === 1 &&
+      (await kmlGroup.getByTestId('export-kml-all').count()) === 1 &&
+      (await kmlGroup.getByTestId('export-kml-by-base').count()) === 1,
   )
   const header = headerExport(page)
   check(
@@ -2259,6 +2270,28 @@ await scenario('bases-exportar-por-base', async () => {
       )
     }),
     polys.join(' '),
+  )
+  // KML de todos os blocos, o par do ZIP de todos os voos: os mesmos KML de
+  // bloco do ZIP por base, com o mesmo texto, soltos na raiz e sem mapa/
+  const [zipKmlAll, fileKmlAll] = await download(
+    page,
+    panel.getByTestId('export-kml-all'),
+    join(OUT, 'kml-todos.zip'),
+  )
+  const kmlAllZip = await JSZip.loadAsync(readFileSync(fileKmlAll))
+  const kmlAll = Object.keys(kmlAllZip.files)
+  const kmlAllTexts = await Promise.all(kmlAll.map((n) => kmlAllZip.file(n).async('string')))
+  check(
+    'kml todos: ZIP «…_kml.zip», com o prefixo do ZIP dos voos',
+    zipKmlAll === `${prefix}_kml.zip`,
+    zipKmlAll,
+  )
+  check(
+    'kml todos: os KML de bloco do ZIP por base, soltos na raiz, pela ordem de voo e com o mesmo texto',
+    kmlAll.join(' ') === polys.map((n) => n.split('/').pop()).join(' ') &&
+      kmlAllTexts.length === polyTexts.length &&
+      kmlAllTexts.every((txt, i) => txt === polyTexts[i]),
+    kmlAll.join(' '),
   )
   const routesB = (await readRoutes(fileByBase)).filter((x) =>
     x.name.startsWith(`base-${B.label}/`),
@@ -2419,6 +2452,65 @@ await scenario('bases-exportar-por-base', async () => {
     `${repFlights.join(' ')} / ${order.join(' ')}`,
   )
   check('por base: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Sem bases: os dois «todos», KMZ e KML, com os mesmos voos pela mesma
+// ordem; os «por base» e o mapa «Bases e blocos» só aparecem com bases.
+await scenario('exportar-voos-sem-bases', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false })
+  await configure(page, { split: 'Quadrícula' })
+  await exportReady(page)
+  const panel = page.getByTestId('flight-exports')
+  const conta = (id) => panel.getByTestId(id).count()
+  check(
+    'sem bases: KMZ e KML de todos, sem os por base nem o mapa das bases',
+    (await conta('export-all-flights')) === 1 &&
+      (await conta('export-kml-all')) === 1 &&
+      (await conta('export-by-base')) === 0 &&
+      (await conta('export-kml-by-base')) === 0 &&
+      (await conta('export-bases-kml')) === 0,
+  )
+  const [kmzName, kmzFile] = await download(
+    page,
+    panel.getByTestId('export-all-flights'),
+    join(OUT, 'sem-bases-voos.zip'),
+  )
+  const [kmlName, kmlFile] = await download(
+    page,
+    panel.getByTestId('export-kml-all'),
+    join(OUT, 'sem-bases-kml.zip'),
+  )
+  const kmz = await zipOrder(kmzFile)
+  const kmlZip = await JSZip.loadAsync(readFileSync(kmlFile))
+  const kml = Object.keys(kmlZip.files)
+  // o voo no nome: o que vem depois do tipo (…_area_3.kmz, …_poligono_3.kml)
+  const voo = (n, tipo) => n.replace(new RegExp(`^.*_${tipo}_`), '').replace(/\.km[lz]$/, '')
+  check(
+    'sem bases: «…_kml.zip» ao lado de «…_voos.zip», com o mesmo prefixo',
+    kmzName.endsWith('_voos.zip') && kmlName === kmzName.replace(/_voos\.zip$/, '_kml.zip'),
+    `${kmzName} / ${kmlName}`,
+  )
+  check(
+    'sem bases: um KML por voo, solto na raiz, pela ordem e com o número dos KMZ',
+    kml.length >= 2 &&
+      kml.length === kmz.length &&
+      kml.every((n) => /^[\w-]+_poligono_\d+\.kml$/.test(n)) &&
+      kml.map((n) => voo(n, 'poligono')).join() === kmz.map((n) => voo(n, 'area')).join(),
+    `${kml.join(' ')} / ${kmz.join(' ')}`,
+  )
+  const texts = await Promise.all(kml.map((n) => kmlZip.file(n).async('string')))
+  check(
+    'sem bases: cada KML tem um só Polygon, sem buracos, com o nome do ficheiro',
+    texts.every(
+      (txt, i) =>
+        (txt.match(/<Polygon>/g) || []).length === 1 &&
+        !txt.includes('innerBoundaryIs') &&
+        txt.includes(`<name>${kml[i].replace(/\.kml$/, '')}</name>`),
+    ),
+  )
+  check('sem bases: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })
@@ -3635,6 +3727,7 @@ const INVENTARIO_BATERIA = [
   ['resumo', 'exportar todos os voos por base', inv.id('export-by-base')],
   ['resumo', 'escolher um voo', inv.id('export-flight-select')],
   ['resumo', 'exportar um voo', inv.id('export-one-flight')],
+  ['resumo', 'KML de todos os blocos', inv.id('export-kml-all')],
   ['resumo', 'KML das bases e blocos', inv.id('export-bases-kml')],
   ['resumo', 'KML dos blocos por base', inv.id('export-kml-by-base')],
 ]
@@ -5167,8 +5260,14 @@ await scenario('impressao-area-bases', async () => {
     panel.getByTestId('export-kml-by-base'),
     join(OUT, 'impressao-kml-por-base.zip'),
   )
+  const [, kmlTodos] = await download(
+    page,
+    panel.getByTestId('export-kml-all'),
+    join(OUT, 'impressao-kml-todos.zip'),
+  )
   agora.basesKml = await impressaoFicheiro(kml)
   agora.kmlPorBase = await impressaoFicheiro(porBase)
+  agora.kmlTodos = await impressaoFicheiro(kmlTodos)
   conferir('area-bases', agora, check, OUT)
   check('impressão da área com bases: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()

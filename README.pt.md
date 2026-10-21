@@ -151,7 +151,7 @@ Gestos de edição: clique acrescenta vértices (durante o desenho, Backspace ou
 | Exportação | Conteúdo | Uso |
 | --- | --- | --- |
 | KML da área | Só o anel exterior do polígono do levantamento (sem buracos: o Pilot 2 não tem zonas de exclusão; o botão avisa) | Definir a área no DJI Pilot 2 e configurar aí a missão |
-| WPML (KMZ) — Área | `template.kml` + `waylines.wpml`, alturas por waypoint com terrain follow, disparo por distância/tempo/waypoint, `_area[-variantes]`, um KMZ por voo `_area[-variantes]_A-1` | Importação directa no Pilot 2; área dividida: todos os voos (`_voos.zip`), todos os voos por base (`_voos-por-base.zip`, uma pasta por base) ou um voo; com bases o botão do cabeçalho descarrega os dois ZIP |
+| WPML (KMZ) — Área | `template.kml` + `waylines.wpml`, alturas por waypoint com terrain follow, disparo por distância/tempo/waypoint, `_area[-variantes]`, um KMZ por voo `_area[-variantes]_A-1` | Importação directa no Pilot 2; área dividida: todos os voos (`_voos.zip`), voos por base (`_voos-por-base.zip`, uma pasta por base) ou um voo; com bases o botão do cabeçalho descarrega o ZIP por base |
 | WPML (KMZ) — Corredor | Passagens ao longo de um eixo, gimbal nadir, disparo por distância ou por waypoint, seguimento de terreno por passagem, `_corridor_nN` (`-tf` com relevo) | Estradas, condutas, linhas de água, linhas eléctricas, rampas de mina |
 | WPML (KMZ) — Fachada | Rumo fixo e foto por waypoint, `_face_p1-N` | Faces, taludes, estruturas |
 | WPML (KMZ) — Órbita | Voo curvo contínuo, rumo ao POI, gimbal por nível, `_orbit_nN` (única ou ZIP por nível); espiral em vídeo com `startRecord`/`stopRecord`, `_orbit-video_nN` | Inspecção/3D de alvos isolados |
@@ -159,7 +159,8 @@ Gestos de edição: clique acrescenta vértices (durante o desenho, Backspace ou
 | WPML (KMZ) — Inspecção | Pontos avulsos com rumo/pitch/foto, `_inspect_nN` | Inspecção dirigida |
 | KML de GCPs | Pontos numerados | Rover RTK / campo |
 | KML de bases e blocos | Pontos das bases com a ficha, zonas de descolagem e contornos dos blocos com o rótulo do voo | Google Earth, telemóvel, campo |
-| Blocos por base (KML, ZIP) | Uma pasta por base com um KML por bloco (só o polígono, para a missão de mapeamento do Pilot 2) e `mapa/` com a base, a zona e os blocos | Deixar o Pilot 2 planear cada bloco, base a base |
+| Todos os blocos (KML, ZIP) | Um KML por bloco (só o polígono, para a missão de mapeamento do Pilot 2), todos soltos, pela ordem de voo: `_kml.zip`, também sem bases | Deixar o Pilot 2 planear cada bloco |
+| Blocos por base (KML, ZIP) | Os mesmos KML de bloco numa pasta por base, mais `mapa/` com a base, a zona e os blocos: `_kml-por-base.zip` | Deixar o Pilot 2 planear cada bloco, base a base |
 | JSON do projecto | Estado completo do planeador; documentado pelo [esquema JSON](public/schema/project-v2.schema.json) publicado (`$schema` no ficheiro) | Arquivo, partilha |
 | Checklist JSON / impressão | Registo de campo | Diário de operações |
 | Relatório de missão (impressão) | Mapa, parâmetros, blocos, GCPs, pontos de inspecção, assinaturas | Pasta de campo / anexos |

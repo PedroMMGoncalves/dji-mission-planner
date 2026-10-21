@@ -248,22 +248,26 @@ tablet real):
   Marcar **duas bases** (A e B) nos dois extremos e **Propor bases**.
   **Esperado:** cada bloco com uma base; voos numerados A-1, A-2, B-3...;
   na lista, a zona e «voo entre 0 e +X m acima do planeado» de cada base.
-- ☐ No cartão 7 **Resumo e exportar**, **Todos os voos por base (ZIP)**.
+- ☐ No cartão 7 **Resumo e exportar**, em **Exportar voos**, dois pares:
+  KMZ e KML, cada um com «todos» e «por base». **Voos por base (KMZ, ZIP)**.
   **Esperado:** `<missão>_area[-variantes]_voos-por-base.zip` com uma pasta
   por base (`base-A/`, `base-B/`…), cada uma com os seus voos pela ordem de
   voo (`..._B-3.kmz`, `..._B-4.kmz`, com zeros a partir de 10 voos); **Todos
-  os voos (ZIP)** dá `..._voos.zip` com todos soltos; **Um voo (KMZ)** com B-3
-  dá `..._B-3.kmz`; o botão de exportar do cabeçalho diz **(ZIP)** e
+  os voos (KMZ, ZIP)** dá `..._voos.zip` com todos soltos; **Um voo (KMZ)**
+  com B-3 dá `..._B-3.kmz`; o botão de exportar do cabeçalho diz **(ZIP)** e
   descarrega o ZIP por base; o cartão 7 não repete esse botão. Com um
-  bloqueio no preflight ficam todos desactivados.
+  bloqueio no preflight ficam os KMZ desactivados (os KML não).
 - ☐ **Bases e blocos (KML)** aberto no Google Earth (ou no telemóvel).
   **Esperado:** pontos «Base A» e «Base B» com a ficha ao clicar, círculos
   das zonas, contornos dos blocos com o rótulo do voo.
 - ☐ **Blocos por base (KML, ZIP)**; abrir o ZIP.
   **Esperado:** `<missão>_area[-variantes]_kml-por-base.zip` com `base-A/`,
   `base-B/`…, cada uma com um KML por voo (`<missão>_poligono_B-3.kml`,
-  pela ordem de voo) e `mapa/<missão>_mapa_base-B.kml`; cada KML de bloco
-  abre no Google Earth como um só polígono com o nome do ficheiro. **No
+  pela ordem de voo) e `mapa/<missão>_mapa_base-B.kml`; **Todos os blocos
+  (KML, ZIP)** dá `..._kml.zip` com os mesmos KML de bloco soltos, sem
+  `mapa/`; cada KML de bloco abre no Google Earth como um só polígono com o
+  nome do ficheiro. Sem bases (divisão sem bases marcadas) há só os dois
+  «todos», KMZ e KML. **No
   Pilot 2** (M3E/M4T e M300 com P1): importar um KML de bloco como área
   de uma missão de mapeamento e ver o nome mostrado e o polígono; registar
   em `docs/VALIDACAO.md`.

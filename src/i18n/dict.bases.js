@@ -109,14 +109,21 @@ export default {
   },
   /* ---- Exportação por voo / por base (src/mission/flightFiles.js) ---- */
   'bases.export.title': { pt: 'Exportar voos', en: 'Export flights' },
-  'bases.export.all': { pt: 'Todos os voos (ZIP)', en: 'All flights (ZIP)' },
+  // dois pares iguais: os KMZ (a rota) e os KML (o polígono), todos soltos
+  // num ZIP ou numa pasta por base
+  'bases.export.kmzGroup': { pt: 'KMZ: a rota de cada voo', en: 'KMZ: the route of each flight' },
+  'bases.export.kmlGroup': {
+    pt: 'KML: o polígono de cada bloco',
+    en: 'KML: the polygon of each block',
+  },
+  'bases.export.all': { pt: 'Todos os voos (KMZ, ZIP)', en: 'All flights (KMZ, ZIP)' },
   'bases.export.allTitle': {
     pt: 'Um KMZ por voo, pela ordem de voo, num ZIP: {file}',
     en: 'One KMZ per flight, in flight order, in a ZIP: {file}',
   },
   'bases.export.byBase': {
-    pt: 'Todos os voos por base (ZIP)',
-    en: 'All flights by base (ZIP)',
+    pt: 'Voos por base (KMZ, ZIP)',
+    en: 'Flights by base (KMZ, ZIP)',
   },
   'bases.export.byBaseTitle': {
     pt: 'Um ZIP com uma pasta por base (base-A/, base-B/…): com vários pilotos, cada um leva as pastas das suas bases. {file}',
@@ -136,6 +143,11 @@ export default {
   'bases.export.kmlTitle': {
     pt: 'Para o Google Earth ou o telemóvel: bases com a ficha, zonas de descolagem e blocos com o rótulo do voo. Não é para o Pilot 2.',
     en: 'For Google Earth or a phone: bases with their sheet, take-off zones and blocks labelled with their flight. Not for Pilot 2.',
+  },
+  'bases.export.kmlAll': { pt: 'Todos os blocos (KML, ZIP)', en: 'All blocks (KML, ZIP)' },
+  'bases.export.kmlAllTitle': {
+    pt: 'Um ZIP com um KML por bloco, todos soltos, pela ordem de voo — só o polígono, para a missão de mapeamento do Pilot 2, que calcula a sua própria rota (confirme no comando a altura, o ângulo das faixas e o tempo). Os buracos ficam de fora. {file}',
+    en: 'One ZIP with one KML per block, all loose, in flight order — the polygon only, for the Pilot 2 mapping mission, which plans its own route (check height, line angle and time on the controller). Holes are left out. {file}',
   },
   'bases.export.kmlByBase': { pt: 'Blocos por base (KML, ZIP)', en: 'Blocks by base (KML, ZIP)' },
   'bases.export.kmlByBaseTitle': {

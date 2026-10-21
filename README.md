@@ -153,7 +153,7 @@ Editing gestures: click adds vertices (while drawing, Backspace or Ctrl+Z remove
 | Export | Content | Use |
 | --- | --- | --- |
 | Area KML | The outer ring of the survey polygon alone (no holes: Pilot 2 has no exclusion zones; the button says so) | Defining the area in DJI Pilot 2 and setting the mission up there |
-| WPML (KMZ) — Area | `template.kml` + `waylines.wpml`, per-waypoint heights with terrain follow, distance/time/per-waypoint trigger (suspended on links longer than 2.5 line spacings: one action group per contiguous run), `_area[-variants]`, one KMZ per flight `_area[-variants]_A-1` | Direct import in DJI Pilot 2; split areas: all flights (`_voos.zip`), all flights by base (`_voos-por-base.zip`, one folder per base) or one flight; with bases the header button downloads both ZIPs |
+| WPML (KMZ) — Area | `template.kml` + `waylines.wpml`, per-waypoint heights with terrain follow, distance/time/per-waypoint trigger (suspended on links longer than 2.5 line spacings: one action group per contiguous run), `_area[-variants]`, one KMZ per flight `_area[-variants]_A-1` | Direct import in DJI Pilot 2; split areas: all flights (`_voos.zip`), flights by base (`_voos-por-base.zip`, one folder per base) or one flight; with bases the header button downloads the ZIP by base |
 | WPML (KMZ) — Corridor | Passes along a centreline, nadir gimbal, distance or per-waypoint trigger, per-pass terrain following, `_corridor_nN` (`-tf` with terrain) | Roads, pipelines, watercourses, power lines |
 | WPML (KMZ) — Circular | Grid of overlapping circles, heading at each centre, fixed oblique gimbal, one photo per point, continuous curved flight, `_circular_nN` (single or per-block ZIP, `-tf` with terrain) | 3D of vegetation, outcrops, quarries, confined sites |
 | WPML (KMZ) — Face | Fixed heading and one photo per waypoint, `_face_p1-N` | Faces, slopes, structures |
@@ -161,7 +161,8 @@ Editing gestures: click adds vertices (while drawing, Backspace or Ctrl+Z remove
 | WPML (KMZ) — Inspection | Individual points with heading/pitch/photo, `_inspect_nN` | Directed inspection |
 | GCPs KML | Numbered GCP points | RTK rover / field |
 | Bases and blocks KML | Base points with their field sheet, take-off zones and block outlines labelled with the flight | Google Earth, phone, field |
-| Blocks by base (KML, ZIP) | One folder per base with one KML per block (the polygon only, for a Pilot 2 mapping mission) and `mapa/` with the base, zone and blocks | Letting Pilot 2 plan each block itself, base by base |
+| All blocks (KML, ZIP) | One KML per block (the polygon only, for a Pilot 2 mapping mission), all loose, in flight order: `_kml.zip`, also without bases | Letting Pilot 2 plan each block itself |
+| Blocks by base (KML, ZIP) | The same block KMLs in one folder per base, plus `mapa/` with the base, zone and blocks: `_kml-por-base.zip` | Letting Pilot 2 plan each block itself, base by base |
 | Project JSON | Full planner state; documented by the published [JSON Schema](public/schema/project-v2.schema.json) (`$schema` in the file) | Archive, sharing |
 | Checklist JSON / print | Field record | Operations log |
 | Mission report (print) | Map, parameters, blocks, GCPs, inspection points, signatures | Field folder / annexes |

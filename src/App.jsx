@@ -659,8 +659,14 @@ function AppInner({ lang, setLang }) {
     runExport,
     missionName,
   })
-  const { fieldSheets, fieldSheetsDay, areaKmlNotes, handleExportBasesKml, handleExportKmlByBase } =
-    sheets
+  const {
+    fieldSheets,
+    fieldSheetsDay,
+    areaKmlNotes,
+    handleExportBasesKml,
+    handleExportKmlAll,
+    handleExportKmlByBase,
+  } = sheets
 
   // o preflight do separador aberto: avisos, bloqueios e o que os alimenta
   // (src/hooks/usePreflight.js)
@@ -1048,6 +1054,9 @@ function AppInner({ lang, setLang }) {
                     blocked: exportBlocked,
                     onExport: (sel) => gated(() => handleExportFlights(sel))(),
                     onExportKml: fieldSheets.length ? handleExportBasesKml : null,
+                    // os KML dos blocos, o par dos dois ZIP dos voos: todos
+                    // soltos, e numa pasta por base (com bases)
+                    onExportKmlAll: handleExportKmlAll,
                     onExportKmlByBase: fieldSheets.length ? handleExportKmlByBase : null,
                   },
                   // bacias de visão: por voo no painel, relevo usado e camada do mapa

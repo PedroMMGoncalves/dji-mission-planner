@@ -1415,12 +1415,15 @@ missão dentro do KMZ (`<name>` da pasta do `template.kml`). Por isso:
   único); se acontecessem, o segundo leva `-b<id>`, e o ZIP recusa dois
   ficheiros com o mesmo nome em vez de escrever um por cima do outro.
 - **Escolhas** (cartão «Resumo e exportar», atrás do mesmo preflight do
-  botão do cabeçalho): «Todos os voos (ZIP)» = `<missão>_<tipo>[-variantes]_voos.zip`,
-  todos soltos; «Todos os voos por base (ZIP)» = `..._voos-por-base.zip`,
+  botão do cabeçalho): «Todos os voos (KMZ, ZIP)» = `<missão>_<tipo>[-variantes]_voos.zip`,
+  todos soltos; «Voos por base (KMZ, ZIP)» = `..._voos-por-base.zip`,
   uma pasta por base (`base-A/`, `base-B/`…) com os voos dessa base; «Um voo
   (KMZ)» = o KMZ desse voo sozinho. Com bases, o botão do cabeçalho descarrega
-  os dois ZIP. Dentro de um ZIP, os KMZ vão pela ordem de voo (base a base,
-  pela ordem dos rótulos, e em cada base pela ordem do mosaico).
+  o ZIP por base (um clique, um ficheiro: os dois ZIP com os mesmos KMZ
+  punham cada voo duas vezes no Pilot 2). Dentro de um ZIP, os KMZ vão pela
+  ordem de voo (base a base, pela ordem dos rótulos, e em cada base pela
+  ordem do mosaico). Os KML dos blocos fazem o mesmo par, todos soltos ou
+  numa pasta por base (KML dos blocos, abaixo).
 - As alturas de cada KMZ são as do seu bloco (cota da zona da sua base,
   §4.1), qualquer que seja a escolha: exportar só a base B dá exactamente
   os mesmos ficheiros de B que exportar tudo.
@@ -1460,15 +1463,19 @@ nem linhas, o invólucro convexo, como antes. Cores das bases do mapa
 (`aabbggrr`). As descrições são HTML: cada valor é escapado como HTML (a
 ligação como `<a href>`) e a descrição inteira como XML.
 
-**KML por base** (`blocksKmlByBase`, `src/mission/blocksKml.js`;
-`<missão>_area[-variantes]_kml-por-base.zip`, o prefixo do ZIP dos voos
-por base), cartão 7, «Blocos por base (KML, ZIP)», com bases e mais de um
-voo: uma pasta por base (`base-A/`, …; `sem-base/` para um bloco sem base)
-e, em cada uma, um KML por bloco com o polígono e nada mais — o ficheiro
-que o Pilot 2 aceita para definir uma missão de mapeamento, que o comando
-planeia (altura, ângulo, margens e tempo são os dele; a app refere cada
-bloco à cota mínima da zona da base e o KML não leva altura) —, mais
-`mapa/` com o KML «Bases e blocos» só dessa base. Nomes por `flightFiles`
+**KML dos blocos** (`src/mission/blocksKml.js`), cartão 7, o par dos dois
+ZIP dos KMZ, com o mesmo prefixo. Um KML por bloco com o polígono e nada
+mais — o ficheiro que o Pilot 2 aceita para definir uma missão de
+mapeamento, que o comando planeia (altura, ângulo, margens e tempo são os
+dele; a app refere cada bloco à cota mínima da zona da base e o KML não
+leva altura) —, em dois ZIP: «Todos os blocos (KML, ZIP)» (`blocksKmlAll`,
+`<missão>_area[-variantes]_kml.zip`), com mais de um voo, com ou sem
+bases, os KML de bloco soltos na raiz pela ordem de voo; e «Blocos por
+base (KML, ZIP)» (`blocksKmlByBase`,
+`<missão>_area[-variantes]_kml-por-base.zip`), com bases, os mesmos KML
+(o mesmo nome e o mesmo texto) numa pasta por base (`base-A/`, …;
+`sem-base/` para um bloco sem base), mais `mapa/` em cada uma com o KML
+«Bases e blocos» só dessa base. Nomes por `flightFiles`
 com o tipo `poligono` (`corta-norte_poligono_A-1.kml`: a mesma ordem, os
 mesmos zeros e o mesmo desempate dos KMZ, e um nome que não se confunde
 com a rota WPML do mesmo voo na biblioteca do Pilot 2); o nome é o mesmo
