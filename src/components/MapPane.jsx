@@ -3,9 +3,10 @@
  * pré-visualizações dos modos, bacias de visão, legenda) e, por cima dele, a
  * barra de desenho do modo Área (com os primeiros passos, sem área), e à
  * direita o resumo do projecto e o cartão de métricas do separador aberto.
- * Nada disto empurra o mapa: tudo flutua por cima, nos cantos.
+ * Nada disto empurra o mapa: tudo flutua por cima, nos cantos, e o mapa
+ * enquadra a área ao lado da barra de desenho e do cartão aberto.
  */
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import ProjectSummary from './ProjectSummary.jsx'
 import MapView from './MapView.jsx'
 import StatsPanel from './StatsPanel.jsx'
@@ -150,6 +151,11 @@ export default function MapPane({
   // a barra de desenho é a do modo Área (os outros modos desenham pelo
   // painel); sem área e sem ferramenta activa, os primeiros passos por baixo
   const drawTools = missionMode === 'area'
+  // o enquadramento da área evita a barra (em cima) e o cartão das métricas
+  // aberto (à direita), medidos na altura de enquadrar
+  const toolsRef = useRef(null)
+  const statsRef = useRef(null)
+  const fitAvoid = useMemo(() => ({ top: toolsRef, right: statsRef }), [])
   return (
     <>
       <main className="relative min-w-0 flex-1">
@@ -185,6 +191,7 @@ export default function MapPane({
           circularPreview={circularPreview}
           onOrbitPoiDrag={handleOrbitPoiDrag}
           fitKey={fitKey}
+          fitAvoid={fitAvoid}
           editable={!gridCells && split.mode !== 'tiles' && split.mode !== 'battery'}
           areaMovable={missionMode === 'area' || missionMode === 'circular'}
           onMapClick={handleMapClick}
@@ -201,6 +208,7 @@ export default function MapPane({
         />
         {drawTools && (
           <MapDrawTools
+            ref={toolsRef}
             mode={mode}
             anchorShape={anchor.shape}
             hasArea={Boolean(ring)}
@@ -222,6 +230,7 @@ export default function MapPane({
         >
           <ProjectSummary summary={projectSummary} />
           <StatsPanel
+            cardRef={statsRef}
             uncertainty={quality.uncertainty}
             gsd={quality.gsd}
             gimbalPitch={quality.gimbalPitch}

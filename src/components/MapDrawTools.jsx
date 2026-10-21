@@ -10,15 +10,18 @@ import { FOCUS, Icon } from './MapOverlay.jsx'
  * Cada botão chama a mesma acção do painel; a ferramenta activa fica
  * premida. Sem área, as três formas ficam realçadas (o primeiro passo).
  * É uma barra de ferramentas: uma só paragem do Tab, e as setas, Home e End
- * passam de um botão ao outro.
+ * passam de um botão ao outro. O `ref` é o da barra: o enquadramento da
+ * área fica por baixo dela.
  */
 
 /**
  * @param {{mode: string, anchorShape: string, hasArea: boolean,
  *   onDraw: () => void, onAnchor: (shape: string) => void,
- *   onBase: () => void, onInspect: () => void}} props
+ *   onBase: () => void, onInspect: () => void,
+ *   ref?: import('react').Ref<HTMLDivElement>}} props
  */
 export default function MapDrawTools({
+  ref,
   mode,
   anchorShape,
   hasArea,
@@ -142,6 +145,7 @@ export default function MapDrawTools({
   )
   return (
     <div
+      ref={ref}
       role="toolbar"
       aria-label={t('map.drawTools')}
       data-testid="map-draw-tools"

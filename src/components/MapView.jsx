@@ -5,6 +5,7 @@ import { tCount } from '../i18n/format.js'
 import LayerLegend from './LayerLegend.jsx'
 import { hiddenStrips, radioStrips, ringLabelPoint } from '../mission/viewshedPlan.js'
 import { blockRing } from '../mission/baseLayout.js'
+import { fitPadding } from '../utils/mapFit.js'
 import './MapView.css'
 
 /**
@@ -101,6 +102,9 @@ export default function MapView({
   circularPreview,
   onOrbitPoiDrag,
   fitKey,
+  // o que flutua por cima do mapa e o enquadramento evita: { top, right },
+  // refs da barra de desenho e do cartão das métricas aberto
+  fitAvoid = null,
   editable,
   areaMovable = false,
   onMapClick,
@@ -377,11 +381,18 @@ export default function MapView({
       )
   }, [mode])
 
-  // Enquadrar o mapa na área (após importação ou abertura de projecto)
+  // Enquadrar o mapa na área (após importação ou abertura de projecto): por
+  // baixo da barra de desenho e à esquerda do cartão das métricas aberto,
+  // medidos agora (src/utils/mapFit.js); o resto fica com a margem de 60 px
   useEffect(() => {
     const map = mapRef.current
     if (!map || !fitKey || !ring || ring.length < 3) return
-    map.fitBounds(L.latLngBounds(ring.map(toLatLng)), { padding: [60, 60] })
+    const rect = (r) => r?.current?.getBoundingClientRect() ?? null
+    const padding = fitPadding(containerRef.current.getBoundingClientRect(), {
+      top: rect(fitAvoid?.top),
+      right: rect(fitAvoid?.right),
+    })
+    map.fitBounds(L.latLngBounds(ring.map(toLatLng)), padding)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey])
 
@@ -549,11 +560,14 @@ export default function MapView({
 
     const color = valid ? '#38bdf8' : '#ef4444'
     const rings = [ring.map(toLatLng), ...(holes ?? []).map((h) => h.map(toLatLng))]
+    // a classe é a âncora dos cliques do E2E: situa os pontos pela área no
+    // ecrã, qualquer que seja o enquadramento ou o zoom
     L.polygon(rings, {
       color,
       weight: 2,
       fillColor: color,
       fillOpacity: 0.08,
+      className: 'area-ring',
     }).addTo(g)
 
     if (editable) {

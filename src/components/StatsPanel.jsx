@@ -13,7 +13,8 @@ const STATS_COLLAPSED_KEY = 'dji-mission-planner:stats:collapsed'
  * tempo) e operação (voos, bases, baterias, tempo total). Mostra o separador
  * aberto; os valores perto ou acima de um limite ficam a âmbar ou a vermelho
  * (o preflight tem o aviso completo). Recolhe-se num botão com o GSD e os
- * voos (a escolha fica neste aparelho); sem plano não aparece.
+ * voos (a escolha fica neste aparelho); sem plano não aparece. `cardRef` é
+ * o do cartão aberto: o enquadramento da área fica à esquerda dele.
  */
 
 function fmtDist(m) {
@@ -112,6 +113,7 @@ export default function StatsPanel({
   shutterWarn = false,
   baseDistance,
   uncertainty = null,
+  cardRef = null,
 }) {
   const t = useT()
   // recolhível (M3-U23): num tablet o cartão tapa meio mapa
@@ -196,6 +198,7 @@ export default function StatsPanel({
   const level = ops?.level ?? 'ok'
   return (
     <section
+      ref={cardRef}
       data-testid="stats-panel"
       aria-labelledby="stats-title"
       className={`pointer-events-auto flex max-h-full min-h-0 w-72 flex-col overflow-hidden ${CARD}`}

@@ -643,12 +643,86 @@ await scenario('multipoligono-aviso', async () => {
 })
 
 /* ---- outros modos: desenhados no mapa, como o operador faz ------------- */
-// O mapa fica ajustado ao rectângulo importado (~1 px ≈ 2 m), por isso os
-// cliques a algumas centenas de píxeis do centro dão eixos de ~1 km.
-async function clickMap(page, dx, dy) {
+// Os cliques no mapa dão-se em metros do referencial dos fixtures (x para
+// este, y para norte: toLL), situados no ecrã pelo contorno da área
+// importada (path.area-ring) e pela caixa dele em metros: o ponto é o mesmo
+// qualquer que seja o enquadramento (a área fica por baixo da barra de
+// desenho e à esquerda do cartão das métricas) ou o zoom. Um clique que
+// caísse fora do mapa ou debaixo de um painel (uma gaveta aberta, um
+// cartão, os controlos) pára o cenário em vez de cair noutro sítio.
+const caixaM = (ring) => {
+  const ms = ring.map(([lon, lat]) => toM(lon, lat))
+  const xs = ms.map((m) => m[0])
+  const ys = ms.map((m) => m[1])
+  return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) }
+}
+const RECT_M = caixaM(rectRing)
+const HILL_M = caixaM(hillRing)
+/** A caixa do contorno da área no ecrã: a geometria (getBBox), sem o traço. */
+const caixaAnel = (page) =>
+  page
+    .locator('path.area-ring')
+    .first()
+    .evaluate((path) => {
+      const b = path.getBBox()
+      const m = path.getScreenCTM()
+      return { x: m.a * b.x + m.e, y: m.d * b.y + m.f, w: m.a * b.width, h: m.d * b.height }
+    })
+/** O ponto (x, y) em metros, no ecrã, pela caixa `caixa` da área importada. */
+async function noEcra(page, x, y, caixa = RECT_M) {
+  const a = await caixaAnel(page)
+  return [
+    a.x + ((x - caixa.x0) / (caixa.x1 - caixa.x0)) * a.w,
+    a.y + ((caixa.y1 - y) / (caixa.y1 - caixa.y0)) * a.h,
+  ]
+}
+async function clickMap(page, x, y, caixa = RECT_M) {
+  const [px, py] = await noEcra(page, x, y, caixa)
+  const livre = await page.evaluate(
+    ([u, v]) => {
+      const el = document.elementFromPoint(u, v)
+      return Boolean(el?.closest('.leaflet-container') && !el.closest('.leaflet-control-container'))
+    },
+    [px, py],
+  )
+  if (!livre)
+    throw new Error(`clique no mapa em (${x}, ${y}) m: fora do mapa ou debaixo de um painel`)
+  await page.mouse.click(px, py)
+  await page.waitForTimeout(250)
+}
+/** Sem área ainda (o primeiro desenho), a vista inicial: píxeis a partir do centro do mapa. */
+async function clickMapCentro(page, dx, dy) {
   const box = await page.locator('.leaflet-container').boundingBox()
   await page.mouse.click(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy)
   await page.waitForTimeout(250)
+}
+/**
+ * «Afastar» um nível e esperar que o mapa acabe a animação: o contorno da
+ * área fica com metade da largura. Com a página ocupada (um MDT a
+ * recortar), o clique chegava a meio da animação anterior e o Leaflet
+ * ignorava-o; um clique sem efeito repete-se.
+ */
+async function afastar(page) {
+  const { w } = await caixaAnel(page)
+  for (let i = 0; i < 3; i += 1) {
+    await page.locator('.leaflet-control-zoom-out').click()
+    const feito = await page
+      .waitForFunction(
+        (w0) => {
+          const p = document.querySelector('path.area-ring')
+          if (!p || document.querySelector('.leaflet-zoom-anim')) return false
+          return Math.abs(p.getScreenCTM().a * p.getBBox().width - w0 / 2) < 3
+        },
+        w,
+        { timeout: 8000 },
+      )
+      .then(
+        () => true,
+        () => false,
+      )
+    if (feito) return
+  }
+  throw new Error('«Afastar» não mudou o zoom do mapa')
 }
 const modo = (page, re) => page.getByRole('button', { name: re, exact: true }).click()
 /** Descarrega pelo botão `btn` (um Locator, ou o nome do botão). */
@@ -664,9 +738,9 @@ await scenario('corredor-desenhado', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Corredor$|^Corridor$/)
   await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
-  await clickMap(page, -300, 40)
-  await clickMap(page, 0, -60)
-  await clickMap(page, 300, 40)
+  await clickMap(page, 330, 905)
+  await clickMap(page, 1450, 1275)
+  await clickMap(page, 2565, 905)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
   // meia-largura de 300 m: várias passagens em vez da passagem única por omissão
   await page
@@ -701,9 +775,9 @@ await scenario('corredor-voos-parametros-proprios', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Corredor$|^Corridor$/)
   await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
-  await clickMap(page, -300, 40)
-  await clickMap(page, 0, -60)
-  await clickMap(page, 300, 40)
+  await clickMap(page, 330, 905)
+  await clickMap(page, 1450, 1275)
+  await clickMap(page, 2565, 905)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
   const meia = page.locator('label', { hasText: /Meia-largura|Half-width/ }).locator('input')
   await meia.fill('300')
@@ -828,7 +902,7 @@ await scenario('desenho-teclas-primeiro-vertice', async () => {
     [260, 80],
     [60, 80],
   ]
-  for (const [dx, dy] of pts) await clickMap(page, dx, dy)
+  for (const [dx, dy] of pts) await clickMapCentro(page, dx, dy)
   check(
     'desenho: 4 vértices e o primeiro a fechar',
     (await draft.count()) === 4 && (await closer.count()) === 1,
@@ -842,7 +916,7 @@ await scenario('desenho-teclas-primeiro-vertice', async () => {
     afterBack === 3 && afterUndo === 2 && (await closer.count()) === 0,
     `${afterBack} e ${afterUndo}`,
   )
-  for (const [dx, dy] of pts.slice(2)) await clickMap(page, dx, dy)
+  for (const [dx, dy] of pts.slice(2)) await clickMapCentro(page, dx, dy)
   await draft.nth(1).click()
   await page.waitForTimeout(250)
   check('desenho: o clique noutro vértice não o remove', (await draft.count()) === 4)
@@ -860,7 +934,7 @@ await scenario('desenho-teclas-primeiro-vertice', async () => {
 
   await modo(page, /^Corredor$|^Corridor$/)
   await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
-  for (const [dx, dy] of pts.slice(0, 3)) await clickMap(page, dx, dy)
+  for (const [dx, dy] of pts.slice(0, 3)) await clickMapCentro(page, dx, dy)
   await page.keyboard.press('Backspace')
   const axBack = await draft.count()
   await page.keyboard.press('Control+z')
@@ -960,9 +1034,9 @@ await scenario('corredor-segue-terreno', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: true })
   await modo(page, /^Corredor$|^Corridor$/)
   await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
-  await clickMap(page, -300, 40)
-  await clickMap(page, 0, -60)
-  await clickMap(page, 300, 40)
+  await clickMap(page, 330, 905)
+  await clickMap(page, 1450, 1275)
+  await clickMap(page, 2565, 905)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
   await page
     .locator('label', { hasText: /Meia-largura|Half-width/ })
@@ -1036,8 +1110,8 @@ await scenario('fachada-desenhada', async () => {
     itensFace.join(' | '),
   )
   await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
-  await clickMap(page, -200, 0)
-  await clickMap(page, 200, 0)
+  await clickMap(page, 705, 1050)
+  await clickMap(page, 2195, 1050)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
   await page.waitForTimeout(800)
   const routes = await readRoutes(
@@ -1082,9 +1156,9 @@ await scenario('fachada-em-l', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Face$/)
   await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
-  await clickMap(page, -200, 0)
-  await clickMap(page, 100, 0)
-  await clickMap(page, 100, -150)
+  await clickMap(page, 705, 1050)
+  await clickMap(page, 1820, 1050)
+  await clickMap(page, 1820, 1605)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
   const espera = page
     .locator('label', { hasText: /Espera em cada foto|Wait at each photo/ })
@@ -1208,7 +1282,7 @@ await scenario('orbita-marcada', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Órbita$|^Orbit$/)
   await page.getByRole('button', { name: /Marcar POI|Mark POI/ }).click()
-  await clickMap(page, 0, 0)
+  await clickMap(page, 1450, 1050)
   await page.waitForTimeout(800)
   const single = await readRoutes(
     await panelExport(page, panelExportButton(page, 'orbita-5'), join(OUT, 'orbita.kmz')),
@@ -1291,7 +1365,7 @@ await scenario('orbita-aeronave-e-inclinacoes', async () => {
   await picker.getByTestId('aircraft-picker-aircraft').selectOption('M300RTK')
   await picker.getByTestId('aircraft-picker-payload').selectOption('P1')
   await page.getByRole('button', { name: /Marcar POI|Mark POI/ }).click()
-  await clickMap(page, 0, 0)
+  await clickMap(page, 1450, 1050)
   await page.getByTestId('orbit-capture-multi').click()
   await page.waitForTimeout(800)
   const angulos = await page
@@ -1561,11 +1635,14 @@ await scenario('mdt-importado-acompanha-a-geometria', async () => {
     { timeout: 20000 },
   )
   await modo(page, /^Corredor$|^Corridor$/)
-  await page.locator('.leaflet-control-zoom-out').click()
-  await page.waitForTimeout(600)
+  // um eixo de ~7 km, de 2,3 km a oeste da área a 2,3 km a leste: dois
+  // «Afastar» para as duas pontas ficarem à vista, ao lado do cartão das
+  // métricas
+  await afastar(page)
+  await afastar(page)
   await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
-  await clickMap(page, -480, 0)
-  await clickMap(page, 480, 10)
+  await clickMap(page, -2130, 1050)
+  await clickMap(page, 5035, 975)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
   // o relevo do fixture sobe centenas de metros à volta: com relevo sobre a
   // rota, o preflight vê a colisão; sem ele, diria que não há relevo
@@ -1633,11 +1710,15 @@ await scenario('inspeccao-sem-relevo-bloqueia', async () => {
   // pontos de inspecção: missão própria, fora do preflight da área, mas com
   // a mesma regra; sem relevo o KMZ fica desactivado e o painel diz porquê
   const { page, errors } = await openMission({ area: fx.rect, dem: false, globalTerrain: false })
-  // os pontos de inspecção estão na gaveta do cartão «Extras»
+  // os pontos de inspecção estão na gaveta do cartão «Extras»; aberta, a
+  // gaveta fica por cima da parte oeste da área: fecha-se para marcar e
+  // volta a abrir-se para terminar
   await openDrawer(page, 'extras')
   await page.getByRole('button', { name: /Marcar pontos no mapa|Place points on the map/ }).click()
-  await clickMap(page, -80, 20)
-  await clickMap(page, 60, -30)
+  await closeDrawer(page)
+  await clickMap(page, 1150, 980)
+  await clickMap(page, 1670, 1165)
+  await openDrawer(page, 'extras')
   await page.getByRole('button', { name: /Marcar pontos no mapa|Place points on the map/ }).click()
   const btn = page.getByRole('button', { name: /^Exportar KMZ$|^Export KMZ$/ })
   await page.waitForTimeout(800)
@@ -3238,10 +3319,9 @@ await scenario('bacias-visao-cumeada', async () => {
 
   // a base: um clique no mapa, e depois arrastada para a planície a oeste
   // da cumeada (mapa calibrado com a base e a pega do centro da área)
-  await page.locator('.leaflet-control-zoom-out').click()
-  await page.waitForTimeout(800)
+  await afastar(page)
   await page.getByRole('button', { name: /Marcar base|Set base/ }).click()
-  await clickMap(page, -250, 0)
+  await clickMap(page, 785, 1125, HILL_M)
   await page.waitForTimeout(1200)
   const centreLL = toLL(1250, 1125)
   const project = async () =>
@@ -3645,10 +3725,9 @@ await scenario('propor-bases-sitio-alto', async () => {
 
   // 1) a base do operador no alto de oeste: arrastada para lá com o mapa
   // calibrado pela base e pela pega do centro da área
-  await page.locator('.leaflet-control-zoom-out').click()
-  await page.waitForTimeout(800)
+  await afastar(page)
   await page.getByRole('button', { name: /Marcar base|Set base/ }).click()
-  await clickMap(page, -250, 0)
+  await clickMap(page, 785, 1125, HILL_M)
   await page.waitForTimeout(1200)
   const proj = await mapProjector(
     page,
@@ -4068,12 +4147,12 @@ await scenario('inventario-painel-area', async () => {
   // pontos de inspecção e GCPs, antes da divisão
   await (await usa(p2, 'extras', inv.btn(/Marcar pontos no mapa/))).click()
   await closeDrawer(p2)
-  for (const [dx, dy] of [
-    [60, -40],
-    [120, 20],
-    [80, 60],
+  for (const [x, y] of [
+    [1670, 1200],
+    [1895, 980],
+    [1745, 830],
   ])
-    await clickMap(p2, dx, dy)
+    await clickMap(p2, x, y)
   await (await usa(p2, 'extras', inv.btn(/Marcar pontos no mapa/))).click()
   await (await usa(p2, 'extras', inv.field(/Planear posições de GCPs/))).check()
   await closeDrawer(p2)
@@ -4081,7 +4160,7 @@ await scenario('inventario-painel-area', async () => {
   // base A marcada no mapa
   await (await usa(p2, 'bases', inv.btn(/Marcar base/))).click()
   await closeDrawer(p2)
-  await clickMap(p2, 200, -120)
+  await clickMap(p2, 2195, 1495)
   await (await usa(p2, 'bases', inv.btn(/Marcar base/))).click()
   await closeDrawer(p2)
   await (await usa(p2, 'divisao', inv.exact('Quadrícula'))).click()
@@ -4411,6 +4490,28 @@ await scenario('painel-estatisticas', async () => {
   check('estatísticas: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
+})
+
+// O cartão das métricas e o enquadramento da área. Na janela do E2E o
+// cartão abre e a área importada fica à esquerda dele e por baixo da barra
+// de desenho, como no ecrã desenhado (antes ficava ao centro, com o cartão
+// por cima da parte direita).
+await scenario('metricas-enquadramento', async () => {
+  const largo = await openMission({ area: fx.rect, dem: false })
+  const anel = await caixaAnel(largo.page)
+  const cartao = await largo.page.getByTestId('stats-panel').boundingBox()
+  const barra = await largo.page.getByTestId('map-draw-tools').boundingBox()
+  check(
+    'enquadramento: a área fica à esquerda do cartão das métricas aberto e por baixo da barra',
+    (await largo.page.getByTestId('stats-toggle').getAttribute('aria-expanded')) === 'true' &&
+      anel.x + anel.w <= cartao.x - 8 &&
+      anel.y >= barra.y + barra.height + 8,
+    `área ${Math.round(anel.x)}–${Math.round(anel.x + anel.w)} px e desde ${Math.round(anel.y)}; ` +
+      `cartão desde ${Math.round(cartao.x)}, barra até ${Math.round(barra.y + barra.height)}`,
+  )
+  check('enquadramento: sem erros de página', largo.errors.length === 0, largo.errors.join(' | '))
+  await largo.page.close()
+  return { page: largo.page }
 })
 
 // Intervalo de disparo escrito à mão: em «Distância» os metros, em «Tempo»

@@ -51,7 +51,9 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   mais longo e uma barra contra o tempo útil; recolhem-se num botão com o
   GSD e os voos, e sem plano não aparecem (eram mosaicos translúcidos por
   cima da missão, com traços antes de haver área). Os números são os
-  mesmos. A legenda é um cartão opaco com interruptores e os símbolos do
+  mesmos. Uma área importada ou aberta fica enquadrada por baixo da barra
+  de desenho e à esquerda do cartão aberto, e não ao centro, por baixo
+  dele. A legenda é um cartão opaco com interruptores e os símbolos do
   mapa (blocos e faixas na cor da base, início e fim da rota, o pino da
   base, as bacias de visão em «Análise»), e a margem a 0 % deixa de se
   desenhar por cima do contorno da área. Sem área, os «Primeiros passos»
