@@ -253,4 +253,147 @@ export default {
     pt: 'Descolagem na base {base}: o relevo carregado não cobre a base e o alvo.',
     en: 'Take-off at base {base}: the loaded terrain does not cover both the base and the target.',
   },
+
+  /* ---- Itens do mesmo código numa tabela (src/mission/preflightGroups.js) ---- */
+  // o título ({count} itens), a parte comum das frases e uma coluna por
+  // número: nenhum número das frases fica de fora
+  'preflight.group.base-zone-drop': {
+    pt: 'Zona de descolagem reduzida em {count} bases',
+    en: 'Take-off zone reduced at {count} bases',
+  },
+  'preflight.groupNote.base-zone-drop': {
+    pt: 'Há desnível perto destas bases: descolar até à distância pedida pode pôr o voo mais baixo do que o planeado. Descole dentro da zona, ou mova a base para um sítio plano.',
+    en: 'There is relief near these bases: taking off up to the requested distance may fly lower than planned. Take off inside the zone, or move the base to flat ground.',
+  },
+  'preflight.group.base-zone-zero': {
+    pt: 'Zona de descolagem sem raio em {count} bases',
+    en: 'Take-off zone with no radius left at {count} bases',
+  },
+  'preflight.groupNote.base-zone-zero': {
+    pt: 'Já perto do ponto há desnível, e descolar até à distância pedida pode pôr o voo mais baixo. Descole no ponto marcado, ou mova a base para um sítio plano.',
+    en: 'There is relief right next to the point, and taking off up to the requested distance may fly lower. Take off at the marked point, or move the base to flat ground.',
+  },
+  'preflight.group.base-zone-reduced': {
+    pt: 'Zona de descolagem reduzida em {count} bases, sem baixar o voo',
+    en: 'Take-off zone reduced at {count} bases, without lowering the flight',
+  },
+  'preflight.groupNote.base-zone-reduced': {
+    pt: 'Descole dentro da zona reduzida, à volta do ponto marcado.',
+    en: 'Take off inside the reduced zone, around the marked point.',
+  },
+  'preflight.group.base-zone-partial': {
+    pt: 'Pontos sem relevo na zona de {count} bases',
+    en: 'Points without elevation data in the zone of {count} bases',
+  },
+  'preflight.groupNote.base-zone-partial': {
+    pt: 'A cota mínima e o desnível só contam a parte com dados. Carregue relevo que cubra a zona inteira.',
+    en: 'The minimum elevation and relief only count the covered part. Load elevation data that covers the whole zone.',
+  },
+  'preflight.group.base-zone-no-terrain': {
+    pt: '{count} bases fora do relevo carregado',
+    en: '{count} bases outside the loaded elevation data',
+  },
+  'preflight.groupNote.base-zone-no-terrain': {
+    pt: 'As alturas dos seus voos não têm cota de referência conhecida (assumiu-se a mínima de cada bloco). Mova a base para dentro do relevo ou carregue relevo que a cubra.',
+    en: 'Their flights have no known reference elevation (each block’s lowest point was assumed). Move the base inside the elevation data or load terrain that covers it.',
+  },
+  'preflight.group.block-no-base': {
+    pt: '{count} voos sem base',
+    en: '{count} flights without a base',
+  },
+  'preflight.groupNote.block-no-base': {
+    pt: 'Não se sabe de onde descolam nem a que cota se referem as alturas.',
+    en: 'Neither the take-off point nor the reference elevation of their heights is known.',
+  },
+  'preflight.group.block-base-unreachable': {
+    pt: '{count} voos com a base longe demais para as baterias',
+    en: '{count} flights with the base too far for the batteries',
+  },
+  'preflight.groupNote.block-base-unreachable': {
+    pt: 'Só a deslocação de ida e volta da base leva mais do que os {usable} min úteis de um conjunto de baterias. Mude a base destes blocos.',
+    en: 'The round trip from the base alone takes more than the {usable} usable minutes of one battery set. Change these blocks’ base.',
+  },
+  'preflight.group.block-vlos': {
+    pt: '{count} voos longe demais da base para VLOS',
+    en: '{count} flights beyond visual line of sight from the base',
+  },
+  'preflight.groupNote.block-vlos': {
+    pt: 'No pior caso (descolando na orla da zona), acima da distância VLOS da aeronave ({vlos} m). Mude a base do bloco ou aproxime-a.',
+    en: 'In the worst case (taking off at the edge of the zone), above the aircraft’s VLOS range ({vlos} m). Change the block’s base or move it closer.',
+  },
+  'preflight.group.battery-block-base': {
+    pt: '{count} voos acima do tempo útil, com a deslocação',
+    en: '{count} flights over the usable time, including transit',
+  },
+  'preflight.groupNote.battery-block-base': {
+    pt: 'Com a deslocação de ida e volta do pior ponto da zona, excedem o tempo útil por voo ({usable} min). Aproxime a base ou reduza o lado do bloco.',
+    en: 'Including the round-trip transit from the worst point of the zone, they exceed the usable time per flight ({usable} min). Move the base closer or reduce the block side.',
+  },
+  'preflight.group.battery-block': {
+    pt: '{count} voos acima do tempo útil',
+    en: '{count} flights over the usable time',
+  },
+  'preflight.groupNote.battery-block': {
+    pt: 'Excedem o tempo útil por voo ({usable} min, já com a reserva de aterragem). Reduza o lado do quadrado, divida mais ou aumente a velocidade.',
+    en: 'They exceed the usable time per flight ({usable} min, landing reserve included). Reduce the square side, split further or raise the speed.',
+  },
+  'preflight.group.block-viewshed': {
+    pt: 'Parte do bloco atrás do relevo em {count} voos',
+    en: 'Part of the block behind the terrain on {count} flights',
+  },
+  'preflight.groupNote.block-viewshed': {
+    pt: 'A aeronave sai da vista do piloto: mude ou suba a base, ou confirme no campo (bacias de visão no mapa).',
+    en: 'The aircraft leaves the pilot’s sight: move or raise the base, or check in the field (viewsheds on the map).',
+  },
+  'preflight.group.block-viewshed-minor': {
+    pt: 'Parte do bloco atrás do relevo em {count} voos',
+    en: 'Part of the block behind the terrain on {count} flights',
+  },
+  'preflight.group.block-radio': {
+    pt: 'Sinal de rádio em risco em {count} voos',
+    en: 'Radio signal at risk on {count} flights',
+  },
+  'preflight.groupNote.block-radio': {
+    pt: 'À vista, mas o relevo entra na zona de Fresnel (60 % a 2,4 GHz). Pode perder a ligação do comando: suba o comando ou a base, ou confirme no campo.',
+    en: 'In sight, but the terrain enters the Fresnel zone (60 % at 2.4 GHz). The controller link may drop: raise the controller or the base, or check in the field.',
+  },
+  'preflight.group.block-radio-minor': {
+    pt: 'Sinal de rádio em risco em {count} voos',
+    en: 'Radio signal at risk on {count} flights',
+  },
+  // as colunas: o cabeçalho e a célula, com os params de cada item
+  'preflight.col.base': { pt: 'Base', en: 'Base' },
+  'preflight.cell.base': { pt: 'Base {base}', en: 'Base {base}' },
+  'preflight.col.flight': { pt: 'Voo', en: 'Flight' },
+  'preflight.cell.flight': { pt: '{flight}', en: '{flight}' },
+  'preflight.col.block': { pt: 'Bloco', en: 'Block' },
+  'preflight.cell.block': { pt: '{id}', en: '{id}' },
+  'preflight.col.flights': { pt: 'Voos', en: 'Flights' },
+  'preflight.cell.flights': { pt: '{flights}', en: '{flights}' },
+  'preflight.col.zone': { pt: 'Zona / pedida', en: 'Zone / requested' },
+  'preflight.cell.zone': { pt: '{r} / {req} m', en: '{r} / {req} m' },
+  'preflight.col.relief': { pt: 'Desnível', en: 'Relief' },
+  'preflight.cell.relief': { pt: '{relief} m a {at} m', en: '{relief} m at {at} m' },
+  'preflight.col.requested': { pt: 'Zona pedida', en: 'Requested zone' },
+  'preflight.cell.requested': { pt: '{req} m', en: '{req} m' },
+  'preflight.col.drop': { pt: 'Voo mais baixo', en: 'Flight lower by' },
+  'preflight.cell.drop': { pt: '−{drop} m', en: '{drop} m' },
+  'preflight.col.noData': { pt: 'Pontos sem relevo', en: 'Points without data' },
+  'preflight.cell.noData': { pt: '{n}', en: '{n}' },
+  'preflight.col.distance': { pt: 'Distância (pior caso)', en: 'Distance (worst case)' },
+  'preflight.cell.distance': { pt: '{m} m', en: '{m} m' },
+  'preflight.col.time': { pt: 'Tempo', en: 'Time' },
+  'preflight.cell.time': { pt: '{min} min', en: '{min} min' },
+  'preflight.col.transit': { pt: 'Deslocação', en: 'Transit' },
+  'preflight.cell.transit': { pt: '{transit} min', en: '{transit} min' },
+  'preflight.col.transitAlone': { pt: 'Só a deslocação', en: 'Transit alone' },
+  'preflight.cell.transitAlone': { pt: '{min} min', en: '{min} min' },
+  'preflight.col.hidden': { pt: 'Atrás do relevo', en: 'Behind terrain' },
+  'preflight.cell.hidden': { pt: '{pct} %', en: '{pct} %' },
+  'preflight.col.hiddenAt': { pt: 'Tapado a', en: 'Blocked at' },
+  'preflight.cell.hiddenAt': { pt: '~{m} m', en: '~{m} m' },
+  'preflight.col.radio': { pt: 'Rádio em risco', en: 'Radio at risk' },
+  'preflight.cell.radio': { pt: '{pct} %', en: '{pct} %' },
+  'preflight.col.radioAt': { pt: 'Relevo a', en: 'Terrain at' },
+  'preflight.cell.radioAt': { pt: '~{m} m', en: '~{m} m' },
 }
