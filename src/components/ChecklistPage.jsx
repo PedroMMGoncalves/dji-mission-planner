@@ -1545,7 +1545,8 @@ function SeletorVoo({ voos, valor, onChange, info, L }) {
           aria-label={L(UI.flightPick)}
           value={v?.label ?? ''}
           onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
+          // por cima da borda: o alvo tem os 44 px da caixa
+          className="absolute -inset-px h-[calc(100%+2px)] w-[calc(100%+2px)] cursor-pointer appearance-none opacity-0"
         >
           {voos.map((x) => (
             <option key={x.label} value={x.label}>
@@ -1571,17 +1572,22 @@ function SegurancaKmz({ safety, rthInfo, t, L }) {
   const tituloId = useId()
   const linhas = [
     { k: 'fim', label: t('safety.finish'), value: t(`safety.finish.${safety.finishAction}`) },
-    {
-      k: 'sinal',
-      label: t('safety.rcLost'),
-      value:
-        safety.exitOnRCLost === 'executeLostAction'
-          ? t('safety.checklistStop', {
-              mode: t('safety.rcLost.executeLostAction'),
-              action: t(`safety.rcAction.${safety.executeRCLostAction}`),
-            })
-          : t('safety.rcLost.goContinue'),
-    },
+    // «Interromper a missão, depois RTH»: a acção com o nome curto (o do
+    // desenho e da folha A4), numa linha; o nome inteiro fica no título
+    safety.exitOnRCLost === 'executeLostAction'
+      ? {
+          k: 'sinal',
+          label: t('safety.rcLost'),
+          value: t('safety.checklistStop', {
+            mode: t('safety.rcLost.executeLostAction'),
+            action: t(`mp.safety.act.${safety.executeRCLostAction}`),
+          }),
+          title: t('safety.checklistStop', {
+            mode: t('safety.rcLost.executeLostAction'),
+            action: t(`safety.rcAction.${safety.executeRCLostAction}`),
+          }),
+        }
+      : { k: 'sinal', label: t('safety.rcLost'), value: t('safety.rcLost.goContinue') },
     ...(rthInfo
       ? [
           {
@@ -1616,7 +1622,9 @@ function SegurancaKmz({ safety, rthInfo, t, L }) {
             }`}
           >
             <dt className="flex-none whitespace-nowrap text-slate-300">{l.label}</dt>
-            <dd className="m-0 text-right tabular-nums">{l.value}</dd>
+            <dd title={l.title} className="m-0 text-right tabular-nums">
+              {l.value}
+            </dd>
           </div>
         ))}
       </dl>
@@ -1770,10 +1778,21 @@ function FichasPorBase({ sheets, day, onOpen, onPrintAll, ultima, cardRefs, t, L
 function FichaVista({ sheets, index, onIndex, onClose, onPrintAll, sheetProps, t, L }) {
   const s = sheets[index]
   const voltar = useRef(/** @type {HTMLButtonElement|null} */ (null))
+  const anterior = useRef(/** @type {HTMLButtonElement|null} */ (null))
+  const seguinte = useRef(/** @type {HTMLButtonElement|null} */ (null))
   const corpo = useRef(/** @type {HTMLDivElement|null} */ (null))
   useEffect(() => {
     voltar.current?.focus()
   }, [])
+  // na primeira e na última base o botão usado fica desactivado: o foco passa
+  // ao do outro lado (com uma só base não há para onde ir: «Voltar»)
+  const ir = (i) => {
+    flushSync(() => onIndex(i))
+    const foco = /** @type {HTMLButtonElement|null} */ (document.activeElement)
+    if (foco && foco !== document.body && !foco.disabled) return
+    const outro = i === 0 ? seguinte.current : anterior.current
+    ;(outro && !outro.disabled ? outro : voltar.current)?.focus()
+  }
   // cada base abre a folha no topo
   useEffect(() => {
     corpo.current?.scrollTo?.(0, 0)
@@ -1792,7 +1811,8 @@ function FichaVista({ sheets, index, onIndex, onClose, onPrintAll, sheetProps, t
   const quadrado = 'h-11 w-11 px-0'
   return (
     <div
-      role="region"
+      role="dialog"
+      aria-modal="true"
       aria-label={titulo}
       data-testid="sheet-view"
       className="chk-vista fixed inset-0 z-50 flex flex-col bg-slate-950 text-slate-100"
@@ -1811,23 +1831,25 @@ function FichaVista({ sheets, index, onIndex, onClose, onPrintAll, sheetProps, t
         </div>
         <div className="flex-1" />
         <Button
+          ref={anterior}
           size="lg"
           variant="ghost"
           className={quadrado}
           aria-label={L(UI.sheetPrev)}
           title={L(UI.sheetPrev)}
           disabled={index === 0}
-          onClick={() => onIndex(index - 1)}
+          onClick={() => ir(index - 1)}
           icon={<IconChevronLeft className="h-5 w-5" />}
         />
         <Button
+          ref={seguinte}
           size="lg"
           variant="ghost"
           className={quadrado}
           aria-label={L(UI.sheetNext)}
           title={L(UI.sheetNext)}
           disabled={index === sheets.length - 1}
-          onClick={() => onIndex(index + 1)}
+          onClick={() => ir(index + 1)}
           icon={<IconChevronRight className="h-5 w-5" />}
         />
         <Button
@@ -2562,7 +2584,7 @@ export default function ChecklistPage({
                 {L(UI.autosave)}
               </span>
             </div>
-            <div className="chk-campos grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="chk-campos grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {CAMPOS_MISSAO.map((c) => (
                 <CampoTexto
                   key={c.key}
@@ -2828,7 +2850,10 @@ export default function ChecklistPage({
           </section>
 
           {/* --------------------------- Notas ---------------------------- */}
-          <section aria-labelledby={`${prefixo}-notas`} className={`${CARTAO} px-5 pb-5 pt-3.5`}>
+          <section
+            aria-labelledby={`${prefixo}-notas`}
+            className={`chk-notas-bloco ${CARTAO} px-5 pb-5 pt-3.5`}
+          >
             <h2 id={`${prefixo}-notas`} className={`${H2} mb-3`}>
               {L(UI.notesSection)}
             </h2>
@@ -3125,7 +3150,12 @@ const PRINT_CSS = `
   .chk-page .chk-tabela input::placeholder { color: transparent !important; }
 
   .chk-page .chk-notas { grid-template-columns: 1fr 1fr !important; gap: 3mm !important; }
+  /* as notas, como o registo e as assinaturas, não se partem; e um título
+     não fica sozinho no fim da página */
+  .chk-page .chk-notas-bloco,
   .chk-page .chk-assinaturas { break-inside: avoid; }
+  .chk-page h2,
+  .chk-page h3 { break-after: avoid; }
   .chk-page .chk-linha { border-bottom: 1px solid #000 !important; }
 }
 
