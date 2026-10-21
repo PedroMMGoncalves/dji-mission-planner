@@ -33,7 +33,14 @@ import { fileURLToPath } from 'node:url'
 // interruptores, e os textos PT/EN e da ajuda; nenhuma dependência de
 // JavaScript nova (a letra Inter são ficheiros .woff2, que não contam). As
 // duas partes acrescentam 31 + 22 KB (2435 → 2489 KB).
-const BUDGET_KB = 2500
+// 2500 → 2525 na conversão do painel da área (fase 2, Outubro de 2026): as
+// sete secções que fecham, com o resumo de cada uma numa linha e a escolha
+// lembrada no aparelho, a tabela das bases com o detalhe na linha, o
+// «Resumo e exportar» com a tabela dos voos e as exportações em linhas, as
+// gavetas em grupos, o interruptor e o controlo segmentado partilhados
+// (src/components/ui) e os textos PT/EN; nenhuma dependência nova. Acrescenta
+// 27 KB (2491 → 2518 KB).
+const BUDGET_KB = 2525
 // fileURLToPath e não .pathname: este descodifica percent-encoding e trata
 // os caminhos do Windows, o outro devolve-os em bruto.
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))
