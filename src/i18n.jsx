@@ -6,6 +6,7 @@ import settingsDict from './i18n/dict.settings.js'
 import basesDict from './i18n/dict.bases.js'
 import cardsDict from './i18n/dict.cards.js'
 import errorsDict from './i18n/dict.errors.js'
+import windowsDict from './i18n/dict.windows.js'
 
 /**
  * Internacionalização PT/EN.
@@ -530,6 +531,7 @@ const DICT = {
   ...basesDict,
   ...cardsDict,
   ...errorsDict,
+  ...windowsDict,
 }
 
 export default DICT
