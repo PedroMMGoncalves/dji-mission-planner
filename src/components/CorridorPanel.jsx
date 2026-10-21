@@ -623,7 +623,8 @@ export default function CorridorPanel({
           />
         )}
         <Button
-          className="h-10 w-full"
+          size="field"
+          className="w-full"
           onClick={onShowProfile}
           disabled={!(terrainReady && corridorCovers && stats)}
           icon={<IconChart className="h-[15px] w-[15px]" />}

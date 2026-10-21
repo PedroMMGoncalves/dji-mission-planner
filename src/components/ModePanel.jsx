@@ -831,7 +831,7 @@ export function DrawControls({
         </ToolButton>
         <Button
           variant="danger"
-          className="h-10"
+          size="field"
           onClick={onClear}
           disabled={clearDisabled}
           icon={<IconTrash className="h-[15px] w-[15px]" />}

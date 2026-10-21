@@ -668,7 +668,8 @@ export default function CircularPanel({
           <Part divided className="gap-1">
             <Button
               variant="danger"
-              className="h-10 justify-start self-start px-0.5"
+              size="field"
+              className="justify-start self-start px-0.5"
               onClick={onRemove}
               icon={<IconTrash className="h-[15px] w-[15px]" />}
             >

@@ -24,6 +24,8 @@ const SIZE = {
   sm: 'h-8 px-2.5 text-xs',
   md: 'h-9 px-3 text-[13px]',
   lg: 'h-11 px-4 text-sm',
+  // ao lado de um campo, da altura da caixa (40 px)
+  field: 'h-10 px-3 text-[13px]',
   // quadrado, só com o ícone (dê-lhe aria-label)
   icon: 'h-9 w-9 text-[13px]',
 }
@@ -31,7 +33,7 @@ const SIZE = {
 /**
  * Classes de um botão.
  * @param {'primary'|'secondary'|'ghost'|'danger'|'dangerSolid'} [variant]
- * @param {'sm'|'md'|'lg'|'icon'} [size]
+ * @param {'sm'|'md'|'field'|'lg'|'icon'} [size]
  */
 export function buttonClass(variant = 'secondary', size = 'md') {
   return `${BASE} ${VARIANT[variant] ?? VARIANT.secondary} ${SIZE[size] ?? SIZE.md}`
@@ -41,7 +43,7 @@ export function buttonClass(variant = 'secondary', size = 'md') {
  * Botão com uma variante e um tamanho; `icon` vai antes do texto. O resto
  * das propriedades passa ao <button> (onClick, disabled, title, aria-*...).
  * @param {{variant?: 'primary'|'secondary'|'ghost'|'danger'|'dangerSolid',
- *   size?: 'sm'|'md'|'lg'|'icon', icon?: any, className?: string,
+ *   size?: 'sm'|'md'|'field'|'lg'|'icon', icon?: any, className?: string,
  *   type?: 'button'|'submit'|'reset', children?: any} & Record<string, any>} props
  */
 export function Button({

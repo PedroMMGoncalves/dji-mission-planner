@@ -428,7 +428,7 @@ export default function ControlPanel({
         onClick={onLoadTerrain}
         disabled={!hasRing || terrain.status === 'loading'}
         icon={<IconMountain />}
-        className="h-10"
+        size="field"
       >
         {terrain.status === 'loading' ? t('cp.terrain.loading') : t('cp.terrain.downloadGlobal')}
       </Button>
@@ -437,7 +437,7 @@ export default function ControlPanel({
         disabled={!hasRing || terrain.status === 'loading'}
         title={t('cp.terrain.importDemTitle')}
         icon={<IconFolder />}
-        className="h-10"
+        size="field"
       >
         {t('cp.terrain.importDem')}
       </Button>
@@ -743,7 +743,8 @@ export default function ControlPanel({
                   <Button
                     onClick={() => onEffectiveFov(payload.fov)}
                     title={t('cp.drone.effectiveFovResetTitle', { fov: payload.fov })}
-                    className="mt-[22px] h-10"
+                    size="field"
+                    className="mt-[22px]"
                   >
                     {t('cp.drone.effectiveFovReset')}
                   </Button>
@@ -806,12 +807,12 @@ export default function ControlPanel({
               onClick={() => areaFileRef.current?.click()}
               title={t('cp.area.importTitle')}
               icon={<IconFolder />}
-              className="h-10"
+              size="field"
             >
               {t('cp.area.import')}
             </Button>
             {hasRing && (
-              <Button variant="danger" onClick={onClear} icon={<IconTrash />} className="h-10">
+              <Button variant="danger" onClick={onClear} icon={<IconTrash />} size="field">
                 {t('cp.area.clear')}
               </Button>
             )}
@@ -1045,7 +1046,7 @@ export default function ControlPanel({
             onClick={onShowProfile}
             disabled={!(terrain.status === 'ready' && terrainCovers)}
             icon={<IconChart />}
-            className="h-10"
+            size="field"
           >
             {t('cp.terrain.profile')}
           </Button>
@@ -1560,7 +1561,7 @@ export default function ControlPanel({
                   aria-pressed={mode === 'base'}
                   aria-label={t('cp.area.markBase')}
                   title={t('cp.area.markBase')}
-                  className={`${buttonClass('secondary', 'md')} h-10 !px-2 ${
+                  className={`${buttonClass('secondary', 'field')} !px-2 ${
                     mode === 'base' ? '!border-sky-400/40 bg-sky-400/15 text-sky-300' : ''
                   }`}
                 >
@@ -1572,7 +1573,7 @@ export default function ControlPanel({
                   disabled={!hasBase}
                   aria-label={t('cp.area.removeBase')}
                   title={t('cp.area.removeBase')}
-                  className={`${buttonClass('secondary', 'md')} h-10 !px-2`}
+                  className={`${buttonClass('secondary', 'field')} !px-2`}
                 >
                   {t('cp.area.removeBaseShort')}
                 </button>
@@ -1799,7 +1800,8 @@ export default function ControlPanel({
               disabled={!canExportArea}
               title={exportAreaTitle ?? undefined}
               icon={<IconDownload />}
-              className="h-10 w-full"
+              size="field"
+              className="w-full"
             >
               {t('app.exportKml')}
             </Button>
@@ -2356,7 +2358,7 @@ export default function ControlPanel({
                   aria-pressed={gcpConfig.count == null}
                   onClick={() => setGcpConfig({ ...gcpConfig, count: null })}
                   title={t('cp.gcp.autoTitle', { n: gcpAutoCount })}
-                  className={`${buttonClass('secondary', 'md')} h-10 ${
+                  className={`${buttonClass('secondary', 'field')} ${
                     gcpConfig.count == null ? '!border-sky-400/40 bg-sky-400/15 text-sky-300' : ''
                   }`}
                 >
@@ -2391,7 +2393,12 @@ export default function ControlPanel({
                   })}
                 </p>
               )}
-              <Button onClick={onExportGcps} icon={<IconDownload />} className="h-10 w-full">
+              <Button
+                onClick={onExportGcps}
+                icon={<IconDownload />}
+                size="field"
+                className="w-full"
+              >
                 {t('cp.gcp.export')}
               </Button>
               <p className="text-xs leading-relaxed text-slate-400">{t('cp.gcp.hint')}</p>
@@ -2410,7 +2417,7 @@ export default function ControlPanel({
             onClick={onStartInspect}
             title={t('cp.inspect.markTitle')}
             aria-pressed={mode === 'inspect'}
-            className={`${buttonClass('secondary', 'md')} h-10 w-full ${
+            className={`${buttonClass('secondary', 'field')} w-full ${
               mode === 'inspect' ? '!border-orange-400/40 bg-orange-400/15 text-orange-200' : ''
             }`}
           >

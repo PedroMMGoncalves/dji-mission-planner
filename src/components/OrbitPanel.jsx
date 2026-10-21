@@ -257,7 +257,7 @@ export default function OrbitPanel({
           </ToolButton>
           <Button
             variant="danger"
-            className="h-10"
+            size="field"
             onClick={onClearPoi}
             disabled={!poi}
             icon={<IconTrash className="h-[15px] w-[15px]" />}

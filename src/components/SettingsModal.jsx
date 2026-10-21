@@ -717,7 +717,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                         onClick={() =>
                           edit((eq) => addBattery(eq, aircraftId, t('set.newBattery')).equipment)
                         }
-                        className={`${buttonClass('secondary', 'md')} h-10 self-start px-3.5`}
+                        className={`${buttonClass('secondary', 'field')} self-start px-3.5`}
                       >
                         <Icon d="M12 5v14M5 12h14" size={15} />
                         {t('set.add')}
@@ -932,7 +932,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                       type="button"
                       onClick={exportFile}
                       title={t('set.exportTitle')}
-                      className={`${buttonClass('secondary', 'md')} h-10 px-3.5`}
+                      className={`${buttonClass('secondary', 'field')} px-3.5`}
                     >
                       <IconDownload className="h-[15px] w-[15px]" />
                       {t('set.export')}
@@ -949,7 +949,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                       type="button"
                       onClick={() => fileRef.current?.click()}
                       title={t('set.importTitle')}
-                      className={`${buttonClass('secondary', 'md')} h-10 px-3.5`}
+                      className={`${buttonClass('secondary', 'field')} px-3.5`}
                     >
                       <Icon size={15}>
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -998,7 +998,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                         setStatus(null)
                         setConfirmRestore(true)
                       }}
-                      className={`${buttonClass('danger', 'md')} h-10`}
+                      className={buttonClass('danger', 'field')}
                     >
                       <Icon size={15}>
                         <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
@@ -1033,14 +1033,14 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                             setConfirmRestore(false)
                             setStatus({ kind: 'ok', text: t('set.restored'), where: 'restore' })
                           }}
-                          className={`${buttonClass('dangerSolid', 'md')} h-10 px-4`}
+                          className={`${buttonClass('dangerSolid', 'field')} px-4`}
                         >
                           {t('set.restoreYes')}
                         </button>
                         <button
                           type="button"
                           onClick={() => setConfirmRestore(false)}
-                          className={`${buttonClass('secondary', 'md')} h-10 px-4`}
+                          className={`${buttonClass('secondary', 'field')} px-4`}
                         >
                           {t('set.restoreNo')}
                         </button>
@@ -1069,7 +1069,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                       aria-label={t('set.clearCache')}
                       title={t('set.clearCache')}
                       onClick={clearCache}
-                      className={`${buttonClass('secondary', 'md')} h-10 px-3.5`}
+                      className={`${buttonClass('secondary', 'field')} px-3.5`}
                     >
                       <IconTrash className="h-[15px] w-[15px]" />
                       {t('set.clearCacheShort')}
@@ -1091,7 +1091,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
           <button
             type="button"
             onClick={close}
-            className={`${buttonClass('primary', 'lg')} h-10 px-5 text-[13.5px]`}
+            className={`${buttonClass('primary', 'field')} px-5`}
           >
             {t('set.close')}
           </button>
