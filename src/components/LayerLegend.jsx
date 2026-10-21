@@ -271,6 +271,7 @@ export default function LayerLegend({
     onOpenChange(v)
   }
   if (!items?.length) return null
+  // recolhida, o corpo não existe: a pastilha não tem aria-controls
   if (!open)
     return (
       <div className={className} data-testid={testId}>
@@ -279,7 +280,6 @@ export default function LayerLegend({
           ref={toggleRef}
           data-testid={`${testId}-toggle`}
           aria-expanded="false"
-          aria-controls={`${testId}-body`}
           title={t('legend.expand')}
           onClick={() => setOpen(true)}
           className={PILL}

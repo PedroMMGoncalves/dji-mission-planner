@@ -417,6 +417,7 @@ function Legend3D({ items, hidden, onToggle, open, onOpenChange, colors, note })
   }
   const testId = 'map3d-legend'
   if (!items.length) return null
+  // recolhida, o corpo não existe: a pastilha não tem aria-controls
   if (!open)
     return (
       <div className="absolute right-4 top-4 z-10" data-testid={testId}>
@@ -425,7 +426,6 @@ function Legend3D({ items, hidden, onToggle, open, onOpenChange, colors, note })
           ref={toggleRef}
           data-testid={`${testId}-toggle`}
           aria-expanded="false"
-          aria-controls={`${testId}-body`}
           title={t('legend.expand')}
           onClick={() => setOpen(true)}
           className={PILL}

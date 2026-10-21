@@ -107,7 +107,9 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   uma pesquisa na língua aberta, sem maiúsculas nem acentos, que deixa no
   índice só os tópicos com as palavras e as realça; os textos são os
   mesmos, só arrumados (eram uma coluna de ~5400 px), mais o perfil de
-  elevação e a legenda da vista 3D. O Aviso antes de usar mostra o texto
+  elevação, a legenda da vista 3D e um tópico «Zona de descolagem» (o
+  raio, a cota mais baixa, o ganho, a redução junto a uma corta e o pior
+  caso do alcance visual e do trânsito). O Aviso antes de usar mostra o texto
   integral em cinco pontos numerados, com a declaração ao lado do botão;
   aceita-se e guarda-se como antes. A vista 3D tem a legenda nas cores da
   cena (a rota e os waypoints nas cores das bases), com a escala das cotas
