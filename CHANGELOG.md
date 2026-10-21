@@ -199,12 +199,13 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   dos ZIP sai; o polígono da área inteira, sozinho, fica na seta, como
   «Polígono da área (KML)». Os ficheiros são os mesmos.
 - **Sobreposição entre blocos no mapa.** Com a área dividida em células
-  (mosaico ou quadrícula), o troço das faixas de um bloco que entra na
-  célula do bloco vizinho — a margem e os prolongamentos das faixas —
-  desenha-se a tracejado e um pouco mais grosso, na cor do seu bloco; antes
-  via-se só uma linha por cima da outra. Com sobreposição, a legenda das
-  faixas diz «a tracejado por cima do bloco vizinho». As rotas e os
-  ficheiros são os mesmos.
+  (mosaico ou quadrícula), onde dois blocos vizinhos voam a mesma faixa —
+  a margem e os prolongamentos das faixas — o mapa desenha uma só linha às
+  riscas, nas cores dos dois, com a espessura das outras e cortes a 45°, e
+  a linha cheia de cada bloco acaba onde ela começa; antes via-se só uma
+  linha por cima da outra. Com sobreposição, a legenda das faixas diz «às
+  riscas onde dois blocos voam a mesma faixa». As rotas e os ficheiros são
+  os mesmos.
 - **Margem por bloco.** Com a área dividida em blocos, a margem (0 a
   30 %) lê-se pelo bloco e não pela área inteira: cada bloco alarga metade
   da percentagem do seu lado para cada lado, e dois blocos vizinhos voam

@@ -245,16 +245,16 @@ export default {
   // com a área dividida, a margem lê-se pelo bloco (cellBuffersM): cada um
   // entra metade no vizinho, e os dois voam em comum {pct} % do lado
   'cp.buffer.blocks': {
-    pt: '= {m} m para cada lado de cada bloco ({pct} % do lado de {s} m ÷ 2): dois blocos vizinhos voam {o} m em comum, a tracejado no mapa',
-    en: '= {m} m on each side of every block ({pct} % of the {s} m side ÷ 2): two neighbouring blocks fly {o} m in common, dashed on the map',
+    pt: '= {m} m para cada lado de cada bloco ({pct} % do lado de {s} m ÷ 2): dois blocos vizinhos voam {o} m em comum, às riscas no mapa',
+    en: '= {m} m on each side of every block ({pct} % of the {s} m side ÷ 2): two neighbouring blocks fly {o} m in common, striped on the map',
   },
   'cp.buffer.cells': {
-    pt: '= {m} m para cada lado de cada bloco ({pct} % de √área do bloco ÷ 2): dois blocos vizinhos voam {o} m em comum, a tracejado no mapa',
-    en: '= {m} m on each side of every block ({pct} % of the block’s √area ÷ 2): two neighbouring blocks fly {o} m in common, dashed on the map',
+    pt: '= {m} m para cada lado de cada bloco ({pct} % de √área do bloco ÷ 2): dois blocos vizinhos voam {o} m em comum, às riscas no mapa',
+    en: '= {m} m on each side of every block ({pct} % of the block’s √area ÷ 2): two neighbouring blocks fly {o} m in common, striped on the map',
   },
   'cp.buffer.cellsRange': {
-    pt: '= {m} a {m2} m para cada lado, conforme o bloco ({pct} % de √área de cada bloco ÷ 2); onde dois blocos voam em comum, a tracejado no mapa',
-    en: '= {m} to {m2} m on each side, depending on the block ({pct} % of each block’s √area ÷ 2); where two blocks fly in common, dashed on the map',
+    pt: '= {m} a {m2} m para cada lado, conforme o bloco ({pct} % de √área de cada bloco ÷ 2); onde dois blocos voam em comum, às riscas no mapa',
+    en: '= {m} to {m2} m on each side, depending on the block ({pct} % of each block’s √area ÷ 2); where two blocks fly in common, striped on the map',
   },
   'cp.inspect.moveUp': { pt: 'Subir o ponto {n} na ordem', en: 'Move point {n} up' },
   'cp.inspect.moveDown': { pt: 'Descer o ponto {n} na ordem', en: 'Move point {n} down' },

@@ -416,9 +416,10 @@ function topicsPt({ onShowDisclaimer, t }) {
             que é cada camada, com o símbolo que o mapa desenha (na vista 3D, nas cores da cena, com
             a escala das cotas do relevo e o exagero vertical), e mostra ou esconde cada uma no seu
             interruptor (faixas, fotos, bases, GCP…; no mapa, também as bacias de visão). Com a área
-            dividida em células (mosaico ou quadrícula), o troço das faixas de um bloco que entra na
-            célula do bloco vizinho — o buffer e os prolongamentos das faixas — fica a tracejado e
-            um pouco mais grosso, na cor do seu bloco: é a sobreposição entre blocos.
+            dividida em células (mosaico ou quadrícula), onde dois blocos vizinhos voam a mesma
+            faixa — a margem e os prolongamentos das faixas — a linha fica às riscas, nas cores dos
+            dois, com a mesma espessura e cortes a 45°: é a sobreposição entre blocos; fora daí,
+            cada bloco continua cheio.
           </p>
           <p>
             As <strong>Métricas</strong>, num cartão à direita do mapa, aparecem quando há plano: o
@@ -1107,10 +1108,10 @@ function topicsEn({ onShowDisclaimer, t }) {
             the 3D view, says what each layer is, with the symbol the map draws (in the 3D view, in
             the scene’s colours, with the terrain elevation scale and the vertical exaggeration),
             and shows or hides each one with its switch (lines, photos, bases, GCPs…; on the map,
-            also the viewsheds). With the area split into cells (mosaic or grid), the stretch of a
-            block’s lines that enters the next block’s cell — the buffer and the line extensions —
-            is dashed and slightly thicker, in its own block’s colour: that is the overlap between
-            blocks.
+            also the viewsheds). With the area split into cells (mosaic or grid), where two
+            neighbouring blocks fly the same line — the buffer and the line extensions — the line is
+            striped in both their colours, with the same thickness and 45° cuts: that is the overlap
+            between blocks; elsewhere, each block stays solid.
           </p>
           <p>
             The <strong>Metrics</strong>, in a card on the right of the map, appear once there is a

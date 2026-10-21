@@ -5729,21 +5729,22 @@ function coresDoSimbolo(loc) {
 // o E2E nunca abria o perfil. A escala do relevo da vista 3D cobre o terreno
 // do perfil. A 30 m sem seguir terreno, a folga passa a negativa e o cartão a
 // vermelho, como o bloqueio do preflight.
-// A sobreposição entre blocos: com a área em células, o troço das faixas de
-// um bloco que entra na célula do vizinho (a margem, o prolongamento)
-// desenha-se a tracejado ([6, 5], no canvas do mapa) e a legenda das faixas
-// di-lo; com as faixas dentro dos quadrados, nada a tracejado.
+// A sobreposição entre blocos: onde dois blocos voam a mesma faixa (a margem,
+// o prolongamento), uma só linha às riscas nas cores deles (o mapa conta os
+// troços em data-overlap-stretches, e as riscas são os únicos polígonos
+// fechados no canvas das faixas) e a legenda das faixas di-lo; com as faixas
+// dentro dos quadrados, nada às riscas.
 await scenario('sobreposicao-entre-blocos', async () => {
   const { page, errors } = await openMission({
     area: fx.rect,
     dem: false,
-    // conta os traços [6, 5] que o mapa pinta no canvas
+    // conta os polígonos fechados que o mapa pinta no canvas (as riscas)
     initScript: () => {
-      const setLineDash = CanvasRenderingContext2D.prototype.setLineDash
-      window.__tracejados = 0
-      CanvasRenderingContext2D.prototype.setLineDash = function (seg) {
-        if (seg?.length === 2 && seg[0] === 6 && seg[1] === 5) window.__tracejados += 1
-        return setLineDash.call(this, seg)
+      const closePath = CanvasRenderingContext2D.prototype.closePath
+      window.__riscas = 0
+      CanvasRenderingContext2D.prototype.closePath = function () {
+        window.__riscas += 1
+        return closePath.call(this)
       }
     },
   })
@@ -5751,12 +5752,17 @@ await scenario('sobreposicao-entre-blocos', async () => {
   await exportReady(page)
   const legenda = page.getByTestId('map-legend')
   await legenda.getByTestId('map-legend-toggle').click()
-  const tracejados = () => page.evaluate(() => window.__tracejados)
+  const troços = async () =>
+    Number(await page.locator('[data-overlap-stretches]').getAttribute('data-overlap-stretches'))
+  const riscas = () => page.evaluate(() => window.__riscas)
   const blocos = await page.getByTestId('block-row').count()
   check(
-    'sobreposição: as faixas dentro dos quadrados (sem margem nem prolongamento), nada a tracejado',
-    blocos >= 2 && (await tracejados()) === 0 && !/tracejado/.test(await legenda.innerText()),
-    `${blocos} blocos, ${await tracejados()} traços`,
+    'sobreposição: as faixas dentro dos quadrados (sem margem nem prolongamento), nada às riscas',
+    blocos >= 2 &&
+      (await troços()) === 0 &&
+      (await riscas()) === 0 &&
+      !/às riscas/.test(await legenda.innerText()),
+    `${blocos} blocos, ${await troços()} troços, ${await riscas()} riscas`,
   )
   await openDrawer(page, 'voo')
   const over = page
@@ -5767,10 +5773,11 @@ await scenario('sobreposicao-entre-blocos', async () => {
   await closeDrawer(page)
   await page.waitForTimeout(1500)
   check(
-    'sobreposição: com o prolongamento, o troço por cima do quadrado vizinho a tracejado, e a legenda di-lo',
-    (await tracejados()) > 0 &&
-      /a tracejado por cima do bloco vizinho/.test(await legenda.innerText()),
-    `${await tracejados()} traços`,
+    'sobreposição: com o prolongamento, os troços que dois blocos voam às riscas, e a legenda di-lo',
+    (await troços()) > 0 &&
+      (await riscas()) > 0 &&
+      /às riscas onde dois blocos voam a mesma faixa/.test(await legenda.innerText()),
+    `${await troços()} troços, ${await riscas()} riscas`,
   )
   check('sobreposição: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()

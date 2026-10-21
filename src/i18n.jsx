@@ -466,10 +466,10 @@ const BASE_DICT = {
   },
   'legend.linesBase': { pt: 'Na cor da base', en: "In the base's colour" },
   'legend.linesBlock': { pt: 'Uma cor por bloco', en: 'One colour per block' },
-  // a sobreposição entre blocos (MapView, blockLinePieces)
+  // a sobreposição entre blocos (MapView, sharedStretches)
   'legend.linesOverlap': {
-    pt: 'a tracejado por cima do bloco vizinho',
-    en: 'dashed over the next block',
+    pt: 'às riscas onde dois blocos voam a mesma faixa',
+    en: 'striped where two blocks fly the same line',
   },
   'legend.start': { pt: 'início', en: 'start' },
   'legend.end': { pt: 'fim', en: 'end' },

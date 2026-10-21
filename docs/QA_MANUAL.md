@@ -85,11 +85,11 @@ gaveta).
   útil (cartão 7, «Voo mais longo / tempo útil» sem vermelho); por baixo da
   margem, «= N m para cada lado de cada bloco (10 % do lado de L m ÷ 2):
   dois blocos vizinhos voam 2N m em comum», com N = 5 % de L e não da área
-  inteira;
-  no mapa, o troço das faixas de cada bloco que entra no quadrado vizinho
-  (a margem e o prolongamento) a tracejado e um pouco mais grosso, na cor
-  do seu bloco, e a legenda das faixas diz «a tracejado por cima do bloco
-  vizinho».
+  inteira; no mapa, onde dois blocos vizinhos voam a mesma faixa (a margem e
+  o prolongamento), uma só linha às riscas nas cores dos dois, com a
+  espessura das outras e cortes a 45°, e a linha cheia de cada bloco acaba
+  onde ela começa; a legenda das faixas diz «às riscas onde dois blocos voam
+  a mesma faixa».
 - ☐ Checklist (com Mapper+ activo).
   **Esperado:** grupos **LiDAR** no pré-campo e no durante; com um perfil de
   câmara os grupos desaparecem e as contagens de progresso ajustam.

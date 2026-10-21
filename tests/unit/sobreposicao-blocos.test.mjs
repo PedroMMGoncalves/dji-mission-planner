@@ -1,204 +1,192 @@
 /**
- * A sobreposição entre blocos no mapa (src/mission/blockOverlap.js): os
- * troços das linhas de um bloco que passam por cima da célula de outro bloco
- * desenham-se a tracejado. O buffer e os prolongamentos das faixas entram no
- * vizinho, e no mapa via-se só uma linha por cima da outra.
+ * A sobreposição entre blocos no mapa: onde dois (ou mais) blocos voam a
+ * mesma faixa (src/mission/blockOverlap.js), uma só linha às riscas nas
+ * cores deles, com a espessura das cheias e cortes a 45°
+ * (src/utils/stripes.js). As faixas de blocos vizinhos são colineares (a
+ * mesma grelha), e no mapa via-se só uma linha por cima da outra.
  */
 import fc from 'fast-check'
 import { describe, expect, test } from 'vitest'
-import { blockLinePieces, ringBox, splitByCells } from '../../src/mission/blockOverlap.js'
+import { sharedStretches } from '../../src/mission/blockOverlap.js'
+import { stripePolygons } from '../../src/utils/stripes.js'
+import { M_PER_DEG_LAT, metersPerDegLonSafe } from '../../src/utils/units.js'
 
-const quadrado = (x0, y0, lado = 1) => [
-  [x0, y0],
-  [x0 + lado, y0],
-  [x0 + lado, y0 + lado],
-  [x0, y0 + lado],
-  [x0, y0],
-]
-const celula = (x0, y0, lado) => ({ ring: quadrado(x0, y0, lado) })
+// metros num plano local, à latitude de Lisboa
+const lat0 = 38.7
+const lon0 = -9.1
+const mLon = metersPerDegLonSafe(lat0)
+const em = (x, y) => [lon0 + x / mLon, lat0 + y / M_PER_DEG_LAT]
+const xOf = (p) => (p[0] - lon0) * mLon
+const yOf = (p) => (p[1] - lat0) * M_PER_DEG_LAT
+const faixa = (x0, x1, y = 0) => [em(x0, y), em(x1, y)]
+const xs = (points) => points.map((p) => Math.round(xOf(p) * 100) / 100)
+const comp = (points) =>
+  Math.hypot(xOf(points[1]) - xOf(points[0]), yOf(points[1]) - yOf(points[0]))
 
-describe('sobreposição entre blocos', () => {
-  test('a caixa de um anel', () => {
-    expect(ringBox(quadrado(2, -1, 3))).toEqual([2, -1, 5, 2])
-  })
-
-  test('uma linha que entra no vizinho: o troço dentro dele é sobreposição', () => {
-    // a célula do bloco vai de x = 0 a 1; a do vizinho de 1 a 2; a linha
-    // prolonga-se até 1,25
-    const partes = splitByCells(
+describe('troços partilhados entre blocos', () => {
+  test('dois blocos na mesma faixa: cheio, partilhado pelos dois, cheio', () => {
+    const { solid, shared } = sharedStretches([
+      { id: 1, lines: [faixa(0, 110)] },
+      { id: 2, lines: [faixa(90, 200)] },
+    ])
+    expect(solid.get(1).map(xs)).toEqual([[0, 90]])
+    expect(solid.get(2).map(xs)).toEqual([[110, 200]])
+    expect(shared.map((s) => [xs(s.points), s.ids])).toEqual([
       [
-        [0.1, 0.5],
-        [1.25, 0.5],
+        [90, 110],
+        [1, 2],
       ],
-      [celula(1, 0, 1)],
-    )
-    expect(partes).toEqual([
-      {
-        points: [
-          [0.1, 0.5],
-          [1, 0.5],
-        ],
-        overlap: false,
-      },
-      {
-        points: [
-          [1, 0.5],
-          [1.25, 0.5],
-        ],
-        overlap: true,
-      },
     ])
   })
 
-  test('uma linha que atravessa o vizinho e sai do outro lado: três troços', () => {
-    const partes = splitByCells(
+  test('faixas que só se tocam, ou a 5 m uma da outra, não se sobrepõem', () => {
+    const toque = sharedStretches([
+      { id: 1, lines: [faixa(0, 100)] },
+      { id: 2, lines: [faixa(100, 200)] },
+    ])
+    expect(toque.shared).toEqual([])
+    const lado = sharedStretches([
+      { id: 1, lines: [faixa(0, 100, 0)] },
+      { id: 2, lines: [faixa(0, 100, 5)] },
+    ])
+    expect(lado.shared).toEqual([])
+    expect(lado.solid.get(2).map(xs)).toEqual([[0, 100]])
+  })
+
+  test('a cruzada (outra direcção) e o mesmo bloco duas vezes não contam', () => {
+    const { solid, shared } = sharedStretches([
+      { id: 1, lines: [faixa(0, 100), faixa(0, 100), [em(50, -50), em(50, 50)]] },
+      { id: 2, lines: [[em(40, -50), em(40, 50)]] },
+    ])
+    expect(shared).toEqual([])
+    expect(solid.get(1).length).toBe(2)
+  })
+
+  test('três blocos e linhas de vários pontos', () => {
+    const { solid, shared } = sharedStretches([
+      { id: 3, lines: [[em(0, 0), em(50, 0), em(120, 0)]] },
+      { id: 1, lines: [faixa(100, 200)] },
+      { id: 2, lines: [faixa(110, 150)] },
+    ])
+    expect(shared.map((s) => [xs(s.points), s.ids])).toEqual([
       [
-        [-0.5, 0.5],
-        [2.5, 0.5],
+        [100, 110],
+        [1, 3],
       ],
-      [celula(0, 0, 2)],
-    )
-    expect(partes.map((p) => p.overlap)).toEqual([false, true, false])
-    expect(partes.map((p) => p.points.map((q) => q[0]))).toEqual([
-      [-0.5, 0],
-      [0, 2],
-      [2, 2.5],
-    ])
-  })
-
-  test('uma linha que não toca nenhuma célula, ou só lhe toca na aresta, volta inteira', () => {
-    const linha = [
-      [0, 0.5],
-      [1, 0.5],
-    ]
-    // longe: a caixa nem toca
-    expect(splitByCells(linha, [celula(5, 5, 1)])).toEqual([{ points: linha, overlap: false }])
-    // ao longo da aresta de baixo do vizinho (paralela, colinear): não entra
-    const rente = [
-      [1, 0],
-      [2, 0],
-    ]
-    expect(splitByCells(rente, [celula(1, 0, 1)])).toEqual([{ points: rente, overlap: false }])
-  })
-
-  test('uma linha de vários pontos junta os troços seguidos do mesmo tipo', () => {
-    const partes = splitByCells(
       [
-        [0.2, 0.5],
-        [0.6, 0.5],
-        [1.4, 0.5],
-        [1.8, 0.5],
+        [110, 120],
+        [1, 2, 3],
       ],
-      [celula(1, 0, 1)],
-    )
-    expect(partes).toEqual([
-      {
-        points: [
-          [0.2, 0.5],
-          [0.6, 0.5],
-          [1, 0.5],
-        ],
-        overlap: false,
-      },
-      {
-        points: [
-          [1, 0.5],
-          [1.4, 0.5],
-          [1.8, 0.5],
-        ],
-        overlap: true,
-      },
+      [
+        [120, 150],
+        [1, 2],
+      ],
     ])
+    expect(solid.get(3).map(xs)).toEqual([[0, 100]])
+    expect(solid.get(2)).toEqual([])
+    expect(sharedStretches(null).shared).toEqual([])
+    expect(sharedStretches([{ id: 1, lines: [] }]).solid.get(1)).toBeUndefined()
   })
 
-  test('por bloco: cada linha contra as células dos outros, nunca contra a sua', () => {
-    const blocos = [
-      {
-        id: 1,
-        cellRing: quadrado(0, 0, 1),
-        lines: [
-          [
-            [-0.1, 0.5],
-            [1.2, 0.5],
-          ],
-        ],
-      },
-      {
-        id: 2,
-        cellRing: quadrado(1, 0, 1),
-        lines: [
-          [
-            [0.9, 0.25],
-            [2.1, 0.25],
-          ],
-        ],
-      },
-    ]
-    const porBloco = blockLinePieces(blocos)
-    expect(porBloco.get(1)[0].map((p) => p.overlap)).toEqual([false, true])
-    expect(porBloco.get(2)[0].map((p) => p.overlap)).toEqual([true, false])
-    // sem células (a divisão por faixas) ou com um só bloco, as linhas inteiras
-    const faixas = blocos.map(({ cellRing: _c, ...b }) => b)
-    expect(blockLinePieces(faixas).get(1)).toEqual([
-      [{ points: faixas[0].lines[0], overlap: false }],
-    ])
-    expect(blockLinePieces([blocos[0]]).get(1)).toEqual([
-      [{ points: blocos[0].lines[0], overlap: false }],
-    ])
-    expect(blockLinePieces(null).size).toBe(0)
-  })
-
-  test('propriedade: os troços refazem a linha, pela ordem, e cada um está onde diz', () => {
-    const coord = fc.double({ min: -3, max: 3, noNaN: true })
-    const ponto = fc.tuple(coord, coord)
+  test('propriedade: cada bloco continua a voar o mesmo comprimento', () => {
     fc.assert(
       fc.property(
-        fc.array(ponto, { minLength: 2, maxLength: 5 }),
-        fc.array(fc.tuple(coord, coord, fc.double({ min: 0.2, max: 2, noNaN: true })), {
-          maxLength: 4,
-        }),
-        (linha, quadrados) => {
-          const outros = quadrados.map(([x, y, l]) => celula(x, y, l))
-          const partes = splitByCells(linha, outros)
-          const perto = (a, b) => Math.abs(a[0] - b[0]) < 1e-9 && Math.abs(a[1] - b[1]) < 1e-9
-          // começa e acaba nos pontos da linha, e cada troço começa onde o anterior acabou
-          if (partes.length === 0) return linha.every((p) => perto(p, linha[0]))
-          if (!perto(partes[0].points[0], linha[0])) return false
-          if (!perto(partes.at(-1).points.at(-1), linha.at(-1))) return false
-          for (let i = 1; i < partes.length; i += 1) {
-            if (!perto(partes[i].points[0], partes[i - 1].points.at(-1))) return false
-            // troços seguidos do mesmo tipo juntam-se
-            if (partes[i].overlap === partes[i - 1].overlap) return false
+        fc.array(
+          fc.record({
+            id: fc.integer({ min: 1, max: 4 }),
+            y: fc.constantFrom(0, 20, 40),
+            a: fc.integer({ min: 0, max: 300 }),
+            l: fc.integer({ min: 1, max: 200 }),
+          }),
+          { minLength: 1, maxLength: 8 },
+        ),
+        (segs) => {
+          const ids = [...new Set(segs.map((s) => s.id))]
+          const blocks = ids.map((id) => ({
+            id,
+            lines: segs.filter((s) => s.id === id).map((s) => faixa(s.a, s.a + s.l, s.y)),
+          }))
+          const { solid, shared } = sharedStretches(blocks)
+          // o comprimento de cada bloco: a união das suas faixas, faixa a faixa
+          const uniao = (id) => {
+            let total = 0
+            for (const y of [0, 20, 40]) {
+              const iv = segs
+                .filter((s) => s.id === id && s.y === y)
+                .map((s) => [s.a, s.a + s.l])
+                .sort((p, q) => p[0] - q[0])
+              let cur = null
+              for (const [a, b] of iv) {
+                if (cur && a <= cur[1]) cur[1] = Math.max(cur[1], b)
+                else {
+                  if (cur) total += cur[1] - cur[0]
+                  cur = [a, b]
+                }
+              }
+              if (cur) total += cur[1] - cur[0]
+            }
+            return total
           }
-          // o comprimento total é o da linha
-          const comp = (pts) =>
-            pts.slice(1).reduce((s, p, i) => s + Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]), 0)
-          const total = partes.reduce((s, p) => s + comp(p.points), 0)
-          if (Math.abs(total - comp(linha)) >= 1e-9) return false
-          // cada pedaço de cada troço está dentro de um vizinho se e só se o
-          // troço é de sobreposição (o meio de cada pedaço, longe das arestas)
-          const dentro = ([x, y]) =>
-            quadrados.some(([x0, y0, l]) => x > x0 && x < x0 + l && y > y0 && y < y0 + l)
-          const rente = ([x, y]) =>
-            quadrados.some(
-              ([x0, y0, l]) =>
-                (Math.min(Math.abs(x - x0), Math.abs(x - x0 - l)) < 1e-9 &&
-                  y >= y0 - 1e-9 &&
-                  y <= y0 + l + 1e-9) ||
-                (Math.min(Math.abs(y - y0), Math.abs(y - y0 - l)) < 1e-9 &&
-                  x >= x0 - 1e-9 &&
-                  x <= x0 + l + 1e-9),
-            )
-          return partes.every(({ points, overlap }) =>
-            points.slice(1).every((b, i) => {
-              const a = points[i]
-              const meio = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
-              return rente(meio) || dentro(meio) === overlap
-            }),
-          )
+          return ids.every((id) => {
+            const cheio = (solid.get(id) ?? []).reduce((t, p) => t + comp(p), 0)
+            const partilhado = shared
+              .filter((s) => s.ids.includes(id))
+              .reduce((t, s) => t + comp(s.points), 0)
+            return Math.abs(cheio + partilhado - uniao(id)) < 0.05
+          })
         },
       ),
-      { numRuns: 300 },
+      { numRuns: 200 },
     )
+  })
+})
+
+describe('riscas a 45°', () => {
+  const area = (pts) =>
+    Math.abs(
+      pts.reduce((a, p, i) => {
+        const q = pts[(i + 1) % pts.length]
+        return a + p[0] * q[1] - q[0] * p[1]
+      }, 0) / 2,
+    )
+
+  test('cobrem a barra sem falhas nem sobreposições, à vez, com os topos direitos', () => {
+    const riscas = stripePolygons([10, 20], [110, 20], { width: 4, stripe: 12 })
+    const total = riscas.reduce((a, r) => a + area(r.points), 0)
+    expect(total).toBeCloseTo(100 * 4, 6)
+    // todas dentro da barra
+    for (const r of riscas)
+      for (const [x, y] of r.points) {
+        expect(x).toBeGreaterThanOrEqual(10 - 1e-9)
+        expect(x).toBeLessThanOrEqual(110 + 1e-9)
+        expect(Math.abs(y - 20)).toBeLessThanOrEqual(2 + 1e-9)
+      }
+    // os índices seguidos (as cores à vez) e a primeira começa no início
+    const idx = riscas.map((r) => r.index)
+    expect(idx).toEqual(idx.map((_, i) => idx[0] + i))
+    expect(Math.min(...riscas[0].points.map((p) => p[0]))).toBeCloseTo(10, 9)
+  })
+
+  test('as fronteiras entre riscas fazem 45° com a barra, em qualquer direcção', () => {
+    const [p0, p1] = [
+      [0, 0],
+      [60, 80],
+    ]
+    const riscas = stripePolygons(p0, p1, { width: 6, stripe: 10 })
+    const u = [0.6, 0.8]
+    // uma risca do meio é um paralelogramo: as arestas que não seguem a
+    // barra fazem 45° com ela
+    const meio = riscas.find((r) => r.points.length === 4 && r.index === 4)
+    const lados = meio.points
+      .map((p, i) => {
+        const q = meio.points[(i + 1) % 4]
+        const d = [q[0] - p[0], q[1] - p[1]]
+        const c = Math.abs(d[0] * u[0] + d[1] * u[1]) / Math.hypot(d[0], d[1])
+        return Math.round((Math.acos(Math.min(1, c)) * 180) / Math.PI)
+      })
+      .sort((a, b) => a - b)
+    expect(lados).toEqual([0, 0, 45, 45])
+    expect(stripePolygons([0, 0], [0, 0], { width: 4, stripe: 12 })).toEqual([])
+    expect(stripePolygons([0, 0], [10, 0], { width: 0, stripe: 12 })).toEqual([])
   })
 })

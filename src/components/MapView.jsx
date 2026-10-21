@@ -5,9 +5,53 @@ import { tCount } from '../i18n/format.js'
 import LayerLegend from './LayerLegend.jsx'
 import { hiddenStrips, radioStrips, ringLabelPoint } from '../mission/viewshedPlan.js'
 import { blockRing } from '../mission/baseLayout.js'
-import { blockLinePieces } from '../mission/blockOverlap.js'
+import { sharedStretches } from '../mission/blockOverlap.js'
+import { stripePolygons } from '../utils/stripes.js'
 import { fitPadding } from '../utils/mapFit.js'
 import './MapView.css'
+
+/** Espessura das faixas dos blocos no mapa (px), cheias ou às riscas. */
+const LINE_W = 2.5
+/** Comprimento de cada risca da sobreposição entre blocos (px). */
+const STRIPE_PX = 12
+
+/**
+ * Uma faixa voada por dois ou mais blocos (sharedStretches): uma só linha,
+ * com a espessura das cheias, às riscas nas cores dos blocos, à vez, com
+ * cortes a 45° e sem falhas (stripePolygons). Desenha-se no canvas das
+ * faixas; sem recorte à janela, para as riscas não mudarem de sítio ao
+ * arrastar o mapa.
+ */
+const StripedLine = L.Polyline.extend({
+  options: {
+    colors: ['#22d3ee'],
+    stripe: STRIPE_PX,
+    weight: LINE_W,
+    interactive: false,
+    noClip: true,
+    smoothFactor: 0,
+  },
+  _updatePath() {
+    const ctx = this._renderer?._ctx
+    const part = this._parts?.[0]
+    if (!ctx || !part || part.length < 2) return
+    const { colors, stripe, weight } = this.options
+    // opacas: o canvas guarda a opacidade da última linha pintada (a
+    // serpentina vai a 0,7)
+    ctx.globalAlpha = 1
+    for (let k = 1; k < part.length; k += 1) {
+      const p0 = [part[k - 1].x, part[k - 1].y]
+      const p1 = [part[k].x, part[k].y]
+      for (const { points, index } of stripePolygons(p0, p1, { width: weight, stripe })) {
+        ctx.beginPath()
+        points.forEach(([x, y], j) => (j ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
+        ctx.closePath()
+        ctx.fillStyle = colors[((index % colors.length) + colors.length) % colors.length]
+        ctx.fill()
+      }
+    }
+  },
+})
 
 /**
  * Mapa Leaflet com camadas imperativas sincronizadas com o estado React:
@@ -129,14 +173,11 @@ export default function MapView({
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const layersRef = useRef(null)
-  // as linhas de cada bloco partidas onde passam por cima da célula de outro
-  // bloco (a sobreposição entre blocos), para as desenhar a tracejado; e se
-  // há alguma, para a legenda o dizer
-  const linePieces = useMemo(() => blockLinePieces(blocks), [blocks])
-  const hasOverlap = useMemo(
-    () => [...linePieces.values()].some((ls) => ls.some((ps) => ps.some((p) => p.overlap))),
-    [linePieces],
-  )
+  // os troços onde dois ou mais blocos voam a mesma faixa (a sobreposição
+  // entre blocos), para os desenhar numa só linha às riscas, e o resto de
+  // cada linha, cheio; e se há algum, para a legenda o dizer
+  const stretches = useMemo(() => sharedStretches(blocks), [blocks])
+  const hasOverlap = stretches.shared.length > 0
 
   // As callbacks/modo vivem num ref para os handlers Leaflet (registados uma
   // única vez) lerem sempre a versão atual sem re-registos.
@@ -761,6 +802,8 @@ export default function MapView({
     if (!layers) return
     layers.buffer.clearLayers()
     layers.lines.clearLayers()
+    // quantos troços às riscas o mapa desenha (os testes lêem-no)
+    containerRef.current?.setAttribute('data-overlap-stretches', '0')
     if (!plan || plan.error) return
 
     // Contorno da área expandida (buffer), só com margem
@@ -791,29 +834,25 @@ export default function MapView({
     // há células clicáveis (mosaico ou grelha)? senão, o contorno de cada bloco
     const hasCells = Boolean(tiles?.length || gridCells?.length)
     if (blocks && (blocks.length > 1 || baseLayout?.hasBases)) {
-      // os troços por cima da célula de outro bloco desenham-se no fim, por
-      // cima das linhas cheias de todos os blocos: senão a linha do vizinho,
-      // desenhada depois, tapava-os
-      const overlaps = []
-      blocks.forEach((block, i) => {
-        // com bases: a cor da base do bloco; sem elas, uma cor por bloco
+      // com bases: a cor da base do bloco; sem elas, uma cor por bloco
+      const colorOf = new Map(
+        blocks.map((b, i) => [
+          b.id,
+          baseLayout?.byBlock?.[b.id]?.color ?? BLOCK_COLORS[i % BLOCK_COLORS.length],
+        ]),
+      )
+      blocks.forEach((block) => {
         const info = baseLayout?.byBlock?.[block.id]
-        const color = info?.color ?? BLOCK_COLORS[i % BLOCK_COLORS.length]
-        block.lines.forEach((seg, k) => {
-          // por cima da célula de outro bloco (a sobreposição entre blocos:
-          // o buffer e os prolongamentos das faixas), a tracejado e um pouco
-          // mais grossa, no fim; sem eventos: o clique tem de chegar à
-          // célula do bloco por baixo
-          for (const piece of linePieces.get(block.id)?.[k] ?? [{ points: seg, overlap: false }])
-            if (piece.overlap) overlaps.push({ points: piece.points, color })
-            else
-              L.polyline(piece.points.map(toLatLng), {
-                color,
-                weight: 2.5,
-                interactive: false,
-                renderer: layers.canvas,
-              }).addTo(layers.lines)
-        })
+        const color = colorOf.get(block.id)
+        // as faixas, ou os troços delas, que só este bloco voa: cheias; sem
+        // eventos: o clique tem de chegar à célula do bloco por baixo
+        for (const points of stretches.solid.get(block.id) ?? block.lines)
+          L.polyline(points.map(toLatLng), {
+            color,
+            weight: LINE_W,
+            interactive: false,
+            renderer: layers.canvas,
+          }).addTo(layers.lines)
         // etiqueta com o número do voo no início do bloco ("A-1"; sem bases, 1, 2, ...)
         const first = block.lines[0]
         const mid = [(first[0][0] + first[1][0]) / 2, (first[0][1] + first[1][1]) / 2]
@@ -846,14 +885,14 @@ export default function MapView({
           }
         }
       })
-      for (const { points, color } of overlaps)
-        L.polyline(points.map(toLatLng), {
-          color,
-          weight: 3.5,
-          dashArray: '6 5',
-          interactive: false,
+      // onde dois ou mais blocos voam a mesma faixa (a margem e os
+      // prolongamentos): uma só linha às riscas, nas cores deles
+      for (const { points, ids } of stretches.shared)
+        new StripedLine(points.map(toLatLng), {
+          colors: ids.map((id) => colorOf.get(id)),
           renderer: layers.canvas,
         }).addTo(layers.lines)
+      containerRef.current?.setAttribute('data-overlap-stretches', String(stretches.shared.length))
     } else {
       plan.lines.forEach((seg) => {
         L.polyline(seg.map(toLatLng), {
@@ -879,7 +918,7 @@ export default function MapView({
         renderer: layers.canvas,
       }).addTo(layers.lines)
     })
-  }, [plan, blocks, linePieces, baseLayout, assignMode, tiles, gridCells, bufferOn])
+  }, [plan, blocks, stretches, baseLayout, assignMode, tiles, gridCells, bufferOn])
 
   // Alvos GCP planeados (xadrez amarelo, com etiqueta)
   useEffect(() => {
