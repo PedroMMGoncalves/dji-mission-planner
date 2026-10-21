@@ -120,6 +120,10 @@ export default function MapView({
   // a margem só se desenha quando existe: a 0 % a linha tracejada caía
   // por cima do contorno da área
   bufferOn = true,
+  // a operação do dia aberta (useDayOperation): o voo em foco ({blockIds,
+  // baseId, label, key}: o contorno do bloco, o anel na base e o rótulo;
+  // `key` muda em «Ver no mapa», que o enquadra) e os blocos dos voos feitos
+  day = null,
 }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
@@ -279,6 +283,8 @@ export default function MapView({
       bases: L.layerGroup().addTo(map),
       // bacias de visão: só no mapa quando ligada (controlo de camadas ou painel)
       viewshed: L.layerGroup(),
+      // a operação do dia: o voo em foco e os vistos dos feitos, por cima de tudo
+      day: L.layerGroup().addTo(map),
       canvas: L.canvas({ padding: 0.3 }),
     }
     const viewshedLayer = layersRef.current.viewshed
@@ -1111,6 +1117,110 @@ export default function MapView({
     orbitPreview,
     circularPreview,
   ])
+  // A operação do dia: o voo em foco (o contorno do bloco, um anel à volta
+  // do pino da base e o rótulo por cima) e um visto ao lado do rótulo de
+  // cada voo feito; «Ver no mapa» (uma `key` nova) enquadra o bloco e a base
+  const dayFocus = day?.focus ?? null
+  const dayDone = day?.done ?? null
+  useEffect(() => {
+    const g = layersRef.current?.day
+    if (!g) return
+    g.clearLayers()
+    const byId = new Map((blocks ?? []).map((b) => [b.id, b]))
+    for (const id of dayDone ?? []) {
+      const first = byId.get(id)?.lines?.[0]
+      if (!first) continue
+      // no sítio do rótulo do voo (o meio da primeira faixa), ao canto dele
+      const mid = [(first[0][0] + first[1][0]) / 2, (first[0][1] + first[1][1]) / 2]
+      L.marker(toLatLng(mid), {
+        icon: L.divIcon({
+          className: 'day-done-mark',
+          html: `<span data-block-id="${id}"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>`,
+          iconSize: null,
+        }),
+        interactive: false,
+        zIndexOffset: 800,
+      }).addTo(g)
+    }
+    if (!dayFocus) return
+    for (const id of dayFocus.blockIds ?? []) {
+      const ring = blockRing(byId.get(id))
+      if (ring.length < 3) continue
+      const ll = ring.map(toLatLng)
+      L.polygon(ll, {
+        color: '#0A0F1C',
+        weight: 5,
+        opacity: 0.75,
+        fill: false,
+        interactive: false,
+      }).addTo(g)
+      L.polygon(ll, { color: '#E0F2FE', weight: 2, fill: false, interactive: false }).addTo(g)
+    }
+    const base = (bases ?? []).find((b) => b.id === dayFocus.baseId)
+    if (!base?.point) return
+    const at = toLatLng(base.point)
+    L.circleMarker(at, {
+      radius: 25,
+      color: '#38BDF8',
+      weight: 5,
+      opacity: 0.45,
+      fill: false,
+      interactive: false,
+    }).addTo(g)
+    L.circleMarker(at, {
+      radius: 21,
+      color: '#E0F2FE',
+      weight: 3,
+      fill: false,
+      interactive: false,
+    }).addTo(g)
+    const label = L.marker(at, {
+      icon: L.divIcon({
+        className: 'day-focus-label',
+        html: `<span>${String(dayFocus.label ?? '').replace(/[<>&]/g, '')}</span>`,
+        iconSize: null,
+      }),
+      interactive: false,
+      zIndexOffset: 900,
+    }).addTo(g)
+    // o rótulo, centrado por cima do anel, não sai pelos lados do mapa: uma
+    // base junto ao bordo leva-o para dentro
+    const map = mapRef.current
+    const place = () => {
+      const el = /** @type {HTMLElement|null|undefined} */ (label.getElement()?.firstElementChild)
+      if (!map || !el) return
+      const half = el.offsetWidth / 2
+      const x = map.latLngToContainerPoint(at).x
+      const room = map.getSize().x
+      const dx = x - half < 8 ? 8 - (x - half) : x + half > room - 8 ? room - 8 - (x + half) : 0
+      el.style.marginLeft = `${Math.round(dx)}px`
+    }
+    place()
+    map?.on('move zoom resize', place)
+    return () => {
+      map?.off('move zoom resize', place)
+    }
+  }, [dayFocus, dayDone, blocks, bases])
+  const dayKey = dayFocus?.key ?? 0
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !dayKey || !dayFocus) return
+    const byId = new Map((blocks ?? []).map((b) => [b.id, b]))
+    const pts = (dayFocus.blockIds ?? []).flatMap((id) => blockRing(byId.get(id)))
+    const base = (bases ?? []).find((b) => b.id === dayFocus.baseId)
+    if (base?.point) pts.push(base.point)
+    if (pts.length === 0) return
+    const rect = (r) => r?.current?.getBoundingClientRect() ?? null
+    const padding = fitPadding(containerRef.current.getBoundingClientRect(), {
+      top: rect(fitAvoid?.top),
+      right: rect(fitAvoid?.right),
+    })
+    // com folga à volta, para se ver também o que está ao lado do bloco
+    map.fitBounds(L.latLngBounds(pts.map(toLatLng)).pad(0.25), { ...padding, maxZoom: 17 })
+    // só quando se pede («Ver no mapa»), não a cada mudança do plano
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayKey])
+
   useEffect(() => {
     const map = mapRef.current
     const refs = layersRef.current

@@ -520,7 +520,7 @@ export function ViewshedBox({
 }
 
 /** A cor do texto sobre a cor de uma base: a que dá mais contraste (branco ou quase preto). */
-function inkFor(hex) {
+export function inkFor(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(hex ?? ''))
   if (!m) return '#0A0F1C'
   const n = parseInt(m[1], 16)

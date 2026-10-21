@@ -2,11 +2,15 @@
  * A área do mapa: o mapa (desenho, área, blocos, bases, fotos,
  * pré-visualizações dos modos, bacias de visão, legenda) e, por cima dele, a
  * barra de desenho do modo Área (com os primeiros passos, sem área), e à
- * direita o resumo do projecto e o cartão de métricas do separador aberto.
- * Nada disto empurra o mapa: tudo flutua por cima, nos cantos, e o mapa
- * enquadra a área ao lado da barra de desenho e do cartão aberto.
+ * direita o resumo do projecto, o cartão de métricas do separador aberto e,
+ * com os voos da área nas suas bases, o botão «Operação do dia». Nada disto
+ * empurra o mapa: tudo flutua por cima, nos cantos, e o mapa enquadra a área
+ * ao lado da barra de desenho e do cartão aberto. Com a operação do dia
+ * aberta (o painel à direita do mapa, DayPanel), o lado direito é dela: o
+ * resumo e as métricas saem, e o mapa marca o voo em foco e os feitos.
  */
 import { useMemo, useRef } from 'react'
+import { DayOpener } from './DayPanel.jsx'
 import ProjectSummary from './ProjectSummary.jsx'
 import MapView from './MapView.jsx'
 import StatsPanel from './StatsPanel.jsx'
@@ -37,6 +41,10 @@ export default function MapPane({
   handleGcpDrag,
   viewshedLayerOn,
   setViewshedLayerOn,
+  // a operação do dia (useDayOperation) e o botão que a abre
+  // ({flights, totalS, onOpen, buttonRef}, ou null sem voos com bases)
+  day = null,
+  dayOpener = null,
 }) {
   const { sensor, payload } = hw
   const { bases, selectedBaseId } = basesState
@@ -149,8 +157,9 @@ export default function MapPane({
     ],
   )
   // a barra de desenho é a do modo Área (os outros modos desenham pelo
-  // painel); sem área e sem ferramenta activa, os primeiros passos por baixo
-  const drawTools = missionMode === 'area'
+  // painel); sem área e sem ferramenta activa, os primeiros passos por baixo.
+  // Com a operação do dia aberta não se desenha: o mapa fica só com a missão
+  const drawTools = missionMode === 'area' && !day?.open
   // o enquadramento da área evita a barra (em cima) e o cartão das métricas
   // aberto (à direita), medidos na altura de enquadrar
   const toolsRef = useRef(null)
@@ -205,6 +214,7 @@ export default function MapPane({
           viewshedLayerOn={viewshedLayerOn}
           onViewshedLayer={setViewshedLayerOn}
           bufferOn={params.bufferPct > 0}
+          day={day?.map ?? null}
         />
         {drawTools && (
           <MapDrawTools
@@ -219,45 +229,49 @@ export default function MapPane({
           />
         )}
         {drawTools && !ring && mode === 'idle' && <FirstSteps />}
-        {/* à direita: o resumo do projecto e as métricas, por baixo da barra
-            de desenho enquanto o mapa é estreito para as duas lado a lado;
-            em baixo pára 40 px acima do fundo, sem tapar a atribuição */}
-        <div
-          className={`pointer-events-none absolute right-4 z-[1000] flex flex-col items-end gap-2 ${
-            drawTools
-              ? 'top-[70px] max-h-[calc(100%-110px)] min-[1360px]:top-4 min-[1360px]:max-h-[calc(100%-56px)]'
-              : 'top-4 max-h-[calc(100%-56px)]'
-          }`}
-        >
-          <ProjectSummary summary={projectSummary} />
-          <StatsPanel
-            cardRef={statsRef}
-            uncertainty={quality.uncertainty}
-            gsd={quality.gsd}
-            gimbalPitch={quality.gimbalPitch}
-            footprint={quality.footprint}
-            spacing={quality.spacing}
-            pointDensity={quality.pointDensity}
-            interval={quality.interval}
-            intervalS={quality.intervalS}
-            intervalManual={quality.intervalManual}
-            triggerMode={quality.triggerMode}
-            speed={quality.speed}
-            missionMode={missionMode}
-            stats={modeStats}
-            ops={statsOps}
-            shutterWarn={Boolean(
-              missionMode === 'circular'
-                ? circularTriggerWarn
-                : missionMode === 'corridor'
-                  ? corridorTriggerWarn
-                  : missionMode === 'area'
-                    ? triggerWarn
-                    : null,
-            )}
-            baseDistance={missionMode === 'area' && bases.length <= 1 ? areaBaseDistance : null}
-          />
-        </div>
+        {/* à direita: o resumo do projecto, as métricas e a operação do dia,
+            por baixo da barra de desenho enquanto o mapa é estreito para as
+            duas lado a lado; em baixo pára 40 px acima do fundo, sem tapar a
+            atribuição. Com a operação do dia aberta, o lado direito é dela */}
+        {!day?.open && (
+          <div
+            className={`pointer-events-none absolute right-4 z-[1000] flex flex-col items-end gap-2 ${
+              drawTools
+                ? 'top-[70px] max-h-[calc(100%-110px)] min-[1360px]:top-4 min-[1360px]:max-h-[calc(100%-56px)]'
+                : 'top-4 max-h-[calc(100%-56px)]'
+            }`}
+          >
+            <ProjectSummary summary={projectSummary} />
+            <StatsPanel
+              cardRef={statsRef}
+              uncertainty={quality.uncertainty}
+              gsd={quality.gsd}
+              gimbalPitch={quality.gimbalPitch}
+              footprint={quality.footprint}
+              spacing={quality.spacing}
+              pointDensity={quality.pointDensity}
+              interval={quality.interval}
+              intervalS={quality.intervalS}
+              intervalManual={quality.intervalManual}
+              triggerMode={quality.triggerMode}
+              speed={quality.speed}
+              missionMode={missionMode}
+              stats={modeStats}
+              ops={statsOps}
+              shutterWarn={Boolean(
+                missionMode === 'circular'
+                  ? circularTriggerWarn
+                  : missionMode === 'corridor'
+                    ? corridorTriggerWarn
+                    : missionMode === 'area'
+                      ? triggerWarn
+                      : null,
+              )}
+              baseDistance={missionMode === 'area' && bases.length <= 1 ? areaBaseDistance : null}
+            />
+            {dayOpener && <DayOpener {...dayOpener} />}
+          </div>
+        )}
       </main>
     </>
   )

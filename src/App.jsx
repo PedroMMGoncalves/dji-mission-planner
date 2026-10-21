@@ -9,7 +9,8 @@ import ChecklistPage from './components/ChecklistPage.jsx'
 import AppOverlays from './components/AppOverlays.jsx'
 import MapPane from './components/MapPane.jsx'
 import AppHeader from './components/AppHeader.jsx'
-import { useMedia } from './components/MapOverlay.jsx'
+import DayPanel from './components/DayPanel.jsx'
+import { useMedia, useToggleFocus } from './components/MapOverlay.jsx'
 import { PanelCollapseContext } from './components/ui/PanelCollapse.jsx'
 import { acceptDisclaimer, disclaimerAccepted } from './components/DisclaimerModal.jsx'
 import { nearestBase } from './mission/bases.js'
@@ -21,6 +22,7 @@ import { useAreaTools } from './hooks/useAreaTools.js'
 import { useMapInteractions } from './hooks/useMapInteractions.js'
 import { useBaseViewsheds } from './hooks/useBaseViewsheds.js'
 import { useFieldSheets } from './hooks/useFieldSheets.js'
+import { useDayOperation } from './hooks/useDayOperation.js'
 import { useMissionOps } from './hooks/useMissionOps.js'
 import { useRouteChecks } from './hooks/useRouteChecks.js'
 import { usePreflight } from './hooks/usePreflight.js'
@@ -40,6 +42,7 @@ import { flightsArchiveName } from './mission/flightFiles.js'
 import { checkFaceClearance } from './utils/faceMode.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from './utils/units.js'
 import { DEFAULT_SAFETY } from './mission/safety.js'
+import { batteryLabel } from './mission/equipment.js'
 
 /** Camada «Bacias de visão» ligada neste aparelho ('1') ou não. */
 const VIEWSHED_LAYER_KEY = 'dji-mission-planner:viewshedLayer'
@@ -690,6 +693,19 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
     handleExportKmlByBase,
   } = sheets
 
+  // a operação do dia: os voos com as bases pela ordem de voo e os feitos,
+  // no registo de voos da checklist (src/hooks/useDayOperation.js); aberta,
+  // fica com o lado direito e o painel de parâmetros recolhe-se
+  const day = useDayOperation({ missionName, missionMode, area, sheets, ops, t })
+  const dayToggleFocus = useToggleFocus(day.open)
+  const panelShown = panelOpen && !day.open
+  const togglePanel = () => {
+    if (day.open) {
+      day.setOpen(false)
+      setPanelOpen(true)
+    } else setPanelOpen((v) => !v)
+  }
+
   // o preflight do separador aberto: avisos, bloqueios e o que os alimenta
   // (src/hooks/usePreflight.js)
   const preflightState = usePreflight({
@@ -914,15 +930,16 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
         <div className="flex h-full shrink-0">
           <MissionModeSelector
             mode={missionMode}
-            // um modo escolhido mostra o seu painel
+            // um modo escolhido mostra o seu painel (e fecha a operação do dia)
             onChange={(m) => {
               setPanelOpen(true)
+              day.setOpen(false)
               changeMissionMode(m)
             }}
-            panelOpen={panelOpen}
-            onTogglePanel={() => setPanelOpen((v) => !v)}
+            panelOpen={panelShown}
+            onTogglePanel={togglePanel}
           />
-          <div id="mode-panel" hidden={!panelOpen} className="h-full min-h-0">
+          <div id="mode-panel" hidden={!panelShown} className="h-full min-h-0">
             {missionMode === 'face' && (
               <FacePanel
                 hw={hw}
@@ -1179,7 +1196,51 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
           handleGcpDrag={handleGcpDrag}
           viewshedLayerOn={viewshedLayerOn}
           setViewshedLayerOn={setViewshedLayerOn}
+          day={day}
+          dayOpener={
+            day.available
+              ? {
+                  flights: day.flights.length,
+                  totalS: statsOps?.totalS ?? null,
+                  buttonRef: dayToggleFocus.ref,
+                  onOpen: () => {
+                    dayToggleFocus.mark()
+                    day.setOpen(true)
+                  },
+                }
+              : null
+          }
         />
+        {day.open && (
+          <DayPanel
+            flights={day.flights}
+            done={day.done}
+            next={day.next}
+            focusId={day.focusId}
+            ops={statsOps}
+            daySheets={fieldSheetsDay}
+            missionTimeS={planOk?.stats?.flightTimeS ?? null}
+            battery={batteryLabel(missionBatteryType, t)}
+            usefulMin={batteryMin}
+            estimated={Boolean(missionBatteryType.estimated && !hw.batteryOverridden)}
+            vlosM={vlosM}
+            onToggle={day.toggle}
+            onMark={day.mark}
+            onShow={day.show}
+            closeRef={dayToggleFocus.ref}
+            onClose={() => {
+              dayToggleFocus.mark()
+              day.setOpen(false)
+            }}
+            onOpenSettings={() => setShowSettings(true)}
+            // o tempo útil por voo está na secção 4 do painel da área
+            onAdjustUseful={() => {
+              day.setOpen(false)
+              setPanelOpen(true)
+              setAreaReveal({ id: 'divisao' })
+            }}
+          />
+        )}
       </div>
 
       <AppOverlays

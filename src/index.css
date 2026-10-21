@@ -209,6 +209,36 @@ body,
   font-weight: 700;
 }
 
+/* Operação do dia: o visto de um voo feito, ao canto do rótulo do voo, e o
+   rótulo do voo em foco, por cima do anel à volta do pino da base */
+.day-done-mark span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  transform: translate(13px, -21px);
+  border-radius: 9999px;
+  border: 2px solid #0a0f1c;
+  background: #10b981;
+  color: #04241a;
+}
+.day-focus-label span {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 30px));
+  border-radius: 9999px;
+  border: 1px solid #2c4a68;
+  background: #0d1424;
+  color: #e0f2fe;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
 /* Controlo de camadas Leaflet em dark mode */
 .leaflet-control-layers,
 .leaflet-bar a {
