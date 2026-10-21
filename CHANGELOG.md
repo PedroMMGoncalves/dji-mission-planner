@@ -80,6 +80,25 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   base, as bacias de visão em «Análise»), e a margem a 0 % deixa de se
   desenhar por cima do contorno da área. Sem área, os «Primeiros passos»
   (três) ficam por baixo da barra de desenho.
+- **Janelas e vistas do desenho novo.** A Configuração passa a quatro
+  secções com um índice (aeronaves e baterias, zona de descolagem, piloto,
+  ficheiro e dados), com as baterias numa tabela e esquemas da zona e da
+  linha de vista com os valores configurados; os mesmos campos, limites e
+  valores por omissão, guardados como antes (eram uma coluna em que só se
+  via a primeira parte). A Ajuda ganha um índice de tópicos, com grupos, e
+  uma pesquisa na língua aberta, sem maiúsculas nem acentos, que deixa no
+  índice só os tópicos com as palavras e as realça; os textos são os
+  mesmos, só arrumados (eram uma coluna de ~5400 px), mais o perfil de
+  elevação e a legenda da vista 3D. O Aviso antes de usar mostra o texto
+  integral em cinco pontos numerados, com a declaração ao lado do botão;
+  aceita-se e guarda-se como antes. A vista 3D tem a legenda nas cores da
+  cena (a rota e os waypoints nas cores das bases), com a escala das cotas
+  do relevo e o exagero vertical escolhido; a cena não muda. O perfil de
+  elevação põe a folga mínima em destaque, com os limites das cores
+  escritos (verde a partir de 30 m, âmbar de 15 a 30 m, vermelho abaixo de
+  15 m) e o valor marcado no gráfico; cada voo do selector na cor da sua
+  base; os mesmos números. As janelas fecham com Esc sem fechar a gaveta
+  por baixo, e o foco entra nelas e volta a quem as abriu.
 
 ### Corrigido
 

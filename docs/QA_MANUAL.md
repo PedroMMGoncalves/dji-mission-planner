@@ -540,6 +540,47 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   **Esperado:** o cabeçalho parte-se em duas linhas sem sair do ecrã; a lista
   do preflight e os menus ficam dentro do ecrã.
 
+## 19. Janelas: configuração, ajuda e aviso; perfil e vista 3D (~4 min)
+
+- ☐ Abrir a **Configuração** (roda dentada).
+  **Esperado:** quatro secções num índice à esquerda (Aeronaves e baterias,
+  Zona de descolagem, Piloto, Ficheiro e dados), a primeira aberta e na
+  aeronave da missão («usada no projecto aberto»); as setas e Home/End
+  andam no índice; na zona, o esquema diz o raio configurado («Raio pedido
+  (100 m)»); no piloto, as alturas dos olhos e do comando. Uma alteração
+  fica guardada logo («Cada alteração fica guardada neste browser»); Esc,
+  o ✕ ou **Fechar** fecham.
+- ☐ Em **Ficheiro e dados**: Exportar, Importar o mesmo ficheiro, **Repor…**
+  (e Cancelar), **Limpar a cache**.
+  **Esperado:** o .json de sempre; a importação diz «Configuração
+  importada.» na secção; Repor pede confirmação antes de apagar; a cache
+  diz o espaço usado.
+- ☐ Abrir a **Ajuda** em português.
+  **Esperado:** o índice à esquerda (grupos que abrem e fecham) e o tópico à
+  direita, com o caminho («Ajuda › Voos e bases») e «Ver também»; a
+  pesquisa já tem o foco: «rth» deixa só «Acções de segurança» e «O que
+  mudou», com as palavras realçadas (e não o «Earth» do Google Earth);
+  «seguranca», sem cedilha, encontra «segurança»; Enter passa ao tópico
+  seguinte; Esc limpa a pesquisa e, depois, fecha. Em inglês, o mesmo.
+- ☐ Numa janela privada, abrir a app.
+  **Esperado:** o **Aviso antes de usar** em cinco pontos numerados, com a
+  declaração ao lado de «Li e compreendo»; PT/EN mudam a língua; Esc e um
+  clique fora não o fecham; aceite, não volta ao recarregar. Na ajuda,
+  Acerca › Aviso antes de usar › «Ler o aviso completo» reabre-o, e aí Esc
+  fecha.
+- ☐ Área com relevo e seguir terreno; abrir o **perfil de elevação**.
+  **Esperado:** à direita, a **folga mínima** em destaque (a verde a partir
+  de 30 m, âmbar de 15 a 30 m, vermelho abaixo de 15 m, escrito no cartão) e
+  marcada no gráfico com o valor; os números do resumo iguais aos de antes;
+  com bases, cada voo no selector com a cor da sua base. A 30 m sem seguir
+  terreno: a folga negativa, a vermelho.
+- ☐ Abrir a **vista 3D** com bases.
+  **Esperado:** a legenda aberta no canto de cima, à direita, nas cores da
+  cena (a rota e os waypoints nas cores das bases, o início a verde e o fim
+  a vermelho); o relevo com a escala das cotas enquanto as imagens não
+  chegam (sem imagens, a escala fica, com a nota) e o exagero vertical
+  escolhido no cabeçalho; em baixo, à esquerda, como mexer na vista.
+
 Registo de execução:
 
 | Data | Versão/commit | Executor | Resultado | Notas |
