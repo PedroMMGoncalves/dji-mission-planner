@@ -189,6 +189,16 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ### Corrigido
 
+- **Checklist de campo: a última edição antes de voltar ao planeador.** A
+  gravação espera 400 ms, e sair da página antes disso cancelava-a: faz-se
+  agora ao sair (também ao fechar ou recarregar o separador). O registo de
+  voos tem outro escritor, o planeador, que marca um voo feito escrevendo a
+  «Hora fim» na linha dele: antes de gravar, e quando outro separador
+  grava, a checklist junta o que lá está (as horas novas e as linhas do
+  plano que ele juntou), em vez de escrever por cima; uma hora ou uma
+  linha que a checklist apagou não volta. **Importar blocos do plano** já
+  não repete os voos que têm linha. Sem outro escritor, a checklist gravada
+  é a mesma, byte a byte.
 - **Desenho com cliques quase no mesmo sítio.** Três cliques quase no
   mesmo ponto podiam deixar dois vértices quase iguais seguidos, e o
   corredor ou a fachada aceitavam um eixo de um só ponto (dois vértices a

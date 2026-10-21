@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useLang, useT } from '../i18n.jsx'
 import { tCount } from '../i18n/format.js'
-import { flightLogRows, groupApplies } from '../data/checklist.js'
+import { flightLogRows, groupApplies, mergeFlightLog, missingPlanRows } from '../data/checklist.js'
 import { BaseSheetPage, baseInk } from './BaseFieldSheets.jsx'
 import { Button } from './ui/Button.jsx'
 import {
@@ -30,7 +30,8 @@ import { safeFileStem } from '../utils/exporters.js'
  * fase/grupo/item e são, por isso, independentes da língua activa.
  * ------------------------------------------------------------------ */
 
-const STORAGE_KEY = 'dji-mission-planner:checklist:v1'
+/** A chave antiga, sem missão (a de quem actualizou); a de cada missão acrescenta-lhe o nome. */
+export const STORAGE_KEY = 'dji-mission-planner:checklist:v1'
 const SAVE_DELAY_MS = 400
 
 /**
@@ -69,29 +70,44 @@ const tr = (v, lang) => {
  * escrever por cima da leitura (era o que o `hidratado` guardava).
  */
 function lerChave(chave) {
+  return objectoDe(lerTexto(chave))
+}
+
+/** O texto gravado numa chave (null: nada, ou armazenamento indisponível). */
+function lerTexto(chave) {
   try {
-    const bruto = window.localStorage.getItem(chave)
+    return window.localStorage.getItem(chave)
+  } catch {
+    return null
+  }
+}
+
+/** O objecto de um texto gravado (null: vazio ou corrompido). */
+function objectoDe(bruto) {
+  try {
     const g = bruto ? JSON.parse(bruto) : null
     return g && typeof g === 'object' ? g : null
   } catch {
-    /* armazenamento indisponível ou dados corrompidos */
+    /* dados corrompidos */
     return null
   }
 }
 
 /**
  * O que está gravado para esta missão: `dados` (a checklist desta missão,
- * ou vazia) e `outra` (a checklist antiga, sem chave de missão, quando é de
- * outra missão e ainda não se decidiu o que lhe fazer).
+ * ou vazia), `outra` (a checklist antiga, sem chave de missão, quando é de
+ * outra missão e ainda não se decidiu o que lhe fazer) e `texto`, o texto
+ * gravado na chave da missão (a base da fusão com o planeador).
  */
 function lerGuardado(missionName) {
-  const propria = lerChave(checklistStorageKey(missionName))
-  if (propria) return { dados: propria, outra: null }
+  const texto = lerTexto(checklistStorageKey(missionName))
+  const propria = objectoDe(texto)
+  if (propria) return { dados: propria, outra: null, texto }
   const antiga = lerChave(STORAGE_KEY)
-  if (!antiga) return { dados: {}, outra: null }
+  if (!antiga) return { dados: {}, outra: null, texto }
   const nome = antiga.missionName ?? antiga.missao?.missao ?? ''
-  if (!nome || nome === missionName) return { dados: antiga, outra: null }
-  return { dados: {}, outra: { ...antiga, nome } }
+  if (!nome || nome === missionName) return { dados: antiga, outra: null, texto }
+  return { dados: {}, outra: { ...antiga, nome }, texto }
 }
 
 /** Atalho para declarar um item: texto, nota opcional, crítico opcional. */
@@ -1071,6 +1087,11 @@ let seq = 0
 const uid = () => `r${Date.now().toString(36)}${(seq++).toString(36)}`
 
 const linhaVazia = (cols) => cols.reduce((acc, c) => ({ ...acc, [c.key]: '' }), { _id: uid() })
+/**
+ * Uma linha do registo de voos a partir de uma que outro separador gravou
+ * (todas as colunas e um _id novo), como as que se lêem ao abrir.
+ */
+const linhaDeVoo = (l) => ({ ...linhaVazia(COLS_VOO), ...l, _id: uid() })
 
 const chaveItem = (faseId, gi, ii) => `${faseId}.${gi}.${ii}`
 
@@ -1987,7 +2008,9 @@ export default function ChecklistPage({
   )
 
   // O estado gravado é lido UMA vez e semeia todos os átomos abaixo
-  const [{ dados: guardado, outra: guardadoDeOutra }] = useState(() => lerGuardado(missionName))
+  const [{ dados: guardado, outra: guardadoDeOutra, texto: textoLido }] = useState(() =>
+    lerGuardado(missionName),
+  )
   // a checklist antiga de outra missão, à espera de «Começar uma nova» ou «Continuar com esta»
   const [outraMissao, setOutraMissao] = useState(guardadoDeOutra)
   const [checked, setChecked] = useState(() =>
@@ -2039,19 +2062,89 @@ export default function ChecklistPage({
   /* ------------- Gravação automática com debounce simples ------------- */
   // Sem guarda de hidratação: o estado já nasce com o que estava gravado,
   // pelo que a primeira gravação reescreve exactamente o mesmo conteúdo.
+  //
+  // O registo de voos tem outro escritor: o planeador («Operação do dia»)
+  // marca um voo feito escrevendo a «Hora fim» na linha dele, na mesma chave,
+  // às vezes noutro separador. Antes de gravar relê-se a chave e, se outro a
+  // escreveu desde o texto que a página conhece (o lido ao abrir ou o último
+  // que gravou), junta-se o registo de lá ao daqui (mergeFlightLog); o
+  // evento «storage» e o regresso ao separador trazem-no logo para o ecrã.
+  // Sem outro escritor grava-se o mesmo texto de sempre. Ao sair da página
+  // (voltar ao planeador, fechar ou recarregar o separador) a gravação por
+  // fazer faz-se logo, em vez de se perder.
+  const conhecido = useRef({ chave: checklistStorageKey(missionName), texto: textoLido })
+  const ultimo = useRef(/** @type {any} */ (null))
+  const pendente = useRef(false)
+  const gravar = useRef((/** @type {boolean} */ noEcra) => {
+    const e = ultimo.current
+    if (!e || !pendente.current) return
+    pendente.current = false
+    const chave = checklistStorageKey(e.missionName)
+    const agora = lerTexto(chave)
+    let registo = e.voos
+    // (com outra chave, de outra missão, não há base: grava-se por cima, como sempre)
+    if (conhecido.current.chave === chave && agora !== conhecido.current.texto) {
+      const base = objectoDe(conhecido.current.texto)?.voos
+      const deLa = objectoDe(agora)?.voos
+      registo = mergeFlightLog(e.voos, deLa, base, linhaDeVoo)
+      if (noEcra && registo !== e.voos)
+        setVoos((v) => (v === e.voos ? registo : mergeFlightLog(v, deLa, base, linhaDeVoo)))
+    }
+    const { missionName: nome, checked: c, missao: m, gcps: g, notas: n } = e
+    const texto = JSON.stringify({
+      missionName: nome,
+      savedAt: hoje(),
+      checked: c,
+      missao: m,
+      voos: registo,
+      gcps: g,
+      notas: n,
+    })
+    try {
+      if (texto !== agora) window.localStorage.setItem(chave, texto)
+      conhecido.current = { chave, texto }
+    } catch {
+      /* quota excedida ou modo privado — ignorar */
+    }
+  })
   useEffect(() => {
-    const t = setTimeout(() => {
-      try {
-        window.localStorage.setItem(
-          checklistStorageKey(missionName),
-          JSON.stringify({ missionName, savedAt: hoje(), checked, missao, voos, gcps, notas }),
-        )
-      } catch {
-        /* quota excedida ou modo privado — ignorar */
-      }
-    }, SAVE_DELAY_MS)
+    ultimo.current = { missionName, checked, missao, voos, gcps, notas }
+    pendente.current = true
+    const t = setTimeout(() => gravar.current(true), SAVE_DELAY_MS)
     return () => clearTimeout(t)
   }, [missionName, checked, missao, voos, gcps, notas])
+  // ao sair: a gravação por fazer faz-se já (pagehide: fechar ou recarregar)
+  useEffect(() => {
+    const sair = () => gravar.current(false)
+    window.addEventListener('pagehide', sair)
+    return () => {
+      window.removeEventListener('pagehide', sair)
+      sair()
+    }
+  }, [])
+  // o que o planeador gravou noutro separador, ou enquanto este esteve escondido
+  useEffect(() => {
+    const chave = checklistStorageKey(missionName)
+    const trazer = (agora) => {
+      const { chave: daBase, texto } = conhecido.current
+      if (agora == null || daBase !== chave || agora === texto) return
+      const base = objectoDe(texto)?.voos
+      const deLa = objectoDe(agora)?.voos
+      setVoos((v) => mergeFlightLog(v, deLa, base, linhaDeVoo))
+    }
+    const aoGravar = (ev) => {
+      if (ev.key === chave) trazer(ev.newValue)
+    }
+    const aoVoltar = () => {
+      if (document.visibilityState === 'visible') trazer(lerTexto(chave))
+    }
+    window.addEventListener('storage', aoGravar)
+    document.addEventListener('visibilitychange', aoVoltar)
+    return () => {
+      window.removeEventListener('storage', aoGravar)
+      document.removeEventListener('visibilitychange', aoVoltar)
+    }
+  }, [missionName])
 
   /** Continuar com a checklist antiga de outra missão: os dados passam para esta missão. */
   const continuarOutra = () => {
@@ -2166,7 +2259,9 @@ export default function ChecklistPage({
       const preenchidas = prev.filter((l) =>
         COLS_VOO.some((c) => String(l[c.key] ?? '').trim() !== ''),
       )
-      return [...preenchidas, ...novas]
+      // um voo que já tem linha (marcado feito no planeador, ou importado
+      // antes) não se repete
+      return [...preenchidas, ...missingPlanRows(preenchidas, novas)]
     })
   }
 

@@ -344,6 +344,13 @@ A app é usada em campo: numa janela de **1024 × 768** e noutra de **834 ×
   de 24 px); na fase **Durante** o selector de voo diz a base, a zona, o
   RTH e o KMZ do voo escolhido, sem mudar as caixas; **Exportar JSON** dá
   o mesmo ficheiro de antes.
+- ☐ Registo de voos com a checklist aberta noutro separador: no planeador,
+  marcar um voo feito; na checklist, escrever numa célula e voltar logo ao
+  planeador; reabrir e **Importar blocos do plano** outra vez.
+  **Esperado:** a «Hora fim» do voo marcado aparece na checklist sem
+  recarregar e fica depois de a checklist gravar; a célula escrita mesmo
+  antes de voltar ficou gravada; importar de novo não repete os voos que
+  já têm linha.
 - ☐ **No campo**, na base B: copiar a pasta `base-B/` do ZIP por base para o
   comando e importar no DJI Pilot 2 (cartão ou cabo).
   **Esperado:** as missões aparecem com o nome do ficheiro (`..._B-3`), pela

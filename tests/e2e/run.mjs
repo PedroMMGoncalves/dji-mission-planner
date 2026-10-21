@@ -180,8 +180,12 @@ async function openMission({
   initScript = null,
   // pedidos locais a abortar (um bloco sob demanda que «não chega»)
   abort = null,
+  // num contexto próprio, onde se podem abrir outros separadores (fecha-se com a página)
+  separadores = false,
 }) {
-  const page = await browser.newPage({ viewport, acceptDownloads: true })
+  const page = separadores
+    ? await (await browser.newContext({ viewport, acceptDownloads: true })).newPage()
+    : await browser.newPage({ viewport, acceptDownloads: true })
   currentPage = page
   // antes da navegação; o page.close() passa a recolhê-la (cobertura.mjs)
   if (cobertura) await cobertura.iniciar(page)
@@ -6824,6 +6828,157 @@ await scenario('checklist-por-projecto', async () => {
   )
   check('checklist: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
+  return { page }
+})
+
+/* ---- o registo de voos com dois escritores ------------------------------
+ * O planeador («Operação do dia») marca um voo feito escrevendo a «Hora fim»
+ * na linha dele, na chave da checklist da missão. Com a checklist aberta
+ * noutro separador, a gravação seguinte dela escrevia por cima das marcas;
+ * voltar ao planeador logo a seguir a uma edição perdia-a; e importar os
+ * blocos do plano depois de marcar repetia as linhas. */
+await scenario('checklist-registo-partilhado', async () => {
+  const { page, errors } = await openMission({ area: fx.rect, dem: false, separadores: true })
+  await abrirNoPainel(page, 'missao')
+  await page.getByPlaceholder(/nome-da-missao|mission-name/).fill('registo-duplo')
+  await configure(page, { split: 'Bateria' })
+  const CHAVE = 'dji-mission-planner:checklist:v1:registo-duplo'
+  const gravado = () => page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? 'null'), CHAVE)
+  const abrir = async () => {
+    await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
+    await page.waitForTimeout(500)
+  }
+  const celula = (col, voo) => page.getByLabel(`${col} do voo ${voo}`, { exact: true })
+  const espera = async (loc, valor) => {
+    for (let i = 0; i < 30 && (await loc.inputValue()) !== valor; i++)
+      await page.waitForTimeout(100)
+    return (await loc.inputValue()) === valor
+  }
+  const importar = page.getByRole('button', { name: /Importar blocos do plano/ })
+  await abrir()
+  await importar.click()
+  await page.waitForTimeout(700) // gravação
+  const rotulos = ((await gravado())?.voos ?? []).map((l) => l.n)
+  check(
+    'registo partilhado: importar os blocos escreve uma linha por voo',
+    rotulos.length >= 2 && new Set(rotulos).size === rotulos.length && rotulos.every(Boolean),
+    rotulos.join(),
+  )
+  const [v1, v2] = rotulos
+
+  // outro separador (o planeador) marca o 2.º voo: a hora entra logo aqui
+  const outro = await page.context().newPage()
+  await outro.route('**/*', (route) =>
+    route.request().url().startsWith(`http://127.0.0.1:${PORT}/`)
+      ? route.continue()
+      : route.abort(),
+  )
+  await outro.goto(`${URL}schema/project-v2.schema.json`)
+  const marcarNoOutro = (voo, hora) =>
+    outro.evaluate(
+      ([k, v, h]) => {
+        const g = JSON.parse(localStorage.getItem(k))
+        g.voos = g.voos.map((l) => (l.n === v ? { ...l, fim: h } : l))
+        localStorage.setItem(k, JSON.stringify(g))
+      },
+      [CHAVE, voo, hora],
+    )
+  await marcarNoOutro(v2, '10:42')
+  check(
+    'registo partilhado: a hora marcada noutro separador aparece na checklist aberta',
+    await espera(celula('Hora fim', v2), '10:42'),
+  )
+  // a edição seguinte da checklist grava a marca de lá e a sua
+  await celula('Bateria(s)', v1).fill('B1')
+  await page.waitForTimeout(700)
+  let g = await gravado()
+  const linhaDe = (voo) => g.voos.find((l) => l.n === voo)
+  check(
+    'registo partilhado: a gravação da checklist guarda a marca do planeador e a sua edição',
+    linhaDe(v2).fim === '10:42' && linhaDe(v1).baterias === 'B1',
+    JSON.stringify(g.voos.slice(0, 2)),
+  )
+
+  // uma marca escrita sem aviso (o evento perdido): a checklist relê antes de
+  // gravar, junta-a e mostra-a
+  await page.evaluate(
+    ([k, v]) => {
+      const s = JSON.parse(localStorage.getItem(k))
+      s.voos = s.voos.map((l) => (l.n === v ? { ...l, fim: '11:05' } : l))
+      localStorage.setItem(k, JSON.stringify(s))
+    },
+    [CHAVE, v1],
+  )
+  await celula('Meteo', v2).fill('sol')
+  await page.waitForTimeout(700)
+  g = await gravado()
+  check(
+    'registo partilhado: antes de gravar relê a chave e junta a marca que não ouviu',
+    linhaDe(v1).fim === '11:05' &&
+      linhaDe(v1).baterias === 'B1' &&
+      linhaDe(v2).meteo === 'sol' &&
+      linhaDe(v2).fim === '10:42' &&
+      (await espera(celula('Hora fim', v1), '11:05')),
+    JSON.stringify(g.voos.slice(0, 2)),
+  )
+  // apagar uma hora na checklist (para a reescrever) não a faz voltar
+  await celula('Hora fim', v1).fill('')
+  await page.waitForTimeout(900)
+  g = await gravado()
+  check(
+    'registo partilhado: uma hora apagada na checklist fica apagada',
+    linhaDe(v1).fim === '' && (await celula('Hora fim', v1).inputValue()) === '',
+  )
+  // a chave tem as mesmas chaves, pela mesma ordem, e nenhuma linha repetida
+  await importar.click()
+  await page.waitForTimeout(700)
+  g = await gravado()
+  const depois = g.voos.map((l) => l.n)
+  check(
+    'registo partilhado: importar depois de marcar não repete as linhas',
+    depois.join() === rotulos.join() && linhaDe(v2).fim === '10:42',
+    depois.join(),
+  )
+  check(
+    'registo partilhado: o registo gravado tem a forma de sempre',
+    Object.keys(g).join() === 'missionName,savedAt,checked,missao,voos,gcps,notas' &&
+      g.voos.every(
+        (l) =>
+          Object.keys(l).join() ===
+          '_id,n,inicio,fim,previsto,duracao,baterias,area,imagens,sensor,meteo,obs',
+      ),
+  )
+
+  // voltar ao planeador logo a seguir a uma edição (antes dos 400 ms) não a
+  // perde: a página sai e a gravação por fazer faz-se logo (antes, sair
+  // cancelava-a; a espera abaixo não a salvaria). O clique vai pelo DOM: o
+  // do Playwright rola até ao botão e espera que pare, e isso pode passar
+  // dos 400 ms
+  await celula('Bateria(s)', v2).fill('B7')
+  await page
+    .getByRole('button', { name: /Voltar ao planeador|Back to planner/ })
+    .evaluate((b) => b.click())
+  await page.waitForTimeout(300)
+  g = await gravado()
+  check(
+    'registo partilhado: voltar ao planeador logo a seguir grava a edição',
+    linhaDe(v2).baterias === 'B7',
+    JSON.stringify(linhaDe(v2)),
+  )
+  // nem recarregar o separador (pagehide)
+  await abrir()
+  await celula('Sensor', v2).fill('P1')
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  g = await gravado()
+  check(
+    'registo partilhado: recarregar logo a seguir grava a edição',
+    linhaDe(v2).sensor === 'P1' && linhaDe(v2).baterias === 'B7' && linhaDe(v2).fim === '10:42',
+    JSON.stringify(linhaDe(v2)),
+  )
+  check('registo partilhado: sem erros de página', errors.length === 0, errors.join(' | '))
+  await outro.close()
+  await page.close()
+  await page.context().close()
   return { page }
 })
 
