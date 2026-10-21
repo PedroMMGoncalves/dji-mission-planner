@@ -544,6 +544,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                           aria-selected={on}
                           aria-controls="set-aircraft-panel"
                           aria-label={aircraftLabel(AIRCRAFT[id], t)}
+                          title={aircraftLabel(AIRCRAFT[id], t)}
                           tabIndex={on ? 0 : -1}
                           onClick={() => setAircraftId(id)}
                           onKeyDown={aircraftKeys}
@@ -990,7 +991,8 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                     </div>
                     <button
                       type="button"
-                      aria-label={`${t('set.restore')}…`}
+                      aria-label={t('set.restore')}
+                      title={t('set.restore')}
                       aria-expanded={confirmRestore}
                       onClick={() => {
                         setStatus(null)

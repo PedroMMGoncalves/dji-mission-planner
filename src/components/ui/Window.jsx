@@ -9,7 +9,7 @@ import { IconClose } from '../Icons.jsx'
  * abriu.
  */
 
-/** O fundo por baixo de uma janela, por cima de tudo o resto. */
+/** O fundo por baixo de uma janela; a camada (z-index) junta-a cada janela. */
 export const BACKDROP = 'fixed inset-0 flex items-center justify-center p-4'
 
 /** A caixa da janela: opaca, com contorno e sombra (largura e altura são de cada uma). */
