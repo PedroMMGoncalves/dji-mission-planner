@@ -1617,7 +1617,11 @@ await scenario('projecto-autosave-ficheiro', async () => {
   await page
     .locator('input[accept=".kml,.geojson,.json,.zip,.kmz"]')
     .waitFor({ state: 'attached', timeout: 20000 })
-  await page.waitForTimeout(800)
+  // o projecto gravado repõe o estado e o plano recalcula-se: espera-se por
+  // isso (até 20 s) e não por uma pausa fixa, que no CI às vezes não chegava
+  for (const t0 = Date.now(); Date.now() - t0 < 20000; await page.waitForTimeout(250))
+    if ((await nameInput.inputValue()) === 'projecto-e2e' && (await headerExport(page).isEnabled()))
+      break
   check(
     'projecto: nome e dupla grelha sobrevivem ao recarregar',
     (await nameInput.inputValue()) === 'projecto-e2e' && (await label(page, CROSS).isChecked()),
