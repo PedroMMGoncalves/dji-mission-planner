@@ -379,6 +379,9 @@ const BASE_DICT = {
   'map.zoomIn': { pt: 'Aproximar', en: 'Zoom in' },
   'map.zoomOut': { pt: 'Afastar', en: 'Zoom out' },
   'map.layers': { pt: 'Camadas do mapa', en: 'Map layers' },
+  'map.drawTools': { pt: 'Desenhar no mapa', en: 'Draw on the map' },
+  'map.toolBase': { pt: 'Base', en: 'Base' },
+  'map.toolInspect': { pt: 'Inspecção', en: 'Inspection' },
 
   /* ---- Legenda das camadas, vista 3D, intervalo manual e descolagem da face e da órbita ---- */
   'legend.title': { pt: 'Legenda', en: 'Legend' },

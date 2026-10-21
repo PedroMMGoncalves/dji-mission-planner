@@ -234,7 +234,10 @@ export default {
   'cp.inspect.remove': { pt: 'Retirar o ponto {n}', en: 'Remove point {n}' },
 
   /* ---- Área de levantamento ---- */
-  'cp.area.shape': { pt: 'Forma', en: 'Shape' },
+  'cp.area.drawOnMap': {
+    pt: 'Desenhe a área na barra sobre o mapa (Polígono, Rectângulo ou Quadrado), ou importe-a:',
+    en: 'Draw the area with the bar over the map (Polygon, Rectangle or Square), or import it:',
+  },
   'cp.area.polygon': { pt: 'Polígono', en: 'Polygon' },
   'cp.area.polygonTitle': {
     pt: 'Polígono livre: clique a clique no mapa',

@@ -1,13 +1,15 @@
 /**
  * A área do mapa: o mapa (desenho, área, blocos, bases, fotos,
- * pré-visualizações dos modos, bacias de visão, legenda) e, por cima dele, à
- * direita, o resumo do projecto e o cartão de métricas do separador aberto.
+ * pré-visualizações dos modos, bacias de visão, legenda) e, por cima dele, a
+ * barra de desenho do modo Área, e à direita o resumo do projecto e o cartão
+ * de métricas do separador aberto.
  * Nada disto empurra o mapa: tudo flutua por cima, nos cantos.
  */
 import { useMemo } from 'react'
 import ProjectSummary from './ProjectSummary.jsx'
 import MapView from './MapView.jsx'
 import StatsPanel from './StatsPanel.jsx'
+import MapDrawTools from './MapDrawTools.jsx'
 import { qualityStatsFor } from '../mission/qualityStats.js'
 
 export default function MapPane({
@@ -51,7 +53,7 @@ export default function MapPane({
   const { corridorPreview, corridorTriggerWarn, corridorFlight, corridorSpeed } = corridor
   const { orbitPreview, handleOrbitPoiDrag } = orbit
   const { facePreview } = face
-  const { inspectPoints, handleInspectDrag } = inspect
+  const { inspectPoints, handleInspectDrag, startInspect } = inspect
   const {
     ring,
     holes,
@@ -66,6 +68,8 @@ export default function MapPane({
     handleVertexInsert,
     handleVertexDelete,
     handleAreaMove,
+    startDraw,
+    startAnchor,
   } = geom
   const { baseLayout, planOk, blocks, gcps } = area
   const {
@@ -85,6 +89,7 @@ export default function MapPane({
     handleBlockClick,
     handleTileClick,
     handleBaseDrag,
+    startBase,
   } = baseActions
   const { handleMapClick, handleFinishAny } = mapActions
   const { mapPhotoPoints } = routeView
@@ -141,6 +146,9 @@ export default function MapPane({
       circularSpeed,
     ],
   )
+  // a barra de desenho é a do modo Área (os outros modos desenham pelo
+  // painel)
+  const drawTools = missionMode === 'area'
   return (
     <>
       <main className="relative min-w-0 flex-1">
@@ -189,8 +197,26 @@ export default function MapPane({
           viewshedLayerOn={viewshedLayerOn}
           onViewshedLayer={setViewshedLayerOn}
         />
-        {/* à direita: o resumo do projecto e as métricas */}
-        <div className="pointer-events-none absolute right-4 top-4 z-[1000] flex max-h-[calc(100%-32px)] flex-col items-end gap-2">
+        {drawTools && (
+          <MapDrawTools
+            mode={mode}
+            anchorShape={anchor.shape}
+            hasArea={Boolean(ring)}
+            onDraw={startDraw}
+            onAnchor={startAnchor}
+            onBase={startBase}
+            onInspect={startInspect}
+          />
+        )}
+        {/* à direita: o resumo do projecto e as métricas, por baixo da barra
+            de desenho enquanto o mapa é estreito para as duas lado a lado */}
+        <div
+          className={`pointer-events-none absolute right-4 z-[1000] flex flex-col items-end gap-2 ${
+            drawTools
+              ? 'top-[70px] max-h-[calc(100%-86px)] min-[1360px]:top-4 min-[1360px]:max-h-[calc(100%-32px)]'
+              : 'top-4 max-h-[calc(100%-32px)]'
+          }`}
+        >
           <ProjectSummary summary={projectSummary} />
           <StatsPanel
             uncertainty={quality.uncertainty}

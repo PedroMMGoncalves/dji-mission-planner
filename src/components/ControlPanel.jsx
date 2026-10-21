@@ -10,7 +10,6 @@ import {
   IconGear,
   IconHelipad,
   IconMountain,
-  IconPolygon,
   IconTarget,
   IconTrash,
 } from './Icons.jsx'
@@ -231,8 +230,6 @@ export default function ControlPanel({
     cancelImport: onImportCancel,
     undoEdit: onTilesUndo,
     restoreAllTiles: onTilesRestoreAll,
-    startDraw: onStartDraw,
-    startAnchor: onStartAnchor,
     handleFinishDraw: onFinishDraw,
     clearAll: onClear,
   } = geom
@@ -493,44 +490,9 @@ export default function ControlPanel({
 
         {/* 2. Área e relevo */}
         <Card id="area" n={2} title={t('cards.area')} more={d.more('area')}>
-          <p className="mb-1 text-xs uppercase tracking-wider text-slate-400">
-            {t('cp.area.shape')}
-          </p>
-          <div className="grid grid-cols-3 gap-1.5">
-            <button
-              onClick={onStartDraw}
-              title={t('cp.area.polygonTitle')}
-              className={`flex items-center justify-center gap-1 rounded px-1.5 py-2 text-xs font-medium transition-colors ${
-                mode === 'draw'
-                  ? 'bg-sky-500 text-slate-950'
-                  : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-              }`}
-            >
-              <IconPolygon /> {t('cp.area.polygon')}
-            </button>
-            <button
-              onClick={() => onStartAnchor('rect')}
-              title={t('cp.area.rectTitle')}
-              className={`flex items-center justify-center gap-1 rounded px-1.5 py-2 text-xs font-medium transition-colors ${
-                mode === 'anchor' && anchor.shape === 'rect'
-                  ? 'bg-amber-500 text-slate-950'
-                  : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-              }`}
-            >
-              <IconTarget /> {t('cp.area.rect')}
-            </button>
-            <button
-              onClick={() => onStartAnchor('square')}
-              title={t('cp.area.squareTitle')}
-              className={`flex items-center justify-center gap-1 rounded px-1.5 py-2 text-xs font-medium transition-colors ${
-                mode === 'anchor' && anchor.shape === 'square'
-                  ? 'bg-amber-500 text-slate-950'
-                  : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-              }`}
-            >
-              <IconTarget /> {t('cp.area.square')}
-            </button>
-          </div>
+          {/* as formas (polígono, rectângulo, quadrado) estão na barra
+              sobre o mapa, com a base e os pontos de inspecção */}
+          <p className="text-xs leading-relaxed text-slate-400">{t('cp.area.drawOnMap')}</p>
 
           <button
             onClick={() => areaFileRef.current?.click()}

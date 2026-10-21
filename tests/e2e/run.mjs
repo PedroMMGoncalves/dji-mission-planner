@@ -3730,8 +3730,13 @@ async function closeDrawer(page) {
  * O controlo `loc` do cartão `card`, à vista: no cartão, ou depois de abrir a
  * gaveta dele. Devolve onde estava ('cartão' | 'gaveta') e o locator, ou
  * null quando não se alcança. Sem cartões (painel antigo) procura na página.
+ * Com `card` 'mapa', na barra de desenho sobre o mapa ('mapa').
  */
 async function reach(page, card, loc) {
+  if (card === 'mapa') {
+    const el = loc(page.getByTestId('map-draw-tools'), page).first()
+    return { where: (await el.isVisible().catch(() => false)) ? 'mapa' : null, el }
+  }
   const scope = page.locator(`[data-testid="card-${card}"], [data-testid="drawer-${card}"]`)
   const root = (await scope.count()) > 0 ? scope : page
   const el = loc(root, page).first()
@@ -3757,8 +3762,9 @@ const inv = {
  * levantamento, Bases, Divisão em blocos, Terreno, GCPs, Pontos de inspecção),
  * levantado do painel antigo antes da mudança (e verificado contra ele), com
  * o cartão onde ficaram: a exportação por voo e por base passou do painel
- * das bases para o cartão «Resumo e exportar». Agrupados pelo estado que os
- * mostra.
+ * das bases para o cartão «Resumo e exportar», e as formas da área
+ * (polígono, rectângulo, quadrado) do cartão «Área e relevo» para a barra de
+ * desenho sobre o mapa ('mapa'). Agrupados pelo estado que os mostra.
  */
 const INVENTARIO_INICIO = [
   ['missao', 'nome da missão', (r) => r.getByPlaceholder(/nome-da-missao/)],
@@ -3795,9 +3801,9 @@ const INVENTARIO_INICIO = [
   ['voo', 'expansão 20 %', inv.exact('20%')],
   ['voo', 'expansão 30 %', inv.exact('30%')],
   ['voo', 'seguir terreno', inv.field(/Seguir terreno/)],
-  ['area', 'Polígono', inv.btn(/Polígono/)],
-  ['area', 'Rectângulo', inv.btn(/Rectângulo/)],
-  ['area', 'Quadrado', inv.btn(/^Quadrado/)],
+  ['mapa', 'Polígono', inv.btn(/Polígono/)],
+  ['mapa', 'Rectângulo', inv.btn(/Rectângulo/)],
+  ['mapa', 'Quadrado', inv.btn(/^Quadrado/)],
   ['area', 'Importar área', inv.btn(/Importar área/)],
   ['area', 'Descarregar relevo global', inv.btn(DOWNLOAD_GLOBAL)],
   ['area', 'Importar MDT', inv.btn(/Importar MDT/)],
@@ -3935,7 +3941,7 @@ const INVENTARIO_CRS = [
 await scenario('inventario-painel-area', async () => {
   let total = 0
   const falta = []
-  const onde = { cartão: 0, gaveta: 0 }
+  const onde = { cartão: 0, gaveta: 0, mapa: 0 }
   const verifica = async (page, lista) => {
     for (const [card, nome, loc] of lista) {
       total += 1
@@ -3975,11 +3981,11 @@ await scenario('inventario-painel-area', async () => {
   await closeDrawer(page)
   await verifica(page, [['missao', 'FOV do feixe', inv.field(/FOV do feixe/)]])
   // desenho livre e formas ancoradas
-  await (await usa(page, 'area', inv.btn(/Polígono/))).click()
+  await (await usa(page, 'mapa', inv.btn(/Polígono/))).click()
   await verifica(page, INVENTARIO_DESENHO)
-  await (await usa(page, 'area', inv.btn(/Rectângulo/))).click()
+  await (await usa(page, 'mapa', inv.btn(/Rectângulo/))).click()
   await verifica(page, INVENTARIO_ANCORA)
-  await (await usa(page, 'area', inv.btn(/^Quadrado/))).click()
+  await (await usa(page, 'mapa', inv.btn(/^Quadrado/))).click()
   await verifica(page, [['area', 'lado do quadrado', inv.field(/^Lado°?m?$/)]])
   check('inventário: sem erros de página sem área', errors.length === 0, errors.join(' | '))
   await page.close()
@@ -4042,11 +4048,11 @@ await scenario('inventario-painel-area', async () => {
   await d.page.close()
 
   check(
-    `inventário: os ${total} controlos do painel da área alcançam-se (cartão ou gaveta)`,
+    `inventário: os ${total} controlos do painel da área alcançam-se (cartão, gaveta ou barra do mapa)`,
     falta.length === 0,
     falta.length
       ? `faltam: ${falta.join('; ')}`
-      : `${onde['cartão']} no cartão, ${onde.gaveta} na gaveta`,
+      : `${onde['cartão']} no cartão, ${onde.gaveta} na gaveta, ${onde.mapa} na barra do mapa`,
   )
   return { page: p2 }
 })
