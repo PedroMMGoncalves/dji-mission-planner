@@ -292,6 +292,8 @@ export function useMissionOps({
     areaBaseDistance,
     areaRouteOps,
     corridorRouteOps,
+    // cada voo do corredor partido com o seu trânsito (a tabela do painel)
+    corridorFlightOps,
     circularRouteOps,
     circularBaseDistance,
     setsCheck,

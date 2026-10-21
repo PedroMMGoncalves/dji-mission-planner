@@ -11,6 +11,29 @@ import { passThroughFor, triggerRangesForLines } from '../utils/geo.js'
 import { inspectionToWaypoints } from '../utils/inspect.js'
 import { safetyParams } from './safety.js'
 
+/**
+ * Nome do KMZ da face (sem extensão): o tipo e as passagens. O painel
+ * mostra-o antes de exportar.
+ * @param {string} missionName
+ * @param {{stats: {passCount: number}}} plan
+ */
+export function faceExportName(missionName, plan) {
+  return buildExportName(missionName, 'face', { part: `p1-${plan.stats.passCount}` })
+}
+
+/**
+ * Nome do KMZ da órbita (sem extensão): em vídeo leva a variante
+ * (`_orbit-video_n5`), e os níveis. O painel mostra-o antes de exportar.
+ * @param {string} missionName
+ * @param {{stats: {capture: string, levelCount: number}}} plan
+ */
+export function orbitExportName(missionName, plan) {
+  return buildExportName(missionName, 'orbit', {
+    variant: plan.stats.capture === 'video' ? 'video' : null,
+    part: `n${plan.stats.levelCount}`,
+  })
+}
+
 /** Fachada: uma foto por waypoint, rumo fixo; a altitude global é a passagem mais alta. */
 export function faceExportParams({
   missionName,
@@ -24,7 +47,7 @@ export function faceExportParams({
   return {
     // acções de segurança (fim da missão, sinal perdido): src/mission/safety.js
     ...safetyParams(safety),
-    name: buildExportName(missionName, 'face', { part: `p1-${plan.stats.passCount}` }),
+    name: faceExportName(missionName, plan),
     waypoints: plan.waypoints,
     perWaypoint: plan.perWaypoint,
     altitude: Math.round(plan.stats.heights[plan.stats.heights.length - 1]),
@@ -44,14 +67,10 @@ export function faceExportParams({
  * espiral, não tira fotografias, e convém distingui-lo à vista.
  */
 export function orbitExportParams({ missionName, plan, speed, wpml, sensorType, safety = null }) {
-  const video = plan.stats.capture === 'video'
   return {
     // acções de segurança (fim da missão, sinal perdido): src/mission/safety.js
     ...safetyParams(safety),
-    name: buildExportName(missionName, 'orbit', {
-      variant: video ? 'video' : null,
-      part: `n${plan.stats.levelCount}`,
-    }),
+    name: orbitExportName(missionName, plan),
     waypoints: plan.waypoints,
     perWaypoint: plan.perWaypoint,
     turnMode: plan.turnMode,

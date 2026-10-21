@@ -19,13 +19,17 @@ const STATS_COLLAPSED_KEY = 'dji-mission-planner:stats:collapsed'
  * o enquadramento da área fica à esquerda dele.
  */
 
-function fmtDist(m) {
+// os três formatos servem também os resumos dos painéis da face, da órbita,
+// do corredor e do circular: os mesmos números, escritos da mesma maneira
+
+/** Distância: «266.3 m», ou «31.38 km» a partir de um quilómetro. */
+export function fmtDist(m) {
   if (m == null) return '—'
   return m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m.toFixed(1)} m`
 }
 
 /** Duração: «12 min 05 s», ou «17 h 19 min» a partir de uma hora. */
-function fmtTime(s) {
+export function fmtTime(s) {
   if (!Number.isFinite(s)) return '—'
   const t = Math.round(s)
   if (t >= 3600) {
@@ -37,7 +41,7 @@ function fmtTime(s) {
 }
 
 /** mm:ss (ou h:mm:ss) para comparar um voo com o tempo útil da bateria. */
-function fmtClock(s) {
+export function fmtClock(s) {
   if (!Number.isFinite(s)) return '—'
   const t = Math.round(s)
   const h = Math.floor(t / 3600)

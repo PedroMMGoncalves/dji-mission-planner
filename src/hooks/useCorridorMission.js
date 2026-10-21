@@ -25,8 +25,8 @@ import { computeFootprint, photoInterval } from '../utils/geo.js'
 import { corridorFlightRoutes, planCorridorFlights } from '../mission/corridorFlights.js'
 import { exportBlocksZip } from '../utils/exporters.js'
 
-/** Cores dos voos de um corredor partido (as dos blocos da área). */
-const FLIGHT_COLORS = ['#fde047', '#38bdf8', '#f472b6', '#a3e635', '#fb923c', '#c4b5fd']
+/** Cores dos voos de um corredor partido (as dos blocos da área; o painel lista-os nelas). */
+export const FLIGHT_COLORS = ['#fde047', '#38bdf8', '#f472b6', '#a3e635', '#fb923c', '#c4b5fd']
 
 export function useCorridorMission({
   hw,
