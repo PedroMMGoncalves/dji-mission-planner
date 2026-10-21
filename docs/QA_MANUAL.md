@@ -12,8 +12,11 @@ com screenshot e os passos.
 
 O painel da área é uma coluna de sete cartões numerados (1 Missão, 2 Área e
 relevo, 3 Parâmetros de voo, 4 Divisão em voos, 5 Bases e segurança, 6
-Extras, 7 Resumo e exportar); o que não está no cartão está na gaveta dele,
-em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta).
+Extras, 7 Resumo e exportar), que abrem e fecham no título (fechados, o
+essencial numa linha; os abertos ficam lembrados neste aparelho); o que não
+está no cartão está na gaveta dele, no botão do fim do cartão, que diz o que
+ela tem (p. ex. **Linhas de voo, disparo e câmara ›**). Os passos abaixo
+dizem em que cartão (e se na gaveta).
 
 ## 1. Área em U — rota côncava-segura (~2 min)
 
@@ -30,7 +33,7 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 ## 2. Dupla grelha + terrain follow (~2 min)
 
 - ☐ Área retangular ~500×300 m em terreno com relevo; preset
-  **Modelo 3D · Dupla grelha** (cartão 1, **Mais opções ›**); esperar a descarga automática do relevo;
+  **Modelo 3D · Dupla grelha** (cartão 1, **Tipo de levantamento**); esperar a descarga automática do relevo;
   activar **terrain follow**.
   **Esperado:** duas famílias de linhas perpendiculares; o GSD das métricas passa a
   **"GSD (centro da imagem)"** (gimbal −60°) com valor ~15% pior do que a
@@ -169,7 +172,8 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 
 ## 9. Pontos de inspecção — ordem e persistência (~1.5 min)
 
-- ☐ Modo Área → cartão 6 **Extras** → **Mais opções ›** → marcar 4 pontos; renomear dois; arrastar o cartão do 4.º
+- ☐ Modo Área → cartão 6 **Extras** → **Pontos de inspecção ›** → **Marcar pontos de
+  inspecção** e 4 pontos no mapa; renomear dois; arrastar o cartão do 4.º
   para a 2.ª posição; carregar em Sugerir ordem.
   **Esperado:** o arrasto reordena (números do mapa acompanham); a sugestão
   reordena por proximidade a partir da base.
@@ -180,7 +184,8 @@ em **Mais opções ›**. Os passos abaixo dizem em que cartão (e se na gaveta)
 ## 10. Disparo por waypoint (~1.5 min)
 
 - ☐ Perfil de câmara (M3E); área rectangular ~100 × 60 m; no cartão 3,
-  **Mais opções ›**: prolongamento 10 m e **Disparo por: Waypoint**.
+  **Linhas de voo, disparo e câmara ›**: prolongamento 10 m e **Disparo
+  por: Waypoint**.
   **Esperado:** a opção só existe com câmara (desaparece com o Mapper+); o
   mapa mostra waypoints intermédios em cada faixa, nenhum nos troços de
   overshoot; o cartão **Fotos** passa a contar waypoints com foto (sem o
@@ -217,9 +222,11 @@ tablet real):
 - ☐ A barra dos modos (à esquerda do painel) e os cinco painéis
   (Área/Face/Órbita/Corredor/Circular) são usáveis sem sobreposições; os
   campos numéricos aceitam toque; as listas fazem scroll dentro do painel.
-- ☐ Abrir **Mais opções ›** de um cartão.
+- ☐ Abrir a gaveta de um cartão (o botão do fim dele, p. ex. **Linhas de
+  voo, disparo e câmara ›**).
   **Esperado:** a gaveta abre ao lado do painel, por cima do mapa, sem sair
-  do ecrã; os botões dos cartões têm 44 px de altura; o ✕ e o Escape fecham.
+  do ecrã; os botões das gavetas têm 44 px de altura, e os títulos dos
+  cartões mais; o ✕ e o Escape fecham.
 - ☐ No modo inspecção, reordenar com as **setas** (o arrastar HTML5 não
   dispara em ecrã táctil — comportamento esperado).
 - ☐ O resumo do projecto (2+ planos), por cima das métricas, e o cartão
@@ -298,16 +305,17 @@ tablet real):
   dentro de uma célula criam a base e o ponto (a célula não se desactiva).
   Com uma gaveta aberta, o primeiro Esc fecha a gaveta e a base continua
   seleccionada.
-- ☐ Na linha da base A, **Atribuir blocos a esta base**; clicar na área de dois
-  blocos de outras bases (um na divisão por faixas, onde não há quadrados).
-  **Esperado:** nada muda ao carregar no botão; a linha diz «A atribuir blocos
-  à base A…»; cada bloco clicado passa para A e só esses; **Terminar** sai do
-  modo; dois **Ctrl+Z** repõem os blocos.
+- ☐ Na tabela das bases (cartão 5), abrir a linha da base A e carregar em
+  **Atribuir blocos a esta base**; clicar na área de dois blocos de outras
+  bases (um na divisão por faixas, onde não há quadrados).
+  **Esperado:** nada muda ao carregar no botão; o detalhe da base diz «A
+  atribuir blocos à base A…»; cada bloco clicado passa para A e só esses;
+  **Terminar** sai do modo; dois **Ctrl+Z** repõem os blocos.
 
 ## 14. Bacias de visão e rádio — verificação no campo (~2 min + campo)
 
-- ☐ Na missão com bases e blocos, cartão 5 → **Mais opções ›** → **Bacias de
-  visão → Mostrar no mapa**.
+- ☐ Na missão com bases e blocos, cartão 5 → caixa **Bacias de visão** →
+  **Mostrar no mapa**.
   **Esperado:** quadrados laranja onde o drone fica atrás do relevo visto do
   ponto da base, amarelos tracejados onde se vê mas a zona de Fresnel do
   rádio não está livre; a percentagem visível em cada bloco; no painel e na
@@ -335,11 +343,27 @@ tablet real):
 
 ## 15. Cartões, gavetas e acções de segurança (~2 min)
 
-- ☐ Modo Área: percorrer os sete cartões e abrir a gaveta de cada um.
-  **Esperado:** só uma gaveta aberta de cada vez; o foco entra na gaveta e
-  volta a **Mais opções ›** ao fechar (✕ ou Escape); um valor mudado numa
-  gaveta fica depois de a fechar e reabrir.
-- ☐ Cartão 5: **No fim da missão: Aterrar no local**; **Perda de sinal:
+- ☐ Modo Área: fechar e abrir os sete cartões no título; recarregar a
+  página.
+  **Esperado:** fechado, cada cartão diz o essencial numa linha (p. ex.
+  «451.96 ha · relevo global (~30 m)»); sem escolha gravada, abertos o 2 e,
+  com área, o 3; depois de recarregar, os cartões ficam como se deixaram;
+  marcar uma base com o cartão 5 fechado abre-o.
+- ☐ Abrir as gavetas: **Datum vertical e mais opções ›** (2), **Linhas de
+  voo, disparo e câmara ›** (3), **Células e orientação dos quadrados ›** (4,
+  com Quadrícula ou Bateria), **Pontos de apoio (GCP)** e **Pontos de
+  inspecção** (6).
+  **Esperado:** só uma gaveta aberta de cada vez, com a seta virada para o
+  botão que a abriu; o foco entra na gaveta e volta a esse botão ao fechar
+  (✕ ou Escape); um valor mudado numa gaveta fica depois de a fechar e
+  reabrir.
+- ☐ Cartão 5 com várias bases: a tabela (base, voos, zona, cota); carregar
+  numa linha; depois escolher outra base no mapa.
+  **Esperado:** o detalhe abre na linha (raio da zona, voos, zona, cota,
+  vista, **Atribuir blocos a esta base**, remover); a base escolhida no mapa
+  abre a linha dela, à vista no painel.
+- ☐ Cartão 5, caixa **Acções de segurança**: **No fim da missão: Aterrar no
+  local**; **Perda de sinal:
   Interromper a missão** com **Pairar**. Exportar o KMZ.
   **Esperado:** em `waylines.wpml` e `template.kml`,
   `<wpml:finishAction>autoLand`, `<wpml:exitOnRCLost>executeLostAction` e

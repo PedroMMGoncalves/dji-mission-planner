@@ -8,6 +8,26 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ### Alterado
 
+- **Painel da área em secções que fecham.** Os sete cartões abrem e
+  fecham no título e, fechados, dizem o essencial numa linha («451.96 ha ·
+  relevo global (~30 m)», «20 voos · 5 h 27 min · sem bloqueios»); à
+  partida abrem-se a área e, com área, os parâmetros de voo, e o que o
+  operador abre ou fecha fica lembrado neste aparelho; uma secção fechada
+  abre-se sozinha quando passa a ter o que mostrar (marcar uma base, a base
+  escolhida no mapa, um erro ao importar). Os campos ficam em grelha, com a
+  unidade dentro da caixa, e as escolhas curtas em botões segmentados. As
+  bases passam a uma tabela (base, voos, zona, cota) e o detalhe de cada
+  uma abre na sua linha: com 20 bases o painel deixa de ter perto de
+  7800 px. «Seleccionar a base A» (o rótulo) e «Atribuir blocos a esta
+  base» eram a mesma acção com dois nomes: fica a segunda, no detalhe. O
+  «Resumo e exportar» junta os números do plano, a tabela dos voos, as
+  exportações em linhas (os mesmos nomes do menu do cabeçalho) e, no fim, o
+  par do cabeçalho, sem botões repetidos. As gavetas abrem-se num botão
+  que diz o que têm («Linhas de voo, disparo e câmara», «Datum vertical e
+  mais opções», «Pontos de apoio (GCP)», «Pontos de inspecção»), com uma
+  seta virada para ele; as das bases e do resumo, pequenas, passaram para
+  dentro da secção. Os números, os ficheiros exportados e os controlos são
+  os mesmos.
 - **Exportar voos: dois pares iguais, KMZ e KML.** O cartão «Resumo e
   exportar» da área dividida em voos passa a ter as duas saídas em pares,
   cada uma com todos os voos soltos num ZIP e numa pasta por base: KMZ, a
