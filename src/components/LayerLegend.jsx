@@ -279,6 +279,7 @@ export default function LayerLegend({
           ref={toggleRef}
           data-testid={`${testId}-toggle`}
           aria-expanded="false"
+          aria-controls={`${testId}-body`}
           title={t('legend.expand')}
           onClick={() => setOpen(true)}
           className={PILL}
@@ -399,6 +400,7 @@ export default function LayerLegend({
           ref={toggleRef}
           data-testid={`${testId}-toggle`}
           aria-expanded="true"
+          aria-controls={`${testId}-body`}
           aria-label={t('legend.collapse')}
           title={t('legend.collapse')}
           onClick={() => setOpen(false)}
@@ -407,7 +409,7 @@ export default function LayerLegend({
           {chevron(!opensUp)}
         </button>
       </div>
-      <div className="min-h-0 overflow-y-auto">
+      <div id={`${testId}-body`} className="min-h-0 overflow-y-auto">
         {grouped && groupTitle(t('legend.groupMission'), true)}
         {mission.map(row)}
         {analysis.length > 0 && (

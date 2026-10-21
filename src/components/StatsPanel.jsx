@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useT } from '../i18n.jsx'
 import { rangeText, tCount } from '../i18n/format.js'
 import { CARD, ICON_BUTTON, Icon, PILL, useToggleFocus } from './MapOverlay.jsx'
@@ -116,6 +116,7 @@ export default function StatsPanel({
   cardRef = null,
 }) {
   const t = useT()
+  const bodyId = useId()
   // recolhível (M3-U23): num tablet o cartão tapa meio mapa
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -182,6 +183,7 @@ export default function StatsPanel({
           data-testid="stats-toggle"
           onClick={toggle}
           aria-expanded="false"
+          aria-controls={bodyId}
           title={t('stats.show')}
           className={PILL}
         >
@@ -213,6 +215,7 @@ export default function StatsPanel({
           data-testid="stats-toggle"
           onClick={toggle}
           aria-expanded="true"
+          aria-controls={bodyId}
           aria-label={t('stats.hide')}
           title={t('stats.hide')}
           className={`h-8 w-8 ${ICON_BUTTON}`}
@@ -221,7 +224,7 @@ export default function StatsPanel({
         </button>
       </div>
 
-      <div className="min-h-0 overflow-y-auto pb-1.5">
+      <div id={bodyId} className="min-h-0 overflow-y-auto pb-1.5">
         {/* o voo mais longo (ou o único) contra o tempo útil da bateria */}
         {ops && (
           <div

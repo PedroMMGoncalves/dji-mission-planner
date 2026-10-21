@@ -6,8 +6,9 @@ import { FOCUS, Icon } from './MapOverlay.jsx'
  * lateral — troca a ferramenta de desenho e o painel de parâmetros. Cada
  * botão leva o ícone e o nome do modo (o nome acessível é só o nome, que é
  * por onde os testes mudam de modo); o modo aberto fica marcado com
- * aria-current. Os pontos de inspecção mantêm-se como camada extra dentro
- * do modo Área.
+ * aria-current="true" (o modo escolhido entre os botões, não uma página
+ * aberta por uma ligação). Os pontos de inspecção mantêm-se como camada
+ * extra dentro do modo Área.
  */
 const MODES = [
   {
@@ -72,7 +73,7 @@ export default function MissionModeSelector({ mode, onChange }) {
             key={m.id}
             type="button"
             onClick={() => onChange(m.id)}
-            aria-current={current ? 'page' : undefined}
+            aria-current={current ? 'true' : undefined}
             className={`flex min-h-[58px] w-[54px] shrink-0 flex-col items-center justify-center gap-[5px] rounded-[10px] text-[10.5px] font-semibold leading-tight transition-colors ${FOCUS} ${
               current
                 ? 'bg-sky-400/[0.14] text-sky-300'
