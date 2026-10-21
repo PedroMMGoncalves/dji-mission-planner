@@ -649,7 +649,8 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   legenda; os parâmetros e os números do plano; **Voos por base** com o
   comum a todos os voos por cima e a ficha de cada base numa linha
   (coordenadas que abrem nos mapas, zona, cota, RTH, voo, tempo com a
-  barra contra o tempo útil, alturas no comando, VLOS) e o total; a
+  barra contra o tempo útil e, por baixo, os minutos a voar, alturas no
+  comando, VLOS) e o total com e sem deslocações (a soma dos voos); a
   segurança, o preflight com os avisos do mesmo tipo numa tabela, a
   reprodutibilidade e as assinaturas. As secções da barra levam a cada
   uma; Esc fecha e o foco volta ao botão do relatório.
@@ -661,8 +662,15 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   **Esperado:** A4 vertical em fundo branco, sem a barra nem o botão das
   fichas; na primeira página a identificação, o mapa, a operação e a
   legenda; a tabela dos voos parte entre páginas, com o cabeçalho repetido,
-  cada linha inteira e o total só no fim (com 20 bases, cinco páginas, eram
-  treze); abertas, as fichas saem por baixo da tabela, cada base inteira.
+  cada linha inteira (uma base com muitos voos parte entre eles) e o total
+  só no fim (com 20 bases, cinco páginas, eram treze); os valores dos
+  parâmetros e da reprodutibilidade inteiros; abertas, as fichas saem por
+  baixo da tabela, cada base inteira.
+- ☐ Uma área dividida em mais de 12 blocos (uma área grande, divisão por
+  **Bateria**), sem bases; **Relatório**.
+  **Esperado:** em **Voos**, cada voo numa linha (área, distância, minutos
+  e percentagem do tempo útil), em duas tabelas lado a lado pela ordem de
+  voo, e o total numa linha por baixo; impresso, também lado a lado.
 
 Registo de execução:
 

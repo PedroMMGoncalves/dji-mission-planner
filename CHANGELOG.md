@@ -152,8 +152,10 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   números do plano; «Voos por base», com o que é comum a todos os voos
   numa linha e a ficha de campo de cada base numa linha da tabela
   (coordenadas, zona e o que a reduz, cota, RTH, voo, tempo com a barra
-  contra o tempo útil e a deslocação noutro tom, alturas no comando, VLOS),
-  que junta a antiga tabela dos blocos; as fichas inteiras de cada base
+  contra o tempo útil e a deslocação noutro tom, e os minutos a voar,
+  alturas no comando, VLOS), que junta a antiga tabela dos blocos (sem
+  bases, uma linha por voo, em duas tabelas lado a lado quando são muitos:
+  com 70 voos, 3 páginas, eram 4); as fichas inteiras de cada base
   abrem-se no botão por baixo da tabela e, abertas, imprimem-se; a
   segurança (fim da missão, perda de sinal, RTH, subida na descolagem,
   alturas no KMZ); o preflight como a lista do cabeçalho, com os avisos do
