@@ -23,6 +23,7 @@ import { join, resolve } from 'node:path'
 import { chromium } from 'playwright'
 import Ajv2020 from 'ajv/dist/2020.js'
 import JSZip from 'jszip'
+import jsQR from 'jsqr'
 import * as turf from '@turf/turf'
 import {
   HOLE,
@@ -2356,6 +2357,34 @@ async function download(page, locator, file) {
 /** Nomes dos KMZ dentro de um ZIP, pela ordem em que lá estão. */
 const zipOrder = async (file) =>
   Object.keys((await JSZip.loadAsync(readFileSync(file))).files).filter((n) => n.endsWith('.kmz'))
+/**
+ * O texto de um código QR desenhado em <svg> (a folha A4 da base): o SVG
+ * passa a um canvas no browser, como o papel o mostraria, e os píxeis são
+ * lidos aqui por um descodificador independente (jsQR).
+ */
+async function lerQr(locator) {
+  const { w, data } = await locator.evaluate(async (svg) => {
+    const img = new Image()
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(svg))}`
+    await img.decode()
+    const w = 360
+    const c = document.createElement('canvas')
+    c.width = w
+    c.height = w
+    const ctx = c.getContext('2d')
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(0, 0, w, w)
+    ctx.imageSmoothingEnabled = false
+    ctx.drawImage(img, 0, 0, w, w)
+    const px = ctx.getImageData(0, 0, w, w).data
+    let s = ''
+    for (let i = 0; i < px.length; i += 8192) s += String.fromCharCode(...px.subarray(i, i + 8192))
+    return { w, data: btoa(s) }
+  })
+  return jsQR(new Uint8ClampedArray(Buffer.from(data, 'base64')), w, w)?.data ?? null
+}
+/** Páginas de um PDF (os objectos /Type /Page). */
+const paginasPdf = (buf) => (buf.toString('latin1').match(/\/Type\s*\/Page(?!s)/g) ?? []).length
 /** Título da missão dentro de um KMZ (o <name> da pasta do template.kml). */
 async function kmzTitle(buf) {
   const kmz = await JSZip.loadAsync(buf)
@@ -2884,45 +2913,73 @@ await scenario('bases-exportar-por-base', async () => {
     inB.every((n) => kml.includes(n.split('/').pop())),
   )
 
-  // checklist de campo: uma ficha por base com voos
+  // checklist de campo: um cartão por base com voos, que abre a folha A4 dela
   await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
   const sec = page.getByTestId('checklist-bases')
   await sec.waitFor({ timeout: 10000 })
-  const sheets = await sec.getByTestId('base-sheet').evaluateAll((els) =>
-    els.map((e) => ({
-      label: e.dataset.baseLabel,
-      text: e.innerText,
-      href: e.querySelector('[data-testid="base-sheet-link"]')?.getAttribute('href') ?? '',
-      flights: [...e.querySelectorAll('[data-testid="base-sheet-flight"]')].map(
-        (r) => r.dataset.flight,
-      ),
-    })),
-  )
+  const cartoes = await sec
+    .getByTestId('base-sheet-card')
+    .evaluateAll((els) => els.map((e) => e.dataset.baseLabel))
   check(
     'checklist: uma ficha por base com voos',
-    sheets.map((x) => x.label).join() === withFlights.map((r) => r.label).join(),
-    sheets.map((x) => x.label).join(),
+    cartoes.join() === withFlights.map((r) => r.label).join(),
+    cartoes.join(),
   )
-  const sB = sheets.find((x) => x.label === B.label)
+  // a folha A4 da base B, aberta no cartão dela
+  const cartaoB = sec.locator(`[data-testid="base-sheet-card"][data-base-label="${B.label}"]`)
+  await cartaoB.click()
+  const folha = page.getByTestId('sheet-view').getByTestId('base-sheet')
+  await folha.waitFor({ timeout: 10000 })
+  const sB = await folha.evaluate((e) => ({
+    label: e.dataset.baseLabel,
+    text: e.innerText,
+    href: e.querySelector('[data-testid="base-sheet-link"]')?.getAttribute('href') ?? '',
+    flights: [...e.querySelectorAll('[data-testid="base-sheet-flight"]')].map(
+      (r) => r.dataset.flight,
+    ),
+  }))
   check(
     `checklist: ficha da base ${B.label} com coordenadas, ligação, zona, cota, voos e ficheiros`,
-    sB &&
+    sB.label === B.label &&
       /-?\d+\.\d{6}, -?\d+\.\d{6}/.test(sB.text) &&
       /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/.test(sB.href) &&
-      /descolar até \d+ m do ponto/.test(sB.text) &&
-      /voo entre 0 e \+\d+ m acima do planeado/.test(sB.text) &&
+      // a zona de descolagem, no primeiro número da folha
+      /Zona de descolagem\s+\d+ m/.test(sB.text) &&
+      /Descolar a menos de \d+ m do ponto|Descolar no ponto marcado/.test(sB.text) &&
+      /Voo acima do planeado\s+entre 0 e \+\d+ m/.test(sB.text) &&
       /Distância VLOS/i.test(sB.text) &&
       // «1 necessário» com um voo, «N necessários» com mais
       /necessários?/.test(sB.text) &&
       // M3-U10: alturas no comando, % do útil e os parâmetros do plano
       /Altura no comando/i.test(sB.text) &&
       // «150–180 m», ou um só valor quando a do 1.º waypoint é a máxima
-      /\d+(–\d+)? m \(rel\. à descolagem\)/.test(sB.text) &&
+      /Altura no comando\s+-?\d+(–\d+)? m\s+rel\. à descolagem/.test(sB.text) &&
       /\d+ %/.test(sB.text) &&
       /altura \d+ m · [\d.]+ m\/s · sobreposição \d+\/\d+ %/.test(sB.text) &&
       sB.flights.join(',') === wantB.join(',') &&
       inB.every((n) => sB.text.includes(n.split('/').pop())),
-    sB ? sB.text.replace(/\s+/g, ' ').slice(0, 300) : 'sem ficha',
+    sB.text.replace(/\s+/g, ' ').slice(0, 300),
+  )
+  // o código QR da folha lê-se e abre o ponto da base: a mesma ligação dos mapas
+  const qrB = await lerQr(folha.getByTestId('base-sheet-qr'))
+  check(
+    `checklist: o código QR da ficha da base ${B.label} dá a ligação do ponto da base`,
+    qrB !== null && qrB === sB.href,
+    `${qrB} / ${sB.href}`,
+  )
+  // impressa, a folha é uma página A4 (com voos a mais, a letra encolhe e cabe)
+  const pdfFolha = await page.pdf({ format: 'A4' })
+  check(
+    'checklist: a folha da base imprime-se numa página A4',
+    paginasPdf(pdfFolha) === 1,
+    `${paginasPdf(pdfFolha)} páginas`,
+  )
+  // Esc volta à checklist, com o foco no cartão da base
+  await page.keyboard.press('Escape')
+  check(
+    'checklist: Esc fecha a folha e devolve o foco ao cartão da base',
+    (await page.getByTestId('sheet-view').count()) === 0 &&
+      (await cartaoB.evaluate((e) => e === document.activeElement)),
   )
   check(
     'checklist: a linha do dia soma os voos de todas as bases contra os conjuntos da equipa',
@@ -2934,6 +2991,40 @@ await scenario('bases-exportar-por-base', async () => {
       .getByTestId('sheets-day')
       .innerText()
       .catch(() => ''),
+  )
+  // «Imprimir as N fichas»: uma folha por base, que só existem enquanto se imprime
+  await page.evaluate(() => {
+    window.__folhas = null
+    window.print = () => {
+      window.__folhas = [
+        ...document.querySelectorAll('[data-testid="sheets-print"] [data-testid="base-sheet"]'),
+      ].map((e) => e.dataset.baseLabel)
+    }
+  })
+  await sec.getByTestId('sheets-print-all').click()
+  const impressas = await page.evaluate(() => window.__folhas)
+  check(
+    'checklist: «Imprimir as N fichas» imprime uma folha por base com voos',
+    (impressas ?? []).join() === withFlights.map((r) => r.label).join() &&
+      (await page.getByTestId('sheets-print').count()) === 0,
+    (impressas ?? []).join(),
+  )
+  // na fase Durante, o selector de voo: os voos do plano pela ordem de voo,
+  // com os dados do escolhido; é só uma vista (as caixas não mudam)
+  await page.getByRole('tab', { name: /Durante/ }).click()
+  const selector = page.getByTestId('chk-flight-select')
+  const opcoes = await selector.locator('option').evaluateAll((els) => els.map((e) => e.value))
+  const marcadas = () => page.locator('[role="checkbox"][aria-checked="true"]').count()
+  const antesDoVoo = await marcadas()
+  await selector.selectOption(wantB[0])
+  check(
+    'checklist: o selector de voo do Durante tem os voos do plano, e o escolhido diz a sua base',
+    opcoes.join(',') === order.join(',') &&
+      new RegExp(`Base ${B.label} · zona \\d+ m`).test(
+        await page.getByTestId('chk-flight-info').innerText(),
+      ) &&
+      (await marcadas()) === antesDoVoo,
+    `${opcoes.join(' ')} | ${await page.getByTestId('chk-flight-info').innerText()}`,
   )
   await page.getByRole('button', { name: /Voltar ao planeador|Back to planner/ }).click()
 
@@ -3923,15 +4014,15 @@ await scenario('bacias-visao-cumeada', async () => {
     JSON.stringify(await panelViews(page)),
   )
 
-  // ficha de campo da base A: percentagem por voo e o relevo usado
+  // ficha de campo da base A (a folha A4, aberta no cartão): percentagem por
+  // voo e o relevo usado
   await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
-  const sheet = page.getByTestId('checklist-bases').getByTestId('base-sheet').first()
+  await page.getByTestId('checklist-bases').getByTestId('base-sheet-card').first().click()
+  const sheet = page.getByTestId('sheet-view').getByTestId('base-sheet')
   await sheet.waitFor({ timeout: 10000 })
   const sheetText = await sheet.innerText()
   const cellText = await sheet
-    .locator(
-      `[data-testid="base-sheet-flight"][data-flight="${hf}"] [data-testid="base-sheet-view"]`,
-    )
+    .locator(`[data-testid="base-sheet-view"][data-flight="${hf}"]`)
     .innerText()
   check(
     `cumeada: a ficha da base A dá «N % visível — olhos a … — tapado a ~X m do operador» no voo ${hf}`,
@@ -3941,9 +4032,7 @@ await scenario('bacias-visao-cumeada', async () => {
     cellText,
   )
   const vfCell = await sheet
-    .locator(
-      `[data-testid="base-sheet-flight"][data-flight="${vf}"] [data-testid="base-sheet-view"]`,
-    )
+    .locator(`[data-testid="base-sheet-view"][data-flight="${vf}"]`)
     .innerText()
   check(
     `cumeada: e no voo ${vf} «100 % visível — rádio em risco em N % (Fresnel a ~X m)»`,
@@ -3952,12 +4041,12 @@ await scenario('bacias-visao-cumeada', async () => {
     ),
     vfCell,
   )
+  // o rodapé da folha: a vista da base com o relevo das bacias de visão
   check(
     'cumeada: a ficha diz o relevo usado e a ressalva do MDT',
-    /bacias de visão/i.test(sheetText) &&
-      /MDT importado «cumeada\.tif»/.test(sheetText) &&
+    /Vista da base: MDT importado «cumeada\.tif»/.test(sheetText) &&
       /árvores, edifícios nem escombreiras/.test(sheetText),
-    sheetText.replace(/\s+/g, ' ').slice(0, 300),
+    sheetText.replace(/\s+/g, ' ').slice(-400),
   )
 
   // MDT/MDS no projecto: o ficheiro não vai no projecto, mas o nome e a
@@ -5140,10 +5229,11 @@ await scenario('accoes-seguranca-kmz', async () => {
   // a checklist de campo diz quais são
   await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
   const chk = await page.getByTestId('checklist-safety').innerText()
+  // em linhas «rótulo … valor»: «Regresso (RTH)  136 m acima da descolagem»
   check(
     'segurança: a checklist diz o RTH do KMZ',
     (await page.getByTestId('checklist-rth').count()) === 1 &&
-      new RegExp(`RTH\\): ${rthKmz} m`).test(chk),
+      new RegExp(`RTH\\)\\s+${rthKmz} m`).test(chk),
     chk.replace(/\s+/g, ' ').slice(0, 160),
   )
   check(
@@ -6619,21 +6709,84 @@ await scenario('checklist-por-projecto', async () => {
   await abrirNoPainel(page, 'missao')
   await nameInput.fill('corta-norte')
   await abrir()
-  const item = page.locator('button.chk-item').first()
+  // os itens são caixas (role="checkbox"); a fase aberta é a dos críticos por fazer
+  const item = page.locator('button.chk-item:visible').first()
   await item.click()
-  check('checklist: o item fica marcado', (await item.getAttribute('aria-pressed')) === 'true')
+  check('checklist: o item fica marcado', (await item.getAttribute('aria-checked')) === 'true')
   check(
     'checklist: o campo da missão vem do planeador',
     (await campoMissao().inputValue()) === 'corta-norte',
   )
+  // as fases em separadores: as setas mudam de fase (o foco segue) e só o
+  // painel da escolhida se vê; um grupo fecha no título e esconde os itens
+  await page.getByRole('tab', { name: 'Pré-campo', exact: true }).focus()
+  await page.keyboard.press('ArrowRight')
+  const tabDurante = page.getByRole('tab', { name: 'Durante', exact: true })
+  check(
+    'checklist: fases em separadores; a seta passa ao Durante e só o painel dele se vê',
+    (await tabDurante.getAttribute('aria-selected')) === 'true' &&
+      (await tabDurante.evaluate((e) => e === document.activeElement)) &&
+      (await page.getByRole('tabpanel').count()) === 1 &&
+      (await page.getByRole('tabpanel').getAttribute('aria-labelledby')) ===
+        (await tabDurante.getAttribute('id')),
+  )
+  const grupo = page.getByRole('button', { name: 'Chegada ao local', exact: true })
+  const itensDoGrupo = page.locator(`#${await grupo.getAttribute('aria-controls')}`)
+  const abertoAntes = await grupo.getAttribute('aria-expanded')
+  await grupo.click()
+  check(
+    'checklist: um grupo fecha no título (aria-expanded) e os itens escondem-se',
+    abertoAntes === 'true' &&
+      (await grupo.getAttribute('aria-expanded')) === 'false' &&
+      !(await itensDoGrupo.isVisible()),
+  )
+  await grupo.click()
+  await page.getByRole('tab', { name: 'Pré-campo', exact: true }).click()
   await page.waitForTimeout(700) // gravação
+  // a checklist gravada e o JSON exportado com a forma de sempre (as mesmas
+  // chaves, pela mesma ordem): a página nova é uma vista sobre os mesmos dados
+  const gravado = JSON.parse(
+    await page.evaluate(() => localStorage.getItem('dji-mission-planner:checklist:v1:corta-norte')),
+  )
+  check(
+    'checklist: o registo gravado tem as chaves de sempre, pela mesma ordem',
+    Object.keys(gravado).join() === 'missionName,savedAt,checked,missao,voos,gcps,notas' &&
+      gravado.checked['pre.0.0'] === true &&
+      Object.keys(gravado.missao).join() === 'operador,local,missao,plataforma,data' &&
+      Object.keys(gravado.voos[0]).join() ===
+        '_id,n,inicio,fim,previsto,duracao,baterias,area,imagens,sensor,meteo,obs' &&
+      Object.keys(gravado.gcps[0]).join() === '_id,n,ident,lat,lon,alt,crs,metodo,incerteza,obs',
+    JSON.stringify(gravado).slice(0, 200),
+  )
+  const [dlJson] = await Promise.all([
+    page.waitForEvent('download', { timeout: 30000 }),
+    page.getByRole('button', { name: /Exportar JSON|Export JSON/ }).click(),
+  ])
+  const exportado = JSON.parse(readFileSync(await dlJson.path(), 'utf8'))
+  check(
+    'checklist: o JSON exportado tem a forma de sempre (fases, itens e linhas)',
+    /^checklist-corta-norte-\d{4}-\d{2}-\d{2}\.json$/.test(dlJson.suggestedFilename()) &&
+      Object.keys(exportado).join() === 'idioma,missao,checklist,voos,gcps,notas,exportado_em' &&
+      Object.keys(exportado.checklist).join() === 'pre,durante,pos' &&
+      Object.keys(exportado.checklist.pre).join() === 'itens,concluidos,total' &&
+      Object.keys(exportado.checklist.pre.itens[0]).join() === 'texto,concluido,critico' &&
+      exportado.checklist.pre.itens[0].concluido === true &&
+      exportado.checklist.pre.concluidos === 1 &&
+      exportado.checklist.pre.total +
+        exportado.checklist.durante.total +
+        exportado.checklist.pos.total ===
+        75 &&
+      Object.keys(exportado.voos[0]).join() ===
+        'n,inicio,fim,previsto,duracao,baterias,area,imagens,sensor,meteo,obs',
+    `${dlJson.suggestedFilename()} ${JSON.stringify(exportado).slice(0, 160)}`,
+  )
   await voltar()
   await nameInput.fill('corta-sul')
   await abrir()
   check(
     'checklist: outra missão abre com a sua própria checklist, por marcar',
-    (await page.locator('button.chk-item').first().getAttribute('aria-pressed')) === 'false' &&
-      (await campoMissao().inputValue()) === 'corta-sul',
+    (await page.locator('button.chk-item:visible').first().getAttribute('aria-checked')) ===
+      'false' && (await campoMissao().inputValue()) === 'corta-sul',
   )
   check(
     'checklist: sem faixa de outra missão (a chave é por missão)',
@@ -6644,7 +6797,7 @@ await scenario('checklist-por-projecto', async () => {
   await abrir()
   check(
     'checklist: ao voltar à primeira missão os itens marcados voltam',
-    (await page.locator('button.chk-item').first().getAttribute('aria-pressed')) === 'true',
+    (await page.locator('button.chk-item:visible').first().getAttribute('aria-checked')) === 'true',
   )
   await voltar()
   // a checklist antiga (versão anterior, sem chave de missão) é anunciada
