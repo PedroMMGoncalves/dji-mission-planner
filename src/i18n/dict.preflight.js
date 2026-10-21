@@ -14,6 +14,21 @@ export default {
   'preflight.word.blockers': { pt: 'bloqueios', en: 'blockers' },
   'preflight.word.warning': { pt: 'aviso', en: 'warning' },
   'preflight.word.warnings': { pt: 'avisos', en: 'warnings' },
+  'preflight.word.note': { pt: 'nota', en: 'note' },
+  'preflight.word.notes': { pt: 'notas', en: 'notes' },
+  /* ---- A lista aberta (PreflightList) ---- */
+  'preflight.close': { pt: 'Fechar o preflight', en: 'Close the preflight' },
+  'preflight.section.block': { pt: 'Bloqueios', en: 'Blockers' },
+  'preflight.section.warn': { pt: 'Avisos', en: 'Warnings' },
+  'preflight.section.info': { pt: 'Notas', en: 'Notes' },
+  'preflight.readyWarnings': {
+    pt: 'Sem bloqueios: pode exportar. Leia os avisos antes de voar.',
+    en: 'No blockers: you can export. Read the warnings before flying.',
+  },
+  'preflight.readyClean': {
+    pt: 'Sem bloqueios nem avisos: pode exportar.',
+    en: 'No blockers or warnings: you can export.',
+  },
   'preflight.noPlanArea': {
     pt: 'sem plano: defina a área (cartão 2)',
     en: 'no plan: define the area (card 2)',

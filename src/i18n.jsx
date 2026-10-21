@@ -62,6 +62,50 @@ const BASE_DICT = {
     pt: 'Instruções e informação da aplicação',
     en: 'Instructions and app information',
   },
+  'app.help': { pt: 'Ajuda', en: 'Help' },
+  'app.lang': { pt: 'Língua', en: 'Language' },
+  'app.views': { pt: 'Vistas', en: 'Views' },
+  // o projecto no cabeçalho: o nome da missão, se está gravado, e o menu
+  'app.project.menu': { pt: 'Projecto', en: 'Project' },
+  'app.project.title': {
+    pt: 'Projecto: mudar o nome, guardar, abrir',
+    en: 'Project: rename, save, open',
+  },
+  'app.project.label': { pt: 'Projecto {name}, {state}', en: 'Project {name}, {state}' },
+  'app.project.saved': { pt: 'gravado', en: 'saved' },
+  'app.project.notSaved': { pt: 'não gravado', en: 'not saved' },
+  'app.project.notSavedTitle': {
+    pt: 'O browser recusou a gravação automática: use «Guardar projecto» para não perder o trabalho.',
+    en: 'The browser refused the automatic save: use “Save project” so you do not lose your work.',
+  },
+  'app.project.rename': { pt: 'Mudar o nome', en: 'Rename' },
+  // a seta do botão de exportar: as outras exportações do separador, com
+  // os nomes do painel e uma linha a dizer o que sai
+  'app.exportMore': { pt: 'Outras exportações', en: 'Other exports' },
+  'app.menu.areaKml': {
+    pt: 'O polígono da área, para o Pilot 2',
+    en: 'The area polygon, for Pilot 2',
+  },
+  'app.menu.all': {
+    pt: 'Um KMZ por voo, pela ordem de voo',
+    en: 'One KMZ per flight, in flight order',
+  },
+  'app.menu.byBase': {
+    pt: 'Uma pasta por base, para vários pilotos',
+    en: 'One folder per base, for several pilots',
+  },
+  'app.menu.kmlAll': {
+    pt: 'Um KML por bloco, para a missão de mapeamento do Pilot 2',
+    en: 'One KML per block, for a Pilot 2 mapping mission',
+  },
+  'app.menu.kmlByBase': {
+    pt: 'Uma pasta por base e um KML por bloco',
+    en: 'One folder per base and one KML per block',
+  },
+  'app.menu.basesKml': {
+    pt: 'As bases, as zonas e os blocos, para o Google Earth',
+    en: 'The bases, zones and blocks, for Google Earth',
+  },
   /* ---- Falhas de exportação (E4.1) ---- */
   'export.failed': {
     pt: 'A exportação foi cancelada e o ficheiro não foi escrito.',

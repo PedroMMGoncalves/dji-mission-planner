@@ -247,7 +247,7 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
     ],
   )
 
-  const { exportProject, importProject } = useProject({
+  const { exportProject, importProject, autosaveFailed } = useProject({
     state: projectState,
     missionName,
     applyNormalized,
@@ -264,5 +264,7 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
     projectVersion,
     dismissVersionNote,
     projectError,
+    // o browser recusou a última gravação automática (o cabeçalho di-lo)
+    autosaveFailed,
   }
 }

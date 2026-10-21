@@ -5,7 +5,7 @@
  * distribuir o projecto normalizado pelo estado é do App (applyNormalized),
  * que é quem tem os setters.
  */
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   PROJECT_STORAGE_KEY,
   normalizeProject,
@@ -79,14 +79,17 @@ export function useProject({ state, missionName, applyNormalized, onLoaded, setI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // gravação automática (debounce 500 ms)
+  // gravação automática (debounce 500 ms); o cabeçalho diz quando o browser
+  // a recusa (armazenamento bloqueado ou cheio)
+  const [autosaveFailed, setAutosaveFailed] = useState(false)
   useEffect(() => {
     if (!hydratedRef.current) return
     const t = setTimeout(() => {
       try {
         localStorage.setItem(PROJECT_STORAGE_KEY, JSON.stringify(serializeProject(state)))
+        setAutosaveFailed(false)
       } catch {
-        /* armazenamento indisponível */
+        setAutosaveFailed(true)
       }
     }, 500)
     return () => clearTimeout(t)
@@ -116,5 +119,5 @@ export function useProject({ state, missionName, applyNormalized, onLoaded, setI
     [applyProject, setImportError, onLoaded, t],
   )
 
-  return { applyProject, exportProject, importProject }
+  return { applyProject, exportProject, importProject, autosaveFailed }
 }

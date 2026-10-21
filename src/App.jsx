@@ -862,6 +862,15 @@ function AppInner({ lang, setLang }) {
         routeView={routeView}
         sheets={sheets}
         preflightState={preflightState}
+        // as outras exportações do separador (a seta do botão de exportar)
+        // e o projecto (nome, gravado, guardar e abrir)
+        orbit={orbit}
+        circular={circular}
+        baseActions={baseActions}
+        session={session}
+        missionName={missionName}
+        setMissionName={setMissionName}
+        overlayOpen={overlayOpen}
         setShow3d={setShow3d}
         missionMode={missionMode}
         setShowReport={setShowReport}

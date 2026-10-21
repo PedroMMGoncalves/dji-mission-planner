@@ -269,8 +269,20 @@ async function configure(page, { cross = false, nadir = false, tf = false, split
 const HEADER_EXPORT = /Exportar WPML Avançado|Export Advanced WPML/
 const headerExport = (page) => page.locator('header').getByRole('button', { name: HEADER_EXPORT })
 const AREA_KML = /Exportar KML|Export area KML/
-// o do cabeçalho: o fim do cartão 7 tem o mesmo botão
-const headerKml = (page) => page.locator('header').getByRole('button', { name: AREA_KML })
+// As outras exportações do separador estão no menu da seta do botão de
+// exportar do cabeçalho (os itens só existem com o menu aberto): abre-o, se
+// estiver fechado, e devolve o cabeçalho, onde estão os itens.
+async function headerMenu(page) {
+  const seta = page
+    .locator('header')
+    .getByRole('button', { name: /Outras exportações|Other exports/ })
+  if ((await seta.getAttribute('aria-expanded')) !== 'true') await seta.click()
+  return page.locator('header')
+}
+// o KML da área do cabeçalho, no menu da seta (o fim do cartão 7 tem o mesmo botão)
+const headerKml = async (page) => (await headerMenu(page)).getByRole('menuitem', { name: AREA_KML })
+/** O nome de um item do menu: a primeira linha (a segunda diz o que sai). */
+const itemName = async (item) => (await item.innerText()).split('\n')[0].trim()
 const panelExportButton = (page, card) =>
   page.getByTestId(`card-${card}`).getByRole('button', { name: HEADER_EXPORT })
 /** O rótulo do botão condiz com o ficheiro: «(ZIP)» para um .zip, «(KMZ)» para um .kmz. */
@@ -293,7 +305,11 @@ async function exportKmz(page, file) {
 
 const bodyText = (page) => page.evaluate(() => document.body.innerText)
 const pillText = async (page) => (await page.getByTestId('preflight-pill').innerText()).trim()
-const semBloqueio = (txt) => /Pronto a exportar|Ready to export|0 bloqueios|0 blockers/.test(txt)
+// sem bloqueios a pastilha diz «Pronto a exportar» ou só os avisos («3 avisos»,
+// sem «0 bloqueios» à frente); nunca um «N bloqueio(s)»
+const semBloqueio = (txt) =>
+  /Pronto a exportar|Ready to export|\d+ avisos?\b|\d+ warnings?\b/.test(txt) &&
+  !/[1-9]\d* bloqueios?|[1-9]\d* blockers?/.test(txt)
 
 const ONLY = process.env.E2E_ONLY ? process.env.E2E_ONLY.split(',') : null
 // os nomes registados, para um E2E_ONLY com um nome que não existe não
@@ -1419,7 +1435,7 @@ await scenario('preflight-bloqueia-terreno-em-falta', async () => {
   await exportReady(page)
   check(
     'preflight: com o relevo global o bloqueio desaparece',
-    /Pronto a exportar|Ready to export|0 bloqueios|0 blockers/.test(await pill.innerText()),
+    semBloqueio(await pill.innerText()),
     await pill.innerText(),
   )
   check(
@@ -1668,7 +1684,9 @@ await scenario('area-mover-inteira', async () => {
   const pega = page.locator('.anchor-handle')
   check('mover: ha pega central numa area importada com mosaico', (await pega.count()) === 1)
 
-  const antes = kmlRing(await panelExport(page, headerKml(page), join(OUT, 'mover-antes.kml')))
+  const antes = kmlRing(
+    await panelExport(page, await headerKml(page), join(OUT, 'mover-antes.kml')),
+  )
   const box = await pega.boundingBox()
   const x = box.x + box.width / 2
   const y = box.y + box.height / 2
@@ -1678,7 +1696,9 @@ await scenario('area-mover-inteira', async () => {
   await page.mouse.up()
   await page.waitForTimeout(600)
 
-  const depois = kmlRing(await panelExport(page, headerKml(page), join(OUT, 'mover-depois.kml')))
+  const depois = kmlRing(
+    await panelExport(page, await headerKml(page), join(OUT, 'mover-depois.kml')),
+  )
   const a = centro(antes)
   const b = centro(depois)
   check('mover: a area foi para leste', b[0] > a[0], `${a[0].toFixed(5)} -> ${b[0].toFixed(5)}`)
@@ -1699,7 +1719,7 @@ await scenario('area-mover-inteira', async () => {
   await page.keyboard.press('Control+z')
   await page.waitForTimeout(600)
   const desfeito = kmlRing(
-    await panelExport(page, headerKml(page), join(OUT, 'mover-desfeito.kml')),
+    await panelExport(page, await headerKml(page), join(OUT, 'mover-desfeito.kml')),
   )
   const c = centro(desfeito)
   check(
@@ -2078,13 +2098,17 @@ await scenario('bases-multiplas', async () => {
   await dragMarker(page, pin('A'), far[0] - box.x - box.width / 2, far[1] - box.y - box.height / 2)
   await page.getByTestId('preflight-pill').click()
   const lista = await page.getByTestId('preflight-list').innerText()
+  // com um voo, a frase; com vários, a tabela «N voos longe demais da base
+  // para VLOS», uma linha por voo: voo, bloco, base e distância no pior caso
   check(
     'bases: o preflight diz que os voos da base A ficaram fora do alcance visual',
-    /Voo A-\d+ \(bloco \d+\) longe demais da base A para VLOS: \d+ m/.test(lista),
+    /Voo A-\d+ \(bloco \d+\) longe demais da base A para VLOS: \d+ m/.test(lista) ||
+      (/\d+ voos longe demais da base para VLOS/.test(lista) &&
+        /A-\d+\s+\d+\s+(A\s+)?Base A\s+\d+ m/.test(lista)),
     lista
       .split('\n')
-      .filter((l) => /VLOS/.test(l))
-      .slice(0, 2)
+      .filter((l) => /VLOS|Base A/.test(l))
+      .slice(0, 3)
       .join(' | ')
       .slice(0, 300),
   )
@@ -2374,14 +2398,82 @@ await scenario('bases-exportar-por-base', async () => {
   )
   const fimKml = page.getByTestId('summary-export-area')
   const [fimKmlName, fimKmlFile] = await download(page, fimKml, join(OUT, 'cartao7-area.kml'))
-  const [cabKmlName, cabKmlFile] = await download(page, headerKml(page), join(OUT, 'cab-area.kml'))
+  // no cabeçalho, um item do menu da seta do botão de exportar
+  const cabKml = await headerKml(page)
+  const cabKmlNome = await itemName(cabKml)
+  const cabKmlDica = await cabKml.getAttribute('title')
+  const [cabKmlName, cabKmlFile] = await download(page, cabKml, join(OUT, 'cab-area.kml'))
   check(
     'cartão 7: o KML da área é o do cabeçalho (nome, dica e o mesmo ficheiro)',
-    (await fimKml.innerText()).trim() === (await headerKml(page).innerText()).trim() &&
-      (await fimKml.getAttribute('title')) === (await headerKml(page).getAttribute('title')) &&
+    (await fimKml.innerText()).trim() === cabKmlNome &&
+      (await fimKml.getAttribute('title')) === cabKmlDica &&
       fimKmlName === cabKmlName &&
       readFileSync(fimKmlFile, 'utf8') === readFileSync(cabKmlFile, 'utf8'),
-    `${(await fimKml.innerText()).trim()} → ${fimKmlName}`,
+    `${(await fimKml.innerText()).trim()} → ${fimKmlName} | cabeçalho: ${cabKmlNome}`,
+  )
+  // a seta do botão de exportar tem as outras do cartão 7 («Exportar voos»
+  // menos «Um voo», que pede a escolha do voo): os mesmos nomes, as mesmas
+  // dicas, o mesmo estado e os mesmos ficheiros
+  const pares = [
+    ['export-all-flights', 'header-export-all-flights'],
+    ['export-by-base', 'header-export-by-base'],
+    ['export-kml-all', 'header-export-kml-all'],
+    ['export-kml-by-base', 'header-export-kml-by-base'],
+    ['export-bases-kml', 'header-export-bases-kml'],
+  ]
+  const menu = await headerMenu(page)
+  const nomesMenu = await menu
+    .getByRole('menuitem')
+    .evaluateAll((els) => els.map((e) => e.innerText.split('\n')[0].trim()))
+  const diferentes = []
+  for (const [fim, cab] of pares) {
+    const a = panel.getByTestId(fim)
+    const b = menu.getByTestId(cab)
+    if (
+      (await b.count()) !== 1 ||
+      (await a.innerText()).trim() !== (await itemName(b)) ||
+      (await a.getAttribute('title')) !== (await b.getAttribute('title')) ||
+      (await a.isDisabled()) !== (await b.isDisabled())
+    )
+      diferentes.push(fim)
+  }
+  await page.keyboard.press('Escape')
+  check(
+    'cabeçalho: o menu da seta tem as exportações do cartão 7, com o mesmo nome, dica e estado',
+    diferentes.length === 0 &&
+      nomesMenu.join(' | ') ===
+        [
+          'Exportar KML da área',
+          'Todos os voos (KMZ, ZIP)',
+          'Voos por base (KMZ, ZIP)',
+          'Todos os blocos (KML, ZIP)',
+          'Blocos por base (KML, ZIP)',
+          'Bases e blocos (KML)',
+        ].join(' | '),
+    `${nomesMenu.join(' | ')}${diferentes.length ? ` — diferentes: ${diferentes.join(', ')}` : ''}`,
+  )
+  const [menuTodosName, menuTodosFile] = await download(
+    page,
+    (await headerMenu(page)).getByTestId('header-export-all-flights'),
+    join(OUT, 'cab-todos.zip'),
+  )
+  const [menuMapaName, menuMapaFile] = await download(
+    page,
+    (await headerMenu(page)).getByTestId('header-export-bases-kml'),
+    join(OUT, 'cab-bases.kml'),
+  )
+  const [fimMapaName, fimMapaFile] = await download(
+    page,
+    panel.getByTestId('export-bases-kml'),
+    join(OUT, 'cartao7-bases.kml'),
+  )
+  check(
+    'cabeçalho: os itens do menu descarregam os ficheiros do cartão 7 (todos os voos, bases e blocos)',
+    menuTodosName === allName &&
+      (await zipOrder(menuTodosFile)).join() === all.join() &&
+      menuMapaName === fimMapaName &&
+      readFileSync(menuMapaFile, 'utf8') === readFileSync(fimMapaFile, 'utf8'),
+    `${menuTodosName}, ${menuMapaName}`,
   )
 
   // KML de campo: bases, zonas, blocos com o rótulo do voo
@@ -3147,24 +3239,41 @@ await scenario('bacias-visao-cumeada', async () => {
     panelText.replace(/\s+/g, ' ').slice(0, 400),
   )
 
-  // preflight: aviso com o voo e a base
+  // preflight: aviso com o voo e a base. Um voo com o aviso tem a frase; com
+  // mais voos do mesmo código, a lista junta-os numa tabela, uma linha por
+  // voo: voo, base, percentagem e distância (src/mission/preflightGroups.js)
   await page.getByTestId('preflight-pill').click()
   let lista = await page.getByTestId('preflight-list').innerText()
-  const warn = new RegExp(
-    `Voo ${hf}: \\d+ % do bloco fica atrás do relevo visto da base A, tapado a ~(\\d+) m`,
-  ).exec(lista)
+  /** Os avisos `codes` do voo: a frase dele, ou «célula | célula» da sua linha na tabela. */
+  const avisosDoVoo = (voo, codes) =>
+    page.getByTestId('preflight-list').evaluate(
+      (el, [v, cs]) =>
+        [...el.querySelectorAll('li[data-level="warn"]')]
+          .filter((li) => cs.includes(li.dataset.code))
+          .flatMap((li) => {
+            if (!li.dataset.group) return li.innerText.includes(`Voo ${v}:`) ? [li.innerText] : []
+            const tr = [...li.querySelectorAll('tbody tr')].find(
+              (r) => r.cells[0]?.innerText.trim() === v,
+            )
+            return tr ? [[...tr.cells].map((td) => td.innerText.trim()).join(' | ')] : []
+          }),
+      [voo, codes],
+    )
+  // a distância («tapado a ~250 m», ou «~250 m» na tabela), com a base A
+  const aviso = (texto, frase) => {
+    const m = /~(\d+) m/.exec(texto ?? '')
+    return texto && (frase.test(texto) || /\bBase A\b/.test(texto)) && m ? Number(m[1]) : null
+  }
+  const hidden = await avisosDoVoo(hf, ['block-viewshed'])
+  const warn = aviso(hidden[0], /fica atrás do relevo visto da base A/)
   // a cumeada está a 250 m da base: o raio tapado (mediana) passa-a. A
   // distância conta dos olhos, no melhor ponto da zona: se recuaram, a
   // cumeada fica mais longe deles, no máximo o recuo
   const eyeShift = (await panelViews(page, 'data-eye'))[hf] ?? 0
   check(
     `cumeada: o preflight avisa «Voo ${hf}: N % do bloco fica atrás do relevo visto da base A»`,
-    Boolean(warn) && Number(warn[1]) >= 200 && Number(warn[1]) <= 300 + eyeShift,
-    lista
-      .split('\n')
-      .filter((l) => /relevo visto/.test(l))
-      .join(' | ')
-      .slice(0, 300),
+    hidden.length === 1 && warn >= 200 && warn <= 300 + eyeShift,
+    hidden.join(' || ').slice(0, 300),
   )
   check(
     'cumeada: é um aviso (não bloqueia)',
@@ -3173,24 +3282,22 @@ await scenario('bacias-visao-cumeada', async () => {
       .locator('li[data-level="warn"]', { hasText: 'atrás do relevo' })
       .count()) === 1,
   )
-  const radioWarn = new RegExp(
-    `Voo ${vf}: \\d+ % do bloco com o sinal de rádio em risco visto da base A: à vista, mas o relevo entra na zona de Fresnel \\(60 % a 2,4 GHz\\) a ~(\\d+) m`,
-  ).exec(lista)
+  // o voo à vista: só o aviso do rádio (nem atrás do relevo, nem outro)
+  const doVf = await avisosDoVoo(vf, ['block-viewshed', 'block-radio', 'battery-block'])
+  const radioWarn = aviso(
+    (await avisosDoVoo(vf, ['block-radio']))[0],
+    /sinal de rádio em risco visto da base A: à vista, mas o relevo entra na zona de Fresnel \(60 % a 2,4 GHz\)/,
+  )
   check(
     `cumeada: o preflight avisa «Voo ${vf}: … sinal de rádio em risco» (à vista, causa rádio)`,
-    Boolean(radioWarn) &&
-      Number(radioWarn[1]) >= 200 &&
-      Number(radioWarn[1]) <= 300 &&
-      !new RegExp(`Voo ${vf}: \\d+ % do bloco fica atrás do relevo`).test(lista) &&
-      (await page
-        .getByTestId('preflight-list')
-        .locator('li[data-level="warn"]', { hasText: `Voo ${vf}:` })
-        .count()) === 1,
-    lista
+    radioWarn >= 200 &&
+      radioWarn <= 300 &&
+      (await avisosDoVoo(vf, ['block-viewshed'])).length === 0 &&
+      doVf.length === 1,
+    `${doVf.join(' || ')} | ${lista
       .split('\n')
       .filter((l) => /rádio/.test(l))
-      .join(' | ')
-      .slice(0, 300),
+      .join(' | ')}`.slice(0, 300),
   )
   await page.getByTestId('preflight-pill').click()
 
@@ -4592,7 +4699,9 @@ await scenario('projecto-por-cima-da-sessao', async () => {
   // Ctrl+Z não sai do projecto aberto: a área continua a ser a de p2
   await page.keyboard.press('Control+z')
   await page.waitForTimeout(600)
-  const kml = kmlRing(await panelExport(page, headerKml(page), join(OUT, 'por-cima-undo.kml')))
+  const kml = kmlRing(
+    await panelExport(page, await headerKml(page), join(OUT, 'por-cima-undo.kml')),
+  )
   check(
     'projecto por cima: Ctrl+Z não repõe a área da sessão anterior',
     turf.booleanPointInPolygon(turf.point(centro(kml)), poly),
@@ -4632,7 +4741,9 @@ await scenario('ancora-editada-sobrevive', async () => {
   const handles = page.locator('.vertex-handle')
   check('âncora editada: o rectângulo tem 4 vértices editáveis', (await handles.count()) === 4)
   await dragMarker(page, handles.first(), 60, 40)
-  const editado = kmlRing(await panelExport(page, headerKml(page), join(OUT, 'ancora-editado.kml')))
+  const editado = kmlRing(
+    await panelExport(page, await headerKml(page), join(OUT, 'ancora-editado.kml')),
+  )
   const rect = [...lados(editado)]
   check(
     'âncora editada: o anel deixou de ser um rectângulo (um vértice mexeu)',
@@ -4643,7 +4754,7 @@ await scenario('ancora-editada-sobrevive', async () => {
   await page.reload({ waitUntil: 'domcontentloaded' })
   await esperaArea(page)
   const recarregado = kmlRing(
-    await panelExport(page, headerKml(page), join(OUT, 'ancora-recarregado.kml')),
+    await panelExport(page, await headerKml(page), join(OUT, 'ancora-recarregado.kml')),
   )
   check(
     'âncora editada: o vértice arrastado sobrevive ao recarregar',
@@ -4655,7 +4766,9 @@ await scenario('ancora-editada-sobrevive', async () => {
   const pega = page.locator('.anchor-handle')
   check('âncora editada: há pega central', (await pega.count()) === 1)
   await dragMarker(page, pega, 100, 50)
-  const movido = kmlRing(await panelExport(page, headerKml(page), join(OUT, 'ancora-movido.kml')))
+  const movido = kmlRing(
+    await panelExport(page, await headerKml(page), join(OUT, 'ancora-movido.kml')),
+  )
   const l1 = lados(recarregado)
   const l2 = lados(movido)
   check(
@@ -5321,7 +5434,7 @@ await scenario('impressao-area-simples', async () => {
   const { page, errors } = await openMission({ area: fx.hill, dem: false })
   const agora = await impressaoModo(page, 'impressao-area.kmz')
   agora.kml = await impressaoFicheiro(
-    await panelExport(page, headerKml(page), join(OUT, 'impressao-area.kml')),
+    await panelExport(page, await headerKml(page), join(OUT, 'impressao-area.kml')),
   )
   conferir('area-simples', agora, check, OUT)
   check('impressão da área simples: sem erros de página', errors.length === 0, errors.join(' | '))
