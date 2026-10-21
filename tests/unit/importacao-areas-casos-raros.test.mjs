@@ -4,13 +4,20 @@
  * linhas ou sem nada); no GeoJSON, geometrias nulas, pontos, colecções de
  * geometrias, anéis abertos, um buraco com uma coordenada nula e um membro
  * `crs` sem código EPSG; no KML, um polígono sem outerBoundaryIs e
- * coordenadas com lixo; e um ZIP com duas camadas de shapefile.
+ * coordenadas com lixo; um ZIP com duas camadas de shapefile; e os anéis
+ * muito densos, reduzidos sem mudar a forma.
  */
 import { readFileSync } from 'node:fs'
 import JSZip from 'jszip'
+import * as turf from '@turf/turf'
 import { DOMParser as XmlDomParser } from '@xmldom/xmldom'
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest'
-import { crsCodeFromGeojson, looksProjected, parseAreaFile } from '../../src/utils/importArea.js'
+import {
+  crsCodeFromGeojson,
+  looksProjected,
+  parseAreaFile,
+  simplifyRingIfNeeded,
+} from '../../src/utils/importArea.js'
 
 // o leitor de KML usa o DOMParser do browser
 beforeAll(() => {
@@ -209,5 +216,23 @@ describe('KML e shapefile', () => {
     expect(r.parts[0].ring).toEqual(r.parts[1].ring)
     expect(r.ring[0][0]).toBeCloseTo(-7.9, 6)
     expect(r.ring[0][1]).toBeCloseTo(38.55, 6)
+  })
+})
+
+describe('anéis muito densos', () => {
+  test('até 400 vértices fica o próprio anel; acima, reduzido sem mudar a forma', () => {
+    const pequeno = sq(-9.14, 38.7, 0.01).slice(0, 4)
+    expect(simplifyRingIfNeeded(pequeno)).toBe(pequeno)
+    // círculo de 500 m de raio com 1000 vértices (um a cada 3 m)
+    const mLon = 111320 * Math.cos((38.7 * Math.PI) / 180)
+    const circulo = Array.from({ length: 1000 }, (_, k) => {
+      const a = (2 * Math.PI * k) / 1000
+      return [-9.14 + (500 * Math.cos(a)) / mLon, 38.7 + (500 * Math.sin(a)) / 110574]
+    })
+    const r = simplifyRingIfNeeded(circulo)
+    expect(r.length).toBeLessThanOrEqual(400)
+    expect(r.length).toBeGreaterThan(20)
+    const area = (ring) => turf.area(turf.polygon([[...ring, ring[0]]]))
+    expect(Math.abs(area(r) - area(circulo)) / area(circulo)).toBeLessThan(0.01)
   })
 })

@@ -272,6 +272,25 @@ describe('nome da missão e entrada escolhida', () => {
     expect(out.waypoints).toEqual(quadrado)
     expect(out.altitude).toBe(60)
   })
+
+  test('só o molde, numa pasta que não é wpmz/ e sem <Document>: lê-se na mesma', async () => {
+    const alturas = [70, 90, 80]
+    const semDocument =
+      '<?xml version="1.0"?><kml xmlns="http://www.opengis.net/kml/2.2" ' +
+      'xmlns:wpml="http://www.dji.com/wpmz/1.0.2"><Folder><name>Molde solto</name>' +
+      quadrado
+        .slice(0, 3)
+        .map((p, i) => pm(p, { index: i, h: alturas[i], tagH: 'height' }))
+        .join('') +
+      // um Placemark só com pares ilegíveis fica de fora
+      '<Placemark><Point><coordinates>a,b c,d</coordinates></Point></Placemark>' +
+      '</Folder></kml>'
+    const out = await parseWpmlKmz(await kmz({ 'missao/template.kml': semDocument }))
+    expect(out.waypointCount).toBe(3)
+    expect(out.name).toBe('Molde solto')
+    // três alturas diferentes: a do meio
+    expect(out.altitude).toBe(80)
+  })
 })
 
 describe('área reconstruída', () => {
@@ -289,6 +308,17 @@ describe('área reconstruída', () => {
     expect((Math.max(...lons) - Math.max(...lon)) * mLon).toBeCloseTo(20, 0)
     expect((Math.min(...lat) - Math.min(...lats)) * 110574).toBeCloseTo(20, 0)
     expect((Math.max(...lats) - Math.max(...lat)) * 110574).toBeCloseTo(20, 0)
+  })
+
+  test('waypoints todos na mesma recta: sem invólucro, o rectângulo com folga', async () => {
+    const recta = [0, 1, 2, 3].map((i) => em(30 * i, 0))
+    const out = await parseWpmlKmz(
+      await kmz({ 'wpmz/waylines.wpml': kml(pasta(recta.map((p) => pm(p)).join(''))) }),
+    )
+    expect(out.ring).toHaveLength(4)
+    const lats = out.ring.map((p) => p[1])
+    expect((Math.max(...lats) - lat0) * 110574).toBeCloseTo(20, 0)
+    expect((lat0 - Math.min(...lats)) * 110574).toBeCloseTo(20, 0)
   })
 
   test('um quadrado: o invólucro são os próprios cantos, sem o vértice de fecho', async () => {
