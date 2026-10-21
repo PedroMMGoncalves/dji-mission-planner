@@ -5838,16 +5838,27 @@ await scenario('tablet-cartoes-gaveta', async () => {
     viewport: { width: 834, height: 1112 },
   })
   const w = 834
-  // o cabeçalho quebra em linhas em vez de empurrar a configuração, a ajuda
-  // e a língua para fora do ecrã do tablet
+  // o cabeçalho fica numa linha, com a configuração, a ajuda e a língua (e,
+  // ao alto, as vistas) no menu «⋮», em vez de os empurrar para fora do ecrã
   const scrollW = await page.evaluate(() => document.documentElement.scrollWidth)
   check('tablet: a página não transborda para o lado', scrollW <= w, `${scrollW} px`)
+  const alturaCab = Math.round((await page.locator('header').boundingBox())?.height ?? 0)
+  await page.getByTestId('header-more').click()
   const gear = await page.getByTestId('open-settings').boundingBox()
+  const vistasNoMenu = await page
+    .locator('#more-menu')
+    .getByRole('menuitem', { name: /Checklist de campo|Field checklist/ })
+    .count()
   check(
-    'tablet: a configuração fica dentro do ecrã',
-    gear != null && gear.x + gear.width <= w,
-    JSON.stringify(gear),
+    'tablet: a configuração fica dentro do ecrã (no menu «⋮», com as vistas) e o cabeçalho numa linha',
+    gear != null &&
+      gear.x >= 0 &&
+      gear.x + gear.width <= w &&
+      vistasNoMenu === 1 &&
+      alturaCab <= 64,
+    `${JSON.stringify(gear)} · cabeçalho ${alturaCab} px`,
   )
+  await page.keyboard.press('Escape')
   const vistos = []
   for (const c of CARTOES) {
     const card = page.getByTestId(`card-${c}`)
@@ -5878,6 +5889,296 @@ await scenario('tablet-cartoes-gaveta', async () => {
   await page.waitForTimeout(200)
   check('tablet: Escape fecha a gaveta', (await gavetasAbertas(page)) === 0)
   check('tablet: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// O tablet ao baixo (1024 × 768), como no desenho: o cabeçalho numa linha,
+// com botões de 44 px, e a configuração, a ajuda e a língua no menu «⋮»; o
+// painel de parâmetros é uma folha que se recolhe, no botão dele e no
+// «Painel» da barra dos modos (o mapa fica com a largura), e volta ao
+// escolher um modo; as métricas num botão.
+await scenario('tablet-1024-cabecalho-e-folha', async () => {
+  const { page, errors } = await openMission({
+    area: fx.rect,
+    dem: false,
+    viewport: { width: 1024, height: 768 },
+  })
+  await page.getByTestId('stats-toggle').waitFor({ timeout: 20000 })
+  const cab = await page.locator('header').boundingBox()
+  const scrollW = await page.evaluate(() => document.documentElement.scrollWidth)
+  // os controlos do cabeçalho com 44 px de altura (o toque)
+  const baixos = await page
+    .locator('header')
+    .getByRole('button')
+    .evaluateAll((els) =>
+      els
+        .filter((e) => e.getClientRects().length > 0)
+        .map((e) => [
+          e.getAttribute('aria-label') || e.textContent.trim(),
+          e.getBoundingClientRect().height,
+        ])
+        .filter(([, h]) => h < 43.5)
+        .map(([n, h]) => `${n.slice(0, 20)}:${Math.round(h)}`),
+    )
+  check(
+    'tablet 1024: o cabeçalho numa linha, sem transbordar, com os botões de 44 px',
+    cab.height <= 64 && scrollW <= 1024 && baixos.length === 0,
+    `${Math.round(cab.height)} px, ${scrollW} px · ${baixos.join(' ')}`,
+  )
+  check(
+    'tablet 1024: as métricas começam num botão',
+    (await page.getByTestId('stats-toggle').getAttribute('aria-expanded')) === 'false',
+  )
+  // o menu «⋮»: configuração, ajuda e as duas línguas, a actual marcada
+  const mais = page.getByTestId('header-more')
+  await mais.click()
+  const menu = page.locator('#more-menu')
+  const itens = (await menu.locator('[role^="menuitem"]').allInnerTexts()).map((s) => s.trim())
+  const pt = menu.getByRole('menuitemradio', { name: 'Português' })
+  check(
+    'tablet 1024: o menu «⋮» tem a configuração, a ajuda e a língua (a actual marcada)',
+    itens.join('|') === 'Configuração|Ajuda|Português|English' &&
+      (await pt.getAttribute('aria-checked')) === 'true' &&
+      (await page.getByTestId('open-settings').count()) === 1,
+    itens.join('|'),
+  )
+  await menu.getByRole('menuitemradio', { name: 'English' }).click()
+  const emIngles = await headerExport(page).innerText()
+  await mais.click()
+  const en = await menu.getByRole('menuitemradio', { name: 'English' }).getAttribute('aria-checked')
+  await menu.getByRole('menuitemradio', { name: 'Português' }).click()
+  check(
+    'tablet 1024: a língua muda no menu e o menu marca-a',
+    /Export Advanced WPML/.test(emIngles) &&
+      en === 'true' &&
+      /Exportar WPML Avançado/.test(await headerExport(page).innerText()),
+    emIngles,
+  )
+  await mais.click()
+  await page.getByTestId('open-settings').click()
+  const config = page.getByRole('dialog', { name: /Configuração/ })
+  const abriu = await config.isVisible()
+  await page.keyboard.press('Escape')
+  check('tablet 1024: «Configuração» no menu abre a configuração', abriu)
+  // a folha do painel
+  const painel = page.getByTestId('panel-toggle')
+  const missao = page.getByTestId('card-missao')
+  const largura = async () =>
+    Math.round((await page.locator('.leaflet-container').boundingBox())?.width ?? 0)
+  const aberto = await largura()
+  check(
+    'tablet 1024: o painel à vista, com o «Painel» da barra aceso',
+    (await painel.getAttribute('aria-expanded')) === 'true' && (await missao.isVisible()),
+  )
+  await painel.click()
+  await page.waitForTimeout(400)
+  const recolhido = await largura()
+  check(
+    'tablet 1024: o «Painel» da barra recolhe a folha e o mapa fica com a largura',
+    (await painel.getAttribute('aria-expanded')) === 'false' &&
+      !(await missao.isVisible()) &&
+      recolhido >= aberto + 300,
+    `mapa ${aberto} → ${recolhido} px`,
+  )
+  await painel.click()
+  await page.waitForTimeout(300)
+  const recolher = page.getByRole('button', { name: 'Recolher o painel' })
+  const voltou = (await missao.isVisible()) && (await recolher.isVisible())
+  await recolher.click()
+  await page.waitForTimeout(300)
+  check(
+    'tablet 1024: o botão da folha recolhe-a e o foco passa ao «Painel» da barra',
+    voltou &&
+      !(await missao.isVisible()) &&
+      (await painel.evaluate((e) => e === document.activeElement)),
+  )
+  await modo(page, /^Área$|^Area$/)
+  await page.waitForTimeout(300)
+  check(
+    'tablet 1024: escolher um modo mostra o painel dele',
+    (await missao.isVisible()) && (await painel.getAttribute('aria-expanded')) === 'true',
+  )
+  check('tablet 1024: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// A operação do dia: com a área dividida em voos e as bases marcadas, o
+// botão «Operação do dia», por baixo das métricas, abre à direita do mapa o
+// painel do dia de campo — os conjuntos, o tempo total e o voo mais longo
+// (os números das métricas), o voo seguinte e uma linha por voo, pela ordem
+// de voo —, com as métricas e o painel de parâmetros recolhidos. Feito é o
+// voo com a «Hora fim» no registo de voos da checklist: «Marcar feito»
+// escreve-a lá (com as linhas do plano, como «Importar blocos do plano»),
+// desmarcar apaga-a, o que a checklist escreve vê-se no painel, e abrir e
+// fechar o painel não grava nada.
+const CHECKLIST_KEYS = (page) =>
+  page.evaluate(() =>
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith('dji-mission-planner:checklist'))
+      .map((k) => [k, localStorage.getItem(k)]),
+  )
+await scenario('operacao-do-dia', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  await abrirNoPainel(page, 'missao')
+  await page
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .first()
+    .selectOption('M300RTK')
+  await configure(page, { split: 'Bateria' })
+  check(
+    'operação: sem bases, não há operação do dia',
+    (await page.getByTestId('block-row').count()) > 1 &&
+      (await page.getByTestId('day-open').count()) === 0,
+  )
+  await proposeAndWait(page)
+  await zonesReady(page)
+  const voos = await page
+    .getByTestId('block-row')
+    .evaluateAll((els) => els.map((e) => e.dataset.flight))
+  const n = voos.length
+  const abre = page.getByTestId('day-open')
+  await abre.waitFor({ timeout: 20000 })
+  const total = (await page.getByTestId('stats-total').locator('[data-tone]').innerText()).trim()
+  const longo = (await page.getByTestId('stats-longest').locator('[data-tone]').innerText())
+    .trim()
+    .split(/\s/)[0]
+  check(
+    'operação: o botão, por baixo das métricas, diz os voos e o tempo total delas',
+    (await abre.innerText()).includes(`${n} voos · ${total}`),
+    `${await abre.innerText()} · ${n} voos · ${total}`,
+  )
+  // abrir e fechar não grava nada no registo da checklist
+  const antes = await CHECKLIST_KEYS(page)
+  await abre.click()
+  const painel = page.getByTestId('day-panel')
+  await painel.waitFor({ timeout: 5000 })
+  const fechar = painel.getByRole('button', { name: 'Fechar a operação do dia' })
+  check(
+    'operação: abre à direita do mapa, com o foco no fechar, sem as métricas e sem o painel de parâmetros',
+    (await fechar.evaluate((e) => e === document.activeElement)) &&
+      (await page.getByTestId('stats-panel').count()) === 0 &&
+      !(await page.getByTestId('card-missao').isVisible()) &&
+      (await page.getByTestId('panel-toggle').getAttribute('aria-expanded')) === 'false' &&
+      (await page.locator('.leaflet-container').boundingBox()).x +
+        (await page.locator('.leaflet-container').boundingBox()).width <=
+        (await painel.boundingBox()).x + 1,
+  )
+  const linhas = painel.getByTestId('day-row')
+  const ordem = await linhas.evaluateAll((els) => els.map((e) => e.dataset.flight))
+  check(
+    'operação: uma linha por voo, pela ordem de voo do painel da área',
+    ordem.join(' ') === voos.join(' '),
+    ordem.join(' '),
+  )
+  check(
+    'operação: os conjuntos, o tempo total e o voo mais longo são os das métricas',
+    (await painel.getByTestId('day-sets').innerText()).includes(String(n)) &&
+      (await painel.getByTestId('day-total').innerText()).includes(total) &&
+      (await painel.getByTestId('day-longest').innerText()).includes(longo),
+    `${total} · ${longo}`,
+  )
+  check(
+    'operação: o voo seguinte é o primeiro, e o mapa marca-o',
+    (await painel.getByTestId('day-next').getAttribute('data-flight')) === voos[0] &&
+      new RegExp(`A seguir · base [A-Z]+ · ${voos[0]}`).test(
+        await page.locator('.day-focus-label').innerText(),
+      ),
+  )
+  await page.keyboard.press('Escape')
+  check(
+    'operação: Esc fecha, o foco volta ao botão, e as métricas e o painel voltam',
+    (await painel.count()) === 0 &&
+      (await abre.evaluate((e) => e === document.activeElement)) &&
+      (await page.getByTestId('stats-panel').count()) === 1 &&
+      (await page.getByTestId('card-missao').isVisible()),
+  )
+  check(
+    'operação: abrir e fechar não grava nada no registo de voos',
+    JSON.stringify(await CHECKLIST_KEYS(page)) === JSON.stringify(antes),
+    JSON.stringify(antes).slice(0, 120),
+  )
+  // marcar o voo seguinte: a hora de fim no registo da checklist
+  await abre.click()
+  await painel.getByTestId('day-mark-next').click()
+  const registo = async () => {
+    const [[, v] = []] = await CHECKLIST_KEYS(page)
+    return v ? (JSON.parse(v).voos ?? []) : []
+  }
+  let r = await registo()
+  const hora = r.find((l) => l.n === voos[0])?.fim ?? ''
+  check(
+    'operação: «Marcar feito» escreve a hora na «Hora fim» do voo, com as linhas do plano',
+    /^\d\d:\d\d$/.test(hora) &&
+      r.map((l) => l.n).join(' ') === voos.join(' ') &&
+      r.filter((l) => l.fim).length === 1,
+    JSON.stringify(r).slice(0, 200),
+  )
+  check(
+    'operação: o voo fica feito, o seguinte passa ao outro e o mapa marca-o com um visto',
+    (await linhas.first().getAttribute('data-done')) === 'true' &&
+      (await painel.getByTestId('day-next').getAttribute('data-flight')) === voos[1] &&
+      new RegExp(`Feitos 1 de ${n}`).test(await painel.getByTestId('day-progress').innerText()) &&
+      (await page.locator('.day-done-mark').count()) === 1,
+    await painel.getByTestId('day-progress').innerText(),
+  )
+  // desmarcar na linha apaga a hora; marcar de novo volta a escrevê-la
+  const caixa = linhas.first().getByRole('button', { name: `Marcar o voo ${voos[0]} como feito` })
+  await caixa.click()
+  r = await registo()
+  check(
+    'operação: desmarcar apaga a «Hora fim» e o voo volta a ser o seguinte',
+    (await caixa.getAttribute('aria-pressed')) === 'false' &&
+      r.find((l) => l.n === voos[0])?.fim === '' &&
+      (await painel.getByTestId('day-next').getAttribute('data-flight')) === voos[0],
+  )
+  await caixa.click()
+  // «Ver no mapa» de outro voo: o rótulo dele no mapa
+  await linhas
+    .nth(2)
+    .getByRole('button', { name: `Mostrar o voo ${voos[2]} no mapa` })
+    .click()
+  await page.waitForTimeout(600)
+  check(
+    'operação: mostrar outro voo põe o rótulo dele no mapa',
+    new RegExp(`Base [A-Z]+ · ${voos[2]}$`).test(
+      (await page.locator('.day-focus-label').innerText()).trim(),
+    ),
+    await page.locator('.day-focus-label').innerText(),
+  )
+  const horaFim = (await registo()).find((l) => l.n === voos[0])?.fim ?? ''
+  await fechar.click()
+  // a checklist mostra a hora; apagada lá, o voo volta a estar por fazer
+  await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
+  await page.waitForTimeout(500)
+  const campo = await page.evaluate((h) => {
+    const el = [...document.querySelectorAll('input')].find((i) => i.value === h)
+    if (el) el.setAttribute('data-e2e-fim', '1')
+    return Boolean(el)
+  }, horaFim)
+  check('operação: a checklist mostra a hora de fim no registo de voos', campo, horaFim)
+  if (campo) {
+    await page.locator('[data-e2e-fim]').fill('')
+    await page.waitForTimeout(700)
+  }
+  await page.getByRole('button', { name: /Voltar ao planeador|Back to planner/ }).click()
+  await page.waitForTimeout(500)
+  await abre.click()
+  check(
+    'operação: a hora apagada na checklist deixa o voo por fazer no painel',
+    (await painel.getByTestId('day-row').first().getAttribute('data-done')) === 'false' &&
+      new RegExp(`Feitos 0 de ${n}`).test(await painel.getByTestId('day-progress').innerText()),
+    await painel.getByTestId('day-progress').innerText(),
+  )
+  // «Painel», na barra dos modos, fecha a operação e mostra o painel
+  await page.getByTestId('panel-toggle').click()
+  check(
+    'operação: o «Painel» da barra fecha a operação do dia e mostra o painel',
+    (await painel.count()) === 0 && (await page.getByTestId('card-missao').isVisible()),
+  )
+  check('operação: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })
