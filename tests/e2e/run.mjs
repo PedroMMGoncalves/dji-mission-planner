@@ -5849,12 +5849,14 @@ await scenario('tablet-cartoes-gaveta', async () => {
     .locator('#more-menu')
     .getByRole('menuitem', { name: /Checklist de campo|Field checklist/ })
     .count()
+  const tracos = await page.locator('#more-menu').getByRole('separator').count()
   check(
     'tablet: a configuração fica dentro do ecrã (no menu «⋮», com as vistas) e o cabeçalho numa linha',
     gear != null &&
       gear.x >= 0 &&
       gear.x + gear.width <= w &&
       vistasNoMenu === 1 &&
+      tracos === 2 &&
       alturaCab <= 64,
     `${JSON.stringify(gear)} · cabeçalho ${alturaCab} px`,
   )
@@ -5942,6 +5944,14 @@ await scenario('tablet-1024-cabecalho-e-folha', async () => {
       (await pt.getAttribute('aria-checked')) === 'true' &&
       (await page.getByTestId('open-settings').count()) === 1,
     itens.join('|'),
+  )
+  const alturasMenu = await menu
+    .locator('[role^="menuitem"]')
+    .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)))
+  check(
+    'tablet 1024: os itens do menu «⋮» têm 44 px (o toque), com um traço antes das línguas',
+    alturasMenu.every((h) => h >= 44) && (await menu.getByRole('separator').count()) === 1,
+    alturasMenu.join(','),
   )
   await menu.getByRole('menuitemradio', { name: 'English' }).click()
   const emIngles = await headerExport(page).innerText()
@@ -6087,6 +6097,23 @@ await scenario('operacao-do-dia', async () => {
         await page.locator('.day-focus-label').innerText(),
       ),
   )
+  // o nome de cada botão começa pelo que ele mostra (WCAG 2.5.3): «Ver no
+  // mapa» e «Marcar feito» com o voo; na linha, a base, com a acção na dica
+  const base0 = voos[0].split('-')[0]
+  const seguinte = painel.getByTestId('day-next')
+  check(
+    'operação: «Ver no mapa» e «Marcar feito» chamam-se pelo que mostram, com o voo',
+    (await seguinte
+      .getByRole('button', { name: `Ver no mapa: voo ${voos[0]} (base ${base0})`, exact: true })
+      .count()) === 1 &&
+      (await seguinte
+        .getByRole('button', { name: `Marcar feito: voo ${voos[0]}`, exact: true })
+        .count()) === 1 &&
+      (await linhas
+        .first()
+        .getByRole('button', { name: new RegExp(`^Base ${base0}\\s*\\d+ conjuntos?$`) })
+        .getAttribute('title')) === `Ver no mapa: voo ${voos[0]} (base ${base0})`,
+  )
   await page.keyboard.press('Escape')
   check(
     'operação: Esc fecha, o foco volta ao botão, e as métricas e o painel voltam',
@@ -6125,7 +6152,7 @@ await scenario('operacao-do-dia', async () => {
     await painel.getByTestId('day-progress').innerText(),
   )
   // desmarcar na linha apaga a hora; marcar de novo volta a escrevê-la
-  const caixa = linhas.first().getByRole('button', { name: `Marcar o voo ${voos[0]} como feito` })
+  const caixa = linhas.first().getByRole('button', { name: `Marcar feito: voo ${voos[0]}` })
   await caixa.click()
   r = await registo()
   check(
@@ -6138,7 +6165,7 @@ await scenario('operacao-do-dia', async () => {
   // «Ver no mapa» de outro voo: o rótulo dele no mapa
   await linhas
     .nth(2)
-    .getByRole('button', { name: `Mostrar o voo ${voos[2]} no mapa` })
+    .getByTitle(`Ver no mapa: voo ${voos[2]} (base ${voos[2].split('-')[0]})`)
     .click()
   await page.waitForTimeout(600)
   check(
@@ -6153,11 +6180,25 @@ await scenario('operacao-do-dia', async () => {
   // a checklist mostra a hora; apagada lá, o voo volta a estar por fazer
   await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
   await page.waitForTimeout(500)
-  const campo = await page.evaluate((h) => {
-    const el = [...document.querySelectorAll('input')].find((i) => i.value === h)
-    if (el) el.setAttribute('data-e2e-fim', '1')
-    return Boolean(el)
-  }, horaFim)
+  const campo = await page.evaluate(
+    ({ voo, hora }) => {
+      for (const tabela of document.querySelectorAll('table')) {
+        const cols = [...tabela.querySelectorAll('thead th')].map((th) => th.textContent.trim())
+        const iN = cols.indexOf('#')
+        const iFim = cols.findIndex((c) => /^(Hora fim|End time)$/i.test(c))
+        if (iN < 0 || iFim < 0) continue
+        for (const tr of tabela.querySelectorAll('tbody tr')) {
+          const celulas = [...tr.children]
+          const fim = celulas[iFim]?.querySelector('input')
+          if (celulas[iN]?.querySelector('input')?.value !== voo || !fim) continue
+          fim.setAttribute('data-e2e-fim', '1')
+          return fim.value === hora
+        }
+      }
+      return false
+    },
+    { voo: voos[0], hora: horaFim },
+  )
   check('operação: a checklist mostra a hora de fim no registo de voos', campo, horaFim)
   if (campo) {
     await page.locator('[data-e2e-fim]').fill('')
@@ -6177,6 +6218,20 @@ await scenario('operacao-do-dia', async () => {
   check(
     'operação: o «Painel» da barra fecha a operação do dia e mostra o painel',
     (await painel.count()) === 0 && (await page.getByTestId('card-missao').isVisible()),
+  )
+  // num ecrã baixo (1024 × 768) com as métricas abertas, o botão da operação
+  // fica com a sua altura por baixo do cartão: é o cartão que cede (rola)
+  await page.setViewportSize({ width: 1024, height: 768 })
+  await page.waitForTimeout(400)
+  const metricas = page.getByTestId('stats-toggle')
+  if ((await metricas.getAttribute('aria-expanded')) !== 'true') await metricas.click()
+  await page.waitForTimeout(300)
+  const cartao = await page.getByTestId('stats-panel').boundingBox()
+  const botao = await abre.boundingBox()
+  check(
+    'operação: num ecrã baixo, com as métricas abertas, o botão não encolhe e fica por baixo do cartão',
+    botao.height >= 39.5 && cartao.y + cartao.height <= botao.y,
+    `botão ${botao.height} px desde ${Math.round(botao.y)}; cartão até ${Math.round(cartao.y + cartao.height)}`,
   )
   check('operação: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
