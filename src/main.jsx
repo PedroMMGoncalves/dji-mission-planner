@@ -1,5 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+// a letra da interface, empacotada com a aplicação (sem rede no campo)
+import '@fontsource-variable/inter'
 import 'leaflet/dist/leaflet.css'
 import './index.css'
 import App from './App.jsx'

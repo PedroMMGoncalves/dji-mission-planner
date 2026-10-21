@@ -9,6 +9,18 @@ body,
   margin: 0;
 }
 
+@layer base {
+  body {
+    @apply bg-slate-950 font-sans text-slate-100 antialiased;
+  }
+  /* O mesmo anel de foco em todos os controlos, só com o teclado: os campos
+     com «focus:outline-none» continuam a mostrar o foco no contorno */
+  :focus-visible {
+    outline: 2px solid theme('colors.sky.400');
+    outline-offset: 2px;
+  }
+}
+
 /* O mapa Leaflet fica escuro por defeito enquanto os tiles carregam */
 .leaflet-container {
   background: #0f172a;
