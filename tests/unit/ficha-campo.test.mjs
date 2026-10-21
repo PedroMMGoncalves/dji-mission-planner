@@ -11,11 +11,14 @@
 import { describe, expect, test } from 'vitest'
 import {
   baseFieldSheets,
+  dayFlightOrder,
   daySummary,
   formatLatLon,
   heightsOfWaypoints,
   mapLinks,
+  sheetHeights,
   singleRouteSheet,
+  zoneNotice,
 } from '../../src/mission/fieldSheet.js'
 import { buildBasesKML } from '../../src/mission/basesKml.js'
 import { defaultEquipment, updateBattery } from '../../src/mission/equipment.js'
@@ -440,5 +443,79 @@ describe('fichas por base: casos raros', () => {
     // sem a lista de ficheiros, nenhum voo tem ficheiro
     const [a] = baseFieldSheets({ rows, layout, blocks, files: null, vlosM: 500 })
     expect(a.flights.map((f) => f.file)).toEqual([null, null])
+  })
+})
+
+// A folha A4 de cada base (a ficha da checklist): o voo na ordem do dia,
+// o aviso da zona com a regra do preflight e as alturas no comando.
+describe('folha A4 da base: ordem do dia, aviso da zona e alturas', () => {
+  test('a ordem dos voos do dia segue as fichas, base a base, com os vizinhos', () => {
+    const { rows, layout, blocks, files } = baseFixture()
+    const order = dayFlightOrder(baseFieldSheets({ rows, layout, blocks, files, vlosM: 500 }))
+    expect([...order.keys()]).toEqual(['A-1', 'A-2', 'C-3', '4'])
+    expect(order.get('A-1')).toEqual({ n: 1, total: 4, prev: null, next: 'A-2' })
+    expect(order.get('C-3')).toEqual({ n: 3, total: 4, prev: 'A-2', next: '4' })
+    expect(order.get('4')).toEqual({ n: 4, total: 4, prev: 'C-3', next: null })
+    // a ficha da rota única: um só voo, sem vizinhos
+    const one = dayFlightOrder([singleRouteSheet(corridorArgs())])
+    expect(one.get('1')).toEqual({ n: 1, total: 1, prev: null, next: null })
+    expect(dayFlightOrder(null).size).toBe(0)
+    expect(dayFlightOrder([{ label: 'X' }]).size).toBe(0)
+  })
+
+  test('o aviso da zona: sem raio, a baixar o voo, só reduzida, fora do relevo, inteira', () => {
+    const cause = { atM: 20, reliefM: 11.4, belowM: 22.6 }
+    const base = { reduced: true, radiusM: 10, requestedRadiusM: 100, cause }
+    expect(zoneNotice(base)).toEqual({
+      kind: 'drop',
+      r: 10,
+      req: 100,
+      relief: 11,
+      at: 20,
+      drop: 23,
+    })
+    expect(zoneNotice({ ...base, radiusM: 0, cause: { ...cause, atM: 10 } })).toMatchObject({
+      kind: 'zero',
+      r: 0,
+      at: 10,
+    })
+    expect(zoneNotice({ ...base, cause: { atM: 20, reliefM: 11 } })).toMatchObject({
+      kind: 'reduced',
+      drop: 0,
+    })
+    // a mesma regra do preflight: um desnível que baixa menos de meio metro não conta
+    expect(zoneNotice({ ...base, cause: { ...cause, belowM: 0.4 } }).kind).toBe('reduced')
+    // sem causa nem raio pedido: os números que houver, sem inventar
+    expect(zoneNotice({ reduced: true, radiusM: 30 })).toEqual({
+      kind: 'reduced',
+      r: 30,
+      req: 30,
+      relief: 0,
+      at: 30,
+      drop: 0,
+    })
+    expect(zoneNotice({ reduced: true, radiusM: Number.NaN }).kind).toBe('zero')
+    expect(zoneNotice({ noTerrain: true, reduced: true })).toEqual({ kind: 'noTerrain' })
+    expect(zoneNotice({ reduced: false, radiusM: 100 })).toBeNull()
+    expect(zoneNotice(null)).toBeNull()
+  })
+
+  test('as alturas no comando: a menor do 1.º waypoint e a maior, entre os voos da base', () => {
+    expect(
+      sheetHeights({
+        flights: [
+          { h1M: 48, hmaxM: 171 },
+          { h1M: 40, hmaxM: null },
+          { h1M: null, hmaxM: 300 },
+        ],
+      }),
+    ).toEqual({ minM: 40, maxM: 171 })
+    expect(sheetHeights({ flights: [{ h1M: 100, hmaxM: Number.NaN }] })).toEqual({
+      minM: 100,
+      maxM: 100,
+    })
+    expect(sheetHeights({ flights: [{ h1M: null }] })).toBeNull()
+    expect(sheetHeights({})).toBeNull()
+    expect(sheetHeights(null)).toBeNull()
   })
 })

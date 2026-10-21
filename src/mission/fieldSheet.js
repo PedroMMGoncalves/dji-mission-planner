@@ -170,6 +170,66 @@ export function daySummary(sheets, { equipment = null, aircraftId = '', batteryI
 }
 
 /**
+ * A ordem dos voos do dia, para a folha A4 de cada base («10.º voo de 20 ·
+ * antes I-9, depois K-11»): os voos das fichas, que vêm base a base pela
+ * ordem dos rótulos e, em cada base, pela ordem de voo — a numeração do
+ * layoutBlocks. Por rótulo do voo: a posição (1..total) e os voos antes e
+ * depois (null no primeiro e no último).
+ * @param {any[]} sheets
+ * @returns {Map<string, {n: number, total: number, prev: string|null, next: string|null}>}
+ */
+export function dayFlightOrder(sheets) {
+  const labels = (sheets ?? []).flatMap((s) => (s.flights ?? []).map((f) => f.flightLabel))
+  return new Map(
+    labels.map((l, i) => [
+      l,
+      { n: i + 1, total: labels.length, prev: labels[i - 1] ?? null, next: labels[i + 1] ?? null },
+    ]),
+  )
+}
+
+/**
+ * O aviso da zona de descolagem da folha A4, com a mesma regra do preflight
+ * (zoneItems em preflight.js): 'zero' quando a zona ficou sem raio, 'drop'
+ * quando descolar até ao raio pedido baixa o voo (`drop` m), 'reduced'
+ * quando a zona encolheu sem o baixar, 'noTerrain' com a base fora do
+ * relevo carregado (cota desconhecida); null com a zona inteira.
+ * @param {any} sheet
+ * @returns {{kind: 'zero'|'drop'|'reduced'|'noTerrain', r?: number, req?: number,
+ *   relief?: number, at?: number, drop?: number}|null}
+ */
+export function zoneNotice(sheet) {
+  if (!sheet) return null
+  if (sheet.noTerrain) return { kind: 'noTerrain' }
+  if (!sheet.reduced) return null
+  const r = fin(sheet.radiusM) ? Math.round(sheet.radiusM) : 0
+  const drop = Math.round(fin(sheet.cause?.belowM) ? sheet.cause.belowM : 0)
+  return {
+    kind: !(sheet.radiusM > 0) ? 'zero' : drop > 0 ? 'drop' : 'reduced',
+    r,
+    req: fin(sheet.requestedRadiusM) ? Math.round(sheet.requestedRadiusM) : r,
+    relief: Math.round(fin(sheet.cause?.reliefM) ? sheet.cause.reliefM : 0),
+    at: Math.round(fin(sheet.cause?.atM) ? sheet.cause.atM : r),
+    drop,
+  }
+}
+
+/**
+ * As alturas no comando de uma base (relativas à descolagem): a menor do
+ * 1.º waypoint e a maior de todas, entre os voos dela; null sem alturas.
+ * @param {any} sheet
+ * @returns {{minM: number, maxM: number}|null}
+ */
+export function sheetHeights(sheet) {
+  const fl = (sheet?.flights ?? []).filter((f) => fin(f.h1M))
+  if (fl.length === 0) return null
+  return {
+    minM: Math.min(...fl.map((f) => f.h1M)),
+    maxM: Math.max(...fl.map((f) => (fin(f.hmaxM) ? f.hmaxM : f.h1M))),
+  }
+}
+
+/**
  * Fichas das bases com voos, pela ordem dos rótulos.
  * @param {object} args
  * @param {any[]} args.rows summarizeBases
