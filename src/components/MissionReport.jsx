@@ -110,7 +110,7 @@ const UI = {
   teamUnknown: bi('na equipa: por definir na Configuração', 'in the team: not set in Settings'),
   totalTime: bi('Tempo total', 'Total time'),
   withTransit: bi('{time} com deslocações', '{time} incl. transit'),
-  withoutTransit: bi('{time} sem deslocações', '{time} without transit'),
+  flyingSum: bi('{time} a voar (soma dos voos)', '{time} flying (sum of the flights)'),
   vlosWorst: bi(
     '{vlos} m · pior caso {worst} m ({flight})',
     '{vlos} m · worst case {worst} m ({flight})',
@@ -189,6 +189,7 @@ const UI = {
   gainUpTo: bi('voo até +{gain} m', 'flight up to +{gain} m'),
   longest: bi('{pct} % · o mais longo ({clock})', '{pct} % · the longest ({clock})'),
   transitOf: bi('{min} min de deslocação', '{min} min of transit'),
+  flyMin: bi('{min} min a voar', '{min} min flying'),
   barLabel: bi(
     '{flight}: {fly} a voar e {transit} de deslocação, {total} de {useful} úteis ({pct} %)',
     '{flight}: {fly} flying and {transit} of transit, {total} of {useful} usable ({pct} %)',
@@ -749,6 +750,8 @@ const fmtInt = (v) => (fin(v) ? String(Math.round(v)) : DASH)
 const fmtKm = (m) => (fin(m) ? (m / 1000).toFixed(2) : DASH)
 // minutos inteiros, como nas fichas das bases (BaseFieldSheets)
 const minutes = (s) => (fin(s) ? Math.round(s / 60) : null)
+// os minutos do bloco, sem a deslocação, como na antiga tabela dos blocos
+const fmtMin = (s) => (fin(s) ? (s / 60).toFixed(0) : DASH)
 const sum = (list, f) => list.reduce((a, x) => a + (fin(f(x)) ? f(x) : 0), 0)
 
 /** A data por extenso; em português o mês com maiúscula (grafia anterior a 1990). */
@@ -1289,11 +1292,18 @@ export default function MissionReport({
     const u = usefulOf(r)
     const pct = pctOf(r)
     const level = u ? levelOf(r.totalS / u) : 'ok'
+    // o tempo de voo do bloco, sem a deslocação (o «Tempo (min)» dos blocos);
+    // com ele, só a percentagem (o cabeçalho diz «% útil»), para a coluna
+    // não roubar largura às outras
+    const fly = r.transitS > 0 ? L(UI.flyMin, { min: fmtMin(r.flightS) }) : null
     const subParts = [
+      fly,
       pct != null
         ? r === longest && rows.length > 1
           ? L(UI.longest, { pct, clock: fmtClock(r.totalS) })
-          : t('mp.flight.pct', { p: pct })
+          : fly
+            ? `${pct} %`
+            : t('mp.flight.pct', { p: pct })
         : null,
       sameTransit == null && r.transitS > 0 ? L(UI.transitOf, { min: minutes(r.transitS) }) : null,
     ].filter(Boolean)
@@ -1309,7 +1319,16 @@ export default function MissionReport({
             {minutes(r.totalS)} min
           </span>
         </span>
-        {subParts.length > 0 && <span className={sub}>{subParts.join(' · ')}</span>}
+        {subParts.length > 0 && (
+          // parte entre as partes e não a meio de uma («2 min de deslocação»)
+          <span className={sub}>
+            {subParts
+              .join(' · ')
+              .split(' · ')
+              .map((p) => p.replace(/ /g, '\u00a0'))
+              .join(' · ')}
+          </span>
+        )}
       </span>
     )
   }
@@ -1329,7 +1348,8 @@ export default function MissionReport({
       <span className="block text-amber-300">{t('bases.zoneNoTerrain')}</span>
     ) : sh.reduced ? (
       <>
-        <span className="rep-wrap block text-amber-300 xl:whitespace-nowrap">
+        {/* «40 m, reduzida» numa linha (no papel parte, se faltar largura) */}
+        <span className="rep-wrap block whitespace-nowrap text-amber-300">
           {L(sameRequested == null ? UI.zoneReducedFrom : UI.zoneReduced, {
             r: Math.round(sh.radiusM),
             req: Math.round(sh.requestedRadiusM),
@@ -1545,12 +1565,13 @@ export default function MissionReport({
               <span className="rep-wrap block xl:whitespace-nowrap font-semibold">
                 {L(UI.withTransit, { time: fmtTime(totalWith) })}
               </span>
-              <span className={`rep-wrap xl:whitespace-nowrap ${sub}`}>
-                {L(UI.withoutTransit, { time: fmtTime(totalWithout) })}
-              </span>
+              {/* a soma dos voos parte em duas linhas, para não alargar a coluna */}
+              <span className={sub}>{L(UI.flyingSum, { time: fmtTime(totalWithout) })}</span>
             </>
           ) : (
-            <span className="block font-semibold">{fmtTime(totalWithout)}</span>
+            <span className="block font-semibold">
+              {L(UI.flyingSum, { time: fmtTime(totalWithout) })}
+            </span>
           )}
         </td>
         {withBases && (
