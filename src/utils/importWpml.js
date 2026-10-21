@@ -37,13 +37,22 @@ function fileStem(file) {
   return n ? n.replace(/\.(kmz|zip)$/i, '') || null : null
 }
 
+/**
+ * Número no texto de um elemento; null sem elemento, sem texto ou sem número.
+ * O texto vazio não é zero (`Number('')` dá 0): uma etiqueta vazia conta
+ * como em falta.
+ */
+function numberOf(el) {
+  const t = textOf(el)
+  const v = t === '' ? NaN : Number(t)
+  return Number.isFinite(v) ? v : null
+}
+
 /** Primeiro dos nomes dados que exista sob `node` e contenha um número. */
 function numIn(node, ...names) {
   for (const name of names) {
-    const el = findFirst(node, name)
-    if (!el) continue
-    const v = Number(textOf(el))
-    if (Number.isFinite(v)) return v
+    const v = numberOf(findFirst(node, name))
+    if (v != null) return v
   }
   return null
 }
@@ -95,10 +104,9 @@ function extractFromDoc(doc) {
   findAll(root, 'Placemark').forEach((pm, order) => {
     const point = parseFirstCoord(textOf(findFirst(pm, 'coordinates')))
     if (!point) return // Placemarks sem geometria (ex.: POI) são ignorados
-    const idx = Number(textOf(findFirst(pm, 'index')))
     rows.push({
       order,
-      index: Number.isFinite(idx) ? idx : null,
+      index: numberOf(findFirst(pm, 'index')),
       point,
       // waylines usa executeHeight; template usa height (ellipsoidHeight como último recurso)
       height: numIn(pm, 'executeHeight', 'height', 'ellipsoidHeight'),
