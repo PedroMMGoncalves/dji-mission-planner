@@ -84,16 +84,28 @@ function topicsPt({ onShowDisclaimer, t }) {
       body: (
         <p>
           No modo Área o painel é uma coluna de sete cartões numerados pela ordem do trabalho:{' '}
-          <strong>1 Missão</strong> (nome, projecto, aeronave, sensor, RTK),{' '}
+          <strong>1 Missão</strong> (nome, projecto, aeronave, sensor, RTK, tipo de levantamento),{' '}
           <strong>2 Área e relevo</strong>, <strong>3 Parâmetros de voo</strong>,{' '}
           <strong>4 Divisão em voos</strong>, <strong>5 Bases e segurança</strong>,{' '}
           <strong>6 Extras</strong> (GCPs e pontos de inspecção) e{' '}
-          <strong>7 Resumo e exportar</strong>. Cada cartão mostra o essencial; o resto abre em{' '}
-          <strong>Mais opções ›</strong>, uma gaveta ao lado do painel, por cima do mapa (só uma de
-          cada vez; fecha no ✕ ou com <Kbd>Esc</Kbd>). Ex.: tipo de levantamento e sensor próprio
-          (1); grelha de réplicas, datum e sugestão para o declive (2); espaçamento manual, disparo,
-          gimbal, prolongamento, margem, dupla grelha (3); orientação da quadrícula e células (4);
-          bacias de visão (5); GCPs e pontos de inspecção (6). Os outros modos usam o mesmo aspecto.
+          <strong>7 Resumo e exportar</strong>. Os cartões abrem e fecham no título, um de cada vez:
+          abrir um fecha o que estava aberto, e fechado cada um mostra o essencial numa linha (ex.:
+          «451.96 ha · relevo global (~30 m)»). À partida está aberto o 2 e, quando chega a área,
+          abre-se o 3; o que abrir ou fechar fica lembrado neste aparelho, e um cartão abre-se
+          sozinho quando passa a ter alguma coisa a mostrar (marcar uma base, a base escolhida no
+          mapa, um erro ao importar), sem mudar o que ficou lembrado. O resto de alguns cartões abre
+          numa gaveta ao lado do painel, por cima do mapa (só uma de cada vez; fecha no ✕ ou com{' '}
+          <Kbd>Esc</Kbd>), no botão do fim do cartão, que diz o que ela tem: «Mais opções da
+          aeronave» (1, com a aeronave «Personalizada»: o sensor próprio e os enums WPML); «Datum
+          vertical e mais opções» (2: a forma centrada num ponto, a sugestão para o declive e a
+          fonte do relevo); «Linhas de voo, disparo e câmara» (3: espaçamento manual, margem,
+          prolongamento, disparo, gimbal, rumo, dupla grelha, faixa de amarração); «Células e
+          orientação dos quadrados» (4, com «Quadrícula» ou «Bateria»); «Pontos de apoio (GCP)» e
+          «Pontos de inspecção» (6). No cartão 5 as bases estão numa tabela (base, voos, zona,
+          cota): a linha de uma base abre o detalhe dela (raio da zona, voos, vista, «Atribuir
+          blocos a esta base» ou, ainda sem blocos, «Mostrar a zona no mapa», retirar); as bacias de
+          visão e as acções de segurança estão no mesmo cartão. Os outros modos usam o mesmo
+          aspecto, também com uma secção aberta de cada vez.
         </p>
       ),
     },
@@ -109,9 +121,9 @@ function topicsPt({ onShowDisclaimer, t }) {
               <strong>Área</strong> (na barra dos modos, à esquerda do painel) — grelha
               nadir/oblíqua sobre um polígono; inclui a dupla grelha 3D com «Passagem nadir extra
               (ortomosaico)» e os <strong>pontos de inspecção</strong> como camada extra: marque-os
-              no mapa («Marcar pontos de inspecção», em Mais opções do cartão 6 ou na barra sobre o
-              mapa, onde se lê «Inspecção»), edite etiqueta/rumo/pitch/foto, reordene por arrasto ou
-              «Sugerir ordem», e exporte como missão própria.
+              no mapa («Marcar pontos de inspecção», no botão «Pontos de inspecção» do cartão 6 ou
+              na barra sobre o mapa, onde se lê «Inspecção»), edite etiqueta/rumo/pitch/foto,
+              reordene por arrasto ou «Sugerir ordem», e exporte como missão própria.
             </p>
           ),
         },
@@ -120,17 +132,20 @@ function topicsPt({ onShowDisclaimer, t }) {
           title: 'Face',
           body: (
             <p>
-              <strong>Face</strong> — clique «Desenhar» e marque o pé da face no mapa (o sentido do
-              desenho define a esquerda/direita); conclua com duplo clique. Ajuste altura,
-              afastamento, lado e sobreposições; a pré-visualização mostra a linha de voo afastada e
-              os rumos. Nenhuma passagem desce abaixo da altura mínima de segurança de 5 m — com
-              afastamentos curtos a imagem é estreita e o painel avisa da parte que fica sem
-              cobertura no pé da face. Exporta com rumo fixo e uma foto por waypoint. Numa face com
-              cantos, as fotos extra ficam num arco à volta da aresta (do lado de fora) ou
+              <strong>Face</strong> — na secção «Pé da face», clique «Desenhar» e marque o pé da
+              face no mapa (o sentido do desenho define a esquerda/direita, e o «Lado do voo»
+              escolhe-se aí); conclua com «Concluir» ou duplo clique. Em «Parâmetros da face» ajuste
+              altura, afastamento, sobreposições e folga mínima: a caixa azul por baixo diz as
+              passagens, o passo vertical e o GSD na face, e a pré-visualização mostra a linha de
+              voo afastada e os rumos. Nenhuma passagem desce abaixo da altura mínima de segurança
+              de 5 m — com afastamentos curtos a imagem é estreita e o painel avisa da parte que
+              fica sem cobertura no pé da face. Exporta com rumo fixo e uma foto por waypoint. Numa
+              face com cantos, as fotos extra ficam num arco à volta da aresta (do lado de fora) ou
               repartidas antes e depois do vértice (do lado de dentro). Pode esperar em cada foto
-              (acção hover), tirar várias inclinações em cada ponto, prolongar as pontas meia imagem
-              e descolar numa base: as alturas passam a ser relativas a ela. Em todos os modos, a
-              aeronave e o sensor escolhem-se no topo do painel.
+              (acção hover) e tirar várias inclinações em cada ponto («Captura»), prolongar as
+              pontas meia imagem («Parâmetros da face») e descolar numa base («Descolagem e
+              segurança»): as alturas passam a ser relativas a ela. Em todos os modos, a aeronave e
+              o sensor escolhem-se na secção 1 do painel, «Aeronave e sensor».
             </p>
           ),
         },
@@ -139,13 +154,15 @@ function topicsPt({ onShowDisclaimer, t }) {
           title: 'Órbita',
           body: (
             <p>
-              <strong>Órbita</strong> — «Marcar POI» e clicar no alvo; defina raio (ou GSD alvo),
-              níveis e passo. Captura em fotografia (anéis, uma foto por waypoint), vídeo (espiral
-              contínua a gravar, com o gimbal a rodar sem degraus) ou{' '}
-              <strong>várias inclinações (com paragem)</strong>: a aeronave pára em cada ponto e
-              tira uma foto por inclinação (por omissão −45°, 0° e o limite do gimbal menos 5°).
-              Exporta a missão única («Exportar WPML Avançado (KMZ)») ou um KMZ por nível (ZIP).
-              Como a face, pode descolar numa base.
+              <strong>Órbita</strong> — na secção «Ponto de interesse (POI)», «Marcar POI» e clicar
+              no alvo; em «Geometria da órbita» defina raio (ou GSD alvo), níveis e passo, e os
+              anéis aparecem vistos de lado, com os pontos por volta e o gimbal por nível. Captura
+              em fotografia (anéis, uma foto por waypoint), vídeo (espiral contínua a gravar, com o
+              gimbal a rodar sem degraus) ou <strong>várias inclinações (com paragem)</strong>: a
+              aeronave pára em cada ponto e tira uma foto por inclinação (por omissão −45°, 0° e o
+              limite do gimbal menos 5°). No resumo, exporta a missão única («Exportar WPML Avançado
+              (KMZ)», o mesmo botão do cabeçalho) ou um KMZ por nível (ZIP); «O que vai no KMZ» diz
+              o que cada ficheiro leva, com os nomes do WPML. Como a face, pode descolar numa base.
             </p>
           ),
         },
@@ -155,10 +172,13 @@ function topicsPt({ onShowDisclaimer, t }) {
           body: (
             <p>
               <strong>Circular</strong> — grelha de círculos sobrepostos sobre a mesma área do modo
-              Área, câmara inclinada e apontada ao centro de cada círculo, uma foto por ponto
-              (circlegrammetry). Raio e sobreposição entre círculos dão o número de círculos; o
-              painel sugere a maior sobreposição que não acrescenta um círculo. Altura e
-              sobreposição frontal: as da área, ou próprias.
+              Área («Área a cobrir»: o polígono é o mesmo, e move-se, edita-se e importa-se no
+              separador Área), câmara inclinada e apontada ao centro de cada círculo, uma foto por
+              ponto (circlegrammetry). Em «Círculos», raio e sobreposição entre círculos dão o
+              número de círculos; a caixa azul sugere a maior sobreposição que não acrescenta um
+              círculo («Usar …») e «Como funciona» explica a conta. Altura e sobreposição frontal:
+              as da área, ou próprias («Parâmetros de voo»). «Voos e baterias» junta os círculos em
+              blocos, um por bateria, e o resumo exporta a missão única ou um KMZ por bloco (ZIP).
             </p>
           ),
         },
@@ -168,15 +188,17 @@ function topicsPt({ onShowDisclaimer, t }) {
           body: (
             <p>
               <strong>Corredor</strong> — para infraestruturas lineares (estradas, condutas, linhas
-              de água, linhas eléctricas). Clique «Desenhar» e marque o <em>eixo</em> no mapa;
-              conclua com duplo clique. Defina a <strong>meia-largura</strong> (distância coberta de
-              cada lado do eixo — a largura total é o dobro) e o número de passagens paralelas sai
-              daí, da altura de voo e da sobreposição lateral. Escolha o disparo por distância ou
-              por waypoint. É <strong>apenas nadir</strong>; altura e sobreposições são as da área,
-              ou próprias. Em «Divisão em voos: Por bateria», o eixo corta-se em troços que cabem na
-              bateria, cada voo descola da base mais próxima e sai num KMZ próprio (ZIP). Com relevo
-              carregado, «Seguir terreno» põe cada passagem sobre o seu próprio solo; a área e o
-              corredor partilham o mesmo MDT.
+              de água, linhas eléctricas). Na secção «Eixo e largura», clique «Desenhar o eixo» e
+              marque o <em>eixo</em> no mapa; conclua com «Concluir» ou duplo clique. Defina a{' '}
+              <strong>meia-largura</strong> (distância coberta de cada lado do eixo — a largura
+              total é o dobro) e o número de passagens paralelas sai daí, da altura de voo e da
+              sobreposição lateral: a caixa azul por baixo diz-o. Em «Parâmetros de voo» escolha o
+              disparo por distância ou por waypoint. É <strong>apenas nadir</strong>; altura e
+              sobreposições são as da área, ou próprias. Em «Voos e bases», «Divisão em voos: Por
+              bateria» corta o eixo em troços que cabem na bateria; a tabela dá cada voo com a sua
+              base, o tempo no troço e com a deslocação; cada voo descola da base mais próxima e sai
+              num KMZ próprio (ZIP). Com relevo carregado, «Seguir terreno» (secção «Relevo») põe
+              cada passagem sobre o seu próprio solo; a área e o corredor partilham o mesmo MDT.
             </p>
           ),
         },
@@ -264,10 +286,10 @@ function topicsPt({ onShowDisclaimer, t }) {
               </p>
               <p>
                 <strong>Bases</strong> — «Marcar base» acrescenta A, B, C... (arraste para mover;
-                retire na lista). «Propor bases» cobre os blocos que nenhuma base vê dentro da
-                distância VLOS, sem mexer nas suas. Com relevo, prefere sítios{' '}
-                <strong>planos ou altos</strong> com o rádio livre: a zona de descolagem não pode
-                ficar reduzida a menos de metade, cada bloco tem de ter o rádio livre (zona de
+                retire-a no detalhe dela, na tabela do cartão 5). «Propor bases» cobre os blocos que
+                nenhuma base vê dentro da distância VLOS, sem mexer nas suas. Com relevo, prefere
+                sítios <strong>planos ou altos</strong> com o rádio livre: a zona de descolagem não
+                pode ficar reduzida a menos de metade, cada bloco tem de ter o rádio livre (zona de
                 Fresnel, com a vegetação da missão) em 95 % dos pontos, e entre os que servem ganha
                 o melhor rádio, a melhor vista, o mais alto e o mais plano; procura também nos altos
                 do relevo à volta dos blocos. Nunca escolhe um sítio baixo: uma altura relativa
@@ -276,15 +298,35 @@ function topicsPt({ onShowDisclaimer, t }) {
                 m na Configuração): as alturas dos seus blocos referem-se à cota mais baixa da zona,
                 e descolando em qualquer ponto dela voa-se entre 0 e +X m acima do planeado. Voos
                 numerados por base: A-1, A-2, B-3. Para passar um bloco a uma base, seleccione-a (o
-                marcador no mapa ou o rótulo na lista) e clique no bloco (o rótulo ou a célula); um
-                segundo clique deixa-o lá, Esc ou um novo clique no marcador desselecciona. Sem base
-                seleccionada, o clique activa ou desactiva a célula. Refeita a divisão (ângulo,
-                lado, bateria, área editada), cada bloco novo herda a base escolhida à mão e o
-                estado desactivado do bloco antigo que cobre pelo menos metade dele; as atribuições
-                que não passam são ditas no cartão 5 (Bases e segurança). Com a área substituída por
-                outra (menos de metade em comum) nada passa.
+                marcador no mapa, ou «Atribuir blocos a esta base» no detalhe dela, na tabela do
+                cartão 5) e clique no bloco (o rótulo ou a célula); um segundo clique deixa-o lá,
+                Esc ou um novo clique no marcador desselecciona. Sem base seleccionada, o clique
+                activa ou desactiva a célula. Refeita a divisão (ângulo, lado, bateria, área
+                editada), cada bloco novo herda a base escolhida à mão e o estado desactivado do
+                bloco antigo que cobre pelo menos metade dele; as atribuições que não passam são
+                ditas no cartão 5 (Bases e segurança). Com a área substituída por outra (menos de
+                metade em comum) nada passa.
               </p>
             </>
+          ),
+        },
+        {
+          id: 'zona',
+          title: 'Zona de descolagem',
+          body: (
+            <p>
+              O operador marca cada base como um ponto, mas no campo descola a 20–100 m dali. Por
+              isso cada base é uma <strong>zona</strong> de raio r: 100 m por omissão
+              (Configuração), ou um raio próprio de 0 a 500 m no detalhe da base, na tabela do
+              cartão 5. O planeamento usa o pior caso: as alturas dos blocos da base referem-se à
+              cota <strong>mais baixa</strong> da zona (o centro e anéis a cada 10 m em 16
+              direcções), e descolando em qualquer ponto dela voa-se entre 0 e +ganho metros acima
+              do planeado (ganho = cota máxima − cota mínima). Junto a uma corta, o raio reduz-se ao
+              maior anel com um desnível até 10 m (o máximo da Configuração) e o preflight avisa. O
+              alcance visual e o trânsito medem-se do pior ponto da zona: o vértice mais afastado do
+              bloco mais r. No mapa, a base escolhida (um clique no marcador) mostra a zona a cheio
+              e, se foi reduzida, o raio pedido a tracejado — o mesmo esquema da Configuração.
+            </p>
           ),
         },
         {
@@ -293,11 +335,12 @@ function topicsPt({ onShowDisclaimer, t }) {
           body: (
             <p>
               <strong>Atribuir blocos a esta base</strong> — à mão: carregue em «Atribuir blocos a
-              esta base» na linha da base (ou clique no marcador dela no mapa) e clique no mapa nos
-              blocos que quer passar para ela, um a um (o rótulo ou a área do bloco); um clique num
-              bloco que já é dela deixa-o lá. «Terminar» ou Esc acaba. Nada muda sozinho: só os
-              blocos clicados. Um bloco para lá da distância VLOS a partir da base passa na mesma, e
-              o preflight avisa. Ctrl+Z anula um clique de cada vez.
+              esta base» no detalhe da base (abre-se na linha dela, na tabela do cartão 5), ou
+              clique no marcador dela no mapa, e clique no mapa nos blocos que quer passar para ela,
+              um a um (o rótulo ou a área do bloco); um clique num bloco que já é dela deixa-o lá.
+              «Terminar» ou Esc acaba. Nada muda sozinho: só os blocos clicados. Um bloco para lá da
+              distância VLOS a partir da base passa na mesma, e o preflight avisa. Ctrl+Z anula um
+              clique de cada vez.
             </p>
           ),
         },
@@ -316,8 +359,8 @@ function topicsPt({ onShowDisclaimer, t }) {
               base A, tapado a ~420 m», ou «sinal de rádio em risco»). Um MDT e o relevo global não
               têm árvores, edifícios nem escombreiras: some-os em «Vegetação e obstáculos» (por
               missão, a mais de 30 m da base) ou importe o MDS da equipa e marque «Este ficheiro é:
-              MDS». A camada liga-se no cartão 5 (Mais opções) ou no controlo de camadas do mapa e
-              fica lembrada neste aparelho.
+              MDS». A camada liga-se em «Mostrar no mapa», na caixa «Bacias de visão» do cartão 5,
+              ou no controlo de camadas do mapa, e fica lembrada neste aparelho.
             </p>
           ),
         },
@@ -433,11 +476,11 @@ function topicsPt({ onShowDisclaimer, t }) {
           body: (
             <>
               <p>
-                <strong>Intervalo de disparo manual</strong> (cartão 3, gaveta) — em metros com
-                «Distância» e «Waypoint», em segundos com «Tempo»; o painel diz a sobreposição
-                frontal que resulta e o ficheiro leva o valor escrito.{' '}
-                <strong>Rumo da aeronave: fixo</strong> — todos os waypoints com o mesmo rumo, para
-                oblíquas sempre viradas para o mesmo lado.
+                <strong>Intervalo de disparo manual</strong> (cartão 3, gaveta «Linhas de voo,
+                disparo e câmara», grupo «Disparo e câmara») — em metros com «Distância» e
+                «Waypoint», em segundos com «Tempo»; o painel diz a sobreposição frontal que resulta
+                e o ficheiro leva o valor escrito. <strong>Rumo da aeronave: fixo</strong> — todos
+                os waypoints com o mesmo rumo, para oblíquas sempre viradas para o mesmo lado.
               </p>
               <p>
                 <strong>Disparo por waypoint</strong> — em «Disparo por: Waypoint», cada faixa é
@@ -470,14 +513,15 @@ function topicsPt({ onShowDisclaimer, t }) {
       title: 'Acções de segurança',
       body: (
         <p>
-          <strong>Acções de segurança</strong> (cartão 5 da área, e um cartão próprio nos outros
-          modos; as mesmas em todos) — <strong>No fim da missão</strong>: regressar ao ponto de
-          descolagem (RTH, por omissão), pairar no último ponto, aterrar no local ou voltar ao
-          primeiro waypoint. <strong>Perda de sinal</strong>: interromper a missão e regressar ao
-          ponto de descolagem (por omissão), aterrar ou pairar; ou continuar a missão até ao fim sem
-          comando (e depois a acção de fim). Vão no KMZ de todos os voos, ficam no projecto e a
-          checklist de campo lembra-as; confirme no Pilot 2 que a altura de regresso livra o relevo.
-          A <strong>altura de segurança na descolagem</strong> e a{' '}
+          <strong>Acções de segurança</strong> (cartão 5 da área; nos outros modos, a secção «Acções
+          de segurança» — na face e na órbita, dentro de «Descolagem e segurança»; as mesmas em
+          todos) — <strong>No fim da missão</strong>: regressar ao ponto de descolagem (RTH, por
+          omissão), pairar no último ponto, aterrar no local ou voltar ao primeiro waypoint.{' '}
+          <strong>Perda de sinal</strong>: interromper a missão e regressar ao ponto de descolagem
+          (por omissão), aterrar ou pairar; ou continuar a missão até ao fim sem comando (e depois a
+          acção de fim). Vão no KMZ de todos os voos, ficam no projecto e a checklist de campo
+          lembra-as; confirme no Pilot 2 que a altura de regresso livra o relevo. A{' '}
+          <strong>altura de segurança na descolagem</strong> e a{' '}
           <strong>altura de regresso (RTH)</strong> podem ser escritas; vazias, ficam as automáticas
           (30 m; acima do ponto mais alto de cada voo, no mínimo 100 m).
         </p>
@@ -501,11 +545,12 @@ function topicsPt({ onShowDisclaimer, t }) {
       body: (
         <>
           <p>
-            <strong>«Afastamento NÃO verificado»</strong> (modo Face) — sem um GeoTIFF local
-            importado, nada valida a distância à face: os tiles globais (~30 m) não têm resolução à
-            escala de uma parede. Com um modelo local (MDT/MDS) carregado, a app verifica a folga
-            vertical e ao longo do rumo e lista as passagens em conflito — aumentar o afastamento
-            resolve.
+            <strong>«Afastamento não verificado contra o terreno»</strong> (modo Face) — sem um
+            GeoTIFF local importado, nada valida a distância à face: os tiles globais (~30 m) não
+            têm resolução à escala de uma parede. «Importar um GeoTIFF em Área e relevo», no próprio
+            aviso, abre o separador Área. Com um modelo local (MDT/MDS) carregado, a app verifica a
+            folga vertical e ao longo do rumo e lista as passagens em conflito — aumentar o
+            afastamento resolve.
           </p>
           <p>
             <strong>«Passagens partidas»</strong> (corredor) — onde o eixo curva mais apertado do
@@ -648,16 +693,27 @@ function topicsEn({ onShowDisclaimer, t }) {
       body: (
         <p>
           In the Area mode the panel is a column of seven cards numbered in work order:{' '}
-          <strong>1 Mission</strong> (name, project, aircraft, sensor, RTK),{' '}
+          <strong>1 Mission</strong> (name, project, aircraft, sensor, RTK, survey type),{' '}
           <strong>2 Area and terrain</strong>, <strong>3 Flight parameters</strong>,{' '}
           <strong>4 Split into flights</strong>, <strong>5 Bases and safety</strong>,{' '}
           <strong>6 Extras</strong> (GCPs and inspection points) and{' '}
-          <strong>7 Summary and export</strong>. Each card shows the essentials; the rest opens
-          under <strong>More options ›</strong>, a drawer next to the panel, over the map (one at a
-          time; ✕ or <Kbd>Esc</Kbd> closes it). E.g. survey type and custom sensor (1); replica
-          grid, datum and slope suggestion (2); manual spacing, trigger, gimbal, overshoot, buffer,
-          crosshatch (3); tile orientation and cells (4); viewsheds (5); GCPs and inspection points
-          (6). The other modes use the same look.
+          <strong>7 Summary and export</strong>. The cards open and close on their title, one at a
+          time: opening one closes the one that was open, and a closed card shows the essentials on
+          one line (e.g. “451.96 ha · global terrain (~30 m)”). At first card 2 is open and, when
+          the area arrives, card 3 opens; what you open or close is remembered on this device, and a
+          card opens by itself when it has something to show (placing a base, the base picked on the
+          map, an import error), without changing what was remembered. The rest of some cards opens
+          in a drawer next to the panel, over the map (one at a time; ✕ or <Kbd>Esc</Kbd> closes
+          it), from the button at the end of the card, which says what it holds: “More aircraft
+          options” (1, with the “Custom” aircraft: the custom sensor and the WPML enums); “Vertical
+          datum and more options” (2: the shape centred on a point, the slope suggestion and the
+          terrain source); “Flight lines, trigger and camera” (3: manual spacing, buffer, overshoot,
+          trigger, gimbal, heading, crosshatch, tie line); “Cells and square orientation” (4, with
+          “Tiles” or “Battery”); “Ground control points (GCP)” and “Inspection points” (6). In card
+          5 the bases are in a table (base, flights, zone, elevation): a base’s row opens its detail
+          (zone radius, flights, view, “Assign blocks to this base” or, with no blocks yet, “Show
+          the zone on the map”, remove); the viewsheds and the safety actions are in the same card.
+          The other modes use the same look, also with one section open at a time.
         </p>
       ),
     },
@@ -673,9 +729,9 @@ function topicsEn({ onShowDisclaimer, t }) {
               <strong>Area</strong> (in the mode bar, left of the panel) — nadir/oblique grid over a
               polygon; includes the 3D crosshatch with “Extra nadir pass (orthomosaic)” and{' '}
               <strong>inspection points</strong> as an extra layer: place them on the map (“Place
-              inspection points”, in card 6’s More options or in the bar over the map, where it
-              reads “Inspection”), edit label/heading/pitch/photo, reorder by drag or “Suggest
-              order”, and export as a mission of its own.
+              inspection points”, under the “Inspection points” button of card 6 or in the bar over
+              the map, where it reads “Inspection”), edit label/heading/pitch/photo, reorder by drag
+              or “Suggest order”, and export as a mission of its own.
             </p>
           ),
         },
@@ -684,17 +740,20 @@ function topicsEn({ onShowDisclaimer, t }) {
           title: 'Face',
           body: (
             <p>
-              <strong>Face</strong> — click “Draw” and mark the foot of the face on the map (the
-              drawing direction defines left/right); finish with a double click. Set height,
-              standoff, side and overlaps; the preview shows the offset flight line and the
-              headings. No pass drops below the 5 m safety floor — at short standoffs the image is
-              narrow and the panel warns about the part left uncovered at the foot of the face.
-              Exports with a fixed heading and one photo per waypoint. On a face with corners, the
-              extra photos sit on an arc around the edge (outside) or spread before and after the
-              vertex (inside). It can wait at each photo (hover action), take several pitches at
-              each point, extend the ends by half an image and take off from a base: heights then
-              become relative to it. In every mode, the aircraft and sensor are chosen at the top of
-              the panel.
+              <strong>Face</strong> — in the “Foot of the face” section, click “Draw” and mark the
+              foot of the face on the map (the drawing direction defines left/right, and the “Flight
+              side” is chosen there); end with “Finish” or a double click. In “Face parameters” set
+              height, standoff, overlaps and minimum clearance: the blue box below gives the passes,
+              the vertical step and the GSD on the face, and the preview shows the offset flight
+              line and the headings. No pass drops below the 5 m safety floor — at short standoffs
+              the image is narrow and the panel warns about the part left uncovered at the foot of
+              the face. Exports with a fixed heading and one photo per waypoint. On a face with
+              corners, the extra photos sit on an arc around the edge (outside) or spread before and
+              after the vertex (inside). It can wait at each photo (hover action) and take several
+              pitches at each point (“Capture”), extend the ends by half an image (“Face
+              parameters”) and take off from a base (“Take-off and safety”): heights then become
+              relative to it. In every mode, the aircraft and sensor are chosen in the panel’s
+              section 1, “Aircraft and sensor”.
             </p>
           ),
         },
@@ -703,13 +762,16 @@ function topicsEn({ onShowDisclaimer, t }) {
           title: 'Orbit',
           body: (
             <p>
-              <strong>Orbit</strong> — “Mark POI” and click the target; set radius (or target GSD),
-              levels and step. Capture as photo (rings, one photo per waypoint), video (a continuous
-              recording spiral, with the gimbal turning without steps) or{' '}
+              <strong>Orbit</strong> — in the “Point of interest (POI)” section, “Mark POI” and
+              click the target; in “Orbit geometry” set radius (or target GSD), levels and step, and
+              the rings appear seen from the side, with the points per turn and the gimbal per
+              level. Capture as photo (rings, one photo per waypoint), video (a continuous recording
+              spiral, with the gimbal turning without steps) or{' '}
               <strong>several pitches (with stops)</strong>: the aircraft stops at each point and
-              takes one photo per pitch (by default −45°, 0° and the gimbal limit minus 5°). Exports
-              a single mission or one KMZ per level (ZIP). Like the face, it can take off from a
-              base.
+              takes one photo per pitch (by default −45°, 0° and the gimbal limit minus 5°). In the
+              summary, exports a single mission (“Export Advanced WPML (KMZ)”, the same button as in
+              the header) or one KMZ per level (ZIP); “What goes into the KMZ” says what each file
+              carries, with the WPML names. Like the face, it can take off from a base.
             </p>
           ),
         },
@@ -719,10 +781,13 @@ function topicsEn({ onShowDisclaimer, t }) {
           body: (
             <p>
               <strong>Circular</strong> — a grid of overlapping circles over the same polygon as the
-              Area mode, camera tilted and aimed at each circle centre, one photo per point
-              (circlegrammetry). Radius and circle overlap set the circle count; the panel suggests
-              the largest overlap that does not add a circle. Height and forward overlap: the
-              area’s, or its own.
+              Area mode (“Area to cover”: the polygon is shared, and it is moved, edited and
+              imported in the Area tab), camera tilted and aimed at each circle centre, one photo
+              per point (circlegrammetry). In “Circles”, radius and circle overlap set the circle
+              count; the blue box suggests the largest overlap that does not add a circle (“Use …”)
+              and “How it works” explains the sum. Height and forward overlap: the area’s, or its
+              own (“Flight parameters”). “Flights and batteries” groups the circles into blocks, one
+              per battery, and the summary exports a single mission or one KMZ per block (ZIP).
             </p>
           ),
         },
@@ -732,15 +797,18 @@ function topicsEn({ onShowDisclaimer, t }) {
           body: (
             <p>
               <strong>Corridor</strong> — for linear infrastructure (roads, pipelines, watercourses,
-              power lines). Click “Draw” and mark the <em>centreline</em> on the map; finish with a
-              double click. Set the <strong>half-width</strong> (distance covered on each side of
-              the centreline — the total width is twice that) and the number of parallel passes
-              follows from it, the flight height and the side overlap. Choose distance or
-              per-waypoint triggering. It is <strong>nadir only</strong>; height and overlaps are
-              the area’s, or its own. With “Split into flights: By battery”, the centreline is cut
-              into pieces that fit the battery, each flight takes off from the nearest base and goes
-              into its own KMZ (ZIP). With terrain loaded, “Follow terrain” puts each pass over its
-              own ground; the area and the corridor share one DTM.
+              power lines). In the “Centreline and width” section, click “Draw the centreline” and
+              mark the <em>centreline</em> on the map; end with “Finish” or a double click. Set the{' '}
+              <strong>half-width</strong> (distance covered on each side of the centreline — the
+              total width is twice that) and the number of parallel passes follows from it, the
+              flight height and the side overlap: the blue box below says it. In “Flight parameters”
+              choose distance or per-waypoint triggering. It is <strong>nadir only</strong>; height
+              and overlaps are the area’s, or its own. In “Flights and bases”, “Split into flights:
+              By battery” cuts the centreline into stretches that fit the battery; the table gives
+              each flight with its base, the time on the stretch and with transit; each flight takes
+              off from the nearest base and goes into its own KMZ (ZIP). With terrain loaded,
+              “Follow terrain” (“Terrain” section) puts each pass over its own ground; the area and
+              the corridor share one DTM.
             </p>
           ),
         },
@@ -828,27 +896,49 @@ function topicsEn({ onShowDisclaimer, t }) {
                 relative to it; with several bases, each block takes off from its base’s zone.
               </p>
               <p>
-                <strong>Bases</strong> — “Set base” adds A, B, C... (drag to move; remove from the
-                list). “Propose bases” covers the blocks no base sees within VLOS range, without
-                touching yours. With terrain it prefers <strong>flat or high</strong> sites with a
-                clear radio link: the take-off zone must keep at least half its radius, each block
-                needs a clear radio link (Fresnel zone, with the mission’s vegetation) over 95 % of
-                its points, and among the sites that qualify the best radio, the best view, the
-                highest and the flattest win; it also looks at the terrain high points around the
-                blocks. It never picks a low site: a small relative height from a high base is left
-                to the preflight warning. It runs in slices (“Proposing bases… N %”, with “Cancel”).
-                Each base is a <strong>zone</strong> (100 m in Settings): its blocks’ heights refer
-                to the zone’s lowest elevation, and taking off anywhere in it you fly between 0 and
-                +X m above plan. Flights are numbered by base: A-1, A-2, B-3. To move a block to a
-                base, select it (its marker on the map or its label in the list) and click the block
-                (its label or its cell); a second click leaves it there, Esc or another click on the
-                marker deselects. With no base selected, a click enables or disables the cell. When
-                the split is redone (angle, size, battery, edited area), each new block inherits the
-                hand-picked base and the disabled state of the old block covering at least half of
-                it; assignments that do not carry over are reported in card 5 (Bases and safety). If
-                the area is replaced by another (less than half in common), nothing carries over.
+                <strong>Bases</strong> — “Set base” adds A, B, C... (drag to move; remove it in its
+                detail, in the table of card 5). “Propose bases” covers the blocks no base sees
+                within VLOS range, without touching yours. With terrain it prefers{' '}
+                <strong>flat or high</strong> sites with a clear radio link: the take-off zone must
+                keep at least half its radius, each block needs a clear radio link (Fresnel zone,
+                with the mission’s vegetation) over 95 % of its points, and among the sites that
+                qualify the best radio, the best view, the highest and the flattest win; it also
+                looks at the terrain high points around the blocks. It never picks a low site: a
+                small relative height from a high base is left to the preflight warning. It runs in
+                slices (“Proposing bases… N %”, with “Cancel”). Each base is a <strong>zone</strong>{' '}
+                (100 m in Settings): its blocks’ heights refer to the zone’s lowest elevation, and
+                taking off anywhere in it you fly between 0 and +X m above plan. Flights are
+                numbered by base: A-1, A-2, B-3. To move a block to a base, select it (its marker on
+                the map, or “Assign blocks to this base” in its detail, in the table of card 5) and
+                click the block (its label or its cell); a second click leaves it there, Esc or
+                another click on the marker deselects. With no base selected, a click enables or
+                disables the cell. When the split is redone (angle, size, battery, edited area),
+                each new block inherits the hand-picked base and the disabled state of the old block
+                covering at least half of it; assignments that do not carry over are reported in
+                card 5 (Bases and safety). If the area is replaced by another (less than half in
+                common), nothing carries over.
               </p>
             </>
+          ),
+        },
+        {
+          id: 'zona',
+          title: 'Take-off zone',
+          body: (
+            <p>
+              Each base is marked as a point, but in the field you take off 20–100 m from it. So
+              each base is a <strong>zone</strong> of radius r: 100 m by default (Settings), or its
+              own radius from 0 to 500 m in the base’s detail, in the table of card 5. Planning
+              takes the worst case: the heights of the base’s blocks refer to the{' '}
+              <strong>lowest</strong> elevation of the zone (the centre and rings every 10 m in 16
+              directions), and taking off anywhere in it you fly between 0 and +gain metres above
+              the plan (gain = highest − lowest elevation). Near a cliff, the radius shrinks to the
+              largest ring with at most 10 m of relief (the maximum in Settings) and the preflight
+              warns. Visual range and transit are measured from the zone’s worst point: the block’s
+              farthest vertex plus r. On the map, the selected base (a click on its marker) shows
+              the zone filled and, if it was reduced, the requested radius dashed — the same scheme
+              as in Settings.
+            </p>
           ),
         },
         {
@@ -857,11 +947,12 @@ function topicsEn({ onShowDisclaimer, t }) {
           body: (
             <p>
               <strong>Assign blocks to this base</strong> — by hand: press “Assign blocks to this
-              base” in the base’s row (or click its marker on the map) and click on the map the
-              blocks you want to move to it, one by one (their label or their area); clicking a
-              block that is already its own leaves it there. “Done” or Esc ends. Nothing changes by
-              itself: only the clicked blocks. A block beyond VLOS range from the base moves anyway,
-              and the preflight warns. Ctrl+Z undoes one click at a time.
+              base” in the base’s detail (it opens in its row, in the table of card 5), or click its
+              marker on the map, and click on the map the blocks you want to move to it, one by one
+              (their label or their area); clicking a block that is already its own leaves it there.
+              “Done” or Esc ends. Nothing changes by itself: only the clicked blocks. A block beyond
+              VLOS range from the base moves anyway, and the preflight warns. Ctrl+Z undoes one
+              click at a time.
             </p>
           ),
         },
@@ -879,8 +970,8 @@ function topicsEn({ onShowDisclaimer, t }) {
               preflight warns per flight from 5 % of the block. A DTM and the global terrain have no
               trees, buildings or spoil heaps: add them in “Vegetation and obstacles” (per mission,
               beyond 30 m from the base) or import the team’s DSM and mark “This file is: DSM”. The
-              layer is switched in card 5 (More options) or the map’s layer control and remembered
-              on this device.
+              layer is switched with “Show on the map”, in the “Viewsheds” box of card 5, or in the
+              map’s layer control, and remembered on this device.
             </p>
           ),
         },
@@ -999,11 +1090,11 @@ function topicsEn({ onShowDisclaimer, t }) {
           body: (
             <>
               <p>
-                <strong>Manual trigger interval</strong> (card 3, drawer) — in metres with
-                “Distance” and “Waypoint”, in seconds with “Time”; the panel shows the resulting
-                forward overlap and the file carries the typed value.{' '}
-                <strong>Aircraft heading: fixed</strong> — every waypoint with the same heading, for
-                obliques always facing the same way.
+                <strong>Manual trigger interval</strong> (card 3, “Flight lines, trigger and camera”
+                drawer, “Trigger and camera” group) — in metres with “Distance” and “Waypoint”, in
+                seconds with “Time”; the panel shows the resulting forward overlap and the file
+                carries the typed value. <strong>Aircraft heading: fixed</strong> — every waypoint
+                with the same heading, for obliques always facing the same way.
               </p>
               <p>
                 <strong>Per-waypoint trigger</strong> — with “Trigger by: Waypoint”, each line is
@@ -1036,13 +1127,14 @@ function topicsEn({ onShowDisclaimer, t }) {
       title: 'Safety actions',
       body: (
         <p>
-          <strong>Safety actions</strong> (card 5 of the area, and a card of their own in the other
-          modes; the same for all) — <strong>At the end of the mission</strong>: return to home
-          (RTH, the default), hover at the last point, land in place or go back to the first
-          waypoint. <strong>Signal loss</strong>: stop the mission and return home (the default),
-          land or hover; or continue the mission to the end without control (then the end action).
-          They go into the KMZ of every flight, are kept in the project and listed in the field
-          checklist; check in Pilot 2 that the return height clears the terrain. The{' '}
+          <strong>Safety actions</strong> (card 5 of the area; in the other modes, the “Safety
+          actions” section — in the face and the orbit, inside “Take-off and safety”; the same for
+          all) — <strong>At the end of the mission</strong>: return to home (RTH, the default),
+          hover at the last point, land in place or go back to the first waypoint.{' '}
+          <strong>Signal loss</strong>: stop the mission and return home (the default), land or
+          hover; or continue the mission to the end without control (then the end action). They go
+          into the KMZ of every flight, are kept in the project and listed in the field checklist;
+          check in Pilot 2 that the return height clears the terrain. The{' '}
           <strong>take-off safety height</strong> and the <strong>return (RTH) height</strong> can
           be typed; empty, they are automatic (30 m; above the highest point of each flight, at
           least 100 m).
@@ -1067,9 +1159,10 @@ function topicsEn({ onShowDisclaimer, t }) {
       body: (
         <>
           <p>
-            <strong>“Standoff NOT verified”</strong> (face mode) — without an imported local
-            GeoTIFF, nothing validates the distance to the face: global tiles (~30 m) lack
-            resolution at wall scale. With a local DTM/DSM loaded, the app checks vertical and
+            <strong>“Standoff not verified against the terrain”</strong> (face mode) — without an
+            imported local GeoTIFF, nothing validates the distance to the face: global tiles (~30 m)
+            lack resolution at wall scale. “Import a GeoTIFF in Area and terrain”, in the warning
+            itself, opens the Area tab. With a local DTM/DSM loaded, the app checks vertical and
             along-heading clearance and lists conflicting passes — raising the standoff clears it.
           </p>
           <p>
@@ -1187,7 +1280,8 @@ const SEE_ALSO = {
   'tipo-corredor': ['avisos', 'divisao'],
   desenhar: ['tipo-area', 'divisao'],
   divisao: ['bases', 'configuracao'],
-  bases: ['atribuir', 'bacias', 'configuracao'],
+  bases: ['zona', 'atribuir', 'bacias'],
+  zona: ['bases', 'configuracao', 'preflight'],
   atribuir: ['bases', 'divisao'],
   bacias: ['bases', 'configuracao'],
   relevo: ['bases', 'mapa'],
