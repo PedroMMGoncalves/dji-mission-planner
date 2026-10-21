@@ -177,10 +177,13 @@ export default function ControlPanel({
   // acções de segurança (fim da missão, sinal perdido): cartão 5
   safety = null,
   setSafety = (_next) => {},
-  // cartão 7: números da missão e exportação
+  // cartão 7: números da missão e exportação; os dois botões do fim são os
+  // do cabeçalho, com as dicas deles
   summary = null,
   onExportMission = null,
   canExportMission = false,
+  exportMissionTitle = null,
+  exportAreaTitle = null,
   // avisos do KML da área: buracos, partes e células desactivadas que ficam
   // de fora ou dentro do polígono (K-B1, K-E1, K-M8 da revisão)
   exportAreaNotes = [],
@@ -309,8 +312,8 @@ export default function ControlPanel({
   const d = useDrawers()
   const terrainReady = terrain.status === 'ready'
   const exportFlights = basesPanel?.exportFlights ?? null
-  // com vários voos, a exportação (todos, por base, um voo) está em
-  // «Exportar voos»; o botão da missão do cartão 7 repetia o ZIP por base
+  // com vários voos, as escolhas (todos, por base, um voo; KMZ e KML) em
+  // «Exportar voos», por cima do par do cabeçalho
   const perFlight = Boolean(exportFlights && exportFlights.files.length > 1)
   const viewshed = basesPanel?.viewshed ?? null
   // descarregar o relevo global e importar um MDT: no cartão enquanto não há
@@ -1379,31 +1382,32 @@ export default function ControlPanel({
             </div>
           )}
           {perFlight && <FlightExports {...exportFlights} rows={basesPanel.rows} />}
-          <div className={`mt-3 grid gap-2 ${perFlight ? 'grid-cols-1' : 'grid-cols-2'}`}>
-            {/* sem divisão em voos: a missão num KMZ, com o nome do botão do
-                cabeçalho (a mesma exportação, atrás do mesmo preflight) */}
-            {onExportMission && !perFlight && (
-              <button
-                type="button"
-                data-testid="summary-export-mission"
-                onClick={onExportMission}
-                disabled={!canExportMission}
-                title={t('cards.summary.exportMissionTitle')}
-                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded bg-sky-700 px-2 text-xs font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <IconDownload /> {missionExportLabel(t, exportKind)}
-              </button>
-            )}
+          {/* o par do cabeçalho, igual em tudo: o mesmo nome, a mesma dica, o
+              mesmo preflight e o mesmo ficheiro (com vários voos, o ZIP que o
+              cabeçalho escreve: a dica diz qual dos de «Exportar voos» é) */}
+          <div className="mt-3 grid grid-cols-2 gap-2">
             {onExportArea && (
               <button
                 type="button"
                 data-testid="summary-export-area"
                 onClick={onExportArea}
                 disabled={!canExportArea}
-                title={[t('cards.summary.exportAreaTitle'), ...exportAreaNotes].join(' ')}
-                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded bg-slate-800 px-2 text-xs font-medium text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                title={exportAreaTitle ?? undefined}
+                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded bg-emerald-700 px-2 text-xs font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <IconDownload /> {t('cards.summary.exportArea')}
+                <IconDownload /> {t('app.exportKml')}
+              </button>
+            )}
+            {onExportMission && (
+              <button
+                type="button"
+                data-testid="summary-export-mission"
+                onClick={onExportMission}
+                disabled={!canExportMission}
+                title={exportMissionTitle ?? undefined}
+                className="flex min-h-[44px] items-center justify-center gap-1.5 rounded bg-sky-700 px-2 text-xs font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <IconDownload /> {missionExportLabel(t, exportKind)}
               </button>
             )}
           </div>

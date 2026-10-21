@@ -64,10 +64,14 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   «(KMZ)» quando escrevia um ZIP (área com blocos, corredor partido em
   voos). Todos passam a chamar-se «Exportar WPML Avançado», com «(KMZ)» ou
   «(ZIP)» conforme o que esse clique escreve, decidido dos mesmos dados da
-  exportação. No cartão «Resumo e exportar» da área, com a divisão em
-  voos, o botão «Exportar os voos por base (ZIP)» repetia o dos voos por
-  base de «Exportar voos» logo acima: sai; sem divisão o botão da missão
-  fica, e «Área em KML» também.
+  exportação. O mesmo botão, no cabeçalho e no fim do painel do separador,
+  tem também a mesma dica. O cartão «Resumo e exportar» da área acaba
+  sempre no par do cabeçalho, igual em tudo — «Exportar KML da área» e
+  «Exportar WPML Avançado», pela mesma ordem, com a mesma dica, o mesmo
+  preflight e o mesmo ficheiro: o KML chamava-se ali «Área em KML» e vinha
+  depois, e com a divisão em voos o botão da missão dizia «Exportar os
+  voos por base (ZIP)». Com vários voos a dica dos dois diz qual dos ZIP
+  de «Exportar voos» sai: o dos voos por base, com bases, ou o de todos.
 - **Relatório: um nome e uma cor por voo.** O relatório numerava os voos
   1…20 no mapa, B01…B20 na tabela e A-1… nas fichas de campo, com
   todas as bases num ponto laranja e os blocos nas cores dos blocos. Passa

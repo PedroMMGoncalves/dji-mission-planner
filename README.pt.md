@@ -151,7 +151,7 @@ Gestos de edição: clique acrescenta vértices (durante o desenho, Backspace ou
 | Exportação | Conteúdo | Uso |
 | --- | --- | --- |
 | KML da área | Só o anel exterior do polígono do levantamento (sem buracos: o Pilot 2 não tem zonas de exclusão; o botão avisa) | Definir a área no DJI Pilot 2 e configurar aí a missão |
-| WPML (KMZ) — Área | `template.kml` + `waylines.wpml`, alturas por waypoint com terrain follow, disparo por distância/tempo/waypoint, `_area[-variantes]`, um KMZ por voo `_area[-variantes]_A-1` | Importação directa no Pilot 2; área dividida: todos os voos (`_voos.zip`), voos por base (`_voos-por-base.zip`, uma pasta por base) ou um voo; com bases o botão do cabeçalho descarrega o ZIP por base |
+| WPML (KMZ) — Área | `template.kml` + `waylines.wpml`, alturas por waypoint com terrain follow, disparo por distância/tempo/waypoint, `_area[-variantes]`, um KMZ por voo `_area[-variantes]_A-1` | Importação directa no Pilot 2; área dividida: todos os voos (`_voos.zip`), voos por base (`_voos-por-base.zip`, uma pasta por base) ou um voo; com bases o botão do cabeçalho — o mesmo do fim do cartão «Resumo e exportar» — descarrega o ZIP por base |
 | WPML (KMZ) — Corredor | Passagens ao longo de um eixo, gimbal nadir, disparo por distância ou por waypoint, seguimento de terreno por passagem, `_corridor_nN` (`-tf` com relevo) | Estradas, condutas, linhas de água, linhas eléctricas, rampas de mina |
 | WPML (KMZ) — Fachada | Rumo fixo e foto por waypoint, `_face_p1-N` | Faces, taludes, estruturas |
 | WPML (KMZ) — Órbita | Voo curvo contínuo, rumo ao POI, gimbal por nível, `_orbit_nN` (única ou ZIP por nível); espiral em vídeo com `startRecord`/`stopRecord`, `_orbit-video_nN` | Inspecção/3D de alvos isolados |

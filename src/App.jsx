@@ -34,6 +34,7 @@ import { useInspection } from './hooks/useInspection.js'
 import { useTerrain } from './hooks/useTerrain.js'
 import { useProjectSession } from './hooks/useProjectSession.js'
 import { DEFAULT_MISSION_NAME } from './mission/defaults.js'
+import { flightsArchiveName } from './mission/flightFiles.js'
 import { checkFaceClearance } from './utils/faceMode.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from './utils/units.js'
 import { DEFAULT_SAFETY } from './mission/safety.js'
@@ -486,6 +487,7 @@ function AppInner({ lang, setLang }) {
     canExportKMZ,
     handleExportKMZ,
     exportKind: areaExportKind,
+    exportSelection: areaExportSelection,
     handleExportFlights,
     flightFiles,
     exportBaseName,
@@ -723,6 +725,15 @@ function AppInner({ lang, setLang }) {
     corridor: corridorExportKind,
     circular: 'kmz',
   }[missionMode]
+  // a dica do mesmo botão, no cabeçalho e no fim do painel do separador: com
+  // a área em vários voos diz qual dos ZIP de «Exportar voos» sai
+  const modeExportTitle =
+    missionMode === 'area' && areaExportKind === 'zip'
+      ? t(
+          areaExportSelection === 'byBase' ? 'app.exportWpmlByBaseTitle' : 'app.exportWpmlAllTitle',
+          { file: `${flightsArchiveName(exportBaseName, { kind: areaExportSelection })}.zip` },
+        )
+      : t('app.exportWpmlTitle')
   const gated = (fn) => () => {
     if (!exportBlocked) fn()
   }
@@ -860,6 +871,7 @@ function AppInner({ lang, setLang }) {
         gated={gated}
         modeExport={modeExport}
         modeExportKind={modeExportKind}
+        modeExportTitle={modeExportTitle}
         modePlanOk={modePlanOk}
         setShowSettings={setShowSettings}
         setShowHelp={setShowHelp}
@@ -887,6 +899,7 @@ function AppInner({ lang, setLang }) {
                 draftCount={draftVertices.length}
                 onUndoVertex={removeLastDraftVertex}
                 onExport={gated(() => handleExportFace(faceTakeoff))}
+                exportTitle={modeExportTitle}
                 bases={bases}
                 takeoff={faceTakeoff}
                 exportBlocked={exportBlocked}
@@ -904,6 +917,7 @@ function AppInner({ lang, setLang }) {
                 cameraOk={sensor.type === 'camera'}
                 mode={mode}
                 onExportSingle={gated(() => handleExportOrbitSingle(orbitTakeoff))}
+                exportTitle={modeExportTitle}
                 onExportPerLevel={gated(() => handleExportOrbitPerLevel(orbitTakeoff))}
                 bases={bases}
                 takeoff={orbitTakeoff}
@@ -929,6 +943,7 @@ function AppInner({ lang, setLang }) {
                 onUndoAxisPoint={() => setDraftVertices((d) => d.slice(0, -1))}
                 draftCount={draftVertices.length}
                 onExport={gated(handleExportCorridor)}
+                exportTitle={modeExportTitle}
                 exportBlocked={exportBlocked}
                 areaParams={{
                   altitude: params.altitude,
@@ -966,6 +981,7 @@ function AppInner({ lang, setLang }) {
                 hasRing={Boolean(ring)}
                 onUndoVertex={removeLastDraftVertex}
                 onExportSingle={gated(handleExportCircularSingle)}
+                exportTitle={modeExportTitle}
                 onExportBlocks={gated(handleExportCircularBlocks)}
                 exportBlocked={exportBlocked}
                 onRemove={() => {
@@ -1025,6 +1041,8 @@ function AppInner({ lang, setLang }) {
                 }}
                 onExportMission={gated(handleExportKMZ)}
                 canExportMission={canExportKMZ && !exportBlocked}
+                exportMissionTitle={modeExportTitle}
+                exportAreaTitle={sheets.exportKmlTitle}
                 exportAreaNotes={areaKmlNotes}
                 basesPanel={{
                   rows: baseRows,

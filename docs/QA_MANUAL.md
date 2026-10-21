@@ -255,8 +255,10 @@ tablet real):
   voo (`..._B-3.kmz`, `..._B-4.kmz`, com zeros a partir de 10 voos); **Todos
   os voos (KMZ, ZIP)** dá `..._voos.zip` com todos soltos; **Um voo (KMZ)**
   com B-3 dá `..._B-3.kmz`; o botão de exportar do cabeçalho diz **(ZIP)** e
-  descarrega o ZIP por base; o cartão 7 não repete esse botão. Com um
-  bloqueio no preflight ficam os KMZ desactivados (os KML não).
+  descarrega o ZIP por base, com a dica a dizê-lo; no fim do cartão 7 estão
+  os dois botões do cabeçalho, pela mesma ordem, com o mesmo nome, a mesma
+  dica e o mesmo ficheiro. Com um bloqueio no preflight ficam os KMZ
+  desactivados (os KML não).
 - ☐ **Bases e blocos (KML)** aberto no Google Earth (ou no telemóvel).
   **Esperado:** pontos «Base A» e «Base B» com a ficha ao clicar, círculos
   das zonas, contornos dos blocos com o rótulo do voo.

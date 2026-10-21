@@ -256,6 +256,9 @@ async function configure(page, { cross = false, nadir = false, tf = false, split
 // no seu sítio. O rótulo diz o que sai: «(KMZ)», ou «(ZIP)» com vários voos.
 const HEADER_EXPORT = /Exportar WPML Avançado|Export Advanced WPML/
 const headerExport = (page) => page.locator('header').getByRole('button', { name: HEADER_EXPORT })
+const AREA_KML = /Exportar KML|Export area KML/
+// o do cabeçalho: o fim do cartão 7 tem o mesmo botão
+const headerKml = (page) => page.locator('header').getByRole('button', { name: AREA_KML })
 const panelExportButton = (page, card) =>
   page.getByTestId(`card-${card}`).getByRole('button', { name: HEADER_EXPORT })
 /** O rótulo do botão condiz com o ficheiro: «(ZIP)» para um .zip, «(KMZ)» para um .kmz. */
@@ -1653,9 +1656,7 @@ await scenario('area-mover-inteira', async () => {
   const pega = page.locator('.anchor-handle')
   check('mover: ha pega central numa area importada com mosaico', (await pega.count()) === 1)
 
-  const antes = kmlRing(
-    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'mover-antes.kml')),
-  )
+  const antes = kmlRing(await panelExport(page, headerKml(page), join(OUT, 'mover-antes.kml')))
   const box = await pega.boundingBox()
   const x = box.x + box.width / 2
   const y = box.y + box.height / 2
@@ -1665,9 +1666,7 @@ await scenario('area-mover-inteira', async () => {
   await page.mouse.up()
   await page.waitForTimeout(600)
 
-  const depois = kmlRing(
-    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'mover-depois.kml')),
-  )
+  const depois = kmlRing(await panelExport(page, headerKml(page), join(OUT, 'mover-depois.kml')))
   const a = centro(antes)
   const b = centro(depois)
   check('mover: a area foi para leste', b[0] > a[0], `${a[0].toFixed(5)} -> ${b[0].toFixed(5)}`)
@@ -1688,7 +1687,7 @@ await scenario('area-mover-inteira', async () => {
   await page.keyboard.press('Control+z')
   await page.waitForTimeout(600)
   const desfeito = kmlRing(
-    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'mover-desfeito.kml')),
+    await panelExport(page, headerKml(page), join(OUT, 'mover-desfeito.kml')),
   )
   const c = centro(desfeito)
   check(
@@ -2347,10 +2346,30 @@ await scenario('bases-exportar-por-base', async () => {
       (await rotuloCondiz(header, headName)),
     `${(await header.innerText()).trim()} → ${headName}`,
   )
-  // o cartão 7 já não repete esse botão: a saída por base só em «Exportar voos»
+  // o fim do cartão 7 é o par do cabeçalho, igual em tudo: nome, dica,
+  // preflight e ficheiro; a dica diz qual dos ZIP de «Exportar voos» sai
+  const fimMissao = page.getByTestId('summary-export-mission')
+  const [fimName, fimFile] = await download(page, fimMissao, join(OUT, 'cartao7.zip'))
   check(
-    'todos: o cartão «Resumo e exportar» não repete a exportação por base',
-    (await page.getByTestId('summary-export-mission').count()) === 0,
+    'cartão 7: o botão da missão é o do cabeçalho (nome, dica e o mesmo ZIP por base)',
+    (await fimMissao.innerText()).trim() === (await header.innerText()).trim() &&
+      (await fimMissao.getAttribute('title')) === (await header.getAttribute('title')) &&
+      /Voos por base \(KMZ, ZIP\)/.test(await header.getAttribute('title')) &&
+      (await fimMissao.isDisabled()) === (await header.isDisabled()) &&
+      fimName === headName &&
+      (await zipOrder(fimFile)).join() === entries.join(),
+    `${(await fimMissao.innerText()).trim()} → ${fimName} | ${await header.getAttribute('title')}`,
+  )
+  const fimKml = page.getByTestId('summary-export-area')
+  const [fimKmlName, fimKmlFile] = await download(page, fimKml, join(OUT, 'cartao7-area.kml'))
+  const [cabKmlName, cabKmlFile] = await download(page, headerKml(page), join(OUT, 'cab-area.kml'))
+  check(
+    'cartão 7: o KML da área é o do cabeçalho (nome, dica e o mesmo ficheiro)',
+    (await fimKml.innerText()).trim() === (await headerKml(page).innerText()).trim() &&
+      (await fimKml.getAttribute('title')) === (await headerKml(page).getAttribute('title')) &&
+      fimKmlName === cabKmlName &&
+      readFileSync(fimKmlFile, 'utf8') === readFileSync(cabKmlFile, 'utf8'),
+    `${(await fimKml.innerText()).trim()} → ${fimKmlName}`,
   )
 
   // KML de campo: bases, zonas, blocos com o rótulo do voo
@@ -2483,6 +2502,24 @@ await scenario('exportar-voos-sem-bases', async () => {
     join(OUT, 'sem-bases-kml.zip'),
   )
   const kmz = await zipOrder(kmzFile)
+  // sem bases o botão da missão (o do cabeçalho e o do fim do cartão 7, o
+  // mesmo) escreve o ZIP de todos, e a dica di-lo
+  const cab = headerExport(page)
+  const [cabName] = await download(page, cab, join(OUT, 'sem-bases-cabecalho.zip'))
+  const [fimName] = await download(
+    page,
+    page.getByTestId('summary-export-mission'),
+    join(OUT, 'sem-bases-cartao7.zip'),
+  )
+  check(
+    'sem bases: o cabeçalho e o fim do cartão 7 escrevem o ZIP de todos, e a dica di-lo',
+    cabName === kmzName &&
+      fimName === kmzName &&
+      /Todos os voos \(KMZ, ZIP\)/.test(await cab.getAttribute('title')) &&
+      (await page.getByTestId('summary-export-mission').getAttribute('title')) ===
+        (await cab.getAttribute('title')),
+    `${cabName} / ${fimName}`,
+  )
   const kmlZip = await JSZip.loadAsync(readFileSync(kmlFile))
   const kml = Object.keys(kmlZip.files)
   // o voo no nome: o que vem depois do tipo (…_area_3.kmz, …_poligono_3.kml)
@@ -4543,9 +4580,7 @@ await scenario('projecto-por-cima-da-sessao', async () => {
   // Ctrl+Z não sai do projecto aberto: a área continua a ser a de p2
   await page.keyboard.press('Control+z')
   await page.waitForTimeout(600)
-  const kml = kmlRing(
-    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'por-cima-undo.kml')),
-  )
+  const kml = kmlRing(await panelExport(page, headerKml(page), join(OUT, 'por-cima-undo.kml')))
   check(
     'projecto por cima: Ctrl+Z não repõe a área da sessão anterior',
     turf.booleanPointInPolygon(turf.point(centro(kml)), poly),
@@ -4585,9 +4620,7 @@ await scenario('ancora-editada-sobrevive', async () => {
   const handles = page.locator('.vertex-handle')
   check('âncora editada: o rectângulo tem 4 vértices editáveis', (await handles.count()) === 4)
   await dragMarker(page, handles.first(), 60, 40)
-  const editado = kmlRing(
-    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'ancora-editado.kml')),
-  )
+  const editado = kmlRing(await panelExport(page, headerKml(page), join(OUT, 'ancora-editado.kml')))
   const rect = [...lados(editado)]
   check(
     'âncora editada: o anel deixou de ser um rectângulo (um vértice mexeu)',
@@ -4598,7 +4631,7 @@ await scenario('ancora-editada-sobrevive', async () => {
   await page.reload({ waitUntil: 'domcontentloaded' })
   await esperaArea(page)
   const recarregado = kmlRing(
-    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'ancora-recarregado.kml')),
+    await panelExport(page, headerKml(page), join(OUT, 'ancora-recarregado.kml')),
   )
   check(
     'âncora editada: o vértice arrastado sobrevive ao recarregar',
@@ -4610,9 +4643,7 @@ await scenario('ancora-editada-sobrevive', async () => {
   const pega = page.locator('.anchor-handle')
   check('âncora editada: há pega central', (await pega.count()) === 1)
   await dragMarker(page, pega, 100, 50)
-  const movido = kmlRing(
-    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'ancora-movido.kml')),
-  )
+  const movido = kmlRing(await panelExport(page, headerKml(page), join(OUT, 'ancora-movido.kml')))
   const l1 = lados(recarregado)
   const l2 = lados(movido)
   check(
@@ -5278,7 +5309,7 @@ await scenario('impressao-area-simples', async () => {
   const { page, errors } = await openMission({ area: fx.hill, dem: false })
   const agora = await impressaoModo(page, 'impressao-area.kmz')
   agora.kml = await impressaoFicheiro(
-    await panelExport(page, /Exportar KML|Export area KML/, join(OUT, 'impressao-area.kml')),
+    await panelExport(page, headerKml(page), join(OUT, 'impressao-area.kml')),
   )
   conferir('area-simples', agora, check, OUT)
   check('impressão da área simples: sem erros de página', errors.length === 0, errors.join(' | '))

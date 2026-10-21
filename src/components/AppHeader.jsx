@@ -28,6 +28,8 @@ export default function AppHeader({
   modeExport,
   // o que modeExport escreve ('kmz' | 'zip'), para o rótulo dizer o que sai
   modeExportKind = 'kmz',
+  // a sua dica, a mesma no botão do fim do painel do separador
+  modeExportTitle = null,
   modePlanOk,
   setShowSettings,
   setShowHelp,
@@ -108,7 +110,7 @@ export default function AppHeader({
             // separador Area
             onClick={gated(modeExport)}
             disabled={!modePlanOk || exportBlocked}
-            title={t('app.exportWpmlTitle')}
+            title={modeExportTitle ?? t('app.exportWpmlTitle')}
             className="flex items-center gap-1.5 whitespace-nowrap rounded bg-sky-700 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {missionExportLabel(t, modeExportKind)}

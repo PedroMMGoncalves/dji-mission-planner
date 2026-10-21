@@ -70,6 +70,8 @@ export default function CorridorPanel({
   onUndoAxisPoint,
   draftCount,
   onExport,
+  // a dica do botão de exportar do cabeçalho: é o mesmo botão
+  exportTitle = undefined,
   exportBlocked = false,
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
   safety = null,
@@ -542,6 +544,7 @@ export default function CorridorPanel({
             <button
               onClick={onExport}
               disabled={exportBlocked}
+              title={exportTitle}
               className="mt-3 flex w-full items-center justify-center gap-1.5 rounded bg-sky-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <IconDownload /> {missionExportLabel(t, corridorExportKind)}

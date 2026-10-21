@@ -1420,7 +1420,10 @@ missão dentro do KMZ (`<name>` da pasta do `template.kml`). Por isso:
   uma pasta por base (`base-A/`, `base-B/`…) com os voos dessa base; «Um voo
   (KMZ)» = o KMZ desse voo sozinho. Com bases, o botão do cabeçalho descarrega
   o ZIP por base (um clique, um ficheiro: os dois ZIP com os mesmos KMZ
-  punham cada voo duas vezes no Pilot 2). Dentro de um ZIP, os KMZ vão pela
+  punham cada voo duas vezes no Pilot 2), sem bases o de todos; o fim do
+  cartão repete o par do cabeçalho («Exportar KML da área», «Exportar WPML
+  Avançado»), igual em tudo — nome, dica, preflight e ficheiro —, e a dica
+  diz qual dos ZIP sai. Dentro de um ZIP, os KMZ vão pela
   ordem de voo (base a base, pela ordem dos rótulos, e em cada base pela
   ordem do mosaico). Os KML dos blocos fazem o mesmo par, todos soltos ou
   numa pasta por base (KML dos blocos, abaixo).

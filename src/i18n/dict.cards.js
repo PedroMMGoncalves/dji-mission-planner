@@ -95,15 +95,6 @@ export default {
     en: 'Review the plan before re-exporting: the square or flight with the same label may no longer be the same one.',
   },
   'cards.versionNoteClose': { pt: 'Entendido', en: 'Got it' },
-  'cards.summary.exportMissionTitle': {
-    pt: 'A mesma exportação do botão «Exportar WPML Avançado» do cabeçalho, atrás do preflight.',
-    en: 'The same export as the header “Export Advanced WPML” button, behind the preflight.',
-  },
-  'cards.summary.exportArea': { pt: 'Área em KML', en: 'Area as KML' },
-  'cards.summary.exportAreaTitle': {
-    pt: 'O polígono da área em KML (o mesmo do botão «Exportar KML da área» do cabeçalho).',
-    en: 'The area polygon as KML (the same as the header “Export area KML” button).',
-  },
 
   // acções de segurança (src/mission/safety.js)
   'safety.title': { pt: 'Acções de segurança', en: 'Safety actions' },

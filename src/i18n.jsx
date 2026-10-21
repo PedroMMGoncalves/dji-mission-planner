@@ -185,6 +185,15 @@ const BASE_DICT = {
     pt: 'Missão completa DJI (wpmz/template.kml + waylines.wpml)',
     en: 'Full DJI mission (wpmz/template.kml + waylines.wpml)',
   },
+  // a área em vários voos: qual dos ZIP de «Exportar voos» o botão escreve
+  'app.exportWpmlAllTitle': {
+    pt: 'Um KMZ por voo, todos soltos num ZIP ({file}): o mesmo que «Todos os voos (KMZ, ZIP)» em «Exportar voos».',
+    en: 'One KMZ per flight, all loose in a ZIP ({file}): the same as “All flights (KMZ, ZIP)” under “Export flights”.',
+  },
+  'app.exportWpmlByBaseTitle': {
+    pt: 'Um KMZ por voo, numa pasta por base ({file}): o mesmo que «Voos por base (KMZ, ZIP)» em «Exportar voos».',
+    en: 'One KMZ per flight, in one folder per base ({file}): the same as “Flights by base (KMZ, ZIP)” under “Export flights”.',
+  },
   'app.loading3d': { pt: 'A carregar a vista 3D…', en: 'Loading 3D view…' },
   'app.report': { pt: 'Relatório', en: 'Report' },
   'app.reportTitle': {

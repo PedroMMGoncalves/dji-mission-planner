@@ -33,6 +33,8 @@ export default function OrbitPanel({
   cameraOk,
   mode,
   onExportSingle,
+  // a dica do botão de exportar do cabeçalho: é o mesmo botão
+  exportTitle = undefined,
   onExportPerLevel,
   // acções de segurança da missão (fim, sinal perdido): src/mission/safety.js
   safety = null,
@@ -330,6 +332,7 @@ export default function OrbitPanel({
           <button
             onClick={onExportSingle}
             disabled={!stats || exportBlocked}
+            title={exportTitle}
             className="flex items-center justify-center gap-1.5 rounded bg-sky-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <IconDownload /> {missionExportLabel(t, 'kmz')}
