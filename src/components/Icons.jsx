@@ -181,6 +181,124 @@ export function FlagGB({ className = 'h-3.5 w-5' }) {
 
 /** SVG standalone (string) para o marcador da base no mapa Leaflet. */
 
+/** Seta para baixo — abre um menu ou uma secção. */
+/** @param {{className?: string}} props */
+export function IconChevronDown({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2}>
+      <path d="m6 9 6 6 6-6" />
+    </Svg>
+  )
+}
+
+/** Seta para a direita — «Mais opções». */
+/** @param {{className?: string}} props */
+export function IconChevronRight({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2}>
+      <path d="m9 18 6-6-6-6" />
+    </Svg>
+  )
+}
+
+/** Cruz — fechar. */
+/** @param {{className?: string}} props */
+export function IconClose({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2}>
+      <path d="M18 6 6 18M6 6l12 12" />
+    </Svg>
+  )
+}
+
+/** Círculo com «i» — nota, sem plano. */
+/** @param {{className?: string}} props */
+export function IconInfo({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4M12 8h.01" />
+    </Svg>
+  )
+}
+
+/** Triângulo com «!» — aviso. */
+/** @param {{className?: string}} props */
+export function IconWarning({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2}>
+      <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+      <path d="M12 9v4M12 17h.01" />
+    </Svg>
+  )
+}
+
+/** Octógono com cruz — bloqueio. */
+/** @param {{className?: string}} props */
+export function IconBlocked({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2}>
+      <path d="M7.9 2h8.2L22 7.9v8.2L16.1 22H7.9L2 16.1V7.9z" />
+      <path d="m15 9-6 6M9 9l6 6" />
+    </Svg>
+  )
+}
+
+/** Círculo com visto — sem bloqueios. */
+/** @param {{className?: string}} props */
+export function IconCheckCircle({ className }) {
+  return (
+    <Svg className={className} strokeWidth={2}>
+      <path d="M22 11.1V12a10 10 0 1 1-5.9-9.1" />
+      <path d="M22 4 12 14l-3-3" />
+    </Svg>
+  )
+}
+
+/** Círculo com «?» — ajuda. */
+/** @param {{className?: string}} props */
+export function IconHelp({ className }) {
+  return (
+    <Svg className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01" />
+    </Svg>
+  )
+}
+
+/** Folha com linhas — relatório. */
+/** @param {{className?: string}} props */
+export function IconReport({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+    </Svg>
+  )
+}
+
+/** Prancheta com visto — checklist de campo. */
+/** @param {{className?: string}} props */
+export function IconClipboard({ className }) {
+  return (
+    <Svg className={className}>
+      <rect x="8" y="2" width="8" height="4" rx="1" />
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+      <path d="m9 14 2 2 4-4" />
+    </Svg>
+  )
+}
+
+/** Lápis — mudar o nome. */
+/** @param {{className?: string}} props */
+export function IconPencil({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M16.9 3.6a2.1 2.1 0 0 1 3 3L8 18.5 4 19.5l1-4z" />
+    </Svg>
+  )
+}
+
 /** Roda dentada — configuração. */
 /** @param {{className?: string}} props */
 export function IconGear({ className }) {
