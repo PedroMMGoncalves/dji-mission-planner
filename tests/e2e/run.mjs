@@ -750,6 +750,15 @@ const marcarPontos = (page, onde = 'gaveta') =>
     name: MARCAR_PONTOS,
   })
 const modo = (page, re) => page.getByRole('button', { name: re, exact: true }).click()
+// Os painéis da face, da órbita, do corredor e do circular abrem uma secção
+// de cada vez, e a fechada esconde os campos: abrir a `card-<id>` (se está
+// fechada) antes de mexer no que tem dentro.
+async function abrirNoPainel(page, card) {
+  const botao = page.getByTestId(`card-${card}`).locator(':scope > h3 > button')
+  if ((await botao.getAttribute('aria-expanded')) !== 'true') await botao.click()
+}
+// o botão de desenhar o eixo do corredor diz o que desenha
+const DESENHAR_EIXO = /^Desenhar o eixo$|^Draw the centreline$/
 /** Descarrega pelo botão `btn` (um Locator, ou o nome do botão). */
 const panelExport = async (page, btn, file) => {
   const loc = btn instanceof RegExp ? page.getByRole('button', { name: btn }) : btn
@@ -762,7 +771,7 @@ const plano = { toM, ground: () => 0 }
 await scenario('corredor-desenhado', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Corredor$|^Corridor$/)
-  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await page.getByRole('button', { name: DESENHAR_EIXO }).click()
   await clickMap(page, 330, 905)
   await clickMap(page, 1450, 1275)
   await clickMap(page, 2565, 905)
@@ -775,6 +784,7 @@ await scenario('corredor-desenhado', async () => {
   await page.waitForTimeout(800)
   const txt = await bodyText(page)
   check('corredor: painel mostra as passagens', /passagens|passes/.test(txt))
+  await abrirNoPainel(page, 'corredor-5')
   const routes = await readRoutes(
     await panelExport(page, panelExportButton(page, 'corredor-5'), join(OUT, 'corredor.kmz')),
   )
@@ -799,7 +809,7 @@ await scenario('corredor-desenhado', async () => {
 await scenario('corredor-voos-parametros-proprios', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Corredor$|^Corridor$/)
-  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await page.getByRole('button', { name: DESENHAR_EIXO }).click()
   await clickMap(page, 330, 905)
   await clickMap(page, 1450, 1275)
   await clickMap(page, 2565, 905)
@@ -807,6 +817,7 @@ await scenario('corredor-voos-parametros-proprios', async () => {
   const meia = page.locator('label', { hasText: /Meia-largura|Half-width/ }).locator('input')
   await meia.fill('300')
   await meia.press('Tab')
+  await abrirNoPainel(page, 'corredor-2')
   await page.getByTestId('corridor-own-params').check()
   const altura = page
     .getByTestId('card-corredor-2')
@@ -815,6 +826,7 @@ await scenario('corredor-voos-parametros-proprios', async () => {
   await altura.fill('60')
   await altura.press('Tab')
   await page.waitForTimeout(800)
+  await abrirNoPainel(page, 'corredor-5')
   const exportar = panelExportButton(page, 'corredor-5')
   const alturas = (wpml) =>
     [...wpml.matchAll(/<wpml:executeHeight>([-\d.]+)</g)].map((m) => Number(m[1]))
@@ -825,9 +837,14 @@ await scenario('corredor-voos-parametros-proprios', async () => {
     h1.length > 0 && h1.every((h) => h === 60),
     `${Math.min(...h1)}–${Math.max(...h1)} m`,
   )
-  await page.getByTestId('corridor-split').selectOption('battery')
+  // a divisão em voos e a tabela dos voos estão na secção «Voos e bases»
+  await abrirNoPainel(page, 'corredor-voos')
+  await page
+    .getByTestId('corridor-split')
+    .getByRole('button', { name: /^Por bateria$|^By battery$/ })
+    .click()
   await page.waitForTimeout(1200)
-  const voos = page.getByTestId('corridor-flights').locator('li')
+  const voos = page.getByTestId('corridor-flights').locator('tbody tr')
   const n = await voos.count()
   check(
     'corredor: partido pela bateria, o painel lista os voos',
@@ -859,6 +876,7 @@ await scenario('corredor-voos-parametros-proprios', async () => {
     `${nVoos} · ${(await maisLongo.innerText()).replace(/\s+/g, ' ')}`,
   )
   // partido em voos sai um ZIP, e os botões do painel e do cabeçalho dizem-no
+  await abrirNoPainel(page, 'corredor-5')
   check(
     'corredor em voos: os botões do painel e do cabeçalho dizem (ZIP)',
     /\(ZIP\)/.test(await exportar.innerText()) &&
@@ -958,7 +976,7 @@ await scenario('desenho-teclas-primeiro-vertice', async () => {
   check('desenho: Ctrl+Z depois de fechar desfaz a área', (await handles.count()) === 0)
 
   await modo(page, /^Corredor$|^Corridor$/)
-  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await page.getByRole('button', { name: DESENHAR_EIXO }).click()
   for (const [dx, dy] of pts.slice(0, 3)) await clickMapCentro(page, dx, dy)
   await page.keyboard.press('Backspace')
   const axBack = await draft.count()
@@ -971,7 +989,7 @@ await scenario('desenho-teclas-primeiro-vertice', async () => {
     axBack === 2 &&
       axUndo === 1 &&
       (await draft.count()) === 0 &&
-      (await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).count()) === 1,
+      (await page.getByRole('button', { name: DESENHAR_EIXO }).count()) === 1,
     `${axBack} e ${axUndo}`,
   )
   check('desenho: sem erros de página', errors.length === 0, errors.join(' | '))
@@ -986,11 +1004,14 @@ await scenario('circular-sobre-a-area', async () => {
   // o rectângulo de 2,5 x 1,8 km com o raio de 30 m dava milhares de
   // círculos: o painel explica e o KMZ fica desactivado
   let txt = await bodyText(page)
+  // o erro está na secção dos círculos; o botão de exportar, na do resumo
+  await abrirNoPainel(page, 'circular-4')
   check(
     'circular: demasiados círculos com o raio por omissão é um erro explicado',
     /Demasiados círculos|Too many circles/.test(txt) &&
       (await panelExportButton(page, 'circular-4').isDisabled()),
   )
+  await abrirNoPainel(page, 'circular-2')
   const setField = async (re, value) => {
     const input = page.locator('label', { hasText: re }).locator('input')
     await input.fill(String(value))
@@ -999,9 +1020,16 @@ await scenario('circular-sobre-a-area', async () => {
   await setField(/^Raio|^Radius/, 150)
   await setField(/Sobreposição entre círculos|Circle overlap/, 25)
   await page.waitForTimeout(800)
-  txt = await bodyText(page)
-  const m = /(\d+) círculos × (\d+) pontos|(\d+) circles × (\d+) points/.exec(txt)
-  check('circular: painel mostra círculos e pontos por círculo', Boolean(m), m?.[0])
+  // os círculos e os pontos de cada um estão no mosaico do resumo («153 /
+  // × 20 pontos»), que tem também o botão de exportar
+  await abrirNoPainel(page, 'circular-4')
+  const mosaico = await page.getByTestId('circular-circles').innerText()
+  const m = /(\d+)\s+×\s+(\d+) (?:pontos|points)/.exec(mosaico)
+  check(
+    'circular: painel mostra círculos e pontos por círculo',
+    Boolean(m),
+    (m?.[0] ?? mosaico).replace(/\s+/g, ' '),
+  )
   check(
     'circular: o conselho de sobreposição aparece com o número de círculos',
     (await page.getByTestId('circular-advice').count()) === 1,
@@ -1015,8 +1043,8 @@ await scenario('circular-sobre-a-area', async () => {
   const wpml = routes[0].wpml
   const r = analyseRoute(wpml, plano)
   executavel(r)
-  const circles = Number(m?.[1] ?? m?.[3])
-  const pts = Number(m?.[2] ?? m?.[4])
+  const circles = Number(m?.[1])
+  const pts = Number(m?.[2])
   const fotos = (wpml.match(/<wpml:actionActuatorFunc>takePhoto</g) || []).length
   const rumos = (wpml.match(/<wpml:waypointHeadingAngle>/g) || []).length
   check(
@@ -1040,6 +1068,7 @@ await scenario('circular-sobre-a-area', async () => {
   check('resumo do projecto conta a área e a missão circular', /2 planos|2 plans/.test(txt))
   // retirada, a missão circular deixa de contar
   await modo(page, /^Circular$|^Circular$/)
+  await abrirNoPainel(page, 'circular-4')
   await page
     .getByRole('button', { name: /Retirar a missão circular|Remove the circular mission/ })
     .click()
@@ -1058,7 +1087,7 @@ await scenario('corredor-segue-terreno', async () => {
   // dentro dela: um so relevo para os dois
   const { page, errors } = await openMission({ area: fx.rect, dem: true })
   await modo(page, /^Corredor$|^Corridor$/)
-  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await page.getByRole('button', { name: DESENHAR_EIXO }).click()
   await clickMap(page, 330, 905)
   await clickMap(page, 1450, 1275)
   await clickMap(page, 2565, 905)
@@ -1070,6 +1099,7 @@ await scenario('corredor-segue-terreno', async () => {
   await page.waitForTimeout(800)
   // sem seguimento de terreno o corredor plano entra nas colinas: o preflight
   // bloqueia, e tanto o botão do painel como o do cabeçalho ficam desactivados
+  await abrirNoPainel(page, 'corredor-5')
   const exportPainel = panelExportButton(page, 'corredor-5')
   const exportCabecalho = headerExport(page)
   check(
@@ -1080,6 +1110,8 @@ await scenario('corredor-segue-terreno', async () => {
         await bodyText(page),
       ),
   )
+  // o seguimento de terreno está na secção «Relevo»
+  await abrirNoPainel(page, 'corredor-3')
   const tf = page
     .locator('label', { hasText: /cada passagem sobre o seu solo|each pass over its own ground/ })
     .locator('input')
@@ -1139,6 +1171,7 @@ await scenario('fachada-desenhada', async () => {
   await clickMap(page, 2195, 1050)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
   await page.waitForTimeout(800)
+  await abrirNoPainel(page, 'fachada-4')
   const routes = await readRoutes(
     await panelExport(page, panelExportButton(page, 'fachada-4'), join(OUT, 'fachada.kmz')),
   )
@@ -1185,12 +1218,15 @@ await scenario('fachada-em-l', async () => {
   await clickMap(page, 1820, 1050)
   await clickMap(page, 1820, 1605)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
+  // a espera em cada foto está na secção «Captura»
+  await abrirNoPainel(page, 'fachada-captura')
   const espera = page
     .locator('label', { hasText: /Espera em cada foto|Wait at each photo/ })
     .locator('input')
   await espera.fill('2')
   await espera.press('Tab')
   await page.waitForTimeout(800)
+  await abrirNoPainel(page, 'fachada-4')
   const exportar = panelExportButton(page, 'fachada-4')
   check('fachada em L: a exportação fica disponível', await exportar.isEnabled())
   const [rota] = await readRoutes(await panelExport(page, exportar, join(OUT, 'fachada-l.kmz')))
@@ -1229,13 +1265,16 @@ await scenario('fachada-em-l', async () => {
     fotos === r.n && esperas.length === fotos && esperas.every((x) => x === 2),
     `${fotos} fotos, ${esperas.length} esperas`,
   )
-  // prolongamento: sem ele, a primeira foto recua o que o painel diz
+  // prolongamento: sem ele, a primeira foto recua o que o painel diz (o
+  // interruptor e a dica estão nos parâmetros da face)
+  await abrirNoPainel(page, 'fachada-2')
   const dica = await page
-    .locator('p', { hasText: /para lá das pontas da face|beyond the ends of the face/ })
+    .locator('p', { hasText: /para lá das pontas|beyond the ends/ })
     .innerText()
   const extM = Number(/(\d+(?:\.\d+)?) m (?:para lá|beyond)/.exec(dica)?.[1])
   await page.getByTestId('face-extend-ends').uncheck()
   await page.waitForTimeout(800)
+  await abrirNoPainel(page, 'fachada-4')
   const [semPontas] = await readRoutes(
     await panelExport(page, exportar, join(OUT, 'fachada-l-sem-pontas.kmz')),
   )
@@ -1281,6 +1320,9 @@ await scenario('fachada-v-fechado-por-dentro', async () => {
     localStorage.setItem('dji-mission-planner:project:v1', JSON.stringify(p))
   }, baseline)
   await page.reload({ waitUntil: 'domcontentloaded' })
+  // a secção do resumo, com o botão de exportar, abre-se depois de o painel aparecer
+  await page.getByTestId('card-fachada-4').waitFor({ timeout: 20000 })
+  await abrirNoPainel(page, 'fachada-4')
   const exportar = panelExportButton(page, 'fachada-4')
   const botao = exportar
   await botao.waitFor({ timeout: 20000 })
@@ -1303,12 +1345,97 @@ await scenario('fachada-v-fechado-por-dentro', async () => {
   return { page }
 })
 
+// Os painéis dos outros modos em secções, como o da área: uma aberta de
+// cada vez, fechadas com o resumo numa linha; o botão de exportar do resumo
+// é o do cabeçalho (o mesmo nome, a mesma dica e o mesmo estado); «Ver»
+// abre a lista do preflight; «O que vai no KMZ» abre e fecha; e o aviso do
+// afastamento não verificado leva ao separador Área, onde se importa o MDS.
+await scenario('modos-em-seccoes', async () => {
+  const { page, errors } = await comProjecto(
+    { area: fx.rect, dem: false },
+    {
+      missionMode: 'face',
+      faceConfig: {
+        baseline: [toLL(800, 800), toLL(880, 800), toLL(880, 860)],
+        heightM: 20,
+        standoffM: 15,
+        side: 'left',
+      },
+    },
+  )
+  const painel = page.getByRole('region', {
+    name: /Parâmetros da missão de face|Face mission parameters/,
+  })
+  const abertas = () =>
+    painel
+      .locator('section[data-testid^="card-"]')
+      .evaluateAll((els) =>
+        els
+          .filter(
+            (e) =>
+              e.querySelector(':scope > h3 > button')?.getAttribute('aria-expanded') === 'true',
+          )
+          .map((e) => e.dataset.testid.slice(5)),
+      )
+  const antes = await abertas()
+  const resumoPe = (await page.getByTestId('card-fachada-1').innerText()).replace(/\s+/g, ' ')
+  check(
+    'secções: com o pé da face desenhado abre a dos parâmetros, e a fechada diz o resumo',
+    antes.join() === 'fachada-2' && /Desenhado no mapa|Drawn on the map/.test(resumoPe),
+    `${antes.join()} · ${resumoPe.slice(0, 80)}`,
+  )
+  await abrirNoPainel(page, 'fachada-4')
+  check('secções: abrir o resumo fecha a outra', (await abertas()).join() === 'fachada-4')
+  const doPainel = panelExportButton(page, 'fachada-4')
+  const doCabecalho = headerExport(page)
+  check(
+    'secções: o botão de exportar do resumo é o do cabeçalho (nome, dica e estado)',
+    (await doPainel.innerText()).trim() === (await doCabecalho.innerText()).trim() &&
+      (await doPainel.getAttribute('title')) === (await doCabecalho.getAttribute('title')) &&
+      (await doPainel.isDisabled()) === (await doCabecalho.isDisabled()),
+    `${(await doPainel.innerText()).trim()} · ${await doPainel.getAttribute('title')}`,
+  )
+  const kmz = page.getByTestId('mode-kmz-contents')
+  const abrirKmz = kmz.getByRole('button', { name: /O que vai no KMZ|What goes into the KMZ/ })
+  await abrirKmz.click()
+  check(
+    'secções: «O que vai no KMZ» abre e diz o que a exportação escreve',
+    (await abrirKmz.getAttribute('aria-expanded')) === 'true' &&
+      /Um waypoint por posição de foto|One waypoint per photo position/.test(await kmz.innerText()),
+  )
+  await page
+    .getByTestId('mode-preflight')
+    .getByRole('button', { name: /Ver a lista do preflight|See the preflight list/ })
+    .click()
+  await page.getByTestId('preflight-list').waitFor({ timeout: 5000 })
+  check(
+    'secções: «Ver» abre a lista do preflight',
+    (await page.getByTestId('preflight-list').count()) === 1,
+  )
+  await page.keyboard.press('Escape')
+  await abrirNoPainel(page, 'fachada-2')
+  await page
+    .getByRole('button', { name: /Importar um GeoTIFF em Área e relevo|Import a GeoTIFF in Area/ })
+    .click()
+  await page.waitForTimeout(400)
+  check(
+    'secções: o aviso do afastamento leva ao separador Área',
+    (await page
+      .getByRole('button', { name: /^Área$|^Area$/, exact: true })
+      .getAttribute('aria-current')) === 'true',
+  )
+  check('secções: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 await scenario('orbita-marcada', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Órbita$|^Orbit$/)
   await page.getByRole('button', { name: /Marcar POI|Mark POI/ }).click()
   await clickMap(page, 1450, 1050)
   await page.waitForTimeout(800)
+  await abrirNoPainel(page, 'orbita-5')
   const single = await readRoutes(
     await panelExport(page, panelExportButton(page, 'orbita-5'), join(OUT, 'orbita.kmz')),
   )
@@ -1335,8 +1462,10 @@ await scenario('orbita-marcada', async () => {
     `${perLevel.length} níveis`,
   )
   // captura em vídeo: espiral contínua a gravar do primeiro ao último ponto
+  await abrirNoPainel(page, 'orbita-2')
   await page.getByRole('radio', { name: /Vídeo|Video/ }).click()
   await page.waitForTimeout(500)
+  await abrirNoPainel(page, 'orbita-5')
   const [dlVideo] = await Promise.all([
     page.waitForEvent('download', { timeout: 30000 }),
     panelExportButton(page, 'orbita-5').click(),
@@ -1365,6 +1494,7 @@ await scenario('orbita-marcada', async () => {
     'órbita vídeo: a exportação por nível fica desactivada',
     await page.getByRole('button', { name: /um KMZ por nível|one KMZ per level/ }).isDisabled(),
   )
+  await abrirNoPainel(page, 'orbita-2')
   await page.getByRole('radio', { name: /Fotografia|Photo/ }).click()
   await modo(page, /^Área$|^Area$/)
   await page.waitForTimeout(500)
@@ -1385,12 +1515,16 @@ await scenario('orbita-marcada', async () => {
 await scenario('orbita-aeronave-e-inclinacoes', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   await modo(page, /^Órbita$|^Orbit$/)
+  // a primeira secção do painel, que se abre para escolher
+  await abrirNoPainel(page, 'orbita-aeronave')
   const picker = page.getByTestId('aircraft-picker')
   check('órbita: aeronave e sensor no topo do painel', await picker.isVisible())
   await picker.getByTestId('aircraft-picker-aircraft').selectOption('M300RTK')
   await picker.getByTestId('aircraft-picker-payload').selectOption('P1')
+  await abrirNoPainel(page, 'orbita-1')
   await page.getByRole('button', { name: /Marcar POI|Mark POI/ }).click()
   await clickMap(page, 1450, 1050)
+  await abrirNoPainel(page, 'orbita-2')
   await page.getByTestId('orbit-capture-multi').click()
   await page.waitForTimeout(800)
   const angulos = await page
@@ -1402,6 +1536,7 @@ await scenario('orbita-aeronave-e-inclinacoes', async () => {
     JSON.stringify(angulos) === JSON.stringify([-45, 0, 25]),
     angulos.join(', '),
   )
+  await abrirNoPainel(page, 'orbita-5')
   const [rota] = await readRoutes(
     await panelExport(
       page,
@@ -1669,7 +1804,7 @@ await scenario('mdt-importado-acompanha-a-geometria', async () => {
   // métricas
   await afastar(page)
   await afastar(page)
-  await page.getByRole('button', { name: /^Desenhar$|^Draw$/ }).click()
+  await page.getByRole('button', { name: DESENHAR_EIXO }).click()
   await clickMap(page, -2130, 1050)
   await clickMap(page, 5035, 975)
   await page.getByRole('button', { name: /^Concluir$|^Finish$/ }).click()
