@@ -417,6 +417,13 @@ export default {
     pt: 'ficha da base {label} ({n} de {total})',
     en: 'sheet of base {label} ({n} of {total})',
   },
+  // a folha de uma base com muitos voos, em várias páginas
+  'bases.a4.page': { pt: 'página {n} de {total}', en: 'page {n} of {total}' },
+  'bases.a4.cont': {
+    pt: '{base} · voos {flights} · continuação',
+    en: '{base} · flights {flights} · continued',
+  },
+  'bases.a4.contTable': { pt: '{title} (continuação)', en: '{title} (continued)' },
   /* ---- Bacias de visão (src/mission/viewshedPlan.js) ---- */
   'bases.view.title': { pt: 'Bacias de visão', en: 'Viewsheds' },
   'bases.view.layer': { pt: 'Mostrar no mapa', en: 'Show on the map' },

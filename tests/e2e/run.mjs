@@ -6995,6 +6995,70 @@ await scenario('checklist-registo-partilhado', async () => {
   return { page }
 })
 
+/* ---- a folha A4 de uma base com muitos voos -------------------------------
+ * Com a distância VLOS a 2500 m e o relevo global plano, uma base fica com os
+ * voos todos: a folha não cabe numa página nem com a letra reduzida. Saía em
+ * duas, cortada a meio dos críticos e com «(1 de 1)» no rodapé; pagina-se de
+ * propósito, com o número de cada página. */
+await scenario('ficha-base-muitos-voos', async () => {
+  const { page, errors } = await openMission({
+    area: fx.rect,
+    dem: false,
+    initScript: () => {
+      try {
+        localStorage.setItem(
+          'dji-mission-planner:equipment',
+          JSON.stringify({ aircraft: { M3E: { vlosM: 2500 } } }),
+        )
+      } catch {
+        /* armazenamento recusado: o cenário falha no número de voos */
+      }
+    },
+  })
+  await exportReady(page)
+  await configure(page, { split: 'Bateria' })
+  await proposeAndWait(page)
+  await page.getByRole('button', { name: /Checklist de campo|Field checklist/ }).click()
+  const cartoes = page.getByTestId('base-sheet-card')
+  await cartoes.first().waitFor({ timeout: 10000 })
+  // a base com mais voos (o nome do cartão diz-os todos)
+  const nomes = await cartoes.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')))
+  const nVoos = nomes.map((n) => (n.match(/[A-Z]-\d+/g) ?? []).length)
+  const i = nVoos.indexOf(Math.max(...nVoos))
+  await cartoes.nth(i).click()
+  const folha = page.getByTestId('sheet-view').getByTestId('base-sheet')
+  await folha.waitFor({ timeout: 10000 })
+  const P = Number(await folha.getAttribute('data-pages'))
+  const paginas = folha.locator('.chk-ficha-pagina')
+  const rodapes = await paginas.evaluateAll((els) =>
+    els.map((e) => e.querySelector('[data-rodape]')?.textContent ?? ''),
+  )
+  const linhas = await folha
+    .getByTestId('base-sheet-flight')
+    .evaluateAll((els) => els.map((e) => e.dataset.flight))
+  check(
+    'folha com muitos voos: em várias páginas, cada uma com o seu número no rodapé',
+    nVoos[i] >= 15 &&
+      P >= 2 &&
+      (await paginas.count()) === P &&
+      rodapes.every((r, k) => r.includes(`página ${k + 1} de ${P}`)) &&
+      // a tabela dos voos partida entre linhas: cada voo uma vez, pela ordem
+      linhas.length === nVoos[i] &&
+      new Set(linhas).size === linhas.length,
+    `${nVoos[i]} voos, ${P} páginas | ${rodapes.map((r) => r.slice(-40)).join(' / ')}`,
+  )
+  // impressa, sai nessas páginas (um bloco cortado daria uma a mais)
+  const pdf = await page.pdf({ format: 'A4' })
+  check(
+    'folha com muitos voos: imprime-se nas páginas que o rodapé diz',
+    paginasPdf(pdf) === P,
+    `${paginasPdf(pdf)} páginas no PDF, ${P} na folha`,
+  )
+  check('folha com muitos voos: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 /* ---- M3-T3: a ligação do App às verificações de segurança -------------- */
 /** Importa um MDT pela interface e espera que o relevo fique carregado. */
 async function importDem(page, file) {

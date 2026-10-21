@@ -1,8 +1,9 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { Fragment, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useT } from '../i18n.jsx'
 import { rangeText, tCount } from '../i18n/format.js'
 import { sheetHeights, zoneNotice } from '../mission/fieldSheet.js'
 import { qrSvg } from '../utils/qrCode.js'
+import { paginateSheet } from '../utils/sheetPages.js'
 import { IconWarning } from './Icons.jsx'
 
 /**
@@ -335,6 +336,38 @@ export function baseInk(hex) {
  * ppp são 1047 px), com uma folga para os arredondamentos.
  */
 const A4_USEFUL_PX = 1036
+
+/** A linha de continuação no topo das páginas seguintes de uma folha paginada (h-7). */
+const CONT_PX = 28
+
+/** A altura de um elemento no ecrã. */
+const alturaDe = (el) => el.getBoundingClientRect().height
+
+/**
+ * Os blocos de uma folha (os elementos com data-bloco) e as alturas deles; as
+ * tabelas dos voos (linhas com data-linha) com a altura de cada linha e a do
+ * título e do cabeçalho. Uma tabela já partida em páginas soma os pedaços: a
+ * medida é a mesma, paginada ou não.
+ * @param {HTMLElement} el
+ * @returns {import('../utils/sheetPages.js').SheetBlock[]}
+ */
+function medirFolha(el) {
+  /** @type {Map<string, import('../utils/sheetPages.js').SheetBlock>} */
+  const porId = new Map()
+  for (const n of el.querySelectorAll('[data-bloco]')) {
+    const id = /** @type {HTMLElement} */ (n).dataset.bloco ?? ''
+    const rows = [...n.querySelectorAll('[data-linha]')].map(alturaDe)
+    const h = alturaDe(n)
+    const b = porId.get(id)
+    const soma = rows.reduce((a, x) => a + x, 0)
+    if (!b) porId.set(id, rows.length ? { id, h, head: h - soma, rows } : { id, h })
+    else if (b.rows) {
+      b.rows.push(...rows)
+      b.h += soma
+    }
+  }
+  return [...porId.values()]
+}
 
 /** «13 min» de um tempo em segundos; «—» sem tempo. */
 const minText = (s) => (Number.isFinite(s) ? `${Math.round(s / 60)} min` : '—')
@@ -677,33 +710,49 @@ export function BaseSheetPage({
   const views = flights.map((f) => flightViewText(t, f.view))
   const sameView = views.every((v) => v === views[0])
 
-  // Uma folha por base: com muitos voos o conteúdo pode passar a área útil
-  // da A4, e a impressão reduz-lhe a letra (zoom) só o que precisa. Mede-se
-  // no ecrã, que tem a mesma largura útil da página (718 px); a impressão
-  // usa --print-zoom (a regra é de quem imprime, na checklist).
-  const ref = useRef(/** @type {HTMLElement|null} */ (null))
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    el.style.setProperty('min-height', '0px')
-    const cs = getComputedStyle(el)
-    const alto =
-      el.getBoundingClientRect().height - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-    el.style.removeProperty('min-height')
-    const z =
-      alto > A4_USEFUL_PX ? Math.max(0.75, Math.floor((100 * A4_USEFUL_PX) / alto) / 100) : 1
-    el.style.setProperty('--print-zoom', String(z))
-  })
+  // A folha mede-se no ecrã, que tem a largura útil da página (718 px), e
+  // paginateSheet diz como imprime: numa página tal como está, ou com a letra
+  // reduzida (--print-zoom, a regra é de quem imprime, na checklist) até 0,75;
+  // com mais voos, em páginas de propósito, à letra normal, com os blocos
+  // inteiros, as tabelas partidas entre linhas e o rodapé de cada página com
+  // o número dela. A medida não depende de a folha já estar paginada (as
+  // alturas são as mesmas), por isso o plano assenta à segunda volta; a
+  // guarda corta uma oscilação, se a houver.
+  const faixa = one
+    ? labels
+    : `${flights[0]?.flightLabel ?? ''}–${flights[flights.length - 1]?.flightLabel ?? ''}`
 
-  return (
-    <article
-      ref={ref}
-      data-testid="base-sheet"
-      data-base-label={s.label}
-      aria-label={t('bases.a4.title', { label: s.label })}
-      className={`chk-ficha flex min-h-[1123px] w-[794px] flex-none flex-col gap-2 bg-white px-[38px] pb-[30px] pt-9 text-xs leading-[1.4] text-[#0F172A] tabular-nums [-webkit-print-color-adjust:exact] [print-color-adjust:exact] ${className}`}
-    >
-      <header className="flex items-center gap-3.5 border-b-2 border-[#0F172A] pb-3">
+  /** O título de uma tabela, com «(continuação)» nos pedaços seguintes. */
+  const titulo = (key, cont) => (cont ? t('bases.a4.contTable', { title: t(key) }) : t(key))
+
+  /** Os críticos da descolagem, para marcar à mão. */
+  const criticos = (bloco = undefined) => (
+    <section data-bloco={bloco} className="rounded-lg border border-[#CBD5E1] px-3.5 pb-2 pt-2.5">
+      <h3 className={`${SHEET_H3} mb-1`}>{t('bases.a4.before')}</h3>
+      <div className={wide ? 'grid grid-cols-2 gap-x-6' : ''}>
+        {notice?.kind !== 'noTerrain' && r != null && (
+          <PaperCheck strong>
+            {notice?.kind === 'zero' ? t('bases.a4.beforeZero') : t('bases.a4.beforeZone', { r })}
+          </PaperCheck>
+        )}
+        {criticalItems.map((txt) => (
+          <PaperCheck key={txt}>{txt}</PaperCheck>
+        ))}
+      </div>
+    </section>
+  )
+
+  /**
+   * Os blocos da folha, pela ordem; as duas tabelas dos voos recebem o pedaço
+   * (de, até) que vai em cada página.
+   * @type {Record<string, ((de?: number, ate?: number) => any) | null>}
+   */
+  const blocos = {
+    cabecalho: () => (
+      <header
+        data-bloco="cabecalho"
+        className="flex items-center gap-3.5 border-b-2 border-[#0F172A] pb-3"
+      >
         <span
           aria-hidden="true"
           className="flex h-12 w-12 flex-none items-center justify-center rounded-full text-2xl font-bold"
@@ -736,22 +785,29 @@ export function BaseSheetPage({
           </span>
         </div>
       </header>
+    ),
 
-      {warning && (
-        <div
-          role="note"
-          className="flex items-start gap-2.5 rounded-lg border-[1.5px] border-[#B45309] bg-[#FFF7ED] px-3.5 py-[9px]"
-        >
-          <IconWarning className="mt-px h-5 w-5 flex-none text-[#B45309]" />
-          <p className="m-0 text-[12.5px] leading-[1.45] text-[#431407]">
-            {warning.title && <strong className="font-bold text-[#7C2D12]">{warning.title}</strong>}
-            {warning.title ? ' ' : ''}
-            {warning.body}
-          </p>
-        </div>
-      )}
+    aviso: warning
+      ? () => (
+          <div
+            data-bloco="aviso"
+            role="note"
+            className="flex items-start gap-2.5 rounded-lg border-[1.5px] border-[#B45309] bg-[#FFF7ED] px-3.5 py-[9px]"
+          >
+            <IconWarning className="mt-px h-5 w-5 flex-none text-[#B45309]" />
+            <p className="m-0 text-[12.5px] leading-[1.45] text-[#431407]">
+              {warning.title && (
+                <strong className="font-bold text-[#7C2D12]">{warning.title}</strong>
+              )}
+              {warning.title ? ' ' : ''}
+              {warning.body}
+            </p>
+          </div>
+        )
+      : null,
 
-      <div className="grid grid-cols-4 gap-2">
+    numeros: () => (
+      <div data-bloco="numeros" className="grid grid-cols-4 gap-2">
         <Tile
           warn={Boolean(notice)}
           label={t('bases.a4.zone')}
@@ -789,8 +845,10 @@ export function BaseSheetPage({
           }
         />
       </div>
+    ),
 
-      <div className="grid grid-cols-2 gap-3">
+    onde: () => (
+      <div data-bloco="onde" className="grid grid-cols-2 gap-3">
         <section className="rounded-lg border border-[#CBD5E1] px-3.5 py-2.5">
           <h3 className={`${SHEET_H3} mb-2`}>{t('bases.a4.where')}</h3>
           <div className="flex items-start gap-3">
@@ -884,10 +942,12 @@ export function BaseSheetPage({
           )}
         </section>
       </div>
+    ),
 
-      <section>
+    voos: (de = 0, ate = flights.length) => (
+      <section data-bloco="voos">
         <h3 className={`${SHEET_H3} mb-1.5`}>
-          {t(one ? 'bases.a4.flightTable' : 'bases.a4.flightTableMany')}
+          {titulo(one ? 'bases.a4.flightTable' : 'bases.a4.flightTableMany', de > 0)}
         </h3>
         <div className="overflow-hidden rounded-lg border border-[#94A3B8]">
           <table className="w-full table-fixed border-collapse text-left">
@@ -922,9 +982,10 @@ export function BaseSheetPage({
               </tr>
             </thead>
             <tbody>
-              {flights.map((f) => (
+              {flights.slice(de, ate).map((f) => (
                 <tr
                   key={f.blockId}
+                  data-linha=""
                   data-testid="base-sheet-flight"
                   data-flight={f.flightLabel}
                   className="border-t border-[#94A3B8] text-[13px]"
@@ -964,104 +1025,116 @@ export function BaseSheetPage({
           </table>
         </div>
       </section>
+    ),
 
-      {(paramsText || safetyText) && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-3 py-2">
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            className="mt-px h-[18px] w-[18px] flex-none"
-            fill="none"
-            stroke="#334155"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="4" y="2" width="16" height="20" rx="2" />
-            <path d="M12 18h.01" />
-          </svg>
-          <p data-testid="base-sheet-params" className="m-0 text-xs leading-[1.45] text-[#1E293B]">
-            <strong className="font-bold">{t('bases.a4.check', { flights: labels })}</strong>{' '}
-            {[paramsText, safetyText].filter(Boolean).join(' · ')}.
-          </p>
-        </div>
-      )}
-
-      <div className={`grid gap-3 ${wide ? 'grid-cols-1' : 'grid-cols-2'}`}>
-        <section className="rounded-lg border border-[#CBD5E1] px-3.5 pb-2 pt-2.5">
-          <h3 className={`${SHEET_H3} mb-1`}>{t('bases.a4.before')}</h3>
-          <div className={wide ? 'grid grid-cols-2 gap-x-6' : ''}>
-            {notice?.kind !== 'noTerrain' && r != null && (
-              <PaperCheck strong>
-                {notice?.kind === 'zero'
-                  ? t('bases.a4.beforeZero')
-                  : t('bases.a4.beforeZone', { r })}
-              </PaperCheck>
-            )}
-            {criticalItems.map((txt) => (
-              <PaperCheck key={txt}>{txt}</PaperCheck>
-            ))}
-          </div>
-        </section>
-        <section className="rounded-lg border border-[#CBD5E1] px-3.5 pb-3 pt-2.5">
-          <h3 className={`${SHEET_H3} mb-1.5`}>
-            {one ? t('bases.a4.log', { flight: labels }) : t('bases.a4.logMany')}
-          </h3>
-          {one ? (
-            <div className="grid grid-cols-2 gap-x-3.5 gap-y-2">
-              <WriteIn label={t('bases.a4.start')} />
-              <WriteIn label={t('bases.a4.end')} />
-              <WriteIn
-                label={t('bases.a4.duration')}
-                extra={
-                  Number.isFinite(flights[0].totalS)
-                    ? t('bases.a4.planned', { m: Math.round(flights[0].totalS / 60) })
-                    : null
-                }
-              />
-              <WriteIn label={t('bases.a4.batteries')} />
-              <WriteIn label={t('bases.a4.images')} />
-              <WriteIn label={t('bases.a4.weather')} />
+    confira:
+      paramsText || safetyText
+        ? () => (
+            <div
+              data-bloco="confira"
+              className="flex items-start gap-2.5 rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-3 py-2"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="mt-px h-[18px] w-[18px] flex-none"
+                fill="none"
+                stroke="#334155"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="4" y="2" width="16" height="20" rx="2" />
+                <path d="M12 18h.01" />
+              </svg>
+              <p
+                data-testid="base-sheet-params"
+                className="m-0 text-xs leading-[1.45] text-[#1E293B]"
+              >
+                <strong className="font-bold">{t('bases.a4.check', { flights: labels })}</strong>{' '}
+                {[paramsText, safetyText].filter(Boolean).join(' · ')}.
+              </p>
             </div>
-          ) : !wide ? (
-            // até quatro voos: um campo por linha e uma coluna por voo, ao lado
-            // dos críticos, para a folha caber numa página
-            <table className="w-full table-fixed border-collapse text-left text-[11px]">
-              <thead>
-                <tr>
-                  <td className="w-[96px]" />
-                  {flights.map((f) => (
-                    <th
-                      key={f.blockId}
-                      scope="col"
-                      className="pb-0.5 pl-1.5 text-xs font-bold text-[#0F172A]"
-                    >
-                      {f.flightLabel}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {LOG_FIELDS.map((k) => (
-                  <tr key={k} className="h-6">
-                    <th scope="row" className="pr-2 align-bottom font-normal text-[#475569]">
-                      {t(k)}
-                    </th>
-                    {flights.map((f) => (
-                      <td
-                        key={f.blockId}
-                        className="border-b border-l border-[#64748B] border-l-white px-1.5 text-right align-bottom text-[10px] text-[#64748B]"
-                      >
-                        {k === 'bases.a4.duration' && Number.isFinite(f.totalS)
-                          ? t('bases.a4.planned', { m: Math.round(f.totalS / 60) })
-                          : ''}
-                      </td>
+          )
+        : null,
+
+    // até quatro voos, os críticos e o registo lado a lado; com mais, cada um
+    // com a largura toda (e o registo parte-se entre páginas, se for preciso)
+    descolar: !wide
+      ? () => (
+          <div data-bloco="descolar" className="grid grid-cols-2 gap-3">
+            {criticos()}
+            <section className="rounded-lg border border-[#CBD5E1] px-3.5 pb-3 pt-2.5">
+              <h3 className={`${SHEET_H3} mb-1.5`}>
+                {one ? t('bases.a4.log', { flight: labels }) : t('bases.a4.logMany')}
+              </h3>
+              {one ? (
+                <div className="grid grid-cols-2 gap-x-3.5 gap-y-2">
+                  <WriteIn label={t('bases.a4.start')} />
+                  <WriteIn label={t('bases.a4.end')} />
+                  <WriteIn
+                    label={t('bases.a4.duration')}
+                    extra={
+                      Number.isFinite(flights[0].totalS)
+                        ? t('bases.a4.planned', { m: Math.round(flights[0].totalS / 60) })
+                        : null
+                    }
+                  />
+                  <WriteIn label={t('bases.a4.batteries')} />
+                  <WriteIn label={t('bases.a4.images')} />
+                  <WriteIn label={t('bases.a4.weather')} />
+                </div>
+              ) : (
+                // até quatro voos: um campo por linha e uma coluna por voo, ao
+                // lado dos críticos, para a folha caber numa página
+                <table className="w-full table-fixed border-collapse text-left text-[11px]">
+                  <thead>
+                    <tr>
+                      <td className="w-[96px]" />
+                      {flights.map((f) => (
+                        <th
+                          key={f.blockId}
+                          scope="col"
+                          className="pb-0.5 pl-1.5 text-xs font-bold text-[#0F172A]"
+                        >
+                          {f.flightLabel}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {LOG_FIELDS.map((k) => (
+                      <tr key={k} className="h-6">
+                        <th scope="row" className="pr-2 align-bottom font-normal text-[#475569]">
+                          {t(k)}
+                        </th>
+                        {flights.map((f) => (
+                          <td
+                            key={f.blockId}
+                            className="border-b border-l border-[#64748B] border-l-white px-1.5 text-right align-bottom text-[10px] text-[#64748B]"
+                          >
+                            {k === 'bases.a4.duration' && Number.isFinite(f.totalS)
+                              ? t('bases.a4.planned', { m: Math.round(f.totalS / 60) })
+                              : ''}
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
+                  </tbody>
+                </table>
+              )}
+            </section>
+          </div>
+        )
+      : null,
+    criticos: wide ? () => criticos('criticos') : null,
+    registo: wide
+      ? (de = 0, ate = flights.length) => (
+          <section
+            data-bloco="registo"
+            className="rounded-lg border border-[#CBD5E1] px-3.5 pb-3 pt-2.5"
+          >
+            <h3 className={`${SHEET_H3} mb-1.5`}>{titulo('bases.a4.logMany', de > 0)}</h3>
             <table className="w-full table-fixed border-collapse text-left text-[11px]">
               <thead>
                 <tr className="text-[#475569]">
@@ -1081,8 +1154,8 @@ export function BaseSheetPage({
                 </tr>
               </thead>
               <tbody>
-                {flights.map((f) => (
-                  <tr key={f.blockId} className="h-[30px] border-b border-[#64748B]">
+                {flights.slice(de, ate).map((f) => (
+                  <tr key={f.blockId} data-linha="" className="h-[30px] border-b border-[#64748B]">
                     <td className="pr-2 font-bold">{f.flightLabel}</td>
                     <td />
                     <td />
@@ -1098,11 +1171,12 @@ export function BaseSheetPage({
                 ))}
               </tbody>
             </table>
-          )}
-        </section>
-      </div>
+          </section>
+        )
+      : null,
 
-      <section>
+    notas: () => (
+      <section data-bloco="notas">
         <h3 className={SHEET_H3}>{t('bases.a4.notes')}</h3>
         <div className="h-[25px] border-b border-[#CBD5E1]" />
         <div className="h-[25px] border-b border-[#CBD5E1]" />
@@ -1113,26 +1187,99 @@ export function BaseSheetPage({
           <span className="h-5 w-24 border-b border-[#64748B]" />
         </div>
       </section>
+    ),
+  }
 
-      <footer className="mt-auto border-t border-[#CBD5E1] pt-[7px] text-[10px] leading-[1.45] text-[#475569]">
-        {s.viewTerrain && (
-          <p data-testid="base-sheet-view-terrain" className="m-0">
-            {viewFooterText(t, s)}
-          </p>
-        )}
-        <div className="mt-[3px] flex justify-between gap-3">
-          <span>
-            {[
-              `DJI Mission Planner${version ? ` v${version}` : ''}`,
-              missionName,
-              t('bases.a4.footer', { label: s.label, n: index + 1, total }),
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </span>
-          <span>A4</span>
+  const ordem = Object.keys(blocos).filter((k) => blocos[k])
+  // o plano vale para esta base, com estes voos e estes blocos; outro (ao
+  // passar à base seguinte) mede-se de novo numa página, antes de se pintar
+  const chave = `${s.label}|${flights.map((f) => f.flightLabel).join(',')}|${ordem.join(',')}`
+  const ref = useRef(/** @type {HTMLElement|null} */ (null))
+  const [plano, setPlano] = useState(
+    /** @type {{chave: string, pages: import('../utils/sheetPages.js').SheetPiece[][]|null}} */ ({
+      chave: '',
+      pages: null,
+    }),
+  )
+  const guarda = useRef({ chave: '', n: 0 })
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const novo = paginateSheet(medirFolha(el), {
+      cap: A4_USEFUL_PX,
+      gap: parseFloat(getComputedStyle(el.firstElementChild ?? el).rowGap) || 0,
+      footer: Math.max(0, ...[...el.querySelectorAll('[data-rodape]')].map(alturaDe)),
+      cont: CONT_PX,
+    })
+    el.style.setProperty('--print-zoom', String(novo.zoom))
+    if (guarda.current.chave !== chave) guarda.current = { chave, n: 0 }
+    const muda = plano.chave !== chave || JSON.stringify(novo.pages) !== JSON.stringify(plano.pages)
+    if (muda && guarda.current.n < 4) {
+      guarda.current.n += 1
+      setPlano({ chave, pages: novo.pages })
+    }
+  }, [chave, plano, t, date, pilot, missionName, droneLabel, safety, criticalItems])
+  /** @type {import('../utils/sheetPages.js').SheetPiece[][]} */
+  const paginas = (plano.chave === chave && plano.pages) || [ordem.map((id) => ({ id }))]
+  const P = paginas.length
+  return (
+    <article
+      ref={ref}
+      data-testid="base-sheet"
+      data-base-label={s.label}
+      data-pages={P}
+      aria-label={t('bases.a4.title', { label: s.label })}
+      className={`chk-ficha flex w-[794px] flex-none flex-col gap-6 ${className}`}
+    >
+      {paginas.map((pagina, k) => (
+        <div
+          key={k}
+          className="chk-ficha-pagina flex min-h-[1123px] flex-col gap-2 bg-white px-[38px] pb-[30px] pt-9 text-xs leading-[1.4] text-[#0F172A] tabular-nums shadow-[0_24px_60px_rgba(0,0,0,0.55)] [-webkit-print-color-adjust:exact] [print-color-adjust:exact]"
+        >
+          {k > 0 && (
+            <div
+              data-cont=""
+              className="flex h-7 flex-none items-center justify-between gap-3 overflow-hidden whitespace-nowrap border-b border-[#0F172A] text-xs"
+            >
+              <span className="min-w-0 truncate font-bold">
+                {t('bases.a4.cont', { base: t('bases.label', { label: s.label }), flights: faixa })}
+              </span>
+              <span className="flex-none text-[#475569]">
+                {t('bases.a4.page', { n: k + 1, total: P })}
+              </span>
+            </div>
+          )}
+          {pagina.map((p) => {
+            const bloco = blocos[p.id]
+            return bloco ? (
+              <Fragment key={`${p.id}-${p.from ?? 0}`}>{bloco(p.from, p.to)}</Fragment>
+            ) : null
+          })}
+          <footer
+            data-rodape=""
+            className="mt-auto border-t border-[#CBD5E1] pt-[7px] text-[10px] leading-[1.45] text-[#475569]"
+          >
+            {k === P - 1 && s.viewTerrain && (
+              <p data-testid="base-sheet-view-terrain" className="m-0">
+                {viewFooterText(t, s)}
+              </p>
+            )}
+            <div className="mt-[3px] flex justify-between gap-3">
+              <span>
+                {[
+                  `DJI Mission Planner${version ? ` v${version}` : ''}`,
+                  missionName,
+                  t('bases.a4.footer', { label: s.label, n: index + 1, total }),
+                  P > 1 ? t('bases.a4.page', { n: k + 1, total: P }) : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
+              <span>A4</span>
+            </div>
+          </footer>
         </div>
-      </footer>
+      ))}
     </article>
   )
 }

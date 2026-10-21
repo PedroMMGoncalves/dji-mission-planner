@@ -1850,7 +1850,7 @@ function FichaVista({ sheets, index, onIndex, onClose, onPrintAll, sheetProps, t
         )}
       </header>
       <div ref={corpo} className="chk-vista-corpo flex-1 overflow-auto px-4 py-6">
-        <div className="chk-papel mx-auto w-[794px] shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
+        <div className="chk-papel mx-auto w-[794px]">
           <BaseSheetPage sheet={s} index={index} total={sheets.length} {...sheetProps} />
         </div>
       </div>
@@ -2930,17 +2930,29 @@ const PRINT_CSS = `
     position: static !important;
     visibility: visible !important;
   }
-  /* uma folha por página (a margem é a da página), reduzida só quando o
-     conteúdo não cabe numa (--print-zoom, medido em BaseSheetPage) */
+  /* a folha de cada base nas suas páginas (a margem é a da página): uma,
+     reduzida só quando o conteúdo não cabe (--print-zoom), ou várias, de
+     propósito, com muitos voos (BaseSheetPage mede e pagina); nenhum bloco
+     se parte, e as tabelas só entre linhas */
   .chk-root .chk-ficha {
     width: auto !important;
-    min-height: calc(276mm / var(--print-zoom, 1)) !important;
     padding: 0 !important;
     margin: 0 !important;
+    gap: 0 !important;
     zoom: var(--print-zoom, 1);
     break-after: page;
   }
   .chk-root .chk-ficha:last-child { break-after: auto; }
+  .chk-root .chk-ficha-pagina {
+    width: auto !important;
+    min-height: calc(276mm / var(--print-zoom, 1)) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+  .chk-root .chk-ficha-pagina:not(:last-child) { break-after: page; }
+  .chk-root .chk-ficha [data-bloco],
+  .chk-root .chk-ficha tr { break-inside: avoid; }
   .chk-root .chk-ficha a { text-decoration: none !important; }
 
   /* a checklist: a preto e branco, compacta */
