@@ -48,7 +48,7 @@ import { fileURLToPath } from 'node:url'
 // órbita, do corredor e do circular em secções, com as peças partilhadas
 // dos modos (src/components/ModePanel.jsx) — 48 KB. Nenhuma dependência
 // nova; os textos PT/EN de tudo isto. O total ia em cerca de 2617 KB.
-// 2625 → 2660 na fase 3 da conversão (Outubro de 2026), parte da operação do
+// 2625 → 2690 na fase 3 da conversão (Outubro de 2026), parte da operação do
 // dia e do tablet: o painel «Operação do dia» à direita do mapa (os três
 // números do dia, o voo seguinte e a ordem do dia, uma linha por voo com a
 // barra contra o tempo útil) — 16 KB; os seus textos PT/EN e os do tablet
@@ -57,8 +57,15 @@ import { fileURLToPath } from 'node:url'
 // lido e escrito pelo painel (src/mission/dayPlan.js, useFlightLog.js,
 // useDayOperation.js) — 7 KB; o cabeçalho do tablet com o menu «Mais», o
 // botão «Painel» e a folha que se recolhe — 4 KB. Nenhuma dependência nova.
-// O total ia em 2658 KB.
-const BUDGET_KB = 2660
+// E o relatório da missão do desenho novo: a barra com as secções, a
+// identificação, a operação e a legenda ao lado do mapa, a tabela «Voos por
+// base» com a ficha de cada base numa linha (barra contra o tempo útil, a
+// linha comum, as fichas inteiras num botão), a segurança, o preflight com
+// as peças da lista do cabeçalho e as regras de impressão do A4, com os
+// textos PT/EN — 30 KB, quase todos no bloco do relatório, que só se carrega
+// ao abrir. Nenhuma dependência nova. As duas partes juntas: 2620 → cerca
+// de 2688 KB.
+const BUDGET_KB = 2690
 // fileURLToPath e não .pathname: este descodifica percent-encoding e trata
 // os caminhos do Windows, o outro devolve-os em bruto.
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))
