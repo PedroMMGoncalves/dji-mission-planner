@@ -142,6 +142,26 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   15 m) e o valor marcado no gráfico; cada voo do selector na cor da sua
   base; os mesmos números. As janelas fecham com Esc sem fechar a gaveta
   por baixo, e o foco entra nelas e volta a quem as abriu.
+- **Relatório da missão do desenho novo.** O relatório passa a cartões,
+  com uma barra em cima (as secções, Imprimir e Fechar) que não se
+  imprime: a identificação (missão, data, plataforma, câmara, modo, área,
+  relevo e posicionamento) com as contagens do preflight; o mapa, com os
+  voos e as bases nos nomes e nas cores do planeador (A-1 … T-20), e ao
+  lado a operação (voos, conjuntos de baterias, tempo total, o voo mais
+  longo contra o tempo útil, VLOS) e a legenda; os parâmetros de voo e os
+  números do plano; «Voos por base», com o que é comum a todos os voos
+  numa linha e a ficha de campo de cada base numa linha da tabela
+  (coordenadas, zona e o que a reduz, cota, RTH, voo, tempo com a barra
+  contra o tempo útil e a deslocação noutro tom, alturas no comando, VLOS),
+  que junta a antiga tabela dos blocos; as fichas inteiras de cada base
+  abrem-se no botão por baixo da tabela e, abertas, imprimem-se; a
+  segurança (fim da missão, perda de sinal, RTH, subida na descolagem,
+  alturas no KMZ); o preflight como a lista do cabeçalho, com os avisos do
+  mesmo tipo numa tabela e as notas (eram uma frase por aviso, sem as
+  notas); a reprodutibilidade e as assinaturas. Com 20 bases o relatório
+  passa de ~10 750 para ~4 300 px e a impressão de 13 para 5 páginas A4,
+  em branco, com a identificação, o mapa, a operação e a legenda na
+  primeira. Os números, os avisos e os ficheiros são os mesmos.
 - **«Personalizada» em português.** A aeronave personalizada chama-se
   «Personalizada» (em inglês, «Custom») em todo o lado: nos selectores do
   cartão 1 e dos outros modos, na Configuração, no aviso do preflight, na

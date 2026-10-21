@@ -637,6 +637,33 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
   chegam (sem imagens, a escala fica, com a nota) e o exagero vertical
   escolhido no cabeçalho; em baixo, à esquerda, como mexer na vista.
 
+## 20. Relatório da missão (~2 min)
+
+- ☐ Área com relevo e seguir terreno, divisão por **Bateria** e **Propor
+  bases** (cartão 5); abrir o **Relatório** no cabeçalho.
+  **Esperado:** uma barra em cima com as secções, **Imprimir** e **Fechar
+  Esc**; a identificação (missão, data, plataforma, câmara, modo, área,
+  relevo, posicionamento) com as contagens do preflight; o mapa com os voos
+  A-1 … e as bases nas suas cores, e ao lado a operação (voos, conjuntos de
+  baterias, tempo total, o voo mais longo contra o tempo útil, VLOS) e a
+  legenda; os parâmetros e os números do plano; **Voos por base** com o
+  comum a todos os voos por cima e a ficha de cada base numa linha
+  (coordenadas que abrem nos mapas, zona, cota, RTH, voo, tempo com a
+  barra contra o tempo útil, alturas no comando, VLOS) e o total; a
+  segurança, o preflight com os avisos do mesmo tipo numa tabela, a
+  reprodutibilidade e as assinaturas. As secções da barra levam a cada
+  uma; Esc fecha e o foco volta ao botão do relatório.
+- ☐ **Ver as fichas de campo das N bases**, por baixo da tabela.
+  **Esperado:** as fichas inteiras de cada base, as da checklist (os
+  ficheiros, a vista da base, as baterias); o botão passa a **Esconder as
+  fichas de campo**.
+- ☐ **Imprimir** (ou guardar em PDF), com as fichas fechadas e abertas.
+  **Esperado:** A4 vertical em fundo branco, sem a barra nem o botão das
+  fichas; na primeira página a identificação, o mapa, a operação e a
+  legenda; a tabela dos voos parte entre páginas, com o cabeçalho repetido,
+  cada linha inteira e o total só no fim (com 20 bases, cinco páginas, eram
+  treze); abertas, as fichas saem por baixo da tabela, cada base inteira.
+
 Registo de execução:
 
 | Data | Versão/commit | Executor | Resultado | Notas |

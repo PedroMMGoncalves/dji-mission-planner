@@ -168,7 +168,7 @@ Gestos de edição: clique acrescenta vértices (durante o desenho, Backspace ou
 | Blocos por base (KML, ZIP) | Os mesmos KML de bloco numa pasta por base, mais `mapa/` com a base, a zona e os blocos: `_kml-por-base.zip` | Deixar o Pilot 2 planear cada bloco, base a base |
 | JSON do projecto | Estado completo do planeador; documentado pelo [esquema JSON](public/schema/project-v2.schema.json) publicado (`$schema` no ficheiro) | Arquivo, partilha |
 | Checklist JSON / impressão | Registo de campo | Diário de operações |
-| Relatório de missão (impressão) | Mapa, parâmetros, blocos, GCPs, pontos de inspecção, assinaturas | Pasta de campo / anexos |
+| Relatório de missão (impressão) | Identificação, mapa com a operação e a legenda, parâmetros, voos por base (uma linha por base; as fichas de campo inteiras num botão por baixo), GCPs, pontos de inspecção, segurança, preflight, reprodutibilidade, assinaturas | Pasta de campo / anexos |
 
 ## Notas DJI Pilot 2
 

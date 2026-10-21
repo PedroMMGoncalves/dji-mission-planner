@@ -513,7 +513,10 @@ function topicsPt({ onShowDisclaimer, t }) {
                 na órbita, o KMZ por nível; no circular, o KMZ por bloco. A checklist de campo e o
                 relatório trazem a ficha de cada base (coordenadas com ligação para os mapas, zona,
                 cota, voos com os ficheiros, baterias); «Bases e blocos (KML)» leva as bases, as
-                zonas e os blocos com o rótulo do voo para o Google Earth ou o telemóvel.
+                zonas e os blocos com o rótulo do voo para o Google Earth ou o telemóvel. No
+                relatório, cada base fica numa linha da tabela «Voos por base», com o que é comum a
+                todos os voos por cima, e as fichas inteiras abrem-se no botão por baixo dela; o
+                relatório imprime-se em A4, em branco, sem a barra de cima.
               </p>
             </>
           ),
@@ -1175,7 +1178,10 @@ function topicsEn({ onShowDisclaimer, t }) {
                 the circular mode, the KMZ per block. The field checklist and the report carry a
                 sheet per base (coordinates with a maps link, zone, reference elevation, flights
                 with their files, batteries); “Bases and blocks (KML)” takes the bases, zones and
-                blocks labelled with their flight to Google Earth or a phone.
+                blocks labelled with their flight to Google Earth or a phone. In the report, each
+                base takes one line of the “Flights by base” table, with what every flight shares
+                above it, and the full sheets open from the button below it; the report prints on
+                A4, on white, without the top bar.
               </p>
             </>
           ),
