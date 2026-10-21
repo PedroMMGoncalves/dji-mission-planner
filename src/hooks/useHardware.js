@@ -5,7 +5,14 @@
  * enums WPML, o alcance visual, a zona de descolagem e o tempo útil por voo.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AIRCRAFT, PAYLOADS, DEFAULT_CUSTOM_SENSOR, DEFAULT_SELECTION } from '../data/drones.js'
+import {
+  AIRCRAFT,
+  PAYLOADS,
+  DEFAULT_CUSTOM_SENSOR,
+  DEFAULT_SELECTION,
+  aircraftLabel,
+  payloadLabel,
+} from '../data/drones.js'
 import {
   aircraftEquipmentFor,
   loadEquipment,
@@ -17,7 +24,7 @@ import { missionWpml } from '../mission/missionWpml.js'
 import { resolveSensor } from '../utils/geo.js'
 import { browserStorage } from '../utils/browserStorage.js'
 
-export function useHardware() {
+export function useHardware({ t }) {
   // seleção de hardware: aeronave + payload (T1.1)
   const [drone, setDrone] = useState(
     () =>
@@ -66,7 +73,9 @@ export function useHardware() {
   // rótulo composto para o relatório/checklist: a aeronave, e o payload
   // quando a aeronave tem mais do que um montável
   const hardwareLabel =
-    aircraft.payloads.length > 1 ? `${aircraft.label} + ${payload.label}` : aircraft.label
+    aircraft.payloads.length > 1
+      ? `${aircraftLabel(aircraft, t)} + ${payloadLabel(payload, t)}`
+      : aircraftLabel(aircraft, t)
 
   // payload ativo com a afinação aplicada: um LiDAR pode voar com um corte
   // de trabalho do feixe (effectiveFov) mais estreito do que o nominal

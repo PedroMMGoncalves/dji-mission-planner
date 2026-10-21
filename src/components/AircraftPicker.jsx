@@ -1,6 +1,13 @@
 import { useId } from 'react'
 import { useT } from '../i18n.jsx'
-import { AIRCRAFT, PAYLOADS } from '../data/drones.js'
+import {
+  AIRCRAFT,
+  PAYLOADS,
+  aircraftLabel,
+  aircraftShortLabel,
+  payloadDesc,
+  payloadLabel,
+} from '../data/drones.js'
 import { Note, Select, signedText } from './ModePanel.jsx'
 
 /**
@@ -29,10 +36,8 @@ export function droneForAircraft(drone, aircraftId) {
 export function aircraftSummary(t, drone, sensor, detail) {
   const aircraft = AIRCRAFT[drone.aircraftId]
   const payload = PAYLOADS[drone.payloadId]
-  // o nome curto do resumo do cartão 1 da área: o código entre parênteses
-  // («M3E»), senão o nome sem «DJI»
-  const code = /\(([^)]+)\)\s*$/.exec(aircraft.label)
-  const name = code ? code[1] : aircraft.label.replace(/^DJI\s+/, '')
+  // o nome curto do resumo do cartão 1 da área
+  const name = aircraftShortLabel(aircraft, t)
   const camera = sensor?.type === 'camera'
   const extra = !camera
     ? null
@@ -43,7 +48,7 @@ export function aircraftSummary(t, drone, sensor, detail) {
           max: signedText(payload.gimbalPitch.max),
         })
       : Number.isFinite(sensor.focalLength) && t('mp.aircraft.focal', { f: sensor.focalLength })
-  return [name, payload.label, extra].filter(Boolean).join(' · ')
+  return [name, payloadLabel(payload, t), extra].filter(Boolean).join(' · ')
 }
 
 /**
@@ -73,7 +78,7 @@ export default function AircraftPicker({ drone, setDrone, sensor }) {
         >
           {Object.values(AIRCRAFT).map((a) => (
             <option key={a.id} value={a.id}>
-              {a.label}
+              {aircraftLabel(a, t)}
             </option>
           ))}
         </Select>
@@ -88,7 +93,7 @@ export default function AircraftPicker({ drone, setDrone, sensor }) {
           >
             {aircraft.payloads.map((pid) => (
               <option key={pid} value={pid}>
-                {PAYLOADS[pid].label}
+                {payloadLabel(PAYLOADS[pid], t)}
               </option>
             ))}
           </Select>
@@ -96,12 +101,12 @@ export default function AircraftPicker({ drone, setDrone, sensor }) {
         <p id={descId} className="text-xs leading-normal text-slate-400">
           {sensor?.type === 'camera'
             ? t('ap.camera', {
-                camera: payload.desc,
+                camera: payloadDesc(payload, t),
                 focal: sensor.focalLength,
                 min: payload.gimbalPitch?.min ?? '—',
                 max: payload.gimbalPitch?.max ?? '—',
               })
-            : t('ap.noCamera', { desc: payload.desc })}
+            : t('ap.noCamera', { desc: payloadDesc(payload, t) })}
           {payload.type === 'custom' && ` ${t('ap.custom')}`}
         </p>
       </div>

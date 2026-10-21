@@ -10,7 +10,7 @@
  * valores por omissão, com confirmação.
  */
 import { useEffect, useRef, useState } from 'react'
-import { AIRCRAFT } from '../data/drones.js'
+import { AIRCRAFT, aircraftLabel } from '../data/drones.js'
 import {
   EQUIPMENT_LIMITS,
   addBattery,
@@ -543,7 +543,7 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                           id={`set-aircraft-${id}`}
                           aria-selected={on}
                           aria-controls="set-aircraft-panel"
-                          aria-label={AIRCRAFT[id].label}
+                          aria-label={aircraftLabel(AIRCRAFT[id], t)}
                           tabIndex={on ? 0 : -1}
                           onClick={() => setAircraftId(id)}
                           onKeyDown={aircraftKeys}
@@ -553,13 +553,13 @@ export default function SettingsModal({ equipment, setEquipment, initialAircraft
                               : 'font-medium text-slate-200 hover:bg-raised'
                           }`}
                         >
-                          {shortName(AIRCRAFT[id].label)}
+                          {shortName(aircraftLabel(AIRCRAFT[id], t))}
                         </button>
                       )
                     })}
                   </div>
                   <div className="flex min-h-6 flex-wrap items-center gap-2 text-[13px] text-slate-200">
-                    {AIRCRAFT[aircraftId].label}
+                    {aircraftLabel(AIRCRAFT[aircraftId], t)}
                     {aircraftId === initialAircraftId && (
                       <span className="inline-flex h-[22px] items-center rounded-full bg-[#10233A] px-2 text-xs font-medium text-blue-300">
                         {t('set.inProject')}

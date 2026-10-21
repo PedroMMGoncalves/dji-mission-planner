@@ -1,7 +1,16 @@
 // Perfis de hardware: opticas do M4T (grande-angular e termica) coerentes
 // com a ficha tecnica da DJI, e migracao das seleccoes guardadas.
 import { describe, it, expect } from 'vitest'
-import { AIRCRAFT, PAYLOADS, migrateDroneSelection } from '../../src/data/drones.js'
+import {
+  AIRCRAFT,
+  PAYLOADS,
+  aircraftLabel,
+  aircraftShortLabel,
+  migrateDroneSelection,
+  payloadDesc,
+  payloadLabel,
+} from '../../src/data/drones.js'
+import { translate } from '../../src/i18n.jsx'
 import { resolveSensor, computeFootprint, computeGSD } from '../../src/utils/geo.js'
 
 const dfovDeg = (p) => {
@@ -75,5 +84,37 @@ describe('migracao da seleccao de hardware', () => {
     expect(migrateDroneSelection({ aircraftId: 'M3E', payloadId: 'M4T_THERMAL' }).payloadId).toBe(
       'M3E_WIDE',
     )
+  })
+})
+
+describe('nomes no ecra: a aeronave e o payload personalizados traduzem-se', () => {
+  const pt = (k) => translate('pt', k)
+  const en = (k) => translate('en', k)
+  it('a aeronave personalizada e Personalizada em PT e Custom em EN', () => {
+    expect(aircraftLabel(AIRCRAFT.CUSTOM, pt)).toBe('Personalizada')
+    expect(aircraftLabel(AIRCRAFT.CUSTOM, en)).toBe('Custom')
+    expect(aircraftShortLabel(AIRCRAFT.CUSTOM, pt)).toBe('Personalizada')
+  })
+  it('as do catalogo ficam com o nome do fabricante, nas duas linguas', () => {
+    for (const t of [pt, en]) {
+      expect(aircraftLabel(AIRCRAFT.M3E, t)).toBe('DJI Mavic 3 Enterprise (M3E)')
+      expect(aircraftShortLabel(AIRCRAFT.M3E, t)).toBe('M3E')
+      expect(aircraftShortLabel(AIRCRAFT.M300RTK, t)).toBe('Matrice 300 RTK')
+      expect(payloadLabel(PAYLOADS.P1, t)).toBe(PAYLOADS.P1.label)
+      expect(payloadDesc(PAYLOADS.P1, t)).toBe(PAYLOADS.P1.desc)
+    }
+  })
+  it('o payload personalizado e a sua descricao traduzem-se', () => {
+    expect(payloadLabel(PAYLOADS.CUSTOM, pt)).toBe('Personalizado / LiDAR')
+    expect(payloadLabel(PAYLOADS.CUSTOM, en)).toBe('Custom / LiDAR')
+    expect(payloadDesc(PAYLOADS.CUSTOM, pt)).toBe('Definido manualmente')
+    expect(payloadDesc(PAYLOADS.CUSTOM, en)).toBe('Defined manually')
+  })
+  it('sem aeronave ou payload, texto vazio', () => {
+    expect(aircraftLabel(null, pt)).toBe('')
+    expect(aircraftShortLabel(undefined, pt)).toBe('')
+    expect(payloadLabel(undefined, pt)).toBe('')
+    expect(payloadDesc(null, pt)).toBe('')
+    expect(payloadDesc({ id: 'X' }, pt)).toBe('')
   })
 })

@@ -7,7 +7,7 @@
  * a exportação (exportBlocked).
  */
 import { useMemo } from 'react'
-import { aglCapWarning, positioningError } from '../data/drones.js'
+import { aglCapWarning, aircraftLabel, payloadLabel, positioningError } from '../data/drones.js'
 import { isVerifiedFlight } from '../data/validation.js'
 import { bboxCovers, bboxOfPoints } from '../mission/corridorTerrain.js'
 import { gimbalRangeViolation } from '../mission/gimbal.js'
@@ -306,7 +306,11 @@ export function usePreflight({
       })
     )
       return null
-    return { aircraft: aircraft.label, payload: payload.label, mode: t(`mode.${missionMode}`) }
+    return {
+      aircraft: aircraftLabel(aircraft, t),
+      payload: payloadLabel(payload, t),
+      mode: t(`mode.${missionMode}`),
+    }
   }, [drone.aircraftId, drone.payloadId, missionMode, aircraft, payload, t])
   const preflight = useMemo(
     () =>

@@ -117,6 +117,12 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   15 m) e o valor marcado no gráfico; cada voo do selector na cor da sua
   base; os mesmos números. As janelas fecham com Esc sem fechar a gaveta
   por baixo, e o foco entra nelas e volta a quem as abriu.
+- **«Personalizada» em português.** A aeronave personalizada chama-se
+  «Personalizada» (em inglês, «Custom») em todo o lado: nos selectores do
+  cartão 1 e dos outros modos, na Configuração, no aviso do preflight, na
+  checklist e no relatório; o payload personalizado chama-se «Personalizado
+  / LiDAR» e a sua descrição («Definido manualmente») também se traduz.
+  Os KMZ e KML não mudam: levam só os códigos da aeronave e do payload.
 
 ### Corrigido
 

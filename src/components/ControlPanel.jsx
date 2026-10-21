@@ -1,5 +1,12 @@
 import { useRef, useState } from 'react'
-import { AIRCRAFT, PAYLOADS } from '../data/drones.js'
+import {
+  AIRCRAFT,
+  PAYLOADS,
+  aircraftLabel,
+  aircraftShortLabel,
+  payloadDesc,
+  payloadLabel,
+} from '../data/drones.js'
 import { CRS_OPTIONS } from '../utils/importArea.js'
 import { useLang, useT } from '../i18n.jsx'
 import {
@@ -88,12 +95,6 @@ function fmtTime(s) {
 
 /** Um ângulo com o sinal menos tipográfico («−90»). */
 const signed = (v) => String(v).replace('-', '−')
-
-/** O nome curto da aeronave para o resumo: o código entre parênteses, ou o nome sem «DJI». */
-function aircraftShort(a) {
-  const code = /\(([^)]+)\)\s*$/.exec(a.label)
-  return code ? code[1] : a.label.replace(/^DJI\s+/, '')
-}
 
 /** Caixas de aviso, erro e informação dentro de uma secção. */
 const BOX = {
@@ -445,8 +446,8 @@ export default function ControlPanel({
 
   /* ---------------- resumos numa linha (secção fechada) ---------------- */
   const missionSummary = [
-    aircraftShort(aircraft),
-    payload.label,
+    aircraftShortLabel(aircraft, t),
+    payloadLabel(payload, t),
     t(drone.rtk === true ? 'cards.sum.rtkOn' : 'cards.sum.rtkOff'),
   ].join(' · ')
   const terrainSummary =
@@ -681,7 +682,7 @@ export default function ControlPanel({
             >
               {Object.values(AIRCRAFT).map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.label}
+                  {aircraftLabel(a, t)}
                 </option>
               ))}
             </select>
@@ -695,7 +696,7 @@ export default function ControlPanel({
               >
                 {aircraft.payloads.map((pid) => (
                   <option key={pid} value={pid}>
-                    {PAYLOADS[pid].label}
+                    {payloadLabel(PAYLOADS[pid], t)}
                   </option>
                 ))}
               </select>
@@ -704,7 +705,7 @@ export default function ControlPanel({
           {payload.type === 'camera' && (
             <p className="-mt-1 text-xs leading-relaxed text-slate-400">
               {t('cp.drone.specs', {
-                camera: payload.desc,
+                camera: payloadDesc(payload, t),
                 w: payload.sensorWidth,
                 h: payload.sensorHeight,
                 focal: payload.focalLength,
@@ -716,7 +717,7 @@ export default function ControlPanel({
             <>
               <p className="-mt-1 text-xs leading-relaxed text-slate-400">
                 {t('cp.drone.lidarSpecs', {
-                  desc: payload.desc,
+                  desc: payloadDesc(payload, t),
                   fov: payload.fov,
                   agl: payload.maxAglM ?? '—',
                 })}
@@ -1191,7 +1192,7 @@ export default function ControlPanel({
           {aglWarn && (
             <Notice>
               {t('cp.flight.aglCapWarn', {
-                payload: payload.label,
+                payload: payloadLabel(payload, t),
                 cap: aglWarn.cap,
                 worst: Math.round(aglWarn.worstAgl),
               })}
@@ -1817,7 +1818,7 @@ export default function ControlPanel({
       {/* ---------------- gavetas («Mais opções ›») ---------------- */}
       <Drawer id="missao" n={1} title={t('cards.mission')} {...d.drawer('missao')}>
         {isCustom && (
-          <DrawerGroup title={t('cards.sensor')} summary={payload.label}>
+          <DrawerGroup title={t('cards.sensor')} summary={payloadLabel(payload, t)}>
             <Segmented
               label={t('cards.sensorKind')}
               value={custom.mode}

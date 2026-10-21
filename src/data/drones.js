@@ -9,7 +9,8 @@
  * choice); modular aircraft (M300) list several, including CUSTOM.
  *
  * Aircraft fields:
- *  - label:      name shown in the dropdown
+ *  - label:      name shown in the dropdown (CUSTOM's is translated on
+ *                screen by aircraftLabel)
  *  - speedRange: mission speed limits (m/s), clamped in the UI
  *  - batteryMin: nominal battery duration (min, DJI spec max). Missions no
  *                longer use it directly: they fly the USEFUL time per set
@@ -21,8 +22,9 @@
  *  - payloads:   ids into PAYLOADS, first entry is the default
  *
  * Payload fields:
- *  - label:        short name (payload dropdown / composed hardware label)
- *  - desc:         descriptive text for the specs line
+ *  - label:        short name (payload dropdown / composed hardware label);
+ *                  CUSTOM's is translated by payloadLabel
+ *  - desc:         descriptive text for the specs line (payloadDesc)
  *  - payloadLabel: short code for the specs line
  *  - type:         'camera' | 'lidar' | 'custom' (manual camera or LiDAR)
  *  - camera optics: sensorWidth/sensorHeight (mm), focalLength (mm, real),
@@ -349,6 +351,51 @@ export function aglCapWarning(
 export function batteryMinFor(aircraft, payloadId, overrides = {}) {
   const o = overrides[`${aircraft.id}:${payloadId}`]
   return Number.isFinite(o) && o > 0 ? o : aircraft.batteryMin
+}
+
+/**
+ * O nome de uma aeronave no ecrã e no que se imprime (preflight, checklist,
+ * relatório): a personalizada traduz-se («Personalizada», «Custom»); as do
+ * catálogo ficam com o nome do fabricante.
+ * @param {{id: string, label: string}|null|undefined} a
+ * @param {(key: string) => string} t
+ */
+export function aircraftLabel(a, t) {
+  if (!a) return ''
+  return a.id === 'CUSTOM' ? t('cards.aircraftCustom') : a.label
+}
+
+/**
+ * O nome curto de uma aeronave nos resumos: o código entre parênteses
+ * («M3E»), senão o nome sem «DJI».
+ * @param {{id: string, label: string}|null|undefined} a
+ * @param {(key: string) => string} t
+ */
+export function aircraftShortLabel(a, t) {
+  const label = aircraftLabel(a, t)
+  const code = /\(([^)]+)\)\s*$/.exec(label)
+  return code ? code[1] : label.replace(/^DJI\s+/, '')
+}
+
+/**
+ * O nome de um payload no ecrã (o personalizado traduz-se, como a aeronave).
+ * @param {{id: string, label: string}|null|undefined} p
+ * @param {(key: string) => string} t
+ */
+export function payloadLabel(p, t) {
+  if (!p) return ''
+  return p.id === 'CUSTOM' ? t('cards.payloadCustom') : p.label
+}
+
+/**
+ * A descrição de um payload na linha das características (a do personalizado
+ * traduz-se; as do catálogo são nomes técnicos do fabricante).
+ * @param {{id: string, desc?: string}|null|undefined} p
+ * @param {(key: string) => string} t
+ */
+export function payloadDesc(p, t) {
+  if (!p) return ''
+  return p.id === 'CUSTOM' ? t('cards.payloadCustomDesc') : (p.desc ?? '')
 }
 
 /**

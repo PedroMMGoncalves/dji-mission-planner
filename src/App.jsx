@@ -111,7 +111,7 @@ function AppInner({ lang, setLang }) {
   // acções de segurança (fim da missão, sinal perdido) de todos os modos
   const [safety, setSafety] = useState(() => ({ ...DEFAULT_SAFETY }))
   // aeronave, payload, equipamento e bateria da missão (src/hooks/useHardware.js)
-  const hw = useHardware()
+  const hw = useHardware({ t })
   const {
     drone,
     setDrone,

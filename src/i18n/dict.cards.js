@@ -7,6 +7,9 @@ export default {
   'cards.panel': { pt: 'Painel da missão', en: 'Mission panel' },
   'cards.missionName': { pt: 'Nome da missão', en: 'Mission name' },
   'cards.aircraft': { pt: 'Aeronave', en: 'Aircraft' },
+  'cards.aircraftCustom': { pt: 'Personalizada', en: 'Custom' },
+  'cards.payloadCustom': { pt: 'Personalizado / LiDAR', en: 'Custom / LiDAR' },
+  'cards.payloadCustomDesc': { pt: 'Definido manualmente', en: 'Defined manually' },
   /* ---- Aeronave e sensor no topo dos outros modos (AircraftPicker) ---- */
   'ap.title': { pt: 'Aeronave e sensor', en: 'Aircraft and sensor' },
   'ap.camera': {
