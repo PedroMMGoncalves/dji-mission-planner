@@ -24,10 +24,8 @@ import {
   PreflightRow,
   PreflightStatus,
   SafetyBlock,
-  Segmented,
   StatusBadge,
   StatusDone,
-  Switch,
   TakeoffField,
   Tiles,
   anglesText,
@@ -40,6 +38,8 @@ import {
   takeoffShort,
   useOpenSection,
 } from './ModePanel.jsx'
+import { Segmented } from './ui/Segmented.jsx'
+import { Switch } from './ui/Switch.jsx'
 
 /**
  * E1.1: painel do modo face (serpentina vertical), em seis secções pela
@@ -213,6 +213,7 @@ export default function FacePanel({
         {!cameraOk && <Note tone="warn">{t('fp.cameraRequired')}</Note>}
         <Part divided>
           <Segmented
+            caption
             label={t('fp.params.side')}
             value={faceConfig.side === 'right' ? 'right' : 'left'}
             onChange={(v) => setFaceParam('side', v)}

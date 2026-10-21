@@ -231,10 +231,6 @@ export default {
   },
   'co.terrain.refBaseShort': { pt: 'base marcada', en: 'marked base' },
   'co.terrain.refMinShort': { pt: 'mínima debaixo da rota', en: 'minimum under the route' },
-  'co.terrain.refBase': {
-    pt: 'Alturas relativas à base marcada, à cota {elev} m.',
-    en: 'Heights relative to the marked base, at {elev} m.',
-  },
   'co.terrain.refMin': {
     pt: 'Sem base sobre o relevo: alturas relativas à cota mínima debaixo da rota, {elev} m. Descolar mais acima põe a aeronave mais alta, nunca mais baixa.',
     en: 'No base on the terrain: heights relative to the minimum elevation under the route, {elev} m. Taking off higher puts the aircraft higher, never lower.',

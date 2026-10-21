@@ -31,7 +31,6 @@ import {
   SafetyBlock,
   StatusBadge,
   StatusDone,
-  Switch,
   Tiles,
   boldText,
   preflightState,
@@ -41,6 +40,7 @@ import {
   speedUnit,
   useOpenSection,
 } from './ModePanel.jsx'
+import { Switch } from './ui/Switch.jsx'
 
 /**
  * Painel do modo circular («circlegrammetry»), em sete secções pela ordem

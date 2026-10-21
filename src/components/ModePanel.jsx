@@ -70,9 +70,9 @@ export function useOpenSection(initial) {
 }
 
 /** Dica por baixo de um controlo ou de um grupo. */
-export function Hint({ id = undefined, title = undefined, className = '', children = null }) {
+export function Hint({ id = undefined, className = '', children = null }) {
   return (
-    <p id={id} title={title} className={`text-xs leading-normal text-slate-400 ${className}`}>
+    <p id={id} className={`text-xs leading-normal text-slate-400 ${className}`}>
       {children}
     </p>
   )
@@ -134,102 +134,6 @@ export function Note({ tone = 'neutral', lead = null, testId, className = '', ch
           children
         )}
       </div>
-    </div>
-  )
-}
-
-// o interruptor é uma caixa de verdade (role="switch"): o clique, o teclado,
-// o foco e o rótulo são os do browser; o botão redondo é um gradiente
-const SWITCH =
-  'h-6 w-10 flex-none cursor-pointer appearance-none rounded-full bg-slate-700 bg-[radial-gradient(circle,#AEB9CC_9.5px,transparent_10px)] bg-[length:24px_24px] bg-left bg-no-repeat transition-[background-color,background-position] checked:bg-sky-400 checked:bg-[radial-gradient(circle,#06202E_9.5px,transparent_10px)] checked:bg-right disabled:cursor-not-allowed disabled:opacity-40'
-
-/**
- * Interruptor com o rótulo à esquerda (`extra`, a cinzento, faz parte dele).
- * @param {{label: any, extra?: any, checked: boolean, onChange: (v: boolean) => void,
- *   disabled?: boolean, testId?: string, describedBy?: string, title?: string}} props
- */
-export function Switch({
-  label,
-  extra = null,
-  checked,
-  onChange,
-  disabled = false,
-  testId,
-  describedBy,
-  title,
-}) {
-  return (
-    <label
-      title={title}
-      className={`flex items-center justify-between gap-3 text-[13.5px] text-slate-100 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-    >
-      <span className="min-w-0">
-        {label}
-        {extra && <span className="text-slate-400"> {extra}</span>}
-      </span>
-      <input
-        type="checkbox"
-        role="switch"
-        data-testid={testId}
-        checked={checked}
-        disabled={disabled}
-        aria-describedby={describedBy}
-        onChange={(e) => onChange(e.target.checked)}
-        className={SWITCH}
-      />
-    </label>
-  )
-}
-
-/**
- * Botões de escolha lado a lado (aria-pressed), com o nome do grupo por
- * cima; `after` fica à direita do grupo (o desenho do lado do voo).
- * @param {{label: any, options: {value: string, label: any, title?: string}[],
- *   value: string, onChange: (v: string) => void, testId?: string, after?: any}} props
- */
-export function Segmented({ label, options, value, onChange, testId, after = null }) {
-  const id = useId()
-  const group = (
-    <div
-      role="group"
-      aria-labelledby={id}
-      data-testid={testId}
-      className="grid min-w-0 flex-1 grid-cols-2 gap-1 rounded-[9px] border border-slate-800 bg-field p-[3px]"
-    >
-      {options.map((o) => {
-        const on = o.value === value
-        return (
-          <button
-            key={o.value}
-            type="button"
-            aria-pressed={on}
-            title={o.title}
-            onClick={() => onChange(o.value)}
-            className={`h-8 rounded-md px-1 text-[12.5px] transition-colors focus-visible:outline-offset-[-2px] ${
-              on
-                ? 'bg-[#1E3A52] font-semibold text-sky-100'
-                : 'font-medium text-slate-200 hover:bg-raised'
-            }`}
-          >
-            {o.label}
-          </button>
-        )
-      })}
-    </div>
-  )
-  return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <span id={id} className="text-xs text-slate-400">
-        {label}
-      </span>
-      {after ? (
-        <div className="flex items-center gap-3">
-          {group}
-          {after}
-        </div>
-      ) : (
-        group
-      )}
     </div>
   )
 }
@@ -359,9 +263,9 @@ export function InlineField({ label, unit = null, children = null, boxClass }) {
 }
 
 /** Um valor que sai dos outros, com o rótulo de um campo e sem caixa para escrever. */
-export function Readout({ label, value, extra = null, title = undefined }) {
+export function Readout({ label, value, extra = null }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5" title={title}>
+    <div className="flex min-w-0 flex-col gap-1.5">
       <span className="text-xs text-slate-400">{label}</span>
       <span className="flex h-10 min-w-0 items-center gap-1.5 rounded-lg bg-sunken px-2.5 text-sm font-semibold tabular-nums text-slate-100">
         <span className="whitespace-nowrap">{value}</span>
@@ -374,12 +278,9 @@ export function Readout({ label, value, extra = null, title = undefined }) {
 }
 
 /** Uma linha rótulo / valor numa caixa (a cota de referência, o GSD no eixo óptico). */
-export function KeyLine({ label, value, extra = null, title = undefined }) {
+export function KeyLine({ label, value, extra = null }) {
   return (
-    <div
-      title={title}
-      className="flex items-baseline justify-between gap-3 rounded-lg border border-slate-800 bg-field px-3 py-2.5 text-[12.5px]"
-    >
+    <div className="flex items-baseline justify-between gap-3 rounded-lg border border-slate-800 bg-field px-3 py-2.5 text-[12.5px]">
       <span className="text-slate-300">{label}</span>
       <span className="text-right font-semibold tabular-nums text-slate-100">
         {value}
@@ -530,7 +431,7 @@ export function setsNote(t, ops) {
  * que vai no KMZ»): fechado, o conteúdo fica montado e escondido.
  * @param {{title: any, summary?: any, icon?: any, testId?: string, children?: any}} props
  */
-export function Disclosure({ title, summary = null, icon = null, testId, children = null }) {
+function Disclosure({ title, summary = null, icon = null, testId, children = null }) {
   const [open, setOpen] = useState(false)
   const id = useId()
   return (
@@ -638,7 +539,7 @@ export function StatusDone({ label }) {
 }
 
 /** Ícone de bateria das etiquetas do voo mais longo. */
-export const BATTERY_ICON = (
+const BATTERY_ICON = (
   <Icon size={13} sw={2.2}>
     <rect x="2" y="7" width="16" height="10" rx="2" />
     <path d="M22 11v2M6 11v2M10 11v2" />

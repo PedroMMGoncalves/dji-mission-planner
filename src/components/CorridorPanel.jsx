@@ -38,10 +38,8 @@ import {
   Readout,
   Rows,
   SafetyBlock,
-  Segmented,
   StatusBadge,
   StatusDone,
-  Switch,
   Tiles,
   ToolButton,
   boldText,
@@ -52,6 +50,8 @@ import {
   speedUnit,
   useOpenSection,
 } from './ModePanel.jsx'
+import { Segmented } from './ui/Segmented.jsx'
+import { Switch } from './ui/Switch.jsx'
 
 /**
  * E5.1: painel do modo corredor (cobertura de infraestruturas lineares a
@@ -156,6 +156,7 @@ export default function CorridorPanel({
   const t = useT()
   const demFileRef = useRef(null)
   const howId = useId()
+  const bufferHintId = useId()
   // «Como o corredor segue o relevo»: a explicação inteira, que a dica encurtou
   const [howOpen, setHowOpen] = useState(false)
   const section = useOpenSection('corredor-1')
@@ -275,7 +276,8 @@ export default function CorridorPanel({
         />
         {!drawing && <Hint>{t(axis ? 'co.axis.hint' : 'co.axis.none')}</Hint>}
         <Grid>
-          {/* a explicação antiga da meia-largura fica na dica do campo */}
+          {/* a explicação antiga da meia-largura fica na dica do campo, e
+              para o leitor de ecrã na descrição dele (a dica é só do rato) */}
           <div title={t('co.params.bufferHint')} className="min-w-0">
             <Field label={t('co.params.buffer')} unit="m">
               <NumberInput
@@ -284,9 +286,13 @@ export default function CorridorPanel({
                 min={1}
                 max={5000}
                 step={5}
+                aria-describedby={bufferHintId}
                 className={fieldInput}
               />
             </Field>
+            <span id={bufferHintId} className="sr-only">
+              {t('co.params.bufferHint')}
+            </span>
           </div>
           <Readout
             label={droppedPasses > 0 ? t('co.plan.widthRequested') : t('co.plan.width')}
@@ -439,6 +445,7 @@ export default function CorridorPanel({
         {!isLidar && (
           <Part>
             <Segmented
+              caption
               label={t('co.params.photoMode')}
               value={corridorConfig.photoMode === 'waypoint' ? 'waypoint' : 'distance'}
               onChange={(v) => setCorridorParam('photoMode', v)}
@@ -458,6 +465,7 @@ export default function CorridorPanel({
         {/* as dobras das passagens existem também com LiDAR */}
         <Part>
           <Segmented
+            caption
             label={t('co.params.stops')}
             value={corridorConfig.waypointStops === 'all' ? 'all' : 'corners'}
             onChange={(v) => setCorridorParam('waypointStops', v)}
@@ -610,17 +618,18 @@ export default function CorridorPanel({
           <Note tone="block">{terrainErrorText(corridorTerrain.error, t)}</Note>
         )}
         {corridorReference && Number.isFinite(corridorReference.elev) && (
-          <KeyLine
-            label={t('co.terrain.refLabel')}
-            value={`${Math.round(corridorReference.elev)} m`}
-            extra={`· ${t(corridorReference.source === 'base' ? 'co.terrain.refBaseShort' : 'co.terrain.refMinShort')}`}
-            title={t(
-              corridorReference.source === 'base' ? 'co.terrain.refBase' : 'co.terrain.refMin',
-              {
-                elev: Math.round(corridorReference.elev),
-              },
+          <>
+            <KeyLine
+              label={t('co.terrain.refLabel')}
+              value={`${Math.round(corridorReference.elev)} m`}
+              extra={`· ${t(corridorReference.source === 'base' ? 'co.terrain.refBaseShort' : 'co.terrain.refMinShort')}`}
+            />
+            {/* sem base, à vista (era só a dica do rato): descolar mais acima
+                põe a aeronave mais alta, nunca mais baixa */}
+            {corridorReference.source !== 'base' && (
+              <Hint>{t('co.terrain.refMin', { elev: Math.round(corridorReference.elev) })}</Hint>
             )}
-          />
+          </>
         )}
         <Button
           size="field"
@@ -662,6 +671,7 @@ export default function CorridorPanel({
         <Part>
           {/* divisão em voos: um só, ou troços do eixo que cabem na bateria */}
           <Segmented
+            caption
             label={t('co.split.title')}
             value={corridorConfig.split === 'battery' ? 'battery' : 'none'}
             onChange={(v) => setCorridorParam('split', v)}

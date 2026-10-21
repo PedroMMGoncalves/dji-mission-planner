@@ -1,9 +1,13 @@
+import { useId } from 'react'
+
 /**
  * Controlo segmentado do desenho: botões lado a lado numa calha, o
  * escolhido realçado (aria-pressed). Um grupo (role="group") com nome.
  * Uma opção com `onClick` é uma acção (não fica premida, salvo `pressed`);
  * as outras escolhem `value` com `onChange`. `columns` dá as colunas da
- * grelha (classes, ex.: «grid-cols-2 lg:grid-cols-4»).
+ * grelha (classes, ex.: «grid-cols-2 lg:grid-cols-4»). Com `caption`, o
+ * nome do grupo fica à vista, por cima da calha (e nomeia-o); `after` fica
+ * à direita dela (o desenho do lado do voo da face).
  */
 
 // classes inteiras, para o Tailwind as encontrar
@@ -38,7 +42,8 @@ const TONE = {
 /**
  * @param {{label: string, options: SegmentedOption[], value?: any,
  *   onChange?: (value: any) => void, columns?: string, tone?: 'sky'|'emerald',
- *   title?: string, testId?: string, className?: string}} props
+ *   title?: string, testId?: string, className?: string, caption?: boolean,
+ *   after?: any}} props
  */
 export function Segmented({
   label,
@@ -50,16 +55,22 @@ export function Segmented({
   title,
   testId,
   className = '',
+  caption = false,
+  after = null,
 }) {
+  const id = useId()
   const c = TONE[tone] ?? TONE.sky
   const cols = columns ?? COLS[options.length] ?? 'grid-cols-4'
-  return (
+  const group = (
     <div
       role="group"
-      aria-label={label}
+      aria-label={caption ? undefined : label}
+      aria-labelledby={caption ? `${id}-caption` : undefined}
       title={title}
       data-testid={testId}
-      className={`grid gap-1 rounded-[9px] p-[3px] ${c.rail} ${cols} ${className}`}
+      className={`grid gap-1 rounded-[9px] p-[3px] ${c.rail} ${cols} ${
+        after ? 'min-w-0 flex-1' : ''
+      } ${className}`}
     >
       {options.map((o) => {
         const pressed = o.pressed ?? (o.onClick ? undefined : value === o.value)
@@ -73,7 +84,7 @@ export function Segmented({
             data-testid={o.testId}
             disabled={o.disabled}
             onClick={() => (o.onClick ? o.onClick() : onChange?.(o.value))}
-            className={`min-h-8 rounded-md px-1 text-[12.5px] leading-tight transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent ${
+            className={`min-h-8 rounded-md px-1 text-[12.5px] leading-tight transition-colors focus-visible:outline-offset-[-2px] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent ${
               pressed ? c.on : c.off
             } ${o.className ?? ''}`}
           >
@@ -81,6 +92,24 @@ export function Segmented({
           </button>
         )
       })}
+    </div>
+  )
+  if (!caption && !after) return group
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      {caption && (
+        <span id={`${id}-caption`} className="text-xs text-slate-400">
+          {label}
+        </span>
+      )}
+      {after ? (
+        <div className="flex items-center gap-3">
+          {group}
+          {after}
+        </div>
+      ) : (
+        group
+      )}
     </div>
   )
 }
