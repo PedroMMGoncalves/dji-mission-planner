@@ -33,20 +33,22 @@ import { fileURLToPath } from 'node:url'
 // interruptores, e os textos PT/EN e da ajuda; nenhuma dependência de
 // JavaScript nova (a letra Inter são ficheiros .woff2, que não contam). As
 // duas partes acrescentam 31 + 22 KB (2435 → 2489 KB).
-// 2500 → 2575 na fase 2 da conversão para o desenho aprovado (Outubro de
+// 2500 → 2625 na fase 2 da conversão para o desenho aprovado (Outubro de
 // 2026). O painel da área: as sete secções que fecham, com o resumo de cada
-// uma numa linha e a escolha lembrada no aparelho, a tabela das bases com o
-// detalhe na linha, o «Resumo e exportar» com a tabela dos voos e as
-// exportações em linhas, as gavetas em grupos, o interruptor e o controlo
-// segmentado partilhados (src/components/ui) — 27 KB. As janelas: a
-// configuração em quatro secções com índice e esquemas, a ajuda com índice
-// de tópicos e pesquisa (os textos de sempre, PT e EN, arrumados em 26
-// tópicos), o aviso em pontos numerados, a legenda da vista 3D nas cores da
-// cena com a escala do relevo, o perfil com a folga mínima em destaque e as
-// peças comuns das janelas (src/components/ui/Window.jsx) — 51 KB: 36 no
-// pacote principal, 11 na vista 3D e 4 no perfil, que se carregam à parte.
-// Nenhuma dependência nova; os textos PT/EN de tudo isto.
-const BUDGET_KB = 2575
+// uma numa linha, a tabela das bases com o detalhe na linha, o «Resumo e
+// exportar» com a tabela dos voos e as exportações em linhas, as gavetas em
+// grupos, o interruptor e o controlo segmentado partilhados
+// (src/components/ui) — 27 KB. As janelas: a configuração em quatro secções
+// com índice e esquemas, a ajuda com índice de tópicos e pesquisa (os textos
+// de sempre, PT e EN, arrumados em 26 tópicos), o aviso em pontos numerados,
+// a legenda da vista 3D nas cores da cena com a escala do relevo, o perfil
+// com a folga mínima em destaque e as peças comuns das janelas
+// (src/components/ui/Window.jsx) — 51 KB: 36 no pacote principal, 11 na
+// vista 3D e 4 no perfil, que se carregam à parte. Os painéis da face, da
+// órbita, do corredor e do circular em secções, com as peças partilhadas
+// dos modos (src/components/ModePanel.jsx) — 48 KB. Nenhuma dependência
+// nova; os textos PT/EN de tudo isto. O total ia em cerca de 2617 KB.
+const BUDGET_KB = 2625
 // fileURLToPath e não .pathname: este descodifica percent-encoding e trata
 // os caminhos do Windows, o outro devolve-os em bruto.
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))
