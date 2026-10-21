@@ -31,11 +31,13 @@ import {
 import { Icon } from './MapOverlay.jsx'
 import { fmtClock } from './StatsPanel.jsx'
 import { Button } from './ui/Button.jsx'
+import { PanelCollapseButton } from './ui/PanelCollapse.jsx'
 import { useAccordion } from './ui/useAccordion.js'
 
 /**
  * A coluna do painel (a que rola), com o nome do modo e uma linha a dizer
- * para que serve: 360 px a partir de 1024 px de largura, como a da área.
+ * para que serve: 360 px a partir de 1024 px de largura, como a da área. No
+ * tablet, ao lado do nome, o botão que recolhe o painel (ui/PanelCollapse.jsx).
  * @param {{title: any, description: any, label: string, children?: any}} props
  */
 export function ModePanel({ title, description, label, children = null }) {
@@ -45,9 +47,14 @@ export function ModePanel({ title, description, label, children = null }) {
       aria-label={label}
       className="flex h-full w-80 shrink-0 flex-col gap-2 overflow-y-auto border-r border-slate-800 bg-panel px-3 pb-6 pt-3.5 lg:w-[360px]"
     >
-      <div className="px-1 pb-2 pt-0.5">
-        <h2 className="m-0 text-[17px] font-semibold tracking-[-0.01em] text-slate-100">{title}</h2>
-        <p className="mt-0.5 text-[12.5px] leading-[1.45] text-slate-400">{description}</p>
+      <div className="flex items-start gap-2 px-1 pb-2 pt-0.5">
+        <div className="min-w-0 flex-1">
+          <h2 className="m-0 text-[17px] font-semibold tracking-[-0.01em] text-slate-100">
+            {title}
+          </h2>
+          <p className="mt-0.5 text-[12.5px] leading-[1.45] text-slate-400">{description}</p>
+        </div>
+        <PanelCollapseButton />
       </div>
       {children}
     </div>

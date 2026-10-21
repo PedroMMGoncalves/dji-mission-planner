@@ -16,6 +16,7 @@ import missionModesDict from '../../src/i18n/dict.missionModes.js'
 import preflightDict from '../../src/i18n/dict.preflight.js'
 import settingsDict from '../../src/i18n/dict.settings.js'
 import windowsDict from '../../src/i18n/dict.windows.js'
+import operationDict from '../../src/i18n/dict.operation.js'
 import { FINISH_ACTIONS, RC_LOST_ACTIONS, RC_LOST_MODES } from '../../src/utils/exporters.js'
 
 const SRC = new URL('../../src/', import.meta.url).pathname
@@ -71,6 +72,7 @@ describe('M3-T13: o dicionario contra o codigo', () => {
       ['dict.cards.js', Object.keys(cardsDict)],
       ['dict.errors.js', Object.keys(errorsDict)],
       ['dict.windows.js', Object.keys(windowsDict)],
+      ['dict.operation.js', Object.keys(operationDict)],
     ]
     const vistas = new Map()
     const duplicadas = []

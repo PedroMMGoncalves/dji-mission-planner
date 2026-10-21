@@ -8,7 +8,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * ao botão, Tab fecha e segue para o controlo seguinte (a partir do botão),
  * e um clique fora fecha sem lhe mexer. Um item inactivo é aria-disabled:
  * recebe o foco, para o leitor de ecrã dizer porquê (a dica), mas não
- * escolhe. Os itens só existem com o menu aberto.
+ * escolhe. Os itens só existem com o menu aberto. Um item com `checked` é
+ * uma escolha entre várias (menuitemradio, p. ex. a língua), marcada ou não.
  */
 
 /**
@@ -57,6 +58,8 @@ export function useMenu({ onOpen } = {}) {
  * @property {boolean} [disabled]
  * @property {any} [icon]
  * @property {string} [testId]
+ * @property {boolean} [checked] com valor, uma escolha entre várias
+ *   (role menuitemradio, aria-checked): a marcada é a que está em uso
  * @property {() => void} onSelect
  */
 
@@ -81,7 +84,7 @@ export function Menu({
   useEffect(() => {
     const el = ref.current
     if (!open || !el) return
-    const all = [...el.querySelectorAll('[role="menuitem"]')]
+    const all = [...el.querySelectorAll('[role^="menuitem"]')]
     const enabled = all.filter((it) => it.getAttribute('aria-disabled') !== 'true')
     // todos inactivos (sem plano, por exemplo): o primeiro, que diz porquê;
     // sem itens, o próprio menu, para o Esc o fechar
@@ -103,7 +106,7 @@ export function Menu({
   }, [open, start, close, triggerRef])
   if (!open) return null
   const onKeyDown = (e) => {
-    const all = [...e.currentTarget.querySelectorAll('[role="menuitem"]')]
+    const all = [...e.currentTarget.querySelectorAll('[role^="menuitem"]')]
     const i = all.indexOf(document.activeElement)
     const go = (j) => {
       e.preventDefault()
@@ -138,7 +141,8 @@ export function Menu({
         <button
           key={it.key}
           type="button"
-          role="menuitem"
+          role={it.checked == null ? 'menuitem' : 'menuitemradio'}
+          aria-checked={it.checked ?? undefined}
           tabIndex={-1}
           aria-disabled={it.disabled || undefined}
           title={it.title}

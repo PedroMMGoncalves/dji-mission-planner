@@ -7,7 +7,11 @@
  * abre o KML da área (em todos os separadores) e as outras desse separador
  * (na área as do cartão 7, com os mesmos nomes, dicas e acções);
  * configuração, ajuda e língua. Por baixo, o erro da última exportação e o
- * do projecto que o menu do projecto não conseguiu abrir.
+ * do projecto que o menu do projecto não conseguiu abrir. No ecrã estreito
+ * do tablet (até 1179 px) fica numa linha, com os botões de 44 px: o nome
+ * da aplicação só no ícone, o projecto sem o «gravado», e a configuração, a
+ * ajuda e a língua no menu «Mais» (⋮), que num tablet ao alto (até 899 px)
+ * leva também as vistas.
  */
 import { useEffect, useRef, useState } from 'react'
 import { LANGS, useT } from '../i18n.jsx'
@@ -26,6 +30,7 @@ import {
   IconPencil,
   IconReport,
 } from './Icons.jsx'
+import { useMedia } from './MapOverlay.jsx'
 import { PreflightList, PreflightPill } from './PreflightBar.jsx'
 import { buttonClass } from './ui/Button.jsx'
 import { Menu, useMenu } from './ui/Menu.jsx'
@@ -159,7 +164,7 @@ function moreExports({
  * campo (Enter ou sair do campo grava, Esc desiste); guardar e abrir são os
  * do cartão 1 (useProject), com um campo de ficheiro próprio.
  */
-function ProjectButton({ missionName, setMissionName, session, onOpen }) {
+function ProjectButton({ missionName, setMissionName, session, onOpen, compact = false }) {
   const t = useT()
   const menu = useMenu({ onOpen })
   const fileRef = useRef(/** @type {HTMLInputElement|null} */ (null))
@@ -221,11 +226,14 @@ function ProjectButton({ missionName, setMissionName, session, onOpen }) {
               : t('app.project.label', { name: missionName || '—', state })
           }
           title={t('app.project.title')}
-          className="flex h-9 min-w-0 max-w-[18rem] items-center gap-2 rounded-lg px-2.5 text-[13px] font-medium text-slate-100 transition-colors hover:bg-raised"
+          className={`flex min-w-0 items-center gap-2 rounded-lg px-2.5 text-[13px] font-medium text-slate-100 transition-colors hover:bg-raised ${
+            compact ? 'h-11 max-w-[13rem]' : 'h-9 max-w-[18rem]'
+          }`}
         >
           <IconFolder className="h-4 w-4 flex-none text-slate-400" />
           <span className="truncate">{missionName || t('cp.mission.namePlaceholder')}</span>
-          {!pending && (
+          {/* no tablet só se diz quando não ficou gravado (o nome do botão diz sempre) */}
+          {!pending && !(compact && saved) && (
             <span
               title={saved ? t('cp.mission.autosave') : t('app.project.notSavedTitle')}
               className={`flex-none text-xs font-normal ${saved ? 'text-slate-400' : 'text-amber-300'}`}
@@ -295,7 +303,98 @@ const VIEW_BUTTON =
 // a dica é a mesma
 const VIEW_LABEL = 'sr-only min-[1800px]:not-sr-only min-[1800px]:whitespace-nowrap'
 
-const Divider = () => <span aria-hidden="true" className="h-6 w-px bg-slate-800" />
+const Divider = () => <span aria-hidden="true" className="h-6 w-px flex-none bg-slate-800" />
+
+// no tablet, os botões das vistas com 44 px de lado
+const VIEW_BUTTON_TOUCH =
+  'flex h-11 w-11 items-center justify-center rounded-lg text-slate-200 transition-colors hover:bg-raised hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent'
+
+/** Os três pontos do menu «Mais». */
+const IconKebab = () => (
+  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <circle cx="12" cy="5" r="1.8" />
+    <circle cx="12" cy="12" r="1.8" />
+    <circle cx="12" cy="19" r="1.8" />
+  </svg>
+)
+/** O visto da língua em uso, no menu «Mais». */
+const IconCheckSmall = () => (
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="mt-0.5 h-4 w-4 flex-none text-sky-300"
+  >
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+)
+
+/**
+ * O menu «Mais» do tablet: as vistas (num tablet ao alto, `views`), a
+ * configuração, a ajuda e a língua — os mesmos nomes, dicas e acções dos
+ * botões do cabeçalho largo; a língua em uso fica marcada.
+ */
+function MoreMenu({ views = null, setShowSettings, setShowHelp, lang, setLang, onOpen }) {
+  const t = useT()
+  const menu = useMenu({ onOpen })
+  const label = views ? t('app.moreViews') : t('app.more')
+  /** @type {import('./ui/Menu.jsx').MenuItem[]} */
+  const items = [
+    ...(views ?? []),
+    {
+      key: 'settings',
+      label: t('app.settings'),
+      title: t('app.settingsTitle'),
+      icon: menuIcon(IconGear),
+      onSelect: () => setShowSettings(true),
+      testId: 'open-settings',
+    },
+    {
+      key: 'help',
+      label: t('app.help'),
+      title: t('app.helpTitle'),
+      icon: menuIcon(IconHelp),
+      onSelect: () => setShowHelp(true),
+    },
+    ...LANGS.map(({ code, label: name }) => ({
+      key: `lang-${code}`,
+      label: name,
+      checked: lang === code,
+      icon:
+        lang === code ? <IconCheckSmall /> : <span aria-hidden="true" className="w-4 flex-none" />,
+      onSelect: () => setLang(code),
+    })),
+  ]
+  return (
+    <div className="relative flex-none">
+      <button
+        type="button"
+        {...menu.triggerProps}
+        aria-controls={menu.open ? 'more-menu' : undefined}
+        aria-label={label}
+        title={label}
+        data-testid="header-more"
+        className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-700 text-slate-200 transition-colors hover:bg-raised hover:text-slate-100"
+      >
+        <IconKebab />
+      </button>
+      <Menu
+        id="more-menu"
+        open={menu.open}
+        start={menu.start}
+        close={menu.close}
+        triggerRef={menu.triggerRef}
+        label={label}
+        items={items}
+        className="right-0 w-64"
+      />
+    </div>
+  )
+}
 
 // as faixas de erro por baixo do cabeçalho (exportação, projecto) e o seu ✕
 const ALERT_STRIP =
@@ -357,63 +456,91 @@ export default function AppHeader({
     exportBlocked,
   })
   const baseColors = Object.fromEntries(baseRows.map((b) => [b.label, b.color]))
+  // o ecrã estreito do tablet: uma linha, botões de 44 px e o menu «Mais»;
+  // ao alto, as vistas também no menu
+  const compact = useMedia('(max-width: 1179px)')
+  const narrow = useMedia('(max-width: 899px)')
+  // as três vistas: botões no cabeçalho, ou itens do menu «Mais»
+  const views = [
+    {
+      key: '3d',
+      label: t('app.view3d'),
+      icon: IconCube,
+      onSelect: () => setShow3d(true),
+      disabled: !(
+        terrain.status === 'ready' &&
+        view3d &&
+        (missionMode !== 'area' || (terrainCovers && planOk))
+      ),
+      title: terrain.status === 'ready' ? t('app.view3dReady') : t('app.view3dNotReady'),
+    },
+    {
+      key: 'report',
+      label: t('app.report'),
+      icon: IconReport,
+      onSelect: () => setShowReport(true),
+      disabled: !planOk,
+      title: t('app.reportTitle'),
+    },
+    {
+      key: 'checklist',
+      label: t('app.checklist'),
+      icon: IconClipboard,
+      onSelect: () => setView('checklist'),
+      disabled: false,
+      title: t('app.checklistTitle'),
+    },
+  ]
   return (
     <>
-      <header className="relative z-[1200] flex min-h-14 flex-wrap items-center gap-x-2 gap-y-2 border-b border-slate-800 bg-slate-950 px-4 py-2 min-[1800px]:gap-x-3">
-        <div className="flex items-center gap-2.5" title={t('app.subtitle')}>
+      <header
+        className={`relative z-[1200] flex min-h-14 items-center border-b border-slate-800 bg-slate-950 ${
+          compact
+            ? 'flex-nowrap gap-x-2 px-3 py-1.5'
+            : 'flex-wrap gap-x-2 gap-y-2 px-4 py-2 min-[1800px]:gap-x-3'
+        }`}
+      >
+        <div className="flex flex-none items-center gap-2.5" title={t('app.subtitle')}>
           <IconDrone className="h-[26px] w-[26px] text-sky-400" />
-          <h1 className="flex items-baseline gap-1.5 whitespace-nowrap text-[15px] font-semibold tracking-tight">
+          <h1
+            className={
+              compact
+                ? 'sr-only'
+                : 'flex items-baseline gap-1.5 whitespace-nowrap text-[15px] font-semibold tracking-tight'
+            }
+          >
             DJI Mission Planner
             <span className="text-xs font-normal tracking-normal text-slate-400">
               v{import.meta.env.APP_VERSION}
             </span>
           </h1>
         </div>
-        <Divider />
+        {!compact && <Divider />}
         <ProjectButton
           missionName={missionName}
           setMissionName={setMissionName}
           session={session}
           onOpen={closePreflight}
+          compact={compact}
         />
         <div className="flex-1" />
-        <nav aria-label={t('app.views')} className="flex items-center gap-0.5">
-          <button
-            type="button"
-            onClick={() => setShow3d(true)}
-            disabled={
-              !(
-                terrain.status === 'ready' &&
-                view3d &&
-                (missionMode !== 'area' || (terrainCovers && planOk))
-              )
-            }
-            title={terrain.status === 'ready' ? t('app.view3dReady') : t('app.view3dNotReady')}
-            className={VIEW_BUTTON}
-          >
-            <IconCube className="h-4 w-4" />
-            <span className={VIEW_LABEL}>{t('app.view3d')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowReport(true)}
-            disabled={!planOk}
-            title={t('app.reportTitle')}
-            className={VIEW_BUTTON}
-          >
-            <IconReport className="h-4 w-4" />
-            <span className={VIEW_LABEL}>{t('app.report')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('checklist')}
-            title={t('app.checklistTitle')}
-            className={VIEW_BUTTON}
-          >
-            <IconClipboard className="h-4 w-4" />
-            <span className={VIEW_LABEL}>{t('app.checklist')}</span>
-          </button>
-        </nav>
+        {!narrow && (
+          <nav aria-label={t('app.views')} className="flex flex-none items-center gap-0.5">
+            {views.map((v) => (
+              <button
+                key={v.key}
+                type="button"
+                onClick={v.onSelect}
+                disabled={v.disabled}
+                title={v.title}
+                className={compact ? VIEW_BUTTON_TOUCH : VIEW_BUTTON}
+              >
+                <v.icon className="h-4 w-4" />
+                <span className={compact ? 'sr-only' : VIEW_LABEL}>{v.label}</span>
+              </button>
+            ))}
+          </nav>
+        )}
         <Divider />
         <div className="relative">
           <PreflightPill
@@ -422,6 +549,7 @@ export default function AppHeader({
             onToggle={() => setShowPreflight((v) => !v)}
             mode={missionMode}
             buttonRef={pillRef}
+            tall={compact}
           />
           {showPreflight && (
             <PreflightList
@@ -449,54 +577,78 @@ export default function AppHeader({
           menuId="export-menu"
           items={exportItems}
           onOpen={closePreflight}
+          tall={compact}
         />
 
         {/* configuração, ajuda e língua encostados à direita (também quando
-            o cabeçalho, estreito, os passa para a segunda linha) */}
-        <div className="ml-auto flex items-center gap-1.5">
-          <Divider />
-          <button
-            type="button"
-            onClick={() => setShowSettings(true)}
-            title={t('app.settingsTitle')}
-            aria-label={t('app.settings')}
-            data-testid="open-settings"
-            className={`${buttonClass('ghost', 'icon')} text-slate-200`}
-          >
-            <IconGear className="h-[18px] w-[18px]" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowHelp(true)}
-            title={t('app.helpTitle')}
-            aria-label={t('app.help')}
-            className={`${buttonClass('ghost', 'icon')} text-slate-200`}
-          >
-            <IconHelp className="h-[18px] w-[18px]" />
-          </button>
-          <div
-            role="group"
-            aria-label={t('app.lang')}
-            className="flex h-9 overflow-hidden rounded-lg border border-slate-700"
-          >
-            {LANGS.map(({ code, label }) => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => setLang(code)}
-                title={label}
-                aria-pressed={lang === code}
-                className={`px-[11px] text-xs font-semibold transition-colors focus-visible:outline-offset-[-2px] ${
-                  lang === code
-                    ? 'bg-slate-800 text-slate-100'
-                    : 'text-slate-400 hover:bg-raised hover:text-slate-200'
-                }`}
-              >
-                {code.toUpperCase()}
-              </button>
-            ))}
+            o cabeçalho, estreito, os passa para a segunda linha); no tablet,
+            no menu «Mais» */}
+        {compact ? (
+          <MoreMenu
+            views={
+              narrow
+                ? views.map((v) => ({
+                    key: v.key,
+                    label: v.label,
+                    title: v.title,
+                    disabled: v.disabled,
+                    icon: menuIcon(v.icon),
+                    onSelect: v.onSelect,
+                  }))
+                : null
+            }
+            setShowSettings={setShowSettings}
+            setShowHelp={setShowHelp}
+            lang={lang}
+            setLang={setLang}
+            onOpen={closePreflight}
+          />
+        ) : (
+          <div className="ml-auto flex items-center gap-1.5">
+            <Divider />
+            <button
+              type="button"
+              onClick={() => setShowSettings(true)}
+              title={t('app.settingsTitle')}
+              aria-label={t('app.settings')}
+              data-testid="open-settings"
+              className={`${buttonClass('ghost', 'icon')} text-slate-200`}
+            >
+              <IconGear className="h-[18px] w-[18px]" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowHelp(true)}
+              title={t('app.helpTitle')}
+              aria-label={t('app.help')}
+              className={`${buttonClass('ghost', 'icon')} text-slate-200`}
+            >
+              <IconHelp className="h-[18px] w-[18px]" />
+            </button>
+            <div
+              role="group"
+              aria-label={t('app.lang')}
+              className="flex h-9 overflow-hidden rounded-lg border border-slate-700"
+            >
+              {LANGS.map(({ code, label }) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setLang(code)}
+                  title={label}
+                  aria-pressed={lang === code}
+                  className={`px-[11px] text-xs font-semibold transition-colors focus-visible:outline-offset-[-2px] ${
+                    lang === code
+                      ? 'bg-slate-800 text-slate-100'
+                      : 'text-slate-400 hover:bg-raised hover:text-slate-200'
+                  }`}
+                >
+                  {code.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       {exportError && (

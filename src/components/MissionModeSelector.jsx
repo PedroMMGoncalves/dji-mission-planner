@@ -8,7 +8,8 @@ import { FOCUS, Icon } from './MapOverlay.jsx'
  * por onde os testes mudam de modo); o modo aberto fica marcado com
  * aria-current="true" (o modo escolhido entre os botões, não uma página
  * aberta por uma ligação). Os pontos de inspecção mantêm-se como camada
- * extra dentro do modo Área.
+ * extra dentro do modo Área. Em baixo, «Painel» mostra e esconde o painel
+ * de parâmetros (`panelOpen`, `onTogglePanel`), aceso quando está à vista.
  */
 const MODES = [
   {
@@ -59,34 +60,61 @@ const MODES = [
   },
 ]
 
-export default function MissionModeSelector({ mode, onChange }) {
+const RAIL_BUTTON = `flex min-h-[58px] w-[54px] shrink-0 flex-col items-center justify-center gap-[5px] rounded-[10px] text-[10.5px] font-semibold leading-tight transition-colors ${FOCUS}`
+const RAIL_ON = 'bg-sky-400/[0.14] text-sky-300'
+const RAIL_OFF = 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+
+/**
+ * @param {{mode: string, onChange: (mode: string) => void, panelOpen?: boolean|null,
+ *   onTogglePanel?: () => void}} props `panelOpen` null: sem o botão «Painel»
+ */
+export default function MissionModeSelector({ mode, onChange, panelOpen = null, onTogglePanel }) {
   const t = useT()
+  // os modos são a navegação; «Painel», em baixo, fica fora dela
   return (
-    <nav
-      aria-label={t('mode.nav')}
-      className="flex h-full w-16 shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-slate-800 bg-slate-950 py-2.5"
-    >
-      {MODES.map((m) => {
-        const current = mode === m.id
-        return (
+    <div className="flex h-full w-16 shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-slate-800 bg-slate-950 py-2.5">
+      <nav aria-label={t('mode.nav')} className="flex flex-col items-center gap-1">
+        {MODES.map((m) => {
+          const current = mode === m.id
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => onChange(m.id)}
+              aria-current={current ? 'true' : undefined}
+              className={`${RAIL_BUTTON} ${current ? RAIL_ON : RAIL_OFF}`}
+            >
+              <Icon size={20} sw={1.8}>
+                {m.icon}
+              </Icon>
+              {t(m.key)}
+            </button>
+          )
+        })}
+      </nav>
+      {panelOpen != null && (
+        <>
+          <span aria-hidden="true" className="flex-1" />
+          <span aria-hidden="true" className="my-1 h-px w-8 shrink-0 bg-slate-800" />
           <button
-            key={m.id}
             type="button"
-            onClick={() => onChange(m.id)}
-            aria-current={current ? 'true' : undefined}
-            className={`flex min-h-[58px] w-[54px] shrink-0 flex-col items-center justify-center gap-[5px] rounded-[10px] text-[10.5px] font-semibold leading-tight transition-colors ${FOCUS} ${
-              current
-                ? 'bg-sky-400/[0.14] text-sky-300'
-                : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-            }`}
+            id="panel-toggle"
+            onClick={onTogglePanel}
+            aria-expanded={panelOpen}
+            aria-controls="mode-panel"
+            aria-label={t('mode.panelName')}
+            title={t('mode.panelTitle')}
+            data-testid="panel-toggle"
+            className={`${RAIL_BUTTON} ${panelOpen ? RAIL_ON : RAIL_OFF}`}
           >
             <Icon size={20} sw={1.8}>
-              {m.icon}
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M9 3v18" />
             </Icon>
-            {t(m.key)}
+            {t('mode.panel')}
           </button>
-        )
-      })}
-    </nav>
+        </>
+      )}
+    </div>
   )
 }

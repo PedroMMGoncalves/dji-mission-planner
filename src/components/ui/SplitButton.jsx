@@ -6,11 +6,12 @@ import { Menu, useMenu } from './Menu.jsx'
  * menu (Menu) com as outras. Sem `items`, fica só o botão principal. A seta
  * não segue o `disabled` da principal: com a principal desligada (o
  * preflight bloqueia) as outras podem continuar disponíveis, e a seta passa
- * ao tom neutro para não parecer meio botão aceso.
+ * ao tom neutro para não parecer meio botão aceso. `tall`: 44 px de altura
+ * (o tablet), em vez de 36.
  * @param {{label: any, icon?: any, title?: string, disabled?: boolean,
  *   onClick: () => void, menuLabel: string, menuId?: string,
  *   items?: import('./Menu.jsx').MenuItem[], onOpen?: () => void,
- *   testId?: string}} props
+ *   testId?: string, tall?: boolean}} props
  */
 export function SplitButton({
   label,
@@ -23,6 +24,7 @@ export function SplitButton({
   items = [],
   onOpen,
   testId,
+  tall = false,
 }) {
   const menu = useMenu({ onOpen })
   const hasMenu = items.length > 0
@@ -37,7 +39,7 @@ export function SplitButton({
         onClick={onClick}
         disabled={disabled}
         title={title}
-        className={`flex h-9 items-center gap-2 whitespace-nowrap px-3.5 text-[13px] font-semibold transition-colors ${main} ${
+        className={`flex items-center gap-2 whitespace-nowrap px-3.5 text-[13px] font-semibold transition-colors ${tall ? 'h-11' : 'h-9'} ${main} ${
           hasMenu ? 'rounded-l-lg' : 'rounded-lg'
         }`}
       >
@@ -51,7 +53,7 @@ export function SplitButton({
           aria-controls={menu.open ? menuId : undefined}
           aria-label={menuLabel}
           title={menuLabel}
-          className={`flex h-9 w-[34px] items-center justify-center rounded-r-lg border-l transition-colors ${
+          className={`flex items-center justify-center rounded-r-lg border-l transition-colors ${tall ? 'h-11 w-10' : 'h-9 w-[34px]'} ${
             disabled
               ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700'
               : 'border-[#06202E]/35 bg-sky-400 text-[#06202E] hover:bg-sky-300'

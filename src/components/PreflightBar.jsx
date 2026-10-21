@@ -64,7 +64,20 @@ function counted(t, n, one, many) {
   return `${n} ${t(n === 1 ? one : many)}`
 }
 
-export function PreflightPill({ items, open, onToggle, mode = 'area', buttonRef = null }) {
+/**
+ * A pastilha do preflight no cabeçalho: o estado numa palavra e as
+ * contagens; abre e fecha a lista. `tall`: 44 px de altura (o tablet).
+ * @param {{items: any[], open: boolean, onToggle: () => void, mode?: string,
+ *   buttonRef?: any, tall?: boolean}} props
+ */
+export function PreflightPill({
+  items,
+  open,
+  onToggle,
+  mode = 'area',
+  buttonRef = null,
+  tall = false,
+}) {
   const t = useT()
   const c = preflightCounts(items)
   const state = isNoPlan(items) ? 'none' : c.block > 0 ? 'block' : c.warn > 0 ? 'warn' : 'ok'
@@ -93,7 +106,7 @@ export function PreflightPill({ items, open, onToggle, mode = 'area', buttonRef 
       aria-controls={open ? 'preflight-dialog' : undefined}
       title={t('preflight.pillTitle')}
       data-testid="preflight-pill"
-      className={`${pillClass(s.tone)} transition-[filter] hover:brightness-125`}
+      className={`${pillClass(s.tone)} transition-[filter] hover:brightness-125 ${tall ? '!h-11' : ''}`}
     >
       <s.Icon className={`h-4 w-4 ${s.icon}`} />
       {t('preflight.title')}

@@ -17,6 +17,7 @@ import {
 import { IconChevronDown, IconClose } from './Icons.jsx'
 import NumberInput from './NumberInput.jsx'
 import { Field, fieldBox, fieldInput } from './ui/Field.jsx'
+import { PanelCollapseButton } from './ui/PanelCollapse.jsx'
 import { Section } from './ui/Section.jsx'
 
 /**
@@ -35,7 +36,8 @@ import { Section } from './ui/Section.jsx'
  * 1024 px de largura, ao lado dos 64 px da barra dos modos. Com `title`, o
  * painel do desenho novo (o da área): por cima, o nome do modo e uma linha a
  * dizer para que serve (`subtitle`), o fundo do painel e as secções mais
- * juntas; sem ele, a coluna de cartões dos outros modos, como estava.
+ * juntas; sem ele, a coluna de cartões dos outros modos, como estava. No
+ * tablet, ao lado do nome, o botão que recolhe o painel (ui/PanelCollapse.jsx).
  * @param {{children?: any, label: string, title?: any, subtitle?: any,
  *   testId?: string}} props
  */
@@ -50,9 +52,12 @@ export function CardColumn({ children, label, title = null, subtitle = null, tes
       }`}
     >
       {title != null && (
-        <div className="px-1 pb-2 pt-0.5">
-          <h2 className="text-[17px] font-semibold tracking-tight text-slate-100">{title}</h2>
-          {subtitle != null && <p className="mt-0.5 text-[12.5px] text-slate-400">{subtitle}</p>}
+        <div className="flex items-start gap-2 px-1 pb-2 pt-0.5">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[17px] font-semibold tracking-tight text-slate-100">{title}</h2>
+            {subtitle != null && <p className="mt-0.5 text-[12.5px] text-slate-400">{subtitle}</p>}
+          </div>
+          <PanelCollapseButton />
         </div>
       )}
       {children}

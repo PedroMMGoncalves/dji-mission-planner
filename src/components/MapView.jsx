@@ -311,7 +311,16 @@ export default function MapView({
     })
 
     mapRef.current = map
-    return () => map.remove()
+    // o contentor muda de tamanho sem a janela mudar (o painel de parâmetros
+    // recolhido, a operação do dia aberta): o Leaflet volta a medir-se, com o
+    // mesmo centro
+    const resize =
+      typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => map.invalidateSize())
+    resize?.observe(containerRef.current)
+    return () => {
+      resize?.disconnect()
+      map.remove()
+    }
   }, [])
 
   // Zoom e controlo de camadas com labels na língua activa, um por baixo do

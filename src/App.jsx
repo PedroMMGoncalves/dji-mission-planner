@@ -9,6 +9,8 @@ import ChecklistPage from './components/ChecklistPage.jsx'
 import AppOverlays from './components/AppOverlays.jsx'
 import MapPane from './components/MapPane.jsx'
 import AppHeader from './components/AppHeader.jsx'
+import { useMedia } from './components/MapOverlay.jsx'
+import { PanelCollapseContext } from './components/ui/PanelCollapse.jsx'
 import { acceptDisclaimer, disclaimerAccepted } from './components/DisclaimerModal.jsx'
 import { nearestBase } from './mission/bases.js'
 import { MissionExportError } from './utils/exporters.js'
@@ -87,14 +89,27 @@ export default function App() {
     }
   }, [lang])
 
+  // o painel de parâmetros à vista ou recolhido: «Painel», na barra dos
+  // modos, e, no ecrã estreito do tablet (até 1179 px), o botão que o
+  // recolhe no cabeçalho dele (PanelCollapseContext); o foco passa então
+  // para o «Painel», porque o botão desaparece com o painel
+  const [panelOpen, setPanelOpen] = useState(true)
+  const compact = useMedia('(max-width: 1179px)')
+  const collapsePanel = useCallback(() => {
+    setPanelOpen(false)
+    document.getElementById('panel-toggle')?.focus()
+  }, [])
+
   return (
     <LangContext.Provider value={lang}>
-      <AppInner lang={lang} setLang={setLang} />
+      <PanelCollapseContext.Provider value={compact ? collapsePanel : null}>
+        <AppInner lang={lang} setLang={setLang} panelOpen={panelOpen} setPanelOpen={setPanelOpen} />
+      </PanelCollapseContext.Provider>
     </LangContext.Provider>
   )
 }
 
-function AppInner({ lang, setLang }) {
+function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
   const t = useT()
   /* ----------------------------- Estado ----------------------------- */
   // 'planner' | 'checklist' — o hash #checklist permite ligação direta
@@ -897,8 +912,17 @@ function AppInner({ lang, setLang }) {
       <div className="flex min-h-0 flex-1">
         {/* a barra dos modos à esquerda e o painel do modo; o mapa fica com o resto */}
         <div className="flex h-full shrink-0">
-          <MissionModeSelector mode={missionMode} onChange={changeMissionMode} />
-          <div className="h-full min-h-0">
+          <MissionModeSelector
+            mode={missionMode}
+            // um modo escolhido mostra o seu painel
+            onChange={(m) => {
+              setPanelOpen(true)
+              changeMissionMode(m)
+            }}
+            panelOpen={panelOpen}
+            onTogglePanel={() => setPanelOpen((v) => !v)}
+          />
+          <div id="mode-panel" hidden={!panelOpen} className="h-full min-h-0">
             {missionMode === 'face' && (
               <FacePanel
                 hw={hw}
