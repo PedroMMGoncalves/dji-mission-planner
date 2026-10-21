@@ -3080,6 +3080,38 @@ await scenario('juntar-a-esta-base', async () => {
   await page.waitForTimeout(2500)
   await page.screenshot({ path: join(OUT, 'juntar-3d.png') })
   check('juntar: a vista 3D com bases abre sem erros', errors.length === 0, errors.join(' | '))
+  // a legenda nas cores da cena: a rota e os waypoints nas cores das bases
+  // (as dos pinos do mapa, por baixo da vista)
+  const l3d = page.getByTestId('map3d-legend')
+  const abrir3d = l3d.getByTestId('map3d-legend-toggle')
+  if ((await abrir3d.getAttribute('aria-expanded')) !== 'true') await abrir3d.click()
+  const rgb = (cores) =>
+    page.evaluate(
+      (cs) =>
+        cs.map((c) => {
+          const e = document.createElement('i')
+          e.style.color = c
+          document.body.append(e)
+          const v = getComputedStyle(e).color
+          e.remove()
+          return v
+        }),
+      cores,
+    )
+  const pinos = new Set(
+    await rgb(
+      await page.locator('.base-pin').evaluateAll((els) => els.map((e) => e.style.background)),
+    ),
+  )
+  const rota3d = await rgb(await coresDoSimbolo(l3d.getByTestId('map3d-legend-route')))
+  const pontos3d = await rgb(await coresDoSimbolo(l3d.getByTestId('map3d-legend-waypoints')))
+  check(
+    'juntar: na legenda 3D, a rota e os waypoints nas cores das bases',
+    rota3d.length >= 1 &&
+      [...rota3d, ...pontos3d].every((c) => pinos.has(c)) &&
+      /Cor da base/.test(await l3d.getByTestId('map3d-legend-route').innerText()),
+    `${rota3d} / ${pontos3d} · pinos ${[...pinos]}`,
+  )
   await page.keyboard.press('Escape')
   check('juntar: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
@@ -5108,7 +5140,9 @@ await scenario('legenda-camadas', async () => {
   await page.getByRole('button', { name: /Vista 3D|3D View/ }).click()
   const l3d = page.getByTestId('map3d-legend')
   await l3d.waitFor({ timeout: 20000 })
-  await l3d.getByTestId('map3d-legend-toggle').click()
+  // num ecrã largo a legenda da vista 3D já abre aberta; recolhida, abre-se
+  const abrir3d = l3d.getByTestId('map3d-legend-toggle')
+  if ((await abrir3d.getAttribute('aria-expanded')) !== 'true') await abrir3d.click()
   const caixas3d = await l3d
     .getByRole('switch')
     .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')))
@@ -5123,10 +5157,48 @@ await scenario('legenda-camadas', async () => {
       (await fotos3d.isChecked()),
     caixas3d.join(','),
   )
+  // nas cores da cena: sem bases, a rota em ciano com o realce âmbar e os
+  // waypoints em ciano; o relevo global plano diz a cota, e o exagero
+  // vertical escolhido no cabeçalho aparece no relevo
+  const rota3d = await coresDoSimbolo(l3d.getByTestId('map3d-legend-route'))
+  const pontos3d = await coresDoSimbolo(l3d.getByTestId('map3d-legend-waypoints'))
+  const relevo3d = () => l3d.getByTestId('map3d-legend-terrain').locator('..').innerText()
+  const antes3d = await relevo3d()
+  await page
+    .getByRole('group', { name: /Exagero vertical|Vertical exaggeration/ })
+    .getByRole('button', { name: '2×' })
+    .click()
+  const depois3d = await relevo3d()
+  check(
+    'legenda 3D: a rota e os waypoints nas cores da cena, o relevo plano e o exagero',
+    rota3d.join() === '#fbbf24,#22d3ee' &&
+      pontos3d.join() === '#22d3ee' &&
+      /Relevo plano, à cota de 0 m/.test(antes3d) &&
+      /Exagero vertical 1×/.test(antes3d) &&
+      /Exagero vertical 2×/.test(depois3d) &&
+      (await page.getByTestId('map3d-summary').innerText()) === 'Área · 1 voo',
+    `rota ${rota3d} · waypoints ${pontos3d} · ${antes3d.replace(/\s+/g, ' ')} → ${depois3d.replace(/\s+/g, ' ')}`,
+  )
   check('legenda: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })
+
+/**
+ * As cores de um símbolo da legenda (traços e preenchimentos do SVG), sem
+ * repetidos, pela ordem em que aparecem.
+ * @param {import('playwright').Locator} loc
+ */
+function coresDoSimbolo(loc) {
+  return loc.locator('svg [stroke], svg [fill]').evaluateAll((els) => [
+    ...new Set(
+      els
+        .flatMap((e) => [e.getAttribute('stroke'), e.getAttribute('fill')])
+        .filter((c) => c && c !== 'none' && !c.startsWith('url'))
+        .map((c) => c.toLowerCase()),
+    ),
+  ])
+}
 
 // Ajuda em português: o índice abre os tópicos (os grupos abrem e fecham),
 // «Ver também» leva aos relacionados, a pesquisa deixa no índice só os

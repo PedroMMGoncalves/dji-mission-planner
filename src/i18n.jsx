@@ -358,9 +358,9 @@ const BASE_DICT = {
 
   /* ---- Vista 3D ---- */
   'map3d.title': { pt: 'Vista 3D', en: '3D View' },
-  'map3d.exaggeration': { pt: 'Exagero', en: 'Exaggeration' },
-  'map3d.reset': { pt: '↺ Repor vista', en: '↺ Reset view' },
-  'map3d.close': { pt: '✕ Fechar', en: '✕ Close' },
+  'map3d.exaggeration': { pt: 'Exagero vertical', en: 'Vertical exaggeration' },
+  'map3d.reset': { pt: 'Repor vista', en: 'Reset view' },
+  'map3d.close': { pt: 'Fechar', en: 'Close' },
   'map3d.noWebgl': {
     pt: 'A vista 3D não abre neste browser (sem WebGL): {msg}. O planeador continua; feche esta janela.',
     en: 'The 3D view cannot open in this browser (no WebGL): {msg}. The planner carries on; close this window.',
@@ -487,14 +487,13 @@ const BASE_DICT = {
     en: 'Only the layers with content are listed.',
   },
   'map3d.imageryOk': { pt: 'Imagens © Esri', en: 'Imagery © Esri' },
-  'map3d.imageryLoading': { pt: 'A carregar imagens…', en: 'Loading imagery…' },
+  'map3d.imageryLoading': {
+    pt: 'A carregar as imagens de satélite…',
+    en: 'Loading the satellite imagery…',
+  },
   'map3d.imageryFallback': {
     pt: 'Relevo sombreado (sem imagens)',
     en: 'Shaded relief (no imagery)',
-  },
-  'map3d.controlsHint': {
-    pt: 'Arrastar: rodar · Roda do rato: zoom · Botão direito: deslocar · Esc: fechar',
-    en: 'Drag: rotate · Wheel: zoom · Right button: pan · Esc: close',
   },
   'map3d.noTerrain': {
     pt: 'Sem relevo carregado: descarregue o relevo da área para ver a missão em 3D.',

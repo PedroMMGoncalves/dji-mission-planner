@@ -198,6 +198,8 @@ export default function AppOverlays({
               }))}
               gcps={missionMode === 'area' ? gcps : null}
               photos={photos3d}
+              missionName={missionName}
+              modeLabel={t(`mode.${missionMode}`)}
               onClose={() => setShow3d(false)}
             />
           </Suspense>

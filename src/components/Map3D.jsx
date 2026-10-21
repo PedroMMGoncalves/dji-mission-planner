@@ -2,9 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { useT } from '../i18n.jsx'
+import { tCount } from '../i18n/format.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from '../utils/units.js'
-import LayerLegend from './LayerLegend.jsx'
 import { fillTerrainGaps } from '../utils/terrainGrid.js'
+import { IconCube } from './Icons.jsx'
+import { CARD, FOCUS, ICON_BUTTON, Icon, PILL, useMedia, useToggleFocus } from './MapOverlay.jsx'
+import { buttonClass } from './ui/Button.jsx'
+import { CloseKeyButton, useDialogFocus } from './ui/Window.jsx'
 
 /**
  * VISUALIZADOR 3D DA MISSÃO
@@ -200,24 +204,352 @@ function makeLabelSprite(text, worldHeight, color = '#facc15') {
   return sprite
 }
 
-const BTN = 'rounded bg-slate-800 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-700'
-
 /** Camadas da cena na legenda: um THREE.Group por chave (só as que têm conteúdo). */
 const LEGEND_3D = [
-  { key: 'terrain', label: 'legend.terrain', kind: 'area', color: '#a3a3a3' },
-  { key: 'area', label: 'legend.area', kind: 'line', color: '#ffffff' },
-  { key: 'blocks', label: 'legend.blocks', kind: 'line', color: '#22d3ee' },
-  { key: 'route', label: 'legend.route', kind: 'line', color: '#fbbf24' },
-  { key: 'waypoints', label: 'legend.waypoints', kind: 'dot', color: '#22d3ee' },
-  { key: 'photos', label: 'legend.photos', kind: 'dot', color: '#fde68a' },
-  { key: 'bases', label: 'legend.bases', kind: 'marker', color: '#f59e0b' },
-  { key: 'gcps', label: 'legend.gcps', kind: 'marker', color: '#facc15' },
+  { key: 'terrain', label: 'legend.terrain' },
+  { key: 'area', label: 'legend.area' },
+  { key: 'blocks', label: 'legend.blocks' },
+  { key: 'route', label: 'legend.route' },
+  { key: 'waypoints', label: 'legend.waypoints' },
+  { key: 'photos', label: 'legend.photos' },
+  { key: 'bases', label: 'legend.bases' },
+  { key: 'gcps', label: 'legend.gcps' },
 ]
 const EXAG_OPTIONS = [
   { value: 1, label: '1×' },
   { value: 1.5, label: '1,5×' },
   { value: 2, label: '2×' },
 ]
+
+/* --- legenda: os símbolos nas cores com que a cena desenha cada camada --- */
+
+/** As cores distintas de uma lista, pela ordem (até `max`). */
+const distinct = (colors, max = 4) => [...new Set(colors.filter(Boolean))].slice(0, max)
+
+/** Caixa de 28 × 20 dos símbolos. */
+const Sym = ({ children }) => (
+  <svg aria-hidden="true" width="28" height="20" viewBox="0 0 28 20" className="flex-none">
+    {children}
+  </svg>
+)
+
+/** A rampa hipsométrica da cena (hypsoColor), como gradiente SVG. */
+const Ramp = ({ id }) => (
+  <defs>
+    <linearGradient id={id} x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stopColor="#2f6b3d" />
+      <stop offset="0.5" stopColor="#8a6636" />
+      <stop offset="1" stopColor="#f1f5f9" />
+    </linearGradient>
+  </defs>
+)
+
+/**
+ * Símbolo de cada camada: o relevo (a rampa das cotas, ou a imagem de
+ * satélite), o contorno da área, os blocos, a rota e os waypoints nas cores
+ * dos voos (ou o ciano com o realce âmbar), as fotos, as bases com a zona e
+ * os alvos GCP.
+ */
+function symbolOf(key, { imagery, pieces, blocks, bases }) {
+  if (key === 'terrain')
+    return imagery === 'ok' ? (
+      <Sym>
+        <rect x="2" y="4" width="24" height="12" rx="2.5" fill="#55624a" />
+        <path
+          d="M2 12 9 8l5 4 5-3 7 4v1.5a2.5 2.5 0 0 1-2.5 2.5h-19A2.5 2.5 0 0 1 2 13.5Z"
+          fill="#8a7b62"
+        />
+      </Sym>
+    ) : (
+      <Sym>
+        <Ramp id="map3d-ramp-mini" />
+        <rect x="2" y="4" width="24" height="12" rx="2.5" fill="url(#map3d-ramp-mini)" />
+      </Sym>
+    )
+  if (key === 'area')
+    return (
+      <Sym>
+        <rect
+          x="3"
+          y="4"
+          width="22"
+          height="12"
+          rx="1.5"
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="1.6"
+        />
+      </Sym>
+    )
+  if (key === 'blocks') {
+    const c = blocks.length ? blocks : ['#22d3ee']
+    return (
+      <Sym>
+        {[
+          [2, 3],
+          [15, 3],
+          [2, 11],
+          [15, 11],
+        ].map(([x, y], i) => (
+          <rect
+            key={i}
+            x={x}
+            y={y}
+            width="11"
+            height="6.5"
+            fill="none"
+            stroke={c[i % c.length]}
+            strokeWidth="1.5"
+          />
+        ))}
+      </Sym>
+    )
+  }
+  if (key === 'route')
+    return pieces ? (
+      <Sym>
+        {['M2 14 8 6', 'M8 6l6 8', 'M14 14l6-8', 'M20 6l6 8'].map((d, i) => (
+          <path
+            key={d}
+            d={d}
+            stroke={pieces[i % pieces.length]}
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        ))}
+      </Sym>
+    ) : (
+      <Sym>
+        <path
+          d="M2 14 8 6l6 8 6-8 6 8"
+          fill="none"
+          stroke="#fbbf24"
+          strokeOpacity="0.55"
+          strokeWidth="4"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M2 14 8 6l6 8 6-8 6 8"
+          fill="none"
+          stroke="#22d3ee"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+      </Sym>
+    )
+  if (key === 'waypoints') {
+    const c = pieces ?? ['#22d3ee']
+    return (
+      <Sym>
+        {[4.5, 11, 17.5, 24].map((x, i) => (
+          <circle key={x} cx={x} cy="10" r="2.6" fill={c[i % c.length]} />
+        ))}
+      </Sym>
+    )
+  }
+  if (key === 'photos')
+    return (
+      <Sym>
+        {[4, 9.3, 14.6, 19.9, 25.2].map((x) => (
+          <circle key={x} cx={x} cy="10" r="2.2" fill="#fde68a" />
+        ))}
+      </Sym>
+    )
+  if (key === 'bases') {
+    const c = bases[0] ?? '#f59e0b'
+    return (
+      <Sym>
+        <circle
+          cx="14"
+          cy="10"
+          r="8"
+          fill="none"
+          stroke={c}
+          strokeOpacity="0.9"
+          strokeWidth="1.3"
+        />
+        <circle cx="14" cy="10" r="3.4" fill={c} />
+      </Sym>
+    )
+  }
+  return (
+    <Sym>
+      <rect
+        x="9"
+        y="5"
+        width="10"
+        height="10"
+        fill="#facc15"
+        stroke="#0f172a"
+        transform="rotate(45 14 10)"
+      />
+    </Sym>
+  )
+}
+
+/** Interruptor de 40 × 24 (só o desenho: o botão é a linha inteira). */
+const Knob = ({ on }) => (
+  <span
+    aria-hidden="true"
+    className={`flex h-6 w-10 flex-none rounded-full p-0.5 transition-colors ${
+      on ? 'justify-end bg-sky-400' : 'justify-start bg-slate-700'
+    }`}
+  >
+    <span className={`h-5 w-5 rounded-full ${on ? 'bg-[#06202E]' : 'bg-slate-300'}`} />
+  </span>
+)
+
+/**
+ * Legenda da vista 3D: um cartão no canto de cima, à direita, que se recolhe
+ * numa pastilha; cada camada é um interruptor (a linha inteira) com o
+ * símbolo nas cores da cena, e o relevo leva a escala das cotas e o exagero
+ * vertical.
+ * @param {{items: Array<{key: string, label: string, symbol: any, desc?: any, extra?: any}>,
+ *   hidden: Set<string>, onToggle: (key: string) => void, open: boolean,
+ *   onOpenChange: (open: boolean) => void, colors: string[], note: string}} props
+ */
+function Legend3D({ items, hidden, onToggle, open, onOpenChange, colors, note }) {
+  const t = useT()
+  const { ref: toggleRef, mark } = useToggleFocus(open)
+  const setOpen = (v) => {
+    mark()
+    onOpenChange(v)
+  }
+  const testId = 'map3d-legend'
+  if (!items.length) return null
+  if (!open)
+    return (
+      <div className="absolute right-4 top-4 z-10" data-testid={testId}>
+        <button
+          type="button"
+          ref={toggleRef}
+          data-testid={`${testId}-toggle`}
+          aria-expanded="false"
+          aria-controls={`${testId}-body`}
+          title={t('legend.expand')}
+          onClick={() => setOpen(true)}
+          className={PILL}
+        >
+          <span aria-hidden="true" className="flex gap-[3px]">
+            {colors.slice(0, 3).map((c) => (
+              <span key={c} className="h-2 w-2 rounded-sm" style={{ background: c }} />
+            ))}
+          </span>
+          {t('legend.title')}
+          <span className="text-slate-400">
+            · {tCount(t, 'map3d.layers', items.length, { n: items.length })}
+          </span>
+          <Icon d="m6 9 6 6 6-6" size={14} className="text-slate-400" />
+        </button>
+      </div>
+    )
+  return (
+    <section
+      aria-labelledby={`${testId}-title`}
+      data-testid={testId}
+      className={`absolute right-4 top-4 z-10 flex max-h-[calc(100%-32px)] w-[312px] max-w-[calc(100%-32px)] flex-col overflow-hidden ${CARD}`}
+    >
+      <div className="flex flex-none items-center gap-2 border-b border-slate-800 py-2 pl-3.5 pr-2">
+        <div className="min-w-0 flex-1">
+          <h3 id={`${testId}-title`} className="m-0 text-sm font-semibold">
+            {t('legend.title')}
+          </h3>
+          <p className="m-0 mt-px text-xs text-slate-400">{t('map3d.legendHint')}</p>
+        </div>
+        <button
+          type="button"
+          ref={toggleRef}
+          data-testid={`${testId}-toggle`}
+          aria-expanded="true"
+          aria-controls={`${testId}-body`}
+          aria-label={t('legend.collapse')}
+          title={t('legend.collapse')}
+          onClick={() => setOpen(false)}
+          className={`h-8 w-8 ${ICON_BUTTON}`}
+        >
+          <Icon d="m18 15-6-6-6 6" />
+        </button>
+      </div>
+      <div id={`${testId}-body`} className="flex min-h-0 flex-col gap-0.5 overflow-y-auto p-1.5">
+        {items.map((it) => {
+          const on = !hidden.has(it.key)
+          const row = (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={on}
+              aria-labelledby={`${testId}-${it.key}-label`}
+              aria-describedby={it.desc ? `${testId}-${it.key}-desc` : undefined}
+              data-testid={`${testId}-${it.key}`}
+              onClick={() => onToggle(it.key)}
+              className={`flex min-h-[44px] w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-raised ${FOCUS}`}
+            >
+              <span className={on ? '' : 'opacity-50'}>{it.symbol}</span>
+              <span className={`min-w-0 flex-1 ${on ? '' : 'opacity-50'}`}>
+                <span
+                  id={`${testId}-${it.key}-label`}
+                  className="block text-[13px] font-medium text-slate-100"
+                >
+                  {it.label}
+                </span>
+                {it.desc && (
+                  <span
+                    id={`${testId}-${it.key}-desc`}
+                    className="mt-px block text-xs text-slate-400"
+                  >
+                    {it.desc}
+                  </span>
+                )}
+              </span>
+              <Knob on={on} />
+            </button>
+          )
+          return it.extra ? (
+            <div key={it.key} className="mb-1 rounded-[9px] border border-slate-800 bg-sunken">
+              {row}
+              <div className={`pb-2.5 pl-[46px] pr-2.5 ${on ? '' : 'opacity-50'}`}>{it.extra}</div>
+            </div>
+          ) : (
+            <div key={it.key}>{row}</div>
+          )
+        })}
+      </div>
+      <p className="m-0 flex-none border-t border-slate-800 px-3.5 pb-[11px] pt-[9px] text-xs leading-snug text-slate-400">
+        {note}
+      </p>
+    </section>
+  )
+}
+
+/** Rato com um botão (ou a roda) aceso, para as dicas de como mexer na vista. */
+function MouseIcon({ part }) {
+  return (
+    <Icon size={16} sw={1.8} className="text-slate-300">
+      <rect x="6" y="2.5" width="12" height="19" rx="6" />
+      {part === 'wheel' ? (
+        <path d="M12 6v3.5" stroke="#7DD3FC" strokeWidth="2.8" />
+      ) : (
+        <>
+          <path d="M12 2.5V10M6 10h12" />
+          <path
+            d={
+              part === 'left' ? 'M12 2.5A6 6 0 0 0 6 8.5V10h6z' : 'M12 2.5A6 6 0 0 1 18 8.5V10h-6z'
+            }
+            fill="#7DD3FC"
+            stroke="none"
+          />
+        </>
+      )}
+    </Icon>
+  )
+}
+
+/** O primeiro e o último rótulo de voo pela numeração (A-1 … T-20). */
+function flightRange(labels) {
+  const num = (s) => Number(/(\d+)\s*$/.exec(s)?.[1] ?? NaN)
+  const sorted = labels.filter(Boolean).sort((a, b) => num(a) - num(b) || a.localeCompare(b))
+  return sorted.length ? [sorted[0], sorted[sorted.length - 1]] : null
+}
 
 export default function Map3D({
   terrain,
@@ -231,25 +563,38 @@ export default function Map3D({
   bases3d = null,
   gcps,
   photos = null,
+  missionName = '',
+  modeLabel = '',
   onClose,
 }) {
   const t = useT()
   const hostRef = useRef(null)
+  const boxRef = useRef(/** @type {HTMLDivElement|null} */ (null))
   const apiRef = useRef(null) // { applyExaggeration, resetView } da cena viva
   const propsRef = useRef(null)
   const onCloseRef = useRef(onClose)
   const exagRef = useRef(1)
+  useDialogFocus(boxRef)
 
   const [exag, setExag] = useState(1)
   const [imagery, setImagery] = useState('loading') // 'loading' | 'ok' | 'fallback'
   // um browser sem WebGL: a mensagem fica na janela, o planeador continua (M3-C4)
   const [glError, setGlError] = useState(null)
-  // legenda: aberta, camadas escondidas (um ref para a cena reconstruída as
-  // repor) e as que têm conteúdo
-  const [legendOpen, setLegendOpen] = useState(false)
+  // legenda: aberta (de início, num ecrã largo), camadas escondidas (um ref
+  // para a cena reconstruída as repor) e as que têm conteúdo
+  const wide = useMedia('(min-width: 1024px)')
+  const [legendChoice, setLegendOpen] = useState(/** @type {boolean|null} */ (null))
+  const legendOpen = legendChoice ?? wide
   const [hiddenLayers, setHiddenLayers] = useState(() => new Set())
   const hiddenRef = useRef(hiddenLayers)
   const [presentLayers, setPresentLayers] = useState(/** @type {string[]} */ ([]))
+  // o que a cena calculou e a legenda mostra: as cotas da rampa do relevo e
+  // se a rota vem nas cores dos voos
+  const [sceneInfo, setSceneInfo] = useState(
+    /** @type {{zMin: number, zMax: number, colored: boolean, waypoints: number, photos: number}|null} */ (
+      null
+    ),
+  )
 
   // Escrito num efeito e não durante o render: mutar um ref no corpo do
   // componente é inseguro com renderização concorrente (React pode repetir
@@ -297,13 +642,16 @@ export default function Map3D({
     photos?.length ?? 0,
   ].join('|')
 
-  // Esc fecha o visualizador
+  // Esc fecha o visualizador (na captura, antes das gavetas e da base
+  // seleccionada, que ficam por baixo)
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape') onCloseRef.current?.()
+      if (e.key !== 'Escape' || e.defaultPrevented) return
+      e.preventDefault()
+      onCloseRef.current?.()
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
   }, [])
 
   // Construção da cena (uma vez por conjunto de dados)
@@ -852,6 +1200,8 @@ export default function Map3D({
     }
     for (const key of Object.keys(layer3d)) setLayerVisible(key, !hiddenRef.current.has(key))
     setPresentLayers(LEGEND_3D.filter((l) => layer3d[l.key].children.length > 0).map((l) => l.key))
+    // para a legenda: a rampa vai de zMin a zMax, e as cores da rota
+    setSceneInfo({ zMin, zMax, colored, waypoints: wps.length, photos: photoList.length })
     apiRef.current = { applyExaggeration, resetView, setLayerVisible }
 
     /* --- textura de satélite (assíncrona, com plano B) -------------------- */
@@ -928,10 +1278,6 @@ export default function Map3D({
     hiddenRef.current = hiddenLayers
     for (const l of LEGEND_3D) apiRef.current?.setLayerVisible?.(l.key, !hiddenLayers.has(l.key))
   }, [hiddenLayers])
-  const legendItems = LEGEND_3D.filter((l) => presentLayers.includes(l.key)).map((l) => ({
-    ...l,
-    label: t(l.label),
-  }))
   const toggleLayer = (key) =>
     setHiddenLayers((prev) => {
       const next = new Set(prev)
@@ -939,6 +1285,119 @@ export default function Map3D({
       else next.add(key)
       return next
     })
+
+  // as cores com que a cena desenha cada camada (as mesmas que o efeito usa)
+  const colored = Boolean(sceneInfo?.colored)
+  const palette = {
+    imagery,
+    pieces: colored ? distinct((pieceColors ?? []).map((c) => c || '#22d3ee')) : null,
+    blocks: distinct((blocks3d ?? []).map((b) => b.color || '#22d3ee')),
+    bases: distinct(
+      (bases3d ?? []).map((b) => b.color || '#f59e0b'),
+      3,
+    ),
+  }
+  const nBases = (bases3d ?? []).filter((b) => Array.isArray(b?.point)).length
+  const nGcps = Array.isArray(gcps) ? gcps.length : 0
+  const exagLabel = EXAG_OPTIONS.find((o) => o.value === exag)?.label ?? `${exag}×`
+  const zMin = Math.round(sceneInfo?.zMin ?? 0)
+  const zMax = Math.round(sceneInfo?.zMax ?? 0)
+  const reliefScale =
+    zMin === zMax ? (
+      <p className="m-0 text-xs leading-snug text-slate-400">{t('map3d.scaleFlat', { v: zMin })}</p>
+    ) : imagery === 'ok' ? (
+      <p className="m-0 text-xs leading-snug text-slate-400">
+        {t('map3d.scaleImagery', { min: zMin, max: zMax })}
+      </p>
+    ) : (
+      <>
+        <svg
+          role="img"
+          aria-label={t('map3d.scaleAria', { min: zMin, max: zMax })}
+          width="100%"
+          height="8"
+          viewBox="0 0 220 8"
+          preserveAspectRatio="none"
+          className="block"
+        >
+          <Ramp id="map3d-ramp" />
+          <rect width="220" height="8" rx="4" fill="url(#map3d-ramp)" />
+        </svg>
+        <div
+          aria-hidden="true"
+          data-testid="map3d-scale"
+          className="mt-1 flex justify-between text-[11.5px] tabular-nums text-slate-200"
+        >
+          <span>{zMin} m</span>
+          <span>{zMax} m</span>
+        </div>
+        <p className="m-0 mt-1 text-xs leading-snug text-slate-400">
+          {t(imagery === 'loading' ? 'map3d.scaleLoading' : 'map3d.scaleFallback')}
+        </p>
+      </>
+    )
+  const desc = {
+    terrain:
+      terrain?.source === 'file'
+        ? t('map3d.terrainFile', {
+            label: terrain.label,
+            res: Number.isFinite(terrain.resolutionM) ? +terrain.resolutionM.toFixed(1) : '?',
+          })
+        : t('map3d.terrainGlobal'),
+    area: t('map3d.areaDesc'),
+    blocks: t('map3d.blocksDesc'),
+    route: (
+      <span className="inline-flex flex-wrap items-center gap-[5px]">
+        {colored ? t('map3d.routeBase') : t('map3d.routePlain')} · {t('legend.start')}
+        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#4ade80]" />· {t('legend.end')}
+        <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#ef4444]" />
+      </span>
+    ),
+    waypoints: colored
+      ? t('map3d.inBaseColour', { n: sceneInfo?.waypoints ?? 0 })
+      : String(sceneInfo?.waypoints ?? 0),
+    photos: colored
+      ? t('map3d.photosOver', { n: sceneInfo?.photos ?? 0 })
+      : String(sceneInfo?.photos ?? 0),
+    bases: tCount(t, 'map3d.basesDesc', nBases, { n: nBases }),
+    gcps: tCount(t, 'map3d.gcpsDesc', nGcps, { n: nGcps }),
+  }
+  const legendItems = LEGEND_3D.filter((l) => presentLayers.includes(l.key)).map((l) => ({
+    key: l.key,
+    label: t(l.label),
+    symbol: symbolOf(l.key, palette),
+    desc: desc[l.key],
+    extra:
+      l.key === 'terrain' ? (
+        <>
+          {reliefScale}
+          <p data-testid="map3d-exag" className="m-0 mt-1 text-xs leading-snug text-slate-300">
+            {t('map3d.exag', { k: exagLabel })}
+          </p>
+        </>
+      ) : null,
+  }))
+  // a pastilha da legenda recolhida: as cores dos voos (ou da rota), senão as das bases
+  const pillColors =
+    palette.pieces ?? (palette.blocks.length ? palette.blocks : ['#22d3ee', '#fbbf24'])
+  // na área, sem GCP diz-se porquê a camada não aparece
+  const legendNote =
+    Array.isArray(gcps) && !presentLayers.includes('gcps') ? t('map3d.noteNoGcp') : t('legend.note')
+
+  // o resumo do cabeçalho: o modo, os voos (do primeiro ao último) e as bases
+  const nFlights = blocks3d?.length || (waypoints?.length ? (breaks?.length ?? 0) + 1 : 0)
+  const range = flightRange((blocks3d ?? []).map((b) => b.label))
+  const summary = [
+    modeLabel,
+    nFlights > 1 && range
+      ? t('map3d.flightsRange', { n: nFlights, first: range[0], last: range[1] })
+      : nFlights > 0
+        ? tCount(t, 'map3d.flights', nFlights, { n: nFlights })
+        : null,
+    nBases > 0 ? tCount(t, 'map3d.bases', nBases, { n: nBases }) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   const status =
     imagery === 'ok'
@@ -948,48 +1407,104 @@ export default function Map3D({
         : t('map3d.imageryFallback')
 
   return (
-    <div className="fixed inset-0 z-[2000] flex flex-col bg-slate-950">
-      <div className="flex items-center gap-3 border-b border-slate-800 bg-slate-950/90 px-3 py-2">
-        <span className="text-sm font-semibold text-slate-100">{t('map3d.title')}</span>
-        {hasTerrain && <span className="hidden text-xs text-slate-400 sm:inline">{status}</span>}
-        <div className="ml-auto flex items-center gap-2">
-          <span className="hidden text-xs text-slate-400 sm:inline">{t('map3d.exaggeration')}</span>
-          <div className="flex overflow-hidden rounded border border-slate-700">
-            {EXAG_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setExag(opt.value)}
-                className={`px-2.5 py-1.5 text-sm ${
-                  exag === opt.value
-                    ? 'bg-sky-700 text-white'
-                    : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <button type="button" className={BTN} onClick={() => apiRef.current?.resetView()}>
-            {t('map3d.reset')}
-          </button>
-          <button type="button" className={BTN} onClick={onClose}>
-            {t('map3d.close')}
-          </button>
+    <div
+      ref={boxRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="map3d-title"
+      data-testid="map3d"
+      tabIndex={-1}
+      className="fixed inset-0 z-[2000] flex flex-col bg-[#020617] text-slate-100 outline-none"
+    >
+      <div className="flex h-14 flex-none items-center gap-3 border-b border-slate-800 bg-slate-950 px-4">
+        <div className="flex items-center gap-2.5 whitespace-nowrap">
+          <IconCube className="h-5 w-5 text-sky-400" />
+          <h2 id="map3d-title" className="m-0 text-[17px] font-semibold tracking-[-0.01em]">
+            {t('map3d.title')}
+          </h2>
         </div>
+        {(missionName || summary) && (
+          <>
+            <span aria-hidden="true" className="hidden h-6 w-px bg-slate-800 xl:block" />
+            <div className="hidden min-w-0 items-baseline gap-2 whitespace-nowrap xl:flex">
+              {missionName && (
+                <span className="truncate text-[13.5px] font-medium">{missionName}</span>
+              )}
+              {summary && (
+                <span data-testid="map3d-summary" className="truncate text-[12.5px] text-slate-400">
+                  {summary}
+                </span>
+              )}
+            </div>
+          </>
+        )}
+        {hasTerrain && (
+          <span
+            role="status"
+            className={`hidden h-7 min-w-0 items-center gap-[7px] truncate whitespace-nowrap rounded-full border px-2.5 text-[12.5px] font-medium md:inline-flex ${
+              imagery === 'loading'
+                ? 'border-[#1E2E4A] bg-[#0F1A2E] text-blue-300'
+                : 'border-slate-700 bg-surface text-slate-300'
+            }`}
+          >
+            {imagery === 'loading' && (
+              <Icon d="M21 12a9 9 0 1 1-6.2-8.6" size={14} sw={2.2} className="animate-spin" />
+            )}
+            {status}
+          </span>
+        )}
+        <span className="flex-1" />
+        <span className="hidden whitespace-nowrap text-[12.5px] text-slate-400 xl:inline">
+          {t('map3d.exaggeration')}
+        </span>
+        <div
+          role="group"
+          aria-label={t('map3d.exaggeration')}
+          className="grid flex-none grid-cols-[repeat(3,48px)] gap-0.5 rounded-[9px] border border-slate-800 bg-field p-[3px]"
+        >
+          {EXAG_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              aria-pressed={exag === opt.value}
+              onClick={() => setExag(opt.value)}
+              className={`h-7 rounded-md text-[13px] tabular-nums transition-colors ${
+                exag === opt.value
+                  ? 'bg-[#1E3A52] font-semibold text-sky-100'
+                  : 'font-medium text-slate-200 hover:bg-raised'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          title={t('map3d.resetTitle')}
+          onClick={() => apiRef.current?.resetView()}
+          className={`${buttonClass('secondary', 'md')} flex-none`}
+        >
+          <Icon size={16} sw={1.9}>
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+            <path d="M3 3v5h5" />
+          </Icon>
+          {t('map3d.reset')}
+        </button>
+        <span aria-hidden="true" className="h-6 w-px flex-none bg-slate-800" />
+        <CloseKeyButton text={t('map3d.close')} onClick={onClose} />
       </div>
 
       <div className="relative min-h-0 flex-1">
         <div ref={hostRef} className="absolute inset-0" />
         {!glError && hasTerrain && (
-          <LayerLegend
+          <Legend3D
             items={legendItems}
             hidden={hiddenLayers}
             onToggle={toggleLayer}
             open={legendOpen}
             onOpenChange={setLegendOpen}
-            className="absolute right-2 top-2 z-10 max-h-[calc(100%-16px)] max-w-[calc(100%-16px)]"
-            testId="map3d-legend"
+            colors={pillColors}
+            note={legendNote}
           />
         )}
         {glError ? (
@@ -1000,8 +1515,35 @@ export default function Map3D({
             {t('map3d.noWebgl', { msg: glError })}
           </div>
         ) : hasTerrain ? (
-          <div className="pointer-events-none absolute bottom-2 left-3 text-xs text-slate-400">
-            {t('map3d.controlsHint')}
+          <div
+            role="note"
+            aria-label={t('map3d.hints')}
+            className={`pointer-events-none absolute bottom-4 left-4 max-w-[calc(100%-32px)] px-3.5 py-2.5 text-[12.5px] text-slate-200 ${CARD}`}
+          >
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="inline-flex items-center gap-[7px]">
+                <MouseIcon part="left" />
+                {t('map3d.hintDrag')}
+              </span>
+              <span className="inline-flex items-center gap-[7px]">
+                <MouseIcon part="wheel" />
+                {t('map3d.hintWheel')}
+              </span>
+              <span className="inline-flex items-center gap-[7px]">
+                <MouseIcon part="right" />
+                {t('map3d.hintRight')}
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-center gap-[7px] text-slate-300">
+              <Icon size={16} sw={1.8}>
+                <path d="M22 14a8 8 0 0 1-8 8" />
+                <path d="M18 11v-1a2 2 0 0 0-4 0" />
+                <path d="M14 10V9a2 2 0 0 0-4 0v1" />
+                <path d="M10 9.5V4a2 2 0 0 0-4 0v10" />
+                <path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-6-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+              </Icon>
+              {t('map3d.hintTouch')}
+            </div>
           </div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-sm text-slate-400">
