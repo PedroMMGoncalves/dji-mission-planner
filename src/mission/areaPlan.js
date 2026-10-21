@@ -16,11 +16,32 @@ import {
 } from '../utils/geo.js'
 
 /**
+ * A margem de cada célula, em metros para cada lado. A percentagem lê-se
+ * pelo bloco, nunca pela área inteira (decisão do autor: é a sobreposição
+ * entre blocos vizinhos, de 0 a 30 %, para o ajuste entre as fiadas de voos
+ * diferentes): no mosaico, pct/100 × lado/2 do quadrado, a mesma em todas as
+ * células, também nas que a orla recorta; na grelha e nas partes
+ * importadas, pct/100 × √área/2 de cada célula. Dois blocos vizinhos voam
+ * assim uma faixa de pct/100 do lado, metade de cada um.
+ * @param {number[][][]|null} cells
+ * @param {{bufferPct?: number, sideM?: number|null}} [opts] `sideM`: o lado do mosaico
+ * @returns {number[]}
+ */
+export function cellBuffersM(cells, { bufferPct = 0, sideM = null } = {}) {
+  const list = Array.isArray(cells) ? cells : []
+  if (!(bufferPct > 0)) return list.map(() => 0)
+  if (sideM > 0) return list.map(() => (bufferPct / 100) * (sideM / 2))
+  return list.map((c) => bufferDistanceMeters(ringToPolygon(c), bufferPct))
+}
+
+/**
  * @param {number[][]} ring
  * @param {number[][][]|null} activeCells anéis das células activas
  * @param {any} opts parâmetros de generateFlightPlan; `cellHoles` (opcional,
  *   alinhado com activeCells) dá os buracos de cada célula já recortados pelo
- *   mosaico (buildSquareMosaic), em vez de os procurar entre os da área
+ *   mosaico (buildSquareMosaic), em vez de os procurar entre os da área;
+ *   `cellSideM` (opcional) é o lado do mosaico, para a margem de cada célula
+ *   (cellBuffersM)
  */
 export function planArea(ring, activeCells, opts) {
   if (!ring) return null
@@ -44,16 +65,14 @@ export function planArea(ring, activeCells, opts) {
     })
   }
   const cellHoles = Array.isArray(opts.cellHoles) ? opts.cellHoles : null
-  const { cellHoles: _ignored, ...cellOpts } = opts
-  // a margem em metros vem do CONTORNO, uma vez, e não da área de cada
-  // célula (M2-G10: 10 % eram 59 m na área e 24 m numa célula de 480 m — a
-  // margem exterior mudava ao ligar a divisão)
-  const bufferM =
-    opts.bufferPct > 0 ? bufferDistanceMeters(ringToPolygon(ring, holes), opts.bufferPct) : 0
+  const { cellHoles: _ignored, cellSideM = null, ...cellOpts } = opts
+  // a margem de cada célula vem do bloco, nunca da área inteira (cellBuffersM)
+  const buffers = cellBuffersM(activeCells, { bufferPct: opts.bufferPct, sideM: cellSideM })
   const perCell = activeCells.map((cell, i) =>
     generateFlightPlan(cell, {
       ...cellOpts,
-      bufferM,
+      bufferPct: 0,
+      bufferM: buffers[i],
       align,
       align2,
       holes: cellHoles ? (cellHoles[i]?.length ? cellHoles[i] : null) : holesFor(cell),

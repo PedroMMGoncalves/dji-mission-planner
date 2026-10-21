@@ -75,6 +75,8 @@ export function useAreaMission({
     activeCellHoles = null,
     tiles = null,
     gridCells = null,
+    // o lado do mosaico: a margem de cada célula é a do quadrado (cellBuffersM)
+    tileSide = null,
     split,
   } = geom
   const { bases = [], blockBaseState = { key: null, map: {}, cells: null, ring: null, lost: 0 } } =
@@ -113,12 +115,14 @@ export function useAreaMission({
       holes,
       // buracos de cada célula do mosaico, já recortados (buildSquareMosaic)
       cellHoles: activeCellHoles,
+      cellSideM: tileSide,
       waypointStops: params.waypointStops,
     }
     // plano simples, ou um plano por célula com alinhamento global (src/mission/areaPlan.js)
     return planArea(ring, activeCells, opts)
   }, [
     activeCellHoles,
+    tileSide,
     photoMode,
     ring,
     holes,

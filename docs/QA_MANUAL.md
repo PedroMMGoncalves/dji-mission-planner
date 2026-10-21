@@ -80,8 +80,12 @@ gaveta).
   **Esperado:** aviso âmbar do tecto operacional (100 m AGL) no cartão 3 e no
   preflight. O cartão de métricas mostra **Densidade LiDAR** em vez de GSD.
 - ☐ Divisão «Bateria» com prolongamento 30 m, faixa transversal de amarração e margem 10 %.
-  **Esperado:** quadrados mais pequenos do que sem esses extras; cada bloco
-  cabe no tempo útil (cartão 7, «Voo mais longo / tempo útil» sem vermelho);
+  **Esperado:** quadrados mais pequenos do que sem esses extras (com o lado
+  limitado pela bateria e não pelo tecto de 500 m); cada bloco cabe no tempo
+  útil (cartão 7, «Voo mais longo / tempo útil» sem vermelho); por baixo da
+  margem, «= N m para cada lado de cada bloco (10 % do lado de L m ÷ 2):
+  dois blocos vizinhos voam 2N m em comum», com N = 5 % de L e não da área
+  inteira;
   no mapa, o troço das faixas de cada bloco que entra no quadrado vizinho
   (a margem e o prolongamento) a tracejado e um pouco mais grosso, na cor
   do seu bloco, e a legenda das faixas diz «a tracejado por cima do bloco

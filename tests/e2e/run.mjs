@@ -7383,6 +7383,12 @@ await scenario('m4t-termica-exporta-lente-ir', async () => {
 await scenario('bateria-com-prolongamento-fiada-e-margem', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
   await configure(page, { tf: true, split: 'Bateria' })
+  // 12 min de tempo útil: o lado fica pela bateria, abaixo do tecto de 500 m
+  // (só assim os extras encolhem os quadrados; a margem do bloco, 5 % do
+  // lado para cada lado, cabia nos 25 min sem mexer no lado)
+  await page.getByTestId('mission-useful').fill('12')
+  await page.getByTestId('mission-useful').press('Tab')
+  await page.waitForTimeout(800)
   const useful = Number(await page.getByTestId('mission-useful').inputValue())
   await exportReady(page)
   const base = await readRoutes(await exportKmz(page, join(OUT, 'bateria-simples.zip')))
@@ -7394,6 +7400,25 @@ await scenario('bateria-com-prolongamento-fiada-e-margem', async () => {
   await over.press('Tab')
   await label(page, /Faixa transversal de amarração|Perpendicular tie line/).check()
   await page.getByRole('button', { name: '10%', exact: true }).click()
+  // a margem lê-se pelo bloco: metade de 10 % do lado para cada lado, e os
+  // vizinhos voam em comum o dobro (cellBuffersM)
+  const dica = page.getByTestId('buffer-metres')
+  await page.waitForFunction(
+    () => /cada bloco/.test(document.querySelector('[data-testid="buffer-metres"]')?.textContent),
+    null,
+    { timeout: 10000 },
+  )
+  const m =
+    /= (\d+) m para cada lado de cada bloco \(10 % do lado de (\d+) m ÷ 2\): dois blocos vizinhos voam (\d+) m em comum/.exec(
+      await dica.innerText(),
+    )
+  check(
+    'bateria: a margem é a do bloco, 5 % do lado para cada lado, e os vizinhos voam 10 % em comum',
+    Boolean(m) &&
+      Math.abs(Number(m[1]) - 0.05 * Number(m[2])) <= 0.5 &&
+      Math.abs(Number(m[3]) - 0.1 * Number(m[2])) <= 1,
+    await dica.innerText(),
+  )
   await closeDrawer(page)
   await page.waitForTimeout(1500)
   await exportReady(page)
@@ -7405,9 +7430,8 @@ await scenario('bateria-com-prolongamento-fiada-e-margem', async () => {
   )
   // o modelo do lado (squareSideWithBaseTransit): uma base num canto da célula
   // com a zona de 100 m, trânsito (2·100 + (1+√2)·L)/v; o lado L do mosaico é
-  // a extensão através das faixas menos a margem (10 % de √área / 2 de cada
-  // lado); a margem em metros do rectângulo de 2,5 × 1,8 km
-  const bufferM = 0.05 * Math.sqrt(2500 * 1800)
+  // a extensão através das faixas sem a margem, que é a do bloco: 10 % do
+  // lado, metade de cada lado (cellBuffersM), logo a extensão é 1,1·L
   const medidas = routes.map((r) => {
     const wps = [...r.wpml.matchAll(/<coordinates>\s*([-\d.]+),([-\d.]+)/g)].map((m) =>
       toM(Number(m[1]), Number(m[2])),
@@ -7417,7 +7441,7 @@ await scenario('bateria-com-prolongamento-fiada-e-margem', async () => {
     const ext = Math.min(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys))
     const v = Number(/<wpml:autoFlightSpeed>([\d.]+)</.exec(r.wpml)?.[1])
     const dur = Number(/<wpml:duration>([\d.]+)</.exec(r.wpml)?.[1])
-    const L = Math.max(0, ext - 2 * bufferM)
+    const L = Math.max(0, ext / 1.1)
     return { name: r.name, dur, transit: (2 * 100 + (1 + Math.SQRT2) * L) / v, L }
   })
   const pior = medidas.reduce((a, b) => (a.dur + a.transit > b.dur + b.transit ? a : b))

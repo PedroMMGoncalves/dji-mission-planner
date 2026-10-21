@@ -151,15 +151,21 @@ Módulo `src/utils/geo.js` (`generateFlightLines`, `generateFlightPlan`,
 
 Passos:
 
-1. Margem exterior opcional (`turf.buffer`) com distância
-   `d = (bufferPct/100) · √área / 2` do **contorno**: com 10 % cada lado
-   avança 5 % da dimensão característica. Com células (grelha da âncora,
-   mosaico) a margem é a mesma, em metros, calculada uma vez do contorno
-   em `planArea` e passada a cada célula (`bufferM`, com prioridade sobre
-   `bufferPct`); até Outubro de 2026 cada célula calculava a sua da própria
-   área — 24 m numa célula de 480 m contra 59 m no contorno — e a margem
-   exterior mudava ao ligar a divisão (M2-G10). O lado por bateria (§4) usa
-   a mesma margem em metros.
+1. Margem exterior opcional (`turf.buffer`). Sem divisão, a distância é
+   `d = (bufferPct/100) · √área / 2` da área: com 10 % cada lado avança 5 %
+   da dimensão característica. Com células (mosaico, grelha da âncora,
+   partes importadas) a percentagem lê-se pelo bloco, nunca pela área
+   inteira (`cellBuffersM`, decisão do autor de Outubro de 2026): no
+   mosaico, `d = (bufferPct/100) · L / 2` do lado `L` do quadrado, a mesma
+   em todas as células, também nas que a orla recorta; na grelha e nas
+   partes, a de cada célula, `(bufferPct/100) · √área da célula / 2`. Dois
+   blocos vizinhos voam assim em comum `bufferPct/100 · L` — a sobreposição
+   entre blocos, de 0 a 30 %, para o ajuste entre as fiadas de voos
+   diferentes (num bloco de 500 m, 10 % são 25 m para cada lado e 50 m em
+   comum). Até então a margem das células era a do contorno, em metros
+   (M2-G10): numa área grande, 10 % eram centenas de metros à volta de cada
+   bloco, que o lado por bateria não conseguia absorver (voos de LiDAR a
+   599 % do tempo útil). O lado por bateria (§4) conta a margem do bloco.
 2. Rotação da área por `90° − ângulo` em torno do centróide, para as faixas
    ficarem horizontais no referencial rodado.
 3. Linhas de varrimento espaçadas de `spacing`, centradas na caixa
@@ -333,9 +339,9 @@ por passagem `(L'² + 2o·L')/(s·v) + 2L'/v + (L'/s) · v/1,7 + v/1,7` (as
 paragens intermédias entram no termo em `L'²`), vezes as passagens, mais a
 fiada de amarração uma só vez, `(1,5·L' + 2o)/v + v/1,7` (a faixa a meio e
 a ligação até ela), igualado a `max(60 s · passagens, útil − trânsito)` e
-resolvido como quadrática em `L'`; o lado do mosaico é `L = L' − 2·b`, com
-`b` a margem em metros do contorno (`bufferM`, §3; sem ela, `L'/(1 +
-margem/100)`), porque a margem alarga cada célula `b` de cada lado. Sem contar o prolongamento, a fiada e
+resolvido como quadrática em `L'`; o lado do mosaico é `L = L'/(1 +
+margem/100)`, porque a margem do bloco alarga cada célula `margem/100 ·
+L/2` de cada lado (§3; com uma margem em metros `b`, `L = L' − 2·b`). Sem contar o prolongamento, a fiada e
 a margem, um bloco «cheio» voava 101–127 % do tempo útil (M2-G1 da revisão
 da matemática; com as três opções a 0 o modelo já dava 92–100 %). Limitado
 a `maxSide` (500 m por omissão, conforto VLOS, piso 100 m), arredondado
@@ -364,7 +370,8 @@ em 4 × 4 fracções do lado (2 × 2 acima de ~150 células, 1 × 1 acima de
 menos tiras (`fillFrac < 0,25`), depois menos área em tiras; cada tira
 funde-se no vizinho com mais fronteira comum se o conjunto couber numa
 bateria (`cellFitsBattery`: o mesmo modelo, com a área `A` e a maior
-extensão `W` da célula alargadas pela margem em metros, `(√A + 2·b)²` e
+extensão `W` da célula alargadas pela margem do quadrado em metros, `b =
+margem/100 · L/2`, `(√A + 2·b)²` e
 `W + 2·b`, `passagens · (A·a + W·b + v/1,7) + fiada + (2r + (1+√2)·W)/v ≤
 útil`, com o prolongamento em `b`; no mosaico manual, `A ≤ 1,25 · L²`). Orientação: arestas paralelas
 às faixas do ângulo usado (também o «Óptimo», que escreve o ângulo),

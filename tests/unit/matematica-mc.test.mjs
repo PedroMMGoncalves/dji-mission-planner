@@ -10,7 +10,7 @@
 import * as turf from '@turf/turf'
 import { describe, expect, test } from 'vitest'
 import { AIRCRAFT, DEFAULT_CUSTOM_SENSOR, PAYLOADS } from '../../src/data/drones.js'
-import { planArea } from '../../src/mission/areaPlan.js'
+import { cellBuffersM, planArea } from '../../src/mission/areaPlan.js'
 import { buildSquareMosaic, mosaicOrientationForLines } from '../../src/mission/squareMosaic.js'
 import { routeChecks } from '../../src/mission/uncertainty.js'
 import { circularGrid, generateCircularPlan } from '../../src/utils/circular.js'
@@ -467,37 +467,71 @@ describe('M2-G9: a grelha seguinte comeca junto ao fim da anterior', () => {
 })
 
 // ------------------------------------------------------------------- margem
-describe('M2-G10: a margem e a do contorno, com e sem celulas', () => {
+// A percentagem da margem lê-se pelo bloco, nunca pela área inteira (decisão
+// do autor, Outubro de 2026, que substitui a M2-G10): é a sobreposição entre
+// blocos vizinhos, de 0 a 30 %, para o ajuste entre as fiadas de voos
+// diferentes. Com a M2-G10, 10 % numa área de LiDAR grande eram centenas de
+// metros à volta de cada bloco, e o lado por bateria não chegava para os
+// absorver (voos a 599 % do tempo útil).
+describe('margem por bloco: a percentagem lê-se pelo lado do bloco', () => {
   const big = [em(0, 0), em(1440, 0), em(1440, 960), em(0, 960)]
   const o = { ...base, bufferPct: 10 }
-  test('com celulas as faixas chegam ao mesmo sitio do plano unico', () => {
+  const ext = (lines) => {
+    const pts = lines.flat()
+    return [
+      Math.min(...pts.map(xOf)),
+      Math.max(...pts.map(xOf)),
+      Math.min(...pts.map(yOf)),
+      Math.max(...pts.map(yOf)),
+    ]
+  }
+  const mosaic = buildSquareMosaic(big, {
+    sideM: 480,
+    orientationDeg: mosaicOrientationForLines(90),
+  })
+  const cells = mosaic.cells.map((c) => c.ring)
+  test('no mosaico, cada célula alarga 10 % do lado ÷ 2: 24 m num quadrado de 480 m, também na orla', () => {
+    expect(cells.length).toBe(6)
+    expect(cellBuffersM(cells, { bufferPct: 10, sideM: 480 })).toEqual(cells.map(() => 24))
+    const plano = planArea(big, cells, { ...o, cellSideM: 480 })
+    // as faixas (Este-Oeste) passam 24 m do contorno, e não os 58,8 m que
+    // 10 % de raiz(área) do contorno dariam
+    const b = ext(plano.lines)
+    expect(-b[0]).toBeCloseTo(24, 0)
+    expect(b[1] - 1440).toBeCloseTo(24, 0)
+    expect(bufferDistanceMeters(ringToPolygon(big), 10)).toBeGreaterThan(50)
+  })
+  test('dois blocos vizinhos voam em comum 10 % do lado (48 m), metade de cada um', () => {
+    const plano = planArea(big, cells, { ...o, cellSideM: 480 })
+    // as duas células de baixo, lado a lado ao longo das faixas
+    const caixa = (r) => [Math.min(...r.map(xOf)), Math.max(...r.map(xOf)), Math.min(...r.map(yOf))]
+    const idx = cells
+      .map((r, i) => ({ i, c: caixa(r) }))
+      .filter(({ c }) => c[2] < 1)
+      .sort((a, b) => a.c[0] - b.c[0])
+      .map(({ i }) => i)
+    const [esq, dir] = [idx[0], idx[1]]
+    const fronteira = caixa(cells[esq])[1]
+    expect(fronteira).toBeCloseTo(480, 0)
+    const fimEsq = ext(plano.cellPlans[esq].lines)[1]
+    const inicioDir = ext(plano.cellPlans[dir].lines)[0]
+    expect(fimEsq - fronteira).toBeCloseTo(24, 0)
+    expect(fronteira - inicioDir).toBeCloseTo(24, 0)
+    expect(fimEsq - inicioDir).toBeCloseTo(48, 0)
+  })
+  test('sem divisão o bloco é a área: a margem continua a da área', () => {
     const unico = generateFlightPlan(big, o)
-    const mosaic = buildSquareMosaic(big, {
-      sideM: 480,
-      orientationDeg: mosaicOrientationForLines(90),
-    })
-    const celulas = planArea(
-      big,
-      mosaic.cells.map((c) => c.ring),
-      o,
-    )
-    const ext = (p) => {
-      const pts = p.lines.flat()
-      return [
-        Math.min(...pts.map(xOf)),
-        Math.max(...pts.map(xOf)),
-        Math.min(...pts.map(yOf)),
-        Math.max(...pts.map(yOf)),
-      ]
-    }
-    const a = ext(unico)
-    const b = ext(celulas)
-    for (let i = 0; i < 4; i++) expect(Math.abs(a[i] - b[i])).toBeLessThan(0.5)
-    // a margem e a de 10 % de raiz(area) do CONTORNO (58,8 m), nao a de cada celula (24 m)
-    const bufferM = bufferDistanceMeters(ringToPolygon(big), 10)
-    expect(bufferM).toBeGreaterThan(50)
-    expect(-b[0]).toBeCloseTo(bufferM, 0)
-    expect(b[1] - 1440).toBeCloseTo(bufferM, 0)
+    const a = ext(unico.lines)
+    expect(-a[0]).toBeCloseTo(bufferDistanceMeters(ringToPolygon(big), 10), 0)
+  })
+  test('na grelha e nas partes importadas, a de cada célula; sem margem, zero', () => {
+    const pequena = [em(0, 0), em(100, 0), em(100, 100), em(0, 100)]
+    const grande = [em(0, 0), em(400, 0), em(400, 400), em(0, 400)]
+    const [mp, mg] = cellBuffersM([pequena, grande], { bufferPct: 20 })
+    expect(mp).toBeCloseTo(10, 0)
+    expect(mg).toBeCloseTo(40, 0)
+    expect(cellBuffersM([pequena, grande], { bufferPct: 0 })).toEqual([0, 0])
+    expect(cellBuffersM(null, { bufferPct: 10 })).toEqual([])
   })
   test('o lado por bateria usa a margem em metros quando a tem', () => {
     const sizing = { batteryMin: 25, reservePct: 30, speed: 5, spacingM: 25, maxSideM: 2000 }

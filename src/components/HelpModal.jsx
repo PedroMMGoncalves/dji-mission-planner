@@ -272,6 +272,14 @@ function topicsPt({ onShowDisclaimer, t }) {
                 às faixas ou com a orientação escolhida.
               </p>
               <p>
+                <strong>Margem</strong> (em «Linhas de voo, disparo e câmara», 0 a 30 %) — com a
+                área dividida, lê-se pelo bloco e nunca pela área inteira: cada bloco alarga metade
+                da percentagem do seu lado para cada lado, e dois blocos vizinhos voam em comum essa
+                percentagem do lado (num bloco de 500 m, 10 % são 25 m para cada lado e 50 m em
+                comum), para o ajuste entre as fiadas de voos diferentes. O tamanho dos blocos por
+                bateria já a conta.
+              </p>
+              <p>
                 <Kbd>Clique numa célula</Kbd> — desactiva/reactiva · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> —
                 anula a última edição, da área, das células ou das bases (marcar, arrastar, retirar,
                 raio, atribuir, propor), pela ordem.
@@ -953,6 +961,14 @@ function topicsEn({ onShowDisclaimer, t }) {
               <p>
                 <strong>Tiles</strong> — squares of manual size over the polygon, parallel to the
                 flight lines or at the chosen orientation.
+              </p>
+              <p>
+                <strong>Buffer</strong> (under “Flight lines, trigger and camera”, 0 to 30 %) — with
+                the area split, it is read per block and never on the whole area: each block grows
+                by half the percentage of its side on each side, and two neighbouring blocks fly
+                that percentage of the side in common (on a 500 m block, 10 % is 25 m on each side
+                and 50 m in common), for the adjustment between the lines of different flights. The
+                block size by battery already counts it.
               </p>
               <p>
                 <Kbd>Click a cell</Kbd> — disables/enables it · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> —

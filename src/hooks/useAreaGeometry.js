@@ -9,11 +9,9 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  bufferDistanceMeters,
   gridFromAnchor,
   longestEdgeBearing,
   rectangleFromAnchor,
-  ringToPolygon,
   translateRing,
   validateRing,
 } from '../utils/geo.js'
@@ -58,7 +56,7 @@ import { finishDraft } from '../mission/draft.js'
  * @param {number} [args.stopEveryM] paragem a cada X m ao longo da faixa (0 = só nos cantos)
  * @param {number} [args.overshootM] prolongamento das faixas (o lado por bateria conta-o)
  * @param {boolean} [args.tieLine] fiada de amarração (idem)
- * @param {number} [args.bufferPct] margem em % de √área (idem)
+ * @param {number} [args.bufferPct] margem em % do lado do bloco (idem; cellBuffersM)
  * @param {Function} args.t tradução
  */
 export function useAreaGeometry({
@@ -202,9 +200,6 @@ export function useAreaGeometry({
     if (split.mode !== 'tiles' && split.mode !== 'battery') return null
     let side = split.tileSize
     let fits = null
-    // a margem em metros do contorno, a mesma que planArea aplica a cada
-    // célula (M2-G10)
-    const bufferM = bufferPct > 0 ? bufferDistanceMeters(ringToPolygon(ring, holes), bufferPct) : 0
     if (split.mode === 'battery') {
       const opts = {
         batteryMin,
@@ -222,8 +217,8 @@ export function useAreaGeometry({
         stopEveryM,
         overshootM,
         tieLine,
+        // a margem em % do lado: cada lado alarga pct/100·L/2 (cellBuffersM)
         bufferPct,
-        bufferM,
       }
       side = squareSideWithBaseTransit(opts, { zoneRadiusM }).side
       // uma tira só se funde no vizinho se o conjunto ainda couber na bateria
@@ -237,8 +232,8 @@ export function useAreaGeometry({
         zoneRadiusM,
         overshootM,
         tieLine,
-        bufferPct,
-        bufferM,
+        // a tira fundida leva a margem do quadrado, em metros (cellBuffersM)
+        bufferM: bufferPct > 0 ? (bufferPct / 100) * (side / 2) : 0,
       })
     }
     const mosaic = buildSquareMosaic(ring, {

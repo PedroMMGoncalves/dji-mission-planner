@@ -368,8 +368,10 @@ export default function ControlPanel({
     importProject: onProjectImport,
   } = session
   const {
-    // margem em metros (M3-U22) e minutos de um quadrado (M3-U20)
+    // margem em metros (M3-U22; a do bloco com a área dividida: buffer) e
+    // minutos de um quadrado (M3-U20)
     bufferM = 0,
+    buffer = null,
     squareMinutes = null,
     applySlopeAngle: onApplySlopeAngle,
     setAngleRelative: onSetAngleRelative,
@@ -2063,7 +2065,24 @@ export default function ControlPanel({
             />
             {params.bufferPct > 0 && bufferM > 0 && (
               <p data-testid="buffer-metres" className="text-xs leading-relaxed text-slate-400">
-                {t('cp.buffer.metres', { m: Math.round(bufferM), pct: params.bufferPct })}
+                {/* com a área dividida, a margem é a de cada bloco e os
+                    vizinhos voam o dobro em comum (cellBuffersM) */}
+                {buffer?.cells
+                  ? t(
+                      buffer.blockSideM
+                        ? 'cp.buffer.blocks'
+                        : buffer.mMax - buffer.m >= 1
+                          ? 'cp.buffer.cellsRange'
+                          : 'cp.buffer.cells',
+                      {
+                        m: Math.round(buffer.m),
+                        m2: Math.round(buffer.mMax),
+                        o: Math.round(2 * buffer.m),
+                        s: Math.round(buffer.blockSideM ?? 0),
+                        pct: params.bufferPct,
+                      },
+                    )
+                  : t('cp.buffer.metres', { m: Math.round(bufferM), pct: params.bufferPct })}
               </p>
             )}
           </div>

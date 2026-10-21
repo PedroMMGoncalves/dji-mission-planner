@@ -205,6 +205,17 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   via-se só uma linha por cima da outra. Com sobreposição, a legenda das
   faixas diz «a tracejado por cima do bloco vizinho». As rotas e os
   ficheiros são os mesmos.
+- **Margem por bloco.** Com a área dividida em blocos, a margem (0 a
+  30 %) lê-se pelo bloco e não pela área inteira: cada bloco alarga metade
+  da percentagem do seu lado para cada lado, e dois blocos vizinhos voam
+  em comum essa percentagem do lado (num bloco de 500 m, 10 % são 25 m
+  para cada lado e 50 m em comum), para o ajuste entre as fiadas de voos
+  diferentes. Antes, a percentagem era da área inteira: numa área grande,
+  10 % eram centenas de metros à volta de cada bloco, que o lado por
+  bateria não conseguia absorver (voos de LiDAR a 599 % do tempo útil). O
+  lado dos blocos conta a margem nova, e o painel diz os metros de cada
+  lado e os que os vizinhos voam em comum. Sem divisão, a margem continua
+  a ser a da área.
 
 ### Corrigido
 
