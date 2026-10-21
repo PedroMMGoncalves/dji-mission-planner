@@ -5,7 +5,9 @@
  */
 import { useT } from '../i18n.jsx'
 import { lazy, Suspense, useMemo } from 'react'
+import { payloadDesc } from '../data/drones.js'
 import { serializeProject } from '../mission/project.js'
+import { viewshedTerrainModel } from '../mission/viewshedPlan.js'
 import HelpModal from './HelpModal.jsx'
 import SettingsModal from './SettingsModal.jsx'
 import DisclaimerModal from './DisclaimerModal.jsx'
@@ -50,12 +52,12 @@ export default function AppOverlays({
   show3d,
   setShow3d,
 }) {
-  const { equipment, setEquipment, drone, hardwareLabel } = hw
-  const { params, speed, spacing, interval, gsd } = areaParams
+  const { equipment, setEquipment, drone, hardwareLabel, payload, sensor, batteryMin } = hw
+  const { params, speed, spacing, interval, gsd, footprint } = areaParams
   const { corridorPreview } = corridor
   const { inspectPoints } = inspect
   const { ring } = geom
-  const { terrain, terrainFollow } = terrainState
+  const { terrain, terrainFollow, demSurface } = terrainState
   const { corridorReference } = corridorOnTerrain
   const { reference, blocks, planOk, gcps, baseLayout } = area
   const { circularReference } = circular
@@ -140,12 +142,15 @@ export default function AppOverlays({
             <MissionReport
               missionName={missionName}
               droneLabel={hardwareLabel}
+              camera={payloadDesc(payload, t)}
+              sensor={sensor}
               inspectPoints={inspectPoints}
               // a mesma velocidade limitada que entra no plano e no ficheiro
               params={params.speed === speed ? params : { ...params, speed }}
               spacing={spacing}
               interval={interval}
               gsd={gsd}
+              footprint={footprint}
               stats={planOk.stats}
               blocks={blocks}
               ring={ring}
@@ -155,6 +160,16 @@ export default function AppOverlays({
               terrainFollowOn={Boolean(terrainFollow?.enabled)}
               rthInfo={rthInfo}
               daySheets={missionMode === 'area' ? fieldSheetsDay : null}
+              usefulS={batteryMin > 0 ? batteryMin * 60 : null}
+              // o relevo carregado, como o das bacias de visão (MDT ou MDS, ou o global)
+              terrainModel={
+                terrain.status === 'ready'
+                  ? viewshedTerrainModel(terrain.data, {
+                      surface: terrain.data?.source === 'file' ? demSurface : 'dtm',
+                    })
+                  : null
+              }
+              safety={projectState.safety}
               gcps={gcps}
               lines={planOk.lines}
               reproducibility={{

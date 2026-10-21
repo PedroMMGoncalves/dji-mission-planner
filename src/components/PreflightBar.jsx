@@ -115,8 +115,12 @@ export function PreflightPill({
   )
 }
 
-/** Tinta legível sobre a cor da base: branca nas escuras, quase preta nas claras. */
-function inkOn(hex) {
+/**
+ * Tinta legível sobre a cor da base: branca nas escuras, quase preta nas
+ * claras (também a letra das bases no relatório).
+ * @param {string} hex
+ */
+export function inkOn(hex) {
   const v = parseInt(String(hex).slice(1), 16)
   if (!Number.isFinite(v)) return '#0A0F1C'
   const lin = (c) => {
@@ -224,6 +228,9 @@ function Group({ group, baseColors }) {
     </li>
   )
 }
+
+// o relatório da missão (MissionReport) mostra o preflight com as mesmas peças
+export { Group as PreflightGroup, Item as PreflightItem }
 
 /**
  * A lista aberta, por cima do mapa e por baixo da pastilha (dentro do ecrã,
