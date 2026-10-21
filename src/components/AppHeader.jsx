@@ -289,8 +289,8 @@ function ProjectButton({ missionName, setMissionName, session, onOpen }) {
 
 const VIEW_BUTTON =
   'flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-[13px] font-medium text-slate-200 transition-colors hover:bg-raised hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent'
-// O cabeçalho numa só linha até 1440 px (o rótulo longo do botão de
-// exportar): abaixo de 1800 px as vistas ficam só com o ícone e os grupos
+// Para o cabeçalho caber numa linha a 1440 px, com o rótulo longo do botão
+// de exportar, abaixo de 1800 px as vistas ficam só com o ícone e os grupos
 // mais juntos; o nome continua no botão, para o leitor de ecrã (sr-only), e
 // a dica é a mesma
 const VIEW_LABEL = 'sr-only min-[1800px]:not-sr-only min-[1800px]:whitespace-nowrap'
