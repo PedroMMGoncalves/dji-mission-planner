@@ -204,7 +204,8 @@ const UI = {
   zonesReduced: bi('{n} zonas reduzidas', '{n} reduced zones'),
   zonesReducedOne: bi('1 zona reduzida', '1 reduced zone'),
   zonesNone: bi('nenhuma reduzida', 'none reduced'),
-  maxVlos: bi('máx. {m} m', 'max. {m} m'),
+  // o número e a unidade juntos: no papel, se faltar largura, parte depois de «máx.»
+  maxVlos: bi('máx. {m}\u00a0m', 'max. {m}\u00a0m'),
   sheetsShow: bi('Ver as fichas de campo das {n} bases', 'Show the field sheets of the {n} bases'),
   sheetsShowOne: bi('Ver a ficha de campo da base {label}', 'Show the field sheet of base {label}'),
   sheetsHide: bi('Esconder as fichas de campo', 'Hide the field sheets'),
@@ -872,7 +873,7 @@ function KeyRows({ rows }) {
       {rows.map(([label, value, extra]) => (
         <div
           key={label}
-          className="flex min-h-[38px] items-center justify-between gap-4 border-t border-raised text-[13px]"
+          className="rep-kv flex min-h-[38px] items-center justify-between gap-4 border-t border-raised text-[13px]"
         >
           <dt className="text-slate-300">{label}</dt>
           <dd className="m-0 text-right tabular-nums">
@@ -1282,16 +1283,43 @@ export default function MissionReport({
 
   /* ---------------------------- A tabela dos voos ---------------------------- */
   const cell = 'px-2.5 py-[7px] align-middle'
-  // a base, a zona e a cota: ao meio com um voo, no alto da primeira linha com vários
+  // a base, a zona e a cota: ao meio numa linha, no alto da primeira com várias
   const baseCell = (span) => `px-2.5 py-[7px] ${span > 1 ? 'align-top' : 'align-middle'}`
+  // sem bases, uma linha por voo: mais baixa
+  const nbCell = 'px-2.5 py-1 align-middle'
   const head = 'px-2.5 py-1.5 text-left align-bottom font-normal leading-tight'
   const headMain = 'rep-wrap block xl:whitespace-nowrap text-xs font-semibold text-slate-300'
   const headSub = 'rep-sub block text-[11.5px] text-slate-400'
+  // o cabeçalho de uma coluna: o nome e, por baixo, o que a coluna diz
+  const colHead = (main, below = null, right = false) => (
+    <th scope="col" className={right ? `${head} text-right` : head}>
+      <span className={headMain}>{main}</span>
+      {below != null && <span className={headSub}>{below}</span>}
+    </th>
+  )
   const sub = 'rep-sub block text-xs text-slate-400'
+  const timeHead = useful ? L(UI.cTimeUseful, { u: fmtClock(useful) }) : L(UI.cTime)
   const timeCell = (r) => {
     const u = usefulOf(r)
     const pct = pctOf(r)
     const level = u ? levelOf(r.totalS / u) : 'ok'
+    const isLongest = r === longest && rows.length > 1
+    // sem bases não há deslocação: numa linha, os minutos e a percentagem do útil
+    if (!withBases)
+      return (
+        <span className={`rep-wrap whitespace-nowrap ${TONE_TEXT[level]}`}>
+          {[
+            `${minutes(r.totalS)} min`,
+            pct == null
+              ? null
+              : isLongest
+                ? L(UI.longest, { pct, clock: fmtClock(r.totalS) })
+                : `${pct} %`,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </span>
+      )
     // o tempo de voo do bloco, sem a deslocação (o «Tempo (min)» dos blocos);
     // com ele, só a percentagem (o cabeçalho diz «% útil»), para a coluna
     // não roubar largura às outras
@@ -1299,7 +1327,7 @@ export default function MissionReport({
     const subParts = [
       fly,
       pct != null
-        ? r === longest && rows.length > 1
+        ? isLongest
           ? L(UI.longest, { pct, clock: fmtClock(r.totalS) })
           : fly
             ? `${pct} %`
@@ -1341,7 +1369,7 @@ export default function MissionReport({
     if (last && r.sheet && last.sheet === r.sheet) last.rows.push(r)
     else runs.push({ sheet: r.sheet, rows: [r] })
   }
-  const nCols = withBases ? 8 : 4
+  const baseGap = () => <td colSpan={3} className="p-0" />
 
   const baseCells = (sh, span) => {
     const zone = sh.noTerrain ? (
@@ -1416,80 +1444,68 @@ export default function MissionReport({
   }
 
   const flightBody = runs.map((run) => {
-    const entries = run.rows.map((r) => ({ r, view: withBases ? viewRow(r) : null }))
-    const span = entries.reduce((n, x) => n + (x.view ? 2 : 1), 0)
+    const entries = run.rows.map((r) => ({ r, view: viewRow(r) }))
+    const lines = entries.reduce((n, x) => n + (x.view ? 2 : 1), 0)
+    // até três linhas a base ocupa-as todas e sai inteira no papel; com mais,
+    // fica na primeira e as outras levam o espaço dela, para o papel poder
+    // partir entre os voos (o Chromium não parte as linhas de um rowSpan)
+    const span = lines <= 3 ? lines : 1
+    const gap = () => (span > 1 ? null : baseGap())
     return (
-      <tbody key={run.rows[0].key} className="rep-run border-t border-raised">
+      <tbody
+        key={run.rows[0].key}
+        className={`${lines <= 3 ? 'rep-run ' : ''}border-t border-raised`}
+      >
         {entries.map(({ r, view }, i) => {
           const isWorst = worst != null && r === worst && sheetRows.length > 1
           const out = r.f && r.f.withinVlos === false
+          // as linhas seguintes da mesma base: o traço só nas colunas do voo
+          const line = i > 0 ? 'border-t border-raised' : ''
           return [
             <tr
               key={r.key}
               data-testid="report-block-row"
               data-flight={r.label}
-              className={`rep-row text-[13px] leading-snug tabular-nums ${i > 0 ? 'border-t border-raised' : ''}`}
+              className="rep-row text-[13px] leading-snug tabular-nums"
             >
-              {withBases &&
-                i === 0 &&
-                (run.sheet ? (
-                  baseCells(run.sheet, span)
-                ) : (
-                  <td rowSpan={span} colSpan={3} className={`${cell} text-slate-400`}>
-                    {DASH}
-                  </td>
-                ))}
-              {withBases && (
-                <td className={`${cell} whitespace-nowrap`}>
-                  {r.f?.rthM != null ? `${Math.round(r.f.rthM)} m` : DASH}
+              {i > 0 ? (
+                gap()
+              ) : run.sheet ? (
+                baseCells(run.sheet, span)
+              ) : (
+                <td rowSpan={span} colSpan={3} className={`${baseCell(span)} text-slate-400`}>
+                  {DASH}
                 </td>
               )}
-              <td className={cell}>
-                <span className="flex items-center gap-2">
-                  {!withBases && (
-                    <span
-                      aria-hidden="true"
-                      className="rep-swatch inline-block h-2.5 w-2.5 flex-none rounded-full"
-                      style={{ backgroundColor: r.color }}
-                    />
-                  )}
-                  <span className="font-semibold">{r.label}</span>
-                </span>
-                {withBases && (
-                  <span className={`rep-wrap xl:whitespace-nowrap ${sub}`}>
-                    {fmt(r.areaHa, 2, 'ha')} · {fmtKm(r.lengthM)} km
-                  </span>
-                )}
+              <td className={`${cell} whitespace-nowrap ${line}`}>
+                {r.f?.rthM != null ? `${Math.round(r.f.rthM)} m` : DASH}
               </td>
-              {!withBases && (
-                <>
-                  <td className={`${cell} whitespace-nowrap`}>{fmt(r.areaHa, 2, 'ha')}</td>
-                  <td className={`${cell} whitespace-nowrap`}>{fmtKm(r.lengthM)} km</td>
-                </>
-              )}
-              <td className={cell}>{timeCell(r)}</td>
-              {withBases && (
-                <>
-                  <td className={`${cell} whitespace-nowrap`}>
-                    {r.f?.h1M != null
-                      ? `${rangeText(r.f.h1M, r.f.hmaxM ?? r.f.h1M, Math.round)} m`
-                      : DASH}
-                  </td>
-                  <td
-                    className={`${cell} text-right ${isWorst ? 'font-semibold' : ''} ${out ? 'text-amber-300' : ''}`}
-                  >
-                    <span className="whitespace-nowrap">
-                      {fin(r.f?.worstVlosM) ? `${Math.round(r.f.worstVlosM)} m` : DASH}
-                    </span>
-                    {out && <span className="block text-xs">{t('bases.sheet.outOfVlos')}</span>}
-                  </td>
-                </>
-              )}
+              <td className={`${cell} ${line}`}>
+                <span className="block font-semibold">{r.label}</span>
+                <span className={`rep-wrap xl:whitespace-nowrap ${sub}`}>
+                  {fmt(r.areaHa, 2, 'ha')} · {fmtKm(r.lengthM)} km
+                </span>
+              </td>
+              <td className={`${cell} ${line}`}>{timeCell(r)}</td>
+              <td className={`${cell} whitespace-nowrap ${line}`}>
+                {r.f?.h1M != null
+                  ? `${rangeText(r.f.h1M, r.f.hmaxM ?? r.f.h1M, Math.round)} m`
+                  : DASH}
+              </td>
+              <td
+                className={`${cell} text-right ${line} ${isWorst ? 'font-semibold' : ''} ${out ? 'text-amber-300' : ''}`}
+              >
+                <span className="whitespace-nowrap">
+                  {fin(r.f?.worstVlosM) ? `${Math.round(r.f.worstVlosM)} m` : DASH}
+                </span>
+                {out && <span className="block text-xs">{t('bases.sheet.outOfVlos')}</span>}
+              </td>
             </tr>,
             view ? (
               <tr key={`${r.key}-view`} className="rep-row text-xs">
+                {gap()}
                 <td
-                  colSpan={nCols - 3}
+                  colSpan={5}
                   className={`px-2.5 pb-2 pt-0 ${
                     r.f.view.hidden > 0 || r.f.view.radioOnly > 0
                       ? 'text-amber-300'
@@ -1513,52 +1529,32 @@ export default function MissionReport({
   const nReduced = sheets.filter((x) => x.reduced).length
   const range = (list, unit = ' m') =>
     list.length ? `${rangeText(Math.min(...list), Math.max(...list), Math.round)}${unit}` : DASH
+  const areaSum = fmt(
+    sum(rows, (r) => r.areaHa),
+    2,
+    'ha',
+  )
+  const kmSum = `${fmtKm(sum(rows, (r) => r.lengthM))} km`
   const totals = (
     <tfoot>
       <tr className="rep-total border-t border-slate-700 bg-sunken text-[13px] leading-snug tabular-nums">
         <td className={cell}>
           <span className="block font-semibold">{L(UI.total)}</span>
           <span className={sub}>
-            {withBases
-              ? `${basesText} · ${nFlights === 1 ? L(UI.setsOne) : L(UI.setsN, { n: nFlights })}`
-              : flightsText}
+            {`${basesText} · ${nFlights === 1 ? L(UI.setsOne) : L(UI.setsN, { n: nFlights })}`}
           </span>
         </td>
-        {withBases && (
-          <>
-            <td className={`${cell} ${nReduced > 0 ? 'text-amber-300' : 'text-slate-400'}`}>
-              {nReduced === 0
-                ? L(UI.zonesNone)
-                : L(nReduced === 1 ? UI.zonesReducedOne : UI.zonesReduced, { n: nReduced })}
-            </td>
-            <td className={`${cell} whitespace-nowrap`}>{range(refs)}</td>
-            <td className={`${cell} whitespace-nowrap`}>{range(rths)}</td>
-            <td className={cell}>
-              <span className="block whitespace-nowrap">
-                {fmt(
-                  sum(rows, (r) => r.areaHa),
-                  2,
-                  'ha',
-                )}
-              </span>
-              <span className={`whitespace-nowrap ${sub}`}>
-                {fmtKm(sum(rows, (r) => r.lengthM))} km
-              </span>
-            </td>
-          </>
-        )}
-        {!withBases && (
-          <>
-            <td className={`${cell} whitespace-nowrap`}>
-              {fmt(
-                sum(rows, (r) => r.areaHa),
-                2,
-                'ha',
-              )}
-            </td>
-            <td className={`${cell} whitespace-nowrap`}>{fmtKm(sum(rows, (r) => r.lengthM))} km</td>
-          </>
-        )}
+        <td className={`${cell} ${nReduced > 0 ? 'text-amber-300' : 'text-slate-400'}`}>
+          {nReduced === 0
+            ? L(UI.zonesNone)
+            : L(nReduced === 1 ? UI.zonesReducedOne : UI.zonesReduced, { n: nReduced })}
+        </td>
+        <td className={`${cell} whitespace-nowrap`}>{range(refs)}</td>
+        <td className={`${cell} whitespace-nowrap`}>{range(rths)}</td>
+        <td className={cell}>
+          <span className="block whitespace-nowrap">{areaSum}</span>
+          <span className={`whitespace-nowrap ${sub}`}>{kmSum}</span>
+        </td>
         <td className={cell}>
           {anyTransit ? (
             <>
@@ -1574,20 +1570,79 @@ export default function MissionReport({
             </span>
           )}
         </td>
-        {withBases && (
-          <>
-            <td className={`${cell} whitespace-nowrap text-slate-400`}>
-              {h1s.length
-                ? `${rangeText(Math.min(...h1s), Math.max(...hmaxs), Math.round)} m`
-                : DASH}
-            </td>
-            <td className={`${cell} whitespace-nowrap text-right`}>
-              {worst ? L(UI.maxVlos, { m: Math.round(worst.f.worstVlosM) }) : DASH}
-            </td>
-          </>
-        )}
+        <td className={`${cell} whitespace-nowrap text-slate-400`}>
+          {h1s.length ? `${rangeText(Math.min(...h1s), Math.max(...hmaxs), Math.round)} m` : DASH}
+        </td>
+        <td className={`${cell} whitespace-nowrap text-right`}>
+          {worst ? L(UI.maxVlos, { m: Math.round(worst.f.worstVlosM) }) : DASH}
+        </td>
       </tr>
     </tfoot>
+  )
+
+  // Sem bases (sem deslocação): uma linha por voo, numa tabela, ou em duas
+  // lado a lado com muitos voos (metade em cada uma, pela ordem de voo), e o
+  // total numa linha por baixo
+  const nbHalves =
+    !withBases && rows.length > 12
+      ? [rows.slice(0, Math.ceil(rows.length / 2)), rows.slice(Math.ceil(rows.length / 2))]
+      : [rows]
+  const nbTable = (list, k) => (
+    <div key={k} className="rep-scroll overflow-x-auto rounded-[9px] border border-slate-800">
+      <table className="rep-table rep-nb w-full border-collapse text-left">
+        <caption className="sr-only">
+          {nbHalves.length > 1
+            ? `${L(UI.flights)} ${list[0].label}–${list[list.length - 1].label}`
+            : L(UI.flights)}
+        </caption>
+        <colgroup>
+          {['flight', 'area', 'dist', 'time'].map((c) => (
+            <col key={c} className={`rep-c-${c}`} />
+          ))}
+        </colgroup>
+        <thead className="bg-sunken">
+          <tr>
+            {colHead(t('bases.sheet.flight'))}
+            {colHead(L(UI.cArea))}
+            {colHead(L(UI.cDistance))}
+            {colHead(timeHead, useful ? L(UI.cTimeSubPct) : null)}
+          </tr>
+        </thead>
+        <tbody>
+          {list.map((r) => (
+            <tr
+              key={r.key}
+              data-testid="report-block-row"
+              data-flight={r.label}
+              className="rep-row border-t border-raised text-[13px] leading-snug tabular-nums"
+            >
+              <td className={nbCell}>
+                <span className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="rep-swatch inline-block h-2.5 w-2.5 flex-none rounded-full"
+                    style={{ backgroundColor: r.color }}
+                  />
+                  <span className="font-semibold">{r.label}</span>
+                </span>
+              </td>
+              <td className={`${nbCell} whitespace-nowrap`}>{fmt(r.areaHa, 2, 'ha')}</td>
+              <td className={`${nbCell} whitespace-nowrap`}>{fmtKm(r.lengthM)} km</td>
+              <td className={nbCell}>{timeCell(r)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+  const nbTotal = (
+    <p className="rep-total rep-box m-0 mt-2 flex flex-wrap gap-x-4 gap-y-1 rounded-[9px] border border-slate-700 bg-sunken px-3 py-2 text-[13px] tabular-nums">
+      <span className="font-semibold">{L(UI.total)}</span>
+      <span>{flightsText}</span>
+      <span>{areaSum}</span>
+      <span>{kmSum}</span>
+      <span className="font-semibold">{L(UI.flyingSum, { time: fmtTime(totalWithout) })}</span>
+    </p>
   )
 
   // o que é igual em todos os voos, por cima da tabela
@@ -1970,86 +2025,52 @@ export default function MissionReport({
                 )}
               </div>
             )}
-            <div className="rep-scroll overflow-x-auto rounded-[9px] border border-slate-800">
-              <table className="rep-table w-full border-collapse text-left">
-                <caption className="sr-only">
-                  {L(withBases ? UI.flightsByBase : UI.flights)}
-                </caption>
-                <colgroup>
-                  {(withBases
-                    ? ['base', 'zone', 'ref', 'rth', 'flight', 'time', 'heights', 'vlos']
-                    : ['flight', 'area', 'dist', 'time']
-                  ).map((c) => (
-                    <col key={c} className={`rep-c-${c}`} />
-                  ))}
-                </colgroup>
-                <thead className="bg-sunken">
-                  <tr>
-                    {withBases && (
-                      <>
-                        <th scope="col" className={head}>
-                          <span className={headMain}>{L(UI.cBase)}</span>
-                          <span className={headSub}>{L(UI.cBaseSub)}</span>
-                        </th>
-                        <th scope="col" className={head}>
-                          <span className={headMain}>{L(UI.cZone)}</span>
-                          <span className={headSub}>{L(UI.cZoneSub)}</span>
-                        </th>
-                        <th scope="col" className={head}>
-                          <span className={headMain}>{t('bases.sheet.ref')}</span>
-                          <span className={headSub}>{L(UI.cRefSub)}</span>
-                        </th>
-                        <th scope="col" className={head}>
-                          <span className={headMain}>{L(UI.cRth)}</span>
-                          <span className={headSub}>{L(UI.cRthSub)}</span>
-                        </th>
-                      </>
+            {withBases ? (
+              <div className="rep-scroll overflow-x-auto rounded-[9px] border border-slate-800">
+                <table className="rep-table w-full border-collapse text-left">
+                  <caption className="sr-only">{L(UI.flightsByBase)}</caption>
+                  <colgroup>
+                    {['base', 'zone', 'ref', 'rth', 'flight', 'time', 'heights', 'vlos'].map(
+                      (c) => (
+                        <col key={c} className={`rep-c-${c}`} />
+                      ),
                     )}
-                    <th scope="col" className={head}>
-                      <span className={headMain}>{t('bases.sheet.flight')}</span>
-                      {withBases && <span className={headSub}>{L(UI.cFlightSub)}</span>}
-                    </th>
-                    {!withBases && (
-                      <>
-                        <th scope="col" className={head}>
-                          <span className={headMain}>{L(UI.cArea)}</span>
-                        </th>
-                        <th scope="col" className={head}>
-                          <span className={headMain}>{L(UI.cDistance)}</span>
-                        </th>
-                      </>
-                    )}
-                    <th scope="col" className={head}>
-                      <span className={headMain}>
-                        {useful ? L(UI.cTimeUseful, { u: fmtClock(useful) }) : L(UI.cTime)}
-                      </span>
-                      <span className={headSub}>
-                        {/* sem bases não há deslocação: só o tempo de cada voo */}
-                        {useful
+                  </colgroup>
+                  <thead className="bg-sunken">
+                    <tr>
+                      {colHead(L(UI.cBase), L(UI.cBaseSub))}
+                      {colHead(L(UI.cZone), L(UI.cZoneSub))}
+                      {colHead(t('bases.sheet.ref'), L(UI.cRefSub))}
+                      {colHead(L(UI.cRth), L(UI.cRthSub))}
+                      {colHead(t('bases.sheet.flight'), L(UI.cFlightSub))}
+                      {colHead(
+                        timeHead,
+                        useful
                           ? L(anyTransit ? UI.cTimeSub : UI.cTimeSubPct)
                           : anyTransit
                             ? L(UI.cTimeSubNoUseful)
-                            : null}
-                      </span>
-                    </th>
-                    {withBases && (
-                      <>
-                        <th scope="col" className={head}>
-                          <span className={headMain}>{t('bases.sheet.heights')}</span>
-                          <span className={headSub}>{L(UI.cHeightsSub)}</span>
-                        </th>
-                        <th scope="col" className={`${head} text-right`}>
-                          <span className={headMain}>{L(UI.cVlos)}</span>
-                          <span className={headSub}>{L(UI.cVlosSub)}</span>
-                        </th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                {flightBody}
-                {totals}
-              </table>
-            </div>
+                            : null,
+                      )}
+                      {colHead(t('bases.sheet.heights'), L(UI.cHeightsSub))}
+                      {colHead(L(UI.cVlos), L(UI.cVlosSub), true)}
+                    </tr>
+                  </thead>
+                  {flightBody}
+                  {totals}
+                </table>
+              </div>
+            ) : (
+              <>
+                <div
+                  className={`grid grid-cols-1 items-start gap-3 ${
+                    nbHalves.length > 1 ? 'rep-twoup lg:grid-cols-2' : ''
+                  }`}
+                >
+                  {nbHalves.map(nbTable)}
+                </div>
+                {nbTotal}
+              </>
+            )}
 
             {/* as fichas inteiras de cada base (BaseFieldSheets), a um clique */}
             {sheets.length > 0 && (
@@ -2171,7 +2192,7 @@ export default function MissionReport({
               ].map(([k, v]) => (
                 <div
                   key={k}
-                  className="grid grid-cols-1 items-baseline gap-x-4 gap-y-0.5 border-t border-raised py-2.5 text-[13px] leading-[1.45] sm:grid-cols-[180px_minmax(0,1fr)]"
+                  className="rep-kv2 grid grid-cols-1 items-baseline gap-x-4 gap-y-0.5 border-t border-raised py-2.5 text-[13px] leading-[1.45] sm:grid-cols-[180px_minmax(0,1fr)]"
                 >
                   <dt className="text-slate-300">{k}</dt>
                   <dd className="m-0 tabular-nums">{v}</dd>
@@ -2263,7 +2284,7 @@ export default function MissionReport({
               ].map(([k, v]) => (
                 <div
                   key={k}
-                  className="flex min-h-[38px] items-center justify-between gap-4 border-t border-raised text-[13px]"
+                  className="rep-kv flex min-h-[38px] items-center justify-between gap-4 border-t border-raised text-[13px]"
                 >
                   <dt className="text-slate-300">{k}</dt>
                   <dd className="m-0 text-right tabular-nums">{v}</dd>
@@ -2375,9 +2396,12 @@ function ReportPreflight({ items, counts, baseColors }) {
 // informação (os elementos com o fundo no estilo: pinos, rótulos, barras). A
 // barra de cima e o botão das fichas não saem. A identificação, o mapa, a
 // operação e a legenda cabem na primeira página; a tabela dos voos e o
-// preflight partem entre páginas, cada linha (e cada base, e cada aviso) inteira, e a
+// preflight partem entre páginas, cada linha e cada aviso inteiros (e as
+// bases de até três linhas: uma base com muitos voos parte entre eles, em vez
+// de deixar meia página em branco), e a
 // tabela tem colunas fixas na largura do A4, com o texto a partir e os
-// números não; o total sai só no fim (e não ao fundo de cada página). As
+// números não (nem os valores dos parâmetros e da reprodutibilidade, cujo
+// rótulo parte); o total sai só no fim (e não ao fundo de cada página). As
 // fichas das bases, abertas, imprimem-se cada uma inteira.
 const PRINT_CSS = `
 @media print {
@@ -2409,6 +2433,7 @@ body { visibility: hidden !important; }
 .rep-side .rep-box { padding: 2mm 2.5mm !important; }
 .rep-side dl { gap: 1.2mm !important; }
 .rep-two { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; column-gap: 6mm !important; }
+.rep-two dd { white-space: nowrap !important; }
 .rep-tiles { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
 .rep-tile { border: 1px solid #ccc !important; border-radius: 0 !important; }
 .rep-tile dd { font-size: 10pt !important; }
@@ -2418,12 +2443,17 @@ body { visibility: hidden !important; }
 .rep-table *, .rep-root li[data-group] table * { font-size: inherit !important; }
 .rep-table .rep-sub { font-size: 6.6pt !important; }
 .rep-table th, .rep-table td { padding: 0.7mm 1.2mm !important; overflow-wrap: anywhere; }
+.rep-nb th, .rep-nb td { padding: 0.3mm 1.2mm !important; }
 .rep-run, .rep-row, .rep-total { break-inside: avoid; }
 .rep-scroll > .rep-table { table-layout: fixed !important; }
 .rep-c-base, .rep-c-zone { width: 15%; } .rep-c-ref, .rep-c-heights { width: 11%; }
 .rep-c-rth { width: 9%; } .rep-c-flight { width: 12%; } .rep-c-time { width: 19%; }
-.rep-c-vlos { width: 8%; } .rep-c-area, .rep-c-dist { width: 22%; }
-.rep-table .rep-wrap { white-space: normal !important; }
+.rep-c-vlos { width: 8%; }
+.rep-nb .rep-c-flight { width: 16%; } .rep-nb .rep-c-area, .rep-nb .rep-c-dist { width: 22%; } .rep-nb .rep-c-time { width: 40%; }
+.rep-twoup { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 3mm !important; }
+.rep-kv { min-height: 6.5mm !important; }
+.rep-kv2 { padding-top: 1.2mm !important; padding-bottom: 1.2mm !important; }
+.rep-table .rep-wrap, .rep-total td:last-child { white-space: normal !important; }
 .rep-time, .rep-bar { min-width: 0 !important; }
 .rep-table tfoot { display: table-row-group; }
 .rep-base { border: 1px solid #ccc !important; border-radius: 0 !important; padding: 1.5mm !important; break-inside: avoid; }
