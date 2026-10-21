@@ -23,6 +23,25 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ### Corrigido
 
+- **Desenho com cliques quase no mesmo sítio.** Três cliques quase no
+  mesmo ponto podiam deixar dois vértices quase iguais seguidos, e o
+  corredor ou a fachada aceitavam um eixo de um só ponto (dois vértices a
+  2 cm): cada clique compara-se agora com o último vértice que ficou, e
+  não com o clique anterior.
+- **Inclinação sugerida numa faixa fina na diagonal.** Com as amostras do
+  relevo alinhadas, o plano médio saía com qualquer inclinação (90° numa
+  rampa de 5,7°) e a sugestão para encostas propunha faixas a 45°: quando
+  as amostras não definem um plano, não há sugestão. Nos outros casos o
+  plano é o mesmo, bit a bit.
+- **Importar uma missão .kmz com etiquetas vazias.** Um `<wpml:index>`
+  vazio ou em falta punha o waypoint no início da rota, um
+  `<wpml:autoFlightSpeed>` vazio dava 0 m/s por cima das velocidades dos
+  waypoints e as alturas vazias contavam como 0 m na altura da missão:
+  uma etiqueta vazia conta agora como em falta.
+- **Coordenadas junto a 0° no KML dos GCP e no das bases.** A menos de
+  11 cm do equador ou do meridiano de Greenwich saíam em notação
+  científica (`4e-7`): passam a graus decimais, como no KMZ e no KML da
+  área. Fora disso o texto é o mesmo, carácter a carácter.
 - **Métricas do separador aberto.** Nos separadores Corredor e Circular o
   grupo «Qualidade» do painel de métricas (GSD com o intervalo da incerteza,
   pegada, espaçamento e intervalo de disparo) mostrava os números da grelha
@@ -102,9 +121,8 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   comentários e `shotPitches` nem aparecia), e juntar essa versão à do
   smoke perdia o que os unitários executavam. Com o c8 a medir, o vitest
   carrega `src/utils`, `src/mission`, `src/data` e `src/i18n` no Node tal
-  como estão, como o smoke; os totais passam de 95,4 / 94,1 / 80,5 %
-  (linhas, funções, ramos) para 97,8 / 97,3 / 87,1 %, e os limiares de
-  94/94/80 para 97/97/87.
+  como estão, como o smoke; só com isto os totais passam de 95,4 / 94,1 /
+  80,5 % (linhas, funções, ramos) para 97,8 / 97,3 / 87,1 %.
 - **Cobertura do código do ecrã pelo E2E** (`npm run test:e2e:cobertura`,
   só relatório, sem limiar e fora do CI): o E2E corre sobre uma build com
   mapas de fontes e recolhe a cobertura JS de cada página; os componentes,
@@ -117,12 +135,12 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   áreas, as recusas da exportação (cada uma com o código e a mensagem nas
   duas línguas), o corredor, a fachada, a órbita, o modo circular, os GCP,
   a geometria do plano e a cache do relevo, com entradas inválidas,
-  caminhos de erro e combinações raras. Só com os unitários (sem os
-  scripts de smoke), a cobertura passa de 94,5 % para 99,6 % das linhas e
-  de 80,1 % para 90,7 % dos ramos. Encontraram quatro erros, corrigidos:
-  cliques quase no mesmo sítio no desenho, a inclinação sugerida para uma
-  faixa fina na diagonal, etiquetas vazias num KMZ importado e coordenadas
-  em notação científica junto a 0° no KML dos GCP e no das bases.
+  caminhos de erro e combinações raras. Com eles, e a medida certa, a
+  cobertura de `src/utils/` e `src/mission/` fica em 99,7 % das linhas,
+  100 % das funções e 96,6 % dos ramos, e os limiares passam de 94/94/80
+  para 99/99/96. Encontraram os quatro erros de «Corrigido» acima (o
+  desenho, a inclinação sugerida, a importação de um .kmz e as
+  coordenadas junto a 0°).
 
 ### Interno (repartição do `App.jsx`)
 
