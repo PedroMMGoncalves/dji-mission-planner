@@ -76,6 +76,31 @@ impressões digitais: corra `E2E_IMPRESSOES=gravar npm run test:e2e` (ou só
 os cenários `impressao-*` com `E2E_ONLY`), leia o diff de
 `tests/e2e/impressoes.json` e explique-o na mensagem de commit.
 
+O `npm run test:coverage` só mede `src/utils/` e `src/mission/`; o código
+do ecrã (componentes, hooks e `App.jsx`) só corre no browser e mede-se com
+o E2E, à parte e só em relatório (sem limiar, fora da cadeia e do CI):
+
+```bash
+npm run test:e2e:cobertura   # build com mapas de fontes + E2E com E2E_COBERTURA=1
+```
+
+O script faz a build com mapas de fontes em `tests/e2e/out/build-cobertura/`
+(o `dist/` não muda) e corre o E2E sobre ela; cada página que os cenários
+abrem recolhe a cobertura JS do Chromium, convertida no fim para os
+ficheiros de `src/` (`tests/e2e/cobertura.mjs`). O relatório fica em
+`tests/e2e/out/cobertura/`: `resumo.txt` (componentes, hooks e `App.jsx`, e
+`mission` e `utils` para comparação), `tabela.txt` (por ficheiro, da menor
+cobertura de linhas para a maior), `html/index.html` e `lcov.info`.
+`E2E_ONLY`, `E2E_PORT` e `E2E_CHROMIUM` valem como no `npm run test:e2e`;
+sem `E2E_COBERTURA` o E2E é o de sempre. Leva cerca de 40 % mais tempo
+(12,5 min para 9 numa máquina de 4 núcleos): com a cobertura o JS da página
+corre mais devagar e as pausas fixas dos cenários duplicam, e a conversão
+soma meio minuto. As linhas contam-se como no c8: só fica por cobrir a linha
+que um bloco nunca corrido ocupa inteira, e as que ficam fora de funções
+contam como cobertas. As funções e os ramos dizem mais do que a percentagem
+de linhas, e uma função anónima (o corpo de um `useCallback`, uma seta num
+`map`) conta como função.
+
 Uma alteração intencional à exportação muda os goldens: corra
 `npm run test:update-golden`, leia o diff dos ficheiros em `tests/golden/`
 e explique-o na mensagem de commit. Um golden que muda sem explicação é

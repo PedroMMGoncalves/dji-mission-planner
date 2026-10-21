@@ -11,7 +11,9 @@
  *   npm run build && npm run test:e2e
  *
  * Variáveis: E2E_ONLY (nomes de cenários, separados por vírgula), E2E_PORT (4173), E2E_CHROMIUM (caminho de um Chromium local em
- * vez do que o Playwright instala), E2E_OUT (pasta das capturas em falha).
+ * vez do que o Playwright instala), E2E_OUT (pasta das capturas em falha),
+ * E2E_COBERTURA=1 (cobertura do código do ecrã sobre a build com mapas de
+ * fontes: `npm run test:e2e:cobertura`, ver cobertura.mjs).
  */
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
@@ -41,6 +43,12 @@ const URL = `http://127.0.0.1:${PORT}/dji-mission-planner/`
 const OUT = resolve(process.env.E2E_OUT ?? 'tests/e2e/out')
 const AGL_M = 100 // altura AGL por omissao da interface, usada nos cenarios
 const TOL_M = 5 // tolerância vertical por omissão do terrain follow
+// Cobertura (E2E_COBERTURA): a build com mapas de fontes em vez do dist/ e a
+// cobertura JS de cada página; sem a variável o módulo nem carrega.
+const cobertura = ['', '0'].includes(process.env.E2E_COBERTURA ?? '')
+  ? null
+  : await import('./cobertura.mjs')
+const DIST = cobertura ? cobertura.DIST : 'dist'
 
 let fails = 0
 let passes = 0
@@ -58,8 +66,9 @@ const executavel = (r) =>
     `passo mínimo ${Number.isFinite(r.minStep3DM) ? r.minStep3DM.toFixed(2) : '?'} m`,
   )
 
-if (!existsSync('dist/index.html')) {
-  console.error('sem dist/index.html — corra npm run build primeiro')
+if (!existsSync(join(DIST, 'index.html'))) {
+  const build = cobertura ? 'npm run test:e2e:cobertura' : 'npm run build'
+  console.error(`sem ${DIST}/index.html — corra ${build} primeiro`)
   process.exit(2)
 }
 mkdirSync(OUT, { recursive: true })
@@ -74,6 +83,7 @@ const server = spawn(
   [
     'node_modules/vite/bin/vite.js',
     'preview',
+    ...(cobertura ? ['--outDir', DIST] : []),
     '--port',
     String(PORT),
     '--strictPort',
@@ -171,6 +181,8 @@ async function openMission({
 }) {
   const page = await browser.newPage({ viewport, acceptDownloads: true })
   currentPage = page
+  // antes da navegação; o page.close() passa a recolhê-la (cobertura.mjs)
+  if (cobertura) await cobertura.iniciar(page)
   if (initScript) await page.addInitScript(initScript)
   // aviso antes de usar já aceite neste "aparelho" (o cenário do aviso testa-o)
   if (disclaimer)
@@ -5419,8 +5431,12 @@ await scenario('impressao-inspeccao', async () => {
 
 /* ---- fim ----------------------------------------------------------------- */
 gravarReferencia()
+if (cobertura) await cobertura.recolherAbertas()
 await browser.close()
 stopServer()
+// o relatório da cobertura vem antes do veredicto; se falhar, o comando
+// falha, mas as contas do E2E são as mesmas
+const coberturaOk = cobertura ? await cobertura.relatorio(join(OUT, 'cobertura')) : true
 if (ONLY) {
   const desconhecidos = ONLY.filter((n) => !SCENARIOS.includes(n))
   if (desconhecidos.length) {
@@ -5437,5 +5453,6 @@ if (fails > 0) {
   console.log(`capturas e ficheiros em ${OUT}`)
   process.exit(1)
 }
+if (!coberturaOk) process.exit(1)
 console.log('E2E: TODOS OS CENARIOS PASSARAM')
 process.exit(0)

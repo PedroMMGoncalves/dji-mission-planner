@@ -25,6 +25,7 @@
     "size": "node scripts/check-bundle-size.mjs",
     "preview": "vite preview",
     "test:e2e": "node tests/e2e/run.mjs",
+    "test:e2e:cobertura": "vite build --sourcemap --outDir tests/e2e/out/build-cobertura && E2E_COBERTURA=1 node tests/e2e/run.mjs",
     "test:smoke": "node smoke-test.mjs && node smoke-test-io.mjs",
     "test:unit": "vitest run",
     "test:perf": "PERF=1 vitest run",

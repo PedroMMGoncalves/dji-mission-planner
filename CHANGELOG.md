@@ -105,6 +105,12 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   como estão, como o smoke; os totais passam de 95,4 / 94,1 / 80,5 %
   (linhas, funções, ramos) para 97,8 / 97,3 / 87,1 %, e os limiares de
   94/94/80 para 97/97/87.
+- **Cobertura do código do ecrã pelo E2E** (`npm run test:e2e:cobertura`,
+  só relatório, sem limiar e fora do CI): o E2E corre sobre uma build com
+  mapas de fontes e recolhe a cobertura JS de cada página; os componentes,
+  os hooks e o `App.jsx` (e `mission` e `utils`, para comparação) saem em
+  resumo, tabela por ficheiro, HTML e lcov em `tests/e2e/out/cobertura/`.
+  Até aqui só se media `src/utils/` e `src/mission/`, com as suites em Node.
 
 ### Interno (repartição do `App.jsx`)
 

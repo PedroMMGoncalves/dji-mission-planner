@@ -15,6 +15,8 @@ export default [
       'dist/**',
       'node_modules/**',
       'public/**',
+      // saída do E2E: a build com mapas e o HTML da cobertura (test:e2e:cobertura)
+      'tests/e2e/out/**',
       // Scripts de workflow: o runtime embrulha-os numa funcao assincrona e
       // injecta os globais (agent, pipeline, args...), pelo que o `return` no
       // topo e a API e nao um erro. O ESLint le-os como modulos e falha a
