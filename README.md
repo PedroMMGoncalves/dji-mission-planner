@@ -251,7 +251,7 @@ resolves to the latest release. The repository also ships a `CITATION.cff`
 (GitHub shows it under *Cite this repository*).
 
 > Gonçalves, P. (2026). *dji-mission-planner: browser-based drone mapping
-> mission planner for DJI Pilot 2* (v1.5.0) [Software]. Zenodo.
+> mission planner for DJI Pilot 2* (v1.6.0) [Software]. Zenodo.
 > https://doi.org/10.5281/zenodo.22238440
 
 ```bibtex
@@ -259,7 +259,7 @@ resolves to the latest release. The repository also ships a `CITATION.cff`
   author  = {Gon\c{c}alves, Pedro},
   title   = {dji-mission-planner: browser-based drone mapping mission planner for DJI Pilot 2},
   year    = {2026},
-  version = {1.5.0},
+  version = {1.6.0},
   doi     = {10.5281/zenodo.22238440},
   url     = {https://doi.org/10.5281/zenodo.22238440}
 }
