@@ -2,9 +2,10 @@
  * Peças comuns ao que flutua por cima do mapa e à barra dos modos (barra de
  * desenho, primeiros passos, métricas, legenda): o ícone em traço, as
  * classes repetidas — o cartão opaco, o botão recolhido em pastilha e o
- * anel do foco — e o foco que acompanha o botão de abrir e fechar.
+ * anel do foco —, o foco que acompanha o botão de abrir e fechar e a
+ * largura do ecrã (as media queries das classes, lidas no código).
  */
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 
 /** Anel do foco do teclado nos botões. */
 export const FOCUS = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-sky-400'
@@ -57,4 +58,22 @@ export function useToggleFocus(open) {
     pending.current = false
   }, [open])
   return { ref, mark: () => (pending.current = true) }
+}
+
+/**
+ * Se a media query `query` se verifica agora, e acompanha as mudanças (a
+ * janela que se estreita): para o código decidir o mesmo que as classes
+ * `lg:`, `min-[1180px]:`, … decidem no ecrã.
+ * @param {string} query
+ */
+export function useMedia(query) {
+  const subscribe = useCallback(
+    (/** @type {() => void} */ onChange) => {
+      const m = window.matchMedia(query)
+      m.addEventListener('change', onChange)
+      return () => m.removeEventListener('change', onChange)
+    },
+    [query],
+  )
+  return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches)
 }

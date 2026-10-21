@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useT } from '../i18n.jsx'
-import { FOCUS, Icon } from './MapOverlay.jsx'
+import { FOCUS, Icon, useMedia } from './MapOverlay.jsx'
 
 /**
  * Ferramentas de desenho do modo Área, numa barra por cima do mapa, ao lado
@@ -36,8 +36,11 @@ export default function MapDrawTools({
   const refs = useRef([])
   const [focusIdx, setFocusIdx] = useState(0)
   // num mapa estreito a barra inteira não cabe: abaixo de 1024 px fica só o
-  // ícone das formas, e abaixo de 1180 px o da base e o da inspecção (o nome
-  // continua no botão, para o leitor de ecrã, e na dica)
+  // ícone das formas, e abaixo de 1180 px o da base e o da inspecção. O nome
+  // continua no botão, para o leitor de ecrã, e na dica: a de uma forma só
+  // com o ícone começa pelo nome dela; a da base e a da inspecção é o nome
+  // da acção, que já contém o rótulo
+  const shapeLabels = useMedia('(min-width: 1024px)')
   const tools = [
     {
       key: 'polygon',
@@ -129,7 +132,10 @@ export default function MapDrawTools({
       onClick={tool.act}
       aria-pressed={tool.on}
       aria-label={tool.name}
-      title={tool.name ?? tool.title}
+      title={
+        tool.name ??
+        (shapeLabels ? tool.title : t('map.toolTip', { label: tool.label, tip: tool.title }))
+      }
       className={`flex h-9 items-center gap-[7px] rounded-[7px] px-2.5 text-[13px] font-medium transition-colors ${FOCUS} ${
         tool.on
           ? 'bg-sky-400/15 text-sky-300'

@@ -240,19 +240,21 @@ export default {
     en: 'Draw the area with the bar over the map (Polygon, Rectangle or Square), or import it:',
   },
   'cp.area.polygon': { pt: 'Polígono', en: 'Polygon' },
+  // dicas da barra sobre o mapa: sem o nome da forma, que a barra lhes junta
+  // quando o mostra só no ícone (num mapa estreito)
   'cp.area.polygonTitle': {
-    pt: 'Polígono livre: clique a clique no mapa',
-    en: 'Free-form polygon: click by click on the map',
+    pt: 'Livre, clique a clique no mapa',
+    en: 'Free-form, click by click on the map',
   },
   'cp.area.rect': { pt: 'Rectângulo', en: 'Rectangle' },
   'cp.area.rectTitle': {
-    pt: 'Rectângulo centrado num ponto (comprimento × largura)',
-    en: 'Rectangle centred on a point (length × width)',
+    pt: 'Centrado num ponto (comprimento × largura)',
+    en: 'Centred on a point (length × width)',
   },
   'cp.area.square': { pt: 'Quadrado', en: 'Square' },
   'cp.area.squareTitle': {
-    pt: 'Quadrado centrado num ponto (lado único)',
-    en: 'Square centred on a point (single side)',
+    pt: 'Centrado num ponto (lado único)',
+    en: 'Centred on a point (single side)',
   },
   'cp.area.import': {
     pt: 'Importar área (KML · GeoJSON · SHP · KMZ WPML)',

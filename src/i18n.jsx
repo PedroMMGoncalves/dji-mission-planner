@@ -384,6 +384,8 @@ const BASE_DICT = {
   'map.drawTools': { pt: 'Desenhar no mapa', en: 'Draw on the map' },
   'map.toolBase': { pt: 'Base', en: 'Base' },
   'map.toolInspect': { pt: 'Inspecção', en: 'Inspection' },
+  // a dica de uma forma só com o ícone (mapa estreito): o nome e a explicação
+  'map.toolTip': { pt: '{label} · {tip}', en: '{label} · {tip}' },
 
   /* ---- Primeiros passos (primeiro ecrã, sem área) ---- */
   'guide.title': { pt: 'Primeiros passos', en: 'First steps' },
