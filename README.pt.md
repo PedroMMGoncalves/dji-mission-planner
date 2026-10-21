@@ -234,6 +234,11 @@ A letra da interface, Inter (© The Inter Project Authors), vai na build a
 partir do `@fontsource-variable/inter`, com a licença SIL Open Font License
 1.1, e por isso não depende da rede no campo.
 
+O código QR da ficha de campo de cada base (a ligação dos mapas do ponto da
+base) é codificado pelo `lean-qr` 2.7.4 (© David Evans, licença MIT; o texto
+da licença vai no pacote), que vai na build, e por isso a ficha imprime-se sem
+rede.
+
 ## Citação
 
 Cada release é arquivada no Zenodo com o seu DOI. Para citar uma versão

@@ -238,6 +238,10 @@ The interface font, Inter (© The Inter Project Authors), ships with the build
 from `@fontsource-variable/inter` under the SIL Open Font License 1.1, so the
 planner keeps its typeface offline in the field.
 
+The QR code on each base's field sheet (the base point's maps link) is encoded
+by `lean-qr` 2.7.4 (© David Evans, MIT licence; the licence text is in the
+package), which ships with the build, so the sheet prints with no network.
+
 ## Citation
 
 Every release is archived on Zenodo with its own DOI. To cite a specific
