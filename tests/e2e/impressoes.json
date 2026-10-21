@@ -1,7 +1,7 @@
 {
   "area-bases": {
     "preflight": "Preflight 0 bloqueios 6 avisos 3 notas Sem bloqueios: pode exportar. Leia os avisos antes de voar. AVISOS 6 A esta velocidade o arrastamento a 1/500 s é de 1.6 px (2.0 cm): fixe uma exposição mais curta ou reduza a velocidade. Zona de descolagem reduzida em 5 bases Há desnível perto destas bases: descolar até à distância pedida pode pôr o voo mais baixo do que o planeado. Descole dentro da zona, ou mova a base para um sítio plano. Base Zona / pedida Desnível Voo mais baixo C Base C 50 / 100 m 12 m a 60 m −11 m F Base F 70 / 100 m 10 m a 80 m −5 m B Base B 70 / 100 m 11 m a 80 m −2 m A Base A 90 / 100 m 10 m a 100 m −1 m E Base E 80 / 100 m 10 m a 90 m −1 m NOTAS 3 O regresso (RTH) a 274 m acima da descolagem passa os 120 m da categoria aberta junto à base. Primeiro voo desta combinação (DJI Matrice 300 RTK + Zenmuse P1, Área): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
-    "metricas": "Recolher as métricas QUALIDADE GSD 1.25 (1.18–1.32) cm/px SOBREPOSIÇÃO EFECTIVA 77–83 / 67–73 % PEGADA NO SOLO 103 × 69 m ESPAÇAMENTO ENTRE FAIXAS 30.8 m INTERVALO DE DISPARO 13.7 m VOO ÁREA 451.96 ha N.º DE FAIXAS 295 WAYPOINTS 590 DISTÂNCIA TOTAL 156.62 km N.º DE FOTOS 11368 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 4 h 48 min OPERAÇÃO VOOS 20 · 7 bases CONJUNTOS DE BATERIAS 20 necessários VOO MAIS LONGO / TEMPO ÚTIL F-18 18:52 / 25:00 TEMPO TOTAL COM DESLOCAÇÕES 5 h 27 min",
+    "metricas": "Métricas Voo mais longo · F-18 18:52 de 25:00 75 % do tempo útil da bateria QUALIDADE GSD 1.25 cm/px (1.18–1.32) Sobreposição efectiva 77–83 / 67–73 % Pegada no solo 103 × 69 m Espaçamento entre faixas 30.8 m Intervalo de disparo 13.7 m VOO Área 451.96 ha Faixas 295 Waypoints 590 Distância total 156.62 km Fotos 11368 Tempo na missão 4 h 48 min OPERAÇÃO Voos 20 · 7 bases Conjuntos de baterias 20 necessários Com as deslocações 5 h 27 min",
     "bases": [
       "A Base A Raio voos A-1, A-2 Atribuir blocos a esta base Vista: A-1 100 %, A-2 100 % zona reduzida a 90 m (pedidos 100 m): 10 m de desnível a 100 m cota de referência 168 m · voo entre 0 e +9 m acima do planeado",
       "B Base B Raio voos B-3, B-4, B-5, B-6, B-7 Atribuir blocos a esta base Vista: B-3 100 %, B-4 100 %, B-5 100 %, B-6 100 %, B-7 100 % zona reduzida a 70 m (pedidos 100 m): 11 m de desnível a 80 m cota de referência 195 m · voo entre 0 e +10 m acima do planeado",
@@ -132,7 +132,7 @@
   },
   "area-simples": {
     "preflight": "Preflight 0 bloqueios 0 avisos 2 notas Sem bloqueios nem avisos: pode exportar. NOTAS 2 Sem ponto de base: a deslocação não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota. As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
-    "metricas": "Recolher as métricas QUALIDADE GSD 2.69 (2.67–2.70) cm/px SOBREPOSIÇÃO EFECTIVA 78–82 / 69–71 % PEGADA NO SOLO 142 × 107 m ESPAÇAMENTO ENTRE FAIXAS 42.5 m INTERVALO DE DISPARO 21.3 m VOO ÁREA 12.55 ha N.º DE FAIXAS 6 WAYPOINTS 12 DISTÂNCIA TOTAL 3.21 km N.º DE FOTOS 151 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 5 min 50 s OPERAÇÃO VOOS 1 CONJUNTOS DE BATERIAS 1 necessário VOO / TEMPO ÚTIL 5:50 / 30:00",
+    "metricas": "Métricas Duração do voo 5:50 de 30:00 19 % do tempo útil da bateria QUALIDADE GSD 2.69 cm/px (2.67–2.70) Sobreposição efectiva 78–82 / 69–71 % Pegada no solo 142 × 107 m Espaçamento entre faixas 42.5 m Intervalo de disparo 21.3 m VOO Área 12.55 ha Faixas 6 Waypoints 12 Distância total 3.21 km Fotos 151 Tempo na missão 5 min 50 s OPERAÇÃO Voos 1 Conjuntos de baterias 1 necessário",
     "bases": [],
     "blocos": [],
     "kmz": {
@@ -145,7 +145,7 @@
   },
   "circular": {
     "preflight": "Preflight 0 bloqueios 2 avisos 3 notas Sem bloqueios: pode exportar. Leia os avisos antes de voar. AVISOS 2 3213 waypoints numa só rota: o Pilot 2 importa lentamente; considere dividir em blocos. Tempo estimado de 93.2 min excede o tempo útil por voo (30 min, já com a reserva de aterragem): divida em blocos. NOTAS 3 Sem ponto de base: a deslocação não conta para a bateria e as alturas referem-se à cota mínima do relevo debaixo da rota. Primeiro voo desta combinação (DJI Mavic 3 Enterprise (M3E) + Wide RGB, Circular): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
-    "metricas": "Recolher as métricas QUALIDADE GSD (CENTRO DA IMAGEM) 3.80 cm/px INTERVALO DE DISPARO 9.4 m VOO ÁREA 12.55 ha N.º DE CÍRCULOS 153 WAYPOINTS 3213 DISTÂNCIA TOTAL 33.27 km N.º DE FOTOS 3060 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 1 h 33 min OPERAÇÃO VOOS 4 CONJUNTOS DE BATERIAS 4 necessários VOO MAIS LONGO / TEMPO ÚTIL 29:41 / 30:00 TEMPO TOTAL COM DESLOCAÇÕES 1 h 33 min",
+    "metricas": "Métricas Voo mais longo 29:41 de 30:00 99 % do tempo útil da bateria QUALIDADE GSD (centro da imagem) 3.80 cm/px Intervalo de disparo 9.4 m VOO Área 12.55 ha Círculos 153 Waypoints 3213 Distância total 33.27 km Fotos 3060 Tempo na missão 1 h 33 min OPERAÇÃO Voos 4 Conjuntos de baterias 4 necessários Com as deslocações 1 h 33 min",
     "bases": [],
     "blocos": [],
     "kmz": {
@@ -155,7 +155,7 @@
   },
   "corredor-partido": {
     "preflight": "Preflight 0 bloqueios 1 aviso 2 notas Sem bloqueios: pode exportar. Leia os avisos antes de voar. AVISOS 1 A rota chega a 1472 m da base no pior ponto da zona, acima da distância VLOS da aeronave (500 m). Mova a base, divida a área em blocos com bases, ou voe com observadores. NOTAS 2 Primeiro voo desta combinação (DJI Mavic 3 Enterprise (M3E) + Wide RGB, Corredor): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
-    "metricas": "Recolher as métricas QUALIDADE GSD 2.69 cm/px PEGADA NO SOLO 142 × 107 m ESPAÇAMENTO ENTRE FAIXAS 42.5 m INTERVALO DE DISPARO 21.3 m VOO N.º DE PASSAGENS 10 WAYPOINTS 70 DISTÂNCIA TOTAL 31.38 km N.º DE FOTOS 1438 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 1 h 08 min OPERAÇÃO VOOS 3 · 2 bases CONJUNTOS DE BATERIAS 3 necessários VOO MAIS LONGO / TEMPO ÚTIL C-3 27:23 / 30:00 TEMPO TOTAL COM DESLOCAÇÕES 1 h 18 min",
+    "metricas": "Métricas Voo mais longo · C-3 27:23 de 30:00 91 % do tempo útil da bateria QUALIDADE GSD 2.69 cm/px Pegada no solo 142 × 107 m Espaçamento entre faixas 42.5 m Intervalo de disparo 21.3 m VOO Passagens 10 Waypoints 70 Distância total 31.38 km Fotos 1438 Tempo na missão 1 h 08 min OPERAÇÃO Voos 3 · 2 bases Conjuntos de baterias 3 necessários Com as deslocações 1 h 18 min",
     "bases": [],
     "blocos": [],
     "kmz": {
@@ -169,7 +169,7 @@
   },
   "face": {
     "preflight": "Preflight 0 bloqueios 2 avisos 2 notas Sem bloqueios: pode exportar. Leia os avisos antes de voar. AVISOS 2 Afastamento à face não verificado contra o terreno: sem MDT/MDS local, os tiles globais não têm resolução à escala de uma face. Importe um GeoTIFF no separador Área, cartão 2 (Área e relevo), para a verificação de folga. Folga mínima ao solo de 8 m, abaixo de 15 m. Suba a altura de voo ou ligue «Seguir terreno». NOTAS 2 Primeiro voo desta combinação (DJI Mavic 3 Enterprise (M3E) + Wide RGB, Face): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
-    "metricas": "Recolher as métricas QUALIDADE GSD 0.40 cm/px VOO N.º DE PASSAGENS 2 WAYPOINTS 50 DISTÂNCIA TOTAL 266.3 m N.º DE FOTOS 150 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 7 min 33 s OPERAÇÃO VOOS 1 · 1 bases CONJUNTOS DE BATERIAS 1 necessário VOO / TEMPO ÚTIL 7:33 / 30:00",
+    "metricas": "Métricas Duração do voo 7:33 de 30:00 25 % do tempo útil da bateria QUALIDADE GSD 0.40 cm/px VOO Passagens 2 Waypoints 50 Distância total 266.3 m Fotos 150 Tempo na missão 7 min 33 s OPERAÇÃO Voos 1 · 1 base Conjuntos de baterias 1 necessário",
     "bases": [],
     "blocos": [],
     "kmz": {
@@ -185,7 +185,7 @@
   },
   "orbita-varias": {
     "preflight": "Preflight 0 bloqueios 0 avisos 2 notas Sem bloqueios nem avisos: pode exportar. NOTAS 2 Primeiro voo desta combinação (DJI Mavic 3 Enterprise (M3E) + Wide RGB, Órbita): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
-    "metricas": "Recolher as métricas QUALIDADE GSD 1.34 cm/px VOO N.º DE NÍVEIS 3 WAYPOINTS 70 DISTÂNCIA TOTAL 952.8 m N.º DE FOTOS 210 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 13 min 41 s OPERAÇÃO VOOS 1 · 1 bases CONJUNTOS DE BATERIAS 1 necessário VOO / TEMPO ÚTIL 13:41 / 30:00",
+    "metricas": "Métricas Duração do voo 13:41 de 30:00 46 % do tempo útil da bateria QUALIDADE GSD 1.34 cm/px VOO Níveis 3 Waypoints 70 Distância total 952.8 m Fotos 210 Tempo na missão 13 min 41 s OPERAÇÃO Voos 1 · 1 base Conjuntos de baterias 1 necessário",
     "bases": [],
     "blocos": [],
     "kmz": {
@@ -195,7 +195,7 @@
   },
   "orbita-video": {
     "preflight": "Preflight 0 bloqueios 0 avisos 2 notas Sem bloqueios nem avisos: pode exportar. NOTAS 2 Primeiro voo desta combinação (DJI Mavic 3 Enterprise (M3E) + Wide RGB, Órbita): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»). As alturas do KMZ são relativas ao ponto de descolagem: descole na base marcada (ou dentro da zona dela). Sem base, o plano assume a cota mínima da área: descolar mais alto sobe a rota.",
-    "metricas": "Recolher as métricas QUALIDADE GSD 1.34 cm/px VOO N.º DE NÍVEIS 2 WAYPOINTS 24 DISTÂNCIA TOTAL 313.5 m N.º DE FOTOS 0 TEMPO NA MISSÃO (SEM DESLOCAÇÃO) 1 min 03 s OPERAÇÃO VOOS 1 · 1 bases CONJUNTOS DE BATERIAS 1 necessário VOO / TEMPO ÚTIL 1:03 / 30:00",
+    "metricas": "Métricas Duração do voo 1:03 de 30:00 3 % do tempo útil da bateria QUALIDADE GSD 1.34 cm/px VOO Níveis 2 Waypoints 24 Distância total 313.5 m Fotos 0 Tempo na missão 1 min 03 s OPERAÇÃO Voos 1 · 1 base Conjuntos de baterias 1 necessário",
     "bases": [],
     "blocos": [],
     "kmz": {

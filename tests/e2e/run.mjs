@@ -743,15 +743,18 @@ await scenario('corredor-voos-parametros-proprios', async () => {
     `${await page.locator('.corridor-flight-label').count()} rótulos, ${n} voos`,
   )
   // as estatísticas contam os voos da divisão (contavam a rota junta como um
-  // voo, a vermelho contra o tempo útil)
+  // voo, a vermelho contra o tempo útil); o mais longo diz o rótulo do voo
+  // e o tempo contra o útil («Voo mais longo · C-3», «27:23 de 30:00»)
   const nVoos = (await page.getByTestId('stats-flights').locator('[data-tone]').innerText()).trim()
-  const maisLongo = page.getByTestId('stats-longest').locator('[data-tone]')
+  const maisLongo = page.getByTestId('stats-longest')
+  const tempoLongo = maisLongo.locator('[data-tone]')
   check(
     'corredor: as estatísticas contam os voos, e o mais longo cabe no tempo útil',
     new RegExp(`^${n}\\b`).test(nVoos) &&
-      (await maisLongo.getAttribute('data-tone')) !== 'over' &&
-      /^C-\d+ \d+:\d\d \/ \d+:\d\d$/.test((await maisLongo.innerText()).trim()),
-    `${nVoos} · ${await maisLongo.innerText()}`,
+      (await tempoLongo.getAttribute('data-tone')) !== 'over' &&
+      /Voo mais longo · C-\d+/.test(await maisLongo.innerText()) &&
+      /^\d+:\d\d de \d+:\d\d$/.test((await tempoLongo.innerText()).trim()),
+    `${nVoos} · ${(await maisLongo.innerText()).replace(/\s+/g, ' ')}`,
   )
   // partido em voos sai um ZIP, e os botões do painel e do cabeçalho dizem-no
   check(
@@ -4299,7 +4302,7 @@ await scenario('painel-estatisticas', async () => {
   check(
     'estatísticas: sem divisão, um voo comparado com o tempo útil',
     /\b1$/.test(await flights()) &&
-      /^\d+:\d\d(:\d\d)? \/ \d+:\d\d$/.test((await longest.innerText()).trim()),
+      /^\d+:\d\d(:\d\d)? de \d+:\d\d$/.test((await longest.innerText()).trim()),
     `${await flights()} · ${await longest.innerText()}`,
   )
   // missão de um voo, muito acima do tempo útil: vermelho
@@ -4324,13 +4327,15 @@ await scenario('painel-estatisticas', async () => {
     (await longest.getAttribute('data-tone')) !== 'over',
     await longest.innerText(),
   )
-  // órbita sem POI: nada da área no painel
+  // órbita sem POI: nada da área no painel — sem plano, nem há cartão
   await modo(page, /^Órbita$|^Orbit$/)
   await page.waitForTimeout(500)
-  const orbitTxt = await panel.innerText()
+  const orbitTxt = (await panel.count()) > 0 ? await panel.innerText() : ''
   check(
-    'estatísticas: no separador da órbita não aparecem os números da área',
-    !/\bha\b/.test(orbitTxt) && (await page.getByTestId('stats-flights').count()) === 0,
+    'estatísticas: no separador da órbita sem POI não há métricas (nem os números da área)',
+    (await panel.count()) === 0 &&
+      !/\bha\b/.test(orbitTxt) &&
+      (await page.getByTestId('stats-flights').count()) === 0,
     orbitTxt.replace(/\s+/g, ' ').slice(0, 160),
   )
   check('estatísticas: sem erros de página', errors.length === 0, errors.join(' | '))

@@ -1,7 +1,8 @@
 /**
- * A área do mapa: o resumo do projecto, o mapa (desenho, área, blocos,
- * bases, fotos, pré-visualizações dos modos, bacias de visão) e o painel de
- * métricas do separador aberto.
+ * A área do mapa: o mapa (desenho, área, blocos, bases, fotos,
+ * pré-visualizações dos modos, bacias de visão, legenda) e, por cima dele, à
+ * direita, o resumo do projecto e o cartão de métricas do separador aberto.
+ * Nada disto empurra o mapa: tudo flutua por cima, nos cantos.
  */
 import { useMemo } from 'react'
 import ProjectSummary from './ProjectSummary.jsx'
@@ -143,7 +144,6 @@ export default function MapPane({
   return (
     <>
       <main className="relative min-w-0 flex-1">
-        <ProjectSummary summary={projectSummary} />
         <MapView
           mode={mode}
           draftVertices={draftVertices}
@@ -189,32 +189,36 @@ export default function MapPane({
           viewshedLayerOn={viewshedLayerOn}
           onViewshedLayer={setViewshedLayerOn}
         />
-        <StatsPanel
-          uncertainty={quality.uncertainty}
-          gsd={quality.gsd}
-          gimbalPitch={quality.gimbalPitch}
-          footprint={quality.footprint}
-          spacing={quality.spacing}
-          pointDensity={quality.pointDensity}
-          interval={quality.interval}
-          intervalS={quality.intervalS}
-          intervalManual={quality.intervalManual}
-          triggerMode={quality.triggerMode}
-          speed={quality.speed}
-          missionMode={missionMode}
-          stats={modeStats}
-          ops={statsOps}
-          shutterWarn={Boolean(
-            missionMode === 'circular'
-              ? circularTriggerWarn
-              : missionMode === 'corridor'
-                ? corridorTriggerWarn
-                : missionMode === 'area'
-                  ? triggerWarn
-                  : null,
-          )}
-          baseDistance={missionMode === 'area' && bases.length <= 1 ? areaBaseDistance : null}
-        />
+        {/* à direita: o resumo do projecto e as métricas */}
+        <div className="pointer-events-none absolute right-4 top-4 z-[1000] flex max-h-[calc(100%-32px)] flex-col items-end gap-2">
+          <ProjectSummary summary={projectSummary} />
+          <StatsPanel
+            uncertainty={quality.uncertainty}
+            gsd={quality.gsd}
+            gimbalPitch={quality.gimbalPitch}
+            footprint={quality.footprint}
+            spacing={quality.spacing}
+            pointDensity={quality.pointDensity}
+            interval={quality.interval}
+            intervalS={quality.intervalS}
+            intervalManual={quality.intervalManual}
+            triggerMode={quality.triggerMode}
+            speed={quality.speed}
+            missionMode={missionMode}
+            stats={modeStats}
+            ops={statsOps}
+            shutterWarn={Boolean(
+              missionMode === 'circular'
+                ? circularTriggerWarn
+                : missionMode === 'corridor'
+                  ? corridorTriggerWarn
+                  : missionMode === 'area'
+                    ? triggerWarn
+                    : null,
+            )}
+            baseDistance={missionMode === 'area' && bases.length <= 1 ? areaBaseDistance : null}
+          />
+        </div>
       </main>
     </>
   )

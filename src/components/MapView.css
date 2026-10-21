@@ -1,0 +1,118 @@
+/*
+ * Controlos do Leaflet no mapa (MapView.jsx, contentor .mapa) com o aspecto
+ * dos outros controlos que flutuam sobre ele: o zoom e o botão das camadas
+ * um por baixo do outro no canto de cima à esquerda, opacos, com 44 px de
+ * alvo, e a atribuição discreta no canto de baixo. As cores vêm da paleta
+ * do Tailwind (theme()); as regras levam .mapa.leaflet-container para
+ * passarem à frente das do leaflet.css e das gerais do index.css.
+ */
+
+/* por cima dos cartões do mapa (a lista das camadas abre ao lado), mas
+   por baixo das gavetas do painel (z-index 1100) */
+.mapa.leaflet-container .leaflet-top.leaflet-left {
+  z-index: 1020;
+}
+.mapa.leaflet-container .leaflet-top.leaflet-left .leaflet-control {
+  margin: 16px 0 0 16px;
+}
+.mapa.leaflet-container .leaflet-top.leaflet-left .leaflet-control + .leaflet-control {
+  margin-top: 8px;
+}
+
+/* Zoom: dois botões de 44 px numa caixa, com uma linha entre eles */
+.mapa.leaflet-container .leaflet-control-zoom.leaflet-bar {
+  overflow: hidden;
+  border: 1px solid theme('colors.slate.700');
+  border-radius: 10px;
+  background: theme('colors.slate.900 / 94%');
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+.mapa.leaflet-container .leaflet-control-zoom.leaflet-bar a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: theme('colors.slate.100') !important;
+}
+.mapa.leaflet-container .leaflet-control-zoom.leaflet-bar a + a {
+  border-top: 1px solid theme('colors.slate.700') !important;
+}
+.mapa.leaflet-container .leaflet-control-zoom.leaflet-bar a:hover {
+  background: theme('colors.slate.800') !important;
+}
+.mapa.leaflet-container .leaflet-control-zoom.leaflet-bar a.leaflet-disabled {
+  background: transparent !important;
+  color: theme('colors.slate.500') !important;
+}
+
+/* Camadas: o botão de 46 px (ícone em traço) e a lista quando aberta */
+.mapa.leaflet-container .leaflet-control-layers {
+  border: 1px solid theme('colors.slate.700') !important;
+  border-radius: 10px;
+  background: theme('colors.slate.900 / 94%') !important;
+  color: theme('colors.slate.100') !important;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+.mapa.leaflet-container .leaflet-control-layers-toggle {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background-image: none !important;
+  color: theme('colors.slate.100');
+}
+/* aberta, o Leaflet esconde o botão: o centrar do ícone só fechada */
+.mapa.leaflet-container
+  .leaflet-control-layers:not(.leaflet-control-layers-expanded)
+  .leaflet-control-layers-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mapa.leaflet-container .leaflet-control-layers-toggle:hover {
+  background-color: theme('colors.slate.800');
+}
+.mapa.leaflet-container .leaflet-control-layers-expanded {
+  /* aberta, opaca: a lista lê-se por cima do mapa e dos cartões */
+  background: theme('colors.slate.900') !important;
+  padding: 8px 12px 8px 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.mapa.leaflet-container .leaflet-control-layers-separator {
+  border-top-color: theme('colors.slate.800');
+}
+.mapa.leaflet-container .leaflet-control-layers input {
+  accent-color: theme('colors.sky.400');
+}
+
+/* Botões do mapa com foco visível (teclado) */
+.mapa.leaflet-container .leaflet-control a:focus-visible {
+  outline: 2px solid theme('colors.sky.400');
+  outline-offset: -2px;
+}
+
+/* Atribuição: escura e pequena, «Leaflet · Imagens © Esri» */
+.mapa.leaflet-container .leaflet-control-attribution {
+  padding: 3px 8px;
+  border-top-left-radius: 6px;
+  background: theme('colors.slate.950 / 80%');
+  color: theme('colors.slate.200');
+  font-size: 11px;
+}
+.mapa.leaflet-container .leaflet-control-attribution a {
+  color: theme('colors.sky.300');
+}
+.mapa.leaflet-container .leaflet-control-attribution .leaflet-attribution-flag {
+  display: none !important;
+}
+.mapa.leaflet-container .leaflet-control-attribution span[aria-hidden='true'] {
+  font-size: 0;
+}
+.mapa.leaflet-container .leaflet-control-attribution span[aria-hidden='true']::after {
+  content: '·';
+  font-size: 11px;
+}

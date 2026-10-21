@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import { useT } from '../i18n.jsx'
 import { rangeText, tCount } from '../i18n/format.js'
+import { CARD, ICON_BUTTON, Icon, PILL, useToggleFocus } from './MapOverlay.jsx'
 
 const STATS_COLLAPSED_KEY = 'dji-mission-planner:stats:collapsed'
 
 /**
- * Painel de métricas calculadas, sobreposto ao mapa (canto inferior
- * direito), em três grupos: qualidade (GSD, pegada, espaçamento, disparo),
- * voo (linhas, waypoints, distância, fotos, tempo) e operação (voos, bases,
- * baterias, voo mais longo contra o tempo útil, tempo total). Mostra o
- * separador aberto; os valores perto ou acima de um limite ficam a âmbar ou
- * a vermelho (o preflight tem o aviso completo).
+ * Cartão de métricas calculadas, opaco, à direita do mapa: em cima o voo
+ * mais longo com uma barra contra o tempo útil da bateria, e depois três
+ * grupos, rótulo à esquerda e valor à direita — qualidade (GSD, pegada,
+ * espaçamento, disparo), voo (área, faixas, waypoints, distância, fotos,
+ * tempo) e operação (voos, bases, baterias, tempo total). Mostra o separador
+ * aberto; os valores perto ou acima de um limite ficam a âmbar ou a vermelho
+ * (o preflight tem o aviso completo). Recolhe-se num botão com o GSD e os
+ * voos (a escolha fica neste aparelho); sem plano não aparece.
  */
 
 function fmtDist(m) {
@@ -40,34 +43,41 @@ function fmtClock(s) {
   return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`
 }
 
-const TONE = { ok: 'text-sky-300', near: 'text-amber-300', over: 'text-red-300' }
+const TONE = { ok: '', near: 'text-amber-300', over: 'text-red-300' }
+const BAR = { ok: 'bg-sky-400', near: 'bg-amber-500', over: 'bg-red-400' }
 
-/** @param {{label: any, value: any, hint?: any, tone?: string, testId?: string}} props */
-function Stat({ label, value, hint, tone = 'ok', testId }) {
-  // os mosaicos recebem o rato (a dica do `title`); o contentor continua a
-  // deixar passar os cliques para o mapa entre eles (M3-U13)
+/**
+ * Uma linha: o rótulo à esquerda, o valor à direita (com um complemento a
+ * cinzento, p. ex. o intervalo do GSD). A dica do `title` explica o número.
+ * @param {{label: any, value: any, extra?: any, hint?: any, tone?: string, testId?: string}} props
+ */
+function Row({ label, value, extra = null, hint, tone = 'ok', testId }) {
   return (
     <div
-      className="pointer-events-auto rounded bg-slate-900/90 px-3 py-2"
+      className="flex min-h-[26px] items-baseline justify-between gap-3 text-[12.5px]"
       title={hint}
       data-testid={testId}
     >
-      <div className="text-xs uppercase tracking-wider text-slate-400">{label}</div>
-      <div className={`font-mono text-sm ${TONE[tone] ?? TONE.ok}`} data-tone={tone}>
+      <span className="text-slate-300">{label}</span>
+      <span
+        className={`whitespace-nowrap text-right tabular-nums ${TONE[tone] ?? TONE.ok}`}
+        data-tone={tone}
+      >
         {value}
-      </div>
+        {extra != null && extra !== '' && <span className="text-slate-400">{extra}</span>}
+      </span>
     </div>
   )
 }
 
-function Group({ title, children }) {
+function Group({ title, first = false, children }) {
   return (
-    <>
-      <div className="col-span-full mt-1 px-1 text-xs font-semibold uppercase tracking-widest text-slate-400 first:mt-0">
+    <div className={`px-3.5 pb-1.5 pt-2.5 ${first ? '' : 'border-t border-slate-800'}`}>
+      <div className="mb-1 text-[11px] font-semibold uppercase leading-tight tracking-[0.06em] text-slate-400">
         {title}
       </div>
       {children}
-    </>
+    </div>
   )
 }
 
@@ -104,6 +114,28 @@ export default function StatsPanel({
   uncertainty = null,
 }) {
   const t = useT()
+  // recolhível (M3-U23): num tablet o cartão tapa meio mapa
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(STATS_COLLAPSED_KEY) === '1'
+    } catch {
+      return false
+    }
+  })
+  const { ref: toggleRef, mark: markToggle } = useToggleFocus(collapsed)
+  // sem plano não há números: nada de traços por cima do mapa
+  if (!stats) return null
+  const toggle = () => {
+    markToggle()
+    setCollapsed((v) => {
+      try {
+        localStorage.setItem(STATS_COLLAPSED_KEY, v ? '0' : '1')
+      } catch {
+        /* sem armazenamento: fica só nesta sessão */
+      }
+      return !v
+    })
+  }
   // a fachada e a órbita têm geometria própria: o GSD vem do plano delas, e
   // a pegada, o espaçamento e o intervalo das grelhas não se aplicam
   const gridMode =
@@ -115,202 +147,260 @@ export default function StatsPanel({
   const count = countOf(missionMode, stats)
   // o intervalo [pior, melhor] do GSD só quando, a 2 casas, ainda é um
   // intervalo: com RTK e terreno plano as pontas caíam no próprio valor e
-  // o mosaico dizia «2.69 (2.69–2.69)»
+  // o cartão dizia «2.69 (2.69–2.69)»
   const f2 = (v) => v.toFixed(2)
   const gsdRange =
     gsd != null && uncertainty?.gsd ? rangeText(uncertainty.gsd[0], uncertainty.gsd[1], f2) : null
   const gsdRangeShown = gsdRange != null && gsdRange !== f2(gsd) ? gsdRange : null
-  // recolhível (M3-U23): 16 mosaicos tapam ~450 px do mapa num tablet
-  const [collapsed, setCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem(STATS_COLLAPSED_KEY) === '1'
-    } catch {
-      return false
-    }
-  })
-  const toggle = () => {
-    setCollapsed((v) => {
-      try {
-        localStorage.setItem(STATS_COLLAPSED_KEY, v ? '0' : '1')
-      } catch {
-        /* sem armazenamento: fica só nesta sessão */
-      }
-      return !v
-    })
-  }
-  const toggleBtn = (
-    <button
-      type="button"
-      data-testid="stats-toggle"
-      onClick={toggle}
-      aria-expanded={!collapsed}
-      className="pointer-events-auto col-span-full justify-self-end rounded border border-slate-700 bg-slate-900/90 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800"
-    >
-      {collapsed ? t('stats.show') : t('stats.hide')}
-    </button>
-  )
-  if (collapsed)
+  const density =
+    pointDensity != null ? Math.round(pointDensity.mean ?? pointDensity.overlap) : null
+  const modeGsd = Number.isFinite(stats.gsdCm) ? `${stats.gsdCm.toFixed(2)} cm/px` : null
+
+  if (collapsed) {
+    // recolhido: o essencial no próprio botão (o GSD, ou a densidade LiDAR, e os voos)
+    const quality =
+      density != null
+        ? `${density} pts/m²`
+        : gridMode
+          ? gsd != null
+            ? `${f2(gsd)} cm/px`
+            : null
+          : modeGsd
+    const parts = [
+      quality,
+      ops ? tCount(t, 'stats.flightsN', ops.flights, { n: ops.flights }) : null,
+    ]
+      .filter(Boolean)
+      .join(' · ')
     return (
-      <div
-        data-testid="stats-panel"
-        className="pointer-events-none absolute bottom-4 right-4 z-[1000] grid"
-      >
-        {toggleBtn}
+      <div data-testid="stats-panel" className="pointer-events-auto">
+        <button
+          type="button"
+          ref={toggleRef}
+          data-testid="stats-toggle"
+          onClick={toggle}
+          aria-expanded="false"
+          title={t('stats.show')}
+          className={PILL}
+        >
+          <Icon d="M3 3v18h18M8 17v-5M13 17V8M18 17v-8" className="text-sky-300" />
+          {t('stats.title')}
+          {parts && <span className="text-slate-400">· {parts}</span>}
+          <Icon d="m6 9 6 6 6-6" className="text-slate-400" />
+        </button>
       </div>
     )
+  }
+
+  const pct = ops?.longestFrac != null ? Math.round(ops.longestFrac * 100) : null
+  const level = ops?.level ?? 'ok'
   return (
-    <div
+    <section
       data-testid="stats-panel"
-      className="pointer-events-none absolute bottom-4 right-4 z-[1000] grid max-w-md grid-cols-2 gap-1.5 sm:grid-cols-3"
+      aria-labelledby="stats-title"
+      className={`pointer-events-auto flex max-h-full min-h-0 w-72 flex-col overflow-hidden ${CARD}`}
     >
-      {toggleBtn}
-      <Group title={t('stats.groupQuality')}>
-        {pointDensity != null ? (
-          <Stat
-            label={t('stats.density')}
-            value={`${Math.round(pointDensity.mean ?? pointDensity.overlap)} (${Math.round(pointDensity.single)}) pts/m²`}
-            hint={t('stats.densityHint')}
-          />
-        ) : gridMode ? (
-          !omit(gsd) && (
-            <Stat
-              label={t(gimbalPitch === -90 ? 'stats.gsd' : 'stats.gsdCentre')}
-              value={
-                gsd != null
-                  ? gsdRangeShown
-                    ? `${f2(gsd)} (${gsdRangeShown}) cm/px`
-                    : `${f2(gsd)} cm/px`
-                  : t('stats.gsdOblique')
-              }
-              hint={
-                gimbalPitch === -90
-                  ? gsdRangeShown
-                    ? t('stats.gsdRangeHint')
-                    : undefined
-                  : t('stats.gsdCentreHint')
-              }
+      <div className="flex shrink-0 items-center border-b border-slate-800 py-2 pl-3.5 pr-2">
+        <h2 id="stats-title" className="m-0 flex-1 text-[13.5px] font-semibold">
+          {t('stats.title')}
+        </h2>
+        <button
+          type="button"
+          ref={toggleRef}
+          data-testid="stats-toggle"
+          onClick={toggle}
+          aria-expanded="true"
+          aria-label={t('stats.hide')}
+          title={t('stats.hide')}
+          className={`h-8 w-8 ${ICON_BUTTON}`}
+        >
+          <Icon d="m18 15-6-6-6 6" />
+        </button>
+      </div>
+
+      <div className="min-h-0 overflow-y-auto pb-1.5">
+        {/* o voo mais longo (ou o único) contra o tempo útil da bateria */}
+        {ops && (
+          <div
+            data-testid="stats-longest"
+            title={t('stats.longestHint')}
+            className="border-b border-slate-800 px-3.5 py-3"
+          >
+            <div className="flex items-baseline justify-between gap-3 text-[12.5px]">
+              <span className="text-slate-300">
+                {ops.flights > 1
+                  ? ops.longest.label
+                    ? t('stats.longestOf', { label: ops.longest.label })
+                    : t('stats.longest')
+                  : t('stats.vsBattery')}
+              </span>
+              <span
+                className={`whitespace-nowrap text-sm font-semibold tabular-nums ${TONE[level] ?? TONE.ok}`}
+                data-tone={level}
+              >
+                {fmtClock(ops.longest.timeS)}
+                {ops.usefulS ? (
+                  <span className="text-[12.5px] font-normal text-slate-400">
+                    {' '}
+                    {t('stats.ofUseful', { u: fmtClock(ops.usefulS) })}
+                  </span>
+                ) : null}
+              </span>
+            </div>
+            {pct != null && (
+              <>
+                <div
+                  aria-hidden="true"
+                  className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800"
+                >
+                  <div
+                    className={`h-full rounded-full ${BAR[level] ?? BAR.ok}`}
+                    style={{ width: `${Math.min(100, pct)}%` }}
+                  />
+                </div>
+                <div className="mt-1.5 text-[11.5px] leading-tight text-slate-400">
+                  {t('stats.usefulPct', { p: pct })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        <Group title={t('stats.groupQuality')} first>
+          {density != null ? (
+            <Row
+              label={t('stats.density')}
+              value={`${density} pts/m²`}
+              extra={` (${Math.round(pointDensity.single)})`}
+              hint={t('stats.densityHint')}
             />
-          )
-        ) : (
-          <Stat
-            label={t('stats.gsd')}
-            value={Number.isFinite(stats?.gsdCm) ? `${stats.gsdCm.toFixed(2)} cm/px` : '—'}
-          />
-        )}
-        {missionMode === 'area' && uncertainty?.front && uncertainty?.side && (
-          <Stat
-            label={t('stats.overlapRange')}
-            value={`${rangeText(uncertainty.front[0], uncertainty.front[1], Math.round)} / ${rangeText(uncertainty.side[0], uncertainty.side[1], Math.round)} %`}
-            hint={t('stats.overlapRangeHint')}
-          />
-        )}
-        {gridMode && (
-          <>
-            {!omit(footprint) && (
-              <Stat
-                label={t('stats.footprint')}
-                value={
-                  footprint
-                    ? footprint.along != null
-                      ? `${footprint.across.toFixed(0)} × ${footprint.along.toFixed(0)} m`
-                      : t('stats.swath', { v: footprint.across.toFixed(0) })
-                    : '—'
+          ) : gridMode ? (
+            !omit(gsd) && (
+              <Row
+                label={t(gimbalPitch === -90 ? 'stats.gsd' : 'stats.gsdCentre')}
+                value={gsd != null ? `${f2(gsd)} cm/px` : t('stats.gsdOblique')}
+                extra={gsd != null && gsdRangeShown ? ` (${gsdRangeShown})` : null}
+                hint={
+                  gimbalPitch === -90
+                    ? gsdRangeShown
+                      ? t('stats.gsdRangeHint')
+                      : undefined
+                    : t('stats.gsdCentreHint')
                 }
               />
-            )}
-            {!omit(spacing) && (
-              <Stat
-                label={t('stats.spacing')}
-                value={spacing != null ? `${spacing.toFixed(1)} m` : '—'}
-              />
-            )}
-            {!omit(interval) && (
-              <Stat
-                label={t('stats.interval')}
-                value={
-                  interval != null
-                    ? `${
-                        triggerMode === 'time'
-                          ? `${(intervalS ?? Math.floor((interval / speed) * 10 + 1e-9) / 10).toFixed(1)} s`
-                          : `${interval.toFixed(1)} m`
-                      }${intervalManual ? ` · ${t('stats.intervalManual')}` : ''}`
-                    : '—'
-                }
-                tone={shutterWarn ? 'near' : 'ok'}
-                hint={shutterWarn ? t('stats.intervalWarnHint') : undefined}
-                testId="stats-interval"
-              />
-            )}
-          </>
-        )}
-      </Group>
+            )
+          ) : (
+            <Row label={t('stats.gsd')} value={modeGsd ?? '—'} />
+          )}
+          {missionMode === 'area' && uncertainty?.front && uncertainty?.side && (
+            <Row
+              label={t('stats.overlapRange')}
+              value={`${rangeText(uncertainty.front[0], uncertainty.front[1], Math.round)} / ${rangeText(uncertainty.side[0], uncertainty.side[1], Math.round)} %`}
+              hint={t('stats.overlapRangeHint')}
+            />
+          )}
+          {gridMode && (
+            <>
+              {!omit(footprint) && (
+                <Row
+                  label={t('stats.footprint')}
+                  value={
+                    footprint
+                      ? footprint.along != null
+                        ? `${footprint.across.toFixed(0)} × ${footprint.along.toFixed(0)} m`
+                        : t('stats.swath', { v: footprint.across.toFixed(0) })
+                      : '—'
+                  }
+                />
+              )}
+              {!omit(spacing) && (
+                <Row
+                  label={t('stats.spacing')}
+                  value={spacing != null ? `${spacing.toFixed(1)} m` : '—'}
+                />
+              )}
+              {!omit(interval) && (
+                <Row
+                  label={t('stats.interval')}
+                  value={
+                    interval != null
+                      ? triggerMode === 'time'
+                        ? `${(intervalS ?? Math.floor((interval / speed) * 10 + 1e-9) / 10).toFixed(1)} s`
+                        : `${interval.toFixed(1)} m`
+                      : '—'
+                  }
+                  extra={
+                    interval != null && intervalManual ? ` · ${t('stats.intervalManual')}` : null
+                  }
+                  tone={shutterWarn ? 'near' : 'ok'}
+                  hint={shutterWarn ? t('stats.intervalWarnHint') : undefined}
+                  testId="stats-interval"
+                />
+              )}
+            </>
+          )}
+        </Group>
 
-      <Group title={t('stats.groupFlight')}>
-        {Number.isFinite(stats?.areaHa) && (
-          <Stat label={t('stats.area')} value={`${stats.areaHa.toFixed(2)} ha`} />
-        )}
-        <Stat label={t(count.key)} value={count.value} />
-        <Stat label={t('stats.waypoints')} value={stats?.waypointCount ?? '—'} />
-        <Stat label={t('stats.totalDist')} value={stats ? fmtDist(stats.pathLengthM) : '—'} />
-        <Stat
-          label={t('stats.photos')}
-          value={
-            stats?.photoCountArea != null
-              ? `${stats.photoCount} (${stats.photoCountArea})`
-              : (stats?.photoCount ?? '—')
-          }
-          hint={stats?.photoCountArea != null ? t('stats.photosHint') : undefined}
-        />
-        <Stat label={t('stats.time')} value={stats ? fmtTime(stats.flightTimeS) : '—'} />
-        {baseDistance != null && (
-          <Stat
-            label={t('stats.baseToArea')}
-            value={baseDistance === 0 ? t('stats.insideArea') : fmtDist(baseDistance)}
+        <Group title={t('stats.groupFlight')}>
+          {Number.isFinite(stats.areaHa) && (
+            <Row label={t('stats.area')} value={`${stats.areaHa.toFixed(2)} ha`} />
+          )}
+          <Row label={t(count.key)} value={count.value} />
+          <Row label={t('stats.waypoints')} value={stats.waypointCount ?? '—'} />
+          <Row label={t('stats.totalDist')} value={fmtDist(stats.pathLengthM)} />
+          <Row
+            label={t('stats.photos')}
+            value={stats.photoCount ?? '—'}
+            extra={stats.photoCountArea != null ? ` (${stats.photoCountArea})` : null}
+            hint={stats.photoCountArea != null ? t('stats.photosHint') : undefined}
           />
-        )}
-      </Group>
-
-      {ops && (
-        <Group title={t('stats.groupOps')}>
-          <Stat
-            testId="stats-flights"
-            label={t('stats.flights')}
-            value={
-              ops.bases > 0
-                ? t('stats.flightsBases', { n: ops.flights, b: ops.bases })
-                : String(ops.flights)
-            }
+          <Row
+            label={t('stats.missionTime')}
+            value={fmtTime(stats.flightTimeS)}
+            hint={t('stats.time')}
           />
-          <Stat
-            testId="stats-sets"
-            label={t('stats.batteries')}
-            value={
-              ops.sets == null
-                ? tCount(t, 'stats.setsNeeded', ops.flights, { n: ops.flights })
-                : tCount(t, 'stats.setsVs', ops.flights, { n: ops.flights, s: ops.sets })
-            }
-            tone={ops.short ? 'near' : 'ok'}
-            hint={ops.short ? t('stats.setsShortHint') : undefined}
-          />
-          <Stat
-            testId="stats-longest"
-            label={t(ops.flights > 1 ? 'stats.longest' : 'stats.vsBattery')}
-            value={`${ops.flights > 1 && ops.longest.label ? `${ops.longest.label} ` : ''}${fmtClock(ops.longest.timeS)}${
-              ops.usefulS ? ` / ${fmtClock(ops.usefulS)}` : ''
-            }`}
-            tone={ops.level}
-            hint={t('stats.longestHint')}
-          />
-          {ops.flights > 1 && (
-            <Stat
-              testId="stats-total"
-              label={t('stats.totalTime')}
-              value={fmtTime(ops.totalS)}
-              hint={t('stats.totalTimeHint')}
+          {baseDistance != null && (
+            <Row
+              label={t('stats.baseToArea')}
+              value={baseDistance === 0 ? t('stats.insideArea') : fmtDist(baseDistance)}
             />
           )}
         </Group>
-      )}
-    </div>
+
+        {ops && (
+          <Group title={t('stats.groupOps')}>
+            <Row
+              testId="stats-flights"
+              label={t('stats.flights')}
+              value={String(ops.flights)}
+              extra={
+                ops.bases > 0
+                  ? ` · ${tCount(t, 'stats.basesN', ops.bases, { b: ops.bases })}`
+                  : null
+              }
+            />
+            <Row
+              testId="stats-sets"
+              label={t('stats.batteries')}
+              value={
+                ops.sets == null
+                  ? tCount(t, 'stats.setsNeeded', ops.flights, { n: ops.flights })
+                  : tCount(t, 'stats.setsVs', ops.flights, { n: ops.flights, s: ops.sets })
+              }
+              tone={ops.short ? 'near' : 'ok'}
+              hint={ops.short ? t('stats.setsShortHint') : undefined}
+            />
+            {ops.flights > 1 && (
+              <Row
+                testId="stats-total"
+                label={t('stats.totalTime')}
+                value={fmtTime(ops.totalS)}
+                hint={t('stats.totalTimeHint')}
+              />
+            )}
+          </Group>
+        )}
+      </div>
+    </section>
   )
 }

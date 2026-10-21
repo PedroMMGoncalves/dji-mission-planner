@@ -4,6 +4,7 @@ import { useLang, useT } from '../i18n.jsx'
 import LayerLegend from './LayerLegend.jsx'
 import { hiddenStrips, radioStrips, ringLabelPoint } from '../mission/viewshedPlan.js'
 import { blockRing } from '../mission/baseLayout.js'
+import './MapView.css'
 
 /**
  * Mapa Leaflet com camadas imperativas sincronizadas com o estado React:
@@ -42,6 +43,17 @@ const LEGEND_LAYERS = [
   { key: 'orbit', label: 'legend.orbit', kind: 'line', color: '#38bdf8' },
   { key: 'circular', label: 'legend.circular', kind: 'line', color: '#fde047' },
 ]
+
+/** Ícones do zoom e das camadas (traço, na cor do texto), em HTML para o Leaflet. */
+const svgIcon = (size, sw, body) =>
+  `<svg aria-hidden="true" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`
+const ICON_ZOOM_IN = svgIcon(18, 2, '<path d="M12 5v14M5 12h14"/>')
+const ICON_ZOOM_OUT = svgIcon(18, 2, '<path d="M5 12h14"/>')
+const ICON_LAYERS = svgIcon(
+  20,
+  1.8,
+  '<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+)
 
 export default function MapView({
   mode,
@@ -135,6 +147,8 @@ export default function MapView({
       center: [39.5, -8.0],
       zoom: 7,
       doubleClickZoom: false,
+      // o zoom é criado no efeito de idioma, com os nomes traduzidos
+      zoomControl: false,
     })
 
     const esriImagery = () =>
@@ -219,12 +233,13 @@ export default function MapView({
       attribution: 'CAOP © DGT',
     })
 
-    // o controlo de camadas é criado no efeito de idioma (labels traduzidas)
+    // o zoom e o controlo de camadas são criados no efeito de idioma (labels traduzidas)
     layersRef.current = {
       ...(layersRef.current ?? {}),
       baseLayers: { hybrid, sat, topo, osm },
       caopOverlays: { municipios, freguesias },
       layersControl: null,
+      zoomControl: null,
     }
 
     layersRef.current = {
@@ -278,8 +293,10 @@ export default function MapView({
     return () => map.remove()
   }, [])
 
-  // Controlo de camadas com labels na língua ativa (reconstruído ao mudar;
-  // os estados ligado/desligado preservam-se porque as camadas são as mesmas)
+  // Zoom e controlo de camadas com labels na língua activa, um por baixo do
+  // outro no canto de cima à esquerda (à direita fica o cartão das
+  // métricas); reconstruídos ao mudar de língua, e os estados ligado/
+  // desligado preservam-se porque as camadas são as mesmas
   const t = useT()
   const lang = useLang()
   const moveHint = t('map.moveArea')
@@ -288,7 +305,17 @@ export default function MapView({
     const map = mapRef.current
     const refs = layersRef.current
     if (!map || !refs?.baseLayers) return
+    if (refs.zoomControl) map.removeControl(refs.zoomControl)
     if (refs.layersControl) map.removeControl(refs.layersControl)
+    refs.zoomControl = L.control
+      .zoom({
+        position: 'topleft',
+        zoomInText: ICON_ZOOM_IN,
+        zoomInTitle: t('map.zoomIn'),
+        zoomOutText: ICON_ZOOM_OUT,
+        zoomOutTitle: t('map.zoomOut'),
+      })
+      .addTo(map)
     refs.layersControl = L.control
       .layers(
         {
@@ -302,9 +329,18 @@ export default function MapView({
           [t('map.parishes')]: refs.caopOverlays.freguesias,
           [t('map.viewsheds')]: refs.viewshed,
         },
-        { position: 'topright' },
+        { position: 'topleft' },
       )
       .addTo(map)
+    // o botão que abre a lista: o ícone em traço e o nome na língua activa
+    const toggle = refs.layersControl
+      .getContainer()
+      ?.querySelector('.leaflet-control-layers-toggle')
+    if (toggle) {
+      toggle.innerHTML = ICON_LAYERS
+      toggle.title = t('map.layers')
+      toggle.setAttribute('aria-label', t('map.layers'))
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang])
 
@@ -1068,7 +1104,8 @@ export default function MapView({
 
   return (
     <div className="relative h-full w-full">
-      <div ref={containerRef} className="h-full w-full" />
+      {/* .mapa: os controlos do Leaflet com o aspecto dos outros (MapView.css) */}
+      <div ref={containerRef} className="mapa h-full w-full" />
       <LayerLegend
         items={legendItems}
         hidden={hiddenLayers}
