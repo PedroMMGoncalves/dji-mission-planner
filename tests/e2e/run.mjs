@@ -4591,7 +4591,9 @@ await scenario('painel-estatisticas', async () => {
 // O cartão das métricas e o enquadramento da área. Na janela do E2E o
 // cartão abre e a área importada fica à esquerda dele e por baixo da barra
 // de desenho, como no ecrã desenhado (antes ficava ao centro, com o cartão
-// por cima da parte direita).
+// por cima da parte direita). Num mapa estreito (janela de 1024), sem
+// escolha gravada, o cartão começa recolhido (aberto tapava meio mapa);
+// aberto, pára acima da atribuição do mapa, e a escolha fica ao recarregar.
 await scenario('metricas-enquadramento', async () => {
   const largo = await openMission({ area: fx.rect, dem: false })
   const anel = await caixaAnel(largo.page)
@@ -4607,7 +4609,45 @@ await scenario('metricas-enquadramento', async () => {
   )
   check('enquadramento: sem erros de página', largo.errors.length === 0, largo.errors.join(' | '))
   await largo.page.close()
-  return { page: largo.page }
+
+  const { page, errors } = await openMission({
+    area: fx.rect,
+    dem: false,
+    viewport: { width: 1024, height: 768 },
+  })
+  const toggle = page.getByTestId('stats-toggle')
+  await toggle.waitFor({ timeout: 20000 })
+  check(
+    'mapa estreito: sem escolha gravada, as métricas começam recolhidas',
+    (await toggle.getAttribute('aria-expanded')) === 'false',
+  )
+  await toggle.click()
+  const coluna = await page.getByTestId('stats-panel').boundingBox()
+  const atribuicao = await page.locator('.leaflet-control-attribution').boundingBox()
+  const corpo = await toggle.getAttribute('aria-controls')
+  check(
+    'mapa estreito: aberto, o cartão pára acima da atribuição e o botão diz o que abre',
+    (await toggle.getAttribute('aria-expanded')) === 'true' &&
+      coluna.y + coluna.height <= atribuicao.y &&
+      (await page.evaluate(
+        (id) =>
+          Boolean(
+            id &&
+            document.querySelector('[data-testid="stats-panel"]')?.querySelector(`[id="${id}"]`),
+          ),
+        corpo,
+      )),
+    `cartão até ${Math.round(coluna.y + coluna.height)} px, atribuição desde ${Math.round(atribuicao.y)}`,
+  )
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await toggle.waitFor({ timeout: 20000 })
+  check(
+    'mapa estreito: aberto pelo operador, continua aberto ao recarregar',
+    (await toggle.getAttribute('aria-expanded')) === 'true',
+  )
+  check('mapa estreito: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
 })
 
 // Intervalo de disparo escrito à mão: em «Distância» os metros, em «Tempo»

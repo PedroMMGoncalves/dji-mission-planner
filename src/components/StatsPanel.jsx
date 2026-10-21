@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import { useT } from '../i18n.jsx'
 import { rangeText, tCount } from '../i18n/format.js'
-import { CARD, ICON_BUTTON, Icon, PILL, useToggleFocus } from './MapOverlay.jsx'
+import { CARD, ICON_BUTTON, Icon, PILL, useMedia, useToggleFocus } from './MapOverlay.jsx'
 
 const STATS_COLLAPSED_KEY = 'dji-mission-planner:stats:collapsed'
 
@@ -13,8 +13,10 @@ const STATS_COLLAPSED_KEY = 'dji-mission-planner:stats:collapsed'
  * tempo) e operação (voos, bases, baterias, tempo total). Mostra o separador
  * aberto; os valores perto ou acima de um limite ficam a âmbar ou a vermelho
  * (o preflight tem o aviso completo). Recolhe-se num botão com o GSD e os
- * voos (a escolha fica neste aparelho); sem plano não aparece. `cardRef` é
- * o do cartão aberto: o enquadramento da área fica à esquerda dele.
+ * voos; a escolha fica neste aparelho, e sem ela o cartão começa recolhido
+ * num mapa estreito (até 1179 px de janela, onde aberto tapa meio mapa) e
+ * aberto nos outros. Sem plano não aparece. `cardRef` é o do cartão aberto:
+ * o enquadramento da área fica à esquerda dele.
  */
 
 function fmtDist(m) {
@@ -117,27 +119,31 @@ export default function StatsPanel({
 }) {
   const t = useT()
   const bodyId = useId()
-  // recolhível (M3-U23): num tablet o cartão tapa meio mapa
-  const [collapsed, setCollapsed] = useState(() => {
+  // recolhível (M3-U23): num tablet o cartão tapa meio mapa. A escolha do
+  // operador ('1' recolhido, '0' aberto) manda; sem ela, decide a largura:
+  // recolhido num mapa estreito
+  const narrow = useMedia('(max-width: 1179px)')
+  const [chosen, setChosen] = useState(() => {
     try {
-      return localStorage.getItem(STATS_COLLAPSED_KEY) === '1'
+      const v = localStorage.getItem(STATS_COLLAPSED_KEY)
+      return v === '1' ? true : v === '0' ? false : null
     } catch {
-      return false
+      return null
     }
   })
+  const collapsed = chosen ?? narrow
   const { ref: toggleRef, mark: markToggle } = useToggleFocus(collapsed)
   // sem plano não há números: nada de traços por cima do mapa
   if (!stats) return null
   const toggle = () => {
+    const next = !collapsed
     markToggle()
-    setCollapsed((v) => {
-      try {
-        localStorage.setItem(STATS_COLLAPSED_KEY, v ? '0' : '1')
-      } catch {
-        /* sem armazenamento: fica só nesta sessão */
-      }
-      return !v
-    })
+    try {
+      localStorage.setItem(STATS_COLLAPSED_KEY, next ? '1' : '0')
+    } catch {
+      /* sem armazenamento: fica só nesta sessão */
+    }
+    setChosen(next)
   }
   // a fachada e a órbita têm geometria própria: o GSD vem do plano delas, e
   // a pegada, o espaçamento e o intervalo das grelhas não se aplicam

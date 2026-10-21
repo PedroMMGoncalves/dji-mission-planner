@@ -273,9 +273,10 @@ function InstrucoesPt() {
         <Li>
           As <strong>Métricas</strong>, num cartão à direita do mapa, aparecem quando há plano: o
           voo mais longo contra o tempo útil da bateria (com uma barra) e a qualidade, o voo e a
-          operação do separador aberto. A seta recolhe o cartão num botão com o GSD e os voos. Ao
-          importar uma área ou abrir um projecto, o mapa enquadra-a por baixo da barra de desenho e
-          à esquerda do cartão aberto.
+          operação do separador aberto. A seta recolhe o cartão num botão com o GSD e os voos; num
+          mapa estreito começa recolhido, e a escolha fica neste aparelho. Ao importar uma área ou
+          abrir um projecto, o mapa enquadra-a por baixo da barra de desenho e à esquerda do cartão
+          aberto.
         </Li>
       </ul>
 
@@ -628,8 +629,9 @@ function InstrucoesEn() {
           The <strong>Metrics</strong>, in a card on the right of the map, appear once there is a
           plan: the longest flight against the battery’s usable time (with a bar) and the quality,
           flight and operation of the open tab. The arrow collapses the card into a button with the
-          GSD and the flights. When you import an area or open a project, the map frames it below
-          the drawing bar and to the left of the open card.
+          GSD and the flights; on a narrow map it starts collapsed, and the choice is kept on this
+          device. When you import an area or open a project, the map frames it below the drawing bar
+          and to the left of the open card.
         </Li>
       </ul>
 

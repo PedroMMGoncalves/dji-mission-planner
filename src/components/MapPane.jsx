@@ -220,12 +220,13 @@ export default function MapPane({
         )}
         {drawTools && !ring && mode === 'idle' && <FirstSteps />}
         {/* à direita: o resumo do projecto e as métricas, por baixo da barra
-            de desenho enquanto o mapa é estreito para as duas lado a lado */}
+            de desenho enquanto o mapa é estreito para as duas lado a lado;
+            em baixo pára 40 px acima do fundo, sem tapar a atribuição */}
         <div
           className={`pointer-events-none absolute right-4 z-[1000] flex flex-col items-end gap-2 ${
             drawTools
-              ? 'top-[70px] max-h-[calc(100%-86px)] min-[1360px]:top-4 min-[1360px]:max-h-[calc(100%-32px)]'
-              : 'top-4 max-h-[calc(100%-32px)]'
+              ? 'top-[70px] max-h-[calc(100%-110px)] min-[1360px]:top-4 min-[1360px]:max-h-[calc(100%-56px)]'
+              : 'top-4 max-h-[calc(100%-56px)]'
           }`}
         >
           <ProjectSummary summary={projectSummary} />

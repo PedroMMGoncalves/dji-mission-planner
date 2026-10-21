@@ -224,7 +224,8 @@ tablet real):
   dispara em ecrã táctil — comportamento esperado).
 - ☐ O resumo do projecto (2+ planos), por cima das métricas, e o cartão
   das métricas não tapam a barra de desenho nem o zoom; a 1024 × 768 o
-  cartão desce para baixo da barra.
+  cartão desce para baixo da barra e, sem escolha gravada, começa
+  recolhido; aberto, pára acima da atribuição do mapa (canto de baixo).
 
 ## 12. Não há missão sem relevo (~1.5 min)
 
