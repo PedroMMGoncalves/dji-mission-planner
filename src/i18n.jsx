@@ -466,6 +466,11 @@ const BASE_DICT = {
   },
   'legend.linesBase': { pt: 'Na cor da base', en: "In the base's colour" },
   'legend.linesBlock': { pt: 'Uma cor por bloco', en: 'One colour per block' },
+  // a sobreposição entre blocos (MapView, blockLinePieces)
+  'legend.linesOverlap': {
+    pt: 'a tracejado por cima do bloco vizinho',
+    en: 'dashed over the next block',
+  },
   'legend.start': { pt: 'início', en: 'start' },
   'legend.end': { pt: 'fim', en: 'end' },
   'legend.photosDesc': { pt: 'Onde a câmara dispara', en: 'Where the camera fires' },

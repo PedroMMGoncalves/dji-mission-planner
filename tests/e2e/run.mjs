@@ -5729,6 +5729,53 @@ function coresDoSimbolo(loc) {
 // o E2E nunca abria o perfil. A escala do relevo da vista 3D cobre o terreno
 // do perfil. A 30 m sem seguir terreno, a folga passa a negativa e o cartão a
 // vermelho, como o bloqueio do preflight.
+// A sobreposição entre blocos: com a área em células, o troço das faixas de
+// um bloco que entra na célula do vizinho (a margem, o prolongamento)
+// desenha-se a tracejado ([6, 5], no canvas do mapa) e a legenda das faixas
+// di-lo; com as faixas dentro dos quadrados, nada a tracejado.
+await scenario('sobreposicao-entre-blocos', async () => {
+  const { page, errors } = await openMission({
+    area: fx.rect,
+    dem: false,
+    // conta os traços [6, 5] que o mapa pinta no canvas
+    initScript: () => {
+      const setLineDash = CanvasRenderingContext2D.prototype.setLineDash
+      window.__tracejados = 0
+      CanvasRenderingContext2D.prototype.setLineDash = function (seg) {
+        if (seg?.length === 2 && seg[0] === 6 && seg[1] === 5) window.__tracejados += 1
+        return setLineDash.call(this, seg)
+      }
+    },
+  })
+  await configure(page, { split: 'Bateria' })
+  await exportReady(page)
+  const legenda = page.getByTestId('map-legend')
+  await legenda.getByTestId('map-legend-toggle').click()
+  const tracejados = () => page.evaluate(() => window.__tracejados)
+  const blocos = await page.getByTestId('block-row').count()
+  check(
+    'sobreposição: as faixas dentro dos quadrados (sem margem nem prolongamento), nada a tracejado',
+    blocos >= 2 && (await tracejados()) === 0 && !/tracejado/.test(await legenda.innerText()),
+    `${blocos} blocos, ${await tracejados()} traços`,
+  )
+  await openDrawer(page, 'voo')
+  const over = page
+    .locator('label', { hasText: /Prolongamento por faixa|Per-line overshoot/ })
+    .locator('input')
+  await over.fill('30')
+  await over.press('Tab')
+  await closeDrawer(page)
+  await page.waitForTimeout(1500)
+  check(
+    'sobreposição: com o prolongamento, o troço por cima do quadrado vizinho a tracejado, e a legenda di-lo',
+    (await tracejados()) > 0 &&
+      /a tracejado por cima do bloco vizinho/.test(await legenda.innerText()),
+    `${await tracejados()} traços`,
+  )
+  check('sobreposição: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+})
+
 await scenario('perfil-folga-minima', async () => {
   const { page, errors } = await openMission({ area: fx.rect })
   await label(page, TF).check()

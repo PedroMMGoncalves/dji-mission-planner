@@ -407,7 +407,10 @@ function topicsPt({ onShowDisclaimer, t }) {
             A <strong>Legenda</strong>, no canto de baixo do mapa e no de cima da vista 3D, diz o
             que é cada camada, com o símbolo que o mapa desenha (na vista 3D, nas cores da cena, com
             a escala das cotas do relevo e o exagero vertical), e mostra ou esconde cada uma no seu
-            interruptor (faixas, fotos, bases, GCP…; no mapa, também as bacias de visão).
+            interruptor (faixas, fotos, bases, GCP…; no mapa, também as bacias de visão). Com a área
+            dividida em células (mosaico ou quadrícula), o troço das faixas de um bloco que entra na
+            célula do bloco vizinho — o buffer e os prolongamentos das faixas — fica a tracejado e
+            um pouco mais grosso, na cor do seu bloco: é a sobreposição entre blocos.
           </p>
           <p>
             As <strong>Métricas</strong>, num cartão à direita do mapa, aparecem quando há plano: o
@@ -1088,7 +1091,10 @@ function topicsEn({ onShowDisclaimer, t }) {
             the 3D view, says what each layer is, with the symbol the map draws (in the 3D view, in
             the scene’s colours, with the terrain elevation scale and the vertical exaggeration),
             and shows or hides each one with its switch (lines, photos, bases, GCPs…; on the map,
-            also the viewsheds).
+            also the viewsheds). With the area split into cells (mosaic or grid), the stretch of a
+            block’s lines that enters the next block’s cell — the buffer and the line extensions —
+            is dashed and slightly thicker, in its own block’s colour: that is the overlap between
+            blocks.
           </p>
           <p>
             The <strong>Metrics</strong>, in a card on the right of the map, appear once there is a

@@ -81,7 +81,11 @@ gaveta).
   preflight. O cartão de métricas mostra **Densidade LiDAR** em vez de GSD.
 - ☐ Divisão «Bateria» com prolongamento 30 m, faixa transversal de amarração e margem 10 %.
   **Esperado:** quadrados mais pequenos do que sem esses extras; cada bloco
-  cabe no tempo útil (cartão 7, «Voo mais longo / tempo útil» sem vermelho).
+  cabe no tempo útil (cartão 7, «Voo mais longo / tempo útil» sem vermelho);
+  no mapa, o troço das faixas de cada bloco que entra no quadrado vizinho
+  (a margem e o prolongamento) a tracejado e um pouco mais grosso, na cor
+  do seu bloco, e a legenda das faixas diz «a tracejado por cima do bloco
+  vizinho».
 - ☐ Checklist (com Mapper+ activo).
   **Esperado:** grupos **LiDAR** no pré-campo e no durante; com um perfil de
   câmara os grupos desaparecem e as contagens de progresso ajustam.

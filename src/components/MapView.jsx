@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import { useLang, useT } from '../i18n.jsx'
 import { tCount } from '../i18n/format.js'
 import LayerLegend from './LayerLegend.jsx'
 import { hiddenStrips, radioStrips, ringLabelPoint } from '../mission/viewshedPlan.js'
 import { blockRing } from '../mission/baseLayout.js'
+import { blockLinePieces } from '../mission/blockOverlap.js'
 import { fitPadding } from '../utils/mapFit.js'
 import './MapView.css'
 
@@ -128,6 +129,14 @@ export default function MapView({
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const layersRef = useRef(null)
+  // as linhas de cada bloco partidas onde passam por cima da célula de outro
+  // bloco (a sobreposição entre blocos), para as desenhar a tracejado; e se
+  // há alguma, para a legenda o dizer
+  const linePieces = useMemo(() => blockLinePieces(blocks), [blocks])
+  const hasOverlap = useMemo(
+    () => [...linePieces.values()].some((ls) => ls.some((ps) => ps.some((p) => p.overlap))),
+    [linePieces],
+  )
 
   // As callbacks/modo vivem num ref para os handlers Leaflet (registados uma
   // única vez) lerem sempre a versão atual sem re-registos.
@@ -782,18 +791,28 @@ export default function MapView({
     // há células clicáveis (mosaico ou grelha)? senão, o contorno de cada bloco
     const hasCells = Boolean(tiles?.length || gridCells?.length)
     if (blocks && (blocks.length > 1 || baseLayout?.hasBases)) {
+      // os troços por cima da célula de outro bloco desenham-se no fim, por
+      // cima das linhas cheias de todos os blocos: senão a linha do vizinho,
+      // desenhada depois, tapava-os
+      const overlaps = []
       blocks.forEach((block, i) => {
         // com bases: a cor da base do bloco; sem elas, uma cor por bloco
         const info = baseLayout?.byBlock?.[block.id]
         const color = info?.color ?? BLOCK_COLORS[i % BLOCK_COLORS.length]
-        block.lines.forEach((seg) => {
-          // sem eventos: o clique tem de chegar à célula do bloco por baixo
-          L.polyline(seg.map(toLatLng), {
-            color,
-            weight: 2.5,
-            interactive: false,
-            renderer: layers.canvas,
-          }).addTo(layers.lines)
+        block.lines.forEach((seg, k) => {
+          // por cima da célula de outro bloco (a sobreposição entre blocos:
+          // o buffer e os prolongamentos das faixas), a tracejado e um pouco
+          // mais grossa, no fim; sem eventos: o clique tem de chegar à
+          // célula do bloco por baixo
+          for (const piece of linePieces.get(block.id)?.[k] ?? [{ points: seg, overlap: false }])
+            if (piece.overlap) overlaps.push({ points: piece.points, color })
+            else
+              L.polyline(piece.points.map(toLatLng), {
+                color,
+                weight: 2.5,
+                interactive: false,
+                renderer: layers.canvas,
+              }).addTo(layers.lines)
         })
         // etiqueta com o número do voo no início do bloco ("A-1"; sem bases, 1, 2, ...)
         const first = block.lines[0]
@@ -827,6 +846,14 @@ export default function MapView({
           }
         }
       })
+      for (const { points, color } of overlaps)
+        L.polyline(points.map(toLatLng), {
+          color,
+          weight: 3.5,
+          dashArray: '6 5',
+          interactive: false,
+          renderer: layers.canvas,
+        }).addTo(layers.lines)
     } else {
       plan.lines.forEach((seg) => {
         L.polyline(seg.map(toLatLng), {
@@ -852,7 +879,7 @@ export default function MapView({
         renderer: layers.canvas,
       }).addTo(layers.lines)
     })
-  }, [plan, blocks, baseLayout, assignMode, tiles, gridCells, bufferOn])
+  }, [plan, blocks, linePieces, baseLayout, assignMode, tiles, gridCells, bufferOn])
 
   // Alvos GCP planeados (xadrez amarelo, com etiqueta)
   useEffect(() => {
@@ -1281,6 +1308,7 @@ export default function MapView({
       desc: (
         <>
           {tinted ? `${t('legend.linesBase')} · ` : perBlock ? `${t('legend.linesBlock')} · ` : ''}
+          {perBlock && hasOverlap && `${t('legend.linesOverlap')} · `}
           {startEnd}
         </>
       ),

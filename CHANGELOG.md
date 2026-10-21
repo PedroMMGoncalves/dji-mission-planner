@@ -198,6 +198,14 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   «Exportar KML da área», com «(ZIP)» quando sai um ZIP, e a dica diz qual
   dos ZIP sai; o polígono da área inteira, sozinho, fica na seta, como
   «Polígono da área (KML)». Os ficheiros são os mesmos.
+- **Sobreposição entre blocos no mapa.** Com a área dividida em células
+  (mosaico ou quadrícula), o troço das faixas de um bloco que entra na
+  célula do bloco vizinho — a margem e os prolongamentos das faixas —
+  desenha-se a tracejado e um pouco mais grosso, na cor do seu bloco; antes
+  via-se só uma linha por cima da outra. Com sobreposição, a legenda das
+  faixas diz «a tracejado por cima do bloco vizinho». As rotas e os
+  ficheiros são os mesmos.
+
 ### Corrigido
 
 - **Checklist de campo: a última edição antes de voltar ao planeador.** A
