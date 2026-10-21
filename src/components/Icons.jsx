@@ -73,6 +73,38 @@ export function IconHelipad({ className }) {
   )
 }
 
+/** Raios à volta de um centro — propor (sugerir) bases. */
+/** @param {{className?: string}} props */
+export function IconSparkle({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" />
+    </Svg>
+  )
+}
+
+/** Escudo — acções de segurança. */
+/** @param {{className?: string}} props */
+export function IconShield({ className }) {
+  return (
+    <Svg className={className}>
+      <path d="M12 21.5s8-4 8-10V5l-8-3-8 3v6.5c0 6 8 10 8 10z" />
+    </Svg>
+  )
+}
+
+/** Anéis concêntricos — alvos de apoio (GCP). */
+/** @param {{className?: string}} props */
+export function IconRings({ className }) {
+  return (
+    <Svg className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1.2" />
+    </Svg>
+  )
+}
+
 /** @param {{className?: string}} props */
 export function IconTrash({ className }) {
   return (

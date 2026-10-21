@@ -100,8 +100,10 @@ export function Section({
 
 /**
  * «Mais opções ›» de uma secção: abre a gaveta `controls` (ou o que
- * `onClick` fizer), e diz se está aberta (`expanded`).
- * @param {{label: any, onClick: () => void, expanded?: boolean, controls?: string,
+ * `onClick` fizer), e diz se está aberta (`expanded`): aberta, fica
+ * realçada e a seta vira-se para a gaveta. Alvo de 44 px (M3-U23: no campo,
+ * com luvas).
+ * @param {{label: any, onClick: (e?: any) => void, expanded?: boolean, controls?: string,
  *   ariaLabel?: string, testId?: string}} props
  */
 export function MoreButton({ label, onClick, expanded = false, controls, ariaLabel, testId }) {
@@ -113,12 +115,16 @@ export function MoreButton({ label, onClick, expanded = false, controls, ariaLab
       aria-controls={controls}
       aria-label={ariaLabel}
       onClick={onClick}
-      className={`flex min-h-[36px] w-full items-center justify-between gap-2 rounded-lg px-0.5 text-left text-[13px] font-medium transition-colors hover:text-sky-200 ${
-        expanded ? 'text-sky-200' : 'text-sky-300'
+      className={`flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border px-2.5 text-left text-[13px] font-medium transition-colors hover:text-sky-200 ${
+        expanded
+          ? 'border-[#2C4A68] bg-[#0F2438] text-sky-200'
+          : 'border-transparent text-sky-300 hover:bg-raised'
       }`}
     >
       <span>{label}</span>
-      <IconChevronRight className="h-4 w-4 flex-none" />
+      <IconChevronRight
+        className={`h-4 w-4 flex-none transition-transform ${expanded ? 'rotate-180' : ''}`}
+      />
     </button>
   )
 }
