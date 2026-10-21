@@ -1398,9 +1398,10 @@ export default function MissionReport({
     )
     return (
       <>
-        <td
+        <th
+          scope="row"
           rowSpan={span}
-          className={baseCell(span)}
+          className={`${baseCell(span)} text-left font-normal`}
           data-testid="report-base"
           data-base-label={sh.label}
         >
@@ -1425,7 +1426,7 @@ export default function MissionReport({
               )}
             </span>
           </span>
-        </td>
+        </th>
         <td rowSpan={span} className={baseCell(span)}>
           {zone}
         </td>
@@ -1480,12 +1481,12 @@ export default function MissionReport({
               <td className={`${cell} whitespace-nowrap ${line}`}>
                 {r.f?.rthM != null ? `${Math.round(r.f.rthM)} m` : DASH}
               </td>
-              <td className={`${cell} ${line}`}>
+              <th scope="row" className={`${cell} text-left font-normal ${line}`}>
                 <span className="block font-semibold">{r.label}</span>
                 <span className={`rep-wrap xl:whitespace-nowrap ${sub}`}>
                   {fmt(r.areaHa, 2, 'ha')} · {fmtKm(r.lengthM)} km
                 </span>
-              </td>
+              </th>
               <td className={`${cell} ${line}`}>{timeCell(r)}</td>
               <td className={`${cell} whitespace-nowrap ${line}`}>
                 {r.f?.h1M != null
@@ -1616,7 +1617,7 @@ export default function MissionReport({
               data-flight={r.label}
               className="rep-row border-t border-raised text-[13px] leading-snug tabular-nums"
             >
-              <td className={nbCell}>
+              <th scope="row" className={`${nbCell} text-left font-normal`}>
                 <span className="flex items-center gap-2">
                   <span
                     aria-hidden="true"
@@ -1625,7 +1626,7 @@ export default function MissionReport({
                   />
                   <span className="font-semibold">{r.label}</span>
                 </span>
-              </td>
+              </th>
               <td className={`${nbCell} whitespace-nowrap`}>{fmt(r.areaHa, 2, 'ha')}</td>
               <td className={`${nbCell} whitespace-nowrap`}>{fmtKm(r.lengthM)} km</td>
               <td className={nbCell}>{timeCell(r)}</td>
@@ -1688,638 +1689,647 @@ export default function MissionReport({
   const longestLevel = levelOf(longestFrac)
 
   return (
-    <div
-      ref={rootRef}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="rep-title"
-      tabIndex={-1}
-      className="rep-root fixed inset-0 z-[2500] overflow-y-auto bg-slate-950 text-slate-100 outline-none"
-    >
+    <>
+      {/* as regras de impressão ficam fora do diálogo, que recebe o foco */}
       <style>{PRINT_CSS}</style>
-
-      {/* ------------- Barra: o relatório, as secções, imprimir e fechar ------------- */}
-      <header className="no-print sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-800 bg-slate-950 px-4 sm:px-6">
-        <div className="flex min-w-0 flex-none items-center gap-2.5">
-          <IconReport className="h-5 w-5 text-sky-400" />
-          <span className="text-[15px] font-semibold">{t('app.report')}</span>
-          <span className="hidden truncate text-[13px] text-slate-400 sm:inline">
-            {missionName || L(UI.untitled)}
-          </span>
-        </div>
-        <nav
-          aria-label={L(UI.sectionsNav)}
-          className="hidden min-w-0 flex-1 justify-center gap-0.5 xl:flex"
-        >
-          {sections.map((x) => (
-            <a
-              key={x.id}
-              href={`#${x.id}`}
-              onClick={(e) => goTo(e, x.id)}
-              className="flex h-9 items-center whitespace-nowrap rounded-lg px-2.5 text-[13px] font-medium text-slate-200 no-underline transition-colors hover:bg-raised hover:text-slate-100"
-            >
-              {x.label}
-            </a>
-          ))}
-        </nav>
-        <span className="flex-1 xl:hidden" />
-        <span className="hidden flex-none text-xs text-slate-400 min-[1400px]:inline">
-          {L(UI.a4)}
-        </span>
-        <Button
-          variant="primary"
-          size="md"
-          onClick={() => window.print()}
-          title={L(UI.printTitle)}
-          icon={<PrintIcon />}
-        >
-          {L(UI.print)}
-        </Button>
-        <CloseKeyButton text={L(UI.close)} title={L(UI.closeTitle)} onClick={onClose} />
-      </header>
-
-      <div className="rep-page mx-auto flex max-w-[1216px] flex-col gap-5 px-4 pb-12 pt-7">
-        {/* --------------------------- Identificação --------------------------- */}
-        <section
-          id="rep-identificacao"
-          aria-labelledby="rep-title"
-          className="rep-card rounded-xl border border-slate-800 bg-slate-900 px-6 py-5"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h1 id="rep-title" className="m-0 text-xl font-semibold tracking-[-0.01em]">
-                {L(UI.title)}
-              </h1>
-              <p className="rep-muted m-0 mt-1 text-[13px] text-slate-400">{L(UI.subtitle)}</p>
-            </div>
-            {counts && (
-              <div className="flex flex-none items-center gap-1.5">
-                <span className="mr-0.5 text-xs text-slate-400">{t('preflight.title')}</span>
-                {countBadges}
-              </div>
-            )}
+      <div
+        ref={rootRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="rep-title"
+        tabIndex={-1}
+        className="rep-root fixed inset-0 z-[2500] overflow-y-auto bg-slate-950 text-slate-100 outline-none"
+      >
+        {/* ------------- Barra: o relatório, as secções, imprimir e fechar ------------- */}
+        <header className="no-print sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-slate-800 bg-slate-950 px-4 sm:px-6">
+          <div className="flex min-w-0 flex-none items-center gap-2.5">
+            <IconReport className="h-5 w-5 text-sky-400" />
+            <span className="text-[15px] font-semibold">{t('app.report')}</span>
+            <span className="hidden truncate text-[13px] text-slate-400 sm:inline">
+              {missionName || L(UI.untitled)}
+            </span>
           </div>
-          <dl className="rep-ident m-0 mt-4 grid grid-cols-1 gap-x-6 gap-y-3.5 border-t border-slate-800 pt-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              [L(UI.mission), missionName || L(UI.untitled)],
-              [L(UI.date), dateText],
-              [L(UI.platform), droneLabel || DASH],
-              ...(camera
-                ? [
-                    [
-                      L(sensor?.type === 'lidar' ? UI.sensor : UI.camera),
-                      sensor?.type === 'camera' && fin(sensor.focalLength)
-                        ? `${camera} · ${L(UI.focal, { f: sensor.focalLength })}`
-                        : camera,
-                    ],
-                  ]
-                : []),
-              [
-                L(UI.mode),
-                `${t('mode.area')} · ${withBases ? L(UI.flightsIn, { flights: flightsText, bases: basesText }) : flightsText}`,
-              ],
-              [t('stats.area'), stats ? fmt(stats.areaHa, 2, 'ha') : DASH],
-              [
-                L(UI.terrain),
-                terrainModel
-                  ? (() => {
-                      const x = viewTerrainText(t, terrainModel)
-                      return x.charAt(0).toUpperCase() + x.slice(1)
-                    })()
-                  : L(UI.noTerrain),
-              ],
-              ...(unc?.inputs
-                ? [[L(UI.positioning), L(unc.inputs.mode === 'rtk' ? UI.posRtk : UI.posGnss)]]
-                : []),
-            ].map(([k, v]) => (
-              <div key={k} className="min-w-0">
-                <dt className="text-xs text-slate-400">{k}</dt>
-                <dd className="m-0 mt-[3px] text-[13.5px] font-medium tabular-nums [overflow-wrap:anywhere]">
-                  {v}
-                </dd>
-              </div>
+          <nav
+            aria-label={L(UI.sectionsNav)}
+            className="hidden min-w-0 flex-1 justify-center gap-0.5 xl:flex"
+          >
+            {sections.map((x) => (
+              <a
+                key={x.id}
+                href={`#${x.id}`}
+                onClick={(e) => goTo(e, x.id)}
+                className="flex h-9 items-center whitespace-nowrap rounded-lg px-2.5 text-[13px] font-medium text-slate-200 no-underline transition-colors hover:bg-raised hover:text-slate-100"
+              >
+                {x.label}
+              </a>
             ))}
-          </dl>
-        </section>
+          </nav>
+          <span className="flex-1 xl:hidden" />
+          <span className="hidden flex-none text-xs text-slate-400 min-[1400px]:inline">
+            {L(UI.a4)}
+          </span>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => window.print()}
+            title={L(UI.printTitle)}
+            icon={<PrintIcon />}
+          >
+            {L(UI.print)}
+          </Button>
+          <CloseKeyButton text={L(UI.close)} title={L(UI.closeTitle)} onClick={onClose} />
+        </header>
 
-        {/* --------------------- Mapa, operação e legenda --------------------- */}
-        <Card id="rep-mapa" title={L(UI.mapTitle)} note={caption}>
-          <div className="rep-map grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_257px]">
-            <figure className="m-0 min-w-0">
-              <canvas
-                ref={canvasRef}
-                width={CANVAS_W}
-                height={CANVAS_H}
-                role="img"
-                aria-label={`${L(UI.mapTitle)}: ${mapWhat}`}
-                className="block h-auto w-full rounded-lg bg-surface shadow-[0_0_0_1px_#1C2740]"
-              />
-            </figure>
-            <div className="rep-side flex min-w-0 flex-col gap-3">
-              {longest && (
-                <div className="rep-box rounded-[10px] border border-slate-800 bg-surface p-3.5">
-                  <h3 className="m-0 mb-2.5 text-[13.5px] font-semibold">{L(UI.opTitle)}</h3>
-                  <dl className="m-0 flex flex-col gap-2.5 tabular-nums">
-                    <OpItem label={t('stats.flights')} value={opFlights} />
-                    {daySheets && (
-                      <OpItem
-                        label={t('stats.batteries')}
-                        value={tCount(t, 'stats.setsNeeded', daySheets.flights, {
-                          n: daySheets.flights,
-                        })}
-                        tone={daySheets.short ? 'near' : 'ok'}
-                        sub={[
-                          daySheets.sets != null
-                            ? L(UI.teamSets, { s: daySheets.sets })
-                            : L(UI.teamUnknown),
-                          daySheets.short ? t('bases.sheet.setsShort') : null,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      />
-                    )}
-                    <OpItem
-                      label={L(UI.totalTime)}
-                      value={
-                        anyTransit
-                          ? L(UI.withTransit, { time: fmtTime(totalWith) })
-                          : t('cards.tile.inMission', { time: fmtTime(stats?.flightTimeS) })
-                      }
-                      sub={
-                        anyTransit
-                          ? t('cards.tile.inMission', { time: fmtTime(stats?.flightTimeS) })
-                          : null
-                      }
-                    />
-                    <OpItem
-                      label={nFlights > 1 ? t('stats.longest') : t('stats.vsBattery')}
-                      value={
-                        <>
-                          {longest.label && nFlights > 1 ? `${longest.label} · ` : ''}
-                          {fmtClock(longest.totalS)}
-                          {useful ? (
-                            <span className="font-normal text-slate-300">
-                              {' '}
-                              {t('stats.ofUseful', { u: fmtClock(useful) })}
-                            </span>
-                          ) : null}
-                        </>
-                      }
-                      tone={longestLevel}
-                      sub={
-                        longestFrac != null
-                          ? t('stats.usefulPct', { p: Math.round(longestFrac * 100) })
-                          : null
-                      }
-                    >
-                      {useful ? (
-                        <UsefulBar
-                          flightS={longest.flightS}
-                          transitS={longest.transitS}
-                          usefulS={useful}
-                          label={barLabel({ ...longest, label: longest.label ?? '' })}
-                        />
-                      ) : null}
-                    </OpItem>
-                    {worst && fin(vlosM) && (
-                      <OpItem
-                        label={t('bases.sheet.vlos')}
-                        value={L(UI.vlosWorst, {
-                          vlos: Math.round(vlosM),
-                          worst: Math.round(worst.f.worstVlosM),
-                          flight: worst.label,
-                        })}
-                        tone={sheetRows.some((r) => r.f.withinVlos === false) ? 'near' : 'ok'}
-                        sub={
-                          sheetRows.some((r) => r.f.withinVlos === false)
-                            ? t('bases.sheet.outOfVlos')
-                            : null
-                        }
-                      />
-                    )}
-                  </dl>
+        <div className="rep-page mx-auto flex max-w-[1216px] flex-col gap-5 px-4 pb-12 pt-7">
+          {/* --------------------------- Identificação --------------------------- */}
+          <section
+            id="rep-identificacao"
+            aria-labelledby="rep-title"
+            className="rep-card rounded-xl border border-slate-800 bg-slate-900 px-6 py-5"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h1 id="rep-title" className="m-0 text-xl font-semibold tracking-[-0.01em]">
+                  {L(UI.title)}
+                </h1>
+                <p className="rep-muted m-0 mt-1 text-[13px] text-slate-400">{L(UI.subtitle)}</p>
+              </div>
+              {counts && (
+                <div className="flex flex-none items-center gap-1.5">
+                  <span className="mr-0.5 text-xs text-slate-400">{t('preflight.title')}</span>
+                  {countBadges}
                 </div>
               )}
-              <div className="rep-box rounded-[10px] border border-slate-800 bg-surface p-3.5">
-                <h3 className="m-0 mb-2.5 text-[13.5px] font-semibold">{L(UI.legendTitle)}</h3>
-                <ul className="m-0 flex list-none flex-col gap-[9px] p-0 text-[12.5px] text-slate-200">
-                  {firstBase && (
-                    <li className="flex items-center gap-2.5">
-                      <span className="rep-swatch inline-flex rounded-full shadow-[0_0_0_2px_#FFFFFF]">
-                        <BaseDot
-                          label={firstBase.label}
-                          color={firstBase.color || BASE_COLOR}
-                          size="h-[22px] w-[22px] text-[11px]"
-                        />
-                      </span>
-                      {L(UI.legendBase)}
-                    </li>
-                  )}
-                  {groups.length > 1 ? (
-                    <li className="flex items-center gap-2.5">
-                      <FlightBadge label={groups[0].label} color={groups[0].color} />
-                      {L(UI.legendFlight)}
-                    </li>
-                  ) : (
-                    <li className="flex items-center gap-2.5">
-                      <span
-                        aria-hidden="true"
-                        className="rep-swatch h-0.5 w-[34px] flex-none"
-                        style={{ background: LINE_COLOR }}
-                      />
-                      {L(UI.legendLines)}
-                    </li>
-                  )}
-                  <li className="flex items-center gap-2.5">
-                    <span
-                      aria-hidden="true"
-                      className="rep-swatch rep-outline h-0.5 w-[34px] flex-none bg-slate-100"
-                    />
-                    {L(UI.legendArea)}
-                  </li>
-                  {validGcps.length > 0 && (
-                    <li className="flex items-center gap-2.5">
-                      <span
-                        aria-hidden="true"
-                        className="rep-swatch ml-[11px] mr-[11px] h-3 w-3 flex-none border border-white"
-                        style={{
-                          background: `conic-gradient(${GCP_COLOR} 0 25%, #0f172a 25% 50%, ${GCP_COLOR} 50% 75%, #0f172a 75%)`,
-                        }}
-                      />
-                      {L(UI.legendGcp)}
-                    </li>
-                  )}
-                </ul>
-              </div>
             </div>
-          </div>
-        </Card>
-
-        {/* --------------------- Parâmetros e estatísticas --------------------- */}
-        <Card
-          id="rep-parametros"
-          title={L(UI.paramsTitle)}
-          note={nFlights > 1 ? L(UI.paramsSame) : null}
-        >
-          <div className="rep-two grid grid-cols-1 gap-x-8 md:grid-cols-2">
-            <KeyRows rows={paramRows.slice(0, half)} />
-            <KeyRows rows={paramRows.slice(half)} />
-          </div>
-          {stats ? (
-            <dl className="rep-tiles m-0 mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            <dl className="rep-ident m-0 mt-4 grid grid-cols-1 gap-x-6 gap-y-3.5 border-t border-slate-800 pt-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                [t('stats.area'), `${fmt(stats.areaHa, 2)} ha`],
-                [t('stats.lines'), fmtInt(stats.lineCount)],
-                [t('stats.waypoints'), fmtInt(stats.waypointCount)],
-                [t('stats.totalDist'), `${fmtKm(stats.pathLengthM)} km`],
-                [t('stats.photos'), fmtInt(stats.photoCount)],
-                [t('stats.missionTime'), fmtTime(stats.flightTimeS)],
+                [L(UI.mission), missionName || L(UI.untitled)],
+                [L(UI.date), dateText],
+                [L(UI.platform), droneLabel || DASH],
+                ...(camera
+                  ? [
+                      [
+                        L(sensor?.type === 'lidar' ? UI.sensor : UI.camera),
+                        sensor?.type === 'camera' && fin(sensor.focalLength)
+                          ? `${camera} · ${L(UI.focal, { f: sensor.focalLength })}`
+                          : camera,
+                      ],
+                    ]
+                  : []),
+                [
+                  L(UI.mode),
+                  `${t('mode.area')} · ${withBases ? L(UI.flightsIn, { flights: flightsText, bases: basesText }) : flightsText}`,
+                ],
+                [t('stats.area'), stats ? fmt(stats.areaHa, 2, 'ha') : DASH],
+                [
+                  L(UI.terrain),
+                  terrainModel
+                    ? (() => {
+                        const x = viewTerrainText(t, terrainModel)
+                        return x.charAt(0).toUpperCase() + x.slice(1)
+                      })()
+                    : L(UI.noTerrain),
+                ],
+                ...(unc?.inputs
+                  ? [[L(UI.positioning), L(unc.inputs.mode === 'rtk' ? UI.posRtk : UI.posGnss)]]
+                  : []),
               ].map(([k, v]) => (
-                <div
-                  key={k}
-                  className="rep-tile min-w-0 rounded-[9px] border border-slate-800 bg-surface px-3 py-2.5"
-                >
+                <div key={k} className="min-w-0">
                   <dt className="text-xs text-slate-400">{k}</dt>
-                  <dd className="m-0 mt-[3px] whitespace-nowrap text-[17px] font-semibold tabular-nums">
+                  <dd className="m-0 mt-[3px] text-[13.5px] font-medium tabular-nums [overflow-wrap:anywhere]">
                     {v}
                   </dd>
                 </div>
               ))}
             </dl>
-          ) : (
-            <p className="m-0 mt-3 text-xs text-slate-400">{L(UI.noStats)}</p>
-          )}
-        </Card>
+          </section>
 
-        {/* -------------------------- Voos (por base) -------------------------- */}
-        {rows.length > 0 && (
-          <Card
-            id="rep-voos"
-            title={L(withBases ? UI.flightsByBase : UI.flights)}
-            note={
-              withBases
-                ? L(UI.flightsNoteBases, { bases: basesText, flights: flightsText })
-                : L(UI.flightsNote, { flights: flightsText })
-            }
-            className="rep-flow"
-          >
-            {withBases && (common.length > 0 || viewTerrain || filesLine) && (
-              <div className="rep-box mb-3 flex flex-col gap-[5px] rounded-[9px] border border-slate-800 bg-sunken px-3.5 py-3">
-                {common.length > 0 && (
-                  <p className="m-0 text-[13px] leading-normal text-slate-200">
-                    <strong className="font-semibold text-slate-100">{L(UI.commonLead)}</strong>{' '}
-                    {common.join(' · ')}.
-                  </p>
-                )}
-                {viewTerrain && (
-                  <p className="rep-muted m-0 text-xs leading-normal text-slate-400">
-                    {t('bases.view.model', { model: viewTerrainText(t, viewTerrain) })}{' '}
-                    {viewCaveatText(t, viewTerrain)} {t('bases.view.point')}{' '}
-                    {t('bases.view.radioRule')}
-                  </p>
-                )}
-                {filesLine && (
-                  <p className="rep-muted m-0 text-xs leading-normal text-slate-400 [overflow-wrap:anywhere]">
-                    {filesLine}
-                  </p>
-                )}
-              </div>
-            )}
-            {withBases ? (
-              <div className="rep-scroll overflow-x-auto rounded-[9px] border border-slate-800">
-                <table className="rep-table w-full border-collapse text-left">
-                  <caption className="sr-only">{L(UI.flightsByBase)}</caption>
-                  <colgroup>
-                    {['base', 'zone', 'ref', 'rth', 'flight', 'time', 'heights', 'vlos'].map(
-                      (c) => (
-                        <col key={c} className={`rep-c-${c}`} />
-                      ),
-                    )}
-                  </colgroup>
-                  <thead className="bg-sunken">
-                    <tr>
-                      {colHead(L(UI.cBase), L(UI.cBaseSub))}
-                      {colHead(L(UI.cZone), L(UI.cZoneSub))}
-                      {colHead(t('bases.sheet.ref'), L(UI.cRefSub))}
-                      {colHead(L(UI.cRth), L(UI.cRthSub))}
-                      {colHead(t('bases.sheet.flight'), L(UI.cFlightSub))}
-                      {colHead(
-                        timeHead,
-                        useful
-                          ? L(anyTransit ? UI.cTimeSub : UI.cTimeSubPct)
-                          : anyTransit
-                            ? L(UI.cTimeSubNoUseful)
-                            : null,
+          {/* --------------------- Mapa, operação e legenda --------------------- */}
+          <Card id="rep-mapa" title={L(UI.mapTitle)} note={caption}>
+            <div className="rep-map grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_257px]">
+              <figure className="m-0 min-w-0">
+                <canvas
+                  ref={canvasRef}
+                  width={CANVAS_W}
+                  height={CANVAS_H}
+                  role="img"
+                  aria-label={`${L(UI.mapTitle)}: ${mapWhat}`}
+                  className="block h-auto w-full rounded-lg bg-surface shadow-[0_0_0_1px_#1C2740]"
+                />
+              </figure>
+              <div className="rep-side flex min-w-0 flex-col gap-3">
+                {longest && (
+                  <div className="rep-box rounded-[10px] border border-slate-800 bg-surface p-3.5">
+                    <h3 className="m-0 mb-2.5 text-[13.5px] font-semibold">{L(UI.opTitle)}</h3>
+                    <dl className="m-0 flex flex-col gap-2.5 tabular-nums">
+                      <OpItem label={t('stats.flights')} value={opFlights} />
+                      {daySheets && (
+                        <OpItem
+                          label={t('stats.batteries')}
+                          value={tCount(t, 'stats.setsNeeded', daySheets.flights, {
+                            n: daySheets.flights,
+                          })}
+                          tone={daySheets.short ? 'near' : 'ok'}
+                          sub={[
+                            daySheets.sets != null
+                              ? L(UI.teamSets, { s: daySheets.sets })
+                              : L(UI.teamUnknown),
+                            daySheets.short ? t('bases.sheet.setsShort') : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        />
                       )}
-                      {colHead(t('bases.sheet.heights'), L(UI.cHeightsSub))}
-                      {colHead(L(UI.cVlos), L(UI.cVlosSub), true)}
-                    </tr>
-                  </thead>
-                  {flightBody}
-                  {totals}
-                </table>
-              </div>
-            ) : (
-              <>
-                <div
-                  className={`grid grid-cols-1 items-start gap-3 ${
-                    nbHalves.length > 1 ? 'rep-twoup lg:grid-cols-2' : ''
-                  }`}
-                >
-                  {nbHalves.map(nbTable)}
-                </div>
-                {nbTotal}
-              </>
-            )}
-
-            {/* as fichas inteiras de cada base (BaseFieldSheets), a um clique */}
-            {sheets.length > 0 && (
-              <div data-testid="report-bases" className="rep-bases mt-3">
-                <div className="no-print flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                  <Button
-                    variant="secondary"
-                    size="md"
-                    aria-expanded={sheetsOpen}
-                    aria-controls="rep-fichas"
-                    onClick={() => setSheetsOpen((v) => !v)}
-                  >
-                    {sheets.length === 1
-                      ? L(sheetsOpen ? UI.sheetsHideOne : UI.sheetsShowOne, {
-                          label: sheets[0].label,
-                        })
-                      : L(sheetsOpen ? UI.sheetsHide : UI.sheetsShow, { n: sheets.length })}
-                  </Button>
-                  <span className="text-xs text-slate-400">{L(UI.sheetsHint)}</span>
-                </div>
-                <div id="rep-fichas" hidden={!sheetsOpen} className="mt-3">
-                  {sheetsOpen && (
-                    <>
-                      <h3 className="m-0 mb-2 text-[13.5px] font-semibold">
-                        {t('bases.sheet.title')}
-                      </h3>
-                      <BaseFieldSheets
-                        day={daySheets}
-                        sheets={sheets}
-                        cardClass="rep-base bg-surface"
-                        tableClass="rep-sheet-table"
+                      <OpItem
+                        label={L(UI.totalTime)}
+                        value={
+                          anyTransit
+                            ? L(UI.withTransit, { time: fmtTime(totalWith) })
+                            : t('cards.tile.inMission', { time: fmtTime(stats?.flightTimeS) })
+                        }
+                        sub={
+                          anyTransit
+                            ? t('cards.tile.inMission', { time: fmtTime(stats?.flightTimeS) })
+                            : null
+                        }
                       />
-                    </>
-                  )}
+                      <OpItem
+                        label={nFlights > 1 ? t('stats.longest') : t('stats.vsBattery')}
+                        value={
+                          <>
+                            {longest.label && nFlights > 1 ? `${longest.label} · ` : ''}
+                            {fmtClock(longest.totalS)}
+                            {useful ? (
+                              <span className="font-normal text-slate-300">
+                                {' '}
+                                {t('stats.ofUseful', { u: fmtClock(useful) })}
+                              </span>
+                            ) : null}
+                          </>
+                        }
+                        tone={longestLevel}
+                        sub={
+                          longestFrac != null
+                            ? t('stats.usefulPct', { p: Math.round(longestFrac * 100) })
+                            : null
+                        }
+                      >
+                        {useful ? (
+                          <UsefulBar
+                            flightS={longest.flightS}
+                            transitS={longest.transitS}
+                            usefulS={useful}
+                            label={barLabel({ ...longest, label: longest.label ?? '' })}
+                          />
+                        ) : null}
+                      </OpItem>
+                      {worst && fin(vlosM) && (
+                        <OpItem
+                          label={t('bases.sheet.vlos')}
+                          value={L(UI.vlosWorst, {
+                            vlos: Math.round(vlosM),
+                            worst: Math.round(worst.f.worstVlosM),
+                            flight: worst.label,
+                          })}
+                          tone={sheetRows.some((r) => r.f.withinVlos === false) ? 'near' : 'ok'}
+                          sub={
+                            sheetRows.some((r) => r.f.withinVlos === false)
+                              ? t('bases.sheet.outOfVlos')
+                              : null
+                          }
+                        />
+                      )}
+                    </dl>
+                  </div>
+                )}
+                <div className="rep-box rounded-[10px] border border-slate-800 bg-surface p-3.5">
+                  <h3 className="m-0 mb-2.5 text-[13.5px] font-semibold">{L(UI.legendTitle)}</h3>
+                  <ul className="m-0 flex list-none flex-col gap-[9px] p-0 text-[12.5px] text-slate-200">
+                    {firstBase && (
+                      <li className="flex items-center gap-2.5">
+                        <span className="rep-swatch inline-flex rounded-full shadow-[0_0_0_2px_#FFFFFF]">
+                          <BaseDot
+                            label={firstBase.label}
+                            color={firstBase.color || BASE_COLOR}
+                            size="h-[22px] w-[22px] text-[11px]"
+                          />
+                        </span>
+                        {L(UI.legendBase)}
+                      </li>
+                    )}
+                    {groups.length > 1 ? (
+                      <li className="flex items-center gap-2.5">
+                        <FlightBadge label={groups[0].label} color={groups[0].color} />
+                        {L(UI.legendFlight)}
+                      </li>
+                    ) : (
+                      <li className="flex items-center gap-2.5">
+                        <span
+                          aria-hidden="true"
+                          className="rep-swatch h-0.5 w-[34px] flex-none"
+                          style={{ background: LINE_COLOR }}
+                        />
+                        {L(UI.legendLines)}
+                      </li>
+                    )}
+                    <li className="flex items-center gap-2.5">
+                      <span
+                        aria-hidden="true"
+                        className="rep-swatch rep-outline h-0.5 w-[34px] flex-none bg-slate-100"
+                      />
+                      {L(UI.legendArea)}
+                    </li>
+                    {validGcps.length > 0 && (
+                      <li className="flex items-center gap-2.5">
+                        <span
+                          aria-hidden="true"
+                          className="rep-swatch ml-[11px] mr-[11px] h-3 w-3 flex-none border border-white"
+                          style={{
+                            background: `conic-gradient(${GCP_COLOR} 0 25%, #0f172a 25% 50%, ${GCP_COLOR} 50% 75%, #0f172a 75%)`,
+                          }}
+                        />
+                        {L(UI.legendGcp)}
+                      </li>
+                    )}
+                  </ul>
                 </div>
               </div>
+            </div>
+          </Card>
+
+          {/* --------------------- Parâmetros e estatísticas --------------------- */}
+          <Card
+            id="rep-parametros"
+            title={L(UI.paramsTitle)}
+            note={nFlights > 1 ? L(UI.paramsSame) : null}
+          >
+            <div className="rep-two grid grid-cols-1 gap-x-8 md:grid-cols-2">
+              <KeyRows rows={paramRows.slice(0, half)} />
+              <KeyRows rows={paramRows.slice(half)} />
+            </div>
+            {stats ? (
+              <dl className="rep-tiles m-0 mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                {[
+                  [t('stats.area'), `${fmt(stats.areaHa, 2)} ha`],
+                  [t('stats.lines'), fmtInt(stats.lineCount)],
+                  [t('stats.waypoints'), fmtInt(stats.waypointCount)],
+                  [t('stats.totalDist'), `${fmtKm(stats.pathLengthM)} km`],
+                  [t('stats.photos'), fmtInt(stats.photoCount)],
+                  [t('stats.missionTime'), fmtTime(stats.flightTimeS)],
+                ].map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="rep-tile min-w-0 rounded-[9px] border border-slate-800 bg-surface px-3 py-2.5"
+                  >
+                    <dt className="text-xs text-slate-400">{k}</dt>
+                    <dd className="m-0 mt-[3px] whitespace-nowrap text-[17px] font-semibold tabular-nums">
+                      {v}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="m-0 mt-3 text-xs text-slate-400">{L(UI.noStats)}</p>
             )}
           </Card>
-        )}
 
-        {/* ------------------------------ GCPs ------------------------------ */}
-        {validGcps.length > 0 && (
-          <Card id="rep-gcps" title={L(UI.gcpsTitle)} note={L(UI.gcpsNote)}>
-            <ul className="rep-gcps m-0 grid list-none grid-cols-1 gap-x-6 gap-y-1 p-0 sm:grid-cols-2 lg:grid-cols-4">
-              {validGcps.map((g, i) => (
-                <li key={g.id ?? i} className="flex items-baseline gap-2 text-[13px] tabular-nums">
-                  <span className="shrink-0 font-semibold text-amber-300">
-                    {g.id ?? `GCP-${String(i + 1).padStart(2, '0')}`}
-                  </span>
-                  <span className="text-slate-200">
-                    {g.point[1].toFixed(6)}, {g.point[0].toFixed(6)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
-
-        {/* ---------------------- Pontos de inspecção (R2.9) ---------------------- */}
-        {hasInspect && (
-          <Card id="rep-inspeccao" title={L(UI.inspectTitle)} note={L(UI.inspectNote)}>
-            <Table
-              label={L(UI.inspectTitle)}
-              columns={[
-                { key: 'n', label: L(UI.inspectIdx) },
-                { key: 'label', label: L(UI.inspectLabel) },
-                { key: 'coords', label: L(UI.inspectCoords) },
-                { key: 'h', label: L(UI.inspectHeight), align: 'right' },
-                { key: 'photo', label: L(UI.inspectPhoto) },
-              ]}
-              rows={inspectPoints.map((ip, i) => ({
-                key: String(ip.id ?? i),
-                cells: [
-                  <span key="n" className="font-semibold text-orange-300">
-                    {i + 1}
-                  </span>,
-                  ip.label,
-                  `${ip.point[1].toFixed(6)}, ${ip.point[0].toFixed(6)}`,
-                  Number.isFinite(ip.heightM) ? ip.heightM : DASH,
-                  ip.photo === false ? L(UI.inspectNo) : L(UI.inspectYes),
-                ],
-              }))}
-              className="rep-table"
-            />
-          </Card>
-        )}
-
-        {/* ----------------------- Segurança e preflight ----------------------- */}
-        <div className="rep-pair grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
-          <Card
-            id="rep-seguranca"
-            title={L(UI.safetyTitle)}
-            icon={<IconShield className="h-[17px] w-[17px] text-sky-300" />}
-          >
-            <dl className="m-0">
-              {[
-                [t('safety.finish'), t(`safety.finish.${s.finishAction}`)],
-                [
-                  t('safety.rcLost'),
-                  s.exitOnRCLost === 'executeLostAction'
-                    ? t('safety.checklistStop', {
-                        mode: t('safety.rcLost.executeLostAction'),
-                        action: lowerFirst(t(`safety.rcAction.${s.executeRCLostAction}`)),
-                      })
-                    : t('safety.rcLost.goContinue'),
-                ],
-                [
-                  t('safety.rthHeight'),
-                  rthInfo
-                    ? rthInfo.rthManual
-                      ? L(UI.rthFixed, { range: rthRange })
-                      : L(withBases && nFlights > 1 ? UI.rthAutoTable : UI.rthAuto, {
-                          range: rthRange,
-                        })
-                    : DASH,
-                ],
-                [L(UI.sTakeoff), rthInfo ? L(UI.takeoffValue, { m: rthInfo.takeoffM }) : DASH],
-                [L(UI.sHeights), L(withBases ? UI.heightsBases : UI.heightsTakeoff)],
-              ].map(([k, v]) => (
-                <div
-                  key={k}
-                  className="rep-kv2 grid grid-cols-1 items-baseline gap-x-4 gap-y-0.5 border-t border-raised py-2.5 text-[13px] leading-[1.45] sm:grid-cols-[180px_minmax(0,1fr)]"
-                >
-                  <dt className="text-slate-300">{k}</dt>
-                  <dd className="m-0 tabular-nums">{v}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="rep-box m-0 mt-3 flex gap-2.5 rounded-[9px] border border-[#1E2E4A] bg-[#0F1A2E] px-3 py-2.5 text-[12.5px] leading-normal text-slate-200">
-              <IconInfo className="mt-0.5 h-4 w-4 flex-none text-blue-300" />
-              <span>{t('safety.checklistHint')}</span>
-            </p>
-          </Card>
-
-          {items && (
+          {/* -------------------------- Voos (por base) -------------------------- */}
+          {rows.length > 0 && (
             <Card
-              id="rep-preflight"
-              title={t('preflight.title')}
-              after={countBadges}
+              id="rep-voos"
+              title={L(withBases ? UI.flightsByBase : UI.flights)}
+              note={
+                withBases
+                  ? L(UI.flightsNoteBases, { bases: basesText, flights: flightsText })
+                  : L(UI.flightsNote, { flights: flightsText })
+              }
               className="rep-flow"
             >
-              <ReportPreflight items={items} counts={counts} baseColors={baseColors} />
+              {withBases && (common.length > 0 || viewTerrain || filesLine) && (
+                <div className="rep-box mb-3 flex flex-col gap-[5px] rounded-[9px] border border-slate-800 bg-sunken px-3.5 py-3">
+                  {common.length > 0 && (
+                    <p className="m-0 text-[13px] leading-normal text-slate-200">
+                      <strong className="font-semibold text-slate-100">{L(UI.commonLead)}</strong>{' '}
+                      {common.join(' · ')}.
+                    </p>
+                  )}
+                  {viewTerrain && (
+                    <p className="rep-muted m-0 text-xs leading-normal text-slate-400">
+                      {t('bases.view.model', { model: viewTerrainText(t, viewTerrain) })}{' '}
+                      {viewCaveatText(t, viewTerrain)} {t('bases.view.point')}{' '}
+                      {t('bases.view.radioRule')}
+                    </p>
+                  )}
+                  {filesLine && (
+                    <p className="rep-muted m-0 text-xs leading-normal text-slate-400 [overflow-wrap:anywhere]">
+                      {filesLine}
+                    </p>
+                  )}
+                </div>
+              )}
+              {withBases ? (
+                <div className="rep-scroll overflow-x-auto rounded-[9px] border border-slate-800">
+                  <table className="rep-table w-full border-collapse text-left">
+                    <caption className="sr-only">{L(UI.flightsByBase)}</caption>
+                    <colgroup>
+                      {['base', 'zone', 'ref', 'rth', 'flight', 'time', 'heights', 'vlos'].map(
+                        (c) => (
+                          <col key={c} className={`rep-c-${c}`} />
+                        ),
+                      )}
+                    </colgroup>
+                    <thead className="bg-sunken">
+                      <tr>
+                        {colHead(L(UI.cBase), L(UI.cBaseSub))}
+                        {colHead(L(UI.cZone), L(UI.cZoneSub))}
+                        {colHead(t('bases.sheet.ref'), L(UI.cRefSub))}
+                        {colHead(L(UI.cRth), L(UI.cRthSub))}
+                        {colHead(t('bases.sheet.flight'), L(UI.cFlightSub))}
+                        {colHead(
+                          timeHead,
+                          useful
+                            ? L(anyTransit ? UI.cTimeSub : UI.cTimeSubPct)
+                            : anyTransit
+                              ? L(UI.cTimeSubNoUseful)
+                              : null,
+                        )}
+                        {colHead(t('bases.sheet.heights'), L(UI.cHeightsSub))}
+                        {colHead(L(UI.cVlos), L(UI.cVlosSub), true)}
+                      </tr>
+                    </thead>
+                    {flightBody}
+                    {totals}
+                  </table>
+                </div>
+              ) : (
+                <>
+                  <div
+                    className={`grid grid-cols-1 items-start gap-3 ${
+                      nbHalves.length > 1 ? 'rep-twoup lg:grid-cols-2' : ''
+                    }`}
+                  >
+                    {nbHalves.map(nbTable)}
+                  </div>
+                  {nbTotal}
+                </>
+              )}
+
+              {/* as fichas inteiras de cada base (BaseFieldSheets), a um clique */}
+              {sheets.length > 0 && (
+                <div data-testid="report-bases" className="rep-bases mt-3">
+                  <div className="no-print flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      aria-expanded={sheetsOpen}
+                      aria-controls="rep-fichas"
+                      onClick={() => setSheetsOpen((v) => !v)}
+                    >
+                      {sheets.length === 1
+                        ? L(sheetsOpen ? UI.sheetsHideOne : UI.sheetsShowOne, {
+                            label: sheets[0].label,
+                          })
+                        : L(sheetsOpen ? UI.sheetsHide : UI.sheetsShow, { n: sheets.length })}
+                    </Button>
+                    <span className="text-xs text-slate-400">{L(UI.sheetsHint)}</span>
+                  </div>
+                  <div id="rep-fichas" hidden={!sheetsOpen} className="mt-3">
+                    {sheetsOpen && (
+                      <>
+                        <h3 className="m-0 mb-2 text-[13.5px] font-semibold">
+                          {t('bases.sheet.title')}
+                        </h3>
+                        <BaseFieldSheets
+                          day={daySheets}
+                          sheets={sheets}
+                          cardClass="rep-base bg-surface"
+                          tableClass="rep-sheet-table"
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </Card>
           )}
-        </div>
 
-        {/* ------------------ Reprodutibilidade e incerteza ------------------ */}
-        {reproducibility && (
-          <Card
-            id="rep-reprodutibilidade"
-            title={L(UI.reproTitle)}
-            note={reproducibility.version ? `v${reproducibility.version}` : null}
-          >
-            <dl className="rep-two m-0 grid grid-cols-1 gap-x-8 md:grid-cols-2">
-              {[
-                [L(UI.rVersion), reproducibility.version ?? DASH],
-                ...(unc
-                  ? [
-                      // um só valor quando as duas pontas, arredondadas, coincidem
-                      [
-                        L(UI.rAgl),
-                        `${rangeText(unc.agl[0], unc.agl[1], (v) => fmt(v, 1), ' – ')} m`,
-                      ],
-                      [
-                        L(UI.rPositioning),
-                        `${unc.inputs.mode === 'rtk' ? 'RTK' : 'GNSS'} · ±${unc.inputs.verticalM} m V · ±${unc.inputs.horizontalM} m H`,
-                      ],
-                      ...(unc.gsd
-                        ? [
-                            [
-                              L(UI.rGsd),
-                              `${rangeText(unc.gsd[0], unc.gsd[1], (v) => fmt(v, 2), ' – ')} cm/px`,
-                            ],
-                          ]
-                        : []),
-                    ]
-                  : []),
-                ...(reproducibility.terrainDatum
-                  ? [[L(UI.rDatum), verticalDatumLabel(reproducibility.terrainDatum, t)]]
-                  : []),
-                ...(unc?.front && unc?.side
-                  ? [
-                      [
-                        L(UI.rOverlap),
-                        `${rangeText(unc.front[0], unc.front[1], (v) => fmt(v, 0))} % / ${rangeText(unc.side[0], unc.side[1], (v) => fmt(v, 0))} %`,
-                      ],
-                    ]
-                  : []),
-                ...(Array.isArray(reproducibility.blur) && reproducibility.blur.length === 2
-                  ? [
-                      [
-                        L(UI.rBlur),
-                        `${fmt(reproducibility.blur[0].blurCm, 1)} cm · ${fmt(reproducibility.blur[1].blurCm, 1)} cm${
-                          reproducibility.blur[1].blurPx != null
-                            ? ` (${fmt(reproducibility.blur[1].blurPx, 1)} px)`
-                            : ''
-                        }`,
-                      ],
-                    ]
-                  : []),
-                [
-                  L(UI.rPreflight),
-                  counts && counts.block + counts.warn > 0
+          {/* ------------------------------ GCPs ------------------------------ */}
+          {validGcps.length > 0 && (
+            <Card id="rep-gcps" title={L(UI.gcpsTitle)} note={L(UI.gcpsNote)}>
+              <ul className="rep-gcps m-0 grid list-none grid-cols-1 gap-x-6 gap-y-1 p-0 sm:grid-cols-2 lg:grid-cols-4">
+                {validGcps.map((g, i) => (
+                  <li
+                    key={g.id ?? i}
+                    className="flex items-baseline gap-2 text-[13px] tabular-nums"
+                  >
+                    <span className="shrink-0 font-semibold text-amber-300">
+                      {g.id ?? `GCP-${String(i + 1).padStart(2, '0')}`}
+                    </span>
+                    <span className="text-slate-200">
+                      {g.point[1].toFixed(6)}, {g.point[0].toFixed(6)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          {/* ---------------------- Pontos de inspecção (R2.9) ---------------------- */}
+          {hasInspect && (
+            <Card id="rep-inspeccao" title={L(UI.inspectTitle)} note={L(UI.inspectNote)}>
+              <Table
+                label={L(UI.inspectTitle)}
+                columns={[
+                  { key: 'n', label: L(UI.inspectIdx) },
+                  { key: 'label', label: L(UI.inspectLabel) },
+                  { key: 'coords', label: L(UI.inspectCoords) },
+                  { key: 'h', label: L(UI.inspectHeight), align: 'right' },
+                  { key: 'photo', label: L(UI.inspectPhoto) },
+                ]}
+                rows={inspectPoints.map((ip, i) => ({
+                  key: String(ip.id ?? i),
+                  cells: [
+                    <span key="n" className="font-semibold text-orange-300">
+                      {i + 1}
+                    </span>,
+                    ip.label,
+                    `${ip.point[1].toFixed(6)}, ${ip.point[0].toFixed(6)}`,
+                    Number.isFinite(ip.heightM) ? ip.heightM : DASH,
+                    ip.photo === false ? L(UI.inspectNo) : L(UI.inspectYes),
+                  ],
+                }))}
+                className="rep-table"
+              />
+            </Card>
+          )}
+
+          {/* ----------------------- Segurança e preflight ----------------------- */}
+          <div className="rep-pair grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
+            <Card
+              id="rep-seguranca"
+              title={L(UI.safetyTitle)}
+              icon={<IconShield className="h-[17px] w-[17px] text-sky-300" />}
+            >
+              <dl className="m-0">
+                {[
+                  [t('safety.finish'), t(`safety.finish.${s.finishAction}`)],
+                  [
+                    t('safety.rcLost'),
+                    s.exitOnRCLost === 'executeLostAction'
+                      ? t('safety.checklistStop', {
+                          mode: t('safety.rcLost.executeLostAction'),
+                          action: lowerFirst(t(`safety.rcAction.${s.executeRCLostAction}`)),
+                        })
+                      : t('safety.rcLost.goContinue'),
+                  ],
+                  [
+                    t('safety.rthHeight'),
+                    rthInfo
+                      ? rthInfo.rthManual
+                        ? L(UI.rthFixed, { range: rthRange })
+                        : L(withBases && nFlights > 1 ? UI.rthAutoTable : UI.rthAuto, {
+                            range: rthRange,
+                          })
+                      : DASH,
+                  ],
+                  [L(UI.sTakeoff), rthInfo ? L(UI.takeoffValue, { m: rthInfo.takeoffM }) : DASH],
+                  [L(UI.sHeights), L(withBases ? UI.heightsBases : UI.heightsTakeoff)],
+                ].map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="rep-kv2 grid grid-cols-1 items-baseline gap-x-4 gap-y-0.5 border-t border-raised py-2.5 text-[13px] leading-[1.45] sm:grid-cols-[180px_minmax(0,1fr)]"
+                  >
+                    <dt className="text-slate-300">{k}</dt>
+                    <dd className="m-0 tabular-nums">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="rep-box m-0 mt-3 flex gap-2.5 rounded-[9px] border border-[#1E2E4A] bg-[#0F1A2E] px-3 py-2.5 text-[12.5px] leading-normal text-slate-200">
+                <IconInfo className="mt-0.5 h-4 w-4 flex-none text-blue-300" />
+                <span>{t('safety.checklistHint')}</span>
+              </p>
+            </Card>
+
+            {items && (
+              <Card
+                id="rep-preflight"
+                title={t('preflight.title')}
+                after={countBadges}
+                className="rep-flow"
+              >
+                <ReportPreflight items={items} counts={counts} baseColors={baseColors} />
+              </Card>
+            )}
+          </div>
+
+          {/* ------------------ Reprodutibilidade e incerteza ------------------ */}
+          {reproducibility && (
+            <Card
+              id="rep-reprodutibilidade"
+              title={L(UI.reproTitle)}
+              note={reproducibility.version ? `v${reproducibility.version}` : null}
+            >
+              <dl className="rep-two m-0 grid grid-cols-1 gap-x-8 md:grid-cols-2">
+                {[
+                  [L(UI.rVersion), reproducibility.version ?? DASH],
+                  ...(unc
                     ? [
-                        counted(counts.block, 'preflight.word.blocker', 'preflight.word.blockers'),
-                        counted(counts.warn, 'preflight.word.warning', 'preflight.word.warnings'),
-                        counted(counts.info, 'preflight.word.note', 'preflight.word.notes'),
-                      ].join(' · ')
-                    : L(UI.rPreflightOk),
-                ],
-              ].map(([k, v]) => (
-                <div
-                  key={k}
-                  className="rep-kv flex min-h-[38px] items-center justify-between gap-4 border-t border-raised text-[13px]"
-                >
-                  <dt className="text-slate-300">{k}</dt>
-                  <dd className="m-0 text-right tabular-nums">{v}</dd>
+                        // um só valor quando as duas pontas, arredondadas, coincidem
+                        [
+                          L(UI.rAgl),
+                          `${rangeText(unc.agl[0], unc.agl[1], (v) => fmt(v, 1), ' – ')} m`,
+                        ],
+                        [
+                          L(UI.rPositioning),
+                          `${unc.inputs.mode === 'rtk' ? 'RTK' : 'GNSS'} · ±${unc.inputs.verticalM} m V · ±${unc.inputs.horizontalM} m H`,
+                        ],
+                        ...(unc.gsd
+                          ? [
+                              [
+                                L(UI.rGsd),
+                                `${rangeText(unc.gsd[0], unc.gsd[1], (v) => fmt(v, 2), ' – ')} cm/px`,
+                              ],
+                            ]
+                          : []),
+                      ]
+                    : []),
+                  ...(reproducibility.terrainDatum
+                    ? [[L(UI.rDatum), verticalDatumLabel(reproducibility.terrainDatum, t)]]
+                    : []),
+                  ...(unc?.front && unc?.side
+                    ? [
+                        [
+                          L(UI.rOverlap),
+                          `${rangeText(unc.front[0], unc.front[1], (v) => fmt(v, 0))} % / ${rangeText(unc.side[0], unc.side[1], (v) => fmt(v, 0))} %`,
+                        ],
+                      ]
+                    : []),
+                  ...(Array.isArray(reproducibility.blur) && reproducibility.blur.length === 2
+                    ? [
+                        [
+                          L(UI.rBlur),
+                          `${fmt(reproducibility.blur[0].blurCm, 1)} cm · ${fmt(reproducibility.blur[1].blurCm, 1)} cm${
+                            reproducibility.blur[1].blurPx != null
+                              ? ` (${fmt(reproducibility.blur[1].blurPx, 1)} px)`
+                              : ''
+                          }`,
+                        ],
+                      ]
+                    : []),
+                  [
+                    L(UI.rPreflight),
+                    counts && counts.block + counts.warn > 0
+                      ? [
+                          counted(
+                            counts.block,
+                            'preflight.word.blocker',
+                            'preflight.word.blockers',
+                          ),
+                          counted(counts.warn, 'preflight.word.warning', 'preflight.word.warnings'),
+                          counted(counts.info, 'preflight.word.note', 'preflight.word.notes'),
+                        ].join(' · ')
+                      : L(UI.rPreflightOk),
+                  ],
+                ].map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="rep-kv flex min-h-[38px] items-center justify-between gap-4 border-t border-raised text-[13px]"
+                  >
+                    <dt className="text-slate-300">{k}</dt>
+                    <dd className="m-0 text-right tabular-nums">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="flex min-h-[38px] flex-wrap items-center justify-between gap-x-4 border-y border-raised py-1.5 text-[13px]">
+                <span className="text-slate-300">{L(UI.rHash)}</span>
+                <span className="break-all text-right font-mono text-[12.5px]">
+                  {projectHash ?? DASH}
+                </span>
+              </div>
+              <p className="rep-muted m-0 mt-2.5 text-xs leading-normal text-slate-400">
+                {L(UI.rNote)}
+              </p>
+            </Card>
+          )}
+
+          {/* ----------------------------- Assinaturas ----------------------------- */}
+          <footer className="rep-card rep-footer rounded-xl border border-slate-800 bg-slate-900 px-6 pb-5 pt-6">
+            <div className="grid grid-cols-2 gap-12">
+              {[UI.sigPilot, UI.sigSupervisor].map((papel) => (
+                <div key={papel.pt}>
+                  <div className="rep-sig h-10 border-b border-[#3A4A66]" />
+                  <p className="m-0 mt-1.5 text-xs text-slate-400">{L(papel)}</p>
                 </div>
               ))}
-            </dl>
-            <div className="flex min-h-[38px] flex-wrap items-center justify-between gap-x-4 border-y border-raised py-1.5 text-[13px]">
-              <span className="text-slate-300">{L(UI.rHash)}</span>
-              <span className="break-all text-right font-mono text-[12.5px]">
-                {projectHash ?? DASH}
-              </span>
             </div>
-            <p className="rep-muted m-0 mt-2.5 text-xs leading-normal text-slate-400">
-              {L(UI.rNote)}
+            <p className="m-0 mt-[18px] flex items-center gap-2 text-[13px] font-medium text-amber-300">
+              <IconWarning className="h-4 w-4 flex-none text-amber-500" />
+              {L(UI.warning)}
             </p>
-          </Card>
-        )}
-
-        {/* ----------------------------- Assinaturas ----------------------------- */}
-        <footer className="rep-card rep-footer rounded-xl border border-slate-800 bg-slate-900 px-6 pb-5 pt-6">
-          <div className="grid grid-cols-2 gap-12">
-            {[UI.sigPilot, UI.sigSupervisor].map((papel) => (
-              <div key={papel.pt}>
-                <div className="rep-sig h-10 border-b border-[#3A4A66]" />
-                <p className="m-0 mt-1.5 text-xs text-slate-400">{L(papel)}</p>
-              </div>
-            ))}
-          </div>
-          <p className="m-0 mt-[18px] flex items-center gap-2 text-[13px] font-medium text-amber-300">
-            <IconWarning className="h-4 w-4 flex-none text-amber-500" />
-            {L(UI.warning)}
-          </p>
-        </footer>
+          </footer>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 
