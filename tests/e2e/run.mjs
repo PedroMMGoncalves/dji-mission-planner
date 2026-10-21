@@ -5338,6 +5338,38 @@ await scenario('erros-de-importacao-junto-do-botao', async () => {
     'projecto: o erro de um projecto que não abre está no cartão 1, junto de «Abrir projecto»',
     (await page.getByTestId('card-missao').getByTestId('project-error').count()) === 1,
   )
+  // pelo menu do projecto do cabeçalho, noutro separador (o cartão 1 não se
+  // vê): o erro aparece por baixo do cabeçalho e o separador não muda; o ✕
+  // fecha-o, e um projecto que abre tira-o
+  await modo(page, /^Face$/)
+  const ficheiroCab = page.getByTestId('header-project-file')
+  await ficheiroCab.setInputFiles(mau)
+  await page.waitForTimeout(600)
+  const faixa = page.getByTestId('header-project-error')
+  const faixaTxt = await faixa.innerText().catch(() => '')
+  check(
+    'projecto: aberto pelo cabeçalho na Face, o erro aparece por baixo do cabeçalho',
+    (await faixa.isVisible()) &&
+      (await faixa.getAttribute('role')) === 'alert' &&
+      /não é um projecto do planeador/.test(faixaTxt) &&
+      (await page.getByTestId('card-fachada-1').isVisible()),
+    faixaTxt.slice(0, 120),
+  )
+  await faixa.getByRole('button', { name: /Fechar|Close/ }).click()
+  const fechada = (await faixa.count()) === 0
+  await ficheiroCab.setInputFiles(mau)
+  await page.waitForTimeout(600)
+  const deNovo = await faixa.isVisible()
+  const bom = join(OUT, 'projecto-face.json')
+  writeFileSync(bom, JSON.stringify({ version: 2, missionName: 'face-ok', missionMode: 'face' }))
+  await ficheiroCab.setInputFiles(bom)
+  await page.waitForTimeout(600)
+  const depois = await faixa.count()
+  check(
+    'projecto: o ✕ fecha a faixa do erro, e um projecto que abre tira-a',
+    fechada && deNovo && depois === 0,
+    `fechada: ${fechada}, de novo: ${deNovo}, depois do projecto bom: ${depois}`,
+  )
   check('importação: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }

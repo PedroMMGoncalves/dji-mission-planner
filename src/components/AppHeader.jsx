@@ -6,12 +6,14 @@
  * é a exportação do separador aberto, a mesma do fim do painel, e a seta
  * abre o KML da área (em todos os separadores) e as outras desse separador
  * (na área as do cartão 7, com os mesmos nomes, dicas e acções);
- * configuração, ajuda e língua. Por baixo, o erro da última exportação.
+ * configuração, ajuda e língua. Por baixo, o erro da última exportação e o
+ * do projecto que o menu do projecto não conseguiu abrir.
  */
 import { useEffect, useRef, useState } from 'react'
 import { LANGS, useT } from '../i18n.jsx'
 import { missionExportLabel } from '../i18n/format.js'
 import { exportChoices, flightsArchiveName } from '../mission/flightFiles.js'
+import { errorText } from '../utils/appError.js'
 import {
   IconChevronDown,
   IconClipboard,
@@ -268,7 +270,7 @@ function ProjectButton({ missionName, setMissionName, session, onOpen }) {
         className="hidden"
         data-testid="header-project-file"
         onChange={(e) => {
-          session.importProject(e.target.files?.[0])
+          session.importProject(e.target.files?.[0], { fromHeader: true })
           e.target.value = ''
         }}
       />
@@ -280,6 +282,11 @@ const VIEW_BUTTON =
   'flex h-9 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-[13px] font-medium text-slate-200 transition-colors hover:bg-raised hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent'
 
 const Divider = () => <span aria-hidden="true" className="h-6 w-px bg-slate-800" />
+
+// as faixas de erro por baixo do cabeçalho (exportação, projecto) e o seu ✕
+const ALERT_STRIP =
+  'flex items-start gap-2 border-b border-red-800 bg-red-950/60 px-4 py-2 text-xs text-red-200'
+const ALERT_CLOSE = 'ml-auto rounded border border-red-700 px-2 py-0.5 font-medium hover:bg-red-900'
 
 export default function AppHeader({
   terrainState,
@@ -476,15 +483,25 @@ export default function AppHeader({
       </header>
 
       {exportError && (
-        <div
-          role="alert"
-          className="flex items-start gap-2 border-b border-red-800 bg-red-950/60 px-4 py-2 text-xs text-red-200"
-        >
+        <div role="alert" className={ALERT_STRIP}>
           <span className="font-semibold">⚠ {t('export.failed')}</span>
           <span>{t(`export.err.${exportError.code}`, { d: exportError.detail })}</span>
+          <button onClick={() => setExportError(null)} className={ALERT_CLOSE}>
+            ✕
+          </button>
+        </div>
+      )}
+      {/* o projecto que o menu do projecto não abriu: o erro fica também
+          aqui, porque fora do separador Área o do cartão 1 não se vê */}
+      {session.projectAlert && session.projectError && (
+        <div role="alert" data-testid="header-project-error" className={ALERT_STRIP}>
+          <span>⚠ {errorText(session.projectError, t)}</span>
           <button
-            onClick={() => setExportError(null)}
-            className="ml-auto rounded border border-red-700 px-2 py-0.5 font-medium hover:bg-red-900"
+            type="button"
+            onClick={session.dismissProjectAlert}
+            aria-label={t('app.errClose')}
+            title={t('app.errClose')}
+            className={ALERT_CLOSE}
           >
             ✕
           </button>

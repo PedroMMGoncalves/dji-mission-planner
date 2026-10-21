@@ -341,7 +341,8 @@ function InstrucoesPt() {
           O projecto grava-se automaticamente no browser; use «Guardar/Abrir projecto» para arquivar
           em ficheiro. Estão no cartão 1 e no <strong>menu do projecto</strong>, o nome da missão no
           cabeçalho, com «Mudar o nome»; ao lado do nome, «gravado», ou «não gravado» quando o
-          browser recusa a gravação automática.
+          browser recusa a gravação automática. Um ficheiro que não abre diz porquê no cartão 1 e,
+          aberto pelo menu do projecto, também por baixo do cabeçalho.
         </Li>
         <Li>
           O <strong>preflight</strong> (a pastilha no cabeçalho) abre a lista por cima do mapa:
@@ -693,7 +694,8 @@ function InstrucoesEn() {
           The project auto-saves in the browser; use “Save/Open project” to archive it as a file.
           They are in card 1 and in the <strong>project menu</strong>, the mission name in the
           header, with “Rename”; next to the name, “saved”, or “not saved” when the browser refuses
-          the automatic save.
+          the automatic save. A file that does not open says why in card 1 and, when opened from the
+          project menu, also below the header.
         </Li>
         <Li>
           The <strong>preflight</strong> (the pill in the header) opens its list over the map:

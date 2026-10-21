@@ -102,18 +102,22 @@ export function useProject({ state, missionName, applyNormalized, onLoaded, setI
     )
   }, [state, missionName])
 
+  // devolve se o projecto abriu (null sem ficheiro): quem o abriu mostra o
+  // erro também onde a acção foi feita
   const importProject = useCallback(
     async (file) => {
-      if (!file) return
+      if (!file) return null
       try {
         const p = JSON.parse(await file.text())
         if (!applyProject(p)) {
           setImportError(t('project.err.invalid'))
-          return
+          return false
         }
         if (p.ring) onLoaded()
+        return true
       } catch {
         setImportError(t('project.err.invalid'))
+        return false
       }
     },
     [applyProject, setImportError, onLoaded, t],

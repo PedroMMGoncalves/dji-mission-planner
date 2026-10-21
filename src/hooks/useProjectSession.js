@@ -247,7 +247,11 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
     ],
   )
 
-  const { exportProject, importProject, autosaveFailed } = useProject({
+  const {
+    exportProject,
+    importProject: importFile,
+    autosaveFailed,
+  } = useProject({
     state: projectState,
     missionName,
     applyNormalized,
@@ -255,6 +259,19 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
     setImportError: setProjectError,
     t,
   })
+  // «Abrir projecto» do menu do cabeçalho: o erro aparece também por baixo
+  // do cabeçalho, onde a acção foi feita (fora do separador Área o cartão 1
+  // não se vê); um projecto que abre, venha de onde vier, tira-o
+  const [projectAlert, setProjectAlert] = useState(false)
+  const importProject = useCallback(
+    async (file, { fromHeader = false } = {}) => {
+      const ok = await importFile(file)
+      if (ok) setProjectAlert(false)
+      else if (ok === false && fromHeader) setProjectAlert(true)
+    },
+    [importFile],
+  )
+  const dismissProjectAlert = useCallback(() => setProjectAlert(false), [])
 
   return {
     projectState,
@@ -264,6 +281,9 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
     projectVersion,
     dismissVersionNote,
     projectError,
+    // o erro do projecto aberto pelo cabeçalho, por baixo dele, e o seu ✕
+    projectAlert,
+    dismissProjectAlert,
     // o browser recusou a última gravação automática (o cabeçalho di-lo)
     autosaveFailed,
   }

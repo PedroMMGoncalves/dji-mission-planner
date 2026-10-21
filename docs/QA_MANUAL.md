@@ -482,6 +482,11 @@ Registo na matriz: aeronave, payload, modo, versão do Pilot 2 e do firmware,
 - ☐ No mesmo menu, **Guardar projecto** e depois **Abrir projecto** com esse
   ficheiro, num separador que não seja o da área.
   **Esperado:** o mesmo .json do botão do cartão 1; o projecto abre igual.
+- ☐ No separador Face, **Abrir projecto** do mesmo menu com um .json que
+  não é um projecto.
+  **Esperado:** por baixo do cabeçalho, uma faixa com o erro e um ✕ que a
+  fecha; o separador não muda; no cartão 1, o mesmo erro. Um projecto que
+  abre a seguir tira a faixa.
 - ☐ Com o teclado: Tab até à seta do botão **Exportar**, seta para baixo,
   setas, Esc.
   **Esperado:** o menu abre com o foco no primeiro item activo, as setas
