@@ -1,8 +1,8 @@
 /**
  * A área do mapa: o mapa (desenho, área, blocos, bases, fotos,
  * pré-visualizações dos modos, bacias de visão, legenda) e, por cima dele, a
- * barra de desenho do modo Área, e à direita o resumo do projecto e o cartão
- * de métricas do separador aberto.
+ * barra de desenho do modo Área (com os primeiros passos, sem área), e à
+ * direita o resumo do projecto e o cartão de métricas do separador aberto.
  * Nada disto empurra o mapa: tudo flutua por cima, nos cantos.
  */
 import { useMemo } from 'react'
@@ -10,6 +10,7 @@ import ProjectSummary from './ProjectSummary.jsx'
 import MapView from './MapView.jsx'
 import StatsPanel from './StatsPanel.jsx'
 import MapDrawTools from './MapDrawTools.jsx'
+import FirstSteps from './FirstSteps.jsx'
 import { qualityStatsFor } from '../mission/qualityStats.js'
 
 export default function MapPane({
@@ -147,7 +148,7 @@ export default function MapPane({
     ],
   )
   // a barra de desenho é a do modo Área (os outros modos desenham pelo
-  // painel)
+  // painel); sem área e sem ferramenta activa, os primeiros passos por baixo
   const drawTools = missionMode === 'area'
   return (
     <>
@@ -209,6 +210,7 @@ export default function MapPane({
             onInspect={startInspect}
           />
         )}
+        {drawTools && !ring && mode === 'idle' && <FirstSteps />}
         {/* à direita: o resumo do projecto e as métricas, por baixo da barra
             de desenho enquanto o mapa é estreito para as duas lado a lado */}
         <div

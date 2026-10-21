@@ -383,6 +383,41 @@ const BASE_DICT = {
   'map.toolBase': { pt: 'Base', en: 'Base' },
   'map.toolInspect': { pt: 'Inspecção', en: 'Inspection' },
 
+  /* ---- Primeiros passos (primeiro ecrã, sem área) ---- */
+  'guide.title': { pt: 'Primeiros passos', en: 'First steps' },
+  'guide.count': { pt: '{n} de {total}', en: '{n} of {total}' },
+  'guide.hide': { pt: 'Esconder os primeiros passos', en: 'Hide the first steps' },
+  'guide.now': { pt: 'Passo 1 · agora', en: 'Step 1 · now' },
+  'guide.step': { pt: 'Passo {n}', en: 'Step {n}' },
+  'guide.s1': { pt: 'Desenhe ou importe a área', en: 'Draw or import the area' },
+  'guide.s1Polygon': {
+    pt: 'clique em cada vértice e feche no primeiro, ou com duplo clique. Esc cancela.',
+    en: 'click each vertex and close on the first one, or with a double-click. Esc cancels.',
+  },
+  'guide.s1ShapesLead': { pt: 'Rectângulo e Quadrado:', en: 'Rectangle and Square:' },
+  'guide.s1Shapes': {
+    pt: 'clique no centro e acerte as medidas no painel.',
+    en: 'click the centre and set the size in the panel.',
+  },
+  'guide.s1Import': {
+    pt: 'Ou importe um ficheiro no cartão 2: KML, GeoJSON, SHP (.zip) ou KMZ WPML.',
+    en: 'Or import a file in card 2: KML, GeoJSON, SHP (.zip) or WPML KMZ.',
+  },
+  'guide.s2': { pt: 'Relevo', en: 'Terrain' },
+  'guide.s2Text': {
+    pt: 'MDT local (GeoTIFF LiDAR da DGT) ou relevo global de ~30 m, no cartão 2.',
+    en: 'Local DTM (DGT LiDAR GeoTIFF) or ~30 m global terrain, in card 2.',
+  },
+  'guide.s3': { pt: 'Parâmetros de voo', en: 'Flight parameters' },
+  'guide.s3Text': {
+    pt: 'Altura, GSD e sobreposições, no cartão 3. O plano e as métricas aparecem no mapa.',
+    en: 'Height, GSD and overlaps, in card 3. The plan and the metrics appear on the map.',
+  },
+  'guide.project': {
+    pt: 'Já tem um plano gravado? Abra o projecto (.json) com',
+    en: 'Already have a saved plan? Open the project (.json) with',
+  },
+
   /* ---- Legenda das camadas, vista 3D, intervalo manual e descolagem da face e da órbita ---- */
   'legend.title': { pt: 'Legenda', en: 'Legend' },
   'legend.area': { pt: 'Área', en: 'Area' },
