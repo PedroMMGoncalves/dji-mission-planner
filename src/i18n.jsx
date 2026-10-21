@@ -367,7 +367,6 @@ const BASE_DICT = {
   },
 
   /* ---- Ajuda ---- */
-  'help.instructions': { pt: 'Instruções', en: 'Instructions' },
   'help.about': { pt: 'Acerca', en: 'About' },
   'help.closeTitle': { pt: 'Fechar (Esc)', en: 'Close (Esc)' },
 

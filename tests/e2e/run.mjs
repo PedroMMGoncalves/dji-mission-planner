@@ -1704,6 +1704,14 @@ await scenario('aviso-antes-de-usar', async () => {
       /seguro de responsabilidade civil quando exigido/.test(await dlg.innerText()) &&
       (await dlg.getByRole('link', { name: /matriz de compatibilidade/ }).count()) === 1,
   )
+  // o texto integral em cinco pontos numerados, a declaração ao lado do botão
+  check(
+    'aviso: cinco pontos numerados e a declaração junto do botão',
+    (await dlg.locator('ol > li').count()) === 5 &&
+      /Ao continuar, declara que compreende/.test(await dlg.innerText()) &&
+      (await dlg.getByRole('button', { name: 'pt', exact: true }).getAttribute('aria-pressed')) ===
+        'true',
+  )
   // só fecha no botão: nem Escape nem um clique fora
   await page.keyboard.press('Escape')
   await page.mouse.click(5, 5)
@@ -1713,17 +1721,28 @@ await scenario('aviso-antes-de-usar', async () => {
   check(
     'aviso: muda de língua no próprio aviso',
     /Before you use this app/.test(await dlg.innerText()) &&
-      /remote pilot is solely responsible/.test(await dlg.innerText()),
+      /remote pilot is solely responsible/.test(await dlg.innerText()) &&
+      (await dlg.getByRole('button', { name: 'en', exact: true }).getAttribute('aria-pressed')) ===
+        'true',
   )
   await dlg.getByRole('button', { name: 'I understand' }).click()
   check('aviso: o botão fecha-o', !(await dlg.isVisible()))
+  check(
+    'aviso: a aceitação fica guardada com a versão do texto',
+    (await page.evaluate(() => localStorage.getItem('dji-mission-planner:disclaimer'))) === '2',
+  )
   await page.reload({ waitUntil: 'domcontentloaded' })
   await page.getByTitle(/Instruções e informação|Instructions and app information/).waitFor()
   await page.waitForTimeout(500)
   check('aviso: aceite, não volta a aparecer neste aparelho', (await dlg.count()) === 0)
-  // reaberto da ajuda, para reler; aí fecha com Escape
+  // reaberto da ajuda, para reler; aí fecha com Escape. Na ajuda, o aviso é
+  // um tópico do grupo «Acerca» do índice
   await page.getByTitle(/Instruções e informação|Instructions and app information/).click()
-  await page.getByRole('button', { name: /^(Acerca|About)$/ }).click()
+  const indice = page.getByRole('navigation', { name: /Tópicos da ajuda|Help topics/ })
+  await indice.getByRole('button', { name: /^(Acerca|About)$/ }).click()
+  await indice
+    .getByRole('button', { name: /^(Aviso antes de usar|Before you use this app)$/ })
+    .click()
   await page.getByRole('button', { name: /Ler o aviso completo|Read the full disclaimer/ }).click()
   await dlg.waitFor({ state: 'visible', timeout: 5000 })
   await page.keyboard.press('Escape')
@@ -5105,6 +5124,111 @@ await scenario('legenda-camadas', async () => {
     caixas3d.join(','),
   )
   check('legenda: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
+// Ajuda em português: o índice abre os tópicos (os grupos abrem e fecham),
+// «Ver também» leva aos relacionados, a pesquisa deixa no índice só os
+// tópicos com as palavras (sem maiúsculas nem acentos, no princípio de uma
+// palavra) e realça-as; Enter passa ao tópico seguinte; Esc limpa a
+// pesquisa e, depois, fecha a ajuda.
+await scenario('ajuda-indice-pesquisa', async () => {
+  const { page, errors } = await openMission({})
+  await page.getByTitle(/Instruções e informação/).click()
+  const ajuda = page.getByRole('dialog', { name: 'Ajuda' })
+  await ajuda.waitFor({ timeout: 5000 })
+  const indice = ajuda.getByRole('navigation', { name: 'Tópicos da ajuda' })
+  const topico = ajuda.getByTestId('help-topic')
+  const titulo = () => topico.getByRole('heading', { level: 2 }).innerText()
+  const busca = ajuda.getByRole('searchbox', { name: 'Procurar na ajuda' })
+  const entradas = async () =>
+    (await indice.getByRole('button').allInnerTexts()).map((s) => s.split('\n')[0].trim())
+  const todas = await entradas()
+  check(
+    'ajuda: abre em português no primeiro tópico, com a pesquisa em foco e o índice',
+    (await titulo()) === 'Fluxo básico' &&
+      (await busca.evaluate((e) => e === document.activeElement)) &&
+      [
+        'Fluxo básico',
+        'Tipos de missão',
+        'Voos e bases',
+        'Exportar',
+        'O que mudou',
+        'Acerca',
+      ].every((n) => todas.includes(n)),
+    todas.join(' | '),
+  )
+  const grupo = indice.getByRole('button', { name: 'Voos e bases' })
+  await grupo.click()
+  const aberto = (await grupo.getAttribute('aria-expanded')) === 'true'
+  await indice.getByRole('button', { name: 'Bacias de visão' }).click()
+  check(
+    'ajuda: o índice abre o grupo e o tópico, marcado como o actual, com o caminho',
+    aberto &&
+      (await titulo()) === 'Bacias de visão' &&
+      /Laranja: atrás do relevo/.test(await topico.innerText()) &&
+      /^Ajuda\s*Voos e bases/.test(await topico.innerText()) &&
+      (await indice
+        .getByRole('button', { name: 'Bacias de visão' })
+        .getAttribute('aria-current')) === 'true',
+  )
+  await grupo.click()
+  check(
+    'ajuda: o grupo fecha-se no índice',
+    (await grupo.getAttribute('aria-expanded')) === 'false' &&
+      (await indice.getByRole('button', { name: 'Bacias de visão' }).count()) === 0,
+  )
+  await topico.getByRole('button', { name: 'Configuração' }).click()
+  check(
+    'ajuda: «Ver também» abre o tópico relacionado',
+    (await titulo()) === 'Configuração' &&
+      /roda dentada no cabeçalho/.test(await topico.innerText()),
+  )
+  // pesquisa: só os tópicos com a palavra, realçada; «rth» não é o de «Earth»
+  await busca.fill('rth')
+  const comRth = await entradas()
+  const marcas = await topico.locator('mark').allInnerTexts()
+  check(
+    'ajuda: a pesquisa deixa no índice só os tópicos com a palavra e realça-a',
+    comRth.includes('Acções de segurança') &&
+      comRth.includes('O que mudou') &&
+      !comRth.includes('Fluxo básico') &&
+      !comRth.includes('WPML (KMZ) e voos') &&
+      (await titulo()) === 'Acções de segurança' &&
+      marcas.length >= 1 &&
+      marcas.every((m) => m === 'RTH') &&
+      /\d+ resultados em 2 tópicos/.test(await ajuda.getByRole('status').innerText()),
+    `${comRth.join(' | ')} · ${marcas.join(',')}`,
+  )
+  await busca.press('Enter')
+  check('ajuda: Enter na pesquisa passa ao tópico seguinte', (await titulo()) === 'O que mudou')
+  // sem acentos: «seguranca» encontra «segurança»
+  await busca.fill('SEGURANCA')
+  const semAcento = await topico.locator('mark').allInnerTexts()
+  check(
+    'ajuda: a pesquisa não distingue maiúsculas nem acentos',
+    semAcento.length >= 1 && semAcento.every((m) => /^segurança$/i.test(m)),
+    semAcento.join(','),
+  )
+  await busca.fill('xyzzy')
+  check(
+    'ajuda: sem resultados, o índice fica vazio e a ajuda di-lo',
+    (await indice.getByRole('button').count()) === 0 &&
+      /Nada encontrado para «xyzzy»/.test(await ajuda.innerText()),
+  )
+  await busca.press('Escape')
+  const limpa = (await busca.inputValue()) === '' && (await ajuda.isVisible())
+  await busca.press('ArrowDown')
+  check(
+    'ajuda: Esc limpa a pesquisa, e a seta para baixo passa ao índice',
+    limpa &&
+      (await entradas()).length === todas.length &&
+      (await page.evaluate(() => document.activeElement?.textContent?.trim())) === 'Fluxo básico',
+  )
+  await page.keyboard.press('Escape')
+  check('ajuda: Esc, fora da pesquisa, fecha a ajuda', (await ajuda.count()) === 0)
+  check('ajuda: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()
   return { page }
 })
