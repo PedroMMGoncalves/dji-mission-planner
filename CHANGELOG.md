@@ -93,6 +93,19 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   mudam. O cartão 3 contava também os pontos desses troços nos «waypoints
   com altura própria» (612 para 589 voados): passa a contar os dos voos.
 
+### Interno (testes)
+
+- **O limiar de cobertura mede a união das três suites.** Sob o c8 o
+  vitest corria os módulos transformados pelo Vite, que o c8 lia sem o mapa
+  de fonte: os deslocamentos do código transformado caíam no ficheiro
+  original nas linhas erradas (em `gimbal.js` as funções «cobertas» eram
+  comentários e `shotPitches` nem aparecia), e juntar essa versão à do
+  smoke perdia o que os unitários executavam. Com o c8 a medir, o vitest
+  carrega `src/utils`, `src/mission`, `src/data` e `src/i18n` no Node tal
+  como estão, como o smoke; os totais passam de 95,4 / 94,1 / 80,5 %
+  (linhas, funções, ramos) para 97,8 / 97,3 / 87,1 %, e os limiares de
+  94/94/80 para 97/97/87.
+
 ### Interno (repartição do `App.jsx`)
 
 - **O `App.jsx` passa de 3422 para 1118 linhas**, sem mudar o que a

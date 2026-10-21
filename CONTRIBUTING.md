@@ -50,6 +50,13 @@ falham com `PERF=1` — no portão registam-se. O workflow `Nocturno` corre
 de madrugada os unitários com uma semente aleatória e os tempos a valer;
 um contra-exemplo que apareça aí passa a teste fixo.
 
+Na cobertura o vitest carrega `src/utils`, `src/mission`, `src/data` e
+`src/i18n` no Node tal como estão, como o smoke, e não transformados pelo
+Vite (`vitest.config.js`, só sob o c8): o c8 não tem o mapa de fonte do
+código transformado e um ficheiro em duas versões saía mal medido. Assim
+o limiar mede a união exacta das três suites, linha a linha, função a
+função e ramo a ramo.
+
 ## As camadas de teste e o que cada uma garante
 
 | Camada | Onde | O que apanha |
