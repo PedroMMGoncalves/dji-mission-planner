@@ -1224,9 +1224,9 @@ const VOLTAR =
   'inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-lg px-3 text-[13.5px] font-medium text-sky-300 transition-colors hover:bg-raised hover:text-sky-200'
 
 /** Campo da identificação da missão: o rótulo por cima e a caixa de 44 px. */
-function CampoTexto({ label, value, onChange, placeholder, type = 'text' }) {
+function CampoTexto({ campo, label, value, onChange, placeholder, type = 'text' }) {
   return (
-    <label className="flex min-w-0 flex-col gap-1.5 text-xs text-slate-400">
+    <label data-campo={campo} className="flex min-w-0 flex-col gap-1.5 text-xs text-slate-400">
       {label}
       <input
         type={type}
@@ -1690,7 +1690,7 @@ function FichasPorBase({ sheets, day, onOpen, onPrintAll, ultima, cardRefs, t, L
                 <span className="flex w-full min-w-0 items-center gap-1.5 whitespace-nowrap">
                   <span
                     aria-hidden="true"
-                    className="inline-flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full text-[11.5px] font-bold [-webkit-print-color-adjust:exact] [print-color-adjust:exact]"
+                    className="chk-cor inline-flex h-[22px] w-[22px] flex-none items-center justify-center rounded-full text-[11.5px] font-bold"
                     style={{ backgroundColor: s.color ?? '#334155', color: baseInk(s.color) }}
                   >
                     {s.label}
@@ -1706,7 +1706,7 @@ function FichasPorBase({ sheets, day, onOpen, onPrintAll, ultima, cardRefs, t, L
                 </span>
                 <span className="flex w-full items-center gap-1.5 whitespace-nowrap">
                   <span
-                    className={`inline-flex h-[22px] items-center rounded-full px-2 text-xs font-semibold tabular-nums ${
+                    className={`chk-zona inline-flex h-[22px] items-center rounded-full px-2 text-xs font-semibold tabular-nums ${
                       s.reduced || s.noTerrain
                         ? 'bg-[#2A1F0B] text-amber-300'
                         : 'bg-[#1A2742] text-slate-200'
@@ -1723,8 +1723,8 @@ function FichasPorBase({ sheets, day, onOpen, onPrintAll, ultima, cardRefs, t, L
         })}
       </ul>
       {menor && (
-        <p className="m-0 mt-3 flex items-start gap-2 text-xs leading-[1.45] text-slate-400">
-          <span className="inline-flex h-[22px] flex-none items-center rounded-full bg-[#2A1F0B] px-2 text-xs font-semibold text-amber-300">
+        <p className="chk-zona-nota m-0 mt-3 flex items-start gap-2 text-xs leading-[1.45] text-slate-400">
+          <span className="chk-zona inline-flex h-[22px] flex-none items-center rounded-full bg-[#2A1F0B] px-2 text-xs font-semibold text-amber-300">
             {L(UI.zoneWord)}
           </span>
           <span className="pt-[3px]">
@@ -1895,7 +1895,7 @@ function Tabela({
                       {cor && (
                         <span
                           aria-hidden="true"
-                          className="ml-3 h-2.5 w-2.5 flex-none rounded-full"
+                          className="chk-cor ml-3 h-2.5 w-2.5 flex-none rounded-full"
                           style={{ backgroundColor: cor }}
                         />
                       )}
@@ -2464,6 +2464,7 @@ export default function ChecklistPage({
               {CAMPOS_MISSAO.map((c) => (
                 <CampoTexto
                   key={c.key}
+                  campo={c.key}
                   label={L(c.label)}
                   type={c.type}
                   placeholder={L(c.placeholder)}
@@ -2495,7 +2496,7 @@ export default function ChecklistPage({
                 {critPorFazer > 0 ? (
                   <CritPill>{critText(critPorFazer, L)}</CritPill>
                 ) : (
-                  <span className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#1F5C47] bg-[#0D2A21] px-[11px] text-[12.5px] font-semibold text-emerald-200">
+                  <span className="chk-crit-pill inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#1F5C47] bg-[#0D2A21] px-[11px] text-[12.5px] font-semibold text-emerald-200">
                     <Svg className="h-3.5 w-3.5 text-emerald-400" strokeWidth={2.2}>
                       <path d="M20 6 9 17l-5-5" />
                     </Svg>
@@ -2870,7 +2871,11 @@ const PRINT_CSS = `
   .chk-page .chk-lado { display: block !important; }
   .chk-page .chk-lado { margin-top: 4mm; }
   .chk-page .chk-lado > * + * { margin-top: 4mm; }
-  .chk-page .chk-campos { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+  /* a identificação em duas linhas: a plataforma («DJI Matrice 300 RTK +
+     Zenmuse P1») não cabe num quinto da folha, e um campo não dobra */
+  .chk-page .chk-campos { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+  .chk-page .chk-campos > label { grid-column: span 2; }
+  .chk-page .chk-campos > label[data-campo='plataforma'] { grid-column: span 4; }
 
   /* as três fases lado a lado, com os grupos todos abertos */
   .chk-page .chk-fases {
@@ -2938,7 +2943,11 @@ const PRINT_CSS = `
     font-size: 6pt !important;
   }
 
-  /* as fichas por base: os cartões em quatro colunas */
+  /* as fichas por base: os cartões em quatro colunas; a lista passa à página
+     seguinte entre filas, nunca a meio de um cartão, e o título vai com ela */
+  .chk-page .chk-bases > div,
+  .chk-page .chk-bases > p { break-after: avoid; }
+  .chk-page .chk-bases li { break-inside: avoid; }
   .chk-page .chk-bases ul {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 1.5mm !important;
@@ -2946,16 +2955,23 @@ const PRINT_CSS = `
   .chk-page .chk-cartao-base {
     min-height: 0 !important;
     padding: 1mm 1.5mm !important;
+    gap: 0.5mm !important;
     border: 1px solid #ccc !important;
     border-radius: 0 !important;
-    font-size: 7pt !important;
   }
-  /* no papel os voos de cada base vão por inteiro */
+  /* no papel, tudo na mesma letra pequena e os voos de cada base por
+     inteiro; a cor da base não passa ao preto e branco, e o nome já diz
+     a letra */
+  .chk-page .chk-cartao-base,
+  .chk-page .chk-cartao-base * { font-size: 7pt !important; }
   .chk-page .chk-cartao-base span {
     overflow: visible !important;
-    white-space: normal !important;
     text-overflow: clip !important;
   }
+  .chk-page .chk-zona { height: auto !important; padding: 0 !important; }
+  .chk-page .chk-cor { display: none !important; }
+  .chk-page .chk-zona-nota { gap: 1.2mm !important; }
+  .chk-page .chk-zona-nota > span { padding-top: 0 !important; }
 
   .chk-page input,
   .chk-page textarea {
@@ -2978,6 +2994,11 @@ const PRINT_CSS = `
     width: auto !important;
     min-width: 0 !important;
   }
+  /* os títulos na letra da tabela (a linha do ecrã traz a sua), e a
+     primeira coluna, só com o voo ou o número, estreita: «Observações»
+     cabe na sua */
+  .chk-page .chk-tabela th { font-size: 7pt !important; line-height: 1.2 !important; }
+  .chk-page .chk-tabela th:first-child { width: 11mm !important; }
   .chk-page .chk-tabela td > span { height: auto !important; }
   .chk-page .chk-tabela input {
     height: auto !important;
@@ -3025,5 +3046,8 @@ const PRINT_CSS = `
   }
 
   body.print-blank .chk-progresso { visibility: hidden !important; }
+
+  /* o estado dos críticos também é preenchimento */
+  body.print-blank .chk-crit-pill { display: none !important; }
 }
 `
