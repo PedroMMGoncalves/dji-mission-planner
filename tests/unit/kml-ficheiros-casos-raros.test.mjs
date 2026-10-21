@@ -98,6 +98,21 @@ describe('a ficha da base no KML «Bases e blocos»', () => {
     expect(XMLValidator.validate(vazio)).toBe(true)
     expect(vazio).not.toContain('<Placemark>')
   })
+
+  test('base junto ao meridiano de Greenwich: graus decimais, sem notação científica', () => {
+    // a menos de 11 cm de 0°, Number(v.toFixed(8)) escrevia «4e-7»
+    const kml = buildBasesKML({
+      name: 'm',
+      sheets: [sheet({ point: [4e-7, 51.4779] })],
+      blocks: [],
+      layout: null,
+    })
+    expect(XMLValidator.validate(kml)).toBe(true)
+    const doc = new DOMParser().parseFromString(kml, 'application/xml').documentElement
+    const coords = findAll(doc, 'coordinates').map(textOf)
+    expect(coords).toContain('0.0000004,51.4779,0')
+    for (const c of coords) expect(c).not.toMatch(/e/i)
+  })
 })
 
 describe('contornos dos blocos de faixas', () => {

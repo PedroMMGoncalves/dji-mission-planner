@@ -304,7 +304,12 @@ export function validateExportParams(params) {
   return params
 }
 
-function fmtCoord(v) {
+/**
+ * Grau decimal dos ficheiros: 8 casas, sem zeros à direita nem notação
+ * científica. Uma só regra para o KMZ, o KML da área, o dos GCPs e o das
+ * bases.
+ */
+export function fmtCoord(v) {
   return fmtDec(v, 8)
 }
 

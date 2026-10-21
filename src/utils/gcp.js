@@ -1,7 +1,7 @@
 import * as turf from '@turf/turf'
 import { ringToPolygon } from './geo.js'
 import { M_PER_DEG_LAT, metersPerDegLon } from './units.js'
-import { escapeXml } from './exporters.js'
+import { escapeXml, fmtCoord } from './exporters.js'
 
 /**
  * PLANEAMENTO DE PONTOS DE CONTROLO NO SOLO (GCPs)
@@ -240,10 +240,6 @@ export function gcpStats(ring, gcps, holes = null) {
     haPerGcp: count > 0 ? areaHa / count : null,
     minSpacingM,
   }
-}
-
-function fmtCoord(v) {
-  return Number(v.toFixed(8))
 }
 
 /**

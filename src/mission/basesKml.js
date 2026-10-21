@@ -10,7 +10,7 @@
  * descrição inteira como XML (escapeXml faz as duas coisas).
  */
 import * as turf from '@turf/turf'
-import { escapeXml } from '../utils/exporters.js'
+import { escapeXml, fmtCoord } from '../utils/exporters.js'
 import { M_PER_DEG_LAT, metersPerDegLonSafe } from '../utils/units.js'
 import { convexHull } from './baseLayout.js'
 import { mapLinks } from './fieldSheet.js'
@@ -187,7 +187,7 @@ function labelPoint(ring) {
   }
 }
 
-const coord = (p) => `${Number(p[0].toFixed(8))},${Number(p[1].toFixed(8))},0`
+const coord = (p) => `${fmtCoord(p[0])},${fmtCoord(p[1])},0`
 const coords = (ring) => ring.map(coord).join(' ')
 /**
  * Descrição: linhas de texto, cada uma escapada como HTML, juntas com <br/>;
