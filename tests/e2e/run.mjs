@@ -6459,6 +6459,61 @@ await scenario('erros-de-importacao-junto-do-botao', async () => {
   return { page }
 })
 
+/* ---- uma base sem blocos: a zona dela a partir do painel ---------------- */
+// Sem divisão em voos não há blocos a atribuir («Atribuir blocos a esta base»
+// não aparece); escolher a base, o que desenha a zona dela no mapa, faz-se
+// no detalhe dela com «Mostrar a zona no mapa», como um clique no marcador.
+await scenario('base-sem-blocos-mostra-zona', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  const marcar = marcarBase(page, 'mapa')
+  await marcar.click()
+  await clickMap(page, 900, 1400)
+  if ((await marcar.getAttribute('aria-pressed')) === 'true') await marcar.click()
+  await zonesReady(page)
+  const linha = page.locator('[data-testid="base-row"][data-base-label="A"]')
+  const abrir = linha.locator('th button')
+  await revelar(page, abrir)
+  if ((await abrir.getAttribute('aria-expanded')) === 'false') await abrir.click()
+  const mostrar = linha.getByTestId('base-show-zone')
+  check(
+    'base sem blocos: no detalhe, «Mostrar a zona no mapa» em vez de «Atribuir blocos a esta base»',
+    (await linha.getByTestId('base-gather').count()) === 0 &&
+      (await mostrar.isVisible()) &&
+      (await mostrar.innerText()).trim() === 'Mostrar a zona no mapa' &&
+      /zona de descolagem da base A/.test((await mostrar.getAttribute('title')) ?? ''),
+    `${await linha.getByTestId('base-gather').count()} · ${await mostrar.getAttribute('title')}`,
+  )
+  // a zona são círculos no mapa (o raio pedido a tracejado, se reduzido)
+  const caminhos = () => page.locator('.leaflet-overlay-pane svg path').count()
+  const estado = async () => ({
+    premido: await mostrar.getAttribute('aria-pressed'),
+    caminhos: await caminhos(),
+  })
+  // acabada de marcar, a base fica escolhida: a zona está à vista
+  const marcada = await estado()
+  await mostrar.click()
+  const escondida = await estado()
+  await mostrar.click()
+  const mostrada = await estado()
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
+  const comEsc = await estado()
+  check(
+    'base sem blocos: «Mostrar a zona no mapa» liga e desliga a zona (aria-pressed), e Esc esconde-a',
+    marcada.premido === 'true' &&
+      escondida.premido === 'false' &&
+      escondida.caminhos < marcada.caminhos &&
+      mostrada.premido === 'true' &&
+      mostrada.caminhos === marcada.caminhos &&
+      comEsc.premido === 'false' &&
+      comEsc.caminhos === escondida.caminhos,
+    JSON.stringify({ marcada, escondida, mostrada, comEsc }),
+  )
+  check('base sem blocos: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 /* ---- impressões digitais (repartição do App.jsx) ------------------------- */
 // Um projecto fixo por modo; do que a interface mostra e exporta guarda-se
 // uma impressão (tests/e2e/impressoes.mjs) que cada passo da repartição do

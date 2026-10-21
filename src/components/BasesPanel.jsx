@@ -339,6 +339,8 @@ export function FlightExports({
   const groupTitle = 'bg-sunken px-3 py-1.5 text-[11.5px] text-slate-400'
   return (
     <div data-testid="flight-exports" className="flex flex-col gap-2">
+      {/* o nome a que as dicas do cabeçalho, a ajuda e o manual se referem */}
+      <h4 className="text-[13.5px] font-semibold text-slate-100">{t('bases.export.title')}</h4>
       <div role="group" aria-labelledby="flight-exports-kmz" className={group}>
         <p id="flight-exports-kmz" className={groupTitle}>
           {t('bases.export.kmzGroup')}
@@ -578,11 +580,12 @@ function BaseRow({
     ? tCount(t, 'bases.flights', b.flights.length, { list: b.flights.join(', ') })
     : t('bases.noFlights')
   const lit = open || selected
-  // escolhida no mapa: a linha, aberta, fica à vista no painel
+  // escolhida no mapa, ou aberta aqui: a linha, com o detalhe, fica à
+  // vista no painel (aberta no fundo da tabela, o detalhe ficava por baixo)
   const rowRef = useRef(/** @type {HTMLTableSectionElement|null} */ (null))
   useEffect(() => {
-    if (selected) rowRef.current?.scrollIntoView?.({ block: 'nearest' })
-  }, [selected])
+    if (selected || open) rowRef.current?.scrollIntoView?.({ block: 'nearest' })
+  }, [selected, open])
   return (
     <tbody
       ref={rowRef}
@@ -741,6 +744,22 @@ function BaseRow({
                     {t('bases.gather')}
                   </button>
                 ))}
+              {/* sem blocos não há o que atribuir: a escolha da base só
+                  mostra a zona dela no mapa (como um clique no marcador) */}
+              {!canGather && (
+                <button
+                  type="button"
+                  data-testid="base-show-zone"
+                  aria-pressed={selected}
+                  onClick={() => onSelect(selected ? null : b.id)}
+                  title={t('bases.showZoneTitle', { label: b.label })}
+                  className={`${buttonClass('secondary', 'md')} min-w-0 flex-1 ${
+                    selected ? 'border-[#2C4A68] bg-[#0F2438] text-sky-200' : 'bg-panel'
+                  }`}
+                >
+                  {t('bases.showZone')}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => onRemove(b.id)}

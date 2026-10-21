@@ -476,9 +476,9 @@ export default function ControlPanel({
         .filter(Boolean)
         .join(' · '))
   const areaStatus = !hasRing ? null : areaProblem ? (
-    <IconBlocked aria-label={t('cards.status.error')} className="h-4 w-4 text-red-300" />
+    <IconBlocked label={t('cards.status.error')} className="h-4 w-4 text-red-300" />
   ) : terrainReady && terrainCovers ? (
-    <IconCheck aria-label={t('cards.status.ready')} className="h-4 w-4 text-emerald-400" />
+    <IconCheck label={t('cards.status.ready')} className="h-4 w-4 text-emerald-400" />
   ) : null
   const flightSummary = [
     t(tf ? 'cards.sum.agl' : 'cards.sum.rel', { m: params.altitude }),
@@ -562,9 +562,9 @@ export default function ControlPanel({
         .filter(Boolean)
         .join(' · ')
   const exportStatus = blocked ? (
-    <IconBlocked aria-label={t('cards.status.blocked')} className="h-4 w-4 text-red-300" />
+    <IconBlocked label={t('cards.status.blocked')} className="h-4 w-4 text-red-300" />
   ) : canExportMission ? (
-    <IconCheck aria-label={t('cards.status.exportReady')} className="h-4 w-4 text-emerald-400" />
+    <IconCheck label={t('cards.status.exportReady')} className="h-4 w-4 text-emerald-400" />
   ) : null
 
   // as escolhas do disparo, tal como o plano as lê

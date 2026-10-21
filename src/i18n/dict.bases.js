@@ -92,6 +92,11 @@ export default {
     en: 'Assigning blocks to base {label}: click the blocks on the map.',
   },
   'bases.gatherDone': { pt: 'Terminar', en: 'Done' },
+  'bases.showZone': { pt: 'Mostrar a zona no mapa', en: 'Show the zone on the map' },
+  'bases.showZoneTitle': {
+    pt: 'A zona de descolagem da base {label} no mapa (com o raio pedido a tracejado, se foi reduzido). Outro clique ou Esc esconde-a.',
+    en: 'The take-off zone of base {label} on the map (with the requested radius dashed, if it was reduced). Another click or Esc hides it.',
+  },
   'bases.flights': { pt: 'voos {list}', en: 'flights {list}' },
   'bases.flightsOne': { pt: 'voo {list}', en: 'flight {list}' },
   'bases.zone': { pt: 'zona {r} m', en: 'zone {r} m' },

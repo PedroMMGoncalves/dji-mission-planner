@@ -3,7 +3,12 @@
  * Estilo de linha consistente em toda a interface.
  */
 
-function Svg({ children, className = 'h-4 w-4', strokeWidth = 1.8 }) {
+/**
+ * Decorativo por omissão (aria-hidden); com `label`, é uma imagem com esse
+ * nome (um ícone de estado que diz «Pronto» sem texto ao lado).
+ * @param {{children?: any, className?: string, strokeWidth?: number, label?: string}} props
+ */
+function Svg({ children, className = 'h-4 w-4', strokeWidth = 1.8, label = undefined }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -13,7 +18,7 @@ function Svg({ children, className = 'h-4 w-4', strokeWidth = 1.8 }) {
       strokeLinecap="round"
       strokeLinejoin="round"
       className={`inline-block shrink-0 ${className}`}
-      aria-hidden="true"
+      {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' })}
     >
       {children}
     </svg>
@@ -126,10 +131,10 @@ export function IconDownload({ className }) {
   )
 }
 
-/** @param {{className?: string}} props */
-export function IconCheck({ className }) {
+/** @param {{className?: string, label?: string}} props */
+export function IconCheck({ className, label = undefined }) {
   return (
-    <Svg className={className}>
+    <Svg className={className} label={label}>
       <path d="M4.5 12.5 10 18 19.5 6.5" />
     </Svg>
   )
@@ -231,10 +236,10 @@ export function IconWarning({ className }) {
 }
 
 /** Octógono com cruz — bloqueio. */
-/** @param {{className?: string}} props */
-export function IconBlocked({ className }) {
+/** @param {{className?: string, label?: string}} props */
+export function IconBlocked({ className, label = undefined }) {
   return (
-    <Svg className={className} strokeWidth={2}>
+    <Svg className={className} strokeWidth={2} label={label}>
       <path d="M7.9 2h8.2L22 7.9v8.2L16.1 22H7.9L2 16.1V7.9z" />
       <path d="m15 9-6 6M9 9l6 6" />
     </Svg>

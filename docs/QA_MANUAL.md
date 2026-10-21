@@ -375,9 +375,14 @@ tablet real):
   reabrir.
 - ☐ Cartão 5 com várias bases: a tabela (base, voos, zona, cota); carregar
   numa linha; depois escolher outra base no mapa.
-  **Esperado:** o detalhe abre na linha (raio da zona, voos, zona, cota,
-  vista, **Atribuir blocos a esta base**, remover); a base escolhida no mapa
-  abre a linha dela, à vista no painel.
+  **Esperado:** o detalhe abre na linha, à vista no painel (raio da zona,
+  voos, zona, cota, vista, **Atribuir blocos a esta base**, remover); a base
+  escolhida no mapa abre a linha dela, à vista no painel.
+- ☐ Cartão 5, uma base e a área ainda sem divisão em voos: abrir a linha
+  da base; carregar em **Mostrar a zona no mapa**, outra vez, e depois Esc.
+  **Esperado:** sem blocos não aparece **Atribuir blocos a esta base**;
+  **Mostrar a zona no mapa** desenha a zona da base (premido) e esconde-a
+  no segundo clique, como um clique no marcador; Esc também a esconde.
 - ☐ Cartão 5, caixa **Acções de segurança**: **No fim da missão: Aterrar no
   local**; **Perda de sinal:
   Interromper a missão** com **Pairar**. Exportar o KMZ.
