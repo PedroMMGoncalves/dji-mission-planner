@@ -106,6 +106,28 @@
       "base-G/mapa/missao-drone_mapa_base-G.kml": "b22d99a5bfb4cbce",
       "base-G/missao-drone_poligono_G-19.kml": "db9e50bd1b146f47",
       "base-G/missao-drone_poligono_G-20.kml": "df2f4f6f52fc0d2c"
+    },
+    "kmlTodos": {
+      "missao-drone_poligono_A-01.kml": "7c16dbdceaa6d3fd",
+      "missao-drone_poligono_A-02.kml": "91d887cec97bc53b",
+      "missao-drone_poligono_B-03.kml": "3cbce848369577c5",
+      "missao-drone_poligono_B-04.kml": "a5667f810749b19f",
+      "missao-drone_poligono_B-05.kml": "2645a5f51207795e",
+      "missao-drone_poligono_B-06.kml": "75d2963a5b7516ac",
+      "missao-drone_poligono_B-07.kml": "33e179d4fffbca11",
+      "missao-drone_poligono_C-08.kml": "65b933cadad6f6bf",
+      "missao-drone_poligono_D-09.kml": "3fde80758dcb1103",
+      "missao-drone_poligono_D-10.kml": "dec66dd0d28e5b1b",
+      "missao-drone_poligono_D-11.kml": "b0445bf69345dea4",
+      "missao-drone_poligono_D-12.kml": "0cb539f7812ad29e",
+      "missao-drone_poligono_E-13.kml": "e947d9842b84855b",
+      "missao-drone_poligono_E-14.kml": "61839e611ebaeb66",
+      "missao-drone_poligono_F-15.kml": "5cddd1368f86f534",
+      "missao-drone_poligono_F-16.kml": "ba43d549b0eafaf7",
+      "missao-drone_poligono_F-17.kml": "96dbab98ae560939",
+      "missao-drone_poligono_F-18.kml": "f79dc69809808748",
+      "missao-drone_poligono_G-19.kml": "db9e50bd1b146f47",
+      "missao-drone_poligono_G-20.kml": "df2f4f6f52fc0d2c"
     }
   },
   "area-simples": {
