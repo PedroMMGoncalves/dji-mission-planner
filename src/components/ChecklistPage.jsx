@@ -2131,6 +2131,13 @@ export default function ChecklistPage({
       const base = objectoDe(texto)?.voos
       const deLa = objectoDe(agora)?.voos
       setVoos((v) => mergeFlightLog(v, deLa, base, linhaDeVoo))
+      // o texto de lá passa a ser a base da fusão seguinte: duas escritas do
+      // planeador antes de a página gravar (marcar e desmarcar o mesmo voo)
+      // fundem-se uma de cada vez. A gravação por fazer, se correr antes do
+      // render novo, leva já a fusão
+      const e = ultimo.current
+      if (e) ultimo.current = { ...e, voos: mergeFlightLog(e.voos, deLa, base, linhaDeVoo) }
+      conhecido.current = { chave, texto: agora }
     }
     const aoGravar = (ev) => {
       if (ev.key === chave) trazer(ev.newValue)

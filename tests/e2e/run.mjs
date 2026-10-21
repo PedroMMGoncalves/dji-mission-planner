@@ -6898,6 +6898,19 @@ await scenario('checklist-registo-partilhado', async () => {
     linhaDe(v2).fim === '10:42' && linhaDe(v1).baterias === 'B1',
     JSON.stringify(g.voos.slice(0, 2)),
   )
+  // duas escritas do planeador antes de a checklist gravar (marcar e logo
+  // desmarcar o mesmo voo: um duplo clique em «Marcar feito»): fica por fazer
+  const v3 = rotulos[2]
+  await marcarNoOutro(v3, '10:50')
+  await page.waitForTimeout(120)
+  await marcarNoOutro(v3, '')
+  await page.waitForTimeout(900)
+  g = await gravado()
+  check(
+    'registo partilhado: marcar e desmarcar no planeador em menos de 400 ms deixa o voo por fazer',
+    linhaDe(v3).fim === '' && (await celula('Hora fim', v3).inputValue()) === '',
+    JSON.stringify(linhaDe(v3)),
+  )
 
   // uma marca escrita sem aviso (o evento perdido): a checklist relê antes de
   // gravar, junta-a e mostra-a
