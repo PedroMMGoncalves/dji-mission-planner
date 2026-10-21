@@ -1431,10 +1431,14 @@ await scenario('modos-em-seccoes', async () => {
     .click()
   await page.waitForTimeout(400)
   check(
-    'secções: o aviso do afastamento leva ao separador Área',
+    'secções: o aviso do afastamento leva ao separador Área, com «Área e relevo» aberta',
     (await page
       .getByRole('button', { name: /^Área$|^Area$/, exact: true })
-      .getAttribute('aria-current')) === 'true',
+      .getAttribute('aria-current')) === 'true' &&
+      (await page
+        .getByTestId('card-area')
+        .locator(':scope > h3 > button')
+        .getAttribute('aria-expanded')) === 'true',
   )
   check('secções: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()

@@ -204,6 +204,10 @@ function AppInner({ lang, setLang }) {
   const [showReport, setShowReport] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showPreflight, setShowPreflight] = useState(false)
+  // «Importar um GeoTIFF em Área e relevo», no aviso da face: o separador
+  // Área com a secção 2 aberta (o painel abre-a ao montar, sem mudar a
+  // escolha guardada); fora da Área o pedido já não vale
+  const [areaReveal, setAreaReveal] = useState(null)
 
   /* ------------------- Pipeline de cálculo (memo) -------------------- */
   // parâmetros de voo da área: pegada, espaçamento, intervalo, GSD e avisos
@@ -601,6 +605,7 @@ function AppInner({ lang, setLang }) {
     setMissionMode,
   })
   const { changeMissionMode, removeLastDraftVertex } = mapActions
+  if (areaReveal && missionMode !== 'area') setAreaReveal(null)
 
   // atalhos da área: direcção das linhas, margem em metros, minutos de um
   // quadrado (src/hooks/useAreaTools.js)
@@ -910,7 +915,10 @@ function AppInner({ lang, setLang }) {
                 faceClearance={faceClearance}
                 dsmLoaded={dsmLoaded}
                 // «Importar um GeoTIFF em Área e relevo», no aviso do afastamento
-                onOpenArea={() => changeMissionMode('area')}
+                onOpenArea={() => {
+                  setAreaReveal({ id: 'area' })
+                  changeMissionMode('area')
+                }}
                 cameraOk={sensor.type === 'camera'}
                 mode={mode}
                 draftCount={draftVertices.length}
@@ -1019,6 +1027,7 @@ function AppInner({ lang, setLang }) {
             )}
             {missionMode === 'area' && (
               <ControlPanel
+                reveal={areaReveal}
                 hw={hw}
                 areaParams={areaParams}
                 geom={geom}

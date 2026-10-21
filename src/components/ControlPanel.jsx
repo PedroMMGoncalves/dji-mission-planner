@@ -248,6 +248,8 @@ export default function ControlPanel({
   // os primeiros bloqueios do preflight, ditos na secção 7 (M3-U6)
   preflightBlockers = [],
   onShowPreflight = null,
+  // uma secção a abrir de fora ({ id }: a ligação do aviso da face)
+  reveal = null,
   rememberedDem = null,
   onShowProfile,
   onExportInspection,
@@ -429,6 +431,7 @@ export default function ControlPanel({
   useOnSignal(mode === 'base' ? mode : null, () => S.show('bases'))
   useOnSignal(basesPanel?.selectedBaseId, () => S.show('bases'))
   useOnSignal(mode === 'inspect' ? mode : null, () => S.show('extras'))
+  useOnSignal(reveal, () => S.show(reveal.id))
 
   const terrainReady = terrain.status === 'ready'
   const exportFlights = basesPanel?.exportFlights ?? null

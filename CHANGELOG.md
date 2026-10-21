@@ -17,12 +17,13 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   neste aparelho; um cartão fechado abre-se sozinho quando passa a ter o
   que mostrar (marcar uma base, a base escolhida no mapa, um erro ao
   importar) e fecha o outro, sem mudar a escolha do operador. Os campos
-  ficam em grelha, com a
-  unidade dentro da caixa, e as escolhas curtas em botões segmentados. As
+  ficam em grelha, com a unidade dentro da caixa, e as escolhas curtas em
+  botões segmentados. As
   bases passam a uma tabela (base, voos, zona, cota) e o detalhe de cada
   uma abre na sua linha: com 20 bases o painel deixa de ter perto de
   7800 px. «Seleccionar a base A» (o rótulo) e «Atribuir blocos a esta
-  base» eram a mesma acção com dois nomes: fica a segunda, no detalhe. O
+  base» eram a mesma acção com dois nomes: fica a segunda, no detalhe; sem
+  blocos, o detalhe tem «Mostrar a zona no mapa». O
   «Resumo e exportar» junta os números do plano, a tabela dos voos, as
   exportações em linhas (os mesmos nomes do menu do cabeçalho) e, no fim, o
   par do cabeçalho, sem botões repetidos. As gavetas abrem-se num botão

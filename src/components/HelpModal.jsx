@@ -89,23 +89,27 @@ function topicsPt({ onShowDisclaimer, t }) {
           <strong>4 Divisão em voos</strong>, <strong>5 Bases e segurança</strong>,{' '}
           <strong>6 Extras</strong> (GCPs e pontos de inspecção) e{' '}
           <strong>7 Resumo e exportar</strong>. Os cartões abrem e fecham no título, um de cada vez:
-          abrir um fecha o que estava aberto, e fechado cada um mostra o essencial numa linha (ex.:
-          «451.96 ha · relevo global (~30 m)»). À partida está aberto o 2 e, quando chega a área,
-          abre-se o 3; o que abrir ou fechar fica lembrado neste aparelho, e um cartão abre-se
-          sozinho quando passa a ter alguma coisa a mostrar (marcar uma base, a base escolhida no
-          mapa, um erro ao importar), sem mudar o que ficou lembrado. O resto de alguns cartões abre
-          numa gaveta ao lado do painel, por cima do mapa (só uma de cada vez; fecha no ✕ ou com{' '}
-          <Kbd>Esc</Kbd>), no botão do fim do cartão, que diz o que ela tem: «Mais opções da
-          aeronave» (1, com a aeronave «Personalizada»: o sensor próprio e os enums WPML); «Datum
-          vertical e mais opções» (2: a forma centrada num ponto, a sugestão para o declive e a
-          fonte do relevo); «Linhas de voo, disparo e câmara» (3: espaçamento manual, margem,
-          prolongamento, disparo, gimbal, rumo, dupla grelha, faixa de amarração); «Células e
-          orientação dos quadrados» (4, com «Quadrícula» ou «Bateria»); «Pontos de apoio (GCP)» e
-          «Pontos de inspecção» (6). No cartão 5 as bases estão numa tabela (base, voos, zona,
-          cota): a linha de uma base abre o detalhe dela (raio da zona, voos, vista, «Atribuir
-          blocos a esta base» ou, ainda sem blocos, «Mostrar a zona no mapa», retirar); as bacias de
-          visão e as acções de segurança estão no mesmo cartão. Os outros modos usam o mesmo
-          aspecto, também com uma secção aberta de cada vez.
+          abrir um fecha o que estava aberto, e carregar no título do que está aberto fecha-o (podem
+          ficar todos fechados); fechado, cada um mostra o essencial numa linha (ex.: «451.96 ha ·
+          relevo global (~30 m)»). À partida está aberto o 2 e, quando a área chega, o 3, a menos
+          que já tenha aberto outro; o cartão que deixar aberto (ou nenhum) fica lembrado neste
+          aparelho. Um cartão fechado abre-se sozinho quando passa a ter o que mostrar — um projecto
+          que não abre ou que foi gravado por uma versão anterior (1); um erro, um aviso ou a
+          pergunta das coordenadas ao importar a área, ou desenhá-la (2); marcar uma base ou
+          escolhê-la no mapa (5); marcar pontos de inspecção (6) — e fecha o que estava aberto, sem
+          mudar o que fica lembrado. O resto de alguns cartões abre numa gaveta ao lado do painel,
+          por cima do mapa (só uma de cada vez; fecha no ✕ ou com <Kbd>Esc</Kbd>), no botão do fim
+          do cartão, que diz o que ela tem: «Mais opções da aeronave» (1, com a aeronave
+          «Personalizada»: o sensor próprio e os enums WPML); «Datum vertical e mais opções» (2: a
+          forma centrada num ponto, a sugestão para o declive e a fonte do relevo); «Linhas de voo,
+          disparo e câmara» (3: espaçamento manual, margem, prolongamento, disparo, gimbal, rumo,
+          dupla grelha, faixa de amarração); «Células e orientação dos quadrados» (4, com
+          «Quadrícula» ou «Bateria»); «Pontos de apoio (GCP)» e «Pontos de inspecção» (6). No cartão
+          5 as bases estão numa tabela (base, voos, zona, cota): a linha de uma base abre o detalhe
+          dela (raio da zona, voos, vista, «Atribuir blocos a esta base» ou, ainda sem blocos,
+          «Mostrar a zona no mapa», retirar); as bacias de visão e as acções de segurança estão no
+          mesmo cartão. Os outros modos usam o mesmo aspecto, também com uma secção aberta de cada
+          vez.
         </p>
       ),
     },
@@ -698,22 +702,26 @@ function topicsEn({ onShowDisclaimer, t }) {
           <strong>4 Split into flights</strong>, <strong>5 Bases and safety</strong>,{' '}
           <strong>6 Extras</strong> (GCPs and inspection points) and{' '}
           <strong>7 Summary and export</strong>. The cards open and close on their title, one at a
-          time: opening one closes the one that was open, and a closed card shows the essentials on
-          one line (e.g. “451.96 ha · global terrain (~30 m)”). At first card 2 is open and, when
-          the area arrives, card 3 opens; what you open or close is remembered on this device, and a
-          card opens by itself when it has something to show (placing a base, the base picked on the
-          map, an import error), without changing what was remembered. The rest of some cards opens
-          in a drawer next to the panel, over the map (one at a time; ✕ or <Kbd>Esc</Kbd> closes
-          it), from the button at the end of the card, which says what it holds: “More aircraft
-          options” (1, with the “Custom” aircraft: the custom sensor and the WPML enums); “Vertical
-          datum and more options” (2: the shape centred on a point, the slope suggestion and the
-          terrain source); “Flight lines, trigger and camera” (3: manual spacing, buffer, overshoot,
-          trigger, gimbal, heading, crosshatch, tie line); “Cells and square orientation” (4, with
-          “Tiles” or “Battery”); “Ground control points (GCP)” and “Inspection points” (6). In card
-          5 the bases are in a table (base, flights, zone, elevation): a base’s row opens its detail
-          (zone radius, flights, view, “Assign blocks to this base” or, with no blocks yet, “Show
-          the zone on the map”, remove); the viewsheds and the safety actions are in the same card.
-          The other modes use the same look, also with one section open at a time.
+          time: opening one closes the one that was open, and pressing the title of the open one
+          closes it (they can all be closed); closed, each shows the essentials on one line (e.g.
+          “451.96 ha · global terrain (~30 m)”). At first card 2 is open and, when the area arrives,
+          card 3, unless you have already opened another; the card you leave open (or none) is
+          remembered on this device. A closed card opens by itself when it has something to show — a
+          project that does not open or was saved by an earlier version (1); an error, a warning or
+          the coordinate question when importing the area, or drawing it (2); placing a base or
+          picking it on the map (5); placing inspection points (6) — and closes the one that was
+          open, without changing what is remembered. The rest of some cards opens in a drawer next
+          to the panel, over the map (one at a time; ✕ or <Kbd>Esc</Kbd> closes it), from the button
+          at the end of the card, which says what it holds: “More aircraft options” (1, with the
+          “Custom” aircraft: the custom sensor and the WPML enums); “Vertical datum and more
+          options” (2: the shape centred on a point, the slope suggestion and the terrain source);
+          “Flight lines, trigger and camera” (3: manual spacing, buffer, overshoot, trigger, gimbal,
+          heading, crosshatch, tie line); “Cells and square orientation” (4, with “Tiles” or
+          “Battery”); “Ground control points (GCP)” and “Inspection points” (6). In card 5 the bases
+          are in a table (base, flights, zone, elevation): a base’s row opens its detail (zone
+          radius, flights, view, “Assign blocks to this base” or, with no blocks yet, “Show the zone
+          on the map”, remove); the viewsheds and the safety actions are in the same card. The other
+          modes use the same look, also with one section open at a time.
         </p>
       ),
     },
