@@ -15,14 +15,14 @@ const em = (x, y, z) =>
 const xOf = (lon) => (lon + 9.14) * mLon
 
 describe('missionWpml: os campos WPML da missao', () => {
-  it('M4T termico leva a lente ir; o M4T largo, wide', () => {
+  it('M4T termico leva a lente ir; o M4T largo, visable', () => {
     const ir = missionWpml(AIRCRAFT.M4T, PAYLOADS.M4T_THERMAL, DEFAULT_CUSTOM_SENSOR)
     expect(ir.imageFormat).toBe('ir')
     expect(ir.droneEnumValue).toBe(AIRCRAFT.M4T.wpml.droneEnumValue)
     expect(ir.payloadEnumValue).toBe(PAYLOADS.M4T_THERMAL.wpml.payloadEnumValue)
     expect(ir.gimbalPitchRange).toEqual(PAYLOADS.M4T_THERMAL.gimbalPitch)
     expect(missionWpml(AIRCRAFT.M4T, PAYLOADS.M4T_WIDE, DEFAULT_CUSTOM_SENSOR).imageFormat).toBe(
-      'wide',
+      'visable',
     )
   })
   it('payloads de uma lente ficam sem lente (como no ficheiro que voou)', () => {

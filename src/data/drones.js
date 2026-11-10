@@ -35,7 +35,7 @@
  *  - gimbalPitch:  { min, max } pitch the gimbal can reach (deg); the export
  *                  clamps to it and the preflight warns (WPML common-element
  *                  table for the M3E class; spec sheets for the others)
- *  - imageFormat:  optional WPML `imageFormat` (wide | ir | ...) written in
+ *  - imageFormat:  optional WPML `imageFormat` (visable | ir | ...) written in
  *                  the template's payloadParam, for multi-lens payloads
  *  - imageSource:  optional DJI XMP `ImageSource` value written in the EXIF of
  *                  this camera's photos (WideCamera, InfraredCamera, ...); the
@@ -163,8 +163,17 @@ export const PAYLOADS = {
     imageSource: 'WideCamera',
     // Matrice 4 series spec sheet: gimbal tilt -90 to +35 deg (confirm in flight)
     gimbalPitch: { min: -90, max: 35 },
-    // multi-lens payload: the template's payloadParam names the lens
-    imageFormat: 'wide',
+    // Multi-lens payload: the template's payloadParam names the lens and every
+    // camera action carries it as payloadLensIndex. `visable`, with that
+    // spelling, not `wide`: every real Matrice 4 file written by Pilot 2 uses
+    // it for visible light in both fields (an M4E waypoint mission, an M4T
+    // patrol with payload 89, an M4T DEM template with "visable,ir"), and the
+    // live common-element page (2026-11) lists `visable` in payloadLensIndex
+    // with "M4D/M4TD only supports visable and ir". Known limit: `visable`
+    // does not choose between the wide and the tele cameras of the M4T; the
+    // photo comes from the zoom set on the camera at that moment. Still to
+    // confirm in flight (docs/VALIDACAO.md, section 5).
+    imageFormat: 'visable',
     sensorWidth: 9.7,
     sensorHeight: 7.3,
     focalLength: 6.72,
@@ -185,8 +194,8 @@ export const PAYLOADS = {
     // 12 mm focal the DFOV is 44.5 deg). The image size here is the
     // physical detector, so the GSD (10 cm/px at 100 m) is the one the
     // microbolometer actually resolves, not the upscaled 1280x1024 file.
-    // Same gimbal and WPML payload enum as the wide camera; which lens takes
-    // the photo is chosen in Pilot 2 (imageFormat), not in this export.
+    // Same gimbal and WPML payload enum as the wide camera; the lens is
+    // named by imageFormat / payloadLensIndex `ir`, as in the real M4T files.
     id: 'M4T_THERMAL',
     label: 'Thermal IR',
     desc: 'Thermal — VOx 640×512, 12 µm, DFOV 45°',

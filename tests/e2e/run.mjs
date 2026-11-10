@@ -7334,7 +7334,7 @@ await scenario('preflight-bloqueia-transito-atras-da-cumeada', async () => {
 })
 
 // M4T térmica: cada acção de foto do KMZ leva a lente ir (payloadLensIndex);
-// a larga leva wide; os enums da aeronave e do payload são os do M4T
+// a larga leva visable (a grafia dos ficheiros reais do M4); os enums da aeronave e do payload são os do M4T
 await scenario('m4t-termica-exporta-lente-ir', async () => {
   const { page, errors } = await openMission({ area: fx.rect, dem: false })
   const sel = (v) =>
@@ -7352,15 +7352,16 @@ await scenario('m4t-termica-exporta-lente-ir', async () => {
   const lentes = (w) => {
     const fotos = (w.match(/<wpml:actionActuatorFunc>takePhoto</g) ?? []).length
     const ir = (w.match(/<wpml:payloadLensIndex>ir</g) ?? []).length
+    const vis = (w.match(/<wpml:payloadLensIndex>visable</g) ?? []).length
     const wide = (w.match(/<wpml:payloadLensIndex>wide</g) ?? []).length
-    return { fotos, ir, wide }
+    return { fotos, ir, vis, wide }
   }
   const termica = await readRoutes(await exportKmz(page, join(OUT, 'm4t-termica.kmz')))
   const t = lentes(termica[0].wpml)
   check(
     'M4T térmica: todas as acções de foto levam a lente ir',
-    t.fotos > 0 && t.ir === t.fotos && t.wide === 0,
-    `${t.ir} ir, ${t.wide} wide, ${t.fotos} fotos`,
+    t.fotos > 0 && t.ir === t.fotos && t.vis === 0 && t.wide === 0,
+    `${t.ir} ir, ${t.vis} visable, ${t.wide} wide, ${t.fotos} fotos`,
   )
   check(
     'M4T térmica: enums da aeronave (99) e do payload (89) no KMZ',
@@ -7374,9 +7375,9 @@ await scenario('m4t-termica-exporta-lente-ir', async () => {
   const larga = await readRoutes(await exportKmz(page, join(OUT, 'm4t-larga.kmz')))
   const l = lentes(larga[0].wpml)
   check(
-    'M4T larga: todas as acções de foto levam a lente wide',
-    l.fotos > 0 && l.wide === l.fotos && l.ir === 0,
-    `${l.wide} wide, ${l.ir} ir, ${l.fotos} fotos`,
+    'M4T larga: todas as acções de foto levam a lente visable',
+    l.fotos > 0 && l.vis === l.fotos && l.ir === 0 && l.wide === 0,
+    `${l.vis} visable, ${l.ir} ir, ${l.wide} wide, ${l.fotos} fotos`,
   )
   check('M4T: sem erros de página', errors.length === 0, errors.join(' | '))
   await page.close()

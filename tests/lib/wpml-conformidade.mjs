@@ -71,6 +71,13 @@ export const ALLOW = {
       65535: 'PSDK: 66 KMZ reais do Pilot 2 escrevem 65535/0 (a tabela diz 65534)',
       89: 'M4T: KMZ aceite e voado (2026-10)',
     },
+    // a tabela (clone de 2024 e pagina viva) escreve `visible`, mas os
+    // ficheiros reais do Matrice 4 escritos pelo Pilot 2 (M4E, M4T) escrevem
+    // `visable`, a grafia que a pagina viva lista no payloadLensIndex (#46)
+    'payloadParam/imageFormat': {
+      visable:
+        'M4E/M4T: grafia dos ficheiros reais do Pilot 2 e do payloadLensIndex da pagina viva',
+    },
   },
   // obrigatórios que ficam de fora, com a razão (E2 da revisão)
   missing: {

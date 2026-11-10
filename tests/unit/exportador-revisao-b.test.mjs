@@ -31,9 +31,9 @@ describe('B2: a lente vai em cada accao de camara nos payloads multi-lente', () 
       /<wpml:payloadPositionIndex>0<\/wpml:payloadPositionIndex>\s*<wpml:payloadLensIndex>ir<\/wpml:payloadLensIndex>\s*<wpml:useGlobalPayloadLensIndex>0</,
     )
   })
-  test('M4T grande-angular: wide; M3E e P1: sem lista, como no ficheiro que voou', () => {
+  test('M4T grande-angular: visable; M3E e P1: sem lista, como no ficheiro que voou', () => {
     expect(buildWaylinesWPML({ ...base, wpml: wpmlOf('M4T', 'M4T_WIDE') })).toMatch(
-      /<wpml:payloadLensIndex>wide</,
+      /<wpml:payloadLensIndex>visable</,
     )
     expect(buildWaylinesWPML({ ...base, wpml: wpmlOf('M3E', 'M3E_WIDE') })).not.toMatch(
       /payloadLensIndex/,
@@ -59,6 +59,36 @@ describe('B2: a lente vai em cada accao de camara nos payloads multi-lente', () 
     expect(de('startRecord')[0]).toMatch(/payloadLensIndex>ir</)
     expect(de('takePhoto')[0]).toMatch(/payloadLensIndex>ir</)
     expect(de('stopRecord')[0]).not.toMatch(/payloadLensIndex|useGlobalPayloadLensIndex/)
+  })
+  // #46: a lente de cada perfil do M4T, nos dois ficheiros do KMZ, com a
+  // grafia dos ficheiros reais do Matrice 4 escritos pelo Pilot 2 (`visable`
+  // e `ir`, nunca `wide`); o M3E fica sem payloadParam nem lista de lente
+  describe('lente por perfil nos dois ficheiros (#46)', () => {
+    const p = {
+      ...base,
+      photoIntervalM: 0,
+      perWaypoint: [{ actions: ['takePhoto'] }, null, { actions: ['takePhoto'] }, null],
+    }
+    const lentes = (xml) => [...xml.matchAll(/<wpml:payloadLensIndex>([^<]*)</g)].map((m) => m[1])
+    const formato = (xml) => xml.match(/<wpml:imageFormat>([^<]*)</)?.[1] ?? null
+    test.each([
+      ['M4T_WIDE', 'visable'],
+      ['M4T_THERMAL', 'ir'],
+    ])('%s: imageFormat e payloadLensIndex %s', (payload, lente) => {
+      const wpml = wpmlOf('M4T', payload)
+      const tpl = buildTemplateKML({ ...p, wpml })
+      const wl = buildWaylinesWPML({ ...p, wpml })
+      expect(formato(tpl)).toBe(lente)
+      expect(lentes(tpl)).toEqual([lente, lente])
+      expect(lentes(wl)).toEqual([lente, lente])
+      expect(tpl + wl).not.toMatch(/>wide</)
+    })
+    test('M3E: sem payloadParam nem payloadLensIndex em nenhum dos dois', () => {
+      const wpml = wpmlOf('M3E', 'M3E_WIDE')
+      const ambos = buildTemplateKML({ ...p, wpml }) + buildWaylinesWPML({ ...p, wpml })
+      expect(ambos).toMatch(/<wpml:actionActuatorFunc>takePhoto</)
+      expect(ambos).not.toMatch(/payloadParam|imageFormat|payloadLensIndex/)
+    })
   })
   test('um imageFormat fora do formato nao chega ao ficheiro', () => {
     const xml = buildWaylinesWPML({

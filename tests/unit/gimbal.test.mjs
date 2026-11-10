@@ -39,7 +39,7 @@ describe('catalogo: intervalos do gimbal e velocidades conformes', () => {
     expect(PAYLOADS.P1.gimbalPitch).toEqual({ min: -120, max: 30 })
   })
   it('o par do M4T nomeia a lente; os outros nao', () => {
-    expect(PAYLOADS.M4T_WIDE.imageFormat).toBe('wide')
+    expect(PAYLOADS.M4T_WIDE.imageFormat).toBe('visable')
     expect(PAYLOADS.M4T_THERMAL.imageFormat).toBe('ir')
     expect(PAYLOADS.M3E_WIDE.imageFormat).toBeUndefined()
   })

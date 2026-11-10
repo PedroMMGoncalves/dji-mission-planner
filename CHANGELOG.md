@@ -8,6 +8,17 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ### Corrigido (exportação)
 
+- **M4T grande-angular: a lente passa a `visable`** (era `wide`), no
+  `imageFormat` do template e no `payloadLensIndex` de cada acção de
+  câmara, nos dois ficheiros. É a grafia de todos os ficheiros reais do
+  Matrice 4 escritos pelo Pilot 2 (missão de waypoints de um M4E, patrulha
+  e modelo de terreno de um M4T), nenhum dos quais escreve `wide`; a página
+  viva da especificação lista `visable` no `payloadLensIndex` e diz que o
+  M4D/M4TD só aceita `visable` e `ir`. A térmica continua `ir`; o M3E e a
+  P1 continuam sem lente. `visable` não escolhe entre a grande-angular e as
+  teles: a foto sai da câmara do zoom corrente. **Por confirmar em voo**
+  (contar `_V` e `_T`): o voo de Outubro foi anterior à lente por acção.
+  Os ficheiros de referência não mudam (não há nenhum do M4T).
 - **Nenhuma acção de câmara com LiDAR, em nenhum modo e em nenhum dos dois
   ficheiros.** Um LiDAR montado num Skyport (o Mapper+ no M300) não tem
   gimbal nem disparo que o WPML comande. A exportação já omitia o grupo

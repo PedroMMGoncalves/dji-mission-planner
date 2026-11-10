@@ -990,8 +990,8 @@ Captura, parâmetro `capture` da configuração da órbita:
   (`_orbit-video_nN`). Parâmetros das acções conforme
   `common-element.md`: `startRecord` com `payloadPositionIndex` e
   `useGlobalPayloadLensIndex` 0, `stopRecord` só com
-  `payloadPositionIndex`; `fileSuffix` e `payloadLensIndex` omitidos,
-  como no `takePhoto`.
+  `payloadPositionIndex`; `fileSuffix` omitido, como no `takePhoto`, e
+  `payloadLensIndex` só nos payloads multi-lente (M4T, §11.2).
 
 - **`multi` (várias inclinações, com paragem)**: os anéis do `photo`, mas
   a aeronave pára em cada ponto (`toPointAndStopWithDiscontinuityCurvature`)
@@ -1367,7 +1367,16 @@ waylines.wpml, common-element), campo a campo. Corrigido nesta auditoria:
   do valor pedido.
 - `payloadParam.imageFormat` nomeia a lente nos payloads multi-lente: sem
   ele um levantamento térmico no M4T dispararia a grande-angular, que o
-  Pilot 2 assume por omissão. O par do M4T passa a escrever `wide` / `ir`.
+  Pilot 2 assume por omissão. O par do M4T escreve `visable` / `ir`, no
+  `imageFormat` do template e no `payloadLensIndex` de cada acção de câmara
+  (B2): é a grafia de todos os ficheiros reais do Matrice 4 escritos pelo
+  Pilot 2 (missão de waypoints de um M4E, patrulha e modelo de terreno de um
+  M4T), e a página viva lista `visable` no `payloadLensIndex`, com «M4D/M4TD
+  only supports visable and ir»; a tabela do `imageFormat` diz `visible`,
+  mas nenhum ficheiro real o escreve. Até Novembro de 2026 a grande-angular
+  escrevia `wide`, que nenhum ficheiro do Matrice 4 usa. Limite conhecido:
+  `visable` não escolhe entre a grande-angular e as teles do M4T — a foto
+  sai da câmara do zoom corrente. Por confirmar em voo (VALIDACAO §5).
 - `takeOffSecurityHeight` tem intervalo [1,2, 1500] m no comando; a
   fronteira aceitava (0, 200].
 

@@ -606,7 +606,7 @@ export function turnParams(turnMode, dampingDistM = 0) {
 
 /**
  * payloadParam do template: só quando o payload nomeia a lente (`imageFormat`
- * wide | ir | ...), o que importa nos payloads multi-lente — sem ele um
+ * visable | ir | ...), o que importa nos payloads multi-lente — sem ele um
  * levantamento térmico no M4T disparava a grande-angular, que é o que o
  * Pilot 2 assume por omissão. Nos restantes payloads fica omitido, como no
  * ficheiro que voou no M3E.

@@ -112,6 +112,16 @@ existe, escrever `<wpml:payloadLensIndex>` com esse valor em cada
 térmico escrito pelo Pilot 2 no M4T, e contar os `_T` no primeiro voo
 térmico (QA §10).
 
+*Evidência acrescentada em 2026-11 (valor da grande-angular corrigido).*
+Todos os ficheiros reais do Matrice 4 escritos pelo Pilot 2 escrevem a luz
+visível como `visable` (com essa grafia) e o infravermelho como `ir`, no
+`imageFormat` e no `payloadLensIndex`: missão de waypoints de um M4E,
+patrulha de um M4T (payload 89), modelo de terreno de um M4T
+(`visable,ir`); nenhum escreve `wide`. A página viva do `common-element`
+lista `visable` no `payloadLensIndex` e diz «M4D/M4TD only supports
+visable and ir». O perfil grande-angular passa de `wide` a `visable`; o
+térmico fica `ir`. Continua por confirmar em voo (contar `_V` e `_T`).
+
 **E1 — `gimbalHeadingYawBase` = `aircraft`.** O enum tem um único valor,
 `north` («Relative geographic north», `EN/40.common-element.md:145`,
 obrigatório). Sem efeito hoje porque `gimbalYawRotateEnable` é 0; se um dia
