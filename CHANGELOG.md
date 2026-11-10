@@ -23,6 +23,27 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   `stopRecord`, `gimbalRotate` ou `gimbalEvenlyRotate`; o rumo por
   waypoint e a espera (`hover`) ficam, porque são da aeronave. Os ficheiros
   de referência não mudam.
+- **Campos dentro dos intervalos das páginas vivas da especificação WPML**
+  (Novembro de 2026). A altura de regresso (`globalRTHHeight`) passa a ser
+  recusada na fronteira fora de [2, 1500] m (aceitava de 0 a 2 m); o valor
+  automático é sempre ≥ 100 m e a interface já recortava a 20 m. O tecto de
+  waypoints passa a ser uma só constante: `wpml:index` vai de 0 a 65535,
+  logo 65536 waypoints cabem numa rota, e o preflight, que tinha a sua
+  própria constante, bloqueava já esse caso. Uma `durationS` de 0 deixa de
+  sair como `wpml:duration` 0 — o que dava outra vez o 100 % e «00:00» do
+  primeiro voo — e cai em distância / velocidade, como sem ela; numa rota
+  de comprimento nulo sai 0, nunca NaN.
+- **Aviso de velocidade acima de 15 m/s.** A transição para a rota
+  (`globalTransitionalSpeed`) já saía limitada a 15 m/s, o tecto
+  documentado, mas a velocidade da rota (`autoFlightSpeed`, [1, 15] na
+  tabela CN) vai tal qual, e a aeronave personalizada deixa pedir até
+  20 m/s. O preflight passa a avisar acima de 15 m/s; não bloqueia, porque o
+  próprio Pilot 2 escreve 21 m/s numa missão de waypoints de um M4E.
+- **`fileSuffix` continua omitido no `takePhoto`**, desvio aceite (E2 da
+  revisão de Outubro), agora com a evidência dos ficheiros reais: nenhum
+  escreve `fileSuffix` num `takePhoto`, e o M3E e o M4T voaram e
+  fotografaram sem ele. Um sufixo com texto mudaria o nome de todas as
+  fotos.
 
 ## 1.6.0 — 2026-10-21
 

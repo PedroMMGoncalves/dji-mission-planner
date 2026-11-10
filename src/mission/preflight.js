@@ -6,9 +6,14 @@
  * `params` da mensagem. Lógica pura; o App só a mostra e usa os bloqueios
  * para desactivar o botão.
  */
+import { MAX_TRANSITIONAL_SPEED_MS, MAX_WAYPOINTS_PER_ROUTE } from '../utils/exporters.js'
 
-/** Limite duro do WPML: índices de waypoint em 16 bits. */
-export const WPML_MAX_WAYPOINTS = 65535
+/**
+ * Limite duro do WPML: `wpml:index` em [0, 65535], logo 65536 waypoints por
+ * rota. A mesma constante da fronteira do exportador: com duas, o preflight
+ * bloqueava 65536 waypoints que o ficheiro aceita.
+ */
+export const WPML_MAX_WAYPOINTS = MAX_WAYPOINTS_PER_ROUTE
 /** Acima disto o Pilot 2 importa lentamente (aviso brando). */
 export const WAYPOINT_SOFT_LIMIT = 2000
 /** Base a mais do que isto da área: o trânsito passa a contar a sério (aviso). */
@@ -61,6 +66,23 @@ function whereAt(c, index) {
 const photoPassUnverified = (c) =>
   c.photoMode === 'waypoint' && c.waypointStops !== 'all'
     ? [item('warn', 'photo-pass-unverified')]
+    : []
+
+/**
+ * Velocidade acima de 15 m/s (só a aeronave personalizada lá chega, até
+ * 20): fora do intervalo documentado de `globalTransitionalSpeed` ([1, 15] na
+ * tabela CN, [0, 15] na EN), que a exportação limita a 15, e do de
+ * `autoFlightSpeed` na tabela CN ([1, 15]), que leva a velocidade pedida. O
+ * Pilot 2 escreve mais num M4E (21 m/s): aviso, não bloqueio.
+ */
+const speedItems = (c) =>
+  Number.isFinite(c.speed) && c.speed > MAX_TRANSITIONAL_SPEED_MS
+    ? [
+        item('warn', 'speed-above-documented', {
+          v: String(round1(c.speed)),
+          max: MAX_TRANSITIONAL_SPEED_MS,
+        }),
+      ]
     : []
 
 /**
@@ -444,6 +466,7 @@ export function preflightArea(c) {
   if (n > WPML_MAX_WAYPOINTS)
     out.push(item('block', 'too-many-waypoints', { n, max: WPML_MAX_WAYPOINTS }))
   else if (n > WAYPOINT_SOFT_LIMIT) out.push(item('warn', 'waypoints-many', { n }))
+  out.push(...speedItems(c))
 
   if (c.aglWarn)
     out.push(item('warn', 'agl-cap', { cap: c.aglWarn.cap, worst: Math.round(c.aglWarn.worstAgl) }))
@@ -576,6 +599,7 @@ export function preflightPlan(c) {
   if (n > WPML_MAX_WAYPOINTS)
     out.push(item('block', 'too-many-waypoints', { n, max: WPML_MAX_WAYPOINTS }))
   else if (n > WAYPOINT_SOFT_LIMIT) out.push(item('warn', 'waypoints-many', { n }))
+  out.push(...speedItems(c))
   if (c.aglWarn)
     out.push(item('warn', 'agl-cap', { cap: c.aglWarn.cap, worst: Math.round(c.aglWarn.worstAgl) }))
   if (c.triggerWarn) {

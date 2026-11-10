@@ -26,15 +26,22 @@ export class MissionExportError extends Error {
 }
 
 // wpml:index tem alcance [0, 65535], logo no máximo 65536 waypoints por rota.
+// É a única constante do tecto: o preflight importa-a (src/mission/preflight.js).
 export const MAX_WAYPOINTS_PER_ROUTE = 65536
-// Limiares de sanidade, não limites de modelo: apanham unidades trocadas e
-// campos em bruto antes de chegarem ao ficheiro.
+// Limiar de sanidade, não limite de modelo nem da especificação: apanha
+// unidades trocadas e campos em bruto antes de chegarem ao ficheiro. Fica
+// acima do intervalo das tabelas (autoFlightSpeed [1, 15] na CN) de
+// propósito: o próprio Pilot 2 escreve 21 m/s numa missão de waypoints de um
+// M4E (autoFlightSpeed e globalTransitionalSpeed). O limite de cada aeronave
+// é o speedRange da interface, e o preflight avisa acima de 15 m/s.
 export const MAX_SPEED_MS = 30
 /** WPML: globalTransitionalSpeed vai de 0 a 15 m/s (EN) ou de 1 a 15 (CN): escreve-se em [1, 15]. */
 export const MAX_TRANSITIONAL_SPEED_MS = 15
 /** WPML: takeOffSecurityHeight no comando vai de 1,2 a 1500 m. */
 export const MIN_TAKEOFF_SECURITY_HEIGHT_M = 1.2
 export const MAX_TAKEOFF_SECURITY_HEIGHT_M = 1500
+/** WPML: globalRTHHeight vai de 2 a 1500 m (template-kml e waylines-wpml, EN e CN). */
+export const MIN_GLOBAL_RTH_HEIGHT_M = 2
 export const MAX_RTH_HEIGHT_M = 1500
 /** Altura de segurança da descolagem escrita por omissão (m). */
 export const DEFAULT_TAKEOFF_SECURITY_HEIGHT_M = 30
@@ -140,9 +147,9 @@ export function validateExportParams(params) {
   // verificação de finitude mas não descreve nenhuma missão real.
   if (!isNum(altitude)) throw new MissionExportError('altitude-not-finite', String(altitude))
   if (altitude <= 0) throw new MissionExportError('altitude-not-positive', String(altitude))
-  // MAX_SPEED_MS é generoso face ao mais rápido dos DJI suportados (~23 m/s);
-  // serve para apanhar unidades trocadas ou um campo em bruto, não para
-  // impor o limite de um modelo, que é validado na interface.
+  // MAX_SPEED_MS é um limiar de sanidade (ver a constante): apanha unidades
+  // trocadas ou um campo em bruto, não impõe o limite de um modelo, que é o
+  // speedRange da interface.
   if (!isNum(speed) || speed <= 0) throw new MissionExportError('speed-invalid', String(speed))
   if (speed > MAX_SPEED_MS) throw new MissionExportError('speed-out-of-range', String(speed))
   if (!wpml || !isNum(wpml.droneEnumValue) || !isNum(wpml.payloadEnumValue)) {
@@ -163,7 +170,9 @@ export function validateExportParams(params) {
   }
   // Domínios: um intervalo de disparo negativo desliga o disparo em silêncio,
   // e uma altura de regresso negativa mandaria o regresso para baixo do
-  // ponto de descolagem.
+  // ponto de descolagem. A altura de regresso vai de 2 a 1500 m
+  // (globalRTHHeight, template-kml e waylines-wpml): entre 0 e 2 m passava
+  // a fronteira e saía fora do intervalo documentado.
   if (isNum(params.photoIntervalM) && params.photoIntervalM < 0) {
     throw new MissionExportError('param-out-of-range', 'photoIntervalM')
   }
@@ -175,7 +184,7 @@ export function validateExportParams(params) {
   }
   if (
     isNum(params.rthHeightM) &&
-    (params.rthHeightM <= 0 || params.rthHeightM > MAX_RTH_HEIGHT_M)
+    (params.rthHeightM < MIN_GLOBAL_RTH_HEIGHT_M || params.rthHeightM > MAX_RTH_HEIGHT_M)
   ) {
     throw new MissionExportError('param-out-of-range', 'rthHeightM')
   }
@@ -1117,7 +1126,7 @@ export function buildWaylinesWPML(params) {
     // especificação a exige — ver turnParams().
     turnDampingDistM = 0,
     // Duração prevista da rota (s), a mesma que o painel mostra. Sem ela,
-    // distância / velocidade: por baixo, mas nunca zero.
+    // ou com ela a 0, distância / velocidade: por baixo, mas nunca zero.
     durationS = null,
     // Waypoints que passam sem parar (lista paralela); null = todos param
     passThrough = null,
@@ -1153,6 +1162,11 @@ ${headingParamXml(pw)}
   // trazem-nos aqui, entre waylineId e autoFlightSpeed, e o template.kml
   // nunca (docs/VALIDACAO.md, 5.1). A distância é a 3D, como a do comando.
   const distanceM = routeLengthM(waypoints)
+  // Uma duração de 0 (um plano sem previsão, ou um bloco de tempo nulo)
+  // devolvia o 100 % e 00:00 do primeiro voo: só uma duração positiva vai tal
+  // qual; o resto cai em distância / velocidade, que só é 0 numa rota de
+  // comprimento nulo (a velocidade é > 0 na fronteira, logo nunca NaN).
+  const durationOut = isNum(durationS) && durationS > 0 ? durationS : distanceM / speed
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
@@ -1163,7 +1177,7 @@ ${missionConfigXml(params)}
     <wpml:executeHeightMode>relativeToStartPoint</wpml:executeHeightMode>
     <wpml:waylineId>0</wpml:waylineId>
     <wpml:distance>${fmtStat(distanceM)}</wpml:distance>
-    <wpml:duration>${fmtStat(durationS ?? distanceM / speed)}</wpml:duration>
+    <wpml:duration>${fmtStat(durationOut)}</wpml:duration>
     <wpml:autoFlightSpeed>${speed}</wpml:autoFlightSpeed>
 ${placemarks}
   </Folder>

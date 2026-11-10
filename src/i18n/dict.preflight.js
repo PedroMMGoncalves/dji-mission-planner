@@ -86,6 +86,10 @@ export default {
     pt: '{n} waypoints numa só rota: o Pilot 2 importa lentamente; considere dividir em blocos.',
     en: '{n} waypoints in one route: Pilot 2 imports slowly; consider splitting into blocks.',
   },
+  'preflight.speed-above-documented': {
+    pt: 'Velocidade de {v} m/s acima dos {max} m/s que a especificação WPML documenta: a transição para a rota sai limitada a {max} m/s, e o Pilot 2 pode limitar a rota. Confirme a velocidade no comando antes de voar.',
+    en: 'Speed of {v} m/s above the {max} m/s the WPML specification documents: the transition to the route is capped at {max} m/s, and Pilot 2 may cap the route. Check the speed on the remote controller before flying.',
+  },
   'preflight.agl-cap': {
     pt: 'Altura de {worst} m acima do tecto AGL do payload ({cap} m): baixe a altura de voo ou escolha outro payload.',
     en: 'Height of {worst} m above the payload AGL ceiling ({cap} m): lower the flight height or choose another payload.',

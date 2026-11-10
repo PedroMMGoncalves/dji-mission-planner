@@ -55,7 +55,8 @@ describe('outros modos: os mesmos limites da área', () => {
     const demais = preflightPlan({ plan: { ...P, waypoints: wps(WPML_MAX_WAYPOINTS + 1) } })
     expect(find(demais, 'too-many-waypoints')).toMatchObject({
       level: 'block',
-      params: { n: 65536, max: 65535 },
+      // wpml:index [0, 65535]: 65536 waypoints cabem, 65537 nao
+      params: { n: 65537, max: 65536 },
     })
     expect(codes(demais)).not.toContain('waypoints-many')
     // no limite ainda passa; um plano sem lista de waypoints conta zero

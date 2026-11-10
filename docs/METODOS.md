@@ -1290,8 +1290,8 @@ no primeiro valor permitido.
 O `Folder` do `waylines.wpml` leva `distance` (m) e `duration` (s), de onde
 o Pilot 2 tira o progresso e o tempo em falta da rota: a distância é o
 comprimento 3D (`routeLengthM`), a duração é a previsão do plano
-(`durationS`) ou, sem ela, distância / velocidade. Por bloco, a do bloco,
-sem trânsito.
+(`durationS`) ou, sem ela ou com ela a 0, distância / velocidade (só 0
+numa rota de comprimento nulo). Por bloco, a do bloco, sem trânsito.
 Pontos de passagem (`passThrough`, lista paralela aos waypoints): no
 `waylines.wpml`, `waypointTurnMode` =
 `toPointAndPassWithContinuityCurvature`, `useStraightLine` = 1 e
@@ -1306,7 +1306,7 @@ Validação na fronteira (`validateExportParams`), que lança
 `MissionExportError` em vez de escrever o ficheiro: waypoints presentes e
 ≤ 65536, coordenadas finitas em [−180, 180] × [−90, 90], alturas finitas,
 altitude finita > 0, velocidade em (0, 30] m/s, enums WPML numéricos,
-`photoIntervalM ≥ 0`, RTH em (0, 1500], pitch em [−120, 60], rumos em
+`photoIntervalM ≥ 0`, RTH em [2, 1500] (`globalRTHHeight`), pitch em [−120, 60], rumos em
 [−180, 360), `takeOffSecurityHeight` em [1,2, 1500], intervalos de disparo
 inteiros, crescentes e dentro da rota. Caracteres XML ilegais e substitutos
 isolados são retirados dos textos. Blocos: um KMZ por voo num zip, com
@@ -1371,6 +1371,15 @@ waylines.wpml, common-element), campo a campo. Corrigido nesta auditoria:
 - `takeOffSecurityHeight` tem intervalo [1,2, 1500] m no comando; a
   fronteira aceitava (0, 200].
 
+Corrigido na verificação contra as páginas vivas (Novembro de 2026):
+
+- `globalRTHHeight` tem intervalo [2, 1500] m; a fronteira aceitava
+  (0, 1500]. O valor automático é sempre ≥ 100 m.
+- O tecto de waypoints é um só (`MAX_WAYPOINTS_PER_ROUTE` = 65536, de
+  `wpml:index` em [0, 65535]): o preflight bloqueava já a partir de 65536.
+- `wpml:duration` a 0 (uma `durationS` de 0) voltava a dar o 100 % e
+  00:00 do primeiro voo: só uma duração positiva vai tal qual.
+
 Verificado e conforme: enums de `finishAction`, `exitOnRCLost`,
 `executeRCLostAction`, `flyToWaylineMode`, `waypointTurnMode`,
 `waypointHeadingMode`; `waypointHeadingAngle` em [−180, 180];
@@ -1379,8 +1388,9 @@ do troço adjacente; `useStraightLine` coerente com o modo; `actionTriggerParam`
 > 0; `coordinateMode` WGS84 e `heightMode` relativeToStartPoint;
 `positioningType` é opcional e não afecta a execução.
 
-Documentado como obrigatório e omitido, tolerado no primeiro voo real do
-M3E: `fileSuffix` da acção `takePhoto`; `payloadParam` nos payloads de uma
+Documentado como obrigatório e omitido, tolerado nos voos reais do M3E
+(Setembro) e do M4T (Outubro): `fileSuffix` da acção `takePhoto` (desvio
+aceite, E2 da revisão de Outubro); `payloadParam` nos payloads de uma
 só lente. Fica registado, não alterado, porque o ficheiro que voou é o que
 está validado. Sem uso: `coordinateTurn` global (amortecimento fixo sem
 verificação do troço) não é alcançável pela interface. A especificação não
@@ -1670,11 +1680,13 @@ do cálculo do terreno (o resultado do seguimento traz um código —
 `ref-outside-terrain`, `no-plan`, `terrain-failed` com
 o detalhe — que os painéis e o preflight traduzem, M3-C8; o bloqueio
 «seguir terreno com foto por waypoint» desapareceu quando os pontos de
-foto passaram a entrar na rota densificada); mais de 65535
+foto passaram a entrar na rota densificada); mais de 65536
 waypoints numa rota (a maior, com
 blocos); waypoints consecutivos a menos de 0,5 m em 3D na rota exportada (o mínimo
 que a DJI aceita), em todos os modos — as verificações de rota corriam só
-na área; é o mínimo do SDK da DJI, a especificação WPML não fixa um. Nota (não é aviso): rota acima de 120 m do solo, o máximo da categoria aberta. Avisos: rota acima de 2000 waypoints; tecto AGL do
+na área; é o mínimo do SDK da DJI, a especificação WPML não fixa um. Nota (não é aviso): rota acima de 120 m do solo, o máximo da categoria aberta. Avisos: rota acima de 2000 waypoints; velocidade acima de 15 m/s, fora do
+intervalo documentado de `globalTransitionalSpeed` e do de `autoFlightSpeed`
+na tabela CN (só a aeronave personalizada lá chega); tecto AGL do
 payload (`altitude + tolerância` com seguimento de terreno); obturador;
 sobreposição no pior caso abaixo de 60/50 % (secção 2); arrastamento
 acima de 1 px a 1/500 s; MDT com alturas elipsoidais; taxa de subida
@@ -1801,8 +1813,8 @@ pelo mais longo sem bases (`longestFlightS`), nunca pela soma.
 | Circular: alcance da pegada (descarte de círculos) | max(2R, ρ_far + w_far/2) | circular.js |
 | Corredor: banda de validade | ±max(0,25 m, 1 %) | corridor.js |
 | GCPs: n / recuo (pela normal da aresta) / separação | [5, 25] / max(15 m, 3 %·√A) / 10 m | gcp.js |
-| WPML: waypoints / velocidade / RTH | 65536 / 30 m/s / 1500 m | exporters.js |
-| Preflight: waypoints (bloqueio / aviso) | 65535 / 2000 | preflight.js |
+| WPML: waypoints / velocidade (sanidade) / RTH | 65536 / 30 m/s / [2, 1500] m | exporters.js |
+| Preflight: waypoints (bloqueio / aviso) / velocidade (aviso) | 65536 / 2000 / 15 m/s | preflight.js |
 | 3D: malha do terreno / passagens de preenchimento | 200×200 / até 201 | Map3D.jsx, terrainGrid.js |
 | Importação: vértices antes de simplificar | 400 | importArea.js |
 

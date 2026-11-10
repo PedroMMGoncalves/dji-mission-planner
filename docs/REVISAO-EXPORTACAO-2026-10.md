@@ -128,6 +128,19 @@ está certa no M300. Tolerado nos voos do M3E e do M4T (já registado em
 METODOS §11.2). Só com um ficheiro real do M3E/M4T se decide o valor; um
 `fileSuffix` vazio inventado é pior do que a omissão validada em voo.
 
+*Evidência acrescentada em 2026-11 (desvio aceite, sem alteração).* A
+página viva do `common-element` (2026-11-05) estende a obrigatoriedade a
+M300/M350 com H20/H30, M4D/M4TD e M4E/M4T, e não a P1 nem a payloads
+PSDK. Nenhum ficheiro real de referência escreve `fileSuffix` num
+`takePhoto`: o único `takePhoto` do conjunto (gerador de campo M350 + P1)
+sai só com `payloadPositionIndex` e `useGlobalPayloadLensIndex`; o Pilot 2
+num M4T escreve `startRecord` sem ele (patrulha `targetdetection`); e numa
+missão de waypoints de um M4E o Pilot 2 não usa `takePhoto` mas
+`orientedShoot`, com `orientedFileSuffix` `3wide`/`3med`/`3tele` — um
+sufixo com texto muda o nome de todas as fotos, e não há ficheiro que
+mostre um vazio. O M3E (Setembro) e o M4T (Outubro) voaram e fotografaram
+sem ele. Continua omitido, e o validador mantém-no em `missing`.
+
 **E3 — `caliFlightEnable` num template `waypoint`.** Escrevemos
 `<wpml:caliFlightEnable>0</wpml:caliFlightEnable>` no `Folder`; o elemento
 só existe nas tabelas dos templates `mapping2d`, `mapping3d` e
