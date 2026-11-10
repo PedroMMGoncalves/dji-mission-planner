@@ -48,6 +48,18 @@ export const MAX_RTH_HEIGHT_M = 1500
  * página de suporte de produtos da DJI): 0, 1 e 2; o 7 é a câmara FPV.
  */
 export const PAYLOAD_POSITION_INDEXES = [0, 1, 2]
+/**
+ * Versões do namespace WPML (`xmlns:wpml="http://www.dji.com/wpmz/<versão>"`)
+ * que a exportação pode declarar. A 1.0.2 é a dos exemplos do template e do
+ * waylines da especificação (EN e CN) e a única com voo real (M3E em
+ * Setembro e M4T em Outubro de 2026, VALIDACAO §5): é a de omissão, em
+ * todas as aeronaves. A 1.0.3 é a que o Pilot 2 escreve num M300 RTK (81
+ * KMZ, 2023-2026) e a 1.0.6 a dos ficheiros reais do Matrice 4 (M4E e M4T).
+ * Só muda o atributo: os elementos escritos continuam os da 1.0.2. Serve
+ * para o ensaio de campo do comando que recuse a 1.0.2 (VALIDACAO §5.3).
+ */
+export const WPML_VERSIONS = ['1.0.2', '1.0.3', '1.0.6']
+export const DEFAULT_WPML_VERSION = '1.0.2'
 /** Altura de segurança da descolagem escrita por omissão (m). */
 export const DEFAULT_TAKEOFF_SECURITY_HEIGHT_M = 30
 /**
@@ -296,6 +308,12 @@ export function validateExportParams(params) {
   const pos = wpml.payloadPositionIndex
   if (isNum(pos) && !PAYLOAD_POSITION_INDEXES.includes(pos)) {
     throw new MissionExportError('param-out-of-range', `wpml.payloadPositionIndex=${pos}`)
+  }
+  // A versao do WPML vai para dentro de um atributo XML (o namespace): so as
+  // da lista, tal e qual; um texto livre (`1.0.2" x="`) partia o cabecalho.
+  const ver = wpml.wpmlVersion
+  if (ver != null && !WPML_VERSIONS.includes(ver)) {
+    throw new MissionExportError('param-out-of-range', `wpml.wpmlVersion=${JSON.stringify(ver)}`)
   }
   if (isNum(params.gimbalPitch) && (params.gimbalPitch < -120 || params.gimbalPitch > 60)) {
     throw new MissionExportError('param-out-of-range', 'gimbalPitch')
@@ -731,6 +749,11 @@ function passTurnAt(waypoints, passThrough, i, wpml = null) {
   return { mode: PASS_TURN_MODE, damping: Number(damping.toFixed(2)) }
 }
 
+/** A versão do namespace dos dois ficheiros (já validada): a pedida, ou a de omissão. */
+function wpmlVersionOf(params) {
+  return params.wpml?.wpmlVersion ?? DEFAULT_WPML_VERSION
+}
+
 export function buildTemplateKML(params) {
   validateExportParams(params)
   const { name, waypoints, altitude, speed } = params
@@ -775,7 +798,7 @@ export function buildTemplateKML(params) {
     .join('\n')
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/${wpmlVersionOf(params)}">
 <Document>
   <wpml:author>dji-mission-planner</wpml:author>
   <wpml:createTime>${now}</wpml:createTime>
@@ -1191,7 +1214,7 @@ ${headingParamXml(pw)}
   const durationOut = isNum(durationS) && durationS > 0 ? durationS : distanceM / speed
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/1.0.2">
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:wpml="http://www.dji.com/wpmz/${wpmlVersionOf(params)}">
 <Document>
 ${missionConfigXml(params)}
   <Folder>

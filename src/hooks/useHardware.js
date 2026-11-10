@@ -3,6 +3,8 @@
  * por payload, o equipamento da equipa (Configuração, guardado neste
  * aparelho) e o que daí sai para todos os modos — o sensor resolvido, os
  * enums WPML, o alcance visual, a zona de descolagem e o tempo útil por voo.
+ * E a versão do WPML do projecto (o namespace que o Pilot 2 do comando lê),
+ * que vai com os enums para a exportação de todos os modos.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -22,6 +24,7 @@ import {
   vlosFor,
 } from '../mission/equipment.js'
 import { missionWpml } from '../mission/missionWpml.js'
+import { DEFAULT_WPML_VERSION } from '../utils/exporters.js'
 import { resolveSensor } from '../utils/geo.js'
 import { browserStorage } from '../utils/browserStorage.js'
 
@@ -35,6 +38,9 @@ export function useHardware({ t }) {
       }),
   )
   const [custom, setCustom] = useState(DEFAULT_CUSTOM_SENSOR)
+  // versão do namespace WPML dos dois ficheiros do KMZ (a 1.0.2 por omissão,
+  // em todas as aeronaves: a documentada e a única com voo confirmado)
+  const [wpmlVersion, setWpmlVersion] = useState(DEFAULT_WPML_VERSION)
   // afinações por payload (T1.2): { [payloadId]: { effectiveFov } }
   const [payloadTuning, setPayloadTuning] = useState(
     /** @type {Record<string, {effectiveFov?: number}>} */ ({}),
@@ -147,10 +153,10 @@ export function useHardware({ t }) {
   // Enums WPML: aeronave + payload; o editor custom substitui o enum do
   // payload sempre, e o da aeronave apenas quando a aeronave é CUSTOM
   // (num M300 com payload custom o droneEnumValue continua a ser o do M300);
-  // a posição do payload é a escolhida no projecto
+  // a posição do payload e a versão do WPML são as escolhidas no projecto
   const wpml = useMemo(
-    () => missionWpml(aircraft, payload, custom, { payloadPositionIndex }),
-    [aircraft, payload, custom, payloadPositionIndex],
+    () => missionWpml(aircraft, payload, custom, { payloadPositionIndex, wpmlVersion }),
+    [aircraft, payload, custom, payloadPositionIndex, wpmlVersion],
   )
 
   // tipos de bateria da aeronave (selector da missão)
@@ -183,6 +189,8 @@ export function useHardware({ t }) {
     setMissionBatteryId,
     setUsefulMin,
     wpml,
+    wpmlVersion,
+    setWpmlVersion,
     equipmentBatteries,
   }
 }

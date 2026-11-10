@@ -79,6 +79,7 @@ const estadoCompleto = () => ({
     takeOffSecurityHeightM: 45,
     rthHeightM: 150,
   },
+  wpmlVersion: '1.0.3',
   demFile: { label: 'mdt-dgt.tif', surface: 'dsm' },
 })
 

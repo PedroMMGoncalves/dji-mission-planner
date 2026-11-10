@@ -234,6 +234,10 @@ export default {
     pt: 'Primeiro voo desta combinação ({aircraft} + {payload}, {mode}): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»).',
     en: 'First flight of this combination ({aircraft} + {payload}, {mode}): no KMZ confirmed in Pilot 2 yet. On the first flight count the photos, check the heights and the lens, and record it in the compatibility matrix (QA manual, §16 “First flight of each mode”).',
   },
+  'preflight.wpml-version': {
+    pt: 'O KMZ declara o WPML {v} (escolhido em «Versão do WPML»), com os elementos da {base}: só a {base} tem voo confirmado. Se o comando aceitar ou recusar, registe-o na matriz de compatibilidade (VALIDACAO §5).',
+    en: 'The KMZ declares WPML {v} (chosen in “WPML version”), with the elements of {base}: only {base} has a confirmed flight. Whether the controller accepts or refuses it, record it in the compatibility matrix (VALIDACAO §5).',
+  },
   'preflight.open-category-rth': {
     pt: 'O regresso (RTH) a {rth} m acima da descolagem passa os {cap} m da categoria aberta junto à base.',
     en: 'The return (RTH) at {rth} m above take-off exceeds the {cap} m of the Open category near the base.',

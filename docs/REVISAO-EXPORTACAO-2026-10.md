@@ -238,6 +238,14 @@ exemplos EN e CN; 1.0.3 só aparece nos ficheiros reais. O KMZ tem
 exactamente `wpmz/template.kml` e `wpmz/waylines.wpml` (DEFLATE, UTF-8 sem
 BOM); o nome da rota é o nome do ficheiro, sanitizado.
 
+> Nota de evidência (Novembro de 2026, #48): os ficheiros reais do Matrice
+> 4 escritos pelo Pilot 2 (missão de waypoints de um M4E, patrulha e modelo
+> de terreno de um M4T) declaram `wpmz/1.0.6`; os 81 do M300, `1.0.3`. A
+> decisão fica: 1.0.2 por omissão, em todas as aeronaves, por ser a da
+> especificação e a única que voou (M3E e M4T). A versão passou a ser um
+> campo do projecto (1.0.2, 1.0.3 ou 1.0.6, só o atributo muda) para o
+> ensaio de campo de VALIDACAO §5.3 se fazer sem mexer no código.
+
 ### Riscos por aeronave
 
 - **M3E** — todos os elementos escritos têm suporte; falta tolerada:

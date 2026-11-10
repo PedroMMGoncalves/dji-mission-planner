@@ -5447,6 +5447,65 @@ await scenario('accoes-seguranca-kmz', async () => {
   return { page }
 })
 
+/* ---- versão do WPML (#48) ----------------------------------------------- */
+const namespacesKmz = (xml) => [...xml.matchAll(/xmlns:wpml="([^"]*)"/g)].map((m) => m[1])
+await scenario('versao-wpml', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  // a seguir o terreno, como as acções de segurança: sem ele a rota plana
+  // entra no relevo do fixture e o preflight bloqueia a exportação
+  await configure(page, { tf: true })
+  await exportReady(page)
+  const versao = page.getByTestId('card-bases').getByTestId('wpml-version')
+  await revelar(page, versao)
+  check(
+    'versão do WPML: ao lado das acções de segurança, na 1.0.2 por omissão',
+    (await versao.isVisible()) && (await versao.inputValue()) === '1.0.2',
+  )
+  let { template, waylines } = await kmzTextos(
+    await exportKmz(page, join(OUT, 'versao-wpml-omissao.kmz')),
+  )
+  check(
+    'versão do WPML: por omissão os dois ficheiros declaram 1.0.2',
+    JSON.stringify([...namespacesKmz(template), ...namespacesKmz(waylines)]) ===
+      JSON.stringify(['http://www.dji.com/wpmz/1.0.2', 'http://www.dji.com/wpmz/1.0.2']),
+  )
+  await versao.selectOption('1.0.3')
+  await page.waitForTimeout(400)
+  const file = await exportKmz(page, join(OUT, 'versao-wpml-103.kmz'))
+  await readRoutes(file) // o validador de conformidade
+  ;({ template, waylines } = await kmzTextos(file))
+  check(
+    'versão do WPML: com 1.0.3 os dois ficheiros declaram 1.0.3',
+    JSON.stringify([...namespacesKmz(template), ...namespacesKmz(waylines)]) ===
+      JSON.stringify(['http://www.dji.com/wpmz/1.0.3', 'http://www.dji.com/wpmz/1.0.3']),
+    `${namespacesKmz(template)} | ${namespacesKmz(waylines)}`,
+  )
+  await page.getByTestId('preflight-pill').click()
+  const lista = await page.getByTestId('preflight-list').innerText()
+  check(
+    'versão do WPML: o preflight lembra que só a 1.0.2 tem voo confirmado',
+    /declara o WPML 1\.0\.3|declares WPML 1\.0\.3/.test(lista),
+    lista.replace(/\s+/g, ' ').slice(0, 200),
+  )
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(800)
+  const saved = JSON.parse(
+    (await page.evaluate(() => localStorage.getItem('dji-mission-planner:project:v1'))) ?? 'null',
+  )
+  check('versão do WPML: fica no projecto', saved?.wpmlVersion === '1.0.3', saved?.wpmlVersion)
+  // os outros modos mostram a mesma escolha, no cartão das acções de segurança
+  await modo(page, /^Corredor$|^Corridor$/)
+  const noCorredor = page.getByTestId('card-corredor-seguranca').getByTestId('wpml-version')
+  await revelar(page, noCorredor)
+  check(
+    'versão do WPML: o corredor mostra a mesma escolha',
+    (await noCorredor.isVisible()) && (await noCorredor.inputValue()) === '1.0.3',
+  )
+  check('versão do WPML: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 /* ---- tablet: cartões e gaveta por cima do mapa -------------------------- */
 await scenario('painel-estatisticas', async () => {
   // três grupos (qualidade, voo, operação); a operação diz voos, baterias e

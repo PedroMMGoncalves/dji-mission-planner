@@ -52,6 +52,7 @@ export function preflightFor(missionMode, s) {
     flightOfIndex,
     rthHeightM,
     unverified,
+    wpmlVersion = null,
     corridorPlan,
     corridorTriggerWarn,
     corridorPhotoMode,
@@ -123,6 +124,7 @@ export function preflightFor(missionMode, s) {
       flightOfIndex,
       rthHeightM,
       unverified,
+      wpmlVersion,
     })
   }
   const other = {
@@ -139,6 +141,7 @@ export function preflightFor(missionMode, s) {
     routePoints,
     rthHeightM,
     unverified,
+    wpmlVersion,
   }
   if (missionMode === 'corridor')
     return preflightPlan({

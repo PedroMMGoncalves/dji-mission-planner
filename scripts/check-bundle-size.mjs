@@ -76,7 +76,11 @@ import { fileURLToPath } from 'node:url'
 // do suporte no cartão 1 e no topo dos painéis dos outros modos, o suporte
 // no rótulo da aeronave do relatório e da checklist, a validação na
 // fronteira e os textos PT/EN — 3 KB. Nenhuma dependência nova.
-const BUDGET_KB = 2773
+// 2773 → 2776 com a versão do WPML (#48, Novembro de 2026): a escolha ao
+// lado das acções de segurança, na área e nos outros modos, o campo do
+// projecto, a nota do preflight, a validação na fronteira e os textos
+// PT/EN das três versões — 3 KB. Nenhuma dependência nova.
+const BUDGET_KB = 2776
 // fileURLToPath e não .pathname: este descodifica percent-encoding e trata
 // os caminhos do Windows, o outro devolve-os em bruto.
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))

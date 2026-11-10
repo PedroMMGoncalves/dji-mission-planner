@@ -6,7 +6,11 @@
  * `params` da mensagem. Lógica pura; o App só a mostra e usa os bloqueios
  * para desactivar o botão.
  */
-import { MAX_TRANSITIONAL_SPEED_MS, MAX_WAYPOINTS_PER_ROUTE } from '../utils/exporters.js'
+import {
+  DEFAULT_WPML_VERSION,
+  MAX_TRANSITIONAL_SPEED_MS,
+  MAX_WAYPOINTS_PER_ROUTE,
+} from '../utils/exporters.js'
 
 /**
  * Limite duro do WPML: `wpml:index` em [0, 65535], logo 65536 waypoints por
@@ -431,6 +435,7 @@ export function usableBatteryMin(batteryMin, reservePct = 0) {
  * @param {((i: number) => string|null)|null} [c.flightOfIndex] voo a que um índice da rota pertence
  * @param {number|null} [c.rthHeightM] altura de regresso (RTH) escrita no KMZ (a maior, com vários voos)
  * @param {{aircraft: string, payload: string, mode: string}|null} [c.unverified] combinação sem voo confirmado (M3-U19)
+ * @param {string|null} [c.wpmlVersion] versão do namespace WPML do KMZ (nota quando não é a 1.0.2)
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
 export function preflightArea(c) {
@@ -545,6 +550,7 @@ export function preflightArea(c) {
   out.push(...noBaseItems(c))
   out.push(...openCategoryItems(c))
   out.push(...unverifiedItems(c))
+  out.push(...wpmlVersionItems(c))
   out.push(item('info', 'heights-relative'))
   return out
 }
@@ -635,6 +641,7 @@ export function preflightPlan(c) {
   if (c.refZone?.zone) out.push(...zoneItems(c.refZone.label, c.refZone.zone))
   out.push(...openCategoryItems(c))
   out.push(...unverifiedItems(c))
+  out.push(...wpmlVersionItems(c))
   out.push(item('info', 'heights-relative'))
   return out
 }
@@ -659,6 +666,17 @@ function unverifiedItems(c) {
       mode: c.unverified.mode ?? '',
     }),
   ]
+}
+
+/**
+ * Nota quando o KMZ declara outra versão do WPML que não a 1.0.2: só o
+ * namespace muda (os elementos são os da 1.0.2), e nenhum voo a confirmou
+ * ainda — a escolha existe para o ensaio de um comando que recuse a 1.0.2.
+ */
+function wpmlVersionItems(c) {
+  const v = c.wpmlVersion
+  if (v == null || v === DEFAULT_WPML_VERSION) return []
+  return [item('info', 'wpml-version', { v, base: DEFAULT_WPML_VERSION })]
 }
 
 function openCategoryItems(c) {

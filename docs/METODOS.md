@@ -1240,7 +1240,8 @@ intervalo). Com foto por waypoint cada foto é um ponto da rota, como sempre.
 ## 11. Exportação WPML
 
 Módulo `src/utils/exporters.js`. Dois ficheiros num KMZ (`wpmz/template.kml`
-e `wpmz/waylines.wpml`, `xmlns:wpml="http://www.dji.com/wpmz/1.0.2"`).
+e `wpmz/waylines.wpml`, `xmlns:wpml="http://www.dji.com/wpmz/1.0.2"` por
+omissão; a versão escolhe-se, ver abaixo).
 Coordenadas a 8 casas decimais. Alturas: `heightMode` e
 `executeHeightMode` = `relativeToStartPoint`; cada placemark leva
 `executeHeight` (waylines) e `height` + `ellipsoidHeight` (template) com o
@@ -1353,7 +1354,7 @@ Validação na fronteira (`validateExportParams`), que lança
 `MissionExportError` em vez de escrever o ficheiro: waypoints presentes e
 ≤ 65536, coordenadas finitas em [−180, 180] × [−90, 90], alturas finitas,
 altitude finita > 0, velocidade em (0, 30] m/s, enums WPML numéricos,
-posição do payload em {0, 1, 2},
+posição do payload em {0, 1, 2}, versão do WPML só uma das de `WPML_VERSIONS`,
 `photoIntervalM ≥ 0`, RTH em [2, 1500] (`globalRTHHeight`), pitch em [−120, 60], rumos em
 [−180, 360), `takeOffSecurityHeight` em [1,2, 1500], intervalos de disparo
 inteiros, crescentes e dentro da rota. Caracteres XML ilegais e substitutos
@@ -1367,11 +1368,26 @@ DJI (`dji-sdk/Cloud-API-Doc`), excepto os dois do M300 que 81 KMZ reais
 exportados pelo Pilot 2 (M300 RTK, 2023–2026) contradizem: os payloads
 PSDK de terceiros aparecem sempre como `65535/0`, e não como o `65534`
 ("PSDK Payload Device") da tabela, e o P1 como `50/1` e não `50/0`. Esses
-ficheiros declaram ainda o namespace `wpmz/1.0.3`, enquanto a exportação
-escreve `1.0.2` — observação registada, sem alteração, por não haver
-evidência de que o cabeçalho 1.0.3 seja aceite com os elementos que
-escrevemos, nem de que o 1.0.2 seja recusado. Nenhum enum foi ainda
-testado num comando real (ver `README`).
+ficheiros declaram ainda o namespace `wpmz/1.0.3`, e os ficheiros reais do
+Matrice 4 (missão de waypoints de um M4E, patrulha e modelo de terreno de
+um M4T) declaram `wpmz/1.0.6`, enquanto a exportação escreve `1.0.2`. A
+1.0.2 é a dos exemplos do template e do waylines da especificação (EN e
+CN) e a única com voo real (M3E em Setembro, M4T em Outubro de 2026,
+VALIDACAO §5): fica a de omissão, em todas as aeronaves (decisão M12 da
+revisão da exportação). Não há evidência de que o cabeçalho 1.0.3 ou 1.0.6
+seja aceite com os elementos que escrevemos, nem de que o 1.0.2 seja
+recusado; para o ensaio se fazer sem mexer no código, a versão é um campo
+do projecto (`wpmlVersion`, «Versão do WPML» ao lado das acções de
+segurança, a mesma em todos os modos), só de entre `WPML_VERSIONS` (1.0.2,
+1.0.3, 1.0.6). Muda só o atributo do namespace, o mesmo nos dois ficheiros
+e em cada KMZ de um ZIP de voos: os elementos continuam os da 1.0.2, e o
+ficheiro é, fora dessa linha, igual byte a byte. Na fronteira, outro valor
+(outra versão, um número, um texto vazio, um texto com aspas) é recusado,
+porque iria para dentro de um atributo XML; um projecto anterior ou com um
+valor fora da lista abre com a 1.0.2. Com outra versão o preflight deixa
+uma nota (só a 1.0.2 tem voo confirmado). O importador lê as três (lê os
+elementos sem olhar ao namespace) e o validador de conformidade também.
+Nenhum enum do M300 foi ainda testado num comando real (ver `README`).
 
 ### 11.1 KML da área
 

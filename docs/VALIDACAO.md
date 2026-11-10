@@ -136,7 +136,7 @@ continua por preencher e só um voo a fecha.
 | `waypointHeadingMode` | followWayline (6447/6447) | followWayline | igual |
 | `heightMode` | relativeToStartPoint (EGM96) | relativeToStartPoint | subconjunto |
 | `templateType` | mapping2d (×81) | waypoint | por desenho |
-| `xmlns:wpml` | 1.0.3 (×81) | 1.0.2 | difere, ver §11 dos métodos |
+| `xmlns:wpml` | 1.0.3 (×81) | 1.0.2 por omissão; 1.0.3 ou 1.0.6 à escolha | difere, ver §11 dos métodos e §5.3 |
 | `finishAction` | goHome (×80), noAction (×1) | goHome por omissão; escolha no painel | igual |
 | `distance` / `duration` (waylines) | escritos (×81) | escritos | corrigido a partir daqui |
 
@@ -178,6 +178,29 @@ Falta saber, e registar aqui:
 
 Até lá a posição 0 é a única escrita por todas as versões anteriores, e
 nenhuma posição diferente de 0 foi importada num comando.
+
+### 5.3 Versão do WPML no M300 e no M4T (por fazer)
+
+A exportação declara `wpmz/1.0.2` por omissão (a da especificação; aceite
+no M3E em 2026-09 e no M4T em 2026-10); os 81 KMZ do M300 escritos pelo
+Pilot 2 declaram `1.0.3`, e os ficheiros reais do Matrice 4 `1.0.6`.
+«Versão do WPML», ao lado das acções de segurança, muda só o namespace dos
+dois ficheiros (os elementos ficam os da 1.0.2). Procedimento, no M300 RTK
+e depois no M4T:
+
+1. Exportar dois KMZ do mesmo plano, iguais salvo a versão: um com 1.0.2
+   e outro com 1.0.3 (no M4T, também um com 1.0.6). Confirmar, abrindo os
+   dois, que só a linha do `xmlns:wpml` difere.
+2. Importar os dois no Pilot 2. Registar, para cada um: aceite ou
+   recusado, os avisos que o comando mostrar, se a missão abre no editor
+   e se voa (ou, sem voo, se o editor mostra os waypoints, as alturas e as
+   acções).
+3. Registar se o firmware actual exige algum elemento que só a 1.0.3 (ou
+   a 1.0.6) tenha.
+4. Registar as versões do Pilot 2 e do firmware da aeronave e do comando.
+
+Resultado: por registar. Até lá a 1.0.2 continua a de omissão em todas as
+aeronaves.
 
 ## 6. Round-trip semântico
 

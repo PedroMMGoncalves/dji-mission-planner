@@ -134,6 +134,24 @@ export default {
     pt: 'Escritos no KMZ: sem valor escrito, o RTH fica acima do ponto mais alto da rota (mínimo 100 m); tem de livrar o relevo e os obstáculos no regresso.',
     en: 'Written in the KMZ: with no typed value, the RTH sits above the highest point of the route (minimum 100 m); it must clear the terrain and obstacles on the way back.',
   },
+  // versão do WPML (namespace dos dois ficheiros; WPML_VERSIONS, src/utils/exporters.js)
+  'safety.wpmlVersion': { pt: 'Versão do WPML', en: 'WPML version' },
+  'safety.wpmlVersion.102': {
+    pt: '1.0.2 — a documentada; voou no M3E e no M4T',
+    en: '1.0.2 — the documented one; flown on the M3E and the M4T',
+  },
+  'safety.wpmlVersion.103': {
+    pt: '1.0.3 — a que o Pilot 2 escreve num M300',
+    en: '1.0.3 — the one Pilot 2 writes on an M300',
+  },
+  'safety.wpmlVersion.106': {
+    pt: '1.0.6 — a que o Pilot 2 escreve no Matrice 4',
+    en: '1.0.6 — the one Pilot 2 writes on the Matrice 4',
+  },
+  'safety.wpmlVersionHint': {
+    pt: 'Muda só o namespace dos dois ficheiros do KMZ; os elementos continuam os da 1.0.2. Mude só se o comando recusar a importação.',
+    en: 'Only changes the namespace of the two KMZ files; the elements stay those of 1.0.2. Change it only if the controller refuses the import.',
+  },
   'cards.summary.blocked': {
     pt: 'Exportação bloqueada pelo preflight:',
     en: 'Export blocked by the preflight:',

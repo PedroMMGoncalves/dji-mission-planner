@@ -478,7 +478,14 @@ export default function FacePanel({
           otherHint={t('fp.takeoff.other')}
           testId="face-takeoff"
         />
-        <SafetyBlock safety={safety} setSafety={setSafety} rthInfo={rthInfo} nested />
+        <SafetyBlock
+          safety={safety}
+          setSafety={setSafety}
+          rthInfo={rthInfo}
+          wpmlVersion={hw.wpmlVersion}
+          setWpmlVersion={hw.setWpmlVersion ?? null}
+          nested
+        />
       </Section>
 
       {/* resumo e exportar */}

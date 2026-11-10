@@ -510,7 +510,14 @@ export default function OrbitPanel({
           otherHint={t('op.takeoff.other')}
           testId="orbit-takeoff"
         />
-        <SafetyBlock safety={safety} setSafety={setSafety} rthInfo={rthInfo} nested />
+        <SafetyBlock
+          safety={safety}
+          setSafety={setSafety}
+          rthInfo={rthInfo}
+          wpmlVersion={hw.wpmlVersion}
+          setWpmlVersion={hw.setWpmlVersion ?? null}
+          nested
+        />
       </Section>
 
       {/* resumo e exportar: missão única (a do cabeçalho) ou um KMZ por nível */}

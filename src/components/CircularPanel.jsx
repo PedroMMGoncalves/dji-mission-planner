@@ -573,7 +573,13 @@ export default function CircularPanel({
         summary={[safetySummary(t, safety), rthHeight(rthInfo)].filter(Boolean).join(' · ')}
         {...section('circular-seguranca')}
       >
-        <SafetyBlock safety={safety} setSafety={setSafety} rthInfo={rthInfo} />
+        <SafetyBlock
+          safety={safety}
+          setSafety={setSafety}
+          rthInfo={rthInfo}
+          wpmlVersion={hw.wpmlVersion}
+          setWpmlVersion={hw.setWpmlVersion ?? null}
+        />
       </Section>
 
       {/* resumo e exportar: missão única (a do cabeçalho) ou um KMZ por bloco */}

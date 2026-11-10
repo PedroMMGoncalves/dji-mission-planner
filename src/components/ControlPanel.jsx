@@ -38,6 +38,7 @@ import {
   DrawerGroup,
   RthLine,
   SafetyActions,
+  WpmlVersionField,
   SelectBox,
   SelectChevron,
   SubSection,
@@ -290,6 +291,8 @@ export default function ControlPanel({
     batteryOverridden: usefulOverridden = false,
     setMissionBatteryId: onBatteryId,
     setUsefulMin: onUsefulMin,
+    wpmlVersion,
+    setWpmlVersion = null,
   } = hw
   const {
     setParam,
@@ -1653,6 +1656,8 @@ export default function ControlPanel({
           >
             <SafetyActions safety={safety} onChange={setSafety} />
             <RthLine info={rthInfo} />
+            {/* o namespace WPML do KMZ, por missão como as acções de segurança */}
+            {setWpmlVersion && <WpmlVersionField value={wpmlVersion} onChange={setWpmlVersion} />}
           </SubSection>
         </Section>
 

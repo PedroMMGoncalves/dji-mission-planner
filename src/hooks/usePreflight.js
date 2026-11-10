@@ -353,6 +353,8 @@ export function usePreflight({
         flightOfIndex,
         rthHeightM: rthInfo?.maxM ?? null,
         unverified,
+        // a nota da versão do WPML que não é a 1.0.2
+        wpmlVersion: hw.wpmlVersion,
         corridorPlan,
         corridorTriggerWarn,
         corridorPhotoMode: corridorConfig.photoMode,
@@ -446,6 +448,7 @@ export function usePreflight({
       dsmLoaded,
       faceClearance,
       unverified,
+      hw.wpmlVersion,
       corridorRouteOps,
       circularRouteOps,
     ],

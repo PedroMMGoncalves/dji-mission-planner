@@ -16,7 +16,7 @@ import { missionExportLabel, rangeText, tCount } from '../i18n/format.js'
 import { preflightCounts } from '../mission/preflight.js'
 import { DEFAULT_SAFETY } from '../mission/safety.js'
 import { rthRangeLabel } from '../mission/transitLegs.js'
-import { RthLine, SafetyActions } from './Cards.jsx'
+import { RthLine, SafetyActions, WpmlVersionField } from './Cards.jsx'
 import {
   IconBlocked,
   IconCheck,
@@ -961,12 +961,27 @@ const SHIELD = (
 /**
  * As acções de segurança e o RTH escrito no KMZ: os campos são os do
  * cartão da área (SafetyActions, a mesma escolha para todos os modos);
- * `nested` põe-nos num bloco que abre e fecha, com o resumo numa linha.
- * @param {{safety: any, setSafety: (s: any) => void, rthInfo?: any, nested?: boolean}} props
+ * `nested` põe-nos num bloco que abre e fecha, com o resumo numa linha. Com
+ * `setWpmlVersion`, a versão do WPML do projecto vai com elas (a mesma do
+ * cartão da área).
+ * @param {{safety: any, setSafety: (s: any) => void, rthInfo?: any, nested?: boolean,
+ *   wpmlVersion?: string, setWpmlVersion?: ((v: string) => void)|null}} props
  */
-export function SafetyBlock({ safety, setSafety, rthInfo = null, nested = false }) {
+export function SafetyBlock({
+  safety,
+  setSafety,
+  rthInfo = null,
+  nested = false,
+  wpmlVersion = undefined,
+  setWpmlVersion = null,
+}) {
   const t = useT()
-  const actions = <SafetyActions safety={safety} onChange={setSafety} />
+  const actions = (
+    <>
+      <SafetyActions safety={safety} onChange={setSafety} />
+      {setWpmlVersion && <WpmlVersionField value={wpmlVersion} onChange={setWpmlVersion} />}
+    </>
+  )
   return (
     <>
       {nested ? (

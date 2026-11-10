@@ -761,6 +761,14 @@
         }
       }
     },
+    "wpmlVersion": {
+      "description": "Versao do namespace WPML (xmlns:wpml) dos dois ficheiros do KMZ, em todos os modos. 1.0.2 e a da especificacao e a unica com voo confirmado; 1.0.3 e a que o Pilot 2 escreve num M300 RTK e 1.0.6 a dos ficheiros reais do Matrice 4. So muda o atributo: os elementos sao os da 1.0.2. Sem o campo (projectos anteriores): 1.0.2.",
+      "enum": [
+        "1.0.2",
+        "1.0.3",
+        "1.0.6"
+      ]
+    },
     "safety": {
       "description": "Accoes de seguranca escritas no missionConfig do WPML de todos os modos: o que a aeronave faz no fim da missao e quando perde o sinal do comando. Sem o campo (projectos anteriores): goHome, executeLostAction e goBack.",
       "type": "object",

@@ -25,6 +25,20 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   ficheiros de referência não mudam. **Por verificar no campo**: o suporte
   real da P1 e do Mapper+, e se o Pilot 2 dirige ao payload certo as acções
   de um KMZ com posição diferente de 0.
+- **Versão do WPML à escolha** (namespace dos dois ficheiros). A
+  exportação continua a declarar `wpmz/1.0.2`, a dos exemplos da
+  especificação e a única que voou (M3E e M4T), em todas as aeronaves; os
+  KMZ escritos pelo Pilot 2 num M300 declaram `1.0.3` e os do Matrice 4
+  `1.0.6`. Para o ensaio de um comando que recuse a 1.0.2 se fazer sem
+  mexer no código, **Versão do WPML**, ao lado das acções de segurança (no
+  cartão «Bases e segurança» da área e no cartão das acções dos outros
+  modos), escolhe 1.0.2, 1.0.3 ou 1.0.6. Só muda o atributo, o mesmo nos
+  dois ficheiros e em cada KMZ de um ZIP; os elementos continuam os da
+  1.0.2. Fica no projecto (um projecto anterior abre com a 1.0.2), o
+  preflight deixa uma nota enquanto a versão não for a 1.0.2, e a fronteira
+  recusa qualquer outro valor (iria para dentro de um atributo XML). Os
+  ficheiros de referência não mudam. **Por ensaiar no campo** (VALIDACAO
+  §5.3): dois KMZ iguais salvo a versão, no M300 e no M4T.
 
 ### Corrigido (exportação)
 

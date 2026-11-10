@@ -13,6 +13,7 @@ import {
   MAX_RTH_HEIGHT_M,
   MAX_TAKEOFF_SECURITY_HEIGHT_M,
   MIN_TAKEOFF_SECURITY_HEIGHT_M,
+  WPML_VERSIONS,
 } from '../utils/exporters.js'
 import { IconChevronDown, IconClose } from './Icons.jsx'
 import NumberInput from './NumberInput.jsx'
@@ -577,6 +578,38 @@ export function SafetyActions({ safety, onChange }) {
         </Field>
       </div>
       <p className="text-xs leading-relaxed text-slate-400">{t('safety.heightsHint')}</p>
+    </div>
+  )
+}
+
+/**
+ * Versão do WPML (o namespace dos dois ficheiros do KMZ), por missão e a
+ * mesma em todos os modos, ao lado das acções de segurança: a 1.0.2 por
+ * omissão; as outras só para o comando que recuse a importação.
+ * @param {{value: string, onChange: (v: string) => void}} props
+ */
+export function WpmlVersionField({ value, onChange }) {
+  const t = useT()
+  return (
+    <div className="border-t border-slate-800 pt-3">
+      <Field
+        label={t('safety.wpmlVersion')}
+        unit={<SelectChevron />}
+        hint={t('safety.wpmlVersionHint')}
+      >
+        <select
+          data-testid="wpml-version"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={selectInput}
+        >
+          {WPML_VERSIONS.map((v) => (
+            <option key={v} value={v}>
+              {t(`safety.wpmlVersion.${v.replaceAll('.', '')}`)}
+            </option>
+          ))}
+        </select>
+      </Field>
     </div>
   )
 }

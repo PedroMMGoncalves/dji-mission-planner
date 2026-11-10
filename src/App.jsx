@@ -148,6 +148,8 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
     sensor,
     missionBatteryType,
     batteryMin,
+    wpmlVersion,
+    setWpmlVersion,
   } = hw
   const [showSettings, setShowSettings] = useState(false)
   // bacias de visão: vegetação e obstáculos a somar a um MDT (por missão,
@@ -826,6 +828,7 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
       gcpConfig,
       obstacleM,
       safety,
+      wpmlVersion,
       demFileLabel,
       demSurface,
       demMemory,
@@ -854,6 +857,7 @@ function AppInner({ lang, setLang, panelOpen, setPanelOpen }) {
       setObstacleM,
       setDemMemory,
       setSafety,
+      setWpmlVersion,
     },
     equipment,
     onLoaded: fitToArea,

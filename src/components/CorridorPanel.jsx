@@ -804,7 +804,13 @@ export default function CorridorPanel({
         summary={[safetySummary(t, safety), rthHeight(rthInfo)].filter(Boolean).join(' · ')}
         {...section('corredor-seguranca')}
       >
-        <SafetyBlock safety={safety} setSafety={setSafety} rthInfo={rthInfo} />
+        <SafetyBlock
+          safety={safety}
+          setSafety={setSafety}
+          rthInfo={rthInfo}
+          wpmlVersion={hw.wpmlVersion}
+          setWpmlVersion={hw.setWpmlVersion ?? null}
+        />
       </Section>
 
       {/* resumo e exportar */}

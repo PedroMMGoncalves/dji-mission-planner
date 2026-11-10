@@ -16,6 +16,7 @@ import {
 } from '../mission/defaults.js'
 import { APP_VERSION, versionBefore } from '../mission/project.js'
 import { DEFAULT_SAFETY } from '../mission/safety.js'
+import { DEFAULT_WPML_VERSION } from '../utils/exporters.js'
 import { DEFAULT_CIRCULAR_CONFIG } from '../utils/circular.js'
 import { DEFAULT_CORRIDOR_CONFIG } from '../utils/corridor.js'
 import { DEFAULT_FACE_CONFIG } from '../utils/faceMode.js'
@@ -60,6 +61,7 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
     gcpConfig,
     obstacleM,
     safety,
+    wpmlVersion,
     demFileLabel,
     demSurface,
     demMemory,
@@ -88,6 +90,7 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
     setObstacleM,
     setDemMemory,
     setSafety,
+    setWpmlVersion,
   } = setters
   // a versão que gravou o projecto aberto, quando é anterior à actual (M3-U17)
   const [projectVersion, setProjectVersion] = useState(null)
@@ -143,6 +146,8 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
       setDemMemory(n.demFile ?? null)
       // projectos anteriores às acções de segurança abrem com as omissões
       setSafety(n.safety ?? { ...DEFAULT_SAFETY })
+      // projectos anteriores à versão do WPML abrem com a 1.0.2
+      setWpmlVersion(n.wpmlVersion ?? DEFAULT_WPML_VERSION)
     },
     [
       setMissionName,
@@ -168,6 +173,7 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
       setObstacleM,
       setDemMemory,
       setSafety,
+      setWpmlVersion,
       equipment,
     ],
   )
@@ -215,6 +221,7 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
       gcpConfig,
       obstacleHeightM: obstacleM,
       safety,
+      wpmlVersion,
       demFile: projectDemFile,
     }),
     [
@@ -243,6 +250,7 @@ export function useProjectSession({ values, setters, equipment, onLoaded, t }) {
       gcpConfig,
       obstacleM,
       safety,
+      wpmlVersion,
       projectDemFile,
     ],
   )

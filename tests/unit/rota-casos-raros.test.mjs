@@ -207,9 +207,11 @@ describe('auxiliares com entradas em falta', () => {
   })
 
   test('enums WPML de um payload sem campos WPML nem limites do gimbal', () => {
-    // a posicao do payload sai sempre, 0 por omissao (o suporte principal)
+    // a posicao do payload e a versao do WPML saem sempre: 0 (o suporte
+    // principal) e 1.0.2 (a da especificacao) por omissao
     expect(missionWpml(null, null)).toEqual({
       payloadPositionIndex: 0,
+      wpmlVersion: '1.0.2',
       gimbalPitchRange: null,
       imageFormat: null,
     })

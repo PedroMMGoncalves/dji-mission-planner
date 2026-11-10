@@ -22,6 +22,10 @@
  * Acções de segurança (`safety`, src/mission/safety.js): fim da missão e
  * sinal perdido, as mesmas em todos os modos. Um projecto sem elas abre com
  * as omissões (regressar à base; interromper e regressar).
+ *
+ * Versão do WPML (`wpmlVersion`): o namespace dos dois ficheiros do KMZ, de
+ * todos os modos (WPML_VERSIONS, src/utils/exporters.js). Um projecto sem
+ * ela, ou com uma que não é da lista, abre com a 1.0.2.
  */
 import {
   AIRCRAFT,
@@ -38,7 +42,7 @@ import { legacyBases, normalizeBases, normalizeBlockBase } from './bases.js'
 import { normalizeObstacleM } from './viewshedPlan.js'
 import { normalizeSafety } from './safety.js'
 import { DEFAULT_ANCHOR, DEFAULT_PARAMS } from './defaults.js'
-import { safeFileStem } from '../utils/exporters.js'
+import { DEFAULT_WPML_VERSION, WPML_VERSIONS, safeFileStem } from '../utils/exporters.js'
 
 export const PROJECT_VERSION = 2
 /**
@@ -74,6 +78,7 @@ export const PROJECT_KEYS = [
   'gcpConfig',
   'obstacleHeightM',
   'safety',
+  'wpmlVersion',
   'demFile',
 ]
 /** Esquema JSON (draft 2020-12) do ficheiro v2, servido com a aplicação: public/schema/. */
@@ -136,6 +141,7 @@ export function serializeProject(state) {
     obstacleHeightM,
     demFile,
     safety,
+    wpmlVersion,
   } = state
   return {
     $schema: PROJECT_SCHEMA_URL,
@@ -182,6 +188,8 @@ export function serializeProject(state) {
     obstacleHeightM: normalizeObstacleM(obstacleHeightM),
     // fim da missão e sinal perdido (WPML missionConfig)
     safety: normalizeSafety(safety),
+    // o namespace WPML dos dois ficheiros do KMZ
+    wpmlVersion: normalizeWpmlVersion(wpmlVersion),
     // o ficheiro de relevo não vai no projecto: só o nome e se é MDT ou
     // MDS, para a escolha voltar quando o mesmo ficheiro for reimportado
     demFile: normalizeDemFile(demFile) ?? undefined,
@@ -198,6 +206,16 @@ export function normalizeDemFile(v) {
   const label = v.label.trim().slice(0, 200)
   if (!label) return null
   return { label, surface: v.surface === 'dsm' ? 'dsm' : 'dtm' }
+}
+
+/**
+ * A versão do WPML lida de um ficheiro: uma das da lista, tal e qual; o
+ * resto (ausente, outra versão, um número) é a de omissão.
+ * @param {any} v
+ * @returns {string}
+ */
+export function normalizeWpmlVersion(v) {
+  return WPML_VERSIONS.includes(v) ? v : DEFAULT_WPML_VERSION
 }
 
 /** Nome do ficheiro de projecto a partir do nome da missão. */
@@ -228,6 +246,8 @@ export function projectFileName(missionName) {
  *    (0 nos projectos anteriores)
  *  - safety: acções de segurança, sempre presente (as omissões nos
  *    projectos anteriores)
+ *  - wpmlVersion: o namespace WPML, sempre presente (1.0.2 nos projectos
+ *    anteriores e num valor fora da lista)
  *  - legacyMosaic: {disabled: Set, basePoint} quando um projecto anterior ao
  *    mosaico novo tinha células desactivadas; disabledTiles fica vazio até a
  *    geometria as traduzir (legacyDisabledForMosaic)
@@ -305,6 +325,7 @@ export function normalizeProject(p) {
   out.obstacleHeightM = normalizeObstacleM(p.obstacleHeightM)
   out.demFile = normalizeDemFile(p.demFile)
   out.safety = normalizeSafety(p.safety)
+  out.wpmlVersion = normalizeWpmlVersion(p.wpmlVersion)
   return out
 }
 
