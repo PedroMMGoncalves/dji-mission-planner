@@ -207,7 +207,12 @@ describe('auxiliares com entradas em falta', () => {
   })
 
   test('enums WPML de um payload sem campos WPML nem limites do gimbal', () => {
-    expect(missionWpml(null, null)).toEqual({ gimbalPitchRange: null, imageFormat: null })
+    // a posicao do payload sai sempre, 0 por omissao (o suporte principal)
+    expect(missionWpml(null, null)).toEqual({
+      payloadPositionIndex: 0,
+      gimbalPitchRange: null,
+      imageFormat: null,
+    })
     const m = missionWpml(AIRCRAFT.M3E, { type: 'lidar' })
     expect(m.droneEnumValue).toBe(AIRCRAFT.M3E.wpml.droneEnumValue)
     expect(m.gimbalPitchRange).toBeNull()

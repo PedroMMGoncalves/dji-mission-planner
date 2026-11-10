@@ -1606,6 +1606,86 @@ await scenario('orbita-aeronave-e-inclinacoes', async () => {
   return { page }
 })
 
+/* ---- posição do payload (#47) ------------------------------------------ */
+// os dois ficheiros do KMZ (readRoutes só devolve o waylines)
+async function kmzTextos(file) {
+  const z = await JSZip.loadAsync(readFileSync(file))
+  return {
+    template: await z.file('wpmz/template.kml').async('string'),
+    waylines: await z.file('wpmz/waylines.wpml').async('string'),
+  }
+}
+const posicoesKmz = (xml) =>
+  [...xml.matchAll(/<wpml:payloadPositionIndex>([^<]*)<\/wpml:payloadPositionIndex>/g)].map(
+    (m) => m[1],
+  )
+await scenario('posicao-do-payload', async () => {
+  const { page, errors } = await openMission({ area: fx.rect })
+  // a seguir o terreno, como as acções de segurança: sem ele a rota plana
+  // entra no relevo do fixture e o preflight bloqueia a exportação
+  await configure(page, { tf: true })
+  await exportReady(page)
+  await abrirNoPainel(page, 'missao')
+  const cartao = page.getByTestId('card-missao')
+  const pos = cartao.getByTestId('payload-position')
+  check('posição do payload: escondida no M3E (um só suporte)', (await pos.count()) === 0)
+  await cartao
+    .locator('select')
+    .filter({ has: page.locator('option[value="M300RTK"]') })
+    .selectOption('M300RTK')
+  const opcoes = await pos.locator('option').evaluateAll((os) => os.map((o) => o.value))
+  check(
+    'posição do payload: à vista no M300, com 0, 1 e 2, a começar em 0',
+    (await pos.isVisible()) &&
+      (await pos.inputValue()) === '0' &&
+      JSON.stringify(opcoes) === '["0","1","2"]',
+    `${await pos.inputValue()} de ${opcoes.join(',')}`,
+  )
+  await pos.selectOption('2')
+  await page.waitForTimeout(400)
+  const file = await exportKmz(page, join(OUT, 'posicao-payload-2.kmz'))
+  await readRoutes(file) // o validador de conformidade
+  const { template, waylines } = await kmzTextos(file)
+  const [pt, pw] = [posicoesKmz(template), posicoesKmz(waylines)]
+  check(
+    'posição do payload: 2 no payloadInfo e em cada acção, nos dois ficheiros',
+    pt.length >= 3 && pw.length >= 3 && [...pt, ...pw].every((v) => v === '2'),
+    `template ${pt.join(',')} | waylines ${pw.join(',')}`,
+  )
+  await page.waitForTimeout(800)
+  const saved = JSON.parse(
+    (await page.evaluate(() => localStorage.getItem('dji-mission-planner:project:v1'))) ?? 'null',
+  )
+  check(
+    'posição do payload: fica no projecto',
+    saved?.drone?.payloadPositionIndex === 2,
+    JSON.stringify(saved?.drone),
+  )
+  // os outros modos mostram a mesma escolha (o selector do topo do painel)
+  await modo(page, /^Órbita$|^Orbit$/)
+  await abrirNoPainel(page, 'orbita-aeronave')
+  const picker = page.getByTestId('aircraft-picker')
+  const posOrbita = picker.getByTestId('aircraft-picker-position')
+  check(
+    'posição do payload: a órbita mostra a mesma escolha',
+    (await posOrbita.isVisible()) && (await posOrbita.inputValue()) === '2',
+  )
+  // uma aeronave de um só suporte esconde-a, e a posição volta a 0
+  await picker.getByTestId('aircraft-picker-aircraft').selectOption('M4T')
+  check('posição do payload: escondida no M4T', (await posOrbita.count()) === 0)
+  await picker.getByTestId('aircraft-picker-aircraft').selectOption('M300RTK')
+  check(
+    'posição do payload: de volta ao M300, começa outra vez em 0',
+    (await posOrbita.inputValue()) === '0',
+  )
+  // a aeronave própria tem os três suportes do M300
+  await picker.getByTestId('aircraft-picker-aircraft').selectOption('CUSTOM')
+  check('posição do payload: à vista na aeronave própria', await posOrbita.isVisible())
+  check('posição do payload: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 // Projecto: gravação automática, recarregar a página, guardar em ficheiro
 // e abrir — a ligação entre o estado e o ficheiro de projecto que nenhuma
 // suite em Node exercita de ponta a ponta.
@@ -4558,6 +4638,7 @@ const INVENTARIO_DRONE = [
     'payload / sensor',
     (r, page) => r.locator('select').filter({ has: page.locator('option[value="P1"]') }),
   ],
+  ['missao', 'posição do payload', inv.field(/Posição do payload/)],
   ['missao', 'FOV de trabalho (LiDAR)', inv.field(/FOV de trabalho/)],
   ['missao', 'FOV nominal', inv.exact('Nominal')],
 ]

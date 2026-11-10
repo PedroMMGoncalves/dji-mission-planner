@@ -43,6 +43,11 @@ export const MAX_TAKEOFF_SECURITY_HEIGHT_M = 1500
 /** WPML: globalRTHHeight vai de 2 a 1500 m (template-kml e waylines-wpml, EN e CN). */
 export const MIN_GLOBAL_RTH_HEIGHT_M = 2
 export const MAX_RTH_HEIGHT_M = 1500
+/**
+ * Posições de payload aceites em `wpml:payloadPositionIndex` (gimbalindex da
+ * página de suporte de produtos da DJI): 0, 1 e 2; o 7 é a câmara FPV.
+ */
+export const PAYLOAD_POSITION_INDEXES = [0, 1, 2]
 /** Altura de segurança da descolagem escrita por omissão (m). */
 export const DEFAULT_TAKEOFF_SECURITY_HEIGHT_M = 30
 /**
@@ -260,11 +265,9 @@ export function validateExportParams(params) {
     })
   }
   // Divida da fronteira que a auditoria registou: estes campos chegavam ao
-  // ficheiro em cru. Nenhum e hoje alimentado por um campo da interface, mas
-  // `turnMode: 'a & b'` e `payloadPositionIndex: '<mau>'` produzem XML MAL
-  // FORMADO — um KMZ que o Pilot 2 nem chega a abrir — e um
-  // takeOffSecurityHeightM nao numerico escreve NaN. Fecha-se agora, antes de
-  // alguem os ligar a um campo.
+  // ficheiro em cru. `turnMode: 'a & b'` e `payloadPositionIndex: '<mau>'`
+  // produzem XML MAL FORMADO — um KMZ que o Pilot 2 nem chega a abrir — e um
+  // takeOffSecurityHeightM nao numerico escreve NaN.
   if (params.turnMode != null && !TURN_MODES.includes(params.turnMode)) {
     throw new MissionExportError('param-out-of-range', `turnMode=${params.turnMode}`)
   }
@@ -284,6 +287,15 @@ export function validateExportParams(params) {
     if (v !== undefined && v !== null && !isNum(v)) {
       throw new MissionExportError('param-not-finite', `wpml.${chave}`)
     }
+  }
+  // A posicao do payload vem do projecto (o suporte escolhido no painel) e
+  // vai para cada accao de camara e de gimbal: so 0, 1 e 2 sao suportes de
+  // payload (gimbalindex, pagina de suporte de produtos da DJI); o 7 e a
+  // camara FPV e o resto esta reservado. Um 3 ou um 1.5 apontariam as accoes
+  // a um suporte que nao existe.
+  const pos = wpml.payloadPositionIndex
+  if (isNum(pos) && !PAYLOAD_POSITION_INDEXES.includes(pos)) {
+    throw new MissionExportError('param-out-of-range', `wpml.payloadPositionIndex=${pos}`)
   }
   if (isNum(params.gimbalPitch) && (params.gimbalPitch < -120 || params.gimbalPitch > 60)) {
     throw new MissionExportError('param-out-of-range', 'gimbalPitch')

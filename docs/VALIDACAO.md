@@ -160,6 +160,25 @@ alarme; fica registado em §16 dos métodos como limite conhecido, e
 importar uma missão de oblíqua inteligente do comando dará sempre um
 tempo muito abaixo do real.
 
+### 5.2 Posição do payload no M300 (por fazer)
+
+A exportação escreve a posição escolhida em «Posição do payload» (0
+inferior esquerdo, 1 inferior direito, 2 superior; METODOS §11) no
+`payloadInfo` e em cada acção de câmara e de gimbal dos dois ficheiros.
+Falta saber, e registar aqui:
+
+1. Que `payloadPositionIndex` escrevem os 81 KMZ do M300 (§5.1), por
+   payload (P1, PSDK), e se algum é diferente de 0 — o levantamento do
+   corpus registou os enums, não a posição.
+2. Em que suporte estão montados, de facto, a P1 e o Mapper+ do LNEG.
+3. Exportar uma missão M300 com a posição do suporte real e outra com uma
+   posição diferente de 0 (o mesmo plano), importar as duas no Pilot 2 e
+   registar se abrem, se o editor mostra o payload certo e, em voo ou em
+   simulação, se o gimbal e as fotos vão para o payload montado.
+
+Até lá a posição 0 é a única escrita por todas as versões anteriores, e
+nenhuma posição diferente de 0 foi importada num comando.
+
 ## 6. Round-trip semântico
 
 Exportar da aplicação → importar no Pilot 2 → exportar do comando (ou

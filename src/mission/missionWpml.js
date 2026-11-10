@@ -6,17 +6,23 @@
  * omissão (B2 da revisão da exportação). Com um payload próprio os enums
  * vêm do editor; com uma aeronave própria, também o da aeronave.
  *
+ * A posição do payload (`payloadPositionIndex`) é a do suporte onde está
+ * montado, escolhida no projecto (payloadPositionFor, src/data/drones.js):
+ * vai para o payloadInfo, o payloadParam e cada acção de câmara e de gimbal.
+ *
  * Função pura, para os testes a importarem sem montar o App.
  * @param {{id?: string, wpml?: object}} aircraft
  * @param {{type?: string, wpml?: object, gimbalPitch?: {min: number, max: number}|null,
  *   imageFormat?: string|null}} payload
  * @param {{payloadEnumValue?: number, droneEnumValue?: number}} [custom]
+ * @param {{payloadPositionIndex?: number}} [opts]
  * @returns {Record<string, any>}
  */
-export function missionWpml(aircraft, payload, custom = {}) {
+export function missionWpml(aircraft, payload, custom = {}, { payloadPositionIndex = 0 } = {}) {
   const merged = {
     ...(aircraft?.wpml ?? {}),
     ...(payload?.wpml ?? {}),
+    payloadPositionIndex,
     // limites do gimbal e lente do payload: a exportação recorta o pitch ao
     // intervalo e nomeia a lente nas acções dos payloads multi-lente
     gimbalPitchRange: payload?.gimbalPitch ?? null,

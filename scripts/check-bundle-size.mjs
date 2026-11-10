@@ -72,7 +72,11 @@ import { fileURLToPath } from 'node:url'
 // o planeador, e os textos PT/EN — cerca de 64 KB; e uma dependência nova, o
 // lean-qr 2.7.4 (MIT, sem dependências), que codifica o código QR do ponto
 // da base — 7 KB. As três partes juntas: 2620 → cerca de 2760 KB.
-const BUDGET_KB = 2770
+// 2770 → 2773 com a posição do payload (#47, Novembro de 2026): o selector
+// do suporte no cartão 1 e no topo dos painéis dos outros modos, o suporte
+// no rótulo da aeronave do relatório e da checklist, a validação na
+// fronteira e os textos PT/EN — 3 KB. Nenhuma dependência nova.
+const BUDGET_KB = 2773
 // fileURLToPath e não .pathname: este descodifica percent-encoding e trata
 // os caminhos do Windows, o outro devolve-os em bruto.
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))

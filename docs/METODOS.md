@@ -1287,6 +1287,26 @@ faz a acção de fim) e `executeRCLostAction` (a acção ao interromper:
 (`safety`); um projecto anterior abre com as omissões, que são os valores
 que a exportação escrevia antes. Na fronteira, um valor fora das listas cai
 no primeiro valor permitido.
+Posição do payload (`payloadPositionIndex`, o gimbalindex da página de
+suporte de produtos da DJI): 0 é o suporte principal — no M300 RTK o de
+baixo à esquerda, olhando para o nariz —, 1 o de baixo à direita e 2 o de
+cima; 7 é a câmara FPV, nunca um payload de missão, e os outros valores
+estão reservados. Cada aeronave declara os suportes que tem
+(`payloadPositions`, `src/data/drones.js`): o M300 RTK e a aeronave própria
+0, 1 e 2 (a própria parte dos enums do M300 e é o caminho para uma
+aeronave modular que o catálogo não tem), as integradas (M3E, M4T) só 0.
+A escolha é do projecto (`drone.payloadPositionIndex`, só escrita quando
+não é 0); um projecto anterior, um valor fora da lista ou o de uma
+aeronave sem esse suporte abrem em 0, e trocar para uma aeronave sem o
+suporte volta a 0. O painel só mostra a escolha quando há mais do que um
+suporte. O valor vai para o `payloadInfo` do `missionConfig`, para o
+`payloadParam` do template (quando o payload nomeia a lente) e para cada
+acção de câmara e de gimbal (`takePhoto`, `startRecord`, `stopRecord`,
+`gimbalRotate`, `gimbalEvenlyRotate`), nos dois ficheiros, sempre o mesmo;
+na fronteira, um número que não seja 0, 1 ou 2 é recusado. O relatório, a
+checklist e a ficha da base dizem o suporte ao lado da aeronave quando ela
+tem mais do que um. Nenhum ficheiro do comando com uma posição diferente
+de 0 foi ainda importado (VALIDACAO §5).
 O `Folder` do `waylines.wpml` leva `distance` (m) e `duration` (s), de onde
 o Pilot 2 tira o progresso e o tempo em falta da rota: a distância é o
 comprimento 3D (`routeLengthM`), a duração é a previsão do plano
@@ -1333,6 +1353,7 @@ Validação na fronteira (`validateExportParams`), que lança
 `MissionExportError` em vez de escrever o ficheiro: waypoints presentes e
 ≤ 65536, coordenadas finitas em [−180, 180] × [−90, 90], alturas finitas,
 altitude finita > 0, velocidade em (0, 30] m/s, enums WPML numéricos,
+posição do payload em {0, 1, 2},
 `photoIntervalM ≥ 0`, RTH em [2, 1500] (`globalRTHHeight`), pitch em [−120, 60], rumos em
 [−180, 360), `takeOffSecurityHeight` em [1,2, 1500], intervalos de disparo
 inteiros, crescentes e dentro da rota. Caracteres XML ilegais e substitutos

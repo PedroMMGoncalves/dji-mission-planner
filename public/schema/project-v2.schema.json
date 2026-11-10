@@ -42,6 +42,14 @@
         },
         "rtk": {
           "type": "boolean"
+        },
+        "payloadPositionIndex": {
+          "description": "Suporte onde o payload esta montado (wpml:payloadPositionIndex; gimbalindex da DJI): 0 = principal (no M300 RTK, em baixo a esquerda), 1 = em baixo a direita, 2 = em cima. So nas aeronaves com varios suportes (M300 RTK, aeronave propria). Ausente = 0; um valor que a aeronave nao tem abre em 0.",
+          "enum": [
+            0,
+            1,
+            2
+          ]
         }
       }
     },

@@ -19,6 +19,9 @@
  *                legacyUsefulMin) and seeds estimates for aircraft
  *                without a preset.
  *  - wpml:       { droneEnumValue, droneSubEnumValue } for template/waylines
+ *  - payloadPositions: the payload mounts (`wpml:payloadPositionIndex`) the
+ *                airframe has, first entry is the default; the UI only
+ *                shows the choice when there is more than one
  *  - payloads:   ids into PAYLOADS, first entry is the default
  *
  * Payload fields:
@@ -42,9 +45,11 @@
  *                  planned-vs-measured tool uses it to keep only this camera's
  *                  files when the aircraft writes one file per lens
  *  - maxAglM:      optional operational AGL ceiling (warning, T1.3)
- *  - wpml:         { payloadEnumValue, payloadSubEnumValue,
- *                    payloadPositionIndex } (confirm against DJI WPML docs
- *                    if Pilot 2 rejects the import)
+ *  - wpml:         { payloadEnumValue, payloadSubEnumValue } (confirm
+ *                    against DJI WPML docs if Pilot 2 rejects the import).
+ *                  The mount (`payloadPositionIndex`) is not the payload's:
+ *                  the aircraft lists its mounts and the project keeps the
+ *                  one chosen (drone.payloadPositionIndex).
  */
 export const AIRCRAFT = {
   M3E: {
@@ -65,6 +70,9 @@ export const AIRCRAFT = {
     maxClimbMS: 6, // max ascent speed, normal mode (spec sheet)
     maxDescentMS: 6, // max descent speed (spec sheet)
     wpml: { droneEnumValue: 77, droneSubEnumValue: 0 },
+    // integrated camera: the main mount only (gimbalindex 0, DJI product
+    // support page, type-subtype-gimbalindex)
+    payloadPositions: [0],
     payloads: ['M3E_WIDE'],
   },
 
@@ -84,6 +92,7 @@ export const AIRCRAFT = {
     wpml: { droneEnumValue: 99, droneSubEnumValue: 1 },
     // Wide RGB and the thermal camera share the same gimbal (payload enum 89);
     // the medium tele and tele cameras are not modelled (not used for mapping).
+    payloadPositions: [0], // integrated gimbal, main mount
     payloads: ['M4T_WIDE', 'M4T_THERMAL'],
   },
 
@@ -104,6 +113,12 @@ export const AIRCRAFT = {
     maxClimbMS: 5,
     maxDescentMS: 4, // max descent speed, P mode (spec sheet; S mode 5)
     wpml: { droneEnumValue: 60, droneSubEnumValue: 0 },
+    // Three gimbal ports (DJI product support page, type-subtype-gimbalindex):
+    // 0 = under the aircraft, left (looking towards the nose), 1 = under,
+    // right, 2 = on top. 7 is the FPV camera, never a mission payload. The
+    // KMZ must name the port the payload is really fitted to: every gimbal
+    // and camera action is addressed to it.
+    payloadPositions: [0, 1, 2],
     payloads: ['P1', 'MAPPER_PLUS', 'CUSTOM'],
   },
 
@@ -120,6 +135,10 @@ export const AIRCRAFT = {
     maxDescentMS: 4, // max descent speed (spec sheet)
     // Default enums, editable in the custom editor of the UI:
     wpml: { droneEnumValue: 60, droneSubEnumValue: 0 },
+    // The M300's three ports: the custom aircraft defaults to the M300 enums
+    // and is the way to plan a modular airframe the catalogue lacks; the
+    // 0/1/2 numbering is the only one the DJI documentation defines.
+    payloadPositions: [0, 1, 2],
     payloads: ['CUSTOM'],
   },
 }
@@ -139,7 +158,7 @@ export const PAYLOADS = {
     minTriggerS: 0.7,
     // WPML common-element, gimbalPitchRotateAngle: M3E/M3T [-90, 35]
     gimbalPitch: { min: -90, max: 35 },
-    wpml: { payloadEnumValue: 66, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+    wpml: { payloadEnumValue: 66, payloadSubEnumValue: 0 },
   },
 
   M4T_WIDE: {
@@ -180,7 +199,7 @@ export const PAYLOADS = {
     imageWidth: 4032,
     imageHeight: 3024,
     minTriggerS: 0.7,
-    wpml: { payloadEnumValue: 89, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+    wpml: { payloadEnumValue: 89, payloadSubEnumValue: 0 },
   },
 
   M4T_THERMAL: {
@@ -213,7 +232,7 @@ export const PAYLOADS = {
     // Interval shooting on the thermal camera is slower than on the RGB
     // ones; 2 s is a conservative figure until measured in the field.
     minTriggerS: 2,
-    wpml: { payloadEnumValue: 89, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+    wpml: { payloadEnumValue: 89, payloadSubEnumValue: 0 },
   },
 
   P1: {
@@ -232,7 +251,7 @@ export const PAYLOADS = {
     minTriggerS: 0.7,
     // Zenmuse P1 spec sheet: pitch -120 to +30 deg
     gimbalPitch: { min: -120, max: 30 },
-    wpml: { payloadEnumValue: 50, payloadSubEnumValue: 1, payloadPositionIndex: 0 },
+    wpml: { payloadEnumValue: 50, payloadSubEnumValue: 1 },
   },
 
   MAPPER_PLUS: {
@@ -253,7 +272,7 @@ export const PAYLOADS = {
     effectiveFov: null, // working cut set in the UI; null = fly the nominal
     maxPrr: 240000, // pts/s, single-return figure (T2.1 density estimator)
     maxAglM: 100, // operational ceiling (T1.3 warning)
-    wpml: { payloadEnumValue: 65535, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+    wpml: { payloadEnumValue: 65535, payloadSubEnumValue: 0 },
   },
 
   CUSTOM: {
@@ -266,7 +285,7 @@ export const PAYLOADS = {
     // conservative envelope for an unknown gimbal
     gimbalPitch: { min: -90, max: 30 },
     // Default enums, editable in the custom editor of the UI:
-    wpml: { payloadEnumValue: 50, payloadSubEnumValue: 0, payloadPositionIndex: 0 },
+    wpml: { payloadEnumValue: 50, payloadSubEnumValue: 0 },
   },
 }
 
@@ -303,15 +322,46 @@ export function migrateDroneSelection(stored) {
       console.warn(`[drones] unknown aircraftId "${stored.aircraftId}" — using default`)
       return { ...DEFAULT_SELECTION }
     }
-    if (!aircraft.payloads.includes(stored.payloadId)) {
+    let payloadId = stored.payloadId
+    if (!aircraft.payloads.includes(payloadId)) {
       console.warn(
-        `[drones] payload "${stored.payloadId}" not available on ${aircraft.id} — using ${aircraft.payloads[0]}`,
+        `[drones] payload "${payloadId}" not available on ${aircraft.id} — using ${aircraft.payloads[0]}`,
       )
-      return { aircraftId: aircraft.id, payloadId: aircraft.payloads[0], rtk: stored.rtk === true }
+      payloadId = aircraft.payloads[0]
     }
-    return { aircraftId: aircraft.id, payloadId: stored.payloadId, rtk: stored.rtk === true }
+    // a posição do payload: só uma que a aeronave tenha; o resto abre em 0
+    return withPayloadPosition(
+      { aircraftId: aircraft.id, payloadId, rtk: stored.rtk === true },
+      stored.payloadPositionIndex,
+    )
   }
   return { ...DEFAULT_SELECTION }
+}
+
+/**
+ * A posição do payload que vale para a aeronave: `value` quando é uma das
+ * suas (`payloadPositions`, um subconjunto das que a exportação aceita,
+ * PAYLOAD_POSITION_INDEXES), senão 0 — um projecto antigo, um valor mal
+ * escrito ou o de uma aeronave com outros suportes abrem no principal.
+ * @param {{payloadPositions?: number[]}|null|undefined} aircraft
+ * @param {any} value
+ */
+export function payloadPositionFor(aircraft, value) {
+  const positions = aircraft?.payloadPositions ?? [0]
+  return Number.isInteger(value) && positions.includes(value) ? value : 0
+}
+
+/**
+ * A escolha `drone` com a posição do payload: guardada só quando não é 0 e
+ * a aeronave a tem (0 é a omissão, e não se escreve, como nos projectos
+ * anteriores ao campo).
+ * @param {{aircraftId: string, payloadPositionIndex?: number, [key: string]: any}} drone
+ * @param {any} value
+ */
+export function withPayloadPosition(drone, value) {
+  const { payloadPositionIndex: _old, ...rest } = drone
+  const pos = payloadPositionFor(AIRCRAFT[drone.aircraftId], value)
+  return pos === 0 ? rest : { ...rest, payloadPositionIndex: pos }
 }
 
 /**

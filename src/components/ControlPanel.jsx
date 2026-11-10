@@ -6,6 +6,8 @@ import {
   aircraftShortLabel,
   payloadDesc,
   payloadLabel,
+  payloadPositionFor,
+  withPayloadPosition,
 } from '../data/drones.js'
 import { CRS_OPTIONS } from '../utils/importArea.js'
 import { useLang, useT } from '../i18n.jsx'
@@ -28,7 +30,7 @@ import {
 } from './Icons.jsx'
 import BatterySetsNote from './BatterySetsNote.jsx'
 import NumberInput from './NumberInput.jsx'
-import { droneForAircraft } from './AircraftPicker.jsx'
+import { droneForAircraft, payloadPositionOptions } from './AircraftPicker.jsx'
 import BasesPanel, { FlightExports, ViewshedBox } from './BasesPanel.jsx'
 import {
   CardColumn,
@@ -720,6 +722,23 @@ export default function ControlPanel({
                     {payloadLabel(PAYLOADS[pid], t)}
                   </option>
                 ))}
+              </select>
+            </Field>
+          )}
+          {/* o suporte onde o payload está montado: só com mais do que um (M300, própria) */}
+          {aircraft.payloadPositions.length > 1 && (
+            <Field
+              label={t('cp.drone.position')}
+              unit={<SelectChevron />}
+              hint={t('cp.drone.positionHint')}
+            >
+              <select
+                className={selectInput}
+                data-testid="payload-position"
+                value={String(payloadPositionFor(aircraft, drone.payloadPositionIndex))}
+                onChange={(e) => setDrone(withPayloadPosition(drone, Number(e.target.value)))}
+              >
+                {payloadPositionOptions(aircraft, t)}
               </select>
             </Field>
           )}

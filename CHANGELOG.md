@@ -6,6 +6,26 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
 ## Por publicar
 
+### Acrescentado (exportação)
+
+- **Posição do payload no M300 RTK e na aeronave própria.** A
+  `payloadPositionIndex` ia sempre a 0 (o suporte de baixo à esquerda do
+  M300), e nada a mudava: uma P1 ou um Mapper+ montados noutro suporte
+  recebiam as acções de gimbal e de foto num suporte vazio. A aeronave
+  passa a dizer os suportes que tem (no M300 RTK e na própria, 0, 1 e 2 da
+  página de suporte de produtos da DJI; nas integradas, M3E e M4T, só 0) e
+  o cartão 1, e o topo dos painéis dos outros modos, mostram **Posição do
+  payload** quando há mais do que um, com a nota de que tem de ser o suporte
+  onde o payload está montado. A escolha fica no projecto (um projecto
+  anterior, ou um valor que a aeronave não tem, abre em 0; mudar para uma
+  aeronave sem o suporte volta a 0), aparece no relatório, na checklist e na
+  ficha da base ao lado da aeronave, e vai para o `payloadInfo` e para cada
+  acção de câmara e de gimbal, nos dois ficheiros. A fronteira da exportação
+  recusa uma posição que não seja 0, 1 ou 2 (aceitava qualquer número). Os
+  ficheiros de referência não mudam. **Por verificar no campo**: o suporte
+  real da P1 e do Mapper+, e se o Pilot 2 dirige ao payload certo as acções
+  de um KMZ com posição diferente de 0.
+
 ### Corrigido (exportação)
 
 - **M4T grande-angular: a lente passa a `visable`** (era `wide`), no

@@ -42,6 +42,18 @@ export default {
     en: 'Narrows the position error from ±0.5 / ±1.5 m (GNSS) to centimetres in the GSD and overlap ranges.',
   },
   'cp.drone.payload': { pt: 'Payload / Sensor', en: 'Payload / Sensor' },
+  /* posição do payload (wpml:payloadPositionIndex): os suportes do M300 RTK */
+  'cp.drone.position': { pt: 'Posição do payload', en: 'Payload position' },
+  'cp.drone.position.0': { pt: 'Inferior esquerdo (0)', en: 'Lower left (0)' },
+  'cp.drone.position.1': { pt: 'Inferior direito (1)', en: 'Lower right (1)' },
+  'cp.drone.position.2': { pt: 'Superior (2)', en: 'Upper (2)' },
+  'cp.drone.positionHint': {
+    pt: 'Tem de ser o suporte onde o payload está montado (esquerda e direita olhando para o nariz): as acções de gimbal e de foto do KMZ vão para esse suporte.',
+    en: 'Must be the port the payload is fitted to (left and right looking towards the nose): the KMZ gimbal and photo actions go to that port.',
+  },
+  'cp.drone.positionShort.0': { pt: 'suporte inferior esquerdo (0)', en: 'lower-left port (0)' },
+  'cp.drone.positionShort.1': { pt: 'suporte inferior direito (1)', en: 'lower-right port (1)' },
+  'cp.drone.positionShort.2': { pt: 'suporte superior (2)', en: 'upper port (2)' },
   'cp.drone.lidarSpecs': {
     pt: '{desc} · FOV nominal {fov}° · tecto operacional {agl} m AGL',
     en: '{desc} · nominal FOV {fov}° · operational ceiling {agl} m AGL',

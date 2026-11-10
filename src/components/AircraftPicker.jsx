@@ -7,21 +7,41 @@ import {
   aircraftShortLabel,
   payloadDesc,
   payloadLabel,
+  payloadPositionFor,
+  withPayloadPosition,
 } from '../data/drones.js'
 import { Note, Select, signedText } from './ModePanel.jsx'
 
 /**
  * A escolha `drone` com outra aeronave: fica o payload, se a nova o monta,
- * senão o primeiro dela (o cartão 1 da área faz o mesmo).
- * @param {{aircraftId: string, payloadId: string}} drone
+ * senão o primeiro dela (o cartão 1 da área faz o mesmo); e fica a posição
+ * do payload, se a nova tem esse suporte, senão volta a 0.
+ * @param {{aircraftId: string, payloadId: string, payloadPositionIndex?: number}} drone
  * @param {string} aircraftId
  */
 export function droneForAircraft(drone, aircraftId) {
   const a = AIRCRAFT[aircraftId]
-  return {
-    aircraftId: a.id,
-    payloadId: a.payloads.includes(drone.payloadId) ? drone.payloadId : a.payloads[0],
-  }
+  return withPayloadPosition(
+    {
+      aircraftId: a.id,
+      payloadId: a.payloads.includes(drone.payloadId) ? drone.payloadId : a.payloads[0],
+    },
+    drone.payloadPositionIndex,
+  )
+}
+
+/**
+ * As opções da posição do payload da aeronave (só as que ela tem), com o
+ * rótulo do suporte e o número que vai para o KMZ.
+ * @param {{payloadPositions?: number[]}} aircraft
+ * @param {(key: string) => string} t
+ */
+export function payloadPositionOptions(aircraft, t) {
+  return (aircraft.payloadPositions ?? [0]).map((n) => (
+    <option key={n} value={n}>
+      {t(`cp.drone.position.${n}`)}
+    </option>
+  ))
 }
 
 /**
@@ -58,12 +78,14 @@ export function aircraftSummary(t, drone, sensor, detail) {
  * modos ficavam sem fotos e sem maneira de a escolher.
  * `sensor` é o sensor resolvido (resolveSensor): o payload próprio é câmara
  * ou LiDAR conforme o editor do cartão 1 da área, que fica lá.
- * @param {{drone: {aircraftId: string, payloadId: string}, setDrone: (d: any) => void,
+ * @param {{drone: {aircraftId: string, payloadId: string, payloadPositionIndex?: number},
+ *   setDrone: (d: any) => void,
  *   sensor: {type: string, focalLength?: number}}} props
  */
 export default function AircraftPicker({ drone, setDrone, sensor }) {
   const t = useT()
   const descId = useId()
+  const positionHintId = useId()
   const aircraft = AIRCRAFT[drone.aircraftId]
   const payload = PAYLOADS[drone.payloadId]
   return (
@@ -97,6 +119,24 @@ export default function AircraftPicker({ drone, setDrone, sensor }) {
               </option>
             ))}
           </Select>
+        )}
+        {/* o suporte onde o payload está montado: só com mais do que um (M300, própria) */}
+        {aircraft.payloadPositions.length > 1 && (
+          <>
+            <Select
+              label={t('cp.drone.position')}
+              value={String(payloadPositionFor(aircraft, drone.payloadPositionIndex))}
+              testId="aircraft-picker-position"
+              describedBy={positionHintId}
+              onChange={(v) => setDrone(withPayloadPosition(drone, Number(v)))}
+              className="mt-1.5"
+            >
+              {payloadPositionOptions(aircraft, t)}
+            </Select>
+            <p id={positionHintId} className="text-xs leading-normal text-slate-400">
+              {t('cp.drone.positionHint')}
+            </p>
+          </>
         )}
         <p id={descId} className="text-xs leading-normal text-slate-400">
           {sensor?.type === 'camera'

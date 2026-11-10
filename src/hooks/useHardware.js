@@ -12,6 +12,7 @@ import {
   DEFAULT_SELECTION,
   aircraftLabel,
   payloadLabel,
+  payloadPositionFor,
 } from '../data/drones.js'
 import {
   aircraftEquipmentFor,
@@ -28,7 +29,8 @@ export function useHardware({ t }) {
   // seleção de hardware: aeronave + payload (T1.1)
   const [drone, setDrone] = useState(
     () =>
-      /** @type {{aircraftId: string, payloadId: string, rtk?: boolean}} */ ({
+      /** @type {{aircraftId: string, payloadId: string, rtk?: boolean,
+       *   payloadPositionIndex?: number}} */ ({
         ...DEFAULT_SELECTION,
       }),
   )
@@ -70,12 +72,22 @@ export function useHardware({ t }) {
   })
   const speedRange = aircraft.speedRange ?? { min: 1, max: 20 }
 
-  // rótulo composto para o relatório/checklist: a aeronave, e o payload
-  // quando a aeronave tem mais do que um montável
-  const hardwareLabel =
+  // o suporte onde o payload está montado (0 nas aeronaves de um só)
+  const payloadPositionIndex = payloadPositionFor(aircraft, drone.payloadPositionIndex)
+
+  // rótulo composto para o relatório/checklist: a aeronave, o payload
+  // quando a aeronave tem mais do que um montável, e o suporte quando tem
+  // mais do que um (no campo, o payload tem de estar no suporte do KMZ)
+  const hardwareLabel = [
     aircraft.payloads.length > 1
       ? `${aircraftLabel(aircraft, t)} + ${payloadLabel(payload, t)}`
-      : aircraftLabel(aircraft, t)
+      : aircraftLabel(aircraft, t),
+    aircraft.payloadPositions.length > 1
+      ? t(`cp.drone.positionShort.${payloadPositionIndex}`)
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   // payload ativo com a afinação aplicada: um LiDAR pode voar com um corte
   // de trabalho do feixe (effectiveFov) mais estreito do que o nominal
@@ -134,8 +146,12 @@ export function useHardware({ t }) {
 
   // Enums WPML: aeronave + payload; o editor custom substitui o enum do
   // payload sempre, e o da aeronave apenas quando a aeronave é CUSTOM
-  // (num M300 com payload custom o droneEnumValue continua a ser o do M300)
-  const wpml = useMemo(() => missionWpml(aircraft, payload, custom), [aircraft, payload, custom])
+  // (num M300 com payload custom o droneEnumValue continua a ser o do M300);
+  // a posição do payload é a escolhida no projecto
+  const wpml = useMemo(
+    () => missionWpml(aircraft, payload, custom, { payloadPositionIndex }),
+    [aircraft, payload, custom, payloadPositionIndex],
+  )
 
   // tipos de bateria da aeronave (selector da missão)
   const equipmentBatteries = aircraftEquipmentFor(equipment, drone.aircraftId).batteries
