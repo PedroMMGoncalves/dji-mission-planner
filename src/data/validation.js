@@ -15,3 +15,18 @@ export function isVerifiedFlight(f) {
     (v) => v.aircraftId === f.aircraftId && v.payloadId === f.payloadId && v.mode === f.mode,
   )
 }
+
+/**
+ * Os enums do payload («50/1») quando não estão na página de suporte de
+ * produtos do Cloud API e vêm só de ficheiros escritos pelo Pilot 2
+ * (`wpmlEnumsObserved`: a P1 e o Mapper+ do M300, VALIDACAO §5.4); senão
+ * null. Com eles, o lembrete do primeiro voo diz de onde vêm e que a
+ * importação está por confirmar.
+ * @param {{wpmlEnumsObserved?: boolean, wpml?: {payloadEnumValue?: number,
+ *   payloadSubEnumValue?: number}}|null|undefined} payload
+ * @returns {string|null}
+ */
+export function observedPayloadEnums(payload) {
+  if (!payload?.wpmlEnumsObserved || !payload.wpml) return null
+  return `${payload.wpml.payloadEnumValue}/${payload.wpml.payloadSubEnumValue ?? 0}`
+}

@@ -20,6 +20,8 @@ import { preflightFor } from '../../src/mission/preflightFor.js'
 import { planForTakeoff, takeoffReference } from '../../src/mission/takeoffRef.js'
 import { translate } from '../../src/i18n.jsx'
 import { metersPerDegLon } from '../../src/utils/units.js'
+import { PAYLOADS } from '../../src/data/drones.js'
+import { observedPayloadEnums } from '../../src/data/validation.js'
 
 const P = {
   waypoints: [
@@ -292,6 +294,56 @@ describe('fachada e órbita', () => {
       payload: '',
       mode: '',
     })
+  })
+
+  // #53: a P1 e o Mapper+ do M300 levam enums tirados de ficheiros escritos
+  // pelo Pilot 2 (50/1, 65535/0), fora da tabela de suporte do Cloud API, e
+  // nenhum comando importou ainda um KMZ da aplicacao com eles: o lembrete
+  // diz isso, e nao so que e o primeiro voo
+  test('P1 e Mapper+ no M300: o lembrete diz de onde vêm os enums e que a importação está por confirmar', () => {
+    expect(observedPayloadEnums(PAYLOADS.P1)).toBe('50/1')
+    expect(observedPayloadEnums(PAYLOADS.MAPPER_PLUS)).toBe('65535/0')
+    // os da tabela (ou com voo) e os do editor próprio ficam com o genérico
+    for (const id of ['M3E_WIDE', 'M4T_WIDE', 'M4T_THERMAL', 'CUSTOM'])
+      expect(observedPayloadEnums(PAYLOADS[id]), id).toBeNull()
+    expect(observedPayloadEnums(null)).toBeNull()
+
+    const unverified = {
+      aircraft: 'DJI Matrice 300 RTK',
+      payload: 'Zenmuse P1',
+      mode: 'Área',
+      enums: observedPayloadEnums(PAYLOADS.P1),
+    }
+    for (const items of [
+      preflightPlan({ plan: P, unverified }),
+      preflightArea({ ...ctx, plan: P, unverified }),
+    ]) {
+      // um só lembrete: o específico substitui o genérico
+      expect(codes(items).filter((c) => c.includes('unverified-combo'))).toEqual([
+        'unverified-combo-enums',
+      ])
+      const it = find(items, 'unverified-combo-enums')
+      expect(it.level).toBe('info')
+      expect(it.params).toEqual(unverified)
+      const pt = translate('pt', `preflight.${it.code}`, it.params)
+      const en = translate('en', `preflight.${it.code}`, it.params)
+      expect(pt).toContain('50/1')
+      expect(pt).toContain('Pilot 2')
+      expect(pt).toContain('Cloud API')
+      expect(pt).toContain('§5.4')
+      expect(en).toContain('50/1')
+      expect(en).toContain('Cloud API')
+      expect(`${pt} ${en}`).not.toMatch(/\{[a-zA-Z]+\}/)
+    }
+    // os rótulos que faltam ficam vazios, como no genérico
+    expect(
+      find(preflightPlan({ plan: P, unverified: { enums: '65535/0' } }), 'unverified-combo-enums')
+        .params,
+    ).toEqual({ aircraft: '', payload: '', mode: '', enums: '65535/0' })
+    // sem enums observados (ou com null) fica o lembrete genérico
+    const generico = preflightPlan({ plan: P, unverified: { ...unverified, enums: null } })
+    expect(codes(generico)).toContain('unverified-combo')
+    expect(codes(generico)).not.toContain('unverified-combo-enums')
   })
 })
 

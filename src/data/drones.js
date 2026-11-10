@@ -50,6 +50,10 @@
  *                  The mount (`payloadPositionIndex`) is not the payload's:
  *                  the aircraft lists its mounts and the project keeps the
  *                  one chosen (drone.payloadPositionIndex).
+ *  - wpmlEnumsObserved: true when the payload enums are not in the product
+ *                  support page of the DJI Cloud API and come only from KMZ
+ *                  written by Pilot 2; the preflight says so until a KMZ of
+ *                  ours is imported (docs/VALIDACAO.md, section 5.4)
  */
 export const AIRCRAFT = {
   M3E: {
@@ -237,7 +241,10 @@ export const PAYLOADS = {
 
   P1: {
     // payloadSubEnumValue 1: 15 real KMZ exported by Pilot 2 with the P1 on
-    // an M300 all write 50/1, not the 50/0 shipped before.
+    // an M300 all write 50/1, not the 50/0 shipped before. The P1 is not in
+    // the camera table of the live product support page (2026-11), which
+    // lists only the H20/H30 series for the M300; 50/0 is the fallback
+    // (docs/VALIDACAO.md, section 5.4).
     id: 'P1',
     label: 'Zenmuse P1',
     desc: 'Zenmuse P1 — Full Frame 35 mm',
@@ -252,17 +259,21 @@ export const PAYLOADS = {
     // Zenmuse P1 spec sheet: pitch -120 to +30 deg
     gimbalPitch: { min: -120, max: 30 },
     wpml: { payloadEnumValue: 50, payloadSubEnumValue: 1 },
+    wpmlEnumsObserved: true,
   },
 
   MAPPER_PLUS: {
     // YellowScan Mapper+ (Livox AVIA) on the M300 Skyport mount.
     // Source: yellowscan.com/products/mapper-plus (checked 2026-08-18):
     // FOV 70.4 deg nominal, 240 kHz PRR (single return), 100 m max AGL.
-    // payloadEnumValue 65535: the DJI WPML common-element table documents
-    // 65534 as "PSDK Payload Device", but 66 real KMZ exported by Pilot 2
-    // on this very aircraft (M300 RTK, 2023-2026, third-party payloads on
-    // the Skyport mount) all write 65535/0. Observed device behaviour wins
-    // over the table; still to be confirmed by importing one of our KMZ.
+    // payloadEnumValue 65535: the 2024 common-element table listed 65534 as
+    // "PSDK Payload Device" (tests/spec/wpml-spec.json), but 66 real KMZ
+    // exported by Pilot 2 on this very aircraft (M300 RTK, 2023-2026,
+    // third-party payloads on the Skyport mount) all write 65535/0. The live
+    // product support page (2026-11) lists neither and says the M300 "can't
+    // support third-party payload now". Observed device behaviour wins over
+    // the table; still to be confirmed by importing one of our KMZ, with
+    // 65534/0 as the fallback (docs/VALIDACAO.md, section 5.4).
     id: 'MAPPER_PLUS',
     label: 'YellowScan Mapper+',
     desc: 'YellowScan Mapper+ — LiDAR Livox AVIA',
@@ -273,6 +284,7 @@ export const PAYLOADS = {
     maxPrr: 240000, // pts/s, single-return figure (T2.1 density estimator)
     maxAglM: 100, // operational ceiling (T1.3 warning)
     wpml: { payloadEnumValue: 65535, payloadSubEnumValue: 0 },
+    wpmlEnumsObserved: true,
   },
 
   CUSTOM: {

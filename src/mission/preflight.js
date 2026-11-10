@@ -434,7 +434,7 @@ export function usableBatteryMin(batteryMin, reservePct = 0) {
  * @param {number[][]|null} [c.routePoints] rota de verificação [lon, lat, h], para as coordenadas dos itens de rota
  * @param {((i: number) => string|null)|null} [c.flightOfIndex] voo a que um índice da rota pertence
  * @param {number|null} [c.rthHeightM] altura de regresso (RTH) escrita no KMZ (a maior, com vários voos)
- * @param {{aircraft: string, payload: string, mode: string}|null} [c.unverified] combinação sem voo confirmado (M3-U19)
+ * @param {{aircraft: string, payload: string, mode: string, enums?: string|null}|null} [c.unverified] combinação sem voo confirmado (M3-U19); `enums` quando os do payload só vêm de ficheiros do Pilot 2
  * @param {string|null} [c.wpmlVersion] versão do namespace WPML do KMZ (nota quando não é a 1.0.2)
  * @returns {Array<{level: 'block'|'warn'|'info', code: string, params: object}>}
  */
@@ -656,9 +656,26 @@ export const OPEN_CATEGORY_MAX_AGL_M = 120
  * exportada, sobre o relevo; `c.rthHeightM` a altura de regresso (a maior,
  * com vários voos) que o KMZ escreve.
  */
-/** Primeiro voo de uma combinação aeronave + payload + modo sem KMZ confirmado (M3-U19). */
+/**
+ * Primeiro voo de uma combinação aeronave + payload + modo sem KMZ confirmado
+ * (M3-U19). Com `enums` (a P1 e o Mapper+ do M300: observedPayloadEnums,
+ * src/data/validation.js) o lembrete é outro e diz a verdade toda: os enums
+ * vêm de ficheiros escritos pelo Pilot 2, a página de suporte de produtos do
+ * Cloud API não os lista (para o M300 só a série H20/H30, e «Can't support
+ * third-party payload now»), e a importação de um KMZ nosso está por
+ * confirmar (VALIDACAO §5.4, com a alternativa se o comando o recusar).
+ */
 function unverifiedItems(c) {
   if (!c.unverified) return []
+  if (c.unverified.enums)
+    return [
+      item('info', 'unverified-combo-enums', {
+        aircraft: c.unverified.aircraft ?? '',
+        payload: c.unverified.payload ?? '',
+        mode: c.unverified.mode ?? '',
+        enums: c.unverified.enums,
+      }),
+    ]
   return [
     item('info', 'unverified-combo', {
       aircraft: c.unverified.aircraft ?? '',

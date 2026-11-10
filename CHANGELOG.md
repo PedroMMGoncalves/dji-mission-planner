@@ -100,6 +100,27 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   fotografaram sem ele. Um sufixo com texto mudaria o nome de todas as
   fotos.
 
+### Alterado (preflight e documentação)
+
+- **P1 e Mapper+ no M300: a limitação dita, com a alternativa.** A página
+  de suporte de produtos do Cloud API lista para o M300 RTK só a série
+  H20/H30 e diz «Can't support third-party payload now»; os `50/1` da P1
+  e `65535/0` do Mapper+ vêm só dos 81 KMZ escritos pelo Pilot 2 neste
+  M300, que provam o que o comando escreve e não o que aceita importar. O
+  lembrete do primeiro voo dessas duas combinações, que era o genérico,
+  passa a dizê-lo (`unverified-combo-enums`, nota): de onde vêm os enums,
+  que estão fora da tabela, e que a importação está por confirmar antes do
+  dia de campo. Em `docs/VALIDACAO.md`, a matriz ganha a linha da térmica
+  do M4T e diz, em cada linha por voar, o que falta; a nova §5.4 tem o
+  procedimento (importar a P1 e o Mapper+, comparar com um KMZ do Pilot 2
+  para o mesmo payload, registar versões) e as alternativas por ordem,
+  todas sem mexer no código: namespace 1.0.3, o suporte real, `50/0` ou
+  `65534/0` pelo payload personalizado, e planear no comando a partir do
+  KML da área. Os READMEs dizem a limitação e deixam de chamar «documentado»
+  ao 65534 do Mapper+, que a exportação não escreve. A exportação e os
+  ficheiros de referência não mudam. **Por fazer no campo**: a importação
+  dos dois KMZ.
+
 ### Interno (testes)
 
 - **O KML da área que a interface dá para o Pilot 2 fica fixado de ponta a

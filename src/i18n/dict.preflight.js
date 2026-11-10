@@ -234,6 +234,10 @@ export default {
     pt: 'Primeiro voo desta combinação ({aircraft} + {payload}, {mode}): ainda não há KMZ confirmado no Pilot 2. No primeiro voo conte as fotos, confira as alturas e a lente, e registe na matriz de compatibilidade (manual de QA, §16 «Primeiro voo de cada modo»).',
     en: 'First flight of this combination ({aircraft} + {payload}, {mode}): no KMZ confirmed in Pilot 2 yet. On the first flight count the photos, check the heights and the lens, and record it in the compatibility matrix (QA manual, §16 “First flight of each mode”).',
   },
+  'preflight.unverified-combo-enums': {
+    pt: 'Primeiro voo desta combinação ({aircraft} + {payload}, {mode}), com os enums do payload {enums}: vêm de ficheiros escritos pelo Pilot 2 num M300 e estão fora da tabela de suporte do Cloud API da DJI, e nenhum comando importou ainda um KMZ desta aplicação com eles. Importe-o no comando antes do dia de campo, confirme que o aceita e que reconhece o payload, e registe na matriz de compatibilidade (VALIDACAO §5.4, com a alternativa se o comando o recusar).',
+    en: 'First flight of this combination ({aircraft} + {payload}, {mode}), with the payload enums {enums}: they come from files written by Pilot 2 on an M300 and are outside the product support table of DJI’s Cloud API, and no controller has yet imported a KMZ from this app with them. Import it on the controller before the field day, check that it is accepted and the payload recognised, and record it in the compatibility matrix (VALIDACAO §5.4, with the workaround if the controller refuses it).',
+  },
   'preflight.wpml-version': {
     pt: 'O KMZ declara o WPML {v} (escolhido em «Versão do WPML»), com os elementos da {base}: só a {base} tem voo confirmado. Se o comando aceitar ou recusar, registe-o na matriz de compatibilidade (VALIDACAO §5).',
     en: 'The KMZ declares WPML {v} (chosen in “WPML version”), with the elements of {base}: only {base} has a confirmed flight. Whether the controller accepts or refuses it, record it in the compatibility matrix (VALIDACAO §5).',

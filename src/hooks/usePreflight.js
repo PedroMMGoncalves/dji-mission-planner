@@ -8,7 +8,7 @@
  */
 import { useMemo } from 'react'
 import { aglCapWarning, aircraftLabel, payloadLabel, positioningError } from '../data/drones.js'
-import { isVerifiedFlight } from '../data/validation.js'
+import { isVerifiedFlight, observedPayloadEnums } from '../data/validation.js'
 import { bboxCovers, bboxOfPoints } from '../mission/corridorTerrain.js'
 import { gimbalRangeViolation } from '../mission/gimbal.js'
 import { hasBlockers } from '../mission/preflight.js'
@@ -306,10 +306,14 @@ export function usePreflight({
       })
     )
       return null
+    // a P1 e o Mapper+ do M300: os enums só vêm de ficheiros do Pilot 2, e
+    // o lembrete di-lo (VALIDACAO §5.4)
+    const enums = observedPayloadEnums(payload)
     return {
       aircraft: aircraftLabel(aircraft, t),
       payload: payloadLabel(payload, t),
       mode: t(`mode.${missionMode}`),
+      ...(enums ? { enums } : {}),
     }
   }, [drone.aircraftId, drone.payloadId, missionMode, aircraft, payload, t])
   const preflight = useMemo(

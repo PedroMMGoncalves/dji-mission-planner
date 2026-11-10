@@ -80,7 +80,10 @@ import { fileURLToPath } from 'node:url'
 // lado das acções de segurança, na área e nos outros modos, o campo do
 // projecto, a nota do preflight, a validação na fronteira e os textos
 // PT/EN das três versões — 3 KB. Nenhuma dependência nova.
-const BUDGET_KB = 2776
+// 2776 → 2777 com o lembrete da P1 e do Mapper+ no M300 (#53, Novembro de
+// 2026): o texto PT/EN que diz de onde vêm os enums e que a importação está
+// por confirmar — 1 KB. Nenhuma dependência nova.
+const BUDGET_KB = 2777
 // fileURLToPath e não .pathname: este descodifica percent-encoding e trata
 // os caminhos do Windows, o outro devolve-os em bruto.
 const DIST = fileURLToPath(new URL('../dist/', import.meta.url))

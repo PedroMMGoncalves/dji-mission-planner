@@ -117,8 +117,9 @@ ao de pontos de foto do plano, e o drone só pára nos cantos das faixas:
 |---|---|---|---|---|---|---|---|---|---|
 | M3E | Wide RGB | 9.2.0.26 | 02.01.0322 | sim (2026-09) | 77/66 | | foto por waypoint dispara, mas pára em cada ponto | | 1.º voo: sem `distance`/`duration` no waylines, o comando mostrou 100 % e 00:00 a meio (corrigido) |
 | M4T | grande-angular | (a registar) | (a registar) | sim (2026-10) | 99/1/89 | | disparo por distância com `actionGroupMode` `parallel`: fotos **só nos waypoints** (cantos das faixas). Corrigido para `sequence`; por voar | | 2.º voo real; enums do M4T confirmados num comando real |
-| M300 RTK | Mapper+ | | | | 60/65535 | | | | |
-| M300 RTK | P1 | | | | 60/50/1 | | | | |
+| M4T | térmica (IR) | | | por importar | 99/1/89 | | | | por voar: os enums são os da grande-angular (aceites em 2026-10), mas a lente `ir` (`imageFormat` e `payloadLensIndex`) nunca foi importada; falta confirmar que as fotos saem da térmica (`ImageSource` `InfraredCamera`) |
+| M300 RTK | Mapper+ | | | por importar | 60/65535/0 | | | | por importar e voar: enums tirados de ficheiros escritos pelo Pilot 2 (§5.1), fora da tabela de suporte do Cloud API; procedimento e alternativa em §5.4, suporte em §5.2, namespace em §5.3 |
+| M300 RTK | P1 | | | por importar | 60/50/1 | | | | por importar e voar: como o Mapper+ (§5.4) |
 
 ### 5.1 O que os ficheiros do comando já provam
 
@@ -201,6 +202,77 @@ e depois no M4T:
 
 Resultado: por registar. Até lá a 1.0.2 continua a de omissão em todas as
 aeronaves.
+
+### 5.4 P1 e Mapper+ no M300: enums fora da tabela do Cloud API (por fazer)
+
+**A limitação.** A página de suporte de produtos do Cloud API da DJI
+(versão viva, 2026-11) lista para o M300 RTK só os payloads
+H20/H20T/H20N/H30/H30T e diz «Can't support third-party payload now»; a
+tabela de câmaras não tem a Zenmuse P1 nem nenhum payload PSDK. Os enums
+que exportamos — P1 `50/1`, Mapper+ `65535/0` — vêm dos 81 KMZ escritos
+pelo Pilot 2 neste M300 (§5.1): provam o que o comando **escreve**, não
+que **aceite importar** um KMZ com eles, nem que reconheça o payload. Nenhum
+KMZ desta aplicação com a P1 ou o Mapper+ foi ainda importado num comando;
+o preflight di-lo nessas duas combinações. Há ainda um gerador de campo
+público (M300 e M350 com a P1, só `template.kml`) que escreve `50/0` com o
+namespace `wpmz/1.0.4`, o que não bate com os `50/1` dos 81 ficheiros; o
+ficheiro não diz se o comando o aceitou.
+
+**Procedimento**, no M300 RTK do LNEG, com o payload montado:
+
+1. Exportar da aplicação o mesmo plano (área pequena, sem seguimento de
+   terreno) com a P1 e com o Mapper+, cada um com a «Posição do payload» do
+   suporte onde está montado (§5.2) e a versão do WPML de omissão.
+2. Importar cada KMZ no Pilot 2 e registar: aceite ou recusado (com o texto
+   do aviso), se a missão abre no editor, se o editor mostra o payload certo
+   e, em voo ou em simulação, se as acções vão para o payload montado (a P1
+   fotografa; o Mapper+ não recebe acções de câmara).
+3. No mesmo comando, criar no Pilot 2 uma missão para o mesmo payload e
+   exportá-la; comparar com o nosso KMZ os `payloadEnumValue` e
+   `payloadSubEnumValue`, o `payloadPositionIndex`, o `xmlns:wpml` e o
+   `payloadParam` do template (e o que mais um só dos dois tiver).
+4. Registar as versões do Pilot 2, do firmware da aeronave e do comando e,
+   no Mapper+, do firmware do payload.
+
+**Alternativa, se o comando recusar o ficheiro ou não reconhecer o
+payload.** Uma mudança de cada vez, pela ordem abaixo, registando cada
+tentativa na tabela; nenhuma exige mexer no código.
+
+| # | Tentativa | Evidência | Como, na interface |
+|---|---|---|---|
+| 1 | namespace `1.0.3` | os 81 KMZ do Pilot 2 neste M300 declaram 1.0.3 (§5.1, §5.3) | «Versão do WPML», ao lado das acções de segurança |
+| 2 | o suporte real, se o payload não for reconhecido | o `payloadPositionIndex` endereça o payload em cada acção (§5.2) | «Posição do payload», no cartão 1 |
+| 3 | P1 com `50/0` | o gerador de campo público acima; era o valor das versões antigas da aplicação | payload «Personalizado / LiDAR», sensor câmara com a óptica da P1 (35,9 × 24,0 mm, 35 mm, 8192 px) e, na gaveta do cartão 1, «Enums WPML (avançado)» `payloadEnumValue` 50 |
+| 4 | Mapper+ com `65534/0` | «PSDK Payload Device» na tabela do `payloadEnumValue` do clone de 2024 da documentação (`tests/spec/wpml-spec.json`); a página viva já não o lista | payload «Personalizado / LiDAR», sensor LiDAR com FOV 70,4°, `payloadEnumValue` 65534 |
+| 5 | planear no comando | o Pilot 2 escreve os enums que ele próprio reconhece | «Exportar KML da área» (ou o ZIP dos KML por bloco) e criar a missão de mapeamento no Pilot 2 |
+
+O que a interface deixa e não deixa fazer:
+
+- O `payloadEnumValue` só se edita com o payload «Personalizado / LiDAR»;
+  os da P1 e do Mapper+ do catálogo são fixos. O `droneEnumValue` só se
+  edita com a aeronave «Personalizada»; no M300 fica o 60.
+- O `payloadSubEnumValue` não se edita: o payload personalizado escreve
+  sempre 0. Chega para as tentativas 3 e 4 (`50/0`, `65534/0`); um
+  sub-enum diferente de 0 com outro enum não é alcançável sem código, e
+  nenhum ficheiro real ou página da DJI o sugere.
+- Com o payload personalizado perde-se o que o perfil do catálogo traz: na
+  P1, o pitch até −120° (o personalizado recorta a [−90°, 30°]); no
+  Mapper+, a densidade de pontos (PRR) e o aviso do tecto de 100 m acima do
+  solo — confira-os à mão. O sensor e os enums ficam no projecto.
+- O namespace `1.0.4` do gerador de campo não está entre as versões da
+  lista (1.0.2, 1.0.3, 1.0.6); experimentá-lo exige código.
+- A tentativa 5 perde o que o planeamento da aplicação faz e o Pilot 2 não
+  (seguimento de terreno pela rota, disparo suspenso nas ligações, blocos
+  com base); é o recurso para voar no dia, não a correcção.
+
+| Payload | Tentativa | Pilot 2 | Firmware | Aceite | Payload reconhecido | Observações |
+|---|---|---|---|---|---|---|
+| P1 | `50/1`, 1.0.2 (a exportação) | | | | | por registar |
+| Mapper+ | `65535/0`, 1.0.2 (a exportação) | | | | | por registar |
+
+Resultado: por registar. Se uma alternativa for a aceite, os enums do
+catálogo (`src/data/drones.js`) mudam num commit à parte, com esta tabela
+como evidência.
 
 ## 6. Round-trip semântico
 

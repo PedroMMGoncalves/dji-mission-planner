@@ -1367,7 +1367,11 @@ Enums de aeronave e payload (`src/data/drones.js`) vêm da documentação
 DJI (`dji-sdk/Cloud-API-Doc`), excepto os dois do M300 que 81 KMZ reais
 exportados pelo Pilot 2 (M300 RTK, 2023–2026) contradizem: os payloads
 PSDK de terceiros aparecem sempre como `65535/0`, e não como o `65534`
-("PSDK Payload Device") da tabela, e o P1 como `50/1` e não `50/0`. Esses
+("PSDK Payload Device") da tabela do clone de 2024, e o P1 como `50/1` e
+não `50/0`. A página viva de suporte de produtos (2026-11) não lista para
+o M300 nem a P1 nem payloads PSDK («Can't support third-party payload
+now»): esses dois pares assentam só nos ficheiros do comando, e o
+preflight di-lo (`unverified-combo-enums`, VALIDACAO §5.4). Esses
 ficheiros declaram ainda o namespace `wpmz/1.0.3`, e os ficheiros reais do
 Matrice 4 (missão de waypoints de um M4E, patrulha e modelo de terreno de
 um M4T) declaram `wpmz/1.0.6`, enquanto a exportação escreve `1.0.2`. A
@@ -1387,7 +1391,9 @@ porque iria para dentro de um atributo XML; um projecto anterior ou com um
 valor fora da lista abre com a 1.0.2. Com outra versão o preflight deixa
 uma nota (só a 1.0.2 tem voo confirmado). O importador lê as três (lê os
 elementos sem olhar ao namespace) e o validador de conformidade também.
-Nenhum enum do M300 foi ainda testado num comando real (ver `README`).
+Nenhum enum do M300 foi ainda testado num comando real (ver `README`); o
+procedimento e as alternativas, sem mexer no código, estão em VALIDACAO
+§5.4.
 
 ### 11.1 KML da área
 
