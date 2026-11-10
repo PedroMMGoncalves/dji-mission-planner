@@ -6,6 +6,7 @@
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
 import DICT from '../../src/i18n.jsx'
 import * as dicts from '../../src/i18n/dict.bases.js'
@@ -19,7 +20,7 @@ import windowsDict from '../../src/i18n/dict.windows.js'
 import operationDict from '../../src/i18n/dict.operation.js'
 import { FINISH_ACTIONS, RC_LOST_ACTIONS, RC_LOST_MODES } from '../../src/utils/exporters.js'
 
-const SRC = new URL('../../src/', import.meta.url).pathname
+const SRC = fileURLToPath(new URL('../../src/', import.meta.url))
 
 /** Todos os ficheiros .js/.jsx de src, recursivamente. */
 function sources(dir = SRC, out = []) {
@@ -38,7 +39,7 @@ describe('M3-T13: o dicionario contra o codigo', () => {
     const faltam = []
     for (const { p, text } of code) {
       // o proprio i18n.jsx explica o uso com t('chave') num comentario
-      if (p.endsWith('/i18n.jsx')) continue
+      if (/[\\/]i18n\.jsx$/.test(p)) continue
       for (const m of text.matchAll(/\bt\(\s*'([^']+)'/g))
         if (!DICT[m[1]]) faltam.push(`${p}: ${m[1]}`)
       for (const m of text.matchAll(/\btranslate\(\s*[a-zA-Z]+,\s*'([^']+)'/g))

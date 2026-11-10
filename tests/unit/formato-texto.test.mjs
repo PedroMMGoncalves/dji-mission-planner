@@ -9,11 +9,12 @@
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
 import DICT, { translate } from '../../src/i18n.jsx'
 import { missionExportLabel, rangeText, tCount } from '../../src/i18n/format.js'
 
-const SRC = new URL('../../src/', import.meta.url).pathname
+const SRC = fileURLToPath(new URL('../../src/', import.meta.url))
 function sources(dir = SRC, out = []) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name)
