@@ -2104,6 +2104,53 @@ await scenario('area-mover-inteira', async () => {
   return { page }
 })
 
+// O KML da área que os botões dão para o Pilot 2 (#49): numa área importada
+// com um buraco, o ficheiro tem um só Placemark com um só Polygon, só com o
+// anel exterior — nem buracos, nem base, nem GCPs, nem faixas —, e o título
+// do botão avisa que o buraco fica de fora (K-B1 da revisão da exportação)
+await scenario('area-kml-pilot2-um-poligono', async () => {
+  const comBuraco = join(OUT, 'area-com-buraco.geojson')
+  const buraco = [toLL(1200, 800), toLL(1600, 800), toLL(1600, 1200), toLL(1200, 1200)]
+  writeFileSync(
+    comBuraco,
+    JSON.stringify({
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'Polygon', coordinates: [rectRing, [...buraco, buraco[0]]] },
+    }),
+  )
+  const { page, errors } = await openMission({ area: comBuraco, dem: false })
+  const item = await headerKml(page)
+  const dica = (await item.getAttribute('title')) ?? ''
+  const txt = readFileSync(await panelExport(page, item, join(OUT, 'area-pilot2.kml')), 'utf8')
+  const n = (re) => (txt.match(re) || []).length
+  check(
+    'KML do Pilot 2: um Document, um Placemark, um Polygon, sem buracos nem outros elementos',
+    n(/<Document>/g) === 1 &&
+      n(/<Placemark>/g) === 1 &&
+      n(/<Polygon>/g) === 1 &&
+      n(/<outerBoundaryIs>/g) === 1 &&
+      !/innerBoundaryIs|<Point>|<LineString>|<Folder>|<Style/.test(txt),
+    `${n(/<Placemark>/g)} Placemark, ${n(/<Polygon>/g)} Polygon, ${n(/innerBoundaryIs/g)} buracos`,
+  )
+  const anel = kmlRing(join(OUT, 'area-pilot2.kml'))
+  check(
+    'KML do Pilot 2: o anel exterior da área, fechado',
+    anel.length === rectRing.length &&
+      anel[0][0] === anel.at(-1)[0] &&
+      anel[0][1] === anel.at(-1)[1],
+    `${anel.length} vértices`,
+  )
+  check(
+    'KML do Pilot 2: o título do botão diz que o buraco fica de fora',
+    /buraco fica de fora|hole is left out/.test(dica),
+    dica,
+  )
+  check('KML do Pilot 2: sem erros de página', errors.length === 0, errors.join(' | '))
+  await page.close()
+  return { page }
+})
+
 // Configuração (equipamento): o tempo útil por conjunto de cada bateria
 // alimenta a bateria da missão (selector e tempo útil por voo, que seguem a
 // configuração até serem acertados à mão), sobrevive ao recarregar e vai e

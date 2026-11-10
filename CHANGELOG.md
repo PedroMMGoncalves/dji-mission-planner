@@ -66,6 +66,15 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   fotografaram sem ele. Um sufixo com texto mudaria o nome de todas as
   fotos.
 
+### Interno (testes)
+
+- **O KML da área que a interface dá para o Pilot 2 fica fixado de ponta a
+  ponta.** Um cenário E2E importa uma área com um buraco, exporta o KML
+  pelo botão e confirma um só Placemark com um só Polygon, só o anel
+  exterior (sem buracos, base, GCPs nem faixas), e o aviso do buraco no
+  título do botão; os KML de bloco já o tinham. Nos READMEs, o `mapa/` do
+  ZIP por base diz que é para o Google Earth e não para o Pilot 2.
+
 ## 1.6.0 — 2026-10-21
 
 ### Alterado

@@ -322,7 +322,10 @@ A app é usada em campo: numa janela de **1024 × 768** e noutra de **834 ×
   nome do ficheiro. Sem bases (divisão sem bases marcadas) há só os dois
   «todos», KMZ e KML. **No
   Pilot 2** (M3E/M4T e M300 com P1): importar um KML de bloco como área
-  de uma missão de mapeamento e ver o nome mostrado e o polígono; registar
+  de uma missão de mapeamento e ver o nome mostrado e o polígono; o mesmo
+  com o **KML da área** de uma área com um buraco (sai sem ele) e, como
+  controlo, com um KML de um polígono com `innerBoundaryIs`: registar se o
+  Pilot 2 o recusa, o importa sem o buraco ou o preserva; registar
   em `docs/VALIDACAO.md`.
 - ☐ **Checklist de campo** e **Relatório**, e imprimir.
   **Esperado:** uma ficha por base: coordenadas (6 casas) que abrem nos

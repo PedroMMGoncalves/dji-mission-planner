@@ -167,7 +167,7 @@ Editing gestures: click adds vertices (while drawing, Backspace or Ctrl+Z remove
 | GCPs KML | Numbered GCP points | RTK rover / field |
 | Bases and blocks KML | Base points with their field sheet, take-off zones and block outlines labelled with the flight | Google Earth, phone, field |
 | All blocks (KML, ZIP) | One KML per block (the polygon only, for a Pilot 2 mapping mission), all loose, in flight order: `_kml.zip`, also without bases | Letting Pilot 2 plan each block itself |
-| Blocks by base (KML, ZIP) | The same block KMLs in one folder per base, plus `mapa/` with the base, zone and blocks: `_kml-por-base.zip` | Letting Pilot 2 plan each block itself, base by base |
+| Blocks by base (KML, ZIP) | The same block KMLs in one folder per base, plus `mapa/` with the base, zone and blocks (several features: Google Earth, not Pilot 2): `_kml-por-base.zip` | Letting Pilot 2 plan each block itself, base by base |
 | Project JSON | Full planner state; documented by the published [JSON Schema](public/schema/project-v2.schema.json) (`$schema` in the file) | Archive, sharing |
 | Checklist JSON / print | Field record | Operations log |
 | Mission report (print) | Identification, map with the operation and legend, parameters, flights by base (one line per base; the full field sheets on a button below), GCPs, inspection points, safety, preflight, reproducibility, signatures | Field folder / annexes |

@@ -165,7 +165,7 @@ Gestos de edição: clique acrescenta vértices (durante o desenho, Backspace ou
 | KML de GCPs | Pontos numerados | Rover RTK / campo |
 | KML de bases e blocos | Pontos das bases com a ficha, zonas de descolagem e contornos dos blocos com o rótulo do voo | Google Earth, telemóvel, campo |
 | Todos os blocos (KML, ZIP) | Um KML por bloco (só o polígono, para a missão de mapeamento do Pilot 2), todos soltos, pela ordem de voo: `_kml.zip`, também sem bases | Deixar o Pilot 2 planear cada bloco |
-| Blocos por base (KML, ZIP) | Os mesmos KML de bloco numa pasta por base, mais `mapa/` com a base, a zona e os blocos: `_kml-por-base.zip` | Deixar o Pilot 2 planear cada bloco, base a base |
+| Blocos por base (KML, ZIP) | Os mesmos KML de bloco numa pasta por base, mais `mapa/` com a base, a zona e os blocos (vários elementos: Google Earth, não o Pilot 2): `_kml-por-base.zip` | Deixar o Pilot 2 planear cada bloco, base a base |
 | JSON do projecto | Estado completo do planeador; documentado pelo [esquema JSON](public/schema/project-v2.schema.json) publicado (`$schema` no ficheiro) | Arquivo, partilha |
 | Checklist JSON / impressão | Registo de campo | Diário de operações |
 | Relatório de missão (impressão) | Identificação, mapa com a operação e a legenda, parâmetros, voos por base (uma linha por base; as fichas de campo inteiras num botão por baixo), GCPs, pontos de inspecção, segurança, preflight, reprodutibilidade, assinaturas | Pasta de campo / anexos |
