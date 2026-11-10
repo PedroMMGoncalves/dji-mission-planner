@@ -811,6 +811,18 @@ function buildActionGroups(params) {
   } = params
   const pitchOf = (p) => clampGimbalPitch(p, wpml.gimbalPitchRange)
   const gimbalPitch = pitchOf(params.gimbalPitch ?? -90)
+  // Um LiDAR de terceiros (o Mapper+ num Skyport do M300) não tem gimbal que
+  // o WPML rode nem câmara que o takePhoto ou o startRecord accionem: a
+  // recolha é comandada pelo próprio sistema. Com sensorType 'lidar' não sai
+  // NENHUMA acção de câmara, nos dois ficheiros — nem o grupo global de
+  // gimbal, nem o gatilho por distância/tempo, nem as acções por waypoint
+  // que os geradores põem (gimbalRotate e gimbalEvenlyRotate da órbita e da
+  // circular, fotos da fachada, da inspecção e da foto por waypoint, o
+  // marcador nadir da dupla grelha). A fronteira é aqui, e não em cada
+  // construtor de parâmetros, para nenhum caminho novo as voltar a deixar
+  // passar. Ficam o rumo por waypoint e a espera (hover: «Hover and wait»,
+  // common-element.md), que são da aeronave e não da câmara.
+  const isLidar = sensorType === 'lidar'
 
   // B2 (revisão da exportação): nos payloads multi-lente a lente vai em cada
   // acção de câmara (`payloadLensIndex` = o `imageFormat` do template); com
@@ -823,7 +835,7 @@ function buildActionGroups(params) {
               <wpml:payloadLensIndex>${wpml.imageFormat}</wpml:payloadLensIndex>`
       : ''
   const triggerXml = (() => {
-    if (!photoIntervalM || photoIntervalM <= 0) return null
+    if (isLidar || !photoIntervalM || photoIntervalM <= 0) return null
     if (triggerMode === 'time') {
       const seconds =
         isNum(photoIntervalS) && photoIntervalS > 0
@@ -837,17 +849,15 @@ function buildActionGroups(params) {
           <wpml:actionTriggerParam>${metres.toFixed(1)}</wpml:actionTriggerParam>`
   })()
 
-  // Waypoint-0 action groups. A LiDAR payload (e.g. YellowScan on a Skyport
-  // mount) has no gimbal the WPML can rotate, so the gimbalRotate group is
+  // Grupos globais no waypoint 0: o de gimbal sai omitido com LiDAR, e o de
+  // disparo sempre que não há gatilho (photoIntervalM nulo ou 0, ou LiDAR).
+  // Os ids continuam consecutivos a partir de 0; sem nenhum dos dois, o
+  // waypoint 0 não leva acção global nenhuma.
   // (gimbalHeadingYawBase: `north` é o único valor do enum, common-element.md;
   // escrevia-se `aircraft`, sem efeito porque o yaw do gimbal fica desligado)
-  // omitted for sensorType 'lidar'; the takePhoto group is omitted whenever
-  // photoIntervalM is null/0. Group ids stay consecutive from 0, and with
-  // both groups absent waypoint 0 carries no actions at all.
-  const gimbalGroup =
-    sensorType === 'lidar'
-      ? null
-      : `        <wpml:actionGroup>
+  const gimbalGroup = isLidar
+    ? null
+    : `        <wpml:actionGroup>
           <wpml:actionGroupId>0</wpml:actionGroupId>
           <wpml:actionGroupStartIndex>0</wpml:actionGroupStartIndex>
           <wpml:actionGroupEndIndex>0</wpml:actionGroupEndIndex>
@@ -981,7 +991,10 @@ ${triggerXml}
       Array.isArray(pw.shots) && pw.shots.length > 0 && (pw.actions ?? []).includes('takePhoto')
         ? pw.shots
         : null
-    if (shots) {
+    if (isLidar) {
+      // só a espera, que é da aeronave; nada de gimbal nem de câmara
+      hover()
+    } else if (shots) {
       // Várias inclinações (com paragem): uma foto por inclinação, cada uma
       // com o seu gimbalRotate; a espera depois da primeira rotação, para a
       // primeira foto sair com a aeronave parada
@@ -1023,7 +1036,7 @@ ${actions.join('\n')}
   // trigger must be betweenAdjacentPoints»): o vídeo da órbita deixa de
   // andar aos solavancos, um gimbalRotate à chegada de cada ponto
   const evenGroup = (i, pw, next) => {
-    if (pw?.gimbalEven !== true || next?.gimbalPitch == null) return ''
+    if (isLidar || pw?.gimbalEven !== true || next?.gimbalPitch == null) return ''
     const gid = nextGroupId
     nextGroupId += 1
     lastPitch = pitchOf(next.gimbalPitch)

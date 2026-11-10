@@ -1008,7 +1008,8 @@ Captura, parâmetro `capture` da configuração da órbita:
 
 Sem câmara (LiDAR, ou nenhum sensor), nenhum modo tira fotos: o painel
 contava 0 e o KMZ levava na mesma um `takePhoto` em cada ponto (também no
-circular). A aeronave e o sensor escolhem-se no topo do painel de cada
+circular). Com LiDAR também não roda o gimbal: a exportação não escreve
+nenhuma acção de câmara (§11). A aeronave e o sensor escolhem-se no topo do painel de cada
 modo, com a escolha do cartão 1 da área (uma por projecto).
 
 «Vídeo + fotografia» no mesmo anel não é possível pela razão acima; a
@@ -1253,7 +1254,13 @@ manda usar com um ângulo (`waypointHeadingAngle` obrigatório em
 no waypoint 0 (omitido com LiDAR) e por waypoint quando indicado. Espera
 por waypoint (`hoverS`): acção `hover` com `hoverTime` (> 0 s em todas as
 aeronaves, common-element.md), depois do `gimbalRotate` e antes do
-`takePhoto` do mesmo grupo. Disparo por tempo: com o intervalo manual em
+`takePhoto` do mesmo grupo. Com `sensorType` LiDAR não sai nenhuma acção de
+câmara, nem no `waylines.wpml` nem no `template.kml`: nem `gimbalRotate`
+(global ou por waypoint), nem `gimbalEvenlyRotate`, nem `takePhoto`
+(gatilho por distância ou tempo, ou por waypoint), nem
+`startRecord`/`stopRecord` — um LiDAR num Skyport não tem gimbal nem
+disparo que o WPML comande. Ficam o rumo por waypoint e a espera
+(`hover`), que são da aeronave. Disparo por tempo: com o intervalo manual em
 segundos, `photoIntervalS` vai tal qual para o `actionTriggerParam`; sem
 ele, `interval / v` por defeito à décima (§6), o valor que o painel mostra.
 `globalRTHHeight = min(1500, max(100, ceil(tecto da rota) + 20))`, com o

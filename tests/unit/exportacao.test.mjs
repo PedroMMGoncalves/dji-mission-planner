@@ -76,6 +76,8 @@ describe('buildWaylinesWPML', () => {
           expect(XMLValidator.validate(xml)).toBe(true)
           expect(JUNK.test(xml)).toBe(false)
           expect((xml.match(/<Placemark>/g) ?? []).length).toBe(p.waypoints.length)
+          // LiDAR: nenhuma accao de camara, venha de onde vier (#52)
+          if (p.sensorType === 'lidar') expect(xml).not.toMatch(/>takePhoto<|>gimbalRotate</)
           for (const m of xml.matchAll(/<wpml:waypointHeadingAngle>([-\d.]+)</g)) {
             const h = Number(m[1])
             expect(h).toBeGreaterThanOrEqual(-180)
@@ -113,7 +115,9 @@ describe('buildWaylinesWPML', () => {
         (p) => {
           const xml = buildWaylinesWPML({ ...p, wpml })
           const grupos = (xml.match(/multipleDistance|multipleTiming/g) ?? []).length
-          expect(grupos).toBe(p.photoIntervalM > 0 ? p.triggerRanges.length : 0)
+          // com LiDAR nao ha disparo nenhum, haja ou nao intervalo (#52)
+          const dispara = p.photoIntervalM > 0 && p.sensorType !== 'lidar'
+          expect(grupos).toBe(dispara ? p.triggerRanges.length : 0)
         },
       ),
       { numRuns: 100 },

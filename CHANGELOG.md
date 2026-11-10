@@ -4,6 +4,26 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-PT/1.1.0/); versões
 [SemVer](https://semver.org/lang/pt-BR/). A etiqueta git `vX.Y.Z` é a
 versão do `package.json`, e a GitHub Release traz o build estático em zip.
 
+## Por publicar
+
+### Corrigido (exportação)
+
+- **Nenhuma acção de câmara com LiDAR, em nenhum modo e em nenhum dos dois
+  ficheiros.** Um LiDAR montado num Skyport (o Mapper+ no M300) não tem
+  gimbal nem disparo que o WPML comande. A exportação já omitia o grupo
+  global de gimbal, mas os grupos por waypoint não olhavam para o sensor:
+  uma órbita M300 + Mapper+ saía com uma rotação de gimbal por mudança de
+  pitch (e, em vídeo, com `gimbalEvenlyRotate` em cada troço e o
+  `startRecord`/`stopRecord`), e o mesmo acontecia na circular, na
+  fachada, nos pontos de inspecção, na foto por waypoint e no marcador nadir
+  da dupla grelha — no `waylines.wpml` e no `template.kml`, que leva os
+  mesmos grupos. O gatilho por distância ou tempo também não olhava para o
+  sensor (no corredor só não saía porque o intervalo de um LiDAR é nulo).
+  Com LiDAR deixa de sair qualquer `takePhoto`, `startRecord`,
+  `stopRecord`, `gimbalRotate` ou `gimbalEvenlyRotate`; o rumo por
+  waypoint e a espera (`hover`) ficam, porque são da aeronave. Os ficheiros
+  de referência não mudam.
+
 ## 1.6.0 — 2026-10-21
 
 ### Alterado

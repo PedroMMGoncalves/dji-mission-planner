@@ -97,7 +97,8 @@ describe('M7: gimbalRotate por waypoint so quando o pitch muda', () => {
     const pitches = [...xml.matchAll(/<wpml:gimbalPitchRotateAngle>([^<]+)</g)].map((m) => m[1])
     expect(pitches).toEqual(['-90', '-60', '-45'])
   })
-  test('LiDAR: sem grupo global, o primeiro pitch por waypoint conta como mudanca', () => {
+  // com LiDAR nao ha gimbal que o WPML rode: nem o global nem os por waypoint (#52)
+  test('LiDAR: sem grupo global nem gimbalRotate por waypoint', () => {
     const xml = buildWaylinesWPML({
       ...base,
       wpml: wpmlOf('M300RTK', 'MAPPER_PLUS'),
@@ -105,7 +106,7 @@ describe('M7: gimbalRotate por waypoint so quando o pitch muda', () => {
       photoIntervalM: 0,
       perWaypoint: [{ gimbalPitch: -90 }, { gimbalPitch: -90 }, null, null],
     })
-    expect(count(xml, /<wpml:actionActuatorFunc>gimbalRotate</g)).toBe(1)
+    expect(count(xml, /<wpml:actionActuatorFunc>gimbalRotate</g)).toBe(0)
   })
 })
 
