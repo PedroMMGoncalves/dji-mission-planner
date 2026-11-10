@@ -172,6 +172,14 @@ e a gravação da órbita. Correcção: espelhar no template, por Placemark,
 `useGlobalHeadingParam` 0 + `waypointHeadingParam` quando há rumo, e os
 mesmos `actionGroup` (ids únicos no KMZ, `EN/40.common-element.md:65`).
 
+*Evidência acrescentada em 2026-11 (#50).* O template de uma missão de
+waypoints escrita pelo Pilot 2 num M4E confirma a forma: `gimbalPitchMode`
+`manual` com `gimbalRotate` nos grupos dos Placemarks (mantido; o
+`usePointSetting` faria o pitch variar ao longo de cada troço), e o
+`waypointHeadingParam` do Placemark sem `waypointHeadingAngleEnable`, que
+o Pilot 2 só escreve no waylines; o template deixa de o escrever. A ida e
+volta no comando continua por fazer (VALIDACAO §6).
+
 **M3 — `useStraightLine` não é suportado no M300 RTK.** Escrevemos
 `useStraightLine` em todos os Placemarks e `globalUseStraightLine`, e o modo
 «passa sem parar» é `toPointAndPassWithContinuityCurvature` +

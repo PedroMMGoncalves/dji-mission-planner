@@ -169,6 +169,18 @@ de 0,1, e o número de waypoints é igual. A importação está em
 `src/utils/importWpml.js`; a comparação faz-se com a ferramenta
 planeado-vs-medido sobre o projecto reimportado, ou à mão sobre o KML.
 
+**Rumos e gimbal na reedição (por fazer no comando).** O `template.kml`
+leva os mesmos rumos e grupos de acções do `waylines.wpml` (METODOS §11;
+fixado nos testes, nunca verificado num comando). Num KMZ de fachada e
+noutro de órbita: (1) abrir no editor do Pilot 2 e registar, por waypoint,
+o modo de rumo e o ângulo mostrados, e o pitch do gimbal (o template usa
+`gimbalPitchMode` `manual` e o pitch vai nos `gimbalRotate`: o campo de
+pitch do ponto pode ficar vazio); (2) gravar sem alterar, exportar do
+comando e comparar o `waylines.wpml` com o original (rumos, `gimbalRotate`,
+`takePhoto`, `startRecord`/`stopRecord`); (3) repetir depois de uma edição
+nula (mover um ponto e voltar a pô-lo). Aceitação: os rumos e as acções de
+cada waypoint coincidem com o original.
+
 ## 7. Resultados
 
 Por preencher com os voos de Setembro de 2026: `docs/validacao/RELATORIO.md`

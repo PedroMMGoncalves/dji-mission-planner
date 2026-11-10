@@ -54,7 +54,12 @@ export const ALLOW = {
     'Folder/name': 'KML 2.2: nome do Folder; o Pilot 2 usa o nome do ficheiro',
     'payloadInfo/payloadSubEnumValue':
       '81 KMZ reais do Pilot 2 (M300 RTK, 2023-2026) escrevem-no; nao documentado',
-    'waypointHeadingParam/waypointHeadingAngleEnable': '81 KMZ reais do Pilot 2; nao documentado',
+    // so no waylines: o template de uma missao de waypoints do Pilot 2 num M4E
+    // escreve o waypointHeadingParam do Placemark sem ele (#50)
+    'waypointHeadingParam/waypointHeadingAngleEnable': {
+      file: 'waylines',
+      why: '81 KMZ reais do Pilot 2 e os do M4E/M4T, sempre no waylines; nao documentado',
+    },
     'Folder/distance':
       '81 KMZ reais; sem ele o Pilot 2 mostrou 100 % e 00:00 a meio (voo M3E 2026-09)',
     'Folder/duration':
@@ -345,7 +350,8 @@ function validateFile(xml, fileKind, aircraft, errors) {
     }
     const found = lookup(parentName, node.name, { action, template: templateKind })
     if (!found) {
-      if (ALLOW.elements[key]) continue
+      const allowed = ALLOW.elements[key]
+      if (typeof allowed === 'string' || allowed?.file === fileKind) continue
       if (KML_CORE.has(node.name) && KML_CORE.has(parentName)) continue
       // os exemplos da especificação também são especificação (Placemark/actionGroup, Document/missionConfig...)
       if (inExamples(parentName, node.name)) continue
@@ -657,9 +663,16 @@ function coherence(tpl, wl, errors) {
       .filter((c) => c.name === 'actionGroup')
       .map(serialize)
       .join('|')
+  // o rumo compara-se pelos filhos documentados: waypointHeadingAngleEnable
+  // só vai no waylines, como nos ficheiros do Pilot 2 (#50)
   const headingOf = (p) => {
     const h = byName(p, 'waypointHeadingParam')
-    return h ? serialize(h) : null
+    return h
+      ? h.children
+          .filter((c) => c.name !== 'waypointHeadingAngleEnable')
+          .map(serialize)
+          .join(',')
+      : null
   }
   wp.forEach((p, i) => {
     if (groupsOf(tp[i]) !== groupsOf(p))

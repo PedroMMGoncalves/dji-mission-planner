@@ -1302,6 +1302,33 @@ waypoint, o ponto fica com o modo da missão. No `template.kml` esses
 pontos levam `useGlobalTurnParam` = 0 e `waypointTurnParam` próprio. Sem a
 lista, o XML é o de sempre.
 
+O `template.kml` conta a mesma missão que o `waylines.wpml` (M2 da revisão
+de Outubro), porque o Pilot 2 voa o `waylines` tal como vem mas regenera-o
+a partir do template quando a missão é editada e gravada no comando. Os
+grupos de acções saem de uma só função (`buildActionGroups`) para os dois
+ficheiros, com os mesmos ids. Um waypoint com rumo próprio leva no template
+`useGlobalHeadingParam` 0 e o mesmo `waypointHeadingParam` do waylines
+(modo, ângulo, ponto de interesse e sentido de rotação), sem
+`waypointHeadingAngleEnable`: o elemento não está nas tabelas da DJI, e o
+Pilot 2 só o escreve no waylines — no template de uma missão de waypoints
+de um M4E o `waypointHeadingParam` do Placemark sai sem ele. Os restantes
+ficam com o rumo global (`followWayline`). Gimbal: `gimbalPitchMode`
+`manual`, com o pitch planeado nos `gimbalRotate` dos grupos, iguais nos
+dois ficheiros — o que o Pilot 2 escreve nessa missão do M4E (`manual` e um
+`gimbalRotate` no grupo do Placemark). Não se usa `usePointSetting` +
+`gimbalPitchAngle`: com ele o pitch vai mudando ao longo de cada troço até
+ao do ponto seguinte (template-kml, tabela do `gimbalPitchMode`), quando a
+grelha quer o pitch fixo desde o waypoint 0 e a fachada e a órbita várias
+inclinações com a aeronave parada no mesmo ponto. Consequência aceite: o
+editor do Pilot 2 pode não mostrar o pitch planeado no campo de pitch do
+ponto, só nas acções. Os testes comparam waypoint a waypoint o rumo e os
+grupos dos dois ficheiros nos dourados da fachada e da órbita e nos casos
+da circular e dos pontos de inspecção
+(`tests/unit/template-waylines-rumos.test.mjs`), e o validador de
+conformidade faz o mesmo em todos os ficheiros gerados. A ida e volta no
+comando (abrir, gravar sem alterar, comparar o `waylines`) está por fazer
+(VALIDACAO §6).
+
 Validação na fronteira (`validateExportParams`), que lança
 `MissionExportError` em vez de escrever o ficheiro: waypoints presentes e
 ≤ 65536, coordenadas finitas em [−180, 180] × [−90, 90], alturas finitas,

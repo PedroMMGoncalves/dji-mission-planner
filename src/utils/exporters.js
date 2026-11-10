@@ -744,7 +744,7 @@ export function buildTemplateKML(params) {
         </wpml:waypointTurnParam>`
         : ''
       const ownHeading = pw?.heading != null
-      const headingXml = ownHeading ? `\n${headingParamXml(pw)}` : ''
+      const headingXml = ownHeading ? `\n${headingParamXml(pw, { template: true })}` : ''
       const groupsXml = groupsByIndex[i]
       return `      <Placemark>
         <Point>
@@ -1076,14 +1076,24 @@ ${actions.join('\n')}
   })
 }
 
-/** `<wpml:waypointHeadingParam>` de um waypoint: rumo próprio (smoothTransition) ou o da rota. */
-function headingParamXml(pw) {
+/**
+ * `<wpml:waypointHeadingParam>` de um waypoint: rumo próprio (smoothTransition)
+ * ou o da rota. `waypointHeadingAngleEnable` não está nas tabelas da DJI e só
+ * vai no waylines (`template: false`): o Pilot 2 escreve-o no waylines (81
+ * KMZ do M300, patrulha de um M4T, missão de waypoints de um M4E), mas no
+ * template dessa missão do M4E o `waypointHeadingParam` do Placemark sai sem
+ * ele — modo, ângulo, ponto de interesse e sentido de rotação.
+ */
+function headingParamXml(pw, { template = false } = {}) {
   const hasHeading = pw?.heading != null
+  const enableXml = template
+    ? ''
+    : `
+          <wpml:waypointHeadingAngleEnable>${hasHeading ? 1 : 0}</wpml:waypointHeadingAngleEnable>`
   return `        <wpml:waypointHeadingParam>
           <wpml:waypointHeadingMode>${hasHeading ? 'smoothTransition' : 'followWayline'}</wpml:waypointHeadingMode>
           <wpml:waypointHeadingAngle>${hasHeading ? ((Math.round(pw.heading) + 540) % 360) - 180 : 0}</wpml:waypointHeadingAngle>
-          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>
-          <wpml:waypointHeadingAngleEnable>${hasHeading ? 1 : 0}</wpml:waypointHeadingAngleEnable>
+          <wpml:waypointPoiPoint>0.000000,0.000000,0.000000</wpml:waypointPoiPoint>${enableXml}
           <wpml:waypointHeadingPathMode>followBadArc</wpml:waypointHeadingPathMode>
         </wpml:waypointHeadingParam>`
 }

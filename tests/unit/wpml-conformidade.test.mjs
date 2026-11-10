@@ -77,7 +77,9 @@ describe('dicionario da especificacao (T1)', () => {
   })
 
   test('cada excepcao tem uma prova escrita', () => {
-    for (const v of Object.values(ALLOW.elements)) expect(v.length).toBeGreaterThan(10)
+    // uma prova (texto), ou { file, why } quando so vale num dos ficheiros
+    for (const v of Object.values(ALLOW.elements))
+      expect((typeof v === 'string' ? v : v.why).length).toBeGreaterThan(10)
     for (const m of Object.values(ALLOW.values))
       for (const v of Object.values(m)) expect(v.length).toBeGreaterThan(10)
     for (const v of Object.values(ALLOW.missing)) expect(v.length).toBeGreaterThan(10)

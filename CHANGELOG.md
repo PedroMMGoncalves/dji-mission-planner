@@ -19,6 +19,16 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   teles: a foto sai da câmara do zoom corrente. **Por confirmar em voo**
   (contar `_V` e `_T`): o voo de Outubro foi anterior à lente por acção.
   Os ficheiros de referência não mudam (não há nenhum do M4T).
+- **O rumo próprio de um waypoint no `template.kml` sai sem
+  `waypointHeadingAngleEnable`**, como no template que o Pilot 2 escreve
+  numa missão de waypoints de um M4E; o elemento não está nas tabelas da
+  DJI e continua no `waylines.wpml`, onde o Pilot 2 o escreve. Modo,
+  ângulo e sentido de rotação são os mesmos nos dois ficheiros, e um teste
+  compara-os waypoint a waypoint, com os grupos de acções, na fachada, na
+  órbita, na circular e nos pontos de inspecção. O gimbal fica em `manual`,
+  com o pitch nos `gimbalRotate` dos dois ficheiros (METODOS §11). Mudam
+  os ficheiros de referência da fachada e da órbita (só o template, uma
+  linha a menos por waypoint). A ida e volta no comando está por fazer.
 - **Nenhuma acção de câmara com LiDAR, em nenhum modo e em nenhum dos dois
   ficheiros.** Um LiDAR montado num Skyport (o Mapper+ no M300) não tem
   gimbal nem disparo que o WPML comande. A exportação já omitia o grupo
