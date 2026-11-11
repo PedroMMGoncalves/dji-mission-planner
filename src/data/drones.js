@@ -267,7 +267,8 @@ export const PAYLOADS = {
     // Source: yellowscan.com/products/mapper-plus (checked 2026-08-18):
     // FOV 70.4 deg nominal, 240 kHz PRR (single return), 100 m max AGL.
     // payloadEnumValue 65535: the 2024 common-element table listed 65534 as
-    // "PSDK Payload Device" (tests/spec/wpml-spec.json), but 66 real KMZ
+    // "PSDK Payload Device" (dji-sdk/cloud-api-doc, frozen in 2024-11; the
+    // dictionary in tests/spec/ now comes from the live pages), but 66 real KMZ
     // exported by Pilot 2 on this very aircraft (M300 RTK, 2023-2026,
     // third-party payloads on the Skyport mount) all write 65535/0. The live
     // product support page (2026-11) lists neither and says the M300 "can't
