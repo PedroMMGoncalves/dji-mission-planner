@@ -9,3 +9,6 @@ tests/e2e/out/
 
 # relatorio de cobertura do c8
 coverage/
+
+# paginas da documentacao da DJI descarregadas (tools/wpml-spec.mjs --fetch)
+.cache/

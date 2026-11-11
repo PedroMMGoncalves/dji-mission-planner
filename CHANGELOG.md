@@ -129,6 +129,36 @@ versão do `package.json`, e a GitHub Release traz o build estático em zip.
   exterior (sem buracos, base, GCPs nem faixas), e o aviso do buraco no
   título do botão; os KML de bloco já o tinham. Nos READMEs, o `mapa/` do
   ZIP por base diz que é para o Google Earth e não para o Pilot 2.
+- **Dicionário da especificação WPML a partir das páginas vivas da DJI.**
+  `tests/spec/wpml-spec.json` vinha do clone `dji-sdk/cloud-api-doc`,
+  parado em 2024-11, sem o Matrice 4; passa a vir das páginas vivas do
+  Cloud API (template-kml, waylines-wpml e common-element de 2026-11-05;
+  suporte de produtos de 2026-10-14). `npm run spec:wpml -- --fetch`
+  descarrega-as para `.cache/dji-docs` (git-ignorada: o texto da DJI não
+  entra no repositório), `tools/lib/pagina-dji.mjs` lê o pedaço JavaScript
+  de cada página sem o executar e converte-o no Markdown das fontes do
+  clone, e o JSON regista o URL, a data que cada página declara e a do
+  descarregamento; `--check` continua a falhar se o JSON divergir, e
+  `tools/wpml-spec-diff.mjs` dá a diferença semântica entre dois
+  dicionários. O dicionário ganha 16 elementos (os do Matrice 4 e do
+  M4D/M5TD), o intervalo do `globalRTHHeight`, o M4D/M4TD, M4E/M4T e M5TD
+  em 203 colunas de suporte, os enums das aeronaves e das câmaras (tabelas
+  da página de suporte de produtos, para onde os da tabela passaram a
+  remeter), a secção de cada entrada e a versão do namespace dos exemplos;
+  e deixa de tomar «Note» por um valor de enum e de perder os valores das
+  listas (`payloadLensIndex`). O validador passa a verificar o modelo
+  exacto (o M4T já não se valida como a classe M3E), os enums da página de
+  suporte de produtos, as listas valor a valor e o namespace; saíram as
+  excepções que a página viva dispensa (o M4T nas tabelas de aeronaves e
+  câmaras, a lente por acção no M4T, as do M350), e o teste falha também
+  quando uma excepção deixa de ser usada. A matriz passa de 64 para 287
+  casos: todos os modos em cada aeronave e payload (M3E, M4T grande-angular
+  e térmica, M300 + P1, M300 + Mapper+, própria em câmara e em LiDAR), a
+  posição do payload 1 e 2 e o namespace 1.0.3 e 1.0.6. Duas divergências
+  ficam abertas e contadas: `useStraightLine` e `globalUseStraightLine`
+  escritos no M300 RTK, que a coluna de suporte não lista (VALIDACAO §7.1,
+  com a tabela das divergências face à documentação de 2026-11-05). A
+  exportação não muda.
 
 ## 1.6.0 — 2026-10-21
 

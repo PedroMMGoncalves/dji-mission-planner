@@ -19,6 +19,13 @@ por confirmar no Pilot 2 (QA, secção 13). As excepções do validador, com
 as provas, estão em `ALLOW` no próprio validador: T5, T6, T8 e T9 ficam
 para quando houver ficheiros reais.
 
+**Nota (2026-11-11):** o dicionário do T1 foi regenerado a partir das
+páginas vivas da documentação (2026-11-05, já com o Matrice 4), em vez do
+clone `4ec6b0c` de 2024; as referências `EN/…:n` e `CN/…:n` abaixo
+continuam a ser ao clone. O que mudou, as excepções que saíram e as
+divergências que ficam abertas estão em VALIDACAO §7.1; o método, em
+METODOS §11.2.
+
 ## 1. Método e fontes
 
 - **Especificação oficial**, clonada do repositório público da DJI
@@ -290,7 +297,7 @@ empacotamento (M12).
 ## 5. Testes propostos («nunca mais no campo»)
 
 - **T1 — dicionário da especificação em JSON** (`tools/wpml-spec.mjs` lê as
-  tabelas Markdown do clone e grava `tests/spec/wpml-spec.json`: por
+  tabelas Markdown do clone — desde 2026-11, as das páginas vivas — e grava `tests/spec/wpml-spec.json`: por
   elemento, pai, tipo, enum, intervalo, obrigatoriedade incluindo as
   condicionais, suporte por aeronave; um teste falha se o JSON divergir).
 - **T2 — validador de elementos** sobre todos os ficheiros gerados (unit,

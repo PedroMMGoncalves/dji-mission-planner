@@ -243,7 +243,7 @@ tentativa na tabela; nenhuma exige mexer no código.
 | 1 | namespace `1.0.3` | os 81 KMZ do Pilot 2 neste M300 declaram 1.0.3 (§5.1, §5.3) | «Versão do WPML», ao lado das acções de segurança |
 | 2 | o suporte real, se o payload não for reconhecido | o `payloadPositionIndex` endereça o payload em cada acção (§5.2) | «Posição do payload», no cartão 1 |
 | 3 | P1 com `50/0` | o gerador de campo público acima; era o valor das versões antigas da aplicação | payload «Personalizado / LiDAR», sensor câmara com a óptica da P1 (35,9 × 24,0 mm, 35 mm, 8192 px) e, na gaveta do cartão 1, «Enums WPML (avançado)» `payloadEnumValue` 50 |
-| 4 | Mapper+ com `65534/0` | «PSDK Payload Device» na tabela do `payloadEnumValue` do clone de 2024 da documentação (`tests/spec/wpml-spec.json`); a página viva já não o lista | payload «Personalizado / LiDAR», sensor LiDAR com FOV 70,4°, `payloadEnumValue` 65534 |
+| 4 | Mapper+ com `65534/0` | «PSDK Payload Device» na tabela do `payloadEnumValue` do clone de 2024 da documentação (`dji-sdk/cloud-api-doc`); a página viva remete para a tabela de câmaras do suporte de produtos, que não o lista (nem o dicionário regenerado em 2026-11) | payload «Personalizado / LiDAR», sensor LiDAR com FOV 70,4°, `payloadEnumValue` 65534 |
 | 5 | planear no comando | o Pilot 2 escreve os enums que ele próprio reconhece | «Exportar KML da área» (ou o ZIP dos KML por bloco) e criar a missão de mapeamento no Pilot 2 |
 
 O que a interface deixa e não deixa fazer:
@@ -310,20 +310,56 @@ METODOS §11.2): o que a app escreve fora das tabelas da DJI está na lista
 de excepções do validador com a prova respectiva. A matriz da secção 5
 continua a ser a única prova de que o comando aceita e voa o ficheiro.
 
+Desde Novembro de 2026 o dicionário vem das páginas vivas da documentação
+(template-kml, waylines-wpml e common-element actualizadas a 2026-11-05;
+suporte de produtos a 2026-10-14), já com o Matrice 4; até aí vinha do
+clone `dji-sdk/cloud-api-doc`, parado em 2024-11. As referências abaixo são
+à página viva, por secção (a âncora do URL) e linha do Markdown convertido
+que o dicionário guarda (`line`, `anchor`).
+
+**Divergências conhecidas face à documentação de 2026-11-05.** A matriz de
+287 casos (todos os modos em cada aeronave e payload, a posição do payload
+1 e 2, o namespace 1.0.3 e 1.0.6) passa com estas excepções, e só com elas
+(o teste falha também se uma excepção deixar de ser usada):
+
+| Categoria | Elemento | O que a app escreve | O que a documentação viva diz | Prova / estado |
+|---|---|---|---|---|
+| (i) aberta | `Placemark/useStraightLine` e `Folder/globalUseStraightLine` no M300 RTK | escritos em todos os waypoints (M3 da revisão: no M300 só passam sem parar os pontos colineares) | «Product Support» sem o M300 RTK (waylines-wpml `#waypoint-info-placemark`, template-kml `#waypoint-info-parent-element-placemark` e `#waypoint-flight-template-element-parent-element-folder`) | sem ficheiro real nem voo do M300; o teste conta-as (2) até alguém decidir: deixar de as escrever no M300 ou trazer a prova |
+| (ii) | `payloadEnumValue` 50 (P1, e o payload próprio por omissão) e 65535 (Mapper+) | 50/1 e 65535/0 | tabela de câmaras do suporte de produtos sem a P1 nem payloads PSDK; «Can't support third-party payload now» | 15 e 66 KMZ reais do Pilot 2 no M300 (§5.1); importação por confirmar (§5.4) |
+| (ii) | `imageFormat` `visable` (M4T) | `visable` | EN `#wpml-payloadparam`: `visible`; CN e o `payloadLensIndex` (EN e CN): `visable` | ficheiros reais do Pilot 2 no M4E e no M4T |
+| (ii) | `fileSuffix` em `takePhoto` e `startRecord` | omitido | obrigatório (`#takephoto`, `#startrecord`); no `takePhoto` a página viva acrescenta o M4E/M4T | voos do M3E e do M4T; os ficheiros reais do Pilot 2 no M4E e no M4T também o omitem |
+| (ii) | `globalShootHeight`, `surfaceFollowModeEnable` no template waypoint | omitidos | obrigatórios na tabela do `waylineCoordinateSysParam` | só os templates de mapeamento os usam; voos do M3E e do M4T |
+| (ii) | namespace `wpmz/1.0.3` e `1.0.6` | opção do projecto | os exemplos (EN e CN) declaram 1.0.2 | 81 KMZ do M300 (1.0.3), ficheiros reais do Matrice 4 (1.0.6); por voar (§5.3) |
+| (ii) | `payloadSubEnumValue`, `waypointHeadingAngleEnable` (waylines), `Folder/distance`, `Folder/duration`, `Folder/name` | escritos | não documentados | 81 KMZ reais; voo M3E de 2026-09 (`distance`/`duration`); KML 2.2 (`name`) |
+| (iii) | `imageFormat` | — | EN diz `visible`, CN diz `visable` | erro da documentação |
+| (iii) | `useStraightLine` (template) | — | EN: M30, M3E, M3D, M4D, M4E/M4T, M5TD; CN: M300 RTK, M350 RTK, M30, M3E, M3D, M4D (sem M4E/M4T) | EN e CN discordam |
+| (iii) | colunas de suporte | — | «M3D/M3TD，M4D/M4TD» com a vírgula chinesa; «M3E/M3T» sem o M3M em algumas acções | o gerador separa nas duas vírgulas |
+| (iii) | `quickOrthoMappingPitch`, `megaphoneOperateLoop` | — | a unidade «°» na coluna do tipo; «是» no nome inglês | erros de edição da página |
+
+As excepções que o clone de 2024 obrigava e a página viva dispensa saíram:
+`droneEnumValue` 99 e o subtipo 1 (o M4T está na tabela de aeronaves),
+`payloadEnumValue` 89 (a câmara do M4T está na tabela de câmaras), a lente
+por acção (`payloadLensIndex`) no M4T (a coluna de suporte lista o
+M4E/M4T; antes o M4 validava-se como a classe M3E) e as do M350 RTK (que a
+app não tem); entrou a do namespace (1.0.3 e 1.0.6), que o validador passou
+a verificar. A lista `ALLOW` passa de 38 para 33 excepções (mais a do
+amortecimento 0 nos modos de paragem, que o exemplo da DJI escreve), todas
+usadas pela matriz ou pelos dourados; 2 abertas.
+
 Elementos novos de Outubro de 2026, confrontados com a documentação WPML
-da DJI (`dji-sdk/cloud-api-doc`, através do dicionário) e ainda **por
-confirmar em voo**:
+da DJI (página viva, através do dicionário) e ainda **por confirmar em
+voo**:
 
 | Elemento | O que a app escreve | Documentação DJI | Por confirmar no comando |
 |---|---|---|---|
-| `hover` / `hoverTime` | espera antes do disparo na face e nos pontos de inspecção, depois do `gimbalRotate` | common-element.md, l. 178: `hoverTime` float > 0 s, obrigatório, todas as aeronaves; sem exemplo (excepção de ordem com a prova) | que a aeronave pára o tempo escrito antes da foto |
-| `waypointHeadingMode` `smoothTransition` com o mesmo ângulo em todos os waypoints | rumo fixo na grelha da área | common-element.md, l. 42: enum com `fixed` e `smoothTransition`; o ângulo só é obrigatório em `smoothTransition` | que o rumo se mantém nas viragens entre faixas e na passagem por grupos de disparo |
-| `takeOffSecurityHeight` escrito pelo piloto | 1,2 a 1500 m | template-kml.md l. 161, waylines-wpml.md l. 133: [1,2; 1500] m | que o comando aceita valores diferentes de 30 m |
+| `hover` / `hoverTime` | espera antes do disparo na face e nos pontos de inspecção, depois do `gimbalRotate` | common-element `#hover` (l. 177; l. 178 no clone): `hoverTime` float > 0 s, obrigatório, todas as aeronaves, M4E/M4T incluído; sem exemplo (excepção de ordem com a prova) | que a aeronave pára o tempo escrito antes da foto |
+| `waypointHeadingMode` `smoothTransition` com o mesmo ângulo em todos os waypoints | rumo fixo na grelha da área | common-element `#wpml-waypointheadingparam-wpml-globalwaypointheadingparam` (l. 43): enum com `fixed` e `smoothTransition`; o ângulo só é obrigatório em `smoothTransition` | que o rumo se mantém nas viragens entre faixas e na passagem por grupos de disparo |
+| `takeOffSecurityHeight` escrito pelo piloto | 1,2 a 1500 m | template-kml l. 158, waylines-wpml l. 128 (`#mission-information-parent-element-wpml-missionconfig`): [1,2; 1500] m | que o comando aceita valores diferentes de 30 m |
 | `globalRTHHeight` escrito pelo piloto | 20 a 1500 m (recorte da app; a fronteira recusa fora de [2, 1500]) | páginas vivas de template-kml e waylines-wpml (2026-11), EN e CN: [2, 1500] m (o clone de 2024 não dava intervalo) | que o comando usa o valor do ficheiro e o seu próprio limite |
 | lente do M4T: `imageFormat` e `payloadLensIndex` `visable` (grande-angular) e `ir` (térmica) | o mesmo valor no `payloadParam` do template e em cada `takePhoto`/`startRecord` dos dois ficheiros | página viva do common-element (2026-11): `payloadLensIndex` lista `visable`, «M4D/M4TD only supports visable and ir»; a tabela do `imageFormat` diz `visible`, mas os ficheiros reais do Matrice 4 escritos pelo Pilot 2 (M4E e M4T) escrevem `visable` nos dois campos. O voo de Outubro foi anterior à lente por acção (B2) e não prova o valor | que a grande-angular sai só com `_V` e a térmica só com `_T` (contar os dois sufixos em cada voo); que `visable` com o zoom no máximo não fotografa com a tele |
-| `actionTriggerParam` com segundos escritos | intervalo manual em «Tempo» | common-element.md, l. 77: float > 0, «s or m» | que o disparo por tempo segue o valor (contar fotos) |
+| `actionTriggerParam` com segundos escritos | intervalo manual em «Tempo» | common-element `#wpml-actiontrigger` (l. 78): float > 0, «s or m» | que o disparo por tempo segue o valor (contar fotos) |
 | vários KMZ por corredor | corredor partido em voos | sem elemento próprio (`mappingStrip/cuttingDistance` é do mapeamento) | que cada KMZ do ZIP se importa e voa como um corredor normal |
-| `gimbalEvenlyRotate` com gatilho `betweenAdjacentPoints` | vídeo da órbita: um grupo por troço (`i`–`i+1`), ao ângulo do ponto seguinte | common-element.md, l. 76, 84 e 156–163: «The trigger must be betweenAdjacentPoints»; M300/M350, M30, M3E/M3T/M3M, M3D (o M4T não está na tabela, nem nenhuma acção) | que o gimbal roda sem degraus durante a gravação, também no M4T |
+| `gimbalEvenlyRotate` com gatilho `betweenAdjacentPoints` | vídeo da órbita: um grupo por troço (`i`–`i+1`), ao ângulo do ponto seguinte | common-element `#wpml-actiontrigger`, `#wpml-action` e `#gimbalevenlyrotate` (l. 77, 85 e 157–164): «The trigger must be betweenAdjacentPoints»; M300/M350, M30, M3E/M3T/M3M, M3D e, na página viva, M4D/M4TD, M4E/M4T e M5TD (o clone de 2024 não tinha o M4) | que o gimbal roda sem degraus durante a gravação, também no M4T |
 | vários `gimbalRotate` + `takePhoto` no mesmo grupo | várias inclinações com paragem (órbita e face) | common-element.md: grupo em `sequence`, acções executadas por ordem | que cada foto sai com a sua inclinação e com a aeronave parada |
 
 ## 8. Ensaio a seco

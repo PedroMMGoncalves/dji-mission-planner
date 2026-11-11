@@ -1,16 +1,19 @@
 /*
  * Validador de conformidade WPML (T2, T3, T4 e T7 da revisão da exportação,
  * docs/REVISAO-EXPORTACAO-2026-10.md), sobre o dicionário da especificação
- * em tests/spec/wpml-spec.json (gerado por tools/wpml-spec.mjs a partir da
- * documentação oficial da DJI).
+ * em tests/spec/wpml-spec.json (gerado por tools/wpml-spec.mjs a partir das
+ * páginas vivas da documentação oficial da DJI).
  *
  * Para cada ficheiro gerado (template.kml e waylines.wpml):
  *  - T2: cada par pai→filho existe na especificação, ou numa lista explícita
- *    com a prova (ficheiros reais do Pilot 2, voos); cada enum no enum; cada
- *    booleano em {0, 1}; cada numérico em decimal (nunca 4e-7, NaN,
- *    undefined) e dentro do intervalo; os obrigatórios presentes (incluindo
- *    os «obrigatório se…» codificados à mão); dada a aeronave, nenhum
- *    elemento fora da coluna de suporte sem prova;
+ *    com a prova (ficheiros reais do Pilot 2, voos); cada enum no enum (os
+ *    das aeronaves e das câmaras na tabela da página de suporte de
+ *    produtos; as listas «wide,ir» valor a valor); cada booleano em {0, 1};
+ *    cada numérico em decimal (nunca 4e-7, NaN, undefined) e dentro do
+ *    intervalo; os obrigatórios presentes (incluindo os «obrigatório se…»
+ *    codificados à mão); dada a aeronave (o modelo exacto, do par
+ *    droneEnumValue-droneSubEnumValue), nenhum elemento fora da coluna de
+ *    suporte sem prova; a versão do namespace a dos exemplos;
  *  - T3: a ordem dos filhos de cada elemento segue os exemplos da
  *    especificação; os filhos que os exemplos não têm levam a posição
  *    aceite, com a prova;
@@ -36,16 +39,45 @@ const DOC_OF = { template: '20.template-kml.md', waylines: '30.waylines-wpml.md'
 const COMMON = '40.common-element.md'
 const EXAMPLE_OF = { template: 'template.kml', waylines: 'waylines.wpml' }
 
-/** Aeronave (nome da coluna de suporte) a partir do droneEnumValue. */
-export const AIRCRAFT_OF = {
-  60: 'M300 RTK',
-  89: 'M350 RTK',
-  67: 'M30/M30T',
-  77: 'M3E/M3T/M3M',
-  91: 'M3D/M3TD',
+/**
+ * Modelo a partir do par droneEnumValue-droneSubEnumValue (tabela «Enumeration
+ * Values of Aircraft, RC and Dock» da página de suporte de produtos, em
+ * SPEC.productSupport), com o nome que as colunas «Product Support» usam.
+ * Valida-se o modelo exacto: «M4E/M4T» suporta o M4T, «M4E» não, «M3E/M3T»
+ * não suporta o M3M.
+ */
+export const MODEL_OF = {
+  '60-0': 'M300 RTK',
+  '89-0': 'M350 RTK',
+  '67-0': 'M30',
+  '67-1': 'M30T',
+  '77-0': 'M3E',
+  '77-1': 'M3T',
+  '77-2': 'M3M',
+  '77-3': 'M3TA',
+  '91-0': 'M3D',
+  '91-1': 'M3TD',
+  '99-0': 'M4E',
+  '99-1': 'M4T',
+  '100-0': 'M4D',
+  '100-1': 'M4TD',
+  '103-0': 'M400',
+  '130-0': 'M5TD',
 }
-/** O M4 (99) não consta da documentação clonada: valida-se como a classe M3E (extrapolação). */
-const CLASS_OF = { 99: 'M3E/M3T/M3M' }
+
+/**
+ * Modelos de uma entrada da coluna de suporte: «M3E/M3T/M3M» → M3E, M3T,
+ * M3M; «M300 RTK and M350 RTK (H20/H20T/…)» → M300 RTK, M350 RTK (o que
+ * está entre parênteses são payloads).
+ */
+export function modelsOf(entry) {
+  return entry
+    .replace(/\([^)]*\)/g, ' ')
+    .split(/\s+and\s+|\//)
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+const supports = (support, model) => support.some((s) => modelsOf(s).includes(model))
 
 /* ---- excepções, cada uma com a prova ----------------------------------- */
 export const ALLOW = {
@@ -65,23 +97,20 @@ export const ALLOW = {
     'Folder/duration':
       '81 KMZ reais; sem ele o Pilot 2 mostrou 100 % e 00:00 a meio (voo M3E 2026-09)',
   },
-  // valores fora do enum da tabela
+  // valores fora do enum da tabela (os payloads: tabela «Enumeration Values
+  // of Camera» da pagina de suporte de produtos, actualizada a 2026-10-14)
   values: {
-    'droneInfo/droneEnumValue': {
-      99: 'M4T: KMZ aceite e voado (2026-10); o M4 nao esta na documentacao clonada',
-    },
-    'droneInfo/droneSubEnumValue': { 1: 'M4T: sub-enum 1 (extrapolacao do M3T); voado 2026-10' },
     'payloadInfo/payloadEnumValue': {
-      50: 'Zenmuse P1: 15 KMZ reais do Pilot 2 escrevem 50/1',
-      65535: 'PSDK: 66 KMZ reais do Pilot 2 escrevem 65535/0 (a tabela diz 65534)',
-      89: 'M4T: KMZ aceite e voado (2026-10)',
+      50: 'Zenmuse P1 (e o payload proprio por omissao): 15 KMZ reais do Pilot 2 num M300 escrevem 50/1; a tabela viva nao tem a P1 nem payloads PSDK, e a importacao no comando esta por confirmar (VALIDACAO 5.4)',
+      65535:
+        'Mapper+ (PSDK): 66 KMZ reais do Pilot 2 num M300 escrevem 65535/0; a tabela de 2024 dava 65534, a viva nao tem payloads PSDK; importacao por confirmar (VALIDACAO 5.4)',
     },
-    // a tabela (clone de 2024 e pagina viva) escreve `visible`, mas os
-    // ficheiros reais do Matrice 4 escritos pelo Pilot 2 (M4E, M4T) escrevem
-    // `visable`, a grafia que a pagina viva lista no payloadLensIndex (#46)
+    // a tabela EN do imageFormat escreve `visible`; a CN do imageFormat, o
+    // payloadLensIndex (EN e CN) e os ficheiros reais do Matrice 4 escritos
+    // pelo Pilot 2 (M4E, M4T) escrevem `visable` (#46)
     'payloadParam/imageFormat': {
       visable:
-        'M4E/M4T: grafia dos ficheiros reais do Pilot 2 e do payloadLensIndex da pagina viva',
+        'M4E/M4T: grafia dos ficheiros reais do Pilot 2, da tabela CN do imageFormat e do payloadLensIndex (EN e CN); a EN do imageFormat diz visible',
     },
   },
   // obrigatórios que ficam de fora, com a razão (E2 da revisão)
@@ -90,27 +119,32 @@ export const ALLOW = {
       'so nos templates de mapeamento (o exemplo da documentacao e um mapping2d); o template waypoint voou no M3E e no M4T sem ele',
     'waylineCoordinateSysParam/surfaceFollowModeEnable': 'idem globalShootHeight',
     'actionActuatorFuncParam/fileSuffix@takePhoto':
-      'tolerado nos voos do M3E e do M4T; a decidir o valor com um ficheiro real',
+      'tolerado nos voos do M3E e do M4T; os ficheiros reais do Pilot 2 no M4E e no M4T tambem o omitem; a decidir o valor com um ficheiro real',
     'actionActuatorFuncParam/fileSuffix@startRecord': 'idem takePhoto',
   },
-  // elementos escritos para aeronaves fora da coluna de suporte (M3 da revisão, pacote B)
+  // elementos escritos para aeronaves fora da coluna de suporte (M3 da
+  // revisão): a chave é o modelo (MODEL_OF)
   unsupported: {
-    'actionActuatorFuncParam/payloadLensIndex@takePhoto': {
-      'M3E/M3T/M3M':
-        'B2 da revisao: a lente por accao no M4T (classe M3E na validacao); a tabela so lista M30/M3D — a confirmar com um KMZ termico do Pilot 2 no M4T',
-    },
-    'actionActuatorFuncParam/payloadLensIndex@startRecord': {
-      'M3E/M3T/M3M': 'idem takePhoto',
-    },
     'Placemark/useStraightLine': {
-      'M300 RTK':
-        'escrito tambem no M300, onde a especificacao nao o suporta (ignorado): M3 aplicado — nessas aeronaves so passam sem parar os pontos colineares (exporters.js, NO_STRAIGHT_LINE_DRONES)',
-      'M350 RTK': 'idem M300',
+      'M300 RTK': {
+        why: 'escrito tambem no M300 (M3 da revisao: so passam sem parar os pontos colineares, exporters.js NO_STRAIGHT_LINE_DRONES); sem ficheiro real nem voo do M300 que mostre que o comando o aceita ou ignora',
+        open: 'EN 30.waylines-wpml.md e 20.template-kml.md, Placemark/useStraightLine, «Product Support» sem M300 RTK (pagina de 2026-11-05); a CN do template lista o M300, a do waylines nao',
+      },
     },
     'Folder/globalUseStraightLine#waypoint': {
-      'M300 RTK': 'idem useStraightLine',
-      'M350 RTK': 'idem',
+      'M300 RTK': {
+        why: 'idem useStraightLine',
+        open: 'EN 20.template-kml.md, Folder/globalUseStraightLine (Waypoint Flight Template), «Product Support» sem M300 RTK (pagina de 2026-11-05)',
+      },
     },
+  },
+  // versões do namespace (xmlns:wpml) que os exemplos da especificação não
+  // declaram (os exemplos, EN e CN, declaram a 1.0.2, a da omissão)
+  namespace: {
+    '1.0.3':
+      'opcao do projecto (#48): os 81 KMZ reais do Pilot 2 num M300 RTK declaram 1.0.3; sem voo com esta versao',
+    '1.0.6':
+      'opcao do projecto (#48): os ficheiros reais do Pilot 2 no M4E e no M4T declaram 1.0.6; sem voo com esta versao',
   },
   // filhos que os exemplos da especificação não mostram: posição aceite
   order: [
@@ -119,7 +153,7 @@ export const ALLOW = {
       parent: 'missionConfig',
       name: 'globalRTHHeight',
       after: 'takeOffSecurityHeight',
-      why: 'so na tabela (waylines-wpml.md); sem exemplo',
+      why: 'so nas tabelas (waylines-wpml.md e, na pagina viva, tambem template-kml.md); sem exemplo',
     },
     {
       file: 'template',
@@ -224,7 +258,7 @@ export const ALLOW = {
       parent: 'actionActuatorFuncParam',
       name: 'hoverTime',
       before: 'gimbalRotateMode',
-      why: 'tabela do hover (common-element.md, linha 178): hoverTime e o unico parametro; os exemplos nao tem hover',
+      why: 'tabela do hover (common-element.md, seccao #hover): hoverTime e o unico parametro; os exemplos nao tem hover',
     },
     {
       file: '*',
@@ -235,6 +269,46 @@ export const ALLOW = {
     },
   ],
 }
+
+/*
+ * Cada excepção é um texto (a prova) ou { why, file?, open? }. `open` marca
+ * uma divergência aberta: a aplicação escreve o que a documentação viva não
+ * aceita e ainda não há prova de que o comando o aceite — fica listada com a
+ * referência da documentação, contada no teste e no relatório, até alguém a
+ * resolver (corrigir a exportação ou trazer a prova).
+ */
+export const whyOf = (v) => (typeof v === 'string' ? v : v.why)
+
+/** Excepções usadas desde o arranque (a matriz e os dourados devem usá-las todas). */
+export const USED = new Set()
+function allowFor(section, id, sub) {
+  const box = ALLOW[section][id]
+  const v = sub === undefined ? box : box?.[sub]
+  if (v) USED.add(sub === undefined ? `${section}|${id}` : `${section}|${id}|${sub}`)
+  return v
+}
+
+/** Todas as excepções, com a chave que USED regista. */
+export function allowEntries() {
+  const out = []
+  for (const [id, v] of Object.entries(ALLOW.elements))
+    out.push({ key: `elements|${id}`, entry: v })
+  for (const section of ['values', 'unsupported'])
+    for (const [id, m] of Object.entries(ALLOW[section]))
+      for (const [sub, v] of Object.entries(m))
+        out.push({ key: `${section}|${id}|${sub}`, entry: v })
+  for (const section of ['missing', 'namespace'])
+    for (const [id, v] of Object.entries(ALLOW[section]))
+      out.push({ key: `${section}|${id}`, entry: v })
+  ALLOW.order.forEach((o, i) => out.push({ key: `order|${i}`, entry: o }))
+  for (const id of Object.keys(RANGE_EXCEPTIONS))
+    out.push({ key: `range|${id}`, entry: RANGE_EXCEPTIONS_WHY[id] })
+  return out
+}
+
+/** As divergências abertas (excepções com `open`). */
+export const openDivergences = () =>
+  allowEntries().filter(({ entry }) => typeof entry === 'object' && entry.open)
 
 /* ---- árvore ----------------------------------------------------------- */
 // parseTagValue false: o texto fica como está escrito («1e2» não vira 100)
@@ -318,6 +392,38 @@ const RANGE_EXCEPTIONS = {
   // exemplo da DJI escreve 0 (waylines-wpml.md, exemplo do Placemark)
   'waypointTurnParam/waypointTurnDampingDist': (node) => node.text === '0',
 }
+const RANGE_EXCEPTIONS_WHY = {
+  'waypointTurnParam/waypointTurnDampingDist':
+    'o exemplo do Placemark do waylines-wpml.md escreve 0 nos modos de paragem',
+}
+
+/**
+ * Valores aceites de um enum remetido para a página de suporte de produtos:
+ * o tipo de aeronave (domínio 0), o subtipo desse tipo, o tipo de câmara
+ * (domínio 1) e o gimbalindex dessa câmara (de todas, se a câmara não
+ * consta). `key` é o que se procura em ALLOW.values: o valor, ou
+ * «tipo-subtipo» no subtipo da aeronave.
+ */
+function refValues(ref, id, text, enums) {
+  const ps = SPEC.productSupport
+  const uniq = (xs) => [...new Set(xs)]
+  const aircraft = ps.aircraft.filter((a) => a.domain === 0)
+  const cameras = ps.cameras.filter((c) => c.domain === 1)
+  if (ref.table === 'aircraft' && ref.field === 'type')
+    return { allowed: uniq(aircraft.map((a) => a.type)), key: text }
+  if (ref.table === 'aircraft' && ref.field === 'subType')
+    return {
+      allowed: uniq(aircraft.filter((a) => String(a.type) === enums.drone).map((a) => a.subType)),
+      key: `${enums.drone}-${text}`,
+    }
+  if (ref.table === 'cameras' && ref.field === 'type')
+    return { allowed: uniq(cameras.map((c) => c.type)), key: text }
+  if (ref.table === 'cameras' && ref.field === 'gimbalIndex') {
+    const own = cameras.filter((c) => String(c.type) === enums.payload)
+    return { allowed: uniq((own.length ? own : cameras).flatMap((c) => c.gimbalIndex)), key: text }
+  }
+  throw new Error(`${id}: remissão desconhecida ${JSON.stringify(ref)}`)
+}
 
 function validateFile(xml, fileKind, aircraft, errors) {
   const v = XMLValidator.validate(xml)
@@ -328,7 +434,19 @@ function validateFile(xml, fileKind, aircraft, errors) {
   if (xml.charCodeAt(0) === 0xfeff) errors.push({ code: 'bom', file: fileKind })
   if (!xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>'))
     errors.push({ code: 'xml-declaration', file: fileKind })
+  // a versão do namespace: a dos exemplos da especificação, ou uma com prova
+  const ns = /xmlns:wpml="http:\/\/www\.dji\.com\/wpmz\/([^"]+)"/.exec(xml)?.[1] ?? null
+  const docNs = SPEC.namespaces?.[EXAMPLE_OF[fileKind]] ?? []
+  if (!ns || (!docNs.includes(ns) && !allowFor('namespace', ns)))
+    errors.push({ code: 'namespace', file: fileKind, value: ns, allowed: docNs })
   const nodes = parseNodes(xml)
+  const enums = {
+    drone: textOf(nodes.find((n) => n.name === 'droneInfo') ?? { children: [] }, 'droneEnumValue'),
+    payload: textOf(
+      nodes.find((n) => n.name === 'payloadInfo') ?? { children: [] },
+      'payloadEnumValue',
+    ),
+  }
   const folder = nodes.find((n) => n.name === 'Folder')
   const templateKind =
     fileKind === 'template' ? (textOf(folder, 'templateType') ?? 'waypoint') : null
@@ -351,7 +469,10 @@ function validateFile(xml, fileKind, aircraft, errors) {
     const found = lookup(parentName, node.name, { action, template: templateKind })
     if (!found) {
       const allowed = ALLOW.elements[key]
-      if (typeof allowed === 'string' || allowed?.file === fileKind) continue
+      if (allowed && (typeof allowed === 'string' || (allowed.file ?? fileKind) === fileKind)) {
+        USED.add(`elements|${key}`)
+        continue
+      }
       if (KML_CORE.has(node.name) && KML_CORE.has(parentName)) continue
       // os exemplos da especificação também são especificação (Placemark/actionGroup, Document/missionConfig...)
       if (inExamples(parentName, node.name)) continue
@@ -361,8 +482,8 @@ function validateFile(xml, fileKind, aircraft, errors) {
     const { id, entry } = found
     const doc = docFor(entry, fileKind)
     // suporte por aeronave
-    if (aircraft && doc.support.length > 0 && !doc.support.includes(aircraft)) {
-      const ok = ALLOW.unsupported[id]?.[aircraft]
+    if (aircraft && doc.support.length > 0 && !supports(doc.support, aircraft)) {
+      const ok = allowFor('unsupported', id, aircraft)
       if (!ok)
         errors.push({
           code: 'unsupported',
@@ -378,15 +499,30 @@ function validateFile(xml, fileKind, aircraft, errors) {
     if (isBool(doc)) {
       if (!['0', '1'].includes(text))
         errors.push({ code: 'bool', file: fileKind, path: node.path, value: text })
-    } else if (isEnumType(doc) && doc.values) {
-      if (!doc.values.includes(text) && !ALLOW.values[id]?.[text])
+    } else if (doc.ref && SPEC.productSupport) {
+      // o enum está na página de suporte de produtos
+      const { allowed, key: refKey } = refValues(doc.ref, id, text, enums)
+      if (!allowed.includes(Number(text)) && !allowFor('values', id, refKey))
         errors.push({
           code: 'enum',
           file: fileKind,
           path: node.path,
-          value: text,
-          allowed: doc.values,
+          value: refKey,
+          allowed,
+          ref: `product-support/${doc.ref.table}.${doc.ref.field}`,
         })
+    } else if (isEnumType(doc) && doc.values) {
+      // listas («wide,ir»): cada valor no enum
+      const list = /list/i.test(`${doc.type} ${doc.unit ?? ''} ${doc.description}`)
+      for (const v of list ? text.split(',') : [text])
+        if (!doc.values.includes(v) && !allowFor('values', id, v))
+          errors.push({
+            code: 'enum',
+            file: fileKind,
+            path: node.path,
+            value: v,
+            allowed: doc.values,
+          })
     } else if (isNumeric(doc)) {
       if (!DECIMAL.test(text))
         errors.push({ code: 'number-format', file: fileKind, path: node.path, value: text })
@@ -395,7 +531,9 @@ function validateFile(xml, fileKind, aircraft, errors) {
           errors.push({ code: 'integer', file: fileKind, path: node.path, value: text })
         const r = doc.range
         const n = Number(text)
-        if (r && !(RANGE_EXCEPTIONS[id]?.(node) ?? false)) {
+        const excepted = RANGE_EXCEPTIONS[id]?.(node) ?? false
+        if (excepted) USED.add(`range|${id}`)
+        if (r && !excepted) {
           const low = r.minOpen ? n > r.min : n >= r.min
           const high = r.max == null ? true : r.maxOpen ? n < r.max : n <= r.max
           if (!(low && high))
@@ -425,9 +563,9 @@ function validateFile(xml, fileKind, aircraft, errors) {
       if (entry.template && entry.template !== templateKind) continue
       const doc = entry.docs[DOC_OF[fileKind]] ?? (entry.docs[COMMON] ? entry.docs[COMMON] : null)
       if (!doc || doc.required !== 'yes') continue
-      if (aircraft && doc.support.length > 0 && !doc.support.includes(aircraft)) continue
+      if (aircraft && doc.support.length > 0 && !supports(doc.support, aircraft)) continue
       if (present.has(entry.element)) continue
-      if (ALLOW.missing[id]) continue
+      if (allowFor('missing', id)) continue
       errors.push({ code: 'missing', file: fileKind, path: `${p.path}/${entry.element}`, key: id })
     }
   }
@@ -440,7 +578,7 @@ function validateFile(xml, fileKind, aircraft, errors) {
 function conditionalRules(nodes, fileKind, aircraft, errors) {
   const straightSupported =
     !aircraft ||
-    SPEC.elements['Placemark/useStraightLine'].docs[DOC_OF[fileKind]].support.includes(aircraft)
+    supports(SPEC.elements['Placemark/useStraightLine'].docs[DOC_OF[fileKind]].support, aircraft)
   for (const p of nodes.filter((n) => n.name === 'Placemark')) {
     const need = (flag, child) => {
       if (textOf(p, flag) === '0' && !byName(p, child))
@@ -579,6 +717,7 @@ function orderRules(nodes, fileKind, errors) {
         errors.push({ code: 'order-unknown', file: fileKind, path: `${p.path}/${name}` })
         continue
       }
+      USED.add(`order|${ALLOW.order.indexOf(rule)}`)
       if (rule.before) {
         const at = expected.indexOf(rule.before)
         expected.splice(at < 0 ? 0 : at, 0, name)
@@ -709,11 +848,15 @@ function coherence(tpl, wl, errors) {
  */
 export function validateWpml({ template, waylines, aircraft = null }) {
   const errors = []
-  const droneEnum = Number(waylines.match(/<wpml:droneEnumValue>(\d+)</)?.[1])
-  const name = aircraft ?? AIRCRAFT_OF[droneEnum] ?? CLASS_OF[droneEnum] ?? null
+  const droneEnum = waylines.match(/<wpml:droneEnumValue>(\d+)</)?.[1]
+  const droneSub = waylines.match(/<wpml:droneSubEnumValue>(\d+)</)?.[1] ?? '0'
+  const name = aircraft ?? MODEL_OF[`${droneEnum}-${droneSub}`] ?? null
   const tpl = validateFile(template, 'template', name, errors)
   const wl = validateFile(waylines, 'waylines', name, errors)
   if (tpl && wl) coherence(tpl, wl, errors)
+  const nsOf = (xml) => /xmlns:wpml="([^"]*)"/.exec(xml)?.[1] ?? null
+  if (nsOf(template) !== nsOf(waylines))
+    errors.push({ code: 'coherence', detail: 'xmlns:wpml diferente nos dois ficheiros' })
   return { errors, aircraft: name }
 }
 

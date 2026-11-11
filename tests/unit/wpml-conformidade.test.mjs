@@ -13,9 +13,14 @@ import { buildBlocksZip } from '../../src/utils/exporters.js'
 import {
   ALLOW,
   SPEC,
+  USED,
+  allowEntries,
   describeErrors,
+  modelsOf,
+  openDivergences,
   validateKmz,
   validateWpml,
+  whyOf,
 } from '../lib/wpml-conformidade.mjs'
 import { casosMatriz, ficheiros } from '../lib/wpml-matriz.mjs'
 
@@ -50,20 +55,52 @@ describe('dicionario da especificacao (T1)', () => {
       max: 15,
       maxOpen: false,
     })
+    // a pagina viva separa «M3D/M3TD，M4D/M4TD» com a virgula chinesa
     expect(e['Placemark/useStraightLine'].docs['30.waylines-wpml.md'].support).toEqual([
       'M30/M30T',
       'M3E/M3T/M3M',
       'M3D/M3TD',
+      'M4D/M4TD',
+      'M4E/M4T',
+      'M5TD',
     ])
+    expect(e['Placemark/quickOrthoMappingEnable'].docs['20.template-kml.md'].support).toEqual([
+      'M4E',
+    ])
+    expect(e['missionConfig/globalRTHHeight'].docs['20.template-kml.md'].range).toEqual({
+      min: 2,
+      minOpen: false,
+      max: 1500,
+      maxOpen: false,
+    })
+    // lista com o tipo na coluna da unidade; «Note:» nao e valor
+    expect(
+      new Set(
+        e['actionActuatorFuncParam/payloadLensIndex@takePhoto'].docs['40.common-element.md'].values,
+      ),
+    ).toEqual(new Set(['zoom', 'wide', 'ir', 'narrow_band', 'visable']))
+    expect(e['missionConfig/finishAction'].docs['30.waylines-wpml.md'].values).not.toContain('Note')
     expect(e['Placemark/caliFlightEnable#mapping2d']).toBeDefined()
     expect(e['Folder/caliFlightEnable']).toBeUndefined()
-    expect(e['droneInfo/droneEnumValue'].docs['40.common-element.md'].values).toEqual([
-      '89',
-      '60',
-      '67',
-      '77',
-      '91',
-    ])
+    // os enums das aeronaves e dos payloads remetem para a pagina de suporte de produtos
+    expect(e['droneInfo/droneEnumValue'].docs['40.common-element.md'].values).toBeNull()
+    expect(e['droneInfo/droneEnumValue'].docs['40.common-element.md'].ref).toEqual({
+      page: 'product-support',
+      table: 'aircraft',
+      field: 'type',
+    })
+    expect(e['payloadInfo/payloadPositionIndex'].docs['40.common-element.md'].ref.field).toBe(
+      'gimbalIndex',
+    )
+    const ps = SPEC.productSupport
+    expect(ps.aircraft.find((a) => a.type === 99 && a.subType === 1)?.domain).toBe(0)
+    expect(ps.cameras.find((c) => c.type === 89)?.gimbalIndex).toEqual([0])
+    expect(ps.cameras.find((c) => c.type === 42)?.gimbalIndex).toEqual([0, 1, 2])
+    expect(ps.cameras.some((c) => [50, 65534, 65535].includes(c.type))).toBe(false)
+    expect(SPEC.namespaces).toEqual({ 'template.kml': ['1.0.2'], 'waylines.wpml': ['1.0.2'] })
+    // a origem: as paginas vivas, com a data que declaram
+    expect(SPEC.source.site).toBe('https://developer.dji.com/doc/cloud-api-tutorial')
+    for (const pg of SPEC.source.pages) expect(pg.updated).toMatch(/^\d{4}-\d\d-\d\dT/)
     expect(SPEC.examples['waylines.wpml'].Placemark).toEqual([
       'Point',
       'index',
@@ -76,14 +113,21 @@ describe('dicionario da especificacao (T1)', () => {
     expect(Object.keys(e).length).toBeGreaterThan(200)
   })
 
-  test('cada excepcao tem uma prova escrita', () => {
-    // uma prova (texto), ou { file, why } quando so vale num dos ficheiros
-    for (const v of Object.values(ALLOW.elements))
-      expect((typeof v === 'string' ? v : v.why).length).toBeGreaterThan(10)
-    for (const m of Object.values(ALLOW.values))
-      for (const v of Object.values(m)) expect(v.length).toBeGreaterThan(10)
-    for (const v of Object.values(ALLOW.missing)) expect(v.length).toBeGreaterThan(10)
-    for (const o of ALLOW.order) expect(o.why.length).toBeGreaterThan(5)
+  test('cada excepcao tem uma prova escrita; as abertas, a referencia da documentacao', () => {
+    // uma prova (texto), ou { why, file?, open? }
+    for (const { key, entry } of allowEntries()) {
+      expect(whyOf(entry)?.length ?? 0, key).toBeGreaterThan(5)
+      if (typeof entry === 'object' && 'open' in entry)
+        expect(entry.open.length, key).toBeGreaterThan(20)
+    }
+    expect(Object.keys(ALLOW.namespace).sort()).toEqual(['1.0.3', '1.0.6'])
+  })
+
+  test('modelos da coluna de suporte', () => {
+    expect(modelsOf('M3E/M3T/M3M')).toEqual(['M3E', 'M3T', 'M3M'])
+    expect(modelsOf('M300 RTK and M350 RTK (H20/H20T/H20N)')).toEqual(['M300 RTK', 'M350 RTK'])
+    expect(modelsOf('M300 RTK and M350 RTK(H20/H20T)')).toEqual(['M300 RTK', 'M350 RTK'])
+    expect(modelsOf('M4E')).toEqual(['M4E'])
   })
 })
 
@@ -121,9 +165,39 @@ describe('matriz modos x aeronaves (T2, T3, T4)', () => {
       'area-terreno-m300rtk',
       'area-mosaico-bateria-m4t-1',
       'area-mosaico-bateria-m4t-2',
+      // dicionario das paginas vivas (2026-11): cada modo em cada aeronave e
+      // payload, o LiDAR proprio, a posicao do payload e o namespace
+      'area-cruzada-nadir-m4t-m4t_thermal',
+      'area-cruzada-nadir-m300rtk-p1',
+      'area-cruzada-nadir-m300rtk-mapper_plus',
+      'area-cruzada-nadir-custom-custom',
+      'area-blocos-m300rtk-mapper_plus-1',
+      'area-blocos-custom-lidar-1',
+      'area-lidar-custom',
+      'corredor-lidar-custom',
+      'corredor-distance-m4t-m4t_thermal',
+      'corredor-waypoint-custom',
+      'fachada-m4t-m4t_wide',
+      'fachada-custom',
+      'orbita-video-m4t-m4t_thermal',
+      'orbita-foto-custom',
+      'circular-m4t-m4t_thermal',
+      'circular-custom',
+      'inspeccao-m4t-m4t_thermal',
+      'inspeccao-custom',
+      'area-distancia-m300rtk-p1-pos1',
+      'orbita-video-m300rtk-p1-pos2',
+      'inspeccao-custom-custom-pos2',
+      'area-lidar-m300-mapper-pos2',
+      'corredor-lidar-m300rtk-mapper-pos1',
+      'area-distancia-m4t-m4t_thermal-ns106',
+      'area-distancia-m300rtk-p1-ns103',
+      'orbita-video-m3e-m3e_wide-ns103',
+      'area-blocos-m4t-ns106-1',
     ])
       expect(nomes).toContain(n)
-    expect(casos.length).toBeGreaterThanOrEqual(50)
+    expect(new Set(nomes).size).toBe(nomes.length)
+    expect(casos.length).toBeGreaterThanOrEqual(280)
   })
   test('a câmara dispara em todos os casos com câmara, nunca com LiDAR; a lente é a do payload', () => {
     for (const c of casos) {
@@ -234,6 +308,36 @@ describe('empacotamento (T7)', () => {
         waylines.replace(/<wpml:globalTransitionalSpeed>[^<]+/, '<wpml:globalTransitionalSpeed>16'),
       ),
     ).toContain('range')
+    // o dicionario das paginas vivas: um elemento so do M4E no M4T, um
+    // payload fora da tabela de camaras, um subtipo que a tabela nao tem, um
+    // suporte que a camara nao tem, uma lente fora do enum, um namespace sem
+    // prova e namespaces diferentes nos dois ficheiros
+    const m4 = ficheiros(casosMatriz().find((c) => c.name === 'area-distancia-m4t-m4t_wide').params)
+    expect(
+      codes(
+        m4.template.replace(
+          '<wpml:useGlobalHeight>',
+          '<wpml:quickOrthoMappingEnable>0</wpml:quickOrthoMappingEnable><wpml:useGlobalHeight>',
+        ),
+        m4.waylines,
+      ),
+    ).toContain('unsupported')
+    const wl = (a, b) => codes(m4.template, m4.waylines.replace(a, b))
+    expect(wl('<wpml:payloadEnumValue>89', '<wpml:payloadEnumValue>65534')).toContain('enum')
+    expect(wl('<wpml:droneSubEnumValue>1', '<wpml:droneSubEnumValue>3')).toContain('enum')
+    expect(wl('<wpml:payloadPositionIndex>0', '<wpml:payloadPositionIndex>1')).toContain('enum')
+    expect(wl(/<wpml:payloadLensIndex>[^<]*/, '<wpml:payloadLensIndex>visable,foo')).toContain(
+      'enum',
+    )
+    expect(
+      codes(
+        m4.template.replace('wpmz/1.0.2', 'wpmz/1.0.4'),
+        m4.waylines.replace('wpmz/1.0.2', 'wpmz/1.0.4'),
+      ),
+    ).toContain('namespace')
+    expect(codes(m4.template.replace('wpmz/1.0.2', 'wpmz/1.0.6'), m4.waylines)).toContain(
+      'coherence',
+    )
     // um elemento novo sem prova
     expect(
       codes(
@@ -244,5 +348,23 @@ describe('empacotamento (T7)', () => {
         ),
       ),
     ).toContain('unknown-element')
+  })
+})
+
+describe('excepcoes (ALLOW)', () => {
+  // corre depois da matriz e dos dourados (os testes de um ficheiro correm
+  // por ordem): uma excepcao que nenhum ficheiro gerado usa deixou de ser
+  // precisa e sai, para a lista dizer so o que a exportacao precisa
+  test('cada excepcao e usada pela matriz ou pelos dourados', () => {
+    const unused = allowEntries()
+      .map((e) => e.key)
+      .filter((k) => !USED.has(k))
+    expect(unused).toEqual([])
+  })
+  test('divergencias abertas face a documentacao viva: contadas e listadas', () => {
+    // a aplicacao escreve o que a documentacao nao aceita, sem prova de
+    // campo; a decisao e do projecto (docs/VALIDACAO.md, 7.1)
+    const open = openDivergences().map(({ key, entry }) => `${key}: ${entry.open}`)
+    expect(open, open.join('\n')).toHaveLength(2)
   })
 })

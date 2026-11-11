@@ -1476,32 +1476,77 @@ verificação do troço) não é alcançável pela interface. A especificação 
 fixa uma distância mínima entre waypoints; os 0,5 m do preflight são o
 mínimo do SDK da DJI.
 
-**Conformidade automática (Outubro de 2026).** `tools/wpml-spec.mjs` lê as
-tabelas Markdown da documentação oficial (`dji-sdk/cloud-api-doc`,
-`docs/en/60.api-reference/00.dji-wpml/`) e grava
-`tests/spec/wpml-spec.json`: por elemento e pai, tipo, enum, intervalo,
-obrigatoriedade (com os «obrigatório se…»), aeronaves suportadas, e a ordem
-dos filhos nos exemplos. `tests/lib/wpml-conformidade.mjs` valida cada
-`template.kml` e `waylines.wpml` gerados — a matriz modos × aeronaves de
-`tests/lib/wpml-matriz.mjs` e os ficheiros dourados — contra esse
-dicionário: pares pai→filho, enums, booleanos, numéricos em decimal,
-intervalos, obrigatórios, «obrigatório se…» codificados à mão, suporte por
-aeronave (o M4, 99, valida-se como a classe M3E), ordem dos filhos,
-coerência entre os dois ficheiros e empacotamento do KMZ. Tudo o que a app
-escreve fora das tabelas está na lista `ALLOW` do validador com a prova
-(81 KMZ reais, voos): um elemento novo sem prova faz o teste falhar.
+**Conformidade automática (Outubro de 2026; dicionário das páginas vivas
+desde Novembro).** `tools/wpml-spec.mjs` lê as tabelas da documentação
+oficial da DJI e grava `tests/spec/wpml-spec.json`: por elemento e pai,
+tipo, enum, intervalo, obrigatoriedade (com os «obrigatório se…»),
+aeronaves suportadas, ficheiro, linha e secção, a ordem dos filhos e a
+versão do namespace nos exemplos, e, da página de suporte de produtos, os
+enums das aeronaves (tipo e subtipo) e das câmaras (tipo, subtipo e
+`gimbalindex`). A fonte é a página viva
+(<https://developer.dji.com/doc/cloud-api-tutorial/en/api-reference/dji-wpml/>:
+template-kml, waylines-wpml e common-element, actualizadas a 2026-11-05; e
+`/en/overview/product-support.html`, de 2026-10-14), que o JSON regista com
+o URL, a data que cada página declara e a data do descarregamento. O
+repositório `dji-sdk/cloud-api-doc`, de onde o dicionário vinha até
+Novembro, parou em 2024-11, antes do Matrice 4.
 
-A matriz (M3-T11) tem 58 casos: a área por distância, por tempo, por
-waypoint e com terreno em cinco pares aeronave/payload, LiDAR em área e em
-corredor (M300 + Mapper+), corredor por distância e por waypoint no M3E, no
-M4T e no M300 + P1, fachada no M3E, no M4T térmico e no M300 + P1, órbita
-(foto, por nível e vídeo), circular e pontos de inspecção no M3E, no M4T e
-no M300 + P1, e a área pelo montador real (`buildAreaExport`, sobre o plano
-de `planMissionFromProject`): blocos por área, dupla grelha com nadir,
-seguimento de terreno e mosaico por bateria, um ficheiro por bloco. Em
-todos os casos com câmara há disparo (grupo por distância ou por tempo,
-foto no waypoint ou gravação) e a lente escrita (`payloadLensIndex`) é a do
-payload; com LiDAR não há acção de câmara. Os E2E validam cada KMZ
+O site é um VuePress: o HTML de cada página é uma casca e o conteúdo vem
+num pedaço JavaScript com a função de render compilada. `tools/lib/
+pagina-dji.mjs` lê esse pedaço com um analisador do subconjunto de
+JavaScript que o compilador do Vue produz (sem o executar) e converte-o no
+Markdown das fontes do repositório (tabelas com `|`, `código`, `<br/>`,
+blocos XML), que o gerador lê pelas mesmas regras. Prova da conversão:
+sobre o clone de 2024 e sobre a página viva, o mesmo gerador dá, nos 261
+pares elemento/documento comuns, 55 iguais em tudo, 241 iguais excepto as
+aeronaves suportadas (o acréscimo do M4D/M4TD, M4E/M4T e M5TD) e 20 com
+mudanças reais da página (os enums remetidos para a página de suporte de
+produtos, o intervalo do `globalRTHHeight`, a nota do `payloadLensIndex`);
+o Markdown convertido, comparado linha a linha com o do clone, só difere no
+que a DJI mudou. Para regenerar:
+
+```
+npm run spec:wpml -- --fetch     # descarrega as páginas para .cache/dji-docs (git-ignorada)
+npm run spec:wpml                # regenera o JSON
+npm run spec:wpml:check          # falha se o JSON divergir das páginas
+node tools/wpml-spec-diff.mjs antigo.json tests/spec/wpml-spec.json   # o que mudou
+```
+
+O texto das páginas não entra no repositório; só o JSON derivado.
+`--clone <pasta>` lê ainda o Markdown de um clone de `dji-sdk/cloud-api-doc`,
+para comparar.
+
+`tests/lib/wpml-conformidade.mjs` valida cada `template.kml` e
+`waylines.wpml` gerados — a matriz modos × aeronaves de
+`tests/lib/wpml-matriz.mjs` e os ficheiros dourados — contra esse
+dicionário: pares pai→filho, enums (os das aeronaves e dos payloads na
+tabela de suporte de produtos; as listas como `wide,ir` valor a valor),
+booleanos, numéricos em decimal, intervalos, obrigatórios, «obrigatório
+se…» codificados à mão, suporte por aeronave (pelo modelo exacto, do par
+`droneEnumValue`-`droneSubEnumValue`: «M4E/M4T» suporta o M4T, «M4E» não),
+versão do namespace (a dos exemplos, 1.0.2, ou uma com prova), ordem dos
+filhos, coerência entre os dois ficheiros e empacotamento do KMZ. Tudo o
+que a app escreve fora das tabelas está na lista `ALLOW` do validador com a
+prova (81 KMZ reais, ficheiros reais do Matrice 4, voos): um elemento novo
+sem prova faz o teste falhar, uma excepção que nenhum caso usa também, e
+as divergências sem prova de campo ficam marcadas como abertas, com a
+referência da documentação, e contadas no teste (VALIDACAO §7.1).
+
+A matriz (M3-T11, alargada em Novembro de 2026) tem 287 casos: a área por
+distância, por tempo, por waypoint e com terreno, a fachada (uma e várias
+inclinações), a órbita (foto, por nível, vídeo, várias inclinações), a
+circular, o corredor (por distância e por waypoint) e os pontos de
+inspecção em cada par com câmara (M3E, M4T grande-angular, M4T térmica,
+M300 + P1, aeronave e payload próprios); LiDAR em área, área com terreno e
+corredor (M300 + Mapper+ e o payload próprio em LiDAR); a área pelo
+montador real (`buildAreaExport`, sobre o plano de
+`planMissionFromProject`): blocos por área e dupla grelha com nadir em cada
+par, LiDAR incluído, seguimento de terreno e mosaico por bateria, um
+ficheiro por bloco; a posição do payload 1 e 2 (M300 + P1, M300 + Mapper+ e
+a aeronave própria, em todos os modos); e o namespace 1.0.3 e 1.0.6 em cada
+par. Em todos os casos com câmara há disparo (grupo por distância ou por
+tempo, foto no waypoint ou gravação) e a lente escrita (`payloadLensIndex`)
+é a do payload; com LiDAR não há acção de câmara. Os E2E validam cada KMZ
 exportado ao lê-lo (`tests/e2e/kmz.mjs`), e os goldens do smoke levam um
 resumo estrutural (`tests/golden/<cenário>.resumo.json`) que diz o que
 mudou num diff.
